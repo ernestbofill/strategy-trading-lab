@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How we tested</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#00ff9c}a:hover{color:#00ffc8}
+</style>
+</helmet>
+<div style="width: 390px; height: 1300px; box-sizing: border-box; background: #261d45; color: #ffffff; font-family: system-ui, -apple-system, 'Segoe UI', Ubuntu, sans-serif; display: flex; flex-direction: column;">
+
+  <div style="display: flex; justify-content: space-between; align-items: center; height: 44px; padding: 0 16px; background: #100d23; border-bottom: 1px solid #1d1833; font-family: 'Fira Code', Consolas, monospace; font-size: 12px; color: #7877b3;">
+    <a href="Review.dc.html" style="text-decoration: none;">← BACK</a>
+    <div>Dip in winners</div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h1 style="margin: 0; font-family: 'Fira Code', Consolas, monospace; font-size: 28px; line-height: 36px; font-weight: 600; color: #00ff9c;">How we tested</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 22px;">We ran the template's rules on past prices, day by day, as if it had been running then. Here's exactly how.</p>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h2 style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #b08bff;">The data</h2>
+    <div style="background: #100d23; border: 1px solid #1d1833; padding: 4px 16px;">
+      <div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1d1833; font-size: 13px; line-height: 20px;"><span>Prices</span><span style="font-family: 'Fira Code', Consolas, monospace; text-align: right;">Daily, from [provider]</span></div>
+      <div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1d1833; font-size: 13px; line-height: 20px;"><span>Period</span><span style="font-family: 'Fira Code', Consolas, monospace;">[year]-[year]</span></div>
+      <div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1d1833; font-size: 13px; line-height: 20px;"><span>Stocks</span><span style="font-family: 'Fira Code', Consolas, monospace; text-align: right;">[N], the starter list</span></div>
+      <div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 13px; line-height: 20px;"><span>Adjusted for</span><span style="font-family: 'Fira Code', Consolas, monospace; text-align: right;">Splits and dividends</span></div>
+    </div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h2 style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #b08bff;">How a test runs</h2>
+    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 22px;">
+      <div><span style="font-family: 'Fira Code', Consolas, monospace; color: #00ffc8;">▸</span> The rules are checked once a day, after the close, as in the app.</div>
+      <div><span style="font-family: 'Fira Code', Consolas, monospace; color: #00ffc8;">▸</span> Each signal is bought at the next day's opening price.</div>
+      <div><span style="font-family: 'Fira Code', Consolas, monospace; color: #00ffc8;">▸</span> The tested defaults: €3,000 budget, €100 steps, up to 5 per stock.</div>
+      <div><span style="font-family: 'Fira Code', Consolas, monospace; color: #00ffc8;">▸</span> Results in euro, at each day's exchange rate.</div>
+      <div><span style="font-family: 'Fira Code', Consolas, monospace; color: #00ffc8;">▸</span> The index fund gets the same money on the same days.</div>
+      <div><span style="font-family: 'Fira Code', Consolas, monospace; color: #00ffc8;">▸</span> Fees: [€X] per trade. Taxes not included.</div>
+    </div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h2 style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #b08bff;">By period</h2>
+    <div style="background: #100d23; border: 1px solid #1d1833;">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 8px 16px; border-bottom: 1px solid #1d1833; font-size: 11px; line-height: 16px; color: #7877b3;">
+        <div>Period</div><div style="text-align: right;">Template</div><div style="text-align: right;">Index</div><div style="text-align: right;">Worst yr</div>
+      </div>
+      <sc-for list="{{ periods }}" as="r" hint-placeholder-count="4">
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 8px 16px; border-bottom: 1px solid #1d1833; font-family: 'Fira Code', Consolas, monospace; font-size: 12px; line-height: 20px;">
+          <div>{{ r.period }}</div><div style="text-align: right; color: #00ff6a;">[+X%]</div><div style="text-align: right;">[+X%]</div><div style="text-align: right; color: #ff3270;">[−X%]</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px;">
+    <div style="background: #693300e8; border: 1px solid #ff9100; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 20px;">
+      <div style="font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">What a backtest can't show</div>
+      <div>The starter list holds companies that are around today. Stocks that failed along the way aren't in it, which flatters past results.</div>
+      <div>Real prices can differ from the opening price, especially on busy days.</div>
+      <div>Past results don't promise future ones.</div>
+    </div>
+  </div>
+
+  <div style="margin-top: auto; padding: 16px; font-size: 12px; line-height: 16px; color: #7877b3; text-align: center;">Not financial advice. Signals follow your rules; you decide and trade at your own broker.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { periods: [{ period: '[2010-14]' }, { period: '[2015-19]' }, { period: '[2020-24]' }, { period: 'All' }] };
+  }
+}
+</script>
+</body>
+</html>

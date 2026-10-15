@@ -1,0 +1,211 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AIRound.dc.html": {
+      "h": 1440,
+      "is_interactive": true,
+      "title": "AI round",
+      "w": 390,
+      "x": 1410,
+      "y": 4020
+    },
+    "Advanced.dc.html": {
+      "h": 1180,
+      "is_interactive": true,
+      "title": "2b · Advanced settings",
+      "w": 390,
+      "x": 940,
+      "y": 300
+    },
+    "Budget.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "4 · Set your budget (live)",
+      "w": 390,
+      "x": 1880,
+      "y": 300
+    },
+    "Confirm.dc.html": {
+      "h": 1160,
+      "is_interactive": true,
+      "title": "5 · Name, preview and confirm (live)",
+      "w": 390,
+      "x": 2350,
+      "y": 300
+    },
+    "Home.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "Dashboard (home)",
+      "w": 390,
+      "x": 0,
+      "y": 4020
+    },
+    "Main.dc.html": {
+      "h": 1223,
+      "is_interactive": true,
+      "title": "1 · Pick a strategy template",
+      "w": 390,
+      "x": 0,
+      "y": 300
+    },
+    "Mode.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "3 · Choose the mode",
+      "w": 390,
+      "x": 1410,
+      "y": 300
+    },
+    "HowTested.dc.html": {
+      "h": 1300,
+      "is_interactive": true,
+      "title": "2c · How we tested",
+      "w": 390,
+      "x": 2820,
+      "y": 300
+    },
+    "Review.dc.html": {
+      "h": 1460,
+      "is_interactive": true,
+      "title": "2 · Review: Dip in winners",
+      "w": 390,
+      "x": 470,
+      "y": 300
+    },
+    "ReviewAI.dc.html": {
+      "h": 1480,
+      "is_interactive": true,
+      "title": "2 · Review: Your AI's top picks",
+      "w": 390,
+      "x": 1410,
+      "y": 2140
+    },
+    "ReviewComeback.dc.html": {
+      "h": 1320,
+      "is_interactive": true,
+      "title": "2 · Review: The comeback",
+      "w": 390,
+      "x": 0,
+      "y": 2140
+    },
+    "ReviewDrop.dc.html": {
+      "h": 1170,
+      "is_interactive": true,
+      "title": "2 · Review: The big market drop",
+      "w": 390,
+      "x": 470,
+      "y": 2140
+    },
+    "ReviewTrend.dc.html": {
+      "h": 1210,
+      "is_interactive": true,
+      "title": "2 · Review: Ride the long trend",
+      "w": 390,
+      "x": 940,
+      "y": 2140
+    },
+    "Signal.dc.html": {
+      "h": 1060,
+      "is_interactive": true,
+      "title": "Confirm a signal (live)",
+      "w": 390,
+      "x": 940,
+      "y": 4020
+    },
+    "StrategyDetail.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Strategy page (live)",
+      "w": 390,
+      "x": 470,
+      "y": 4020
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-13T20:50:00Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/code/artifact/63d1ae2d-7192-4e77-9cb3-32c99ec8ebe2",
+      "copiedAt": "2026-10-13T20:50:00Z",
+      "namespace": "cyberpunk",
+      "title": "Cyberpunk",
+      "version": "1791923548-bc0c"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "s1": {
+      "fill": "teal",
+      "maxH": 520,
+      "text": "Version 2, in the Cyberpunk design system, following the Oct 13 user journey.\n\nWhat changed in the flow:\n• Catalogue items are strategy templates; the user runs their own strategy.\n• New template names: Dip in winners, The comeback, The big market drop, Your AI's top picks (Ride the long trend kept).\n• New step: choose the mode, Simulation or Live.\n• Budget and confirm are drawn in their Live variant; Simulation only changes the intro lines and the button.\n• Confirm adds the strategy name.\n• Discount zone, Choose stocks to watch, and the one-line disclaimer everywhere.",
+      "w": 360,
+      "x": -440,
+      "y": 300
+    },
+    "s2": {
+      "fill": "teal",
+      "maxH": 420,
+      "text": "Same layout as Dip in winners; the content differs per template.\n\n• Market drop and Long trend use one fund, which the user can change.\n• Ride the long trend lists a Buy rule and a Sell rule.\n• Your AI's top picks has no backtest. It shows what the AI reads, the prompt (read-only, with Edit prompt) and what the user needs.",
+      "w": 360,
+      "x": -440,
+      "y": 2140
+    },
+    "s3": {
+      "fill": "teal",
+      "maxH": 520,
+      "text": "Screens the first version didn't have.\n\n• Dashboard: Waiting for you on top; mode label on every card; a dot marks cards with something waiting.\n• Strategy page: Edit list for the stocks; removing one stops its signals, trades stay in the results.\n• Strategy page (live): You vs the rules on their own vs the index; per stock, what the rules hold vs what you hold.\n• Confirm a signal: I did it (price prefilled with the next day's open) or I skipped it (optional reason).\n• AI round: copy prompt, paste answer, pick the AI model, check scores, the sharing opt-in (off by default).",
+      "w": 360,
+      "x": -440,
+      "y": 4020
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 3210,
+      "text": "New strategy flow",
+      "w": 240,
+      "x": 0,
+      "y": 0
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "The other template reviews",
+      "w": 240,
+      "x": 0,
+      "y": 1840
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "Dashboard, live and AI",
+      "w": 240,
+      "x": 0,
+      "y": 3720
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Review.dc.html",
+    "Advanced.dc.html",
+    "Mode.dc.html",
+    "Budget.dc.html",
+    "Confirm.dc.html",
+    "HowTested.dc.html",
+    "ReviewComeback.dc.html",
+    "ReviewDrop.dc.html",
+    "ReviewTrend.dc.html",
+    "ReviewAI.dc.html",
+    "Home.dc.html",
+    "StrategyDetail.dc.html",
+    "Signal.dc.html",
+    "AIRound.dc.html"
+  ],
+  "pages": [],
+  "title": "Strategy Trading Lab wireframes · Cyberpunk"
+}

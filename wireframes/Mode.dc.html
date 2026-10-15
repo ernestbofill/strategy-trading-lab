@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Choose the mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#00ff9c}a:hover{color:#00ffc8}
+</style>
+</helmet>
+<div style="width: 390px; height: 1000px; box-sizing: border-box; background: #261d45; color: #ffffff; font-family: system-ui, -apple-system, 'Segoe UI', Ubuntu, sans-serif; display: flex; flex-direction: column;">
+
+  <div style="display: flex; justify-content: space-between; align-items: center; height: 44px; padding: 0 16px; background: #100d23; border-bottom: 1px solid #1d1833; font-family: 'Fira Code', Consolas, monospace; font-size: 12px; color: #7877b3;">
+    <a href="Review.dc.html" style="text-decoration: none;">← BACK</a>
+    <div>3 / 5</div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h1 style="margin: 0; font-family: 'Fira Code', Consolas, monospace; font-size: 28px; line-height: 36px; font-weight: 600; color: #00ff9c;">How do you want to run it?</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 22px;">You can start a live copy of a simulation later.</p>
+  </div>
+
+  <div style="padding: 20px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <sc-for list="{{ modes }}" as="m" hint-placeholder-count="2">
+      <button onClick="{{ m.pick }}" style="text-align: left; font-family: inherit; color: #ffffff; cursor: pointer; background: #372963; border: 1px solid {{ m.border }}; box-shadow: {{ m.glow }}; border-radius: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
+          <span style="font-family: 'Fira Code', Consolas, monospace; font-size: 11px; line-height: 16px; padding: 1px 6px; border: 1px solid {{ m.color }}; color: {{ m.color }}; border-radius: 2px;">{{ m.tag }}</span>
+          <span style="flex: 1; font-family: 'Fira Code', Consolas, monospace; font-size: 18px; line-height: 26px; font-weight: 600;">{{ m.name }}</span>
+          <sc-if value="{{ m.on }}" hint-placeholder-val="{{ false }}">
+            <span style="width: 22px; height: 22px; border-radius: 11px; border: 1px solid #00ff9c; box-sizing: border-box; display: flex; align-items: center; justify-content: center;"><span style="width: 12px; height: 12px; border-radius: 6px; background: #00ff9c;"></span></span>
+          </sc-if>
+          <sc-if value="{{ m.off }}" hint-placeholder-val="{{ true }}">
+            <span style="width: 22px; height: 22px; border-radius: 11px; border: 1px solid #7877b3; box-sizing: border-box;"></span>
+          </sc-if>
+        </div>
+        <div style="font-size: 14px; line-height: 22px; font-weight: 600;">{{ m.line }}</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 20px;">
+          <div><span style="color: #b08bff;">Who trades:</span> {{ m.who }}</div>
+          <div><span style="color: #b08bff;">The app:</span> {{ m.app }}</div>
+          <div><span style="color: #b08bff;">You:</span> {{ m.you }}</div>
+        </div>
+      </button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 16px 16px 0 16px;">
+      <div style="background: #002f6de8; border: 1px solid #00c3ff; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">Alerts</div>
+        <div style="font-size: 13px; line-height: 20px;">Your browser will ask to allow notifications, so signals reach you right after the market close. Email alerts are on too, as a fallback. On iPhone, add the app to your home screen first.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="margin-top: auto; padding: 16px; background: #100d23; border-top: 1px solid #1d1833; display: flex; flex-direction: column; gap: 8px;">
+    <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size: 12px; line-height: 16px; text-align: center;">The app never trades for you or connects to your broker. It records only what you confirm.</div>
+    </sc-if>
+    <a href="Budget.dc.html" style="height: 48px; border-radius: 2px; background: #00ff9da6; color: #00140b; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; justify-content: center;">Continue</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { mode: 'sim' };
+  }
+  renderVals() {
+    const base = [
+      { id: 'sim', tag: 'SIM', name: 'Simulation', color: '#00c3ff',
+        line: 'Test it on paper. No real money.',
+        who: 'the app, on paper, every time the rules say so.',
+        app: 'records each trade at the next day\'s opening price.',
+        you: 'nothing. Read the daily overview.' },
+      { id: 'live', tag: 'LIVE', name: 'Live', color: '#ff4081',
+        line: 'Follow it with real money at your own broker.',
+        who: 'you, at your broker, if and when you choose.',
+        app: 'alerts you to each signal and records what you confirm.',
+        you: 'confirm each signal: I did it, or I skipped it.' }
+    ];
+    const mode = this.state.mode;
+    const modes = base.map((m) => {
+      const on = mode === m.id;
+      return { ...m, on, off: !on,
+        border: on ? '#00ff9c' : '#1d1833',
+        glow: on ? '0 0 12px #00ff9c66' : 'none',
+        pick: () => this.setState({ mode: m.id }) };
+    });
+    return { modes, isLive: mode === 'live' };
+  }
+}
+</script>
+</body>
+</html>

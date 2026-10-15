@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review: Ride the long trend</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#00ff9c}a:hover{color:#00ffc8}
+</style>
+</helmet>
+<div style="width: 390px; height: 1210px; box-sizing: border-box; background: #261d45; color: #ffffff; font-family: system-ui, -apple-system, 'Segoe UI', Ubuntu, sans-serif; display: flex; flex-direction: column;">
+
+  <div style="display: flex; justify-content: space-between; align-items: center; height: 44px; padding: 0 16px; background: #100d23; border-bottom: 1px solid #1d1833; font-family: 'Fira Code', Consolas, monospace; font-size: 12px; color: #7877b3;">
+    <a href="Main.dc.html" style="text-decoration: none;">← BACK</a>
+    <div>2 / 5</div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 4px;">
+    <div style="font-family: 'Fira Code', Consolas, monospace; font-size: 12px; color: #b08bff;">Strategy template</div>
+    <h1 style="margin: 0; font-family: 'Fira Code', Consolas, monospace; font-size: 28px; line-height: 36px; font-weight: 600; color: #00ff9c;">Ride the long trend</h1>
+    <div style="font-family: 'Fira Code', Consolas, monospace; font-size: 12px; line-height: 20px; color: #76c1ff;">"Take the wins, dodge the losses"</div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h2 style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #b08bff;">The idea</h2>
+    <p style="margin: 0; font-size: 14px; line-height: 22px;">Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal.</p>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h2 style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #b08bff;">It signals when</h2>
+    <div style="background: #100d23; border: 1px solid #1d1833; padding: 8px 16px; display: flex; flex-direction: column;">
+      <div style="display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1d1833;">
+        <div style="font-family: 'Fira Code', Consolas, monospace; font-size: 12px; line-height: 22px; color: #00ff6a; width: 36px; flex: none;">BUY</div>
+        <div style="font-size: 14px; line-height: 22px;">The market closes more than <span style="font-family: 'Fira Code', Consolas, monospace; color: #fffc58;">3%</span> above its <span style="font-family: 'Fira Code', Consolas, monospace; color: #fffc58;">SMA 200</span> (average price over the last 200 days).</div>
+      </div>
+      <div style="display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1d1833;">
+        <div style="font-family: 'Fira Code', Consolas, monospace; font-size: 12px; line-height: 22px; color: #ff3270; width: 36px; flex: none;">SELL</div>
+        <div style="font-size: 14px; line-height: 22px;">The market closes more than <span style="font-family: 'Fira Code', Consolas, monospace; color: #fffc58;">3%</span> below its SMA 200.</div>
+      </div>
+      <div style="display: flex; gap: 12px; padding: 8px 0;">
+        <div style="font-family: 'Fira Code', Consolas, monospace; font-size: 12px; line-height: 22px; color: #9f5fff; width: 36px; flex: none;">ALL</div>
+        <div style="font-size: 14px; line-height: 22px;">All in, all out: each signal covers the whole budget at once.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <h2 style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #b08bff;">THE FUND IT WATCHES</h2>
+    <div style="background: #372963; border: 1px solid #1d1833; min-height: 56px; padding: 8px 16px; display: flex; gap: 12px; align-items: center;">
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-size: 14px; line-height: 20px; font-weight: 600;">[Broad index fund name]</div>
+        <div style="font-size: 12px; line-height: 16px; color: #b08bff;">[What the index covers]</div>
+      </div>
+      <a href="#" style="min-height: 44px; display: flex; align-items: center; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; text-decoration: none;">Change</a>
+    </div>
+  </div>
+
+  <div style="padding: 24px 16px 0 16px; display: flex; flex-direction: column; gap: 8px;">
+    <div style="background: #100d23; border: 1px solid #1d1833; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+      <h2 style="margin: 0; font-size: 13px; line-height: 20px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: #b08bff;">Tested</h2>
+      <div style="font-size: 14px; line-height: 22px;">[year]-[year], [N] buys and sells.</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 11px; line-height: 16px; color: #7877b3;">This template</div><div style="font-family: 'Fira Code', Consolas, monospace; font-size: 18px; line-height: 26px; color: #00ff6a;">[+X%]</div></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 11px; line-height: 16px; color: #7877b3;">Index fund</div><div style="font-family: 'Fira Code', Consolas, monospace; font-size: 18px; line-height: 26px;">[+X%]</div></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 11px; line-height: 16px; color: #7877b3;">Worst year</div><div style="font-family: 'Fira Code', Consolas, monospace; font-size: 18px; line-height: 26px; color: #ff3270;">[−X%]</div></div>
+      </div>
+      <div style="font-size: 12px; line-height: 16px; color: #7877b3;">Past results don't promise future ones.</div>
+      <a href="HowTested.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 13px; line-height: 20px; text-decoration: underline;">How we tested ›</a>
+    </div>
+    <div style="font-size: 14px; line-height: 22px;"><b style="font-weight: 600; color: #ff9100;">What can go wrong:</b> when the market zigzags around its average, it can buy and sell often, losing a little each time, or sell just before a rebound.</div>
+  </div>
+
+  <div style="padding: 16px 16px 0 16px;">
+    <a href="Advanced.dc.html" style="min-height: 48px; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; background: #372963; border: 1px solid #1d1833; font-size: 14px; color: #ffffff; text-decoration: none;">
+      <span>Advanced settings</span>
+      <span style="font-family: 'Fira Code', Consolas, monospace; color: #00ffc8;">›</span>
+    </a>
+  </div>
+
+  <div style="margin-top: auto; padding: 16px; background: #100d23; border-top: 1px solid #1d1833; display: flex; flex-direction: column; gap: 8px;">
+    <a href="Mode.dc.html" style="height: 48px; border-radius: 2px; background: #00ff9da6; color: #00140b; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; justify-content: center;">Use this template</a>
+    <div style="text-align: center; font-size: 12px; line-height: 16px; color: #7877b3;">Not financial advice. Signals follow your rules; you decide and trade at your own broker.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1210}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!-- @dsCard height=288 -->
+<style>
+  html, body { margin: 0; height: 100%; }
+  .cover { position: relative; width: 960px; height: 288px; background: var(--surface-editor); overflow: hidden; }
+  .cover svg { position: absolute; inset: 0; }
+  .violet { fill: var(--accent-violet); }
+  .mint { fill: var(--action); }
+  .pink { fill: var(--hot-pink); }
+  .yellow { fill: var(--syntax-number); }
+  .stripe { stroke: var(--surface-editor); stroke-width: 8px; }
+  .text { position: absolute; left: 40px; bottom: 32px; max-width: 440px; }
+  .name { margin: 0; font-family: var(--font-mono); font-weight: 700; font-size: 76px; line-height: .92; letter-spacing: -1px; color: var(--ink); }
+  .tag { margin: 16px 0 0; font-family: var(--font-mono); font-size: 13px; line-height: 20px; color: var(--primary); }
+</style>
+<div class="cover">
+  <svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+    <!--
+      blocks: accent-violet 400×208 slab, action (mint) 256×192, hot-pink 128×64, syntax-number (yellow) 64×64 — all sides multiples of space-3/space-4 (16/24px grid)
+      arrangement: staggered stack bleeding off the top and right edges, mint slab overlapping the violet one, small pink and yellow satellites stepping down-left
+      pattern: loud/bold row — diagonal stripes at space-4 (24px) pitch cut into the violet slab, like the neon scanline hazard of the theme's banner; chosen because the source calls itself "a crazy cyberpunk theme" and lives on hard contrast
+      scales: corners radius-none (the chrome is square), stripe width space-2 (8px), gaps space-3 (16px)
+    -->
+    <defs><clipPath id="slab"><rect x="560" y="0" width="400" height="208"/></clipPath></defs>
+    <rect class="violet" x="560" y="0" width="400" height="208"/>
+    <g clip-path="url(#slab)">
+      <line class="stripe" x1="560" y1="208" x2="768" y2="0"/>
+      <line class="stripe" x1="584" y1="208" x2="792" y2="0"/>
+      <line class="stripe" x1="608" y1="208" x2="816" y2="0"/>
+      <line class="stripe" x1="632" y1="208" x2="840" y2="0"/>
+      <line class="stripe" x1="656" y1="208" x2="864" y2="0"/>
+    </g>
+    <rect class="mint" x="704" y="96" width="256" height="192"/>
+    <rect class="pink" x="512" y="160" width="128" height="64"/>
+    <rect class="yellow" x="640" y="224" width="64" height="64"/>
+  </svg>
+  <div class="text">
+    <h1 class="name">Cyberpunk</h1>
+    <p class="tag">A wide neon rainbow you can read in the dark.</p>
+  </div>
+</div>

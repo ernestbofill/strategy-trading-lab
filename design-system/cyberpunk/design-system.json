@@ -1,0 +1,80 @@
+{
+  "v": 3,
+  "assetGroups": {
+    "Logos": {
+      "files": {
+        "cyberpunk-mark.png": {
+          "blob": "af365dfedc289022f51419e4a3679eb9",
+          "name": "cyberpunk-mark.png",
+          "size": 99925,
+          "type": "image/png"
+        },
+        "cyberpunk-wordmark.png": {
+          "blob": "4e719b5a372a9a5e4edc3d58a87d341c",
+          "name": "cyberpunk-wordmark.png",
+          "size": 133529,
+          "type": "image/png"
+        }
+      },
+      "name": "Logos",
+      "order": [
+        "cyberpunk-mark.png",
+        "cyberpunk-wordmark.png"
+      ],
+      "tile": "l"
+    },
+    "Screenshots": {
+      "files": {
+        "preview-cyberpunk.png": {
+          "blob": "37f56947b4bbcdd0a03c6ebea6e162f3",
+          "name": "preview-cyberpunk.png",
+          "size": 194150,
+          "type": "image/png"
+        },
+        "preview-scarlet.png": {
+          "blob": "2633a5e2bf0c305de075db04b88b4c9f",
+          "name": "preview-scarlet.png",
+          "size": 192677,
+          "type": "image/png"
+        },
+        "preview-umbra.png": {
+          "blob": "a9555908f9777daad9e423703af19b24",
+          "name": "preview-umbra.png",
+          "size": 189758,
+          "type": "image/png"
+        }
+      },
+      "name": "Screenshots",
+      "order": [
+        "preview-cyberpunk.png",
+        "preview-umbra.png",
+        "preview-scarlet.png"
+      ],
+      "tile": "l"
+    }
+  },
+  "blobs": {},
+  "createdOnFiles": {
+    "at": "2026-10-13T20:32:16Z",
+    "v": 1
+  },
+  "docs": {
+    "readme": "project/README.md",
+    "sections": []
+  },
+  "groups": [
+    "Logos",
+    "Screenshots"
+  ],
+  "lastChange": {
+    "at": "2026-10-13T20:32:16Z",
+    "by": "Ernest Bofill Ylla",
+    "note": "Created from the Cyberpunk VS Code theme (max-SS/cyberpunk)",
+    "via": "Claude"
+  },
+  "layout": "files",
+  "libraries": [],
+  "namespace": "Cyberpunk",
+  "sections": {},
+  "title": "Cyberpunk"
+}

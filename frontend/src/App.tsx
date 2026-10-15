@@ -1,7 +1,16 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { ChooseMode } from './features/new-strategy/ChooseMode'
 import { NewStrategyDraftProvider } from './features/new-strategy/NewStrategyDraft'
+import { NotBuiltYet } from './features/new-strategy/NotBuiltYet'
+import { modePath, reviewPath } from './features/new-strategy/paths'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
-import { ReviewPlaceholder } from './features/new-strategy/ReviewPlaceholder'
+import { HowTested } from './features/new-strategy/review/HowTested'
+import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
+
+function AdvancedStub() {
+  const { key = '' } = useParams()
+  return <NotBuiltYet title="Advanced settings" back={reviewPath(key)} />
+}
 
 export default function App() {
   return (
@@ -9,7 +18,11 @@ export default function App() {
       <NewStrategyDraftProvider>
         <Routes>
           <Route path="/" element={<PickTemplate />} />
-          <Route path="/new/templates/:key" element={<ReviewPlaceholder />} />
+          <Route path="/new/templates/:key" element={<ReviewTemplate />} />
+          <Route path="/new/templates/:key/how-tested" element={<HowTested />} />
+          <Route path="/new/templates/:key/advanced" element={<AdvancedStub />} />
+          <Route path="/new/mode" element={<ChooseMode />} />
+          <Route path="/new/budget" element={<NotBuiltYet title="Set your budget" back={modePath} step="4 / 5" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </NewStrategyDraftProvider>

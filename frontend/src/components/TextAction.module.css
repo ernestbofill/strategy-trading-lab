@@ -1,0 +1,14 @@
+.action {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--primary);
+}
+.action:hover {
+  color: var(--accent);
+}
+.action[aria-disabled="true"] {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}

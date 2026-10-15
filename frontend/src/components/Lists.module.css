@@ -1,0 +1,38 @@
+.bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bullets li {
+  display: flex;
+  gap: var(--space-2);
+}
+.bullets li::before {
+  content: "▸";
+  font-family: var(--font-mono);
+  color: var(--accent);
+}
+
+.kv {
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+}
+
+.kvRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--space-2) 0;
+  font: 13px/20px var(--font-ui);
+}
+.kvRow + .kvRow {
+  border-top: 1px solid var(--border-hairline);
+}
+.kvRow dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  text-align: right;
+}

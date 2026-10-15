@@ -53,6 +53,11 @@
   align-items: flex-start;
   gap: var(--space-2);
 }
+/* Aligns a SIM / LIVE tag with the title's first line. */
+.badge {
+  display: flex;
+  margin-top: 4px;
+}
 
 .headText {
   flex: 1;
@@ -63,11 +68,6 @@
 
 .title {
   font: 600 18px/26px var(--font-mono);
-}
-
-.subtitle {
-  font: 12px/20px var(--font-mono);
-  color: var(--syntax-string);
 }
 
 /* Radio indicator: empty ring, or a ring with a filled dot when selected. */
@@ -96,7 +96,7 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 12px;
   font: 13px/20px var(--font-ui);
 }
 

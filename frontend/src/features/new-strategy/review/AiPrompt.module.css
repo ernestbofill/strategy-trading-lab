@@ -1,0 +1,30 @@
+/* The prompt, shown as code. */
+.prompt {
+  padding: 12px var(--space-3);
+  font: 12px/20px var(--font-mono);
+  color: var(--primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+.prompt p {
+  margin: 0;
+}
+
+.promptComment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+.promptNumber {
+  color: var(--syntax-number);
+}
+.promptString {
+  color: var(--syntax-string);
+}
+.promptSource {
+  color: var(--syntax-keyword);
+}
+.promptTable {
+  color: var(--syntax-function);
+}

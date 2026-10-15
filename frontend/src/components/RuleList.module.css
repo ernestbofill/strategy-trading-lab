@@ -1,0 +1,27 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.rule {
+  display: flex;
+  gap: 12px;
+  padding: var(--space-2) 0;
+}
+.rule + .rule {
+  border-top: 1px solid var(--border-hairline);
+}
+
+.marker {
+  flex: none;
+  min-width: 36px;
+  font: 12px/22px var(--font-mono);
+  color: var(--ink-line-number);
+}
+.marker[data-tone="buy"] {
+  color: var(--success);
+}
+.marker[data-tone="sell"] {
+  color: var(--danger-ink);
+}

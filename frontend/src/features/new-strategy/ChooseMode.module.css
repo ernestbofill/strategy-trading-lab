@@ -1,0 +1,17 @@
+.line {
+  font: 600 14px/22px var(--font-ui);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  color: var(--ink-sidebar);
+}
+
+.inkNote {
+  color: var(--ink);
+}

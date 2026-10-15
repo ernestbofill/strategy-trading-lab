@@ -15,5 +15,6 @@ We start small and add on
 1. First screen `wireframes/Main.dc.html`
     - Mock BE with the strategies
     - We stop here and check this first page
-2. 
+2. Continue with screens 2, 3, 4 and 5. skipping the advanced settings.
+    - Try to make reusable components when that makes sense.
 

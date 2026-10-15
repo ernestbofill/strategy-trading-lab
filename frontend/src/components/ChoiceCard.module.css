@@ -1,0 +1,107 @@
+.list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+/* Cards flow into columns as room allows; each stays at least ~320px wide. */
+@media (min-width: 768px) {
+  .list {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+.card {
+  position: relative;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.card:hover {
+  background: var(--surface-hover);
+}
+.card[data-selected] {
+  border-color: var(--primary);
+  box-shadow: var(--glow-primary);
+}
+.card:has(input:focus-visible) {
+  outline: 1px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.main {
+  flex: 1; /* keeps the footer on the bottom edge when grid rows stretch cards */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+/* Make the whole card the radio's tap target; the footer sits above it. */
+.main::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.headText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  font: 600 18px/26px var(--font-mono);
+}
+
+.subtitle {
+  font: 12px/20px var(--font-mono);
+  color: var(--syntax-string);
+}
+
+/* Radio indicator: empty ring, or a ring with a filled dot when selected. */
+.radio {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 1px solid var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card[data-selected] .radio {
+  border-color: var(--primary);
+}
+.card[data-selected] .radio::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font: 13px/20px var(--font-ui);
+}
+
+.footer {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+}

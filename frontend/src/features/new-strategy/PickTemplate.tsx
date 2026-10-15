@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type StrategyTemplate } from '../../api'
+import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { Screen, TopBar } from '../../components/Screen'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { reviewPath } from './paths'
@@ -41,35 +42,17 @@ export function PickTemplate() {
       {!templates && !error && <p className={styles.status}>Loading templates…</p>}
 
       {templates && (
-        <div role="radiogroup" aria-label="Strategy templates" className={styles.list}>
-          {templates.map((t) => {
-            const selected = t.key === templateKey
-            return (
-              <div key={t.key} className={styles.card} data-selected={selected || undefined}>
-                <label className={styles.cardMain}>
-                  <input
-                    type="radio"
-                    name="template"
-                    value={t.key}
-                    checked={selected}
-                    onChange={() => setTemplateKey(t.key)}
-                    className="visually-hidden"
-                  />
-                  <span className={styles.cardHead}>
-                    <span className={styles.cardText}>
-                      <span className={styles.name}>{t.name}</span>
-                      <span className={styles.tagline}>"{t.tagline}"</span>
-                    </span>
-                    <span className={styles.check} aria-hidden="true">
-                      {selected && (
-                        <svg width="12" height="12" viewBox="0 0 12 12">
-                          <path d="M2 6.5l2.6 2.5L10 3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
-                        </svg>
-                      )}
-                    </span>
-                  </span>
-                  <span className={styles.idea}>{t.idea}</span>
-                </label>
+        <ChoiceList label="Strategy templates">
+          {templates.map((t) => (
+            <ChoiceCard
+              key={t.key}
+              name="template"
+              value={t.key}
+              checked={t.key === templateKey}
+              onSelect={() => setTemplateKey(t.key)}
+              title={t.name}
+              subtitle={`"${t.tagline}"`}
+              footer={
                 <Link
                   to={reviewPath(t.key)}
                   onClick={() => setTemplateKey(t.key)}
@@ -78,10 +61,12 @@ export function PickTemplate() {
                 >
                   Learn more
                 </Link>
-              </div>
-            )
-          })}
-        </div>
+              }
+            >
+              {t.idea}
+            </ChoiceCard>
+          ))}
+        </ChoiceList>
       )}
     </Screen>
   )

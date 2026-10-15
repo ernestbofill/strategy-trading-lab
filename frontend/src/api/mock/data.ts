@@ -1,0 +1,55 @@
+import type { StrategyTemplate } from '../types'
+
+// Copy from docs/strategy-trading-lab-app-spec.md, section 6 "Pick a strategy template".
+export const templates: StrategyTemplate[] = [
+  {
+    key: 'dip',
+    engineKey: 'stage2_pullback',
+    name: 'Dip in winners',
+    tagline: 'Find the next Nvidia',
+    idea: 'A stock on a strong run takes a small step back. The strategy signals that dip.',
+    investsIn: 'stockList',
+    signals: 'buysOnly',
+    hasBacktest: true,
+  },
+  {
+    key: 'comeback',
+    engineKey: 'turnaround',
+    name: 'The comeback',
+    tagline: 'Stocks on the rise',
+    idea: 'A stock that fell a lot starts to recover. The strategy looks for a confirmed turnaround.',
+    investsIn: 'stockList',
+    signals: 'buysOnly',
+    hasBacktest: true,
+  },
+  {
+    key: 'drop',
+    engineKey: 'bear_accumulation',
+    name: 'The big market drop',
+    tagline: 'When the market is on sale',
+    idea: 'When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers.',
+    investsIn: 'sp500Fund',
+    signals: 'buysOnly',
+    hasBacktest: true,
+  },
+  {
+    key: 'trend',
+    engineKey: 'index_trend',
+    name: 'Ride the long trend',
+    tagline: 'Take the wins, dodge the losses',
+    idea: 'The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down.',
+    investsIn: 'indexFund',
+    signals: 'buysAndSells',
+    hasBacktest: true,
+  },
+  {
+    key: 'ai',
+    engineKey: null,
+    name: "Your AI's top picks",
+    tagline: 'Let your AI do the reading',
+    idea: 'Every 2 weeks the AI scores each stock from 0 to 100, and the top score should get a position. Use your own AI.',
+    investsIn: 'stockList',
+    signals: 'buysOnly',
+    hasBacktest: false,
+  },
+]

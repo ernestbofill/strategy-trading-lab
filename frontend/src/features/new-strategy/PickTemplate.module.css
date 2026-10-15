@@ -1,0 +1,148 @@
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font: 12px/20px var(--font-mono);
+  color: var(--ink-sidebar);
+}
+
+.title {
+  margin: 0;
+  font: 600 28px/36px var(--font-mono);
+  color: var(--primary);
+}
+
+.lead {
+  margin: 0;
+  max-width: 640px;
+}
+
+.status {
+  margin: 0;
+  color: var(--ink-sidebar);
+  font: 13px/20px var(--font-ui);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+/* Cards flow into columns as room allows; each stays at least ~320px wide. */
+@media (min-width: 768px) {
+  .list {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+.card {
+  position: relative;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.card:hover {
+  background: var(--surface-hover);
+}
+.card[data-selected] {
+  border-color: var(--primary);
+  box-shadow: var(--glow-primary);
+}
+.card:has(input:focus-visible) {
+  outline: 1px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.cardMain {
+  flex: 1; /* keeps "Learn more" on the bottom edge when grid rows stretch cards */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+/* Make the whole card the radio's tap target; "Learn more" sits above it. */
+.cardMain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.cardText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.name {
+  font: 600 18px/26px var(--font-mono);
+}
+
+.tagline {
+  font: 12px/20px var(--font-mono);
+  color: var(--syntax-string);
+}
+
+.check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-action);
+}
+.card[data-selected] .check {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.idea {
+  font: 13px/20px var(--font-ui);
+}
+
+.learnMore {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  font: 13px/20px var(--font-ui);
+  color: var(--primary);
+  text-decoration: underline;
+  /* 44px touch target without changing the visual rhythm */
+  padding: 12px 12px 12px 0;
+  margin: -12px 0;
+}
+
+.hint {
+  margin: 0;
+  text-align: center;
+  font: 12px/16px var(--font-ui);
+  color: var(--ink-muted);
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 36px;
+    line-height: 44px;
+  }
+  .hint {
+    text-align: left;
+  }
+}

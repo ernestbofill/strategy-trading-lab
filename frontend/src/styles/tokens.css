@@ -1,0 +1,89 @@
+/* Cyberpunk design system tokens — values from design-system/cyberpunk/tokens.json.
+   The default protocol is "cyberpunk"; set data-theme on <html> to switch. */
+:root {
+  --surface-editor: #261d45;
+  --surface-sidebar: #372963;
+  --surface-deep: #100d23;
+  --surface-panel: #100d23;
+  --surface-console: #002212ec;
+  --surface-input: #002212ec;
+  --surface-hover: #3f2c70;
+  --surface-selection: #311b92;
+  --border-hairline: #1d1833;
+  --border-tab: #372963;
+
+  --ink: #ffffff;
+  --ink-sidebar: #b08bff;
+  --ink-muted: #7877b3;
+  --primary: #00ff9c;
+  --accent: #00ffc8;
+  --accent-violet: #721bf2;
+  --hot-pink: #ff4081;
+  --border-focus: #00ff9c;
+
+  --action: #00ff9c;
+  --action-rest: #00ff9da6;
+  --on-action: #00140b;
+
+  --link: #0084ff;
+  --link-active: #3d5afe;
+  --info: #00c3ff;
+  --info-surface: #002f6de8;
+  --warning: #ff9100;
+  --warning-surface: #693300e8;
+  --danger: #ff004c;
+  --danger-surface: #53001ce5;
+  --danger-ink: #ff3270;
+  --success: #00ff6a;
+
+  --syntax-string: #76c1ff;
+
+  --font-mono: "Fira Code", "Cascadia Code", Consolas, "Courier New", monospace;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Ubuntu, sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-pill: 11px;
+
+  --shadow-widget: 0 0 8px 2px #0000006b;
+  --glow-primary: 0 0 12px #00ff9c66;
+}
+
+:root[data-theme="umbra"] {
+  --surface-editor: #100d23;
+  --surface-sidebar: #1e1d45;
+  --surface-panel: #131341;
+  --border-hairline: #09040f;
+  --border-tab: #1e1d45;
+  --ink-sidebar: #8b96ff;
+  --accent: #00ff9d;
+  --link: #3d5afe;
+}
+
+:root[data-theme="scarlet"] {
+  --surface-editor: #101116;
+  --surface-sidebar: #0a0b0e;
+  --surface-deep: #140009;
+  --surface-panel: #101116;
+  --surface-console: #1d000ae5;
+  --surface-input: #001420;
+  --surface-hover: #ff00593d;
+  --surface-selection: #000000;
+  --border-hairline: #101116;
+  --border-tab: #101116;
+  --ink-sidebar: #be4e74;
+  --ink-muted: #eb4d81de;
+  --primary: #ff0055;
+  --accent: #ff0055;
+  --accent-violet: #ff0055;
+  --border-focus: #00a2ff;
+  --link: #00ffc8;
+  --link-active: #ff0055;
+  --success: #00ffc8;
+  --glow-primary: 0 0 12px #ff005566;
+}

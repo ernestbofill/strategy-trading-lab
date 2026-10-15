@@ -1,0 +1,85 @@
+/* Bars run edge to edge; their content and the page content share one centered column
+   that grows from phone width up to --page-max. */
+.screen {
+  --page-max: 1120px;
+  --gutter: max(var(--space-3), (100% - var(--page-max)) / 2);
+  min-height: 100%;
+  background: var(--surface-editor);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .screen {
+    --gutter: max(var(--space-4) * 2, (100% - var(--page-max)) / 2);
+  }
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--gutter);
+  background: var(--surface-deep);
+  border-bottom: 1px solid var(--border-hairline);
+  font: 12px/20px var(--font-mono);
+  color: var(--ink-muted);
+}
+
+.back {
+  color: var(--ink-muted);
+  text-decoration: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.back:hover {
+  color: var(--primary);
+}
+
+.content {
+  flex: 1;
+  padding: var(--space-4) var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding-top: 48px;
+    padding-bottom: 48px;
+    gap: 32px;
+  }
+}
+
+.footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: var(--space-3) var(--gutter);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--surface-deep);
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Wider screens: hint on the left, the one primary action on the right at a fixed width. */
+@media (min-width: 768px) {
+  .footer {
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .footer > :global(.btn-primary) {
+    width: 240px;
+    flex: none;
+  }
+}

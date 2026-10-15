@@ -1,0 +1,362 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Strategy Trading Lab Sitemap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lab-notebook grid paper; a linear onboarding strip on top, then app zones as indented trees, then outside touchpoints as a lane. */
+:root {
+  --bg: #f5f7f6;
+  --grid: #e3e9e7;
+  --panel: #ffffff;
+  --fg: #16201e;
+  --muted: #5b6a67;
+  --line: #b9c6c3;
+  --accent: #0f6e63;
+  --accent-soft: #dcefeb;
+  --live: #b4471f;
+  --live-soft: #fbe7dd;
+  --sim: #3b5bab;
+  --sim-soft: #e3e9f8;
+  --ai: #7a4fa8;
+  --ai-soft: #efe6f8;
+  --todo: #8a6a00;
+  --todo-soft: #fbf1cf;
+  --later-soft: #eceeee;
+  --font-display: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1514; --grid: #18211f; --panel: #151d1c; --fg: #e4ecea; --muted: #94a5a1; --line: #34433f;
+    --accent: #5cc4b5; --accent-soft: #163631;
+    --live: #f08a62; --live-soft: #3a2117; --sim: #8ea8ee; --sim-soft: #1d2640;
+    --ai: #c39bec; --ai-soft: #2c2038; --todo: #e6c45a; --todo-soft: #352d10; --later-soft: #222a29;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1514; --grid: #18211f; --panel: #151d1c; --fg: #e4ecea; --muted: #94a5a1; --line: #34433f;
+  --accent: #5cc4b5; --accent-soft: #163631;
+  --live: #f08a62; --live-soft: #3a2117; --sim: #8ea8ee; --sim-soft: #1d2640;
+  --ai: #c39bec; --ai-soft: #2c2038; --todo: #e6c45a; --todo-soft: #352d10; --later-soft: #222a29;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 32px 20px 56px; display: flex; flex-direction: column; gap: 28px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px 32px; align-items: flex-end; }
+h1 { font-family: var(--font-display); font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 6px 0 0; max-width: 62ch; }
+.sub code { font-family: var(--font-mono); font-size: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 12px; color: var(--muted); }
+.legend-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.legend-label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 10.5px; font-weight: 600; }
+
+.eyebrow { text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px; font-weight: 600; color: var(--muted); margin: 0 0 10px; }
+
+/* Tags */
+.tag { display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+.t-live { background: var(--live-soft); color: var(--live); }
+.t-sim { background: var(--sim-soft); color: var(--sim); }
+.t-ai { background: var(--ai-soft); color: var(--ai); }
+.t-todo { background: var(--todo-soft); color: var(--todo); }
+.t-later { background: var(--later-soft); color: var(--muted); }
+.t-implied { border: 1px dashed var(--line); color: var(--muted); }
+
+/* Node */
+.node { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.node.todo { border-style: dashed; border-color: var(--todo); }
+.node.later { border-style: dotted; background: transparent; }
+.node.implied { border-style: dashed; }
+.node-head { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; }
+.node-name { font-weight: 600; font-size: 13.5px; }
+.route { font-family: var(--font-mono); font-size: 11px; color: var(--accent); overflow-wrap: anywhere; }
+.note { font-size: 12px; color: var(--muted); }
+.step-no { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+
+/* Onboarding strip */
+.flow { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.flow-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; align-items: baseline; }
+.flow-head h2 { font-size: 17px; margin: 0; }
+.entries { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.entries b { color: var(--fg); font-weight: 600; }
+.steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 22px; position: relative; }
+.steps > .col { display: flex; flex-direction: column; gap: 8px; position: relative; min-width: 0; }
+.steps > .col:not(:last-child)::after { content: "→"; position: absolute; right: -17px; top: 10px; color: var(--accent); font-weight: 700; }
+.sub-node { margin-left: 12px; position: relative; }
+.sub-node::before { content: ""; position: absolute; left: -9px; top: -8px; height: 24px; width: 8px; border-left: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); border-bottom-left-radius: 4px; }
+.exits { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); }
+.exits b { color: var(--fg); }
+.templates { display: flex; flex-wrap: wrap; gap: 3px; }
+.templates span { font-size: 11px; border: 1px solid var(--line); border-radius: 3px; padding: 0 5px; background: var(--panel); }
+
+/* Zones */
+.zones { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 2.2fr) minmax(0, 0.9fr); gap: 18px; align-items: start; }
+.zone { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.zone-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; margin: 0; }
+.zone-desc { margin: -6px 0 2px; color: var(--muted); font-size: 12.5px; }
+
+/* Tree */
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree ul { padding-left: 18px; margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+.tree > li + li { margin-top: 6px; }
+.tree ul > li { position: relative; }
+.tree ul > li::before { content: ""; position: absolute; left: -12px; top: -6px; width: 10px; height: 22px; border-left: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); border-bottom-left-radius: 4px; }
+.tree ul > li:not(:last-child)::after { content: ""; position: absolute; left: -12px; top: 14px; bottom: -6px; border-left: 1.5px solid var(--line); }
+
+.dash-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.dash-root { border-width: 2px; border-color: var(--accent); }
+
+/* Touchpoints lane */
+.lane { border-top: 2px dashed var(--line); padding-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+.lane h2 { margin: 0; font-size: 17px; }
+.touch { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.touch .node { gap: 6px; }
+.opens { font-size: 12px; color: var(--muted); }
+.opens b { color: var(--fg); font-weight: 600; }
+
+footer { font-size: 12px; color: var(--muted); max-width: 80ch; display: flex; flex-direction: column; gap: 4px; }
+
+@media (max-width: 1000px) {
+  .zones { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .zone.dash { grid-column: 1 / -1; order: -1; }
+  .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .steps > .col:nth-child(3)::after { display: none; }
+  .touch { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .zones, .dash-grid, .touch { grid-template-columns: minmax(0, 1fr); }
+  .steps { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  .steps > .col:not(:last-child)::after { content: "↓"; right: auto; left: 12px; top: auto; bottom: -21px; display: block; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Strategy Trading Lab · v1</p>
+      <h1>Sitemap</h1>
+      <p class="sub">Every screen named in the user journey (<code>stab-product-user-journey.md</code>, Oct 13), grouped by where it lives in the app. Paths are suggestions.</p>
+    </div>
+    <div class="legend">
+      <div class="legend-group"><span class="legend-label">Status</span>
+        <span class="tag t-todo">To design</span><span class="tag t-later">Later</span><span class="tag t-implied">Implied</span>
+      </div>
+      <div class="legend-group"><span class="legend-label">Only for</span>
+        <span class="tag t-sim">Sim</span><span class="tag t-live">Live</span><span class="tag t-ai">AI</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- New strategy flow -->
+  <section class="flow" aria-labelledby="flow-title">
+    <div class="flow-head">
+      <h2 id="flow-title">New strategy flow · steps 2–6</h2>
+      <div class="entries">
+        <span>Entered from <b>Sign up</b> (first run)</span>
+        <span><b>+ New strategy</b> on the dashboard</span>
+        <span><b>Go live with these settings</b> → joins at step 4, prefilled</span>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="col">
+        <div class="node">
+          <span class="step-no">Step 2</span>
+          <span class="node-name">Pick a strategy template</span>
+          <span class="route">/app/new</span>
+          <div class="templates"><span>Dip in winners</span><span>The comeback</span><span>The big market drop</span><span>Ride the long trend</span><span>Your AI's top picks</span></div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="node">
+          <span class="step-no">Step 3</span>
+          <span class="node-name">Template review</span>
+          <span class="route">/app/new/[template]</span>
+          <span class="note">One page per template: idea, rules, choose stocks to watch, tested, what can go wrong. AI version shows the prompt instead of a backtest.</span>
+        </div>
+        <div class="node sub-node">
+          <span class="node-name">Advanced settings</span>
+          <span class="route">…/[template]/advanced</span>
+          <span class="note">Re-runs the backtest on every change</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="node">
+          <span class="step-no">Step 4</span>
+          <span class="node-name">Choose the mode</span>
+          <span class="route">/app/new/mode</span>
+          <span class="note">Simulation (default) or Live. Live asks for push permission.</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="node">
+          <span class="step-no">Step 5</span>
+          <span class="node-name">Set your budget</span>
+          <span class="route">/app/new/budget</span>
+          <span class="note">Budget, step size, max steps per stock</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="node">
+          <span class="step-no">Step 6</span>
+          <span class="node-name">Name, preview and confirm</span>
+          <span class="route">/app/new/confirm</span>
+          <span class="note">Name field, summary with edit links, disclaimer</span>
+        </div>
+      </div>
+    </div>
+    <div class="exits">
+      <span>Exits to <b>Dashboard</b></span>
+      <span>or, for the AI template, to its <b>first AI round</b></span>
+    </div>
+  </section>
+
+  <div class="zones">
+    <!-- Entry -->
+    <section class="zone">
+      <h2 class="zone-title">Entry</h2>
+      <p class="zone-desc">Public and account access</p>
+      <ul class="tree">
+        <li>
+          <div class="node">
+            <div class="node-head"><span class="step-no">Step 1</span></div>
+            <span class="node-name">Sign up</span>
+            <span class="route">/sign-up</span>
+            <span class="note">Email and password, time zone, overview email on, disclaimer accepted</span>
+          </div>
+          <ul>
+            <li><div class="node"><span class="node-name">Verify email</span><span class="route">/verify</span><span class="note">Then straight to step 2</span></div></li>
+          </ul>
+        </li>
+        <li><div class="node implied"><div class="node-head"><span class="node-name">Log in</span><span class="tag t-implied">Implied</span></div><span class="route">/log-in</span></div></li>
+        <li><div class="node implied"><div class="node-head"><span class="node-name">Reset password</span><span class="tag t-implied">Implied</span></div><span class="route">/forgot-password</span></div></li>
+      </ul>
+    </section>
+
+    <!-- Dashboard -->
+    <section class="zone dash">
+      <h2 class="zone-title">Dashboard</h2>
+      <p class="zone-desc">The app's home, step 10</p>
+      <div class="node dash-root">
+        <span class="node-name">Dashboard (home)</span>
+        <span class="route">/app</span>
+        <span class="note">Waiting for you list, one card per strategy (name, template, mode, result vs index fund), + New strategy</span>
+      </div>
+      <div class="dash-grid">
+        <ul class="tree">
+          <li>
+            <div class="node">
+              <span class="node-name">Strategy page</span>
+              <span class="route">/app/strategies/[id]</span>
+              <span class="note">Result vs index (Live: also vs the rules), budget used, one row per stock</span>
+            </div>
+            <ul>
+              <li><div class="node todo"><div class="node-head"><span class="node-name">Stock page</span><span class="tag t-todo">To design</span></div><span class="route">…/stocks/[symbol]</span><span class="note">Chart with discount zone, status history, trades</span></div></li>
+              <li><div class="node"><span class="node-name">Tune the settings</span><span class="route">…/settings</span><span class="note">Advanced settings, for this strategy</span></div></li>
+              <li><div class="node todo"><div class="node-head"><span class="node-name">Backtest</span><span class="tag t-todo">To design</span></div><span class="route">…/backtest</span></div></li>
+              <li><div class="node todo"><div class="node-head"><span class="node-name">AI rounds history</span><span class="tag t-ai">AI</span><span class="tag t-todo">To design</span></div><span class="route">…/rounds</span><span class="note">Replaces Backtest for AI strategies</span></div></li>
+              <li><div class="node todo"><div class="node-head"><span class="node-name">History</span><span class="tag t-todo">To design</span></div><span class="route">…/history</span><span class="note">Signals, trades, skips, rounds, status changes</span></div></li>
+              <li><div class="node todo"><div class="node-head"><span class="node-name">Go live with these settings</span><span class="tag t-sim">Sim</span><span class="tag t-todo">To design</span></div><span class="note">Starts a new live strategy at step 4</span></div></li>
+              <li><div class="node todo"><div class="node-head"><span class="node-name">Rename, pause or end</span><span class="tag t-todo">To design</span></div></div></li>
+            </ul>
+          </li>
+        </ul>
+        <ul class="tree">
+          <li>
+            <div class="node todo">
+              <div class="node-head"><span class="node-name">Confirm signal</span><span class="tag t-live">Live</span><span class="tag t-todo">To design</span></div>
+              <span class="route">/app/signals/[id]</span>
+              <span class="note">A sheet, opened from an alert, the overview or a stock row</span>
+            </div>
+            <ul>
+              <li><div class="node todo"><span class="node-name">I did it</span><span class="note">Date, price, amount, fee</span></div></li>
+              <li><div class="node todo"><span class="node-name">I skipped it</span><span class="note">Optional reason</span></div></li>
+            </ul>
+          </li>
+          <li><div class="node todo"><div class="node-head"><span class="node-name">Log a trade by hand</span><span class="tag t-live">Live</span><span class="tag t-todo">To design</span></div><span class="note">Also edit or delete a trade</span></div></li>
+          <li>
+            <div class="node todo">
+              <div class="node-head"><span class="node-name">AI round</span><span class="tag t-ai">AI</span><span class="tag t-todo">To design</span></div>
+              <span class="route">/app/strategies/[id]/round</span>
+              <span class="note">Every 2 weeks, step 9</span>
+            </div>
+            <ul>
+              <li><div class="node todo"><span class="node-name">Copy prompt</span></div></li>
+              <li><div class="node todo"><span class="node-name">Paste answer, pick AI model</span></div></li>
+              <li><div class="node todo"><span class="node-name">Check and use the scores</span><span class="note">First round adds the sharing consent box</span></div></li>
+            </ul>
+          </li>
+          <li><div class="node later"><div class="node-head"><span class="node-name">AI comparison</span><span class="tag t-later">Later</span></div><span class="route">/app/ai-comparison</span><span class="note">Results by AI model, never by stock</span></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Account -->
+    <section class="zone">
+      <h2 class="zone-title">Account</h2>
+      <p class="zone-desc">Settings and consent</p>
+      <ul class="tree">
+        <li>
+          <div class="node implied"><div class="node-head"><span class="node-name">Account</span><span class="tag t-implied">Implied</span></div><span class="route">/app/account</span><span class="note">Email, password, time zone, daily overview on or off</span></div>
+          <ul>
+            <li>
+              <div class="node todo"><div class="node-head"><span class="node-name">Data and privacy</span><span class="tag t-todo">To design</span></div><span class="route">…/privacy</span></div>
+              <ul>
+                <li><div class="node todo"><span class="node-name">AI data sharing</span><span class="note">On or off</span></div></li>
+                <li><div class="node todo"><span class="node-name">What we keep</span></div></li>
+                <li><div class="node todo"><span class="node-name">Export data</span></div></li>
+                <li><div class="node todo"><span class="node-name">Delete account</span></div></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- Outside the app -->
+  <section class="lane" aria-labelledby="lane-title">
+    <h2 id="lane-title">Outside the app</h2>
+    <p class="zone-desc" style="margin:0">Emails and notifications that link back in. All sent after the US market close.</p>
+    <div class="touch">
+      <div class="node">
+        <div class="node-head"><span class="node-name">Daily overview</span><span class="tag t-later" style="background:var(--accent-soft);color:var(--accent)">Email</span></div>
+        <span class="note">Step 7: waiting for you, what changed, close to the line, scoreboard</span>
+        <span class="opens">Opens <b>Confirm signal</b>, <b>AI round</b>, <b>Strategy page</b>, <b>Stock page</b></span>
+      </div>
+      <div class="node">
+        <div class="node-head"><span class="node-name">Signal alert</span><span class="tag t-live">Live</span></div>
+        <span class="note">Step 8: web push and email, one reminder if unanswered</span>
+        <span class="opens">Opens <b>Confirm signal</b></span>
+      </div>
+      <div class="node">
+        <div class="node-head"><span class="node-name">AI round due</span><span class="tag t-ai">AI</span></div>
+        <span class="note">Notification every 2 weeks</span>
+        <span class="opens">Opens <b>AI round</b></span>
+      </div>
+      <div class="node implied">
+        <div class="node-head"><span class="node-name">Account emails</span><span class="tag t-implied">Implied</span></div>
+        <span class="note">Email verification, password reset</span>
+        <span class="opens">Opens <b>Verify email</b>, <b>Reset password</b></span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span><b>Implied</b> pages aren't in the journey but the product needs them. <b>To design</b> follows the journey's "Still to design" list.</span>
+    <span>Public marketing pages (home, how it works, legal) are out of the journey's scope and not shown; the older <code>sitemap.md</code> still lists them.</span>
+  </footer>
+</div>
+
+</body></html>

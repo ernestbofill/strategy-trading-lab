@@ -1,11 +1,13 @@
 # Strategy Trading Lab: app spec for implementation
 
-Oct 14, 2026 · @Ernest
+Oct 15, 2026 · @Ernest
+
+Is the productized version of https://github.com/ernestbofill/trading-strategies-bot
 
 This is the brief for the agent building the Strategy Trading Lab app. It describes what the app is, every screen, how the screens connect, what each one does, and the exact copy. Build from this file.
 
-- **Wireframes:** [Strategy Trading Lab wireframes · Cyberpunk](https://claude.ai/artifact/8BqDD41kmeSQfZ47iqVvwY). Their source files are in `claude/wireframes/`: one `.dc.html` file per screen (named in the table in section 4) plus `canvas.json`, which lists the screens and the designer's notes. They are in the design tool's own format and don't run on their own, but their markup shows each screen's layout, copy and interactions.
-- **Visual style:** use the [Cyberpunk design system](https://claude.ai/code/artifact/63d1ae2d-7192-4e77-9cb3-32c99ec8ebe2).
+- **Wireframes:** [Strategy Trading Lab wireframes · Cyberpunk](../wireframes/). Their source files are one `.dc.html` file per screen (named in the table in section 4) plus `canvas.json`, which lists the screens and the designer's notes. They are in the design tool's own format and don't run on their own, but their markup shows each screen's layout, copy and interactions.
+- **Visual style:** use the [Cyberpunk design system](../design-system/cyberpunk/).
 - **Product background:** `claude/stab-product-user-journey.md`. **Regulation:** `claude/regulation-spain-eu.md`.
 - **Strategy logic:** already exists in the POC (`ernestbofill/trading-strategies-bot`, see `docs/PLAN.md`).
 

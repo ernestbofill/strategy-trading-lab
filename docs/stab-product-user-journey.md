@@ -9,7 +9,7 @@ Strategy Trading Lab (the productized STAB) is a strategy lab and a monitoring s
 
 There is no broker sync in either mode. The app never places orders and never reads the user's broker account: in live mode it only knows what the user confirms. It gives no trading advice. The regulatory background is in `claude/regulation-spain-eu.md`; the wording rules that follow from it are in "Wording rules" below.
 
-The screens are drawn in the [Strategy Trading Lab wireframes · Cyberpunk](https://claude.ai/artifact/8BqDD41kmeSQfZ47iqVvwY) (source files in `claude/wireframes/`), in the [Cyberpunk design system](https://claude.ai/code/artifact/63d1ae2d-7192-4e77-9cb3-32c99ec8ebe2). The full screen-by-screen spec with final copy, for the implementation agent, is `claude/strategy-trading-lab-app-spec.md`. Where this doc and the wireframes disagreed, the wireframes won (Oct 14) and this doc was brought in line.
+The screens are drawn in the [Strategy Trading Lab wireframes · Cyberpunk](../wireframes/), in the [Cyberpunk design system](../design-system/cyberpunk/). The full screen-by-screen spec with final copy, for the implementation agent, is `claude/strategy-trading-lab-app-spec.md`. Where this doc and the wireframes disagreed, the wireframes won (Oct 14) and this doc was brought in line.
 
 ## Words we use
 

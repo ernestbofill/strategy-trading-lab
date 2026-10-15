@@ -1,6 +1,6 @@
 # Strategy Trading Lab: Site Map (v1)
 
-Updated Oct 13, 2026, to match `claude/stab-product-user-journey.md`. The visual version is the [Strategy Trading Lab Sitemap](https://claude.ai/artifact/413jCqCRApkm3G8fmyNFFF) artifact.
+Updated Oct 13, 2026, to match `claude/stab-product-user-journey.md`. The visual version is the [Strategy Trading Lab Sitemap](Sitemap.html) artifact.
 
 > A strategy lab and monitoring side app. The user picks a **strategy template**, tunes it, and runs it as **their strategy** in one of two **modes**: Simulation (paper) or Live (they trade at their own broker and confirm each signal).
 > No broker sync, no order placement, no trading advice. US-listed stocks and funds; budgets and results in euro. Free for now.

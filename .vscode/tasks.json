@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build frontend",
+      "type": "npm",
+      "script": "build",
+      "path": "frontend",
+      "group": "build",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Deploy to Oracle",
+      "detail": "Build the frontend and upload it to https://140-238-209-178.sslip.io (needs the strategy-lab host in ~/.ssh/config)",
+      "type": "shell",
+      "command": "rsync -az --delete --stats frontend/dist/ strategy-lab:/var/www/strategy-trading-lab/ && curl -fsS -o /dev/null -w 'Live: HTTP %{http_code}\\n' https://140-238-209-178.sslip.io/",
+      "dependsOn": "Build frontend",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ]
+}

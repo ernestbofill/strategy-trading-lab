@@ -108,14 +108,8 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
               your account.
             </LabelledLine>
           </Callout>
-          <LabelledLine label="Not tested:" tone="muted">
-            there's no backtest. Results start on the day the strategy starts, and depend on which AI you run it in.
-          </LabelledLine>
         </>
       )}
-      <LabelledLine label="What can go wrong:" tone="warning">
-        {template.whatCanGoWrong}
-      </LabelledLine>
       {aiRound ? (
         <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedPath(template.key)} />
       ) : (

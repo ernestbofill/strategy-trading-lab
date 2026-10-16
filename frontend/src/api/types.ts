@@ -75,7 +75,6 @@ export interface TemplateDetail extends StrategyTemplate {
   watches: Watches
   /** Null when the template can't be backtested. */
   backtest: Backtest | null
-  whatCanGoWrong: string
 }
 
 export interface Api {

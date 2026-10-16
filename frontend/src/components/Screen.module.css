@@ -16,9 +16,6 @@
 }
 
 .topBar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -58,9 +55,6 @@
 }
 
 .footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
   padding: var(--space-3) var(--gutter);
   padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
   background: var(--surface-deep);
@@ -70,16 +64,35 @@
   gap: var(--space-2);
 }
 
-/* Wider screens: hint on the left, the one primary action on the right at a fixed width. */
+/* Phones: action then note, or note then action. Wide screens: note left, action right. */
+.note {
+  text-align: center;
+}
+.footer[data-note-above] .note {
+  order: -1;
+}
+
 @media (min-width: 768px) {
   .footer {
-    flex-direction: row-reverse;
+    flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end; /* the action stays right even without a note */
     gap: var(--space-4);
   }
-  .footer > :global(.btn-primary) {
+  .note,
+  .footer[data-note-above] .note {
+    order: -1;
+    flex: 1;
+    text-align: left;
+  }
+  .action {
     width: 240px;
     flex: none;
   }
+}
+
+.message {
+  margin: 0;
+  color: var(--ink-sidebar);
+  font: 13px/20px var(--font-ui);
 }

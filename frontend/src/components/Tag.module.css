@@ -1,0 +1,16 @@
+.tag {
+  flex: none;
+  font: 11px/16px var(--font-mono);
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+}
+.tag[data-tone="sim"] {
+  color: var(--info);
+}
+.tag[data-tone="live"] {
+  color: var(--hot-pink);
+}
+.tag[data-tone="ai"] {
+  color: var(--syntax-keyword);
+}

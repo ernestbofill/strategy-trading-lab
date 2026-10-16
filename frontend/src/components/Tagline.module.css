@@ -1,0 +1,4 @@
+.tagline {
+  font: 12px/20px var(--font-mono);
+  color: var(--syntax-string);
+}

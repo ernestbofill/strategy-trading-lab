@@ -1,0 +1,36 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.tile {
+  min-height: 64px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ink-muted);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.tile[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--surface-console);
+}
+.tile[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.tile[aria-pressed="true"] .title {
+  color: var(--primary);
+}
+
+.detail {
+  font: 11px/16px var(--font-ui);
+}

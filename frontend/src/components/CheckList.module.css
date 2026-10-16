@@ -1,0 +1,30 @@
+.list {
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+}
+.list > * + * {
+  border-top: 1px solid var(--surface-editor);
+}
+
+.box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ink-sidebar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-action);
+}
+.box[data-checked] {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.footer {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+}

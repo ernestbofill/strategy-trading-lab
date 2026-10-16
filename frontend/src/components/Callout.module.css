@@ -1,0 +1,33 @@
+.callout {
+  padding: 12px var(--space-3);
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: 13px/20px var(--font-ui);
+}
+.callout[data-tone="info"] {
+  background: var(--info-surface);
+  border-color: var(--info);
+}
+.callout[data-tone="warning"] {
+  background: var(--warning-surface);
+  border-color: var(--warning);
+}
+.callout p {
+  margin: 0;
+}
+
+.line {
+  margin: 0;
+}
+
+.lineLabel {
+  font-weight: 600;
+}
+.lineLabel[data-tone="warning"] {
+  color: var(--warning);
+}
+.lineLabel[data-tone="muted"] {
+  color: var(--ink-sidebar);
+}

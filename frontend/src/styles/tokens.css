@@ -36,6 +36,12 @@
   --danger-ink: #ff3270;
   --success: #00ff6a;
 
+  --ink-line-number: #9f5fff;
+
+  --syntax-comment: #6766b3;
+  --syntax-keyword: #d57bff;
+  --syntax-function: #00b0ff;
+  --syntax-number: #fffc58;
   --syntax-string: #76c1ff;
 
   --font-mono: "Fira Code", "Cascadia Code", Consolas, "Courier New", monospace;

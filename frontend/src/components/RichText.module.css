@@ -1,0 +1,9 @@
+.label {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.term {
+  font-family: var(--font-mono);
+  color: var(--syntax-number);
+}

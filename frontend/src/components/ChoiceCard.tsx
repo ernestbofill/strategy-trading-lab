@@ -19,7 +19,7 @@ interface ChoiceCardProps {
   title: ReactNode
   /** Small tag before the title, e.g. a SIM / LIVE badge. */
   badge?: ReactNode
-  /** Line under the title, e.g. a template's tagline. */
+  /** Line under the title, e.g. a template's Tagline. */
   subtitle?: ReactNode
   /** Card body, inside the selectable area. */
   children?: ReactNode
@@ -41,10 +41,10 @@ export function ChoiceCard({ name, value, checked, onSelect, title, badge, subti
           className="visually-hidden"
         />
         <span className={styles.head}>
-          {badge}
+          {badge && <span className={styles.badge}>{badge}</span>}
           <span className={styles.headText}>
             <span className={styles.title}>{title}</span>
-            {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
+            {subtitle}
           </span>
           <span className={styles.radio} aria-hidden="true" />
         </span>

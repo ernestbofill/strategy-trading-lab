@@ -43,6 +43,7 @@ applyTo: "frontend/**"
 - **Responsive:** design at 390px first, then check at 768px and 1280px+. Wider layouts use `Columns` and grid; the footer action moves to the right.
 - **Not built yet:** link to `NotBuiltYet` or render the control disabled (e.g. `TextAction` without `to`). Never leave a dead link.
 - Keep components small and typed. Don't add a dependency without a clear need.
+- Create components for reusable UI. But don't over-engineer it, consider if its a concept that makes sense as a reusable component.
 
 ## Testing (Vitest + Testing Library)
 

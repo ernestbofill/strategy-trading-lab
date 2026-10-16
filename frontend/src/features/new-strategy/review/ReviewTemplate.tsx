@@ -113,9 +113,6 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
           </LabelledLine>
         </>
       )}
-      <LabelledLine label="What can go wrong:" tone="warning">
-        {template.whatCanGoWrong}
-      </LabelledLine>
       {aiRound ? (
         <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedPath(template.key)} />
       ) : (

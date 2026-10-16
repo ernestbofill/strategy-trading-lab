@@ -71,7 +71,6 @@ export const templateDetails: TemplateDetail[] = [
         { period: 'All', template: 212, index: 248, worstYear: -21 },
       ],
     }),
-    whatCanGoWrong: 'a stock it buys can keep falling.',
   },
   {
     key: 'comeback',
@@ -101,7 +100,6 @@ export const templateDetails: TemplateDetail[] = [
         { period: 'All', template: 118, index: 248, worstYear: -26 },
       ],
     }),
-    whatCanGoWrong: 'a recovery can stall, and the stock can fall again.',
   },
   {
     key: 'drop',
@@ -134,7 +132,6 @@ export const templateDetails: TemplateDetail[] = [
         { period: 'All', template: 136, index: 283, worstYear: -18 },
       ],
     }),
-    whatCanGoWrong: 'the market can keep falling after the first bounce, and stay low for years.',
   },
   {
     key: 'trend',
@@ -167,8 +164,6 @@ export const templateDetails: TemplateDetail[] = [
         { period: 'All', template: 249, index: 272, worstYear: -11 },
       ],
     }),
-    whatCanGoWrong:
-      'when the market zigzags around its average, it can buy and sell often, losing a little each time, or sell just before a rebound.',
   },
   {
     key: 'ai',
@@ -188,7 +183,6 @@ export const templateDetails: TemplateDetail[] = [
     ],
     watches: { kind: 'stocks', starterList: byName(aiWatchList) },
     backtest: null,
-    whatCanGoWrong: 'your AI can misread the news, or make things up, and a top-scored stock can still fall.',
   },
 ]
 

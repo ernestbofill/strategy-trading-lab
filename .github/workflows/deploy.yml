@@ -50,4 +50,5 @@ jobs:
         run: rsync -az --delete --stats -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" frontend/dist/ ubuntu@140.238.209.178:/var/www/strategy-trading-lab/
 
       - name: Check the live site
-        run: curl -fsS -o /dev/null -w 'Live: HTTP %{http_code}\n' https://140-238-209-178.sslip.io/
+        run: |
+          curl -fsS -o /dev/null -w 'Live: HTTP %{http_code}\n' https://140-238-209-178.sslip.io/

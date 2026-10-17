@@ -2,6 +2,9 @@
 
 Strategy Trading Lab is a strategy lab and monitoring side app. A user picks a strategy template, reviews and tunes it, gives it a budget and runs it as a **simulation** (paper trades) or **live** (the user trades at their own broker and confirms each signal). The app never places orders and never connects to a broker.
 
+## Implementation plan
+The current implementation plan is in [IMPLEMENTATION-PLAN.md](../IMPLEMENTATION-PLAN.md).
+
 ## Sources of truth
 
 Read these before building a screen. Don't invent copy or behaviour that they already define.

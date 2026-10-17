@@ -83,7 +83,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       to: editFromConfirm(budgetPath),
     },
     { label: 'Daily overview', value: 'By email, after the US market close' },
-    ...(isLive ? [{ label: 'Alerts', value: 'App and email', to: editFromConfirm(modePath) }] : []),
+    ...(isLive ? [{ label: 'Alerts', value: 'App and email' }] : []),
     ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: editFromConfirm(reviewPath(template.key)) }] : []),
   ]
 

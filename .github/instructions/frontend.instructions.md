@@ -25,7 +25,7 @@ applyTo: "frontend/**"
   - `Callout`/`LabelledLine`, `RuleList` and `RichText` (`**label**` and `` `term` `` markup), `BulletList`, `KeyValueList`.
 - `src/features/<flow>/`: one folder per flow; the new-strategy flow is in `features/new-strategy/`.
   - `paths.ts` holds the route builders.
-  - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, in memory only: a reload starts again from the defaults. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started. `editing` is set by an Edit link on the confirm screen: Back and Continue then return there (`useFlowTarget`).
+  - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, in memory only: a reload starts again from the defaults. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started. `editing` is set by an Edit link on the confirm screen: Continue then returns there (`useFlowTarget`).
   - `useTemplate.ts` holds the data hooks.
 - `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading).
 
@@ -41,6 +41,7 @@ applyTo: "frontend/**"
   - Show visible focus with the `--border-focus` outline.
   - Make sure each control has a name a screen reader can announce.
 - **Responsive:** design at 390px first, then check at 768px and 1280px+. Wider layouts use `Columns` and grid; the footer action moves to the right.
+- **Back:** `TopBar` goes one step back in the browser history, whichever page you came from. Its `back` is only where it goes when the screen was opened directly.
 - **Not built yet:** link to `NotBuiltYet` or render the control disabled (e.g. `TextAction` without `to`). Never leave a dead link.
 - Keep components small and typed. Don't add a dependency without a clear need.
 - Create components for reusable UI. But don't over-engineer it, consider if its a concept that makes sense as a reusable component.

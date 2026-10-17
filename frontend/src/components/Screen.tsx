@@ -1,19 +1,31 @@
-import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import type { MouseEvent, ReactNode } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import styles from './Screen.module.css'
 
 interface TopBarProps {
   /** Shown on the left. Pass `back` for a "← BACK" link instead. */
   title?: string
+  /** Where "← BACK" goes when the screen was opened directly. Otherwise it goes one step back in the history. */
   back?: string
   step?: string
 }
 
 export function TopBar({ title, back, step }: TopBarProps) {
+  const navigate = useNavigate()
+  // The first entry of the history has the key 'default': there is nothing to go back to.
+  const hasHistory = useLocation().key !== 'default'
+  const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
+    const plainClick = e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+    if (hasHistory && plainClick) {
+      e.preventDefault()
+      navigate(-1)
+    }
+  }
+
   return (
     <header className={styles.topBar}>
       {back ? (
-        <Link to={back} className={styles.back}>
+        <Link to={back} onClick={goBack} className={styles.back}>
           ← BACK
         </Link>
       ) : (

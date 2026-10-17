@@ -17,8 +17,7 @@ import { useTemplate } from './useTemplate'
 export function SetBudget() {
   const { templateKey } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
-  const backTo = useFlowTarget(modePath)
-  const top = <TopBar back={backTo} step="4 / 5" />
+  const top = <TopBar back={modePath} step="4 / 5" />
 
   return (
     <LoadableScreen state={template} top={top} what="the template">

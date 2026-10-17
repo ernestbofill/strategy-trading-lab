@@ -24,19 +24,19 @@ import { AI_SOURCES } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
 
+const top = <TopBar back={pickPath} step="2 / 5" />
+
 /** 2 · Review a template (wireframes `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI`). */
 export function ReviewTemplate() {
   const { key } = useParams<{ key: TemplateKey }>()
-  const backTo = useFlowTarget(pickPath)
-  const top = <TopBar back={backTo} step="2 / 5" />
   return (
     <LoadableScreen state={useTemplate(key)} top={top} what="the template">
-      {(template) => <ReviewContent key={template.key} template={template} top={top} />}
+      {(template) => <ReviewContent key={template.key} template={template} />}
     </LoadableScreen>
   )
 }
 
-function ReviewContent({ template, top }: { template: TemplateDetail; top: ReactNode }) {
+function ReviewContent({ template }: { template: TemplateDetail }) {
   const draft = useNewStrategyDraft()
   const next = useFlowTarget(modePath)
   // Opened by URL for another template than the draft holds (a link, a reload): make it the chosen one.

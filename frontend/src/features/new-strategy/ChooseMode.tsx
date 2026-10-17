@@ -38,12 +38,11 @@ export function ChooseMode() {
   const { mode, templateKey, update } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const isLive = mode === 'live'
-  const back = useFlowTarget(reviewPath(templateKey))
   const next = useFlowTarget(budgetPath)
 
   return (
     <Screen
-      top={<TopBar back={back} step="3 / 5" />}
+      top={<TopBar back={reviewPath(templateKey)} step="3 / 5" />}
       action={<PrimaryAction to={next}>Continue</PrimaryAction>}
       note={
         isLive && (

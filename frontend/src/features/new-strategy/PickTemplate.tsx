@@ -1,21 +1,23 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tagline } from '../../components/Tagline'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { reviewPath } from './paths'
+import { homePath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
 import { useTemplates } from './useTemplate'
 
 /** 1 · Pick a strategy template (wireframe `Main`). */
 export function PickTemplate() {
-  const { templateKey, update } = useNewStrategyDraft()
+  const { templateKey, switchTemplate } = useNewStrategyDraft()
   const templates = useTemplates()
+  // Back only when there is somewhere to go back to (the confirm screen's Edit template), not on a fresh start.
+  const hasHistory = useLocation().key !== 'default'
 
   return (
     <Screen
-      top={<TopBar title="STL // NEW STRATEGY" step="1 / 5" />}
+      top={<TopBar title="STL // NEW STRATEGY" back={hasHistory ? homePath : undefined} step="1 / 5" />}
       action={<PrimaryAction to={reviewPath(templateKey)}>Continue</PrimaryAction>}
       note="Pick one to start. You can add more strategies later, from any template."
     >
@@ -38,13 +40,13 @@ export function PickTemplate() {
               name="template"
               value={t.key}
               checked={t.key === templateKey}
-              onSelect={() => update({ templateKey: t.key })}
+              onSelect={() => switchTemplate(t.key)}
               title={t.name}
               subtitle={<Tagline text={t.tagline} />}
               footer={
                 <Link
                   to={reviewPath(t.key)}
-                  onClick={() => update({ templateKey: t.key })}
+                  onClick={() => switchTemplate(t.key)}
                   className={styles.learnMore}
                   aria-label={`Learn more about ${t.name}`}
                 >

@@ -37,7 +37,7 @@ export function Confirm() {
 
 function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
-  const { mode, budget, step, maxSteps, unticked, update } = draft
+  const { mode, budget, step, maxSteps, unticked, update, reset } = draft
   const isLive = mode === 'live'
   // Branch on what the template does, as the budget screen does.
   const allIn = template.signals === 'buysAndSells'
@@ -56,7 +56,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const stocksValue = (() => {
     const { watches } = template
     if (watches.kind === 'fund') return watches.fund.name
-    const ticked = watches.starterList.filter((s) => !(unticked[template.key] ?? []).includes(s.symbol))
+    const ticked = watches.starterList.filter((s) => !unticked.includes(s.symbol))
     const more = ticked.length - 1
     return more > 0 ? `${ticked[0].name} and ${more} more` : (ticked[0]?.name ?? '')
   })()
@@ -80,7 +80,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       to: budgetPath,
     },
     { label: 'Daily overview', value: 'By email, after the US market close' },
-    ...(isLive ? [{ label: 'Alerts', value: 'App and email', to: modePath }] : []),
+    ...(isLive ? [{ label: 'Alerts', value: 'App and email' }] : []),
     ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: reviewPath(template.key) }] : []),
   ]
 
@@ -103,7 +103,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     <Screen
       top={top}
       action={
-        <PrimaryAction to={dashboardPath}>{isLive ? 'Start following it live' : 'Start the simulation'}</PrimaryAction>
+        <PrimaryAction to={dashboardPath} onClick={reset}>
+          {isLive ? 'Start following it live' : 'Start the simulation'}
+        </PrimaryAction>
       }
       note={DISCLAIMER}
       noteAbove

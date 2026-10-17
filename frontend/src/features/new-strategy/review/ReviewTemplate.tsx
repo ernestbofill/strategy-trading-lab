@@ -39,17 +39,13 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
   const draft = useNewStrategyDraft()
   const { aiRound, watches } = template
   const stocks = watches.kind === 'stocks' ? watches.starterList : []
-  const unticked = draft.unticked[template.key] ?? []
+  const { unticked } = draft
   const tickedCount = stocks.length - unticked.length
   const canContinue = watches.kind === 'fund' || tickedCount > 0
 
   const toggleStock = (symbol: string) =>
     draft.update({
-      templateKey: template.key,
-      unticked: {
-        ...draft.unticked,
-        [template.key]: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol],
-      },
+      unticked: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol],
     })
 
   const stockList = (
@@ -124,7 +120,6 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       action={
         <PrimaryAction
           to={modePath}
-          onClick={() => draft.update({ templateKey: template.key })}
           disabled={!canContinue}
         >
           Use this template

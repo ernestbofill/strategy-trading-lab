@@ -37,4 +37,3 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 - Work on a feature branch (`feature/<short-name>`, `fix/<short-name>`) and open a small PR into `main`. Don't push to `main` directly.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
 - Before opening a PR: the typecheck, lint, tests and build all pass, and you have checked the changed screens in a browser at phone and desktop width.
-- Bump the version in `frontend/package.json` (and `package-lock.json`) in every PR that changes the app. It is shown in the app's top bar and nothing bumps it automatically. Bump the minor number for a new screen or feature (`0.1.0-alpha` → `0.2.0-alpha`) and the patch number for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`). Keep the `-alpha` suffix.

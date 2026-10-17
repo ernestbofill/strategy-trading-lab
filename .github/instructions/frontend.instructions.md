@@ -45,6 +45,11 @@ applyTo: "frontend/**"
 - Keep components small and typed. Don't add a dependency without a clear need.
 - Create components for reusable UI. But don't over-engineer it, consider if its a concept that makes sense as a reusable component.
 
+## Versioning
+
+- Bump the version in `frontend/package.json` (and `package-lock.json`) in every PR that changes the app. It is shown in the app's top bar and nothing bumps it automatically.
+- Bump the minor number for a new screen or feature (`0.1.0-alpha` → `0.2.0-alpha`) and the patch number for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`). Keep the `-alpha` suffix.
+
 ## Testing (Vitest + Testing Library)
 
 - Unit-test `src/lib/` helpers and the rules in components: the last AI source can't be turned off; "Use this template" is disabled with no stocks ticked.

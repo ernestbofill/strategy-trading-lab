@@ -1,0 +1,2 @@
+# nginx rejects CRLF, and this file gets copied to a Linux server.
+*.conf text eol=lf

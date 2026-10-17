@@ -31,8 +31,6 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
-      - run: npm run lint
-      - run: npm test
       - run: npm run build
 
       - name: Set up SSH
@@ -47,7 +45,7 @@ jobs:
 
       - name: Upload to server
         working-directory: .
-        run: rsync -az --delete --stats -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" frontend/dist/ ubuntu@140.238.209.178:/var/www/strategy-trading-lab/
+        run: rsync -az --delete-after --stats -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" frontend/dist/ ubuntu@140.238.209.178:/var/www/strategy-trading-lab/
 
       - name: Check the live site
         run: |

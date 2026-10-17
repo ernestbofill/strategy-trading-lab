@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      - name: Set up SSH
+        working-directory: .
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo '140.238.209.178 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMumRdCTFBX8D+D6UXcv9it9BiV+KX/DksM/7vYVa2xI' > ~/.ssh/known_hosts
+
+      - name: Upload to server
+        working-directory: .
+        run: rsync -az --delete --stats -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" frontend/dist/ ubuntu@140.238.209.178:/var/www/strategy-trading-lab/
+
+      - name: Check the live site
+        run: |
+          curl -fsS -o /dev/null -w 'Live: HTTP %{http_code}\n' https://140-238-209-178.sslip.io/

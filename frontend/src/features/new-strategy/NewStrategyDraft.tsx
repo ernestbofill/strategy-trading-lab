@@ -10,8 +10,8 @@ export type AiSource = 'news' | 'mood' | 'figures'
 // Held in memory only: a new strategy, a reload or reopening the app starts from the defaults.
 interface DraftState {
   templateKey: TemplateKey
-  /** Symbols the user unticked, per template, so switching templates doesn't lose them. */
-  unticked: Partial<Record<TemplateKey, string[]>>
+  /** Symbols the user unticked for the chosen template. */
+  unticked: string[]
   aiSources: Record<AiSource, boolean>
   mode: Mode
   /** Euro amounts, see lib/budget.ts. */
@@ -24,18 +24,20 @@ interface DraftState {
   reachedConfirm: boolean
 }
 
+export type DraftPatch = Partial<DraftState>
+
 interface Draft extends DraftState {
   update: (patch: Partial<DraftState>) => void
   /** Back to the defaults: call when a strategy is started or a new one begins. */
   reset: () => void
-  /** Start over with another template: everything goes back to the defaults. */
-  switchTemplate: (templateKey: TemplateKey) => void
+  /** Start over with another template: everything goes back to the defaults, except what `patch` sets. */
+  switchTemplate: (templateKey: TemplateKey, patch?: Partial<DraftState>) => void
 }
 
 const initialDraft: DraftState = {
   // Dip in winners is selected by default, so "Continue" is always enabled.
   templateKey: 'dip',
-  unticked: {},
+  unticked: [],
   aiSources: { news: true, mood: true, figures: true },
   mode: 'simulation',
   budget: DEFAULT_BUDGET.budget,
@@ -53,7 +55,8 @@ export function NewStrategyDraftProvider({ children }: { children: ReactNode }) 
   const update = useCallback((patch: Partial<DraftState>) => setState((s) => ({ ...s, ...patch })), [])
   const reset = useCallback(() => setState(initialDraft), [])
   const switchTemplate = useCallback(
-    (templateKey: TemplateKey) => setState((s) => ({ ...initialDraft, templateKey, reachedConfirm: s.reachedConfirm })),
+    (templateKey: TemplateKey, patch: Partial<DraftState> = {}) =>
+      setState((s) => ({ ...initialDraft, templateKey, reachedConfirm: s.reachedConfirm, ...patch })),
     [],
   )
   const draft = useMemo(() => ({ ...state, update, reset, switchTemplate }), [state, update, reset, switchTemplate])

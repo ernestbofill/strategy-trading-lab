@@ -1,4 +1,4 @@
-import { useEffect, useId, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import type { TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { BulletList } from '../../components/Lists'
@@ -48,6 +48,15 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
 
   useEffect(() => update({ reachedConfirm: true }), [update])
 
+  // Start resets the draft once this screen is gone, so it doesn't flash the defaults on its way out.
+  const started = useRef(false)
+  useEffect(
+    () => () => {
+      if (started.current) reset()
+    },
+    [reset],
+  )
+
   // The user has no strategies yet in the mock, so there's nothing to number against.
   const name = draft.name ?? template.name
   // Don't repeat the template's name when the strategy still carries it.
@@ -59,7 +68,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const stocksValue = (() => {
     const { watches } = template
     if (watches.kind === 'fund') return watches.fund.name
-    const ticked = watches.starterList.filter((s) => !(unticked[template.key] ?? []).includes(s.symbol))
+    const ticked = watches.starterList.filter((s) => !unticked.includes(s.symbol))
     const more = ticked.length - 1
     return more > 0 ? `${ticked[0].name} and ${more} more` : (ticked[0]?.name ?? '')
   })()
@@ -106,7 +115,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     <Screen
       top={top}
       action={
-        <PrimaryAction to={dashboardPath} onClick={reset}>{isLive ? 'Start following it live' : 'Start the simulation'}</PrimaryAction>
+        <PrimaryAction to={dashboardPath} onClick={() => (started.current = true)}>{isLive ? 'Start following it live' : 'Start the simulation'}</PrimaryAction>
       }
       note={DISCLAIMER}
       noteAbove

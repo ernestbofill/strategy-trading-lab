@@ -15,7 +15,7 @@ import { Tag } from '../../../components/Tag'
 import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { DISCLAIMER } from '../../../lib/copy'
-import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
+import { useNewStrategyDraft, type AiSource, type DraftPatch } from '../NewStrategyDraft'
 import { subPageLink } from '../editFlow'
 import { useEditSource, useFlowTarget } from '../useEditSource'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
@@ -44,18 +44,18 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
   const advancedTo = subPageLink(source, advancedPath(template.key))
   const { aiRound, watches } = template
   const stocks = watches.kind === 'stocks' ? watches.starterList : []
-  const unticked = draft.unticked[template.key] ?? []
+  // The draft may still hold another template's choices when this review was opened by URL.
+  const isDraftTemplate = draft.templateKey === template.key
+  const unticked = isDraftTemplate ? draft.unticked : []
   const tickedCount = stocks.length - unticked.length
   const canContinue = watches.kind === 'fund' || tickedCount > 0
 
+  // Changing anything here makes this the chosen template; if it wasn't, that starts over from the defaults.
+  const choose = (patch: DraftPatch = {}) =>
+    isDraftTemplate ? draft.update(patch) : draft.switchTemplate(template.key, patch)
+
   const toggleStock = (symbol: string) =>
-    draft.update({
-      templateKey: template.key,
-      unticked: {
-        ...draft.unticked,
-        [template.key]: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol],
-      },
-    })
+    choose({ unticked: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol] })
 
   const stockList = (
     <>
@@ -129,7 +129,7 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
       action={
         <PrimaryAction
           to={next}
-          onClick={() => draft.update({ templateKey: template.key })}
+          onClick={() => choose()}
           disabled={!canContinue}
         >
           Use this template

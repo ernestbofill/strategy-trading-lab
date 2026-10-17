@@ -54,7 +54,9 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
   const canContinue = watches.kind === 'fund' || tickedCount > 0
 
   const toggleStock = (symbol: string) =>
-    draft.update({ unticked: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol] })
+    draft.update({
+      unticked: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol],
+    })
 
   const stockList = (
     <>

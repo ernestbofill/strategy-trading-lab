@@ -5,7 +5,7 @@ import { initialDraft, withTemplate, type DraftState } from './draftState'
 export type { AiSource, Mode } from './draftState'
 
 interface Draft extends DraftState {
-  update: (patch: Partial<DraftState>) => void
+  update: (patch: Partial<Omit<DraftState, 'templateKey'>>) => void
   /** Choose a template. A different one starts over from the defaults. */
   switchTemplate: (templateKey: TemplateKey) => void
   /** Back to the defaults: call when a strategy is started. */
@@ -18,7 +18,7 @@ const DraftContext = createContext<Draft | null>(null)
 export function NewStrategyDraftProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DraftState>(initialDraft)
 
-  const update = useCallback((patch: Partial<DraftState>) => setState((s) => ({ ...s, ...patch })), [])
+  const update = useCallback((patch: Partial<Omit<DraftState, 'templateKey'>>) => setState((s) => ({ ...s, ...patch })), [])
   const switchTemplate = useCallback((key: TemplateKey) => setState((s) => withTemplate(s, key)), [])
   const reset = useCallback(() => setState(initialDraft), [])
   const draft = useMemo(() => ({ ...state, update, switchTemplate, reset }), [state, update, switchTemplate, reset])

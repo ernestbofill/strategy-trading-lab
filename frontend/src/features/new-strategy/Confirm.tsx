@@ -115,7 +115,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     <Screen
       top={top}
       action={
-        <PrimaryAction to={dashboardPath} onClick={() => (started.current = true)}>{isLive ? 'Start following it live' : 'Start the simulation'}</PrimaryAction>
+        <PrimaryAction to={dashboardPath} onClick={() => (started.current = true)}>
+          {isLive ? 'Start following it live' : 'Start the simulation'}
+        </PrimaryAction>
       }
       note={DISCLAIMER}
       noteAbove

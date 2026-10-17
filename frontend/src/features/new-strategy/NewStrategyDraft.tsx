@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { TemplateKey } from '../../api'
+import { DEFAULT_BUDGET } from '../../lib/budget'
 
 export type Mode = 'simulation' | 'live'
 
@@ -12,6 +13,10 @@ interface DraftState {
   unticked: Partial<Record<TemplateKey, string[]>>
   aiSources: Record<AiSource, boolean>
   mode: Mode
+  /** Euro amounts, see lib/budget.ts. */
+  budget: number
+  step: number
+  maxSteps: number
 }
 
 interface Draft extends DraftState {
@@ -24,6 +29,9 @@ const initialDraft: DraftState = {
   unticked: {},
   aiSources: { news: true, mood: true, figures: true },
   mode: 'simulation',
+  budget: DEFAULT_BUDGET.budget,
+  step: DEFAULT_BUDGET.step,
+  maxSteps: DEFAULT_BUDGET.maxSteps,
 }
 
 // Survives a page reload within the tab; storage may be unavailable (private mode), so fail quietly.

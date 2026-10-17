@@ -1,5 +1,3 @@
-import { useNavigate } from 'react-router-dom'
-import { Callout } from '../../components/Callout'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -34,31 +32,16 @@ const MODES: { id: Mode; tag: TagTone; name: string; line: string; facts: [label
   },
 ]
 
-/** Live signals arrive by web push; email is the fallback if this is refused or unsupported. */
-async function askForNotifications() {
-  try {
-    if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission()
-  } catch {
-    // Some browsers (iPhone outside the home screen) don't support it: email stays on.
-  }
-}
-
 /** 3 · Choose the mode (wireframe `Mode`). */
 export function ChooseMode() {
   const { mode, templateKey, update } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
-  const navigate = useNavigate()
   const isLive = mode === 'live'
-
-  const onContinue = async () => {
-    if (isLive) await askForNotifications()
-    navigate(budgetPath)
-  }
 
   return (
     <Screen
       top={<TopBar back={reviewPath(templateKey)} step="3 / 5" />}
-      action={<PrimaryAction onClick={onContinue}>Continue</PrimaryAction>}
+      action={<PrimaryAction to={budgetPath}>Continue</PrimaryAction>}
       note={
         isLive && (
           <span className={styles.inkNote}>
@@ -97,15 +80,6 @@ export function ChooseMode() {
         <ScreenMessage>
           {template.data.name} has no backtest, in either mode: results start on the day the strategy starts.
         </ScreenMessage>
-      )}
-
-      {isLive && (
-        <Callout tone="info" title="Alerts">
-          <p>
-            Your browser will ask to allow notifications, so signals reach you right after the market close. Email
-            alerts are on too, as a fallback. On iPhone, add the app to your home screen first.
-          </p>
-        </Callout>
       )}
     </Screen>
   )

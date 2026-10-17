@@ -1,0 +1,69 @@
+.card {
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+  padding: 12px var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  color: var(--ink-sidebar);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.value {
+  flex: 1;
+  min-width: 0;
+  font: 600 28px/36px var(--font-mono);
+  color: var(--syntax-number);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+  margin-left: calc(var(--space-1) * -1);
+  width: 100%;
+}
+.value:hover {
+  border-color: var(--border-tab);
+}
+.value:focus {
+  background: var(--surface-input);
+  border-color: var(--primary);
+  outline: none;
+}
+
+.buttons {
+  display: flex;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+}
+
+.buttons button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: var(--surface-input);
+  color: var(--primary);
+  font: 18px var(--font-mono);
+  cursor: pointer;
+}
+.buttons button + button {
+  border-left: 1px solid var(--primary);
+}
+.buttons button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.help {
+  font: 13px/20px var(--font-ui);
+}

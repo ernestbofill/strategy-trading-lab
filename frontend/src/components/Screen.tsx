@@ -7,9 +7,11 @@ interface TopBarProps {
   title?: string
   back?: string
   step?: string
+  /** Shown on the right instead of the step: a link such as "ACCOUNT". */
+  aside?: ReactNode
 }
 
-export function TopBar({ title, back, step }: TopBarProps) {
+export function TopBar({ title, back, step, aside }: TopBarProps) {
   return (
     <header className={styles.topBar}>
       {back ? (
@@ -20,7 +22,7 @@ export function TopBar({ title, back, step }: TopBarProps) {
         <div>{title}</div>
       )}
       <div className={styles.version}>v{__APP_VERSION__}</div>
-      {step && <div className={styles.step}>{step}</div>}
+      {(step || aside) && <div className={styles.step}>{step ?? aside}</div>}
     </header>
   )
 }

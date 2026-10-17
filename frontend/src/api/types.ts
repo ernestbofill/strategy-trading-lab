@@ -77,7 +77,62 @@ export interface TemplateDetail extends StrategyTemplate {
   backtest: Backtest | null
 }
 
+export type StrategyMode = 'simulation' | 'live'
+
+/** What a strategy has earned since it started, next to the index fund. */
+export interface StrategyResults {
+  /** Percent return, to one decimal. */
+  strategy: number
+  index: number
+  /** The strategy's value over time, oldest first, for the small line chart. */
+  history: number[]
+}
+
+/** How the template did in the past, shown while a strategy has no results of its own. */
+export interface PastResult {
+  /** "2010-2024". */
+  years: string
+  template: number
+  index: number
+}
+
+/** A strategy as shown on the dashboard. */
+export interface StrategySummary {
+  id: string
+  name: string
+  templateKey: TemplateKey
+  templateName: string
+  mode: StrategyMode
+  /** Local date, "2026-10-13". */
+  startedOn: string
+  /** Euro. */
+  budget: number
+  used: number
+  /** Null until the strategy has trades (or, for AI templates, a first round). */
+  results: StrategyResults | null
+  /** Null for templates that can't be backtested. */
+  pastResult: PastResult | null
+}
+
+/** Something that needs the user, newest first on the dashboard. */
+export interface WaitingItem {
+  id: string
+  kind: 'buySignal' | 'sellSignal' | 'aiRound'
+  strategyId: string
+  strategyName: string
+  /** The stock a buy signal is for. */
+  stockName?: string
+}
+
+export interface Dashboard {
+  /** The server's local date, "2026-10-17", to tell a strategy started today from an older one. */
+  today: string
+  strategies: StrategySummary[]
+  waiting: WaitingItem[]
+}
+
 export interface Api {
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
+  getDashboard(): Promise<Dashboard>
 }

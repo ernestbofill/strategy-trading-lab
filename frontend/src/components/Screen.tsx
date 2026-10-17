@@ -47,6 +47,7 @@ export function Screen({ top, action, note, noteAbove, children }: ScreenProps) 
           {note && <p className={`caption ${styles.note}`}>{note}</p>}
         </footer>
       )}
+      <p className={`caption ${styles.version}`}>v{__APP_VERSION__}</p>
     </div>
   )
 }

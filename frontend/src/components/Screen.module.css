@@ -96,3 +96,12 @@
   color: var(--ink-sidebar);
   font: 13px/20px var(--font-ui);
 }
+
+/* Last line of every screen: the build version, so a tester can say which one they have. */
+.version {
+  padding: var(--space-2) var(--gutter);
+  padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+  background: var(--surface-deep);
+  font-family: var(--font-mono);
+  text-align: center;
+}

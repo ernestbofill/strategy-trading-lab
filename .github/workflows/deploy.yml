@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload to server
         working-directory: .
-        run: rsync -az --delete --stats -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" frontend/dist/ ubuntu@140.238.209.178:/var/www/strategy-trading-lab/
+        run: rsync -az --delete-after --stats -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" frontend/dist/ ubuntu@140.238.209.178:/var/www/strategy-trading-lab/
 
       - name: Check the live site
         run: |

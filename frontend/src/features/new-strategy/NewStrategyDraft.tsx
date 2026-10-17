@@ -28,6 +28,8 @@ interface Draft extends DraftState {
   update: (patch: Partial<DraftState>) => void
   /** Back to the defaults: call when a strategy is started or a new one begins. */
   reset: () => void
+  /** Start over with another template: everything goes back to the defaults. */
+  switchTemplate: (templateKey: TemplateKey) => void
 }
 
 const initialDraft: DraftState = {
@@ -50,7 +52,11 @@ export function NewStrategyDraftProvider({ children }: { children: ReactNode }) 
 
   const update = useCallback((patch: Partial<DraftState>) => setState((s) => ({ ...s, ...patch })), [])
   const reset = useCallback(() => setState(initialDraft), [])
-  const draft = useMemo(() => ({ ...state, update, reset }), [state, update, reset])
+  const switchTemplate = useCallback(
+    (templateKey: TemplateKey) => setState((s) => ({ ...initialDraft, templateKey, reachedConfirm: s.reachedConfirm })),
+    [],
+  )
+  const draft = useMemo(() => ({ ...state, update, reset, switchTemplate }), [state, update, reset, switchTemplate])
   return <DraftContext.Provider value={draft}>{children}</DraftContext.Provider>
 }
 

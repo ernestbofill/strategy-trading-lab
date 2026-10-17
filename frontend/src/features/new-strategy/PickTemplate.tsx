@@ -13,12 +13,12 @@ import { useTemplates } from './useTemplate'
 
 /** 1 · Pick a strategy template (wireframe `Main`). */
 export function PickTemplate() {
-  const { templateKey, update } = useNewStrategyDraft()
+  const { templateKey, switchTemplate } = useNewStrategyDraft()
   const templates = useTemplates()
   // Picking another template starts over: Back only returns to the confirm screen while the template is unchanged.
   const initialKey = useState(templateKey)[0]
   const backToConfirm = useEditSource() === 'confirm' && templateKey === initialKey
-  const choose = (key: TemplateKey) => update(key === templateKey ? {} : { templateKey: key, name: null })
+  const choose = (key: TemplateKey) => key !== templateKey && switchTemplate(key)
 
   return (
     <Screen

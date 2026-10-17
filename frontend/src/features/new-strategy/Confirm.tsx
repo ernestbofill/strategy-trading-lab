@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import type { TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { BulletList } from '../../components/Lists'
@@ -44,18 +44,6 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const isFund = template.watches.kind === 'fund'
   const modeName = isLive ? 'Live' : 'Simulation'
   const inputId = useId()
-
-  // Whatever was being changed is done once the user is back here.
-  useEffect(() => update({ editing: false }), [update])
-
-  // Start resets the draft once this screen is gone, so it doesn't flash the defaults on its way out.
-  const started = useRef(false)
-  useEffect(
-    () => () => {
-      if (started.current) reset()
-    },
-    [reset],
-  )
 
   // The user has no strategies yet in the mock, so there's nothing to number against.
   const name = draft.name ?? template.name
@@ -115,7 +103,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     <Screen
       top={top}
       action={
-        <PrimaryAction to={dashboardPath} onClick={() => (started.current = true)}>
+        <PrimaryAction to={dashboardPath} onClick={reset}>
           {isLive ? 'Start following it live' : 'Start the simulation'}
         </PrimaryAction>
       }
@@ -148,7 +136,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
               <span className={styles.term}>{r.label}</span>
               <p className={styles.value}>{r.value}</p>
             </div>
-            <TextAction to={r.to} onClick={() => update({ editing: true })}>
+            <TextAction to={r.to}>
               Edit<span className="visually-hidden"> {r.label.toLowerCase()}</span>
             </TextAction>
           </li>

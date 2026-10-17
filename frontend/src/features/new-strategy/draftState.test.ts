@@ -8,7 +8,6 @@ const changed: DraftState = {
   mode: 'live',
   budget: 6000,
   name: 'My strategy',
-  editing: true,
 }
 
 describe('withTemplate', () => {
@@ -16,7 +15,7 @@ describe('withTemplate', () => {
     expect(withTemplate(changed, 'comeback')).toBe(changed)
   })
 
-  it('starts over from the defaults for another template, and stops editing', () => {
+  it('starts over from the defaults for another template', () => {
     expect(withTemplate(changed, 'trend')).toEqual({ ...initialDraft, templateKey: 'trend' })
   })
 })

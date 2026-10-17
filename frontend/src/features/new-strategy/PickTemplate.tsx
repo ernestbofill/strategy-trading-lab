@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -10,12 +10,14 @@ import { useTemplates } from './useTemplate'
 
 /** 1 · Pick a strategy template (wireframe `Main`). */
 export function PickTemplate() {
-  const { templateKey, editing, switchTemplate } = useNewStrategyDraft()
+  const { templateKey, switchTemplate } = useNewStrategyDraft()
   const templates = useTemplates()
+  // Back only when there is somewhere to go back to: the confirm screen's Edit template, not a fresh start.
+  const hasHistory = useLocation().key !== 'default'
 
   return (
     <Screen
-      top={<TopBar title="STL // NEW STRATEGY" back={editing ? confirmPath : undefined} step="1 / 5" />}
+      top={<TopBar title="STL // NEW STRATEGY" back={hasHistory ? confirmPath : undefined} step="1 / 5" />}
       action={<PrimaryAction to={reviewPath(templateKey)}>Continue</PrimaryAction>}
       note="Pick one to start. You can add more strategies later, from any template."
     >
@@ -44,6 +46,7 @@ export function PickTemplate() {
               footer={
                 <Link
                   to={reviewPath(t.key)}
+                  onClick={() => switchTemplate(t.key)}
                   className={styles.learnMore}
                   aria-label={`Learn more about ${t.name}`}
                 >

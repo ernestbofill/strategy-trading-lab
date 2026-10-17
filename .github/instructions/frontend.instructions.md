@@ -25,7 +25,7 @@ applyTo: "frontend/**"
   - `Callout`/`LabelledLine`, `RuleList` and `RichText` (`**label**` and `` `term` `` markup), `BulletList`, `KeyValueList`.
 - `src/features/<flow>/`: one folder per flow; the new-strategy flow is in `features/new-strategy/`.
   - `paths.ts` holds the route builders.
-  - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, in memory only: a reload starts again from the defaults. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started. `editing` is set by an Edit link on the confirm screen: Continue then returns there (`useFlowTarget`).
+  - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, in memory only: a reload starts again from the defaults. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started.
   - `useTemplate.ts` holds the data hooks.
 - `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading).
 

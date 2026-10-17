@@ -18,8 +18,6 @@ export interface DraftState {
   maxSteps: number
   /** What the user typed on the last screen; null until then, so the name follows the template. */
   name: string | null
-  /** The user is changing something from the confirm screen: Back and Continue return there. */
-  editing: boolean
 }
 
 export const initialDraft: DraftState = {
@@ -32,7 +30,6 @@ export const initialDraft: DraftState = {
   step: DEFAULT_BUDGET.step,
   maxSteps: DEFAULT_BUDGET.maxSteps,
   name: null,
-  editing: false,
 }
 
 /** Another template starts over from the defaults; the same one keeps everything the user has set. */

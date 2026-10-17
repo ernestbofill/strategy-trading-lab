@@ -10,7 +10,6 @@ import { eur } from '../../lib/format'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, modePath } from './paths'
 import styles from './SetBudget.module.css'
-import { useFlowTarget } from './useFlowTarget'
 import { useTemplate } from './useTemplate'
 
 /** 4 · Set your budget (wireframe `Budget`). */
@@ -28,7 +27,6 @@ export function SetBudget() {
 
 function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const { mode, budget, step, maxSteps, update } = useNewStrategyDraft()
-  const next = useFlowTarget(confirmPath)
   const isLive = mode === 'live'
   // Branch on what the template does, not on its key.
   const allIn = template.signals === 'buysAndSells'
@@ -51,7 +49,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
   return (
     <Screen
       top={top}
-      action={<PrimaryAction to={next}>Continue</PrimaryAction>}
+      action={<PrimaryAction to={confirmPath}>Continue</PrimaryAction>}
       note="Amounts in euro. Dollar prices convert at the day's rate."
     >
       <PageHeader

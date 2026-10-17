@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import type { AiRound, TemplateDetail, TemplateKey } from '../../../api'
 import { Callout, LabelledLine } from '../../../components/Callout'
@@ -16,7 +16,6 @@ import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { DISCLAIMER } from '../../../lib/copy'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
-import { useFlowTarget } from '../useFlowTarget'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
 import { useTemplate } from '../useTemplate'
 import { AiPrompt } from './AiPrompt'
@@ -38,15 +37,6 @@ export function ReviewTemplate() {
 
 function ReviewContent({ template }: { template: TemplateDetail }) {
   const draft = useNewStrategyDraft()
-  const next = useFlowTarget(modePath)
-  // Opened by URL for another template than the draft holds (a link, a reload): make it the chosen one.
-  const adopted = draft.templateKey === template.key
-  const { switchTemplate } = draft
-  useEffect(() => {
-    if (!adopted) switchTemplate(template.key)
-  }, [adopted, switchTemplate, template.key])
-  if (!adopted) return null
-
   const { aiRound, watches } = template
   const stocks = watches.kind === 'stocks' ? watches.starterList : []
   const { unticked } = draft
@@ -129,7 +119,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       top={top}
       action={
         <PrimaryAction
-          to={next}
+          to={modePath}
           disabled={!canContinue}
         >
           Use this template

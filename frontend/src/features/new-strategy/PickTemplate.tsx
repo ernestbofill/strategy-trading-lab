@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tagline } from '../../components/Tagline'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { confirmPath, editFromConfirm, reviewPath } from './paths'
+import { confirmPath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
 import { useEditing } from './useEditing'
 import { useTemplates } from './useTemplate'
@@ -13,13 +13,13 @@ import { useTemplates } from './useTemplate'
 export function PickTemplate() {
   const { templateKey, update } = useNewStrategyDraft()
   const templates = useTemplates()
-  const editing = useEditing()
-  const toReview = (key: string) => (editing ? editFromConfirm(reviewPath(key)) : reviewPath(key))
+  // Picking another template starts over, so only Back returns to the confirm screen.
+  const fromConfirm = useEditing()
 
   return (
     <Screen
-      top={<TopBar title="STL // NEW STRATEGY" back={editing ? confirmPath : undefined} step="1 / 5" />}
-      action={<PrimaryAction to={toReview(templateKey)}>Continue</PrimaryAction>}
+      top={<TopBar title="STL // NEW STRATEGY" back={fromConfirm ? confirmPath : undefined} step="1 / 5" />}
+      action={<PrimaryAction to={reviewPath(templateKey)}>Continue</PrimaryAction>}
       note="Pick one to start. You can add more strategies later, from any template."
     >
       <PageHeader
@@ -46,7 +46,7 @@ export function PickTemplate() {
               subtitle={<Tagline text={t.tagline} />}
               footer={
                 <Link
-                  to={toReview(t.key)}
+                  to={reviewPath(t.key)}
                   onClick={() => update({ templateKey: t.key })}
                   className={styles.learnMore}
                   aria-label={`Learn more about ${t.name}`}

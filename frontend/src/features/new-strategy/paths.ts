@@ -5,3 +5,4 @@ export const advancedPath = (key: string) => `/new/templates/${key}/advanced`
 export const modePath = '/new/mode'
 export const budgetPath = '/new/budget'
 export const confirmPath = '/new/confirm'
+export const dashboardPath = '/dashboard'

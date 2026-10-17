@@ -17,6 +17,8 @@ interface DraftState {
   budget: number
   step: number
   maxSteps: number
+  /** What the user typed on the last screen; null until then, so the name follows the template. */
+  name: string | null
 }
 
 interface Draft extends DraftState {
@@ -32,6 +34,7 @@ const initialDraft: DraftState = {
   budget: DEFAULT_BUDGET.budget,
   step: DEFAULT_BUDGET.step,
   maxSteps: DEFAULT_BUDGET.maxSteps,
+  name: null,
 }
 
 // Survives a page reload within the tab; storage may be unavailable (private mode), so fail quietly.

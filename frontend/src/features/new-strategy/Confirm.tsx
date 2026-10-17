@@ -38,7 +38,7 @@ export function Confirm() {
 
 function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
-  const { mode, budget, step, maxSteps, unticked, update } = draft
+  const { mode, budget, step, maxSteps, unticked, update, reset } = draft
   const isLive = mode === 'live'
   // Branch on what the template does, as the budget screen does.
   const allIn = template.signals === 'buysAndSells'
@@ -106,7 +106,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     <Screen
       top={top}
       action={
-        <PrimaryAction to={dashboardPath}>{isLive ? 'Start following it live' : 'Start the simulation'}</PrimaryAction>
+        <PrimaryAction to={dashboardPath} onClick={reset}>{isLive ? 'Start following it live' : 'Start the simulation'}</PrimaryAction>
       }
       note={DISCLAIMER}
       noteAbove

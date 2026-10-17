@@ -4,6 +4,7 @@ import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/S
 import { Tag, type TagTone } from '../../components/Tag'
 import styles from './ChooseMode.module.css'
 import { useNewStrategyDraft, type Mode } from './NewStrategyDraft'
+import { useFlowTarget } from './useEditing'
 import { budgetPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
 
@@ -37,11 +38,13 @@ export function ChooseMode() {
   const { mode, templateKey, update } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const isLive = mode === 'live'
+  const back = useFlowTarget(reviewPath(templateKey))
+  const next = useFlowTarget(budgetPath)
 
   return (
     <Screen
-      top={<TopBar back={reviewPath(templateKey)} step="3 / 5" />}
-      action={<PrimaryAction to={budgetPath}>Continue</PrimaryAction>}
+      top={<TopBar back={back} step="3 / 5" />}
+      action={<PrimaryAction to={next}>Continue</PrimaryAction>}
       note={
         isLive && (
           <span className={styles.inkNote}>

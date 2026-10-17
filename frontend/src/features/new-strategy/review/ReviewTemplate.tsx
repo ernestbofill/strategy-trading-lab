@@ -16,6 +16,7 @@ import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { DISCLAIMER } from '../../../lib/copy'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
+import { useFlowTarget } from '../useEditing'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
 import { useTemplate } from '../useTemplate'
 import { AiPrompt } from './AiPrompt'
@@ -23,20 +24,20 @@ import { AI_SOURCES } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
 
-const top = <TopBar back={pickPath} step="2 / 5" />
-
 /** 2 · Review a template (wireframes `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI`). */
 export function ReviewTemplate() {
   const { key } = useParams<{ key: TemplateKey }>()
+  const top = <TopBar back={useFlowTarget(pickPath)} step="2 / 5" />
   return (
     <LoadableScreen state={useTemplate(key)} top={top} what="the template">
-      {(template) => <ReviewContent key={template.key} template={template} />}
+      {(template) => <ReviewContent key={template.key} template={template} top={top} />}
     </LoadableScreen>
   )
 }
 
-function ReviewContent({ template }: { template: TemplateDetail }) {
+function ReviewContent({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
+  const next = useFlowTarget(modePath)
   const { aiRound, watches } = template
   const stocks = watches.kind === 'stocks' ? watches.starterList : []
   const unticked = draft.unticked[template.key] ?? []
@@ -123,7 +124,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       top={top}
       action={
         <PrimaryAction
-          to={modePath}
+          to={next}
           onClick={() => draft.update({ templateKey: template.key })}
           disabled={!canContinue}
         >

@@ -10,7 +10,7 @@ import { DISCLAIMER } from '../../lib/copy'
 import { eur } from '../../lib/format'
 import styles from './Confirm.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, reviewPath } from './paths'
+import { advancedPath, budgetPath, dashboardPath, editFromConfirm, modePath, pickPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
 
 const NAME_MAX_LENGTH = 60
@@ -62,26 +62,26 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   })()
 
   const rows: SummaryRow[] = [
-    { label: 'Template', value: template.name, to: pickPath },
+    { label: 'Template', value: template.name, to: editFromConfirm(pickPath) },
     {
       label: 'Mode',
       value: isLive
         ? `Live: you trade at your broker and confirm each ${template.aiRound ? 'trade' : 'signal'}`
         : 'Simulation: the app trades on paper',
-      to: modePath,
+      to: editFromConfirm(modePath),
     },
-    { label: 'Stocks', value: stocksValue, to: reviewPath(template.key) },
+    { label: 'Stocks', value: stocksValue, to: editFromConfirm(reviewPath(template.key)) },
     { label: 'Settings', value: 'Tested defaults', to: advancedPath(template.key) },
     {
       label: 'Budget',
       value: allIn
         ? eur(budget)
         : `${eur(budget)} · steps of ${eur(step)} · up to ${maxSteps} ${isFund ? 'for the fund' : 'per stock'}`,
-      to: budgetPath,
+      to: editFromConfirm(budgetPath),
     },
     { label: 'Daily overview', value: 'By email, after the US market close' },
-    ...(isLive ? [{ label: 'Alerts', value: 'App and email', to: modePath }] : []),
-    ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: reviewPath(template.key) }] : []),
+    ...(isLive ? [{ label: 'Alerts', value: 'App and email', to: editFromConfirm(modePath) }] : []),
+    ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: editFromConfirm(reviewPath(template.key)) }] : []),
   ]
 
   const next = [

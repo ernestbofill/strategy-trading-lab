@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tagline } from '../../components/Tagline'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { confirmPath, reviewPath } from './paths'
+import { homePath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
 import { useTemplates } from './useTemplate'
 
@@ -12,12 +12,12 @@ import { useTemplates } from './useTemplate'
 export function PickTemplate() {
   const { templateKey, switchTemplate } = useNewStrategyDraft()
   const templates = useTemplates()
-  // Back only when there is somewhere to go back to: the confirm screen's Edit template, not a fresh start.
+  // Back only when there is somewhere to go back to (the confirm screen's Edit template), not on a fresh start.
   const hasHistory = useLocation().key !== 'default'
 
   return (
     <Screen
-      top={<TopBar title="STL // NEW STRATEGY" back={hasHistory ? confirmPath : undefined} step="1 / 5" />}
+      top={<TopBar title="STL // NEW STRATEGY" back={hasHistory ? homePath : undefined} step="1 / 5" />}
       action={<PrimaryAction to={reviewPath(templateKey)}>Continue</PrimaryAction>}
       note="Pick one to start. You can add more strategies later, from any template."
     >

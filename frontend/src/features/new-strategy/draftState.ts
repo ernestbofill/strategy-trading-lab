@@ -20,6 +20,9 @@ export interface DraftState {
   name: string | null
 }
 
+/** What `update` may change: everything but the template, which only `switchTemplate` changes. */
+export type DraftPatch = Partial<Omit<DraftState, 'templateKey'>>
+
 export const initialDraft: DraftState = {
   // Dip in winners is selected by default, so "Continue" is always enabled.
   templateKey: 'dip',

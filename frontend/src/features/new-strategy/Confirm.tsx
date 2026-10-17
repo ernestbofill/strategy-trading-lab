@@ -19,7 +19,7 @@ const NAME_MAX_LENGTH = 60
 interface SummaryRow {
   label: string
   value: string
-  /** Where "Edit" goes; without it the link is shown but not usable (screen not built yet). */
+  /** Where "Edit" goes (opened as an edit from this screen); without it the link is shown but not usable. */
   to?: string
 }
 
@@ -65,26 +65,26 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   })()
 
   const rows: SummaryRow[] = [
-    { label: 'Template', value: template.name, to: editFromConfirm(pickPath) },
+    { label: 'Template', value: template.name, to: pickPath },
     {
       label: 'Mode',
       value: isLive
         ? `Live: you trade at your broker and confirm each ${template.aiRound ? 'trade' : 'signal'}`
         : 'Simulation: the app trades on paper',
-      to: editFromConfirm(modePath),
+      to: modePath,
     },
-    { label: 'Stocks', value: stocksValue, to: editFromConfirm(reviewPath(template.key)) },
-    { label: 'Settings', value: 'Tested defaults', to: editFromConfirm(advancedPath(template.key)) },
+    { label: 'Stocks', value: stocksValue, to: reviewPath(template.key) },
+    { label: 'Settings', value: 'Tested defaults', to: advancedPath(template.key) },
     {
       label: 'Budget',
       value: allIn
         ? eur(budget)
         : `${eur(budget)} · steps of ${eur(step)} · up to ${maxSteps} ${isFund ? 'for the fund' : 'per stock'}`,
-      to: editFromConfirm(budgetPath),
+      to: budgetPath,
     },
     { label: 'Daily overview', value: 'By email, after the US market close' },
     ...(isLive ? [{ label: 'Alerts', value: 'App and email' }] : []),
-    ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: editFromConfirm(reviewPath(template.key)) }] : []),
+    ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: reviewPath(template.key) }] : []),
   ]
 
   const next = [
@@ -137,7 +137,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
               <span className={styles.term}>{r.label}</span>
               <p className={styles.value}>{r.value}</p>
             </div>
-            <TextAction to={r.to}>
+            <TextAction to={r.to && editFromConfirm(r.to)}>
               Edit<span className="visually-hidden"> {r.label.toLowerCase()}</span>
             </TextAction>
           </li>

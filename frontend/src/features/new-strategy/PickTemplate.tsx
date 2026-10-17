@@ -8,7 +8,7 @@ import { Tagline } from '../../components/Tagline'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
-import { useEditSource } from './useEditing'
+import { useEditSource } from './useEditSource'
 import { useTemplates } from './useTemplate'
 
 /** 1 · Pick a strategy template (wireframe `Main`). */
@@ -16,7 +16,7 @@ export function PickTemplate() {
   const { templateKey, switchTemplate } = useNewStrategyDraft()
   const templates = useTemplates()
   // Picking another template starts over: Back only returns to the confirm screen while the template is unchanged.
-  const initialKey = useState(templateKey)[0]
+  const [initialKey] = useState(templateKey)
   const backToConfirm = useEditSource() === 'confirm' && templateKey === initialKey
   const choose = (key: TemplateKey) => key !== templateKey && switchTemplate(key)
 

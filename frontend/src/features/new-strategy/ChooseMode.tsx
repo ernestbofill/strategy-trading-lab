@@ -4,7 +4,7 @@ import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/S
 import { Tag, type TagTone } from '../../components/Tag'
 import styles from './ChooseMode.module.css'
 import { useNewStrategyDraft, type Mode } from './NewStrategyDraft'
-import { useFlowTarget } from './useEditing'
+import { useFlowTarget } from './useEditSource'
 import { budgetPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
 

@@ -5,7 +5,7 @@ import { NewStrategyDraftProvider } from './features/new-strategy/NewStrategyDra
 import { NotBuiltYet } from './features/new-strategy/NotBuiltYet'
 import { Confirm } from './features/new-strategy/Confirm'
 import { budgetPath, confirmPath, dashboardPath } from './features/new-strategy/paths'
-import { useReviewSubPageBack } from './features/new-strategy/useEditing'
+import { useReviewSubPageBack } from './features/new-strategy/useEditSource'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'

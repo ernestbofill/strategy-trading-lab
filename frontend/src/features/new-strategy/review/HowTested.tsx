@@ -9,7 +9,7 @@ import { Screen, ScreenMessage, TopBar } from '../../../components/Screen'
 import { Section } from '../../../components/Section'
 import { DISCLAIMER } from '../../../lib/copy'
 import { eur } from '../../../lib/format'
-import { useReviewSubPageBack } from '../useEditing'
+import { useReviewSubPageBack } from '../useEditSource'
 import { useTemplate } from '../useTemplate'
 import { PeriodTable } from './Results'
 

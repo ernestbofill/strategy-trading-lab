@@ -14,6 +14,9 @@
       "detail": "Build the frontend and upload it to https://140-238-209-178.sslip.io (needs the strategy-lab host in ~/.ssh/config)",
       "type": "shell",
       "command": "rsync -az --delete --stats frontend/dist/ strategy-lab:/var/www/strategy-trading-lab/ && curl -fsS -o /dev/null -w 'Live: HTTP %{http_code}\\n' https://140-238-209-178.sslip.io/",
+      "windows": {
+        "command": "ssh strategy-lab 'find /var/www/strategy-trading-lab -mindepth 1 -delete'; if ($?) { scp -r frontend/dist/. strategy-lab:/var/www/strategy-trading-lab/ }; if ($?) { curl.exe -fsS -o NUL -w 'Live: HTTP %{http_code}\\n' https://140-238-209-178.sslip.io/ }"
+      },
       "dependsOn": "Build frontend",
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated" }

@@ -19,7 +19,8 @@ export function TopBar({ title, back, step }: TopBarProps) {
       ) : (
         <div>{title}</div>
       )}
-      {step && <div>{step}</div>}
+      <div className={styles.version}>v{__APP_VERSION__}</div>
+      {step && <div className={styles.step}>{step}</div>}
     </header>
   )
 }
@@ -47,7 +48,6 @@ export function Screen({ top, action, note, noteAbove, children }: ScreenProps) 
           {note && <p className={`caption ${styles.note}`}>{note}</p>}
         </footer>
       )}
-      <p className={`caption ${styles.version}`}>v{__APP_VERSION__}</p>
     </div>
   )
 }

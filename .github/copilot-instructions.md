@@ -36,4 +36,5 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 
 - Work on a feature branch (`feature/<short-name>`, `fix/<short-name>`) and open a small PR into `main`. Don't push to `main` directly.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
+- Merge PRs with **squash merge** (`gh pr merge --squash --delete-branch`), so `main` stays linear with one commit per PR. Write the PR title as the final commit subject (imperative, with `(#number)`), because the squash uses it. Only merge when asked.
 - Before opening a PR: the typecheck, lint, tests and build all pass, and you have checked the changed screens in a browser at phone and desktop width.

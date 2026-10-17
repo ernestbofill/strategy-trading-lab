@@ -5,13 +5,14 @@ import { NewStrategyDraftProvider } from './features/new-strategy/NewStrategyDra
 import { NotBuiltYet } from './features/new-strategy/NotBuiltYet'
 import { Confirm } from './features/new-strategy/Confirm'
 import { budgetPath, confirmPath, dashboardPath, reviewPath } from './features/new-strategy/paths'
+import { useFlowTarget } from './features/new-strategy/useEditing'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 
 function AdvancedStub() {
   const { key = '' } = useParams()
-  return <NotBuiltYet title="Advanced settings" back={reviewPath(key)} />
+  return <NotBuiltYet title="Advanced settings" back={useFlowTarget(reviewPath(key))} />
 }
 
 export default function App() {

@@ -71,7 +71,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       to: editFromConfirm(modePath),
     },
     { label: 'Stocks', value: stocksValue, to: editFromConfirm(reviewPath(template.key)) },
-    { label: 'Settings', value: 'Tested defaults', to: advancedPath(template.key) },
+    { label: 'Settings', value: 'Tested defaults', to: editFromConfirm(advancedPath(template.key)) },
     {
       label: 'Budget',
       value: allIn

@@ -4,15 +4,15 @@ import { ChooseMode } from './features/new-strategy/ChooseMode'
 import { NewStrategyDraftProvider } from './features/new-strategy/NewStrategyDraft'
 import { NotBuiltYet } from './features/new-strategy/NotBuiltYet'
 import { Confirm } from './features/new-strategy/Confirm'
-import { budgetPath, confirmPath, dashboardPath } from './features/new-strategy/paths'
-import { useReviewSubPageBack } from './features/new-strategy/useEditSource'
+import { budgetPath, confirmPath, dashboardPath, reviewPath } from './features/new-strategy/paths'
+import { useFlowTarget } from './features/new-strategy/useFlowTarget'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 
 function AdvancedStub() {
   const { key = '' } = useParams()
-  const back = useReviewSubPageBack(key)
+  const back = useFlowTarget(reviewPath(key))
   return <NotBuiltYet title="Advanced settings" back={back} />
 }
 

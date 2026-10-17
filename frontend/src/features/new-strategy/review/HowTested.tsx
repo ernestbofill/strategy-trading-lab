@@ -9,23 +9,22 @@ import { Screen, ScreenMessage, TopBar } from '../../../components/Screen'
 import { Section } from '../../../components/Section'
 import { DISCLAIMER } from '../../../lib/copy'
 import { eur } from '../../../lib/format'
-import { useReviewSubPageBack } from '../useEditSource'
+import { reviewPath } from '../paths'
 import { useTemplate } from '../useTemplate'
 import { PeriodTable } from './Results'
 
 /** 2c · How we tested (wireframe `HowTested`). Not offered for templates without a backtest. */
 export function HowTested() {
   const { key } = useParams<{ key: TemplateKey }>()
-  const back = useReviewSubPageBack(key)
   return (
-    <LoadableScreen state={useTemplate(key)} top={<TopBar back={back} />} what="the test">
-      {(template) => <HowTestedContent template={template} back={back} />}
+    <LoadableScreen state={useTemplate(key)} top={<TopBar back={key ? reviewPath(key) : '/'} />} what="the test">
+      {(template) => <HowTestedContent template={template} />}
     </LoadableScreen>
   )
 }
 
-function HowTestedContent({ template, back }: { template: TemplateDetail; back: string }) {
-  const top = <TopBar back={back} step={template.name} />
+function HowTestedContent({ template }: { template: TemplateDetail }) {
+  const top = <TopBar back={reviewPath(template.key)} step={template.name} />
   const b = template.backtest
   if (!b) {
     return (

@@ -1,65 +1,27 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import type { TemplateKey } from '../../api'
-import { DEFAULT_BUDGET } from '../../lib/budget'
+import { initialDraft, withTemplate, type DraftState } from './draftState'
 
-export type Mode = 'simulation' | 'live'
-
-export type AiSource = 'news' | 'mood' | 'figures'
-
-// Choices made across the new-strategy flow (1 / 5 … 5 / 5), kept while the user moves back and forth.
-// Held in memory only: a new strategy, a reload or reopening the app starts from the defaults.
-interface DraftState {
-  templateKey: TemplateKey
-  /** Symbols the user unticked for the chosen template. */
-  unticked: string[]
-  aiSources: Record<AiSource, boolean>
-  mode: Mode
-  /** Euro amounts, see lib/budget.ts. */
-  budget: number
-  step: number
-  maxSteps: number
-  /** What the user typed on the last screen; null until then, so the name follows the template. */
-  name: string | null
-  /** Set once the user has seen the confirm screen; only then do Edit links there return to it. */
-  reachedConfirm: boolean
-}
-
-export type DraftPatch = Partial<DraftState>
+export type { AiSource, Mode } from './draftState'
 
 interface Draft extends DraftState {
   update: (patch: Partial<DraftState>) => void
-  /** Back to the defaults: call when a strategy is started or a new one begins. */
+  /** Choose a template. A different one starts over from the defaults. */
+  switchTemplate: (templateKey: TemplateKey) => void
+  /** Back to the defaults: call when a strategy is started. */
   reset: () => void
-  /** Start over with another template: everything goes back to the defaults, except what `patch` sets. */
-  switchTemplate: (templateKey: TemplateKey, patch?: Partial<DraftState>) => void
-}
-
-const initialDraft: DraftState = {
-  // Dip in winners is selected by default, so "Continue" is always enabled.
-  templateKey: 'dip',
-  unticked: [],
-  aiSources: { news: true, mood: true, figures: true },
-  mode: 'simulation',
-  budget: DEFAULT_BUDGET.budget,
-  step: DEFAULT_BUDGET.step,
-  maxSteps: DEFAULT_BUDGET.maxSteps,
-  name: null,
-  reachedConfirm: false,
 }
 
 const DraftContext = createContext<Draft | null>(null)
 
+// Held in memory only: a reload or reopening the app starts from the defaults.
 export function NewStrategyDraftProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DraftState>(initialDraft)
 
   const update = useCallback((patch: Partial<DraftState>) => setState((s) => ({ ...s, ...patch })), [])
+  const switchTemplate = useCallback((key: TemplateKey) => setState((s) => withTemplate(s, key)), [])
   const reset = useCallback(() => setState(initialDraft), [])
-  const switchTemplate = useCallback(
-    (templateKey: TemplateKey, patch: Partial<DraftState> = {}) =>
-      setState((s) => ({ ...initialDraft, templateKey, reachedConfirm: s.reachedConfirm, ...patch })),
-    [],
-  )
-  const draft = useMemo(() => ({ ...state, update, reset, switchTemplate }), [state, update, reset, switchTemplate])
+  const draft = useMemo(() => ({ ...state, update, switchTemplate, reset }), [state, update, switchTemplate, reset])
   return <DraftContext.Provider value={draft}>{children}</DraftContext.Provider>
 }
 

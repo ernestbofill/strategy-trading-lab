@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import type { AiRound, TemplateDetail, TemplateKey } from '../../../api'
 import { Callout, LabelledLine } from '../../../components/Callout'
@@ -15,9 +15,8 @@ import { Tag } from '../../../components/Tag'
 import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { DISCLAIMER } from '../../../lib/copy'
-import { useNewStrategyDraft, type AiSource, type DraftPatch } from '../NewStrategyDraft'
-import { subPageLink } from '../editFlow'
-import { useEditSource, useFlowTarget } from '../useEditSource'
+import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
+import { useFlowTarget } from '../useFlowTarget'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
 import { useTemplate } from '../useTemplate'
 import { AiPrompt } from './AiPrompt'
@@ -40,22 +39,22 @@ export function ReviewTemplate() {
 function ReviewContent({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
   const next = useFlowTarget(modePath)
-  const source = useEditSource()
-  const advancedTo = subPageLink(source, advancedPath(template.key))
+  // Opened by URL for another template than the draft holds (a link, a reload): make it the chosen one.
+  const adopted = draft.templateKey === template.key
+  const { switchTemplate } = draft
+  useEffect(() => {
+    if (!adopted) switchTemplate(template.key)
+  }, [adopted, switchTemplate, template.key])
+  if (!adopted) return null
+
   const { aiRound, watches } = template
   const stocks = watches.kind === 'stocks' ? watches.starterList : []
-  // The draft may still hold another template's choices when this review was opened by URL.
-  const isDraftTemplate = draft.templateKey === template.key
-  const unticked = isDraftTemplate ? draft.unticked : []
+  const { unticked } = draft
   const tickedCount = stocks.length - unticked.length
   const canContinue = watches.kind === 'fund' || tickedCount > 0
 
-  // Changing anything here makes this the chosen template; if it wasn't, that starts over from the defaults.
-  const choose = (patch: DraftPatch = {}) =>
-    isDraftTemplate ? draft.update(patch) : draft.switchTemplate(template.key, patch)
-
   const toggleStock = (symbol: string) =>
-    choose({ unticked: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol] })
+    draft.update({ unticked: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol] })
 
   const stockList = (
     <>
@@ -104,7 +103,7 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
   const aside = (
     <>
       {template.backtest ? (
-        <TestedBox backtest={template.backtest} howTestedTo={subPageLink(source, howTestedPath(template.key))} />
+        <TestedBox backtest={template.backtest} howTestedTo={howTestedPath(template.key)} />
       ) : (
         <>
           <Callout tone="info">
@@ -116,9 +115,9 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
         </>
       )}
       {aiRound ? (
-        <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedTo} />
+        <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedPath(template.key)} />
       ) : (
-        <NavRow label="Advanced settings" to={advancedTo} />
+        <NavRow label="Advanced settings" to={advancedPath(template.key)} />
       )}
     </>
   )
@@ -129,7 +128,6 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
       action={
         <PrimaryAction
           to={next}
-          onClick={() => choose()}
           disabled={!canContinue}
         >
           Use this template

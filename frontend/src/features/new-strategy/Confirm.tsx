@@ -10,7 +10,6 @@ import { DISCLAIMER } from '../../lib/copy'
 import { eur } from '../../lib/format'
 import styles from './Confirm.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { editFromConfirm } from './editFlow'
 import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
 
@@ -19,7 +18,7 @@ const NAME_MAX_LENGTH = 60
 interface SummaryRow {
   label: string
   value: string
-  /** Where "Edit" goes (opened as an edit from this screen); without it the link is shown but not usable. */
+  /** Where "Edit" goes; without it the link is shown but not usable (screen not built yet). */
   to?: string
 }
 
@@ -46,7 +45,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const modeName = isLive ? 'Live' : 'Simulation'
   const inputId = useId()
 
-  useEffect(() => update({ reachedConfirm: true }), [update])
+  // Whatever was being changed is done once the user is back here.
+  useEffect(() => update({ editing: false }), [update])
 
   // Start resets the draft once this screen is gone, so it doesn't flash the defaults on its way out.
   const started = useRef(false)
@@ -146,7 +146,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
               <span className={styles.term}>{r.label}</span>
               <p className={styles.value}>{r.value}</p>
             </div>
-            <TextAction to={r.to && editFromConfirm(r.to)}>
+            <TextAction to={r.to} onClick={() => update({ editing: true })}>
               Edit<span className="visually-hidden"> {r.label.toLowerCase()}</span>
             </TextAction>
           </li>

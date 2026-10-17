@@ -10,7 +10,7 @@ import { eur } from '../../lib/format'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, modePath } from './paths'
 import styles from './SetBudget.module.css'
-import { useFlowTarget } from './useEditSource'
+import { useFlowTarget } from './useFlowTarget'
 import { useTemplate } from './useTemplate'
 
 /** 4 · Set your budget (wireframe `Budget`). */

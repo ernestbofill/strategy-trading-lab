@@ -1,16 +1,19 @@
-import { useSearchParams } from 'react-router-dom'
-import { confirmPath } from './paths'
+import { useLocation } from 'react-router-dom'
+import { flowTarget, readEditSource, reviewSubPageBack, type EditSource } from './editFlow'
+import { useNewStrategyDraft } from './NewStrategyDraft'
 
-/**
- * True when the user got here from an Edit link on "Ready to start" (5 / 5).
- * Then Back and Continue return to that screen instead of the next step of the flow.
- */
-export function useEditing(): boolean {
-  const [params] = useSearchParams()
-  return params.get('from') === 'confirm'
+/** Where the user came from when they opened this screen to change something, if they did. */
+export function useEditSource(): EditSource | null {
+  const { search } = useLocation()
+  const { reachedConfirm } = useNewStrategyDraft()
+  return readEditSource(search, reachedConfirm)
 }
 
-/** Where Back and Continue go: the confirm screen while editing, else the screen's usual target. */
-export function useFlowTarget(usual: string): string {
-  return useEditing() ? confirmPath : usual
+/** Where Back and Continue go: the confirm screen while editing from it, else the screen's usual target. */
+export const useFlowTarget = (usual: string) => flowTarget(useEditSource(), usual)
+
+/** Back from a review's sub-page. */
+export const useReviewSubPageBack = (templateKey: string | undefined) => {
+  const source = useEditSource()
+  return templateKey ? reviewSubPageBack(source, templateKey) : '/'
 }

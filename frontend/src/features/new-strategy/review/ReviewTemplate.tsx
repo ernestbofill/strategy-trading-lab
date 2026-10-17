@@ -16,7 +16,8 @@ import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { DISCLAIMER } from '../../../lib/copy'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
-import { useFlowTarget } from '../useEditing'
+import { subPageLink } from '../editFlow'
+import { useEditSource, useFlowTarget } from '../useEditing'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
 import { useTemplate } from '../useTemplate'
 import { AiPrompt } from './AiPrompt'
@@ -27,7 +28,8 @@ import { TestedBox } from './TestedBox'
 /** 2 · Review a template (wireframes `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI`). */
 export function ReviewTemplate() {
   const { key } = useParams<{ key: TemplateKey }>()
-  const top = <TopBar back={useFlowTarget(pickPath)} step="2 / 5" />
+  const backTo = useFlowTarget(pickPath)
+  const top = <TopBar back={backTo} step="2 / 5" />
   return (
     <LoadableScreen state={useTemplate(key)} top={top} what="the template">
       {(template) => <ReviewContent key={template.key} template={template} top={top} />}
@@ -38,6 +40,8 @@ export function ReviewTemplate() {
 function ReviewContent({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
   const next = useFlowTarget(modePath)
+  const source = useEditSource()
+  const advancedTo = subPageLink(source, advancedPath(template.key))
   const { aiRound, watches } = template
   const stocks = watches.kind === 'stocks' ? watches.starterList : []
   const unticked = draft.unticked[template.key] ?? []
@@ -100,7 +104,7 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
   const aside = (
     <>
       {template.backtest ? (
-        <TestedBox backtest={template.backtest} howTestedTo={howTestedPath(template.key)} />
+        <TestedBox backtest={template.backtest} howTestedTo={subPageLink(source, howTestedPath(template.key))} />
       ) : (
         <>
           <Callout tone="info">
@@ -112,9 +116,9 @@ function ReviewContent({ template, top }: { template: TemplateDetail; top: React
         </>
       )}
       {aiRound ? (
-        <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedPath(template.key)} />
+        <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedTo} />
       ) : (
-        <NavRow label="Advanced settings" to={advancedPath(template.key)} />
+        <NavRow label="Advanced settings" to={advancedTo} />
       )}
     </>
   )

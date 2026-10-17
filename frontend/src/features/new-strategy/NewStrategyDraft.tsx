@@ -19,6 +19,8 @@ interface DraftState {
   maxSteps: number
   /** What the user typed on the last screen; null until then, so the name follows the template. */
   name: string | null
+  /** Set once the user has seen the confirm screen; only then do Edit links there return to it. */
+  reachedConfirm: boolean
 }
 
 interface Draft extends DraftState {
@@ -35,6 +37,7 @@ const initialDraft: DraftState = {
   step: DEFAULT_BUDGET.step,
   maxSteps: DEFAULT_BUDGET.maxSteps,
   name: null,
+  reachedConfirm: false,
 }
 
 // Survives a page reload within the tab; storage may be unavailable (private mode), so fail quietly.

@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react'
+import { useEffect, useId, type ReactNode } from 'react'
 import type { TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { BulletList } from '../../components/Lists'
@@ -10,7 +10,8 @@ import { DISCLAIMER } from '../../lib/copy'
 import { eur } from '../../lib/format'
 import styles from './Confirm.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { advancedPath, budgetPath, dashboardPath, editFromConfirm, modePath, pickPath, reviewPath } from './paths'
+import { editFromConfirm } from './editFlow'
+import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
 
 const NAME_MAX_LENGTH = 60
@@ -44,6 +45,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const isFund = template.watches.kind === 'fund'
   const modeName = isLive ? 'Live' : 'Simulation'
   const inputId = useId()
+
+  useEffect(() => update({ reachedConfirm: true }), [update])
 
   // The user has no strategies yet in the mock, so there's nothing to number against.
   const name = draft.name ?? template.name

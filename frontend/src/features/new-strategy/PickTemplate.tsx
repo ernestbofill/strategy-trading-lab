@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import type { TemplateKey } from '../../api'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -6,19 +8,21 @@ import { Tagline } from '../../components/Tagline'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
-import { useEditing } from './useEditing'
+import { useEditSource } from './useEditing'
 import { useTemplates } from './useTemplate'
 
 /** 1 · Pick a strategy template (wireframe `Main`). */
 export function PickTemplate() {
   const { templateKey, update } = useNewStrategyDraft()
   const templates = useTemplates()
-  // Picking another template starts over, so only Back returns to the confirm screen.
-  const fromConfirm = useEditing()
+  // Picking another template starts over: Back only returns to the confirm screen while the template is unchanged.
+  const initialKey = useState(templateKey)[0]
+  const backToConfirm = useEditSource() === 'confirm' && templateKey === initialKey
+  const choose = (key: TemplateKey) => update(key === templateKey ? {} : { templateKey: key, name: null })
 
   return (
     <Screen
-      top={<TopBar title="STL // NEW STRATEGY" back={fromConfirm ? confirmPath : undefined} step="1 / 5" />}
+      top={<TopBar title="STL // NEW STRATEGY" back={backToConfirm ? confirmPath : undefined} step="1 / 5" />}
       action={<PrimaryAction to={reviewPath(templateKey)}>Continue</PrimaryAction>}
       note="Pick one to start. You can add more strategies later, from any template."
     >
@@ -41,13 +45,13 @@ export function PickTemplate() {
               name="template"
               value={t.key}
               checked={t.key === templateKey}
-              onSelect={() => update({ templateKey: t.key })}
+              onSelect={() => choose(t.key)}
               title={t.name}
               subtitle={<Tagline text={t.tagline} />}
               footer={
                 <Link
                   to={reviewPath(t.key)}
-                  onClick={() => update({ templateKey: t.key })}
+                  onClick={() => choose(t.key)}
                   className={styles.learnMore}
                   aria-label={`Learn more about ${t.name}`}
                 >

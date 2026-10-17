@@ -96,7 +96,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
               value={maxSteps}
               display={String(maxSteps)}
               onChange={(v) => update({ maxSteps: clamp(v, MAX_STEPS_LIMITS.min, MAX_STEPS_LIMITS.max) })}
-              help="Buying a stock in steps limits the damage of a bad first buy."
+              help={`Buying ${isFund ? 'the fund' : 'a stock'} in steps limits the damage of a bad first buy.`}
               onDecrease={() => update({ maxSteps: clamp(maxSteps - 1, MAX_STEPS_LIMITS.min, MAX_STEPS_LIMITS.max) })}
               onIncrease={() => update({ maxSteps: clamp(maxSteps + 1, MAX_STEPS_LIMITS.min, MAX_STEPS_LIMITS.max) })}
               canDecrease={maxSteps > MAX_STEPS_LIMITS.min}

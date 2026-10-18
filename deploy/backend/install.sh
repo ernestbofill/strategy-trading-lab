@@ -12,6 +12,10 @@ env_file=/etc/strategy-trading-lab/api.env
 service=strategy-trading-lab-api
 release="$root/releases/${version}_$(date -u +%Y%m%dT%H%M%SZ)"
 
+# One install at a time: the workflow and the VS Code task may run together.
+exec 9> /run/lock/strategy-trading-lab-api.lock
+flock 9
+
 if [ ! -f "$env_file" ]; then
   echo "$env_file is missing: set it up as deploy/backend/README.md says." >&2
   exit 1
@@ -41,7 +45,7 @@ systemctl restart "$service"
 for _ in $(seq 30); do
   if curl -fs http://127.0.0.1:5080/health; then
     echo
-    echo "Installed $version: $(curl -fsS http://127.0.0.1:5080/version)"
+    echo "Installed: $(curl -fsS http://127.0.0.1:5080/version)"
     # Keep the last 5 releases for switching back by hand.
     ls -1dt "$root"/releases/*/ | tail -n +6 | xargs -r rm -rf
     exit 0

@@ -1,24 +1,28 @@
+using Microsoft.Extensions.Configuration;
 using StrategyTradingLab.Api.Neon;
 
 namespace StrategyTradingLab.Api.Tests;
 
 /// <summary>
-/// A test against the linked Neon branch. Skipped when its variables aren't there (CI);
-/// locally they come from the repo's .env.local (`neon env pull`).
+/// A test against the linked Neon branch. Skipped when the app wouldn't find its database and
+/// bucket (CI); locally they come from the repo's .env.local (`neon env pull`).
 /// </summary>
 public sealed class NeonFactAttribute : FactAttribute
 {
-    static readonly bool Configured = LoadEnvironment();
+    static readonly bool Configured = IsConfigured();
 
     public NeonFactAttribute()
     {
         if (!Configured) Skip = "No Neon branch: run `neon env pull` to write .env.local.";
     }
 
-    static bool LoadEnvironment()
+    static bool IsConfigured()
     {
-        NeonEnvironment.LoadDotEnv(AppContext.BaseDirectory);
-        return Environment.GetEnvironmentVariable("DATABASE_URL") is not null
-            && Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL_S3") is not null;
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<Program>(optional: true)
+            .AddEnvironmentVariables()
+            .AddNeonDotEnv(AppContext.BaseDirectory)
+            .Build();
+        return NeonEnvironment.ConnectionString(configuration) is not null && ObjectStorage.IsConfigured(configuration);
     }
 }

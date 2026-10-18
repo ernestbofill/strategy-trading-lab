@@ -1,18 +1,15 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Neon;
 
-// Locally, `neon deploy` / `neon env pull` write the Neon variables to .env.local at the repo root.
-if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-{
-    NeonEnvironment.LoadDotEnv(AppContext.BaseDirectory);
-    NeonEnvironment.LoadDotEnv(Directory.GetCurrentDirectory());
-}
-
 var builder = WebApplication.CreateBuilder(args);
+
+// Locally, `neon deploy` / `neon env pull` write the Neon variables to .env.local at the repo root.
+if (builder.Environment.IsDevelopment()) builder.Configuration.AddNeonDotEnv(AppContext.BaseDirectory);
 
 var connectionString = NeonEnvironment.ConnectionString(builder.Configuration)
     ?? throw new InvalidOperationException(
@@ -39,27 +36,18 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Checks each Neon service the API depends on can be reached.
-app.MapGet("/health", async (AppDbContext db, IServiceProvider services, IOptions<ObjectStorageOptions> storage,
+app.MapGet("/health", async (AppDbContext db, [FromServices] IAmazonS3? s3, IOptions<ObjectStorageOptions> storage,
     CancellationToken cancellationToken) =>
 {
-    var postgres = await db.Database
-        .SqlQueryRaw<string>("select version() as \"Value\"")
-        .SingleAsync(cancellationToken);
+    var bucket = storage.Value.Bucket;
+    var postgres = db.Database.SqlQueryRaw<string>("select version() as \"Value\"").SingleAsync(cancellationToken);
+    var listing = s3?.ListObjectsV2Async(new ListObjectsV2Request { BucketName = bucket, MaxKeys = 1 }, cancellationToken);
+    await Task.WhenAll(listing is null ? [postgres] : [postgres, listing]);
 
-    var s3 = services.GetService<IAmazonS3>();
-    string objectStorage;
-    if (s3 is null)
-    {
-        objectStorage = "not configured";
-    }
-    else
-    {
-        var listing = await s3.ListObjectsV2Async(
-            new ListObjectsV2Request { BucketName = storage.Value.Bucket, MaxKeys = 1 }, cancellationToken);
-        objectStorage = $"ok: bucket {storage.Value.Bucket} ({listing.KeyCount ?? 0} key(s) in the first page)";
-    }
-
-    return TypedResults.Ok(new HealthResponse(postgres, objectStorage));
+    var objectStorage = listing is null
+        ? "not configured"
+        : $"ok: bucket {bucket} ({listing.Result.KeyCount ?? 0} key(s) in the first page)";
+    return TypedResults.Ok(new HealthResponse(postgres.Result, objectStorage));
 })
 .WithName("Health")
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.FileProviders.Physical;
 using Npgsql;
 
 namespace StrategyTradingLab.Api.Neon;
@@ -9,32 +11,24 @@ namespace StrategyTradingLab.Api.Neon;
 public static class NeonEnvironment
 {
     /// <summary>
-    /// Loads <c>.env.local</c> (or <c>.env</c>) from the nearest folder that has one, up from
-    /// <paramref name="startDirectory"/>, into the process environment. Variables already set win.
-    /// Local development only; deployed hosts inject the variables.
+    /// Adds <c>.env.local</c> (or <c>.env</c>) from the nearest folder that has one, up from
+    /// <paramref name="startDirectory"/>, as a configuration source. Local development only;
+    /// deployed hosts set the variables in the environment.
     /// </summary>
-    public static string? LoadDotEnv(string startDirectory)
+    public static IConfigurationBuilder AddNeonDotEnv(this IConfigurationBuilder configuration, string startDirectory)
     {
         for (var directory = new DirectoryInfo(startDirectory); directory is not null; directory = directory.Parent)
         {
             var file = new[] { ".env.local", ".env" }
-                .Select(name => Path.Combine(directory.FullName, name))
-                .FirstOrDefault(File.Exists);
+                .FirstOrDefault(name => File.Exists(Path.Combine(directory.FullName, name)));
             if (file is null) continue;
 
-            foreach (var line in File.ReadAllLines(file))
-            {
-                var trimmed = line.Trim();
-                if (trimmed.Length == 0 || trimmed.StartsWith('#')) continue;
-                var separator = trimmed.IndexOf('=');
-                if (separator <= 0) continue;
-                var key = trimmed[..separator].Trim();
-                var value = trimmed[(separator + 1)..].Trim().Trim('"', '\'');
-                if (Environment.GetEnvironmentVariable(key) is null) Environment.SetEnvironmentVariable(key, value);
-            }
-            return file;
+            // KEY=value lines with # comments are what the INI provider reads. The default file
+            // provider hides dot-files, so this one excludes nothing.
+            var files = new PhysicalFileProvider(directory.FullName, ExclusionFilters.None);
+            return configuration.AddIniFile(files, file, optional: false, reloadOnChange: false);
         }
-        return null;
+        return configuration;
     }
 
     /// <summary>Turns a <c>postgresql://user:password@host/db?sslmode=require</c> URL into an Npgsql connection string.</summary>

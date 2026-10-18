@@ -17,8 +17,6 @@ public static class DevSeed
             Email = "dev@strategytradinglab.local",
             TimeZone = "Europe/Madrid",
             Locale = "en",
-            Currency = "EUR",
-            OverviewEmail = true,
             DisclaimerAcceptedAt = SeededAt,
             CreatedAt = SeededAt,
             UpdatedAt = SeededAt,

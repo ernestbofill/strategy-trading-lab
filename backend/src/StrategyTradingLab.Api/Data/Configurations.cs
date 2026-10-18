@@ -5,7 +5,8 @@ using StrategyTradingLab.Api.Data.Entities;
 namespace StrategyTradingLab.Api.Data;
 
 // Tables, checks and indexes from backend/DATA-MODEL.md. Column names come from the
-// snake_case naming convention; CHECK and filter SQL uses them directly.
+// snake_case naming convention; CHECK and filter SQL uses them directly. Enum checks and the
+// created_at / updated_at defaults are added for every table in ModelBuilderExtensions.
 // Guid keys get UUID v7 values from Npgsql on the client; there is no database default.
 
 static class Money
@@ -26,10 +27,9 @@ class AssetConfiguration : IEntityTypeConfiguration<Asset>
 {
     public void Configure(EntityTypeBuilder<Asset> entity)
     {
-        entity.ToTable("assets", table => table.HasEnumCheck<AssetKind>("kind"));
+        entity.ToTable("assets");
         entity.Property(asset => asset.Currency).HasColumnType(Money.Currency);
         entity.Property(asset => asset.Active).HasColumnDefault(true);
-        entity.HasCreatedAt();
         entity.HasIndex(asset => new { asset.Symbol, asset.Exchange }).IsUnique();
     }
 }
@@ -40,7 +40,6 @@ class AssetTextConfiguration : IEntityTypeConfiguration<AssetText>
     {
         entity.ToTable("asset_texts");
         entity.HasKey(text => new { text.AssetId, text.Locale });
-        entity.HasCreatedAt();
         entity.HasOne<Asset>().WithMany(asset => asset.Texts)
             .HasForeignKey(text => text.AssetId).OnDelete(DeleteBehavior.Cascade);
     }
@@ -55,8 +54,6 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.HasIndex(user => user.Email).IsUnique();
         entity.Property(user => user.Currency).HasColumnType(Money.Currency).HasColumnDefault("EUR");
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
-        entity.HasCreatedAt();
-        entity.Property(user => user.UpdatedAt).HasDefaultValueSql("now()");
     }
 }
 
@@ -66,7 +63,6 @@ class PushSubscriptionConfiguration : IEntityTypeConfiguration<PushSubscription>
     {
         entity.ToTable("push_subscriptions");
         entity.HasIndex(subscription => subscription.Endpoint).IsUnique();
-        entity.HasCreatedAt();
         entity.HasOne<User>().WithMany()
             .HasForeignKey(subscription => subscription.UserId).OnDelete(DeleteBehavior.Cascade);
     }
@@ -78,10 +74,7 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
     {
         entity.ToTable("strategies", table =>
         {
-            var keys = string.Join(", ", TemplateKeys.All.Select(key => $"'{key}'"));
-            table.HasCheckConstraint("ck_strategies_template_key", $"template_key IN ({keys})");
-            table.HasEnumCheck<StrategyMode>("mode");
-            table.HasEnumCheck<StrategyStatus>("status");
+            table.HasInCheck("template_key", TemplateKeys.All);
             table.HasCheckConstraint("ck_strategies_ended_at", "(status = 'ended') = (ended_at IS NOT NULL)");
             table.HasCheckConstraint("ck_strategies_budget_step", "budget_step <= budget_amount");
             table.HasCheckConstraint("ck_strategies_budget_steps",
@@ -96,8 +89,6 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
             budget.Property(b => b.MaxSteps).HasColumnName("budget_max_steps");
         });
         entity.Property(strategy => strategy.Params).HasColumnType("jsonb");
-        entity.HasCreatedAt();
-        entity.Property(strategy => strategy.UpdatedAt).HasDefaultValueSql("now()");
 
         entity.HasOne<User>().WithMany()
             .HasForeignKey(strategy => strategy.UserId).OnDelete(DeleteBehavior.Cascade);
@@ -115,7 +106,6 @@ class StrategyAssetConfiguration : IEntityTypeConfiguration<StrategyAsset>
         entity.ToTable("strategy_assets", table =>
             table.HasCheckConstraint("ck_strategy_assets_removed", "removed_at IS NULL OR NOT active"));
         entity.HasKey(item => new { item.StrategyId, item.AssetId });
-        entity.HasCreatedAt();
         entity.HasOne<Strategy>().WithMany(strategy => strategy.Assets)
             .HasForeignKey(item => item.StrategyId).OnDelete(DeleteBehavior.Cascade);
         entity.HasOne<Asset>().WithMany()
@@ -129,9 +119,6 @@ class SignalConfiguration : IEntityTypeConfiguration<Signal>
     {
         entity.ToTable("signals", table =>
         {
-            table.HasEnumCheck<TradeSide>("side");
-            table.HasEnumCheck<SignalStatus>("status");
-            table.HasEnumCheck<SkipReason>("skip_reason");
             table.HasCheckConstraint("ck_signals_skip_reason_skipped", "skip_reason IS NULL OR status = 'skipped'");
             table.HasCheckConstraint("ck_signals_answered_at",
                 "(status IN ('confirmed', 'skipped')) = (answered_at IS NOT NULL)");
@@ -147,7 +134,6 @@ class SignalConfiguration : IEntityTypeConfiguration<Signal>
         entity.Property(signal => signal.StepAmount).HasColumnType(Money.Amount);
         entity.Property(signal => signal.ClosePrice).HasColumnType(Money.Price);
         entity.Property(signal => signal.Facts).HasColumnType("jsonb");
-        entity.HasCreatedAt();
 
         entity.HasIndex(signal => new { signal.StrategyId, signal.AssetId, signal.SignalDate, signal.Side }).IsUnique();
         entity.HasIndex(signal => new { signal.StrategyId, signal.Status });
@@ -168,8 +154,7 @@ class SignalTradeConfiguration : IEntityTypeConfiguration<SignalTrade>
     {
         entity.ToTable("signal_trades", table =>
         {
-            table.HasEnumCheck<TradeSide>("side");
-            AddTradeSignChecks(table);
+            table.HasTradeSignChecks();
             table.HasCheckConstraint("ck_signal_trades_step_no", "step_no IS NULL OR step_no >= 1");
         });
         entity.Property(trade => trade.Price).HasColumnType(Money.Price);
@@ -177,7 +162,6 @@ class SignalTradeConfiguration : IEntityTypeConfiguration<SignalTrade>
         entity.Property(trade => trade.Amount).HasColumnType(Money.Amount);
         entity.Property(trade => trade.Fee).HasColumnType(Money.Amount).HasColumnDefault(0m);
         entity.Property(trade => trade.FxRate).HasColumnType(Money.FxRate);
-        entity.HasCreatedAt();
 
         entity.HasIndex(trade => trade.SignalId).IsUnique();
         entity.HasIndex(trade => new { trade.StrategyId, trade.AssetId, trade.TradeDate });
@@ -189,15 +173,6 @@ class SignalTradeConfiguration : IEntityTypeConfiguration<SignalTrade>
         entity.HasOne<Asset>().WithMany()
             .HasForeignKey(trade => trade.AssetId).OnDelete(DeleteBehavior.NoAction);
     }
-
-    public static void AddTradeSignChecks(TableBuilder table)
-    {
-        table.HasCheckConstraint($"ck_{table.Name}_price", "price > 0");
-        table.HasCheckConstraint($"ck_{table.Name}_shares", "shares > 0");
-        table.HasCheckConstraint($"ck_{table.Name}_amount", "amount > 0");
-        table.HasCheckConstraint($"ck_{table.Name}_fee", "fee >= 0");
-        table.HasCheckConstraint($"ck_{table.Name}_fx_rate", "fx_rate > 0");
-    }
 }
 
 class UserTradeConfiguration : IEntityTypeConfiguration<UserTrade>
@@ -206,20 +181,14 @@ class UserTradeConfiguration : IEntityTypeConfiguration<UserTrade>
     {
         entity.ToTable("user_trades", table =>
         {
-            table.HasEnumCheck<TradeSide>("side");
-            table.HasEnumCheck<EnteredAs>("entered_as");
-            table.HasEnumCheck<FxSource>("fx_source");
-            table.HasEnumCheck<TradeSource>("source");
             table.HasCheckConstraint("ck_user_trades_source_signal", "(source = 'signal') = (signal_id IS NOT NULL)");
-            SignalTradeConfiguration.AddTradeSignChecks(table);
+            table.HasTradeSignChecks();
         });
         entity.Property(trade => trade.Price).HasColumnType(Money.Price);
         entity.Property(trade => trade.Amount).HasColumnType(Money.Amount);
         entity.Property(trade => trade.Shares).HasColumnType(Money.Shares);
         entity.Property(trade => trade.Fee).HasColumnType(Money.Amount).HasColumnDefault(0m);
         entity.Property(trade => trade.FxRate).HasColumnType(Money.FxRate);
-        entity.HasCreatedAt();
-        entity.Property(trade => trade.UpdatedAt).HasDefaultValueSql("now()");
 
         entity.HasIndex(trade => trade.SignalId).IsUnique().HasFilter("deleted_at IS NULL");
         entity.HasIndex(trade => new { trade.StrategyId, trade.AssetId, trade.TradeDate });
@@ -239,12 +208,9 @@ class NotificationConfiguration : IEntityTypeConfiguration<Notification>
     {
         entity.ToTable("notifications", table =>
         {
-            table.HasEnumCheck<NotificationKind>("kind");
-            table.HasEnumCheck<NotificationChannel>("channel");
             table.HasCheckConstraint("ck_notifications_signal_id",
                 "(kind IN ('signal', 'snoozed')) = (signal_id IS NOT NULL)");
         });
-        entity.HasCreatedAt();
 
         // The dedupe contract: once per user, kind, channel, day and subject, a null subject included.
         entity.HasIndex(n => new { n.UserId, n.Kind, n.Channel, n.ForDate, n.SignalId })

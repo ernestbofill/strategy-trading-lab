@@ -12,10 +12,10 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 {
     public AppDbContext CreateDbContext(string[] args)
     {
-        NeonEnvironment.LoadDotEnv(Directory.GetCurrentDirectory());
         var configuration = new ConfigurationBuilder()
             .AddUserSecrets<DesignTimeDbContextFactory>(optional: true)
             .AddEnvironmentVariables()
+            .AddNeonDotEnv(Directory.GetCurrentDirectory())
             .Build();
 
         // `migrations add` and `migrations script` don't connect, so a placeholder is enough there.
@@ -30,9 +30,12 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
 public static class AppDbContextOptions
 {
+    // Stateless, so one instance serves every context.
+    static readonly UpdatedAtInterceptor UpdatedAt = new(TimeProvider.System);
+
     public static void Configure(DbContextOptionsBuilder options, string connectionString) =>
         options
             .UseNpgsql(connectionString)
             .UseSnakeCaseNamingConvention()
-            .AddInterceptors(new UpdatedAtInterceptor(TimeProvider.System));
+            .AddInterceptors(UpdatedAt);
 }

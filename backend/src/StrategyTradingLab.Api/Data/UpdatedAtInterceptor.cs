@@ -10,15 +10,20 @@ public class UpdatedAtInterceptor(TimeProvider clock) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        if (eventData.Context is not null) Stamp(eventData.Context.ChangeTracker, clock.GetUtcNow());
+        Stamp(eventData);
         return result;
     }
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        if (eventData.Context is not null) Stamp(eventData.Context.ChangeTracker, clock.GetUtcNow());
+        Stamp(eventData);
         return ValueTask.FromResult(result);
+    }
+
+    void Stamp(DbContextEventData eventData)
+    {
+        if (eventData.Context is not null) Stamp(eventData.Context.ChangeTracker, clock.GetUtcNow());
     }
 
     public static void Stamp(ChangeTracker changeTracker, DateTimeOffset now)

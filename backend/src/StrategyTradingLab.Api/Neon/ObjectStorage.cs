@@ -6,7 +6,7 @@ namespace StrategyTradingLab.Api.Neon;
 /// <summary>Neon Object Storage: S3-compatible, one bucket per neon.ts declaration, branch-scoped.</summary>
 public class ObjectStorageOptions
 {
-    /// <summary>The bucket declared in neon.ts.</summary>
+    /// <summary>The bucket declared in neon.ts. Override with ObjectStorage:Bucket.</summary>
     public string Bucket { get; set; } = "assets";
 }
 

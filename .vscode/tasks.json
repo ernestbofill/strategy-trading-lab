@@ -5,12 +5,7 @@
       "label": "Build backend",
       "type": "process",
       "command": "dotnet",
-      "args": [
-        "build",
-        "${workspaceFolder}/backend/StrategyTradingLab.slnx",
-        "/property:GenerateFullPaths=true",
-        "/consoleloggerparameters:NoSummary"
-      ],
+      "args": ["build", "${workspaceFolder}/backend/StrategyTradingLab.slnx", "/property:GenerateFullPaths=true", "/consoleloggerparameters:NoSummary"],
       "group": "build",
       "problemMatcher": "$msCompile"
     },
@@ -20,9 +15,7 @@
       "script": "build",
       "path": "frontend",
       "group": "build",
-      "problemMatcher": [
-        "$tsc"
-      ]
+      "problemMatcher": ["$tsc"]
     },
     {
       "label": "Deploy to Oracle",
@@ -34,10 +27,7 @@
       },
       "dependsOn": "Build frontend",
       "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      }
+      "presentation": { "reveal": "always", "panel": "dedicated" }
     }
   ]
 }

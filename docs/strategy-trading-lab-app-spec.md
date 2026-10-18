@@ -21,7 +21,7 @@ This is the brief for the agent building the Strategy Trading Lab app. It descri
 Strategy Trading Lab is a strategy lab and a monitoring side app. A user picks a **strategy template**, sees how it did in the past, tunes its rules, gives it a budget and a name, and runs it as their own **strategy** in one of two **modes**:
 
 - **Simulation:** the app trades on paper, on real prices, and shows how the strategy does from today. Nothing happens outside the app.
-- **Live:** the user follows the strategy with real money at their own broker. The app sends each signal, the user says whether they acted on it or skipped it, and the app records those trades and tracks the results.
+- **Live:** the user follows the strategy with real money at their own broker. The app sends each signal, the user says whether they acted on it or skipped it (or snoozes it until the next day), and the app records those trades and tracks the results.
 
 There is no broker sync in either mode. The app never places orders and never reads the user's broker account; in live mode it knows only what the user confirms. It gives no trading advice.
 
@@ -51,7 +51,8 @@ These apply to every screen, email and alert.
 - **One disclaimer, everywhere results or signals appear:** "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
-- **US markets, euro results.** v1 covers US-listed stocks and funds. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in dollars (`$412.30`), as at the user's broker.
+- **US markets, euro results.** v1 covers US-listed stocks and funds. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in dollars (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
+- **English and Catalan.** v1 ships in both. The user picks the language (nothing is guessed from the browser) and can change it in the account. Emails and notifications follow it. Quoted copy in this spec is the English; the Catalan copy is still to be written.
 - **Mode always labelled.** Every strategy shows *Simulation* or *Live*; results of different modes are never mixed.
 - **Free for now.** No paywall, plans or pricing.
 - **Mobile first.** The wireframes are 390 px wide. Every screen must also work on desktop, with no horizontal scrolling at any width.
@@ -128,16 +129,19 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### How the two modes run
 
 - All rules are checked **once a day, after the US market close**, as in the POC.
+- **A day is a US market day** (New York trading calendar): start dates, signal dates, snoozes and "the next day" all follow it. The user's time zone only sets when emails arrive.
 - **Signals follow the rules, not the user's trades.** Each strategy keeps the rules' own paper position, and signals come from it, in both modes. After a skip, the rules carry on as if the step had been bought (the next signal for that stock is the next step), and a *Ride the long trend* sell signal arrives even if the user never bought.
-- **Simulation:** the app records every trade the rules call for, at the next trading day's opening price. Results come from those paper trades.
+- **Simulation:** the app records every trade the rules call for, at the next trading day's opening price, with the tested fee per trade (as in the backtest). Results come from those paper trades.
 - **Live:** the app sends each signal and the user confirms it. Results come only from confirmed trades at the prices the user entered; the rules' paper position is shown next to them.
-- **Budget:** when it is used up, the strategy stops signalling buys. In live mode, only confirmed trades use the budget.
+- **Budget used** is what the buys cost (with fees) minus the cost of the shares sold since, at average cost: a sale frees budget again. Simulation counts paper trades; live counts only confirmed and hand-logged trades. When the budget is used up, the strategy stops signalling buys.
+- **Budget and settings can change while a strategy runs** (strategy page). The new values apply from then on. Lowering the budget below what is already used, or the max steps below a stock's current step, stops further buys; nothing is sold.
 
 ## 6. Screen by screen
 
 ### Sign-up (not drawn)
 
 - Email and password, with email verification.
+- Language: English or Catalan, chosen by the user. Editable later in the account.
 - Daily overview by email, on by default.
 - Time zone, guessed from the browser and editable. It sets when the overview arrives (early morning in Europe).
 - The disclaimer, accepted once: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." Plus one line: the app is for learning, testing and following strategies, and it never trades for you.
@@ -364,12 +368,14 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 - *The big market drop*: one fund, so "Max steps per stock" is the number of steps for the fund (default 5).
 - *Your AI's top picks*: add "One step every 2 weeks uses the budget in about [n] weeks."
 
+The same three settings can be changed later from the strategy page (not drawn).
+
 ### 5 · Name, preview and confirm (`Confirm`, drawn in its Live variant)
 
 **Copy**
 - Top bar: "← BACK" · "5 / 5"
 - H1: "Ready to start"
-- **Name field**, label "Name your strategy". Prefilled with the template's name, numbered if the user already has one by that name ("Dip in winners 2"). The wireframe shows a user-typed example, "Zscaler & friends".
+- **Name field**, label "Name your strategy". Prefilled with the template's name, numbered if the user already has one by that name ("Dip in winners 2"). Names are unique among the user's running strategies, ignoring capitals; an ended strategy frees its name. The wireframe shows a user-typed example, "Zscaler & friends".
 - Under the field, live preview: "[name] · [template] · [Live|Simulation] · from today"
 - **Summary**, one row per item with an "Edit" link:
 
@@ -432,14 +438,15 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For simulations, a third link: "Go live with these settings" (not drawn).
-- Pause and end the strategy (not drawn).
+- "Change the budget" (budget, step size, max steps per stock; not drawn).
+- A notifications switch for this strategy, and "End the strategy" (not drawn). There is no pause: with notifications off the strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
 - Bottom, Live: "Your results come from the trades you confirmed, at your prices. Not financial advice. Signals follow your rules; you decide and trade at your own broker." Simulation (draft): "Results come from paper trades at the next day's opening price. Not financial advice. Signals follow your rules; you decide and trade at your own broker."
 
 **Metrics**
 
 | Metric | Simulation: from | Live: from |
 | --- | --- | --- |
-| Budget used | Paper buys vs budget | Confirmed buys vs budget |
+| Budget used | Paper buys minus the cost of paper sales, vs budget | Confirmed buys, with fees, minus the cost of confirmed sales, vs budget |
 | Average cost | Paper buys | Confirmed buys, with fees |
 | Current value | Paper buys, latest price and exchange rate | Confirmed trades, latest price and exchange rate |
 | Gain or loss (money and %) | Current value − invested | Same |
@@ -458,23 +465,28 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 - Signal box: "Your rules for **[strategy name]** are met for [stock]: [8]% below its recent peak, still above its 50-day average. Under your settings that's step [2] of [5] ([€100])." Then "Close on [date]: $[XXX.XX]". The fact list depends on the template's rules.
 - Sell signal for *Ride the long trend* (not drawn): "Your rules for **[strategy name]** are met for a sale: the market closed [3.2]% below its 200-day average."
 - **"Did you act on it?"** with two choices side by side: "✓ I did it" and "× I skipped it". "I did it" is preselected in the wireframe.
+- A third, quieter action: **Snooze** (not drawn), "Remind me tomorrow" (draft). It doesn't answer the signal.
 
-**I did it**: four fields, each with a visible label:
+**I did it**: four fields, each with a visible label, and an exchange-rate line:
 
 | Label | Prefill |
 | --- | --- |
 | Date | The next trading day |
 | Price per share | The next trading day's opening price, once the market has opened. Before that, the field is empty and the signal day's close is shown as a reference. |
-| Amount | The step size |
+| Amount | The step size, without the fee. "Enter shares instead" switches the field to shares (not drawn); sells, all out, are usually entered as shares |
 | Fee (optional) | Empty, placeholder "€0.00" |
+
+Exchange-rate line (not drawn, draft): "At $[1.0850] per €1, the rate of [date]. Change". "Change" opens a field for the rate the broker used. The rate follows the date if the date is changed, unless the user entered their own.
 
 Help line: "Price is prefilled with [date]'s opening price. Change anything that differs from your broker." Button: "Save the trade".
 
 **I skipped it**: "Why? (optional)" with single-choice chips "Price ran away", "Didn't trust it", "No cash", "Other". Text: "A skip uses no budget. The rules carry on as if the step was bought, so the next signal for [stock] is step [n+1] of [max]." Button: "Save the skip".
 
+**Snooze** (not drawn): the signal stays in Waiting for you, and the user is notified again the next trading day, once per channel. It can be snoozed again until the signal ends.
+
 **Behaviour**
 - Saving records the trade or the skip and returns to the strategy page. A trade updates budget used, steps and results.
-- Unanswered signals stay in Waiting for you and in the overview, and get one reminder. A signal can be answered later (with the real date). After the signal ends, it is marked *Missed*.
+- Unanswered signals stay in Waiting for you and in the overview. There is no automatic reminder: the user snoozes a signal to be notified again the next day. A signal can be answered later (with the real date). After the signal ends, it is marked *Missed*.
 - **Log a trade by hand** on a stock (not drawn): for buys before the alert, or sales for the user's own reasons. Manual trades are marked as such and can be edited or deleted.
 - Disclaimer at the bottom.
 
@@ -508,27 +520,32 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 4. **The scoreboard**: one line per strategy, with its name, mode and result so far.
 5. Every item links to its page. The disclaimer at the bottom.
 
-**Live signal alert**: web push and email, right after the daily check that found it (or after an AI round). Same text as the signal box. One reminder if unanswered.
+**Live signal alert**: web push and email, right after the daily check that found it (or after an AI round). Same text as the signal box. Sent once per channel; a snoozed signal is notified again the next day, once per channel.
 
 **AI round due**: notification and email: "Time for the AI round of [strategy name]. It takes about two minutes."
 
 ## 8. Data the app needs
 
-- **User:** email, password hash, verified flag, time zone, overview email on/off, disclaimer accepted at, push subscriptions, AI data sharing on/off and when changed.
-- **Template:** static, from the code: key, name, tagline, copy, tested defaults, starter list or fund.
-- **Strategy:** user, template key, name, mode, start date, status (running, paused, ended), stock or fund list with ticked state, parameter values, budget (budget, step size, max steps per stock), AI sources on/off and prompt (suggested or edited text, version), and for a live copy the simulation it came from.
-- **Rules position:** per strategy and stock, the paper trades the rules made (date, side, price, amount, step). Drives signals in both modes and the results in simulation.
-- **Signals:** strategy, stock, side, step, the rule facts, date, status (waiting, did, skipped, missed), skip reason, reminder sent at.
-- **User trades (live):** strategy, stock, date, side, price, amount or shares, fee, source (signal or manual), linked signal.
-- **AI rounds:** strategy, due date, status (due, done, skipped), date run, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons.
+The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the summary.
+
+- **User:** email, password hash, verified flag, time zone, language (English or Catalan), overview email on/off, disclaimer accepted at, push subscriptions. AI data sharing on/off and when changed, with the AI feature.
+- **Template:** static, in the code, not the database: key, copy (per language), tested defaults with a version number, starter list or fund.
+- **Asset:** a stock or fund: symbol, exchange, name, what it does, currency.
+- **Strategy:** user, template key, the tested-defaults version it started from, name, mode, start date, status (running or ended; no pause), notifications on/off, currency, budget (budget, step size, max steps per stock; editable), parameter values, and for a live copy the simulation it came from. AI settings (sources, prompt) belong in the parameters once the AI feature is defined.
+- **Strategy stocks:** per strategy, each stock or the fund: active (ticked) or not, added, removed.
+- **Rules position:** per strategy and stock, the paper trades the rules made, one per signal (date, side, price, shares, amount, fee, exchange rate, step). Drives signals in both modes and the results in simulation.
+- **Signals:** strategy, stock, side, step and max steps and step size at the time, the rule facts, the close, date, status (waiting, confirmed, skipped, missed; "did" on screen), skip reason, snoozed until, end date.
+- **Notifications:** each one sent, per channel (push, email): kind, the signal it is for, the day, sent or failed. Each goes out once per channel.
+- **User trades (live):** strategy, stock, date, side, price, amount and shares (and which one was entered), fee, exchange rate (and whether the user changed it), source (signal or manual), linked signal; manual trades can be deleted.
+- **AI rounds:** strategy, due date, status (due, done, skipped), date run, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons. Not modelled yet.
 - **Shared AI rounds:** a separate store with no account ID (see the AI round). Whether it is truly anonymous or pseudonymous is open (section 10).
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
 - **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
-- **Market data:** daily US prices and volumes, the euro-dollar rate.
+- **Market data:** daily US prices and volumes, exchange rates.
 
 ## 9. Not designed yet
 
-- Sign-up, log-in and the account page (including Data and privacy: AI sharing on/off, What we keep, export, delete account).
+- Sign-up, log-in and the account page (including language, and Data and privacy: AI sharing on/off, What we keep, export, delete account).
 - Simulation variants of Set your budget, Confirm and the strategy page; the Live variant of the AI round result.
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Ride the long trend* and *The big market drop*.
@@ -540,7 +557,8 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 - Manual trade form; editing and deleting trades.
 - AI round history, error state when the answer can't be read, and the AI comparison page (later: results by AI model, never a ranking of stocks).
 - Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
-- Go live with these settings; renaming; pausing or ending a strategy.
+- Go live with these settings; renaming; changing the budget; the notifications switch; ending a strategy.
+- Snooze on Confirm a signal; "Enter shares instead" and the exchange-rate line.
 - Daily overview email and its settings.
 - Empty, loading and error states.
 
@@ -555,4 +573,5 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 - **Advanced settings per template:** which POC parameters each template exposes; whether *Dip in winners* should expose its 20-day cooldown.
 - **Price data:** which provider supplies daily US prices and the euro-dollar rate, with terms that allow commercial use, and its cost at many free users. The POC uses eToro and Yahoo.
 - **Web push on iPhone:** is a home-screen prompt enough, or do iPhone users rely on email?
+- **Catalan copy:** who writes and reviews it, including template copy, emails and notifications.
 - **Card copy for *Your AI's top picks*** on the pick screen: "the top score should get a position" is final as drawn, but "position" is the one trading word there without an explanation.

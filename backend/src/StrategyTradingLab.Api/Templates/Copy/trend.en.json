@@ -1,0 +1,18 @@
+{
+  "name": "Ride the long trend",
+  "tagline": "Take the wins, dodge the losses",
+  "idea": "The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down.",
+  "rationale": "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal.",
+  "rules": [
+    { "marker": "BUY", "tone": "buy", "text": "The market closes more than `3%` above its `SMA 200` (average price over the last 200 days)." },
+    { "marker": "SELL", "tone": "sell", "text": "The market closes more than `3%` below its SMA 200." },
+    { "marker": "ALL", "text": "All in, all out: each signal covers the whole budget at once." }
+  ],
+  "backtest": {
+    "scope": "2000-2024, 23 buys and sells.",
+    "provider": "Yahoo Finance",
+    "years": "2000-2024",
+    "universe": "The index fund",
+    "testedDefaults": "The whole €3,000 budget, all in, all out."
+  }
+}

@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Template copy, read as templates/{key}.{locale}.json. WithCulture="false" keeps the .en files
+         in the main assembly instead of a satellite one. -->
+    <Content Remove="Templates\Copy\*.json" />
+    <EmbeddedResource Include="Templates\Copy\*.json" LogicalName="templates/%(Filename)%(Extension)" WithCulture="false" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.104.4" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />

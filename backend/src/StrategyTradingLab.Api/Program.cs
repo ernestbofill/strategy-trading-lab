@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -6,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Neon;
+using StrategyTradingLab.Api.Templates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +22,10 @@ builder.Services.AddDbContext<AppDbContext>((services, options) => AppDbContextO
         "No database: set DATABASE_URL (run `neon env pull`) or ConnectionStrings:Default.")));
 
 builder.Services.AddOpenApi();
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+
+builder.Services.AddHostedService<TemplateAssetsCheck>();
 
 builder.Services.Configure<ObjectStorageOptions>(builder.Configuration.GetSection("ObjectStorage"));
 if (ObjectStorage.IsConfigured(builder.Configuration))
@@ -65,6 +72,8 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 })
 .WithName("Health")
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
+
+app.MapTemplates();
 
 app.Run();
 

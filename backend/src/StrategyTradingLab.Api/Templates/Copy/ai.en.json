@@ -1,0 +1,12 @@
+{
+  "name": "Your AI's top picks",
+  "tagline": "Let your AI do the reading",
+  "idea": "Every 2 weeks the AI scores each stock from 0 to 100, and the top score should get a position. Use your own AI.",
+  "rationale": "Nobody can read every news story and financial report about every company, but an AI can. You run our prompt in the AI you already use; it scores each stock, and the strategy signals the top one. You see whether all that reading turns into better picks.",
+  "rules": [
+    { "marker": "01", "text": "Every `2 weeks` you run the AI round: copy the prompt, paste it into your AI, paste its answer back." },
+    { "marker": "02", "text": "The stock with the top score gets a signal for one step, until the budget is used." },
+    { "marker": "03", "text": "If you skip a round, there's no signal that round." }
+  ],
+  "backtest": null
+}

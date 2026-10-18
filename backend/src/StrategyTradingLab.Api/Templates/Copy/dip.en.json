@@ -1,0 +1,18 @@
+{
+  "name": "Dip in winners",
+  "tagline": "Find the next Nvidia",
+  "idea": "A stock on a strong run takes a small step back. The strategy signals that dip.",
+  "rationale": "Pick winning stocks: companies whose price has climbed steadily for months because the market believes in them. Then wait for a short pullback, when the price dips a few percent.",
+  "rules": [
+    { "marker": "01", "text": "**The long trend is up:** the stock is above its `SMA 200` (average price over the last 200 days)." },
+    { "marker": "02", "text": "**Wait for a discount:** it drops into the discount zone, `5-15%` below its recent peak." },
+    { "marker": "03", "text": "**The dip is not a collapse:** it is still above its `SMA 50` (average price over the last 50 days)." }
+  ],
+  "backtest": {
+    "scope": "7 stocks, 2010-2024.",
+    "provider": "Yahoo Finance",
+    "years": "2010-2024",
+    "universe": "7, the starter list",
+    "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+  }
+}

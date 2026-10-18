@@ -1,0 +1,18 @@
+{
+  "name": "The big market drop",
+  "tagline": "When the market is on sale",
+  "idea": "When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers.",
+  "rationale": "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small steps while prices are still low.",
+  "rules": [
+    { "marker": "01", "text": "**The market fell hard:** the S&P 500 is `20%` or more below its high." },
+    { "marker": "02", "text": "**The first bounce:** it climbs `5%` off its low. That's the first step." },
+    { "marker": "03", "text": "**Then in steps:** one more step every `2 weeks`, until the budget is used." }
+  ],
+  "backtest": {
+    "scope": "3 big drops, 2000-2024.",
+    "provider": "Yahoo Finance",
+    "years": "2000-2024",
+    "universe": "The S&P 500 fund",
+    "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."
+  }
+}

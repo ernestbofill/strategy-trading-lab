@@ -98,5 +98,56 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
         Assert.StartsWith("ok: bucket assets", health.ObjectStorage);
     }
 
+    [NeonFact]
+    public async Task Templates_list_the_five_in_order()
+    {
+        using var client = factory.CreateClient();
+
+        var templates = await client.GetFromJsonAsync<JsonElement>("/templates");
+
+        Assert.Equal(["dip", "comeback", "bear", "trend", "ai"],
+            templates.EnumerateArray().Select(t => t.GetProperty("key").GetString()));
+        Assert.Equal("buysAndSells", templates[3].GetProperty("signals").GetString());
+        Assert.Equal(2, templates[4].GetProperty("aiRound").GetProperty("everyWeeks").GetInt32());
+    }
+
+    [NeonFact]
+    public async Task A_template_has_its_starter_list_from_the_database_sorted_by_name()
+    {
+        using var client = factory.CreateClient();
+
+        var dip = await client.GetFromJsonAsync<JsonElement>("/templates/dip");
+
+        var watches = dip.GetProperty("watches");
+        Assert.Equal("stocks", watches.GetProperty("kind").GetString());
+        Assert.Equal(
+            ["Eaton", "Modine", "Monolithic Power Systems", "nVent Electric", "Super Micro Computer", "Vertiv", "Vicor"],
+            watches.GetProperty("starterList").EnumerateArray().Select(s => s.GetProperty("name").GetString()));
+        Assert.Equal(60, dip.GetProperty("defaults").GetProperty("params").GetProperty("peakDays").GetInt32());
+    }
+
+    [NeonFact]
+    public async Task A_fund_template_watches_one_fund()
+    {
+        using var client = factory.CreateClient();
+
+        var trend = await client.GetFromJsonAsync<JsonElement>("/templates/trend");
+
+        var watches = trend.GetProperty("watches");
+        Assert.Equal("fund", watches.GetProperty("kind").GetString());
+        Assert.Equal("SPY", watches.GetProperty("fund").GetProperty("symbol").GetString());
+        Assert.Equal(JsonValueKind.Null, trend.GetProperty("defaults").GetProperty("budget").GetProperty("step").ValueKind);
+    }
+
+    [NeonFact]
+    public async Task An_unknown_template_is_not_found()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/templates/nope");
+
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     record Health(string Postgres, string ObjectStorage);
 }

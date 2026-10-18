@@ -99,7 +99,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Dip in winners (Leader pullback)**
 - Candidate (trending): gained at least 50% at some point in the last 4–8 months; price > SMA 50 > SMA 150 > SMA 200; the SMA 200 is rising.
-- Signal: price in the discount zone, 5–15% below the recent peak (highest price of the last 20–60 days; the screen exposes one number, default 40), while still above the SMA 50.
+- Signal: price in the discount zone, 5–15% below the recent peak (highest price of the last 20–60 days; the screen exposes one number, default 60, the POC's), while still above the SMA 50.
 - Signal ends: the price leaves the zone (back up to the old high, or below the SMA 50).
 - Later steps: one per signal window, at least 20 days (cooldown) after the last one. The cooldown is not exposed in Advanced settings.
 
@@ -277,7 +277,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- |
 | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1) |
 | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
-| "The recent peak is the highest price of the last [n] days." | 40 days | 5 | 20–60 |
+| "The recent peak is the highest price of the last [n] days." | 60 days | 5 | 20–60 |
 | "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
 | "The dip must stay above the average over [n] days." | 50 days | 5 | 20–100 |
 

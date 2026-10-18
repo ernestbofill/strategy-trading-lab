@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Data;
 
@@ -32,5 +33,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         modelBuilder.ApplyTableConventions();
         DevSeed.Apply(modelBuilder);
+        TemplateAssets.Apply(modelBuilder);
     }
 }

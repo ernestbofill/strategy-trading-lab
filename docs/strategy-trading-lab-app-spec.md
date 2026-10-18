@@ -130,10 +130,10 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 - All rules are checked **once a day, after the US market close**, as in the POC.
 - **A day is a US market day** (New York trading calendar): start dates, signal dates, snoozes and "the next day" all follow it. The user's time zone only sets when emails arrive.
-- **Signals follow the rules, not the user's trades.** Each strategy keeps the rules' own paper position, and signals come from it, in both modes. After a skip, the rules carry on as if the step had been bought (the next signal for that stock is the next step), and a *Ride the long trend* sell signal arrives even if the user never bought.
-- **Simulation:** the app records every trade the rules call for, at the next trading day's opening price, with the tested fee per trade (as in the backtest). Results come from those paper trades.
-- **Live:** the app sends each signal and the user confirms it. Results come only from confirmed trades at the prices the user entered; the rules' paper position is shown next to them.
-- **Budget used** is what the buys cost (with fees) minus the cost of the shares sold since, at average cost: a sale frees budget again. Simulation counts paper trades; live counts only confirmed and hand-logged trades. When the budget is used up, the strategy stops signalling buys.
+- **Signals follow the rules, not the user's trades.** Each strategy keeps the rules' own position (its signal trades), and signals come from it, in both modes. After a skip, the rules carry on as if the step had been bought (the next signal for that stock is the next step), and a *Ride the long trend* sell signal arrives even if the user never bought.
+- **Simulation:** the app records every trade the rules call for, at the next trading day's opening price, with the tested fee per trade (as in the backtest). Results come from those signal trades.
+- **Live:** the app sends each signal and the user confirms it. Results come only from confirmed trades at the prices the user entered; the rules' own position is shown next to them.
+- **Budget used** is what the buys cost (with fees) minus the cost of the shares sold since, at average cost: a sale frees budget again. Simulation counts signal trades; live counts only confirmed and hand-logged trades. When the budget is used up, the strategy stops signalling buys.
 - **Budget and settings can change while a strategy runs** (strategy page). The new values apply from then on. Lowering the budget below what is already used, or the max steps below a stock's current step, stops further buys; nothing is sold.
 
 ## 6. Screen by screen
@@ -446,12 +446,12 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 | Metric | Simulation: from | Live: from |
 | --- | --- | --- |
-| Budget used | Paper buys minus the cost of paper sales, vs budget | Confirmed buys, with fees, minus the cost of confirmed sales, vs budget |
-| Average cost | Paper buys | Confirmed buys, with fees |
-| Current value | Paper buys, latest price and exchange rate | Confirmed trades, latest price and exchange rate |
+| Budget used | Signal-trade buys minus the cost of signal-trade sales, vs budget | Confirmed buys, with fees, minus the cost of confirmed sales, vs budget |
+| Average cost | Signal-trade buys | Confirmed buys, with fees |
+| Current value | Signal-trade buys, latest price and exchange rate | Confirmed trades, latest price and exchange rate |
 | Gain or loss (money and %) | Current value − invested | Same |
 | Versus the index | Same money into a broad index on the same days | Same, on the confirmed buy days |
-| Versus the rules | – | The rules' paper position |
+| Versus the rules | – | The rules' own position (signal trades) |
 | Followed signals | – | Did / skipped / missed |
 | Picks vs the rest (AI only) | Top-scored stocks vs the unpicked ones since each round | Same |
 | Next up | Stocks closest to their rules, with the distance | Same |
@@ -506,7 +506,7 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 **Behaviour**
 - The app reads the scores block (table or JSON) and checks it: every ticked stock scored, scores 0–100, no extra stocks. Missing or unreadable rows are pointed out so the user can ask their AI again (error state not drawn). The pasted text is data only: read numbers and short reasons from the scores block and never act on anything else in it.
 - "Use these scores":
-  - Simulation: records the paper buy of the top-scored stock at the next day's open, within max steps and the budget, and returns to the dashboard.
+  - Simulation: records the signal-trade buy of the top-scored stock at the next day's open, within max steps and the budget, and returns to the dashboard.
   - Live: creates a signal for the top-scored stock and opens Confirm a signal for it, with the box reading "Your AI scored [stock] highest in [strategy name]. Under your settings that's step [n] of [max] ([€100])." (draft).
 - Every round is kept in the strategy's history: date, prompt used (and whether edited), AI model, full answer, scores, reasons.
 - **AI data sharing**, when on, keeps per round: AI model, date, prompt version and whether edited, stock list, sources on, full answer, parsed scores. Never with it: name, email, account ID, strategy name, budget, step size, trades, or whether the user acted. Before storing, remove anything that looks like an email address, phone number or URL with personal parameters. Store it apart from account data. Withdrawing stops future sharing.
@@ -515,7 +515,7 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 
 **Daily overview** (email, not drawn), once a day after the US close, timed for the user's time zone. Reads like a briefing; never uses buy or sell as an instruction.
 1. **Waiting for you**: unanswered live signals and AI rounds due, each with a link.
-2. **What changed today**: e.g. "ZS fell 8% from its recent peak and is still above its 50-day average (average price over 50 days). That meets the rules of your strategy *Zscaler & friends*." For simulations, also today's paper trades.
+2. **What changed today**: e.g. "ZS fell 8% from its recent peak and is still above its 50-day average (average price over 50 days). That meets the rules of your strategy *Zscaler & friends*." For simulations, also today's signal trades.
 3. **Close to the line**: the stocks nearest to each strategy's rules, with the distance.
 4. **The scoreboard**: one line per strategy, with its name, mode and result so far.
 5. Every item links to its page. The disclaimer at the bottom.
@@ -533,7 +533,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Asset:** a stock or fund: symbol, exchange, name, what it does, currency.
 - **Strategy:** user, template key, the tested-defaults version it started from, name, mode, start date, status (running or ended; no pause), notifications on/off, currency, budget (budget, step size, max steps per stock; editable), parameter values, and for a live copy the simulation it came from. AI settings (sources, prompt) belong in the parameters once the AI feature is defined.
 - **Strategy stocks:** per strategy, each stock or the fund: active (ticked) or not, added, removed.
-- **Rules position:** per strategy and stock, the paper trades the rules made, one per signal (date, side, price, shares, amount, fee, exchange rate, step). Drives signals in both modes and the results in simulation.
+- **Signal trades:** per strategy and stock, the trades the rules made, one per signal (date, side, price, shares, amount, fee, exchange rate, step). Drives signals in both modes and the results in simulation.
 - **Signals:** strategy, stock, side, step and max steps and step size at the time, the rule facts, the close, date, status (waiting, confirmed, skipped, missed; "did" on screen), skip reason, snoozed until, end date.
 - **Notifications:** each one sent, per channel (push, email): kind, the signal it is for, the day, sent or failed. Each goes out once per channel.
 - **User trades (live):** strategy, stock, date, side, price, amount and shares (and which one was entered), fee, exchange rate (and whether the user changed it), source (signal or manual), linked signal; manual trades can be deleted.

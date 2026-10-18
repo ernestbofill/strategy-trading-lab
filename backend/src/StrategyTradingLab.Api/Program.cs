@@ -1,3 +1,4 @@
+﻿using System.Globalization;
 using System.Reflection;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -67,17 +68,32 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 .WithName("Health")
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
-// Version from backend/Directory.Build.props, plus the commit it was built from.
-app.MapGet("/version", () => TypedResults.Ok(new VersionResponse(
-    typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion)))
+// For the client to show which API it talks to.
+app.MapGet("/version", () => TypedResults.Ok(VersionResponse.Current))
 .WithName("Version")
-.WithSummary("The API's version and the commit it was built from.");
+.WithSummary("The API's version, the commit it was built from and when it was built (Release builds).");
 
 app.Run();
 
 record HealthResponse(string Postgres, string ObjectStorage);
 
-record VersionResponse(string Version);
+/// <summary>
+/// Version from backend/Directory.Build.props; Commit and BuiltAt are stamped into the assembly at build time.
+/// BuiltAt is null in Debug builds, where stamping it would rebuild the project every time.
+/// </summary>
+record VersionResponse(string Version, string? Commit, DateTimeOffset? BuiltAt)
+{
+    public static readonly VersionResponse Current = Read(typeof(Program).Assembly);
+
+    static VersionResponse Read(Assembly assembly)
+    {
+        // "0.1.0-alpha.2+<commit sha>": the SDK appends the commit when it builds from a git checkout.
+        var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+', 2);
+        var builtAt = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(m => m.Key == "BuiltAt")?.Value;
+        return new(informational[0], informational.ElementAtOrDefault(1),
+            builtAt is null ? null : DateTimeOffset.Parse(builtAt, CultureInfo.InvariantCulture));
+    }
+}
 
 /// <summary>Visible to integration tests.</summary>
 public partial class Program;

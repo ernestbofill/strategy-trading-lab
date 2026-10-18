@@ -34,7 +34,7 @@ dotnet run --project src/StrategyTradingLab.Api
 
 `GET http://localhost:5184/health` reports the Postgres version and the bucket. In Development, Swagger UI is at `http://localhost:5184/swagger` (the OpenAPI document at `/openapi/v1.json`); F5 in VS Code opens it.
 
-`GET /version` returns the version and commit.
+`GET /version` returns the version, the commit and when it was built (Release builds).
 
 ## Versions and deploy
 

@@ -3,7 +3,12 @@
   <PropertyGroup>
     <!-- The backend's version. Bump it in every PR that changes the backend (CI checks); each deploy tags it as backend-v<Version>.
          Alpha for now: 0.1.0-alpha.N, raising N by one per change. -->
-    <Version>0.1.0-alpha.1</Version>
+    <Version>0.1.0-alpha.2</Version>
   </PropertyGroup>
+
+  <!-- When the build was made, for GET /version. Release only: a changing value rebuilds the project every time. -->
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <AssemblyMetadata Include="BuiltAt" Value="$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))" />
+  </ItemGroup>
 
 </Project>

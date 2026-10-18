@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Templates;
@@ -47,8 +48,6 @@ public static class TemplateAssets
         Spy,
     ];
 
-    static readonly DateTimeOffset SeededAt = new(2026, 10, 18, 0, 0, 0, TimeSpan.Zero);
-
     public static void Apply(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Asset>().HasData(All.Select(seed => new Asset
@@ -59,14 +58,14 @@ public static class TemplateAssets
             Name = seed.Name,
             Kind = seed.Kind,
             Currency = "USD",
-            CreatedAt = SeededAt,
+            CreatedAt = DevSeed.SeededAt,
         }));
         modelBuilder.Entity<AssetText>().HasData(All.Select(seed => new AssetText
         {
             AssetId = seed.Id,
-            Locale = "en",
+            Locale = TemplateCopy.DefaultLocale,
             What = seed.What,
-            CreatedAt = SeededAt,
+            CreatedAt = DevSeed.SeededAt,
         }));
     }
 }

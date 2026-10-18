@@ -14,93 +14,93 @@ public record TestedFee(decimal Percent, decimal Fixed);
 /// <summary>One backtest period: % return of the template, the index fund, and the worst calendar year.</summary>
 public record PeriodResult(string Period, decimal Template, decimal Index, decimal WorstYear);
 
+/// <summary>What a template watches: a starter list of stocks, or one fund.</summary>
+public abstract record TemplateWatches
+{
+    public abstract IEnumerable<Seed> Assets { get; }
+}
+
+public sealed record StarterList(IReadOnlyList<Seed> Stocks) : TemplateWatches
+{
+    public override IEnumerable<Seed> Assets => Stocks;
+}
+
+public sealed record DefaultFund(Seed Fund) : TemplateWatches
+{
+    public override IEnumerable<Seed> Assets => [Fund];
+}
+
 /// <summary>
 /// A template: the rules the engine runs and its tested defaults, which a new strategy copies.
-/// Its copy (name, rules…) is in Copy/{key}.{locale}.json.
+/// <c>Params</c> is the template's params record (TemplateParams.cs). Its copy is in Copy/{locale}.json.
 /// </summary>
-public abstract record Template(
+public sealed record Template(
     string Key,
     string? EngineKey,
     InvestsIn InvestsIn,
     SignalSides Signals,
     Budget Budget,
-    IReadOnlyList<Seed> Assets,
-    IReadOnlyList<PeriodResult>? Backtest)
+    TemplateWatches Watches,
+    IReadOnlyList<PeriodResult>? Backtest,
+    object Params)
 {
     /// <summary>Bumped when the tested defaults are retuned; strategies record the one they started from.</summary>
     public int DefaultsVersion { get; init; } = 1;
 
-    public TestedFee Fee { get; init; } = TemplateCatalog.PocFee;
-
-    public bool WatchesFund => InvestsIn != InvestsIn.StockList;
-
-    public abstract object DefaultParams { get; }
-
-    public JsonDocument DefaultParamsJson() =>
-        JsonSerializer.SerializeToDocument(DefaultParams, DefaultParams.GetType(), JsonSerializerOptions.Web);
-}
-
-public sealed record Template<TParams>(
-    string Key,
-    string? EngineKey,
-    InvestsIn InvestsIn,
-    SignalSides Signals,
-    Budget Budget,
-    IReadOnlyList<Seed> Assets,
-    IReadOnlyList<PeriodResult>? Backtest,
-    TParams Params)
-    : Template(Key, EngineKey, InvestsIn, Signals, Budget, Assets, Backtest)
-    where TParams : notnull
-{
-    public override object DefaultParams => Params;
+    /// <summary>The params as strategies.params stores them.</summary>
+    public JsonDocument ParamsJson() => JsonSerializer.SerializeToDocument(Params, Params.GetType(), JsonSerializerOptions.Web);
 }
 
 /// <summary>The five templates, in the order the pick screen shows them.</summary>
 public static class TemplateCatalog
 {
     /// <summary>The POC backtest's costs: 0.2% of the amount (spread, currency conversion) plus 1 per order.</summary>
-    public static readonly TestedFee PocFee = new(0.2m, 1m);
+    public static readonly TestedFee Fee = new(0.2m, 1m);
+
+    /// <summary>Where the backtests' daily prices come from.</summary>
+    public const string PriceProvider = "Yahoo Finance";
 
     // The POC scales in with 5 steps per stock ($110 steps, $550 per stock).
     static readonly Budget StockBudget = new(3000, 100, 5);
 
-    // MOCK figures, the same as the frontend's mock, until the backtest engine computes them.
-    static PeriodResult[] Mock(params (string, decimal, decimal, decimal)[] periods) =>
-        [.. periods.Select(p => new PeriodResult(p.Item1, p.Item2, p.Item3, p.Item4))];
+    // The backtest periods are MOCK figures, the same as the frontend's mock, until the backtest engine computes them.
 
-    public static readonly Template<DipParams> Dip = new(
+    public static readonly Template Dip = new(
         "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        [Eaton, Modine, MonolithicPower, NVent, SuperMicro, Vertiv, Vicor],
-        Mock(("2010-14", 38, 61, -9), ("2015-19", 71, 58, -12), ("2020-24", 64, 79, -21), ("All", 212, 248, -21)),
+        new StarterList([Eaton, Modine, MonolithicPower, NVent, SuperMicro, Vertiv, Vicor]),
+        [new("2010-14", 38, 61, -9), new("2015-19", 71, 58, -12), new("2020-24", 64, 79, -21), new("All", 212, 248, -21)],
         new DipParams());
 
-    public static readonly Template<ComebackParams> Comeback = new(
+    public static readonly Template Comeback = new(
         "comeback", "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        [Moderna, Palantir, Salesforce, ServiceNow, Snowflake, Tesla, ZetaGlobal, Zscaler],
-        Mock(("2010-14", 22, 61, -14), ("2015-19", 31, 58, -17), ("2020-24", 47, 79, -26), ("All", 118, 248, -26)),
+        new StarterList([Moderna, Palantir, Salesforce, ServiceNow, Snowflake, Tesla, ZetaGlobal, Zscaler]),
+        [new("2010-14", 22, 61, -14), new("2015-19", 31, 58, -17), new("2020-24", 47, 79, -26), new("All", 118, 248, -26)],
         new ComebackParams());
 
-    public static readonly Template<BearParams> Bear = new(
+    public static readonly Template Bear = new(
         "bear", "bear_accumulation", InvestsIn.Sp500Fund, SignalSides.BuysOnly, new Budget(3000, 600, 5),
-        [Spy],
-        Mock(("2000-09", 41, -9, -18), ("2010-19", 12, 189, -4), ("2020-24", 58, 79, -12), ("All", 136, 283, -18)),
+        new DefaultFund(Spy),
+        [new("2000-09", 41, -9, -18), new("2010-19", 12, 189, -4), new("2020-24", 58, 79, -12), new("All", 136, 283, -18)],
         new BearParams());
 
     // All in, all out: no step, the whole budget at once.
-    public static readonly Template<TrendParams> Trend = new(
+    public static readonly Template Trend = new(
         "trend", "index_trend", InvestsIn.IndexFund, SignalSides.BuysAndSells, new Budget(3000, null, null),
-        [Spy],
-        Mock(("2000-09", 24, -4, -8), ("2010-19", 121, 186, -11), ("2020-24", 52, 81, -9), ("All", 249, 272, -11)),
+        new DefaultFund(Spy),
+        [new("2000-09", 24, -4, -8), new("2010-19", 121, 186, -11), new("2020-24", 52, 81, -9), new("All", 249, 272, -11)],
         new TrendParams());
 
     // No backtest: results start on the day the strategy starts. Watches every stock of the POC's lists.
-    public static readonly Template<AiParams> Ai = new(
+    public static readonly Template Ai = new(
         "ai", null, InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        [.. Dip.Assets, .. Comeback.Assets],
+        new StarterList([.. Dip.Watches.Assets, .. Comeback.Watches.Assets]),
         null,
         new AiParams());
 
     public static readonly IReadOnlyList<Template> All = [Dip, Comeback, Bear, Trend, Ai];
+
+    /// <summary>The keys the database's template_key check allows.</summary>
+    public static readonly string[] Keys = [.. All.Select(template => template.Key)];
 
     public static Template? Find(string key) => All.FirstOrDefault(template => template.Key == key);
 }

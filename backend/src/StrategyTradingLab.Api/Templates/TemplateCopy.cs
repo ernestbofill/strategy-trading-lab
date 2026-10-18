@@ -4,8 +4,9 @@ using System.Text.Json;
 namespace StrategyTradingLab.Api.Templates;
 
 /// <summary>
-/// The words of a template in one language, from Copy/{key}.{locale}.json (embedded).
-/// In rule texts, **bold** marks the rule's plain label and `backticks` mark numbers and terms.
+/// The words of a template in one language. Each language is one file, Copy/{locale}.json (embedded),
+/// keyed by template key. In rule texts, **bold** marks the rule's plain label and `backticks` mark
+/// numbers and terms. Every template has English copy (TemplateTests checks it).
 /// </summary>
 public record TemplateCopy(
     string Name,
@@ -17,31 +18,28 @@ public record TemplateCopy(
 {
     public const string DefaultLocale = "en";
 
-    static readonly FrozenDictionary<(string Key, string Locale), TemplateCopy> All = Load();
+    static readonly FrozenDictionary<string, Dictionary<string, TemplateCopy>> ByLocale = Load();
 
     /// <summary>The copy in <paramref name="locale"/>, or in English when that language has none.</summary>
     public static TemplateCopy For(Template template, string locale) =>
-        All.GetValueOrDefault((template.Key, locale)) ?? All[(template.Key, DefaultLocale)];
+        (ByLocale.TryGetValue(locale, out var copies) && copies.TryGetValue(template.Key, out var copy))
+            ? copy
+            : ByLocale[DefaultLocale][template.Key];
 
-    static FrozenDictionary<(string, string), TemplateCopy> Load()
+    static FrozenDictionary<string, Dictionary<string, TemplateCopy>> Load()
     {
         var assembly = typeof(TemplateCopy).Assembly;
-        var copies = new Dictionary<(string, string), TemplateCopy>();
-        foreach (var name in assembly.GetManifestResourceNames().Where(n => n.StartsWith("templates/")))
-        {
-            // templates/{key}.{locale}.json
-            var parts = name["templates/".Length..].Split('.');
-            using var stream = assembly.GetManifestResourceStream(name)!;
-            copies[(parts[0], parts[1])] = JsonSerializer.Deserialize<TemplateCopy>(stream, JsonSerializerOptions.Web)
-                ?? throw new InvalidOperationException($"Empty template copy: {name}");
-        }
-
-        var missing = TemplateCatalog.All.Where(t => !copies.ContainsKey((t.Key, DefaultLocale))).Select(t => t.Key).ToList();
-        if (missing.Count > 0)
-            throw new InvalidOperationException($"No English copy for template(s): {string.Join(", ", missing)}");
-        return copies.ToFrozenDictionary();
+        return assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith("templates/", StringComparison.Ordinal))
+            .ToFrozenDictionary(
+                name => Path.GetFileNameWithoutExtension(name),
+                name =>
+                {
+                    using var stream = assembly.GetManifestResourceStream(name)!;
+                    return JsonSerializer.Deserialize<Dictionary<string, TemplateCopy>>(stream, JsonSerializerOptions.Web)!;
+                });
     }
 }
 
 /// <summary>The words of the "Tested" box and How we tested.</summary>
-public record BacktestCopy(string Scope, string Provider, string Years, string Universe, string TestedDefaults);
+public record BacktestCopy(string Scope, string Years, string Universe, string TestedDefaults);

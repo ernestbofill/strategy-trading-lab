@@ -1,0 +1,129 @@
+{
+  "dip": {
+    "name": "Dip in winners",
+    "tagline": "Find the next Nvidia",
+    "idea": "A stock on a strong run takes a small step back. The strategy signals that dip.",
+    "rationale": "Pick winning stocks: companies whose price has climbed steadily for months because the market believes in them. Then wait for a short pullback, when the price dips a few percent.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "**The long trend is up:** the stock is above its `SMA 200` (average price over the last 200 days)."
+      },
+      {
+        "marker": "02",
+        "text": "**Wait for a discount:** it drops into the discount zone, `5-15%` below its recent peak."
+      },
+      {
+        "marker": "03",
+        "text": "**The dip is not a collapse:** it is still above its `SMA 50` (average price over the last 50 days)."
+      }
+    ],
+    "backtest": {
+      "scope": "7 stocks, 2010-2024.",
+      "years": "2010-2024",
+      "universe": "7, the starter list",
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+    }
+  },
+  "comeback": {
+    "name": "The comeback",
+    "tagline": "Stocks on the rise",
+    "idea": "A stock that fell a lot starts to recover. The strategy looks for a confirmed turnaround.",
+    "rationale": "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys in steps.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "**It was beaten down:** the stock fell at least `30%` from its high of the last year."
+      },
+      {
+        "marker": "02",
+        "text": "**It turned around:** it climbs `15%` above its `SMA 50` (average price over the last 50 days)."
+      },
+      {
+        "marker": "03",
+        "text": "**More people are trading it:** its volume (shares traded per day) is rising."
+      }
+    ],
+    "backtest": {
+      "scope": "8 stocks, 2010-2024.",
+      "years": "2010-2024",
+      "universe": "8, the starter list",
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+    }
+  },
+  "bear": {
+    "name": "The big market drop",
+    "tagline": "When the market is on sale",
+    "idea": "When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers.",
+    "rationale": "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small steps while prices are still low.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "**The market fell hard:** the S&P 500 is `20%` or more below its high."
+      },
+      {
+        "marker": "02",
+        "text": "**The first bounce:** it climbs `5%` off its low. That's the first step."
+      },
+      {
+        "marker": "03",
+        "text": "**Then in steps:** one more step every `2 weeks`, until the budget is used."
+      }
+    ],
+    "backtest": {
+      "scope": "3 big drops, 2000-2024.",
+      "years": "2000-2024",
+      "universe": "The S&P 500 fund",
+      "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."
+    }
+  },
+  "trend": {
+    "name": "Ride the long trend",
+    "tagline": "Take the wins, dodge the losses",
+    "idea": "The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down.",
+    "rationale": "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal.",
+    "rules": [
+      {
+        "marker": "BUY",
+        "tone": "buy",
+        "text": "The market closes more than `3%` above its `SMA 200` (average price over the last 200 days)."
+      },
+      {
+        "marker": "SELL",
+        "tone": "sell",
+        "text": "The market closes more than `3%` below its SMA 200."
+      },
+      {
+        "marker": "ALL",
+        "text": "All in, all out: each signal covers the whole budget at once."
+      }
+    ],
+    "backtest": {
+      "scope": "2000-2024, 23 buys and sells.",
+      "years": "2000-2024",
+      "universe": "The index fund",
+      "testedDefaults": "The whole €3,000 budget, all in, all out."
+    }
+  },
+  "ai": {
+    "name": "Your AI's top picks",
+    "tagline": "Let your AI do the reading",
+    "idea": "Every 2 weeks the AI scores each stock from 0 to 100, and the top score should get a position. Use your own AI.",
+    "rationale": "Nobody can read every news story and financial report about every company, but an AI can. You run our prompt in the AI you already use; it scores each stock, and the strategy signals the top one. You see whether all that reading turns into better picks.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "Every `2 weeks` you run the AI round: copy the prompt, paste it into your AI, paste its answer back."
+      },
+      {
+        "marker": "02",
+        "text": "The stock with the top score gets a signal for one step, until the budget is used."
+      },
+      {
+        "marker": "03",
+        "text": "If you skip a round, there's no signal that round."
+      }
+    ],
+    "backtest": null
+  }
+}

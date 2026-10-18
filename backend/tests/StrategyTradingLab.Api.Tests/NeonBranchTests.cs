@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Neon;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
@@ -105,7 +106,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
 
         var templates = await client.GetFromJsonAsync<JsonElement>("/templates");
 
-        Assert.Equal(["dip", "comeback", "bear", "trend", "ai"],
+        Assert.Equal(TemplateCatalog.Keys,
             templates.EnumerateArray().Select(t => t.GetProperty("key").GetString()));
         Assert.Equal("buysAndSells", templates[3].GetProperty("signals").GetString());
         Assert.Equal(2, templates[4].GetProperty("aiRound").GetProperty("everyWeeks").GetInt32());

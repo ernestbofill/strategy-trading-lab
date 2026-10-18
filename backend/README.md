@@ -3,7 +3,7 @@
 ASP.NET Core minimal API (.NET 10) with EF Core and PostgreSQL on Neon. The schema is [DATA-MODEL.md](DATA-MODEL.md).
 
 - `src/StrategyTradingLab.Api`: the API. `Data/` has the entities, `AppDbContext`, the table configurations and the migrations.
-- `src/StrategyTradingLab.Api/Templates`: the five strategy templates (code, not data). `TemplateCatalog` has each one's tested defaults (budget, params, starter list or fund) from the POC, `TemplateParams` the typed params records, `Copy/{key}.{locale}.json` the words, and `TemplateAssets` the stocks and funds they need (seeded by migration, checked at startup). Served at `GET /templates` and `GET /templates/{key}`.
+- `src/StrategyTradingLab.Api/Templates`: the five strategy templates (code, not data). `TemplateCatalog` has each one's tested defaults (budget, params, starter list or fund) from the POC, `TemplateParams` the typed params records, `Copy/{locale}.json` the words, and `TemplateAssets` the stocks and funds they need (seeded by migration, checked at startup). Served at `GET /templates` and `GET /templates/{key}`.
 - `tests/StrategyTradingLab.Api.Tests`: xUnit. Tests marked `[NeonFact]` run against the linked Neon branch and skip without it (CI).
 - `migrations.sql`: the idempotent SQL script of every migration, for review and for applying by hand.
 

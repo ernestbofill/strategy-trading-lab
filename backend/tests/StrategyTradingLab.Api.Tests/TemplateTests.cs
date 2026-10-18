@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Templates;
 
@@ -9,9 +8,9 @@ namespace StrategyTradingLab.Api.Tests;
 public class TemplateTests
 {
     [Fact]
-    public void The_catalogue_has_the_keys_the_database_allows_in_order()
+    public void The_catalogue_has_the_five_templates_in_pick_screen_order()
     {
-        Assert.Equal(TemplateKeys.All, TemplateCatalog.All.Select(template => template.Key));
+        Assert.Equal(["dip", "comeback", "bear", "trend", "ai"], TemplateCatalog.Keys);
     }
 
     [Fact]
@@ -38,7 +37,7 @@ public class TemplateTests
         foreach (var template in TemplateCatalog.All)
         {
             var results = new List<ValidationResult>();
-            var valid = Validator.TryValidateObject(template.DefaultParams, new ValidationContext(template.DefaultParams),
+            var valid = Validator.TryValidateObject(template.Params, new ValidationContext(template.Params),
                 results, validateAllProperties: true);
             Assert.True(valid, $"{template.Key}: {string.Join("; ", results.Select(r => r.ErrorMessage))}");
         }
@@ -55,12 +54,12 @@ public class TemplateTests
     [Fact]
     public void Params_are_stored_as_camel_case_json_with_the_poc_defaults()
     {
-        var dip = TemplateCatalog.Dip.DefaultParamsJson().RootElement;
+        var dip = TemplateCatalog.Dip.ParamsJson().RootElement;
 
         Assert.Equal(60, dip.GetProperty("peakDays").GetInt32());
         Assert.Equal(5, dip.GetProperty("zoneStartPct").GetDecimal());
         Assert.Equal(15, dip.GetProperty("zoneEndPct").GetDecimal());
-        Assert.Equal(1.2m, TemplateCatalog.Comeback.DefaultParamsJson().RootElement.GetProperty("volumeRatio").GetDecimal());
+        Assert.Equal(1.2m, TemplateCatalog.Comeback.ParamsJson().RootElement.GetProperty("volumeRatio").GetDecimal());
     }
 
     [Fact]

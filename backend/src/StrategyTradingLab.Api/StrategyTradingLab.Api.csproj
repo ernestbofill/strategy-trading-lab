@@ -8,10 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Template copy, read as templates/{key}.{locale}.json. WithCulture="false" keeps the .en files
-         in the main assembly instead of a satellite one. -->
+    <!-- Template copy, one file per language, read as templates/{locale}.json -->
     <Content Remove="Templates\Copy\*.json" />
-    <EmbeddedResource Include="Templates\Copy\*.json" LogicalName="templates/%(Filename)%(Extension)" WithCulture="false" />
+    <EmbeddedResource Include="Templates\Copy\*.json" LogicalName="templates/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

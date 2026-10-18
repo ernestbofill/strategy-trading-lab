@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using StrategyTradingLab.Api.Data.Entities;
 
@@ -20,22 +19,20 @@ public record TemplateSummary(
 /// <summary>Set when signals come from the user's AI rounds instead of price rules.</summary>
 public record AiRoundDto(int EveryWeeks, int TopN);
 
-/// <summary>Everything the review screen (2 / 5) and How we tested (2c) show, plus the tested defaults.</summary>
-public record TemplateDetail(
-    string Key,
-    string? EngineKey,
-    string Name,
-    string Tagline,
-    string Idea,
-    InvestsIn InvestsIn,
-    SignalSides Signals,
-    AiRoundDto? AiRound,
-    string Rationale,
-    IReadOnlyList<RuleDto> Rules,
-    Watches Watches,
-    BacktestDto? Backtest,
-    TemplateDefaults Defaults)
-    : TemplateSummary(Key, EngineKey, Name, Tagline, Idea, InvestsIn, Signals, AiRound);
+/// <summary>
+/// Everything the review screen (2 / 5) and How we tested (2c) show, plus the tested defaults.
+/// Flat in JSON like the frontend's <c>TemplateDetail extends StrategyTemplate</c>; built from the summary.
+/// </summary>
+public record TemplateDetail : TemplateSummary
+{
+    public TemplateDetail(TemplateSummary summary) : base(summary) { }
+
+    public required string Rationale { get; init; }
+    public required IReadOnlyList<RuleDto> Rules { get; init; }
+    public required Watches Watches { get; init; }
+    public required BacktestDto? Backtest { get; init; }
+    public required TemplateDefaults Defaults { get; init; }
+}
 
 /// <summary>One line of "It signals when". <c>Marker</c> is "01", "BUY", "SELL"…</summary>
 public record RuleDto(
@@ -66,5 +63,5 @@ public record BacktestDto(
     decimal FeePerTrade,
     decimal FeePercent);
 
-/// <summary>What a new strategy from this template starts with.</summary>
-public record TemplateDefaults(int Version, Budget Budget, JsonDocument Params);
+/// <summary>What a new strategy from this template starts with. <c>Params</c> is the template's params record.</summary>
+public record TemplateDefaults(int Version, Budget Budget, object Params);

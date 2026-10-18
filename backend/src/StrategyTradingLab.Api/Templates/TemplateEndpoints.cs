@@ -39,40 +39,30 @@ public static class TemplateEndpoints
     static async Task<List<SecurityDto>> Securities(AppDbContext db, Template template, string locale,
         CancellationToken cancellationToken)
     {
-        var ids = template.Assets.Select(asset => asset.Id).ToList();
-        var rows = await db.Assets
+        var ids = template.Watches.Assets.Select(asset => asset.Id).ToList();
+        var securities = await db.Assets
             .Where(asset => ids.Contains(asset.Id))
-            .Select(asset => new
-            {
-                asset.Id,
-                asset.Symbol,
-                asset.Name,
-                What = asset.Texts.Where(t => t.Locale == locale).Select(t => t.What).FirstOrDefault()
-                    ?? asset.Texts.Where(t => t.Locale == TemplateCopy.DefaultLocale).Select(t => t.What).First(),
-            })
+            .Select(asset => new SecurityDto(asset.Id, asset.Symbol, asset.Name,
+                asset.Texts.Where(t => t.Locale == locale).Select(t => t.What).FirstOrDefault()
+                    ?? asset.Texts.Where(t => t.Locale == TemplateCopy.DefaultLocale).Select(t => t.What).First()))
             .ToListAsync(cancellationToken);
-        return [.. rows.Select(r => new SecurityDto(r.Id, r.Symbol, r.Name, r.What)).OrderBy(s => s.Name, StringComparer.InvariantCultureIgnoreCase)];
+        return [.. securities.OrderBy(security => security.Name, StringComparer.InvariantCultureIgnoreCase)];
     }
 
     static TemplateSummary Summary(Template template, TemplateCopy copy) => new(
         template.Key, template.EngineKey, copy.Name, copy.Tagline, copy.Idea, template.InvestsIn, template.Signals,
-        AiRound(template));
+        template.Params is AiParams ai ? new AiRoundDto(ai.EveryWeeks, ai.TopN) : null);
 
-    static TemplateDetail Detail(Template template, TemplateCopy copy, List<SecurityDto> securities) => new(
-        template.Key, template.EngineKey, copy.Name, copy.Tagline, copy.Idea, template.InvestsIn, template.Signals,
-        AiRound(template),
-        copy.Rationale,
-        copy.Rules,
-        template.WatchesFund ? new FundWatches(securities.Single()) : new StockWatches(securities),
-        Backtest(template, copy),
-        new TemplateDefaults(template.DefaultsVersion, template.Budget, template.DefaultParamsJson()));
-
-    static AiRoundDto? AiRound(Template template) =>
-        template.DefaultParams is AiParams ai ? new AiRoundDto(ai.EveryWeeks, ai.TopN) : null;
-
-    static BacktestDto? Backtest(Template template, TemplateCopy copy) =>
-        template.Backtest is { } periods && copy.Backtest is { } words
-            ? new BacktestDto(words.Scope, periods, words.Provider, words.Years, words.Universe, words.TestedDefaults,
-                template.Fee.Fixed, template.Fee.Percent)
-            : null;
+    static TemplateDetail Detail(Template template, TemplateCopy copy, List<SecurityDto> securities) =>
+        new(Summary(template, copy))
+        {
+            Rationale = copy.Rationale,
+            Rules = copy.Rules,
+            Watches = template.Watches is DefaultFund ? new FundWatches(securities.Single()) : new StockWatches(securities),
+            Backtest = template.Backtest is { } periods && copy.Backtest is { } words
+                ? new BacktestDto(words.Scope, periods, TemplateCatalog.PriceProvider, words.Years, words.Universe,
+                    words.TestedDefaults, TemplateCatalog.Fee.Fixed, TemplateCatalog.Fee.Percent)
+                : null,
+            Defaults = new TemplateDefaults(template.DefaultsVersion, template.Budget, template.Params),
+        };
 }

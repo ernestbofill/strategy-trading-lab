@@ -1,0 +1,78 @@
+name: Deploy backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '!backend/**/*.md'
+      - '!backend/tests/**'
+      - 'deploy/backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+permissions:
+  # Pushes the backend-v<version> tag.
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      # Two PRs can both pass CI with the same bump: the second one must not deploy under a version already in use.
+      - name: Check the version is new
+        id: version
+        run: |
+          version=$(dotnet msbuild backend/Directory.Build.props -getProperty:Version)
+          tagged=$(git ls-remote --tags origin "refs/tags/backend-v$version" | cut -f1)
+          if [ -n "$tagged" ] && [ "$tagged" != "$GITHUB_SHA" ]; then
+            echo "::error file=backend/Directory.Build.props::backend-v$version is already deployed from $tagged: bump <Version> and merge again."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # CI ran on the PR, but not necessarily on what's on main now.
+      - name: Build and test
+        working-directory: backend
+        run: dotnet test --configuration Release
+
+      # The same strategy-lab host the VS Code task uses.
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo '140.238.209.178 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMumRdCTFBX8D+D6UXcv9it9BiV+KX/DksM/7vYVa2xI' > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<'EOF'
+          Host strategy-lab
+            HostName 140.238.209.178
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+          EOF
+
+      - name: Build and install on the server
+        shell: pwsh
+        run: ./deploy/backend/deploy.ps1
+
+      - name: Tag the version
+        env:
+          TAG: backend-v${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            echo "$TAG already exists (a re-run)."
+          else
+            git tag "$TAG" && git push origin "$TAG"
+          fi

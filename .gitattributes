@@ -1,2 +1,4 @@
-# nginx rejects CRLF, and this file gets copied to a Linux server.
+# nginx rejects CRLF, and these files get copied to a Linux server.
 *.conf text eol=lf
+*.sh text eol=lf
+*.service text eol=lf

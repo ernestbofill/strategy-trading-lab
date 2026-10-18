@@ -7,6 +7,7 @@ namespace StrategyTradingLab.Api.Templates;
 /// <summary>
 /// Stops the API from starting when a template points at an asset the database doesn't have
 /// (a migration not applied), or at the wrong kind: a fund template needs a fund, a stock template stocks.
+/// A delisted (inactive) asset doesn't stop it.
 /// </summary>
 public class TemplateAssetsCheck(IServiceScopeFactory scopes) : IHostedService
 {
@@ -16,7 +17,7 @@ public class TemplateAssetsCheck(IServiceScopeFactory scopes) : IHostedService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var ids = TemplateCatalog.All.SelectMany(template => template.Watches.Assets).Select(asset => asset.Id).Distinct().ToList();
         var kinds = await db.Assets.AsNoTracking()
-            .Where(asset => asset.Active && ids.Contains(asset.Id))
+            .Where(asset => ids.Contains(asset.Id))
             .Select(asset => new { asset.Id, asset.Kind })
             .ToDictionaryAsync(asset => asset.Id, asset => asset.Kind, cancellationToken);
 
@@ -26,12 +27,12 @@ public class TemplateAssetsCheck(IServiceScopeFactory scopes) : IHostedService
                 $"Template assets don't match the database (are the migrations applied?): {string.Join("; ", problems)}");
     }
 
-    public static IEnumerable<string> Problems(Template template, IReadOnlyDictionary<Guid, AssetKind> activeKinds)
+    public static IEnumerable<string> Problems(Template template, IReadOnlyDictionary<Guid, AssetKind> kinds)
     {
         var expected = template.Watches is DefaultFund ? AssetKind.Fund : AssetKind.Stock;
         foreach (var asset in template.Watches.Assets)
         {
-            if (!activeKinds.TryGetValue(asset.Id, out var kind)) yield return $"{template.Key}: {asset.Symbol} is missing or inactive";
+            if (!kinds.TryGetValue(asset.Id, out var kind)) yield return $"{template.Key}: {asset.Symbol} is missing";
             else if (kind != expected) yield return $"{template.Key}: {asset.Symbol} is a {kind}, not a {expected}";
         }
     }

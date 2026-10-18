@@ -83,7 +83,7 @@ public class TemplateTests
     {
         var problems = TemplateAssetsCheck.Problems(TemplateCatalog.Bear, new Dictionary<Guid, AssetKind>());
 
-        Assert.Equal(["bear: SPY is missing or inactive"], problems);
+        Assert.Equal(["bear: SPY is missing"], problems);
     }
 
     [Fact]

@@ -56,16 +56,16 @@ erDiagram
 
 ### `assets`
 
-Stocks and funds: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs; a test fails if a template points at an asset that isn't seeded.
+Stocks, funds and indexes: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs, plus a few more ([template-assets.md](src/StrategyTradingLab.Api/Templates/template-assets.md)); a test fails if a template points at an asset that isn't seeded.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid PK | Not the symbol: the same symbol can exist on two exchanges |
-| symbol | text, not null | `ZS`. Internal; the UI shows the name |
+| symbol | text, not null | Yahoo Finance symbol: `ZS`, `SU.PA`, `^NDX`. Internal; the UI shows the name |
 | exchange | text, not null | MIC code, e.g. `XNAS`, `XNYS`, `ARCX` |
 | name | text, not null | "Zscaler" |
-| kind | text, not null | `stock` \| `fund` |
-| currency | char(3), not null | Trading currency, `USD` for v1 |
+| kind | text, not null | `stock` \| `fund` \| `index` (followed, not bought) |
+| currency | char(3), not null | Trading currency: `USD`, `EUR`, `GBP`, `HKD`… |
 | active | bool, not null, default true | Delisted assets stay for history |
 
 Unique `(symbol, exchange)`.

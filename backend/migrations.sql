@@ -429,7 +429,14 @@ START TRANSACTION;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018111946_SeedTemplateAssets') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018132440_SeedTemplateAssets') THEN
+    ALTER TABLE assets DROP CONSTRAINT ck_assets_kind;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018132440_SeedTemplateAssets') THEN
     INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
     VALUES ('019a0000-0000-7000-8001-000000000001', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'XNYS', 'stock', 'Eaton', 'ETN');
     INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
@@ -461,13 +468,39 @@ BEGIN
     INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
     VALUES ('019a0000-0000-7000-8001-000000000015', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'XNAS', 'stock', 'Zscaler', 'ZS');
     INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000000016', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'XNYS', 'stock', 'Coherent', 'COHR');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000000017', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'EUR', 'XPAR', 'stock', 'Schneider Electric', 'SU.PA');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000000018', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'HKD', 'XHKG', 'stock', 'BYD', '1211.HK');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000000019', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'GBP', 'XLON', 'stock', 'Molten Ventures', 'GROW.L');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000000020', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'DKK', 'XCSE', 'stock', 'cBrain', 'CBRAIN.CO');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
     VALUES ('019a0000-0000-7000-8001-000000001001', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'ARCX', 'fund', 'SPDR S&P 500 ETF', 'SPY');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000001002', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'XLON', 'fund', 'iShares Core S&P 500 UCITS ETF', 'CSPX.L');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000001003', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'EUR', 'XAMS', 'fund', 'iShares Core MSCI World UCITS ETF', 'IWDA.AS');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000001004', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'XNAS', 'fund', 'Invesco QQQ Trust', 'QQQ');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000001005', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'ARCX', 'fund', 'iShares MSCI South Korea ETF', 'EWY');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000001006', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'XNAS', 'fund', 'iShares MSCI China ETF', 'MCHI');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000002001', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'USD', 'XNAS', 'index', 'Nasdaq-100', '^NDX');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000002002', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'EUR', 'XETR', 'index', 'DAX', '^GDAXI');
+    INSERT INTO assets (id, active, created_at, currency, exchange, kind, name, symbol)
+    VALUES ('019a0000-0000-7000-8001-000000002003', TRUE, TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'JPY', 'XJPX', 'index', 'Nikkei 225', '^N225');
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018111946_SeedTemplateAssets') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018132440_SeedTemplateAssets') THEN
     INSERT INTO asset_texts (asset_id, locale, created_at, what)
     VALUES ('019a0000-0000-7000-8001-000000000001', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Electrical power equipment');
     INSERT INTO asset_texts (asset_id, locale, created_at, what)
@@ -499,15 +532,48 @@ BEGIN
     INSERT INTO asset_texts (asset_id, locale, created_at, what)
     VALUES ('019a0000-0000-7000-8001-000000000015', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Cloud security software');
     INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000000016', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Lasers and optical parts for networks');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000000017', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Electrical power and automation equipment');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000000018', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Electric cars and batteries');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000000019', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Invests in young tech companies');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000000020', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Software for governments');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
     VALUES ('019a0000-0000-7000-8001-000000001001', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Tracks the 500 largest US companies');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000001002', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Tracks the 500 largest US companies');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000001003', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Large companies in developed countries');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000001004', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Tracks the Nasdaq-100');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000001005', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Large South Korean companies');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000001006', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'Large Chinese companies');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000002001', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'The 100 largest non-financial Nasdaq companies');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000002002', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'The 40 largest German companies');
+    INSERT INTO asset_texts (asset_id, locale, created_at, what)
+    VALUES ('019a0000-0000-7000-8001-000000002003', 'en', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', '225 large Japanese companies');
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018111946_SeedTemplateAssets') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018132440_SeedTemplateAssets') THEN
+    ALTER TABLE assets ADD CONSTRAINT ck_assets_kind CHECK (kind IN ('stock', 'fund', 'index'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018132440_SeedTemplateAssets') THEN
     INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
-    VALUES ('20261018111946_SeedTemplateAssets', '10.0.4');
+    VALUES ('20261018132440_SeedTemplateAssets', '10.0.4');
     END IF;
 END $EF$;
 COMMIT;

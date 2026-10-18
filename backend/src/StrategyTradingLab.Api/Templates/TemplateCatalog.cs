@@ -67,33 +67,34 @@ public static class TemplateCatalog
 
     public static readonly Template Dip = new(
         "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        new StarterList([Eaton, Modine, MonolithicPower, NVent, SuperMicro, Vertiv, Vicor]),
+        new StarterList([Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor]),
         [new("2010-14", 38, 61, -9), new("2015-19", 71, 58, -12), new("2020-24", 64, 79, -21), new("All", 212, 248, -21)],
         new DipParams());
 
     public static readonly Template Comeback = new(
         "comeback", "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        new StarterList([Moderna, Palantir, Salesforce, ServiceNow, Snowflake, Tesla, ZetaGlobal, Zscaler]),
+        new StarterList([Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
+            ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler]),
         [new("2010-14", 22, 61, -14), new("2015-19", 31, 58, -17), new("2020-24", 47, 79, -26), new("All", 118, 248, -26)],
         new ComebackParams());
 
     public static readonly Template Bear = new(
         "bear", "bear_accumulation", InvestsIn.Sp500Fund, SignalSides.BuysOnly, new Budget(3000, 600, 5),
-        new DefaultFund(Spy),
+        new DefaultFund(Cspx),
         [new("2000-09", 41, -9, -18), new("2010-19", 12, 189, -4), new("2020-24", 58, 79, -12), new("All", 136, 283, -18)],
         new BearParams());
 
     // All in, all out: no step, the whole budget at once.
     public static readonly Template Trend = new(
         "trend", "index_trend", InvestsIn.IndexFund, SignalSides.BuysAndSells, new Budget(3000, null, null),
-        new DefaultFund(Spy),
+        new DefaultFund(Cspx),
         [new("2000-09", 24, -4, -8), new("2010-19", 121, 186, -11), new("2020-24", 52, 81, -9), new("All", 249, 272, -11)],
         new TrendParams());
 
-    // No backtest: results start on the day the strategy starts. Watches every stock of the POC's lists.
+    // No backtest: results start on the day the strategy starts. Watches the stocks of Dip in winners and The comeback.
     public static readonly Template Ai = new(
         "ai", null, InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        new StarterList([.. Dip.Watches.Assets, .. Comeback.Watches.Assets]),
+        new StarterList([.. Dip.Watches.Assets.Union(Comeback.Watches.Assets)]),
         null,
         new AiParams());
 

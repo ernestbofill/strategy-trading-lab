@@ -85,10 +85,15 @@ public class TemplateTests
     }
 
     [Fact]
-    public void Seeded_assets_are_unique_us_listings()
+    public void Seeded_assets_are_unique()
     {
         Assert.Equal(TemplateAssets.All.Length, TemplateAssets.All.Select(asset => asset.Id).Distinct().Count());
         Assert.Equal(TemplateAssets.All.Length, TemplateAssets.All.Select(asset => (asset.Symbol, asset.Exchange)).Distinct().Count());
-        Assert.All(TemplateAssets.All, asset => Assert.Contains(asset.Exchange, new[] { "XNYS", "XNAS", "ARCX" }));
+    }
+
+    [Fact]
+    public void The_ai_template_watches_the_stocks_of_both_stock_templates_once()
+    {
+        Assert.Equal(19, TemplateCatalog.Ai.Watches.Assets.Count());
     }
 }

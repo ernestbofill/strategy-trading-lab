@@ -1,6 +1,6 @@
 # Template assets
 
-Which stocks and funds each template watches by default: a template's starter list, or its one fund.
+Which stocks, funds and indexes are seeded, and which ones each template watches by default: its starter list, or its one fund.
 
 - **The database holds the assets.** The `assets` and `asset_texts` tables have the rows (symbol, exchange, name, kind, and "what it does" per language). The API reads them from there.
 - **The code holds which assets each template uses.** [TemplateCatalog.cs](TemplateCatalog.cs) points at assets by their fixed id.
@@ -27,12 +27,13 @@ Delete it from the template's list. Keep its entry in `TemplateAssets.cs` and it
 1. In [TemplateAssets.cs](TemplateAssets.cs), add a line with the next unused number, then add it to `All`:
 
    ```csharp
-   public static readonly Seed Apple = Stock(16, "AAPL", "XNAS", "Apple", "Phones, computers and services");
+   public static readonly Seed Apple = Stock(21, "AAPL", "XNAS", "USD", "Apple", "Phones, computers and services");
    ```
 
-   - The number becomes the row's id (`019a0000-0000-7000-8001-000000000016`). **Never reuse or change one.** Funds use numbers from 1001 up.
+   - The number becomes the row's id (`019a0000-0000-7000-8001-000000000021`). **Never reuse or change one.** Stocks use 1 and up, funds 1001 and up, indexes 2001 and up (`Fund(...)`, `Index(...)`).
    - The symbol is the **Yahoo Finance symbol**, the price data's source (the second column of the POC's `seed.py`). Use it as Yahoo writes it, for example `BRK-B`, not `BRK.B`.
-   - The exchange is the MIC code: `XNAS` (Nasdaq), `XNYS` (NYSE), `ARCX` (NYSE Arca, for most ETFs).
+   - The exchange is the MIC code: `XNAS` (Nasdaq), `XNYS` (NYSE), `ARCX` (NYSE Arca), `XLON` (London), `XPAR` (Paris), `XAMS` (Amsterdam), `XHKG` (Hong Kong)…
+   - The currency is the listing's trading currency (ISO code: `USD`, `EUR`, `GBP`…).
    - The last argument is the English "what it does": one short line, in plain words.
 
 2. Reference it in the template's list in [TemplateCatalog.cs](TemplateCatalog.cs).

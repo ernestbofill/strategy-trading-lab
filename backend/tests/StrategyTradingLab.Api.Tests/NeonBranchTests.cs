@@ -132,7 +132,8 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
         var watches = dip.GetProperty("watches");
         Assert.Equal("stocks", watches.GetProperty("kind").GetString());
         Assert.Equal(
-            ["Eaton", "Modine", "Monolithic Power Systems", "nVent Electric", "Super Micro Computer", "Vertiv", "Vicor"],
+            ["Coherent", "Eaton", "Modine", "Monolithic Power Systems", "nVent Electric", "Schneider Electric",
+             "Super Micro Computer", "Vertiv", "Vicor"],
             watches.GetProperty("starterList").EnumerateArray().Select(s => s.GetProperty("name").GetString()));
         Assert.Equal(60, dip.GetProperty("defaults").GetProperty("params").GetProperty("peakDays").GetInt32());
     }
@@ -146,7 +147,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
 
         var watches = trend.GetProperty("watches");
         Assert.Equal("fund", watches.GetProperty("kind").GetString());
-        Assert.Equal("SPY", watches.GetProperty("fund").GetProperty("symbol").GetString());
+        Assert.Equal("CSPX.L", watches.GetProperty("fund").GetProperty("symbol").GetString());
         Assert.Equal(JsonValueKind.Null, trend.GetProperty("defaults").GetProperty("budget").GetProperty("step").ValueKind);
     }
 

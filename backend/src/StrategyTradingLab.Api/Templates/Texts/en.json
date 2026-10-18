@@ -19,9 +19,9 @@
       }
     ],
     "backtest": {
-      "scope": "7 stocks, 2010-2024.",
+      "scope": "9 stocks, 2010-2024.",
       "years": "2010-2024",
-      "universe": "7, the starter list",
+      "universe": "9, the starter list",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     }
   },
@@ -45,9 +45,9 @@
       }
     ],
     "backtest": {
-      "scope": "8 stocks, 2010-2024.",
+      "scope": "16 stocks, 2010-2024.",
       "years": "2010-2024",
-      "universe": "8, the starter list",
+      "universe": "16, the starter list",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     }
   },

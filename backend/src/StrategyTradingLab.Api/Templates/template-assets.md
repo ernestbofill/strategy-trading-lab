@@ -1,74 +1,65 @@
-## Assets seeded to the DB
+# Template assets
 
-- 1211.HK
-- CBRAIN.CO
-- COHR
-- CRM
-- CSPX.L
-- ETN
-- EWY
-- ^GDAXI
-- GROW.L
-- IWDA.AS
-- ^N225
-- MCHI
-- MOD
-- MPWR
-- MRNA
-- NOW
-- ^NDX
-- NVT
-- PLTR
-- QQQ
-- SMCI
-- SNOW
-- SPY
-- SU.PA
-- TSLA
-- VICR
-- VRT	
-- ZETA
-- ZS
+Which stocks and funds each template watches by default: a template's starter list, or its one fund.
 
-## Dip defaults
+- **The database holds the assets.** The `assets` and `asset_texts` tables have the rows (symbol, exchange, name, kind, and "what it does" per language). The API reads them from there.
+- **The code holds which assets each template uses.** [TemplateCatalog.cs](TemplateCatalog.cs) points at assets by their fixed id.
+- **[TemplateAssets.cs](TemplateAssets.cs) is the seed.** EF generates the migration that inserts the rows from it (`HasData`).
 
-- NVT
-- SMCI
-- COHR
-- ETN
-- MOD
-- MPWR
-- SU.PA
-- VICR
-- VRT
+## Use a stock that's already seeded
 
-## Comeback
+Edit the template's list in [TemplateCatalog.cs](TemplateCatalog.cs):
 
-- ZS
-- NOW
-- CRM
-- PLTR
-- 1211.HK
-- COHR
-- MOD
-- MPWR
-- TSLA
-- VICR
-- VRT
-- ZETA
-- MRNA
-- ETN
-- GROW.L
-- SNOW
+```csharp
+new StarterList([Eaton, Modine, MonolithicPower, NVent, SuperMicro, Vertiv, Vicor]),
+```
 
-## Bear
+For a fund template, change `new DefaultFund(Spy)`.
 
-- CSPX.L
+No migration is needed, because the asset rows don't change. If the template has texts that count its stocks (`scope` and `universe` in [Texts/en.json](Texts/en.json)), update them as well.
 
-## Trend
+## Remove a stock from a template
 
-- CSPX.L
+Delete it from the template's list. Keep its entry in `TemplateAssets.cs` and its row in the database, because strategies may still watch it. A delisted stock gets `active = false`; its row is never deleted.
 
-# AI
+## Add a stock that isn't seeded yet
 
-Dip + Comeback
+1. In [TemplateAssets.cs](TemplateAssets.cs), add a line with the next unused number, then add it to `All`:
+
+   ```csharp
+   public static readonly Seed Apple = Stock(16, "AAPL", "XNAS", "Apple", "Phones, computers and services");
+   ```
+
+   - The number becomes the row's id (`019a0000-0000-7000-8001-000000000016`). **Never reuse or change one.** Funds use numbers from 1001 up.
+   - The symbol is the **Yahoo Finance symbol**, the price data's source (the second column of the POC's `seed.py`). Use it as Yahoo writes it, for example `BRK-B`, not `BRK.B`.
+   - The exchange is the MIC code: `XNAS` (Nasdaq), `XNYS` (NYSE), `ARCX` (NYSE Arca, for most ETFs).
+   - The last argument is the English "what it does": one short line, in plain words.
+
+2. Reference it in the template's list in [TemplateCatalog.cs](TemplateCatalog.cs).
+
+3. From `backend/`, generate the migration that inserts the row, and refresh the SQL script:
+
+   ```bash
+   dotnet ef migrations add SeedMoreAssets --project src/StrategyTradingLab.Api -o Data/Migrations
+   ```
+
+   ```bash
+   dotnet ef migrations script --idempotent --project src/StrategyTradingLab.Api -o migrations.sql
+   ```
+
+4. Apply it to your Neon `dev` branch:
+
+   ```bash
+   dotnet ef database update --project src/StrategyTradingLab.Api
+   ```
+
+5. Bump `<Version>` in [Directory.Build.props](../../../Directory.Build.props). Merging to `main` deploys the change and applies the migration on the server.
+
+## Change a seeded stock's name or text
+
+Edit its line in `TemplateAssets.cs` and generate a migration as in step 3. EF turns the change into an update of that row.
+
+## Checks
+
+- `TemplateTests` fails if a template points at an asset that isn't in `TemplateAssets.All`, or at the wrong kind (a stock in a fund template, or the other way round).
+- `NeonBranchTests.Every_template_asset_is_in_the_database` fails if the linked Neon branch is missing a seeded asset (a migration not applied).

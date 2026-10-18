@@ -8,6 +8,7 @@ namespace StrategyTradingLab.Api.Templates;
 /// The stocks and funds the templates' starter lists and default funds need, seeded by migration.
 /// The lists are the POC's (trading-strategies-bot, seed.py) without its non-US listings.
 /// Ids are fixed so a template can point at them; never reuse or change one.
+/// Symbols are Yahoo Finance's. How to add or change one: template-assets.md.
 /// </summary>
 public static class TemplateAssets
 {

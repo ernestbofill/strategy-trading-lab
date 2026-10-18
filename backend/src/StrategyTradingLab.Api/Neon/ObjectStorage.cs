@@ -12,9 +12,11 @@ public class ObjectStorageOptions
 
 public static class ObjectStorage
 {
+    static readonly string[] Variables =
+        ["AWS_ENDPOINT_URL_S3", "AWS_REGION", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"];
+
     public static bool IsConfigured(IConfiguration configuration) =>
-        !string.IsNullOrWhiteSpace(configuration["AWS_ENDPOINT_URL_S3"])
-        && !string.IsNullOrWhiteSpace(configuration["AWS_ACCESS_KEY_ID"]);
+        Variables.All(name => !string.IsNullOrWhiteSpace(configuration[name]));
 
     /// <summary>An S3 client for the branch endpoint in the AWS_* variables.</summary>
     public static IAmazonS3 CreateClient(IConfiguration configuration)

@@ -18,13 +18,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
-        // Every enum in Data.Entities is stored as snake_case text.
-        var enumTypes = typeof(AssetKind).Assembly.GetTypes()
-            .Where(type => type.IsEnum && type.Namespace == typeof(AssetKind).Namespace);
-        foreach (var enumType in enumTypes)
+        foreach (var enumType in SnakeCaseEnums.Types)
         {
-            configurationBuilder.Properties(enumType)
-                .HaveConversion(typeof(SnakeCaseEnumConverter<>).MakeGenericType(enumType));
+            configurationBuilder.Properties(enumType).HaveConversion(SnakeCaseEnums.ConverterFor(enumType));
         }
 
         configurationBuilder.Properties<DateTimeOffset>().HaveColumnType("timestamptz");

@@ -38,7 +38,8 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
         // A skip reason on a signal that isn't skipped.
         var error = await Assert.ThrowsAsync<DbUpdateException>(async () =>
         {
-            var asset = new Asset { Symbol = "ZS", Exchange = "XNAS", Name = "Zscaler", Kind = AssetKind.Stock, Currency = "USD" };
+            // A random symbol, so it never collides with seeded assets.
+            var asset = new Asset { Symbol = Guid.NewGuid().ToString("N")[..8], Exchange = "XNAS", Name = "Test asset", Kind = AssetKind.Stock, Currency = "USD" };
             var strategy = new Strategy
             {
                 UserId = DevSeed.DevUserId, TemplateKey = "dip", Name = $"Test {Guid.NewGuid()}",

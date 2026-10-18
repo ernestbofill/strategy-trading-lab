@@ -44,12 +44,10 @@ static class ModelBuilderExtensions
             foreach (var property in entity.GetProperties())
             {
                 var enumType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
-                if (!enumType.IsEnum) continue;
+                if (!SnakeCaseEnums.Types.Contains(enumType)) continue;
 
-                var values = (IEnumerable<string>)typeof(SnakeCaseEnumConverter<>).MakeGenericType(enumType)
-                    .GetProperty(nameof(SnakeCaseEnumConverter<AssetKind>.StoredValues))!.GetValue(null)!;
                 var column = property.GetColumnName();
-                entity.AddCheckConstraint($"ck_{table}_{column}", InList(column, values));
+                entity.AddCheckConstraint($"ck_{table}_{column}", InList(column, SnakeCaseEnums.StoredValues(enumType)));
             }
         }
     }

@@ -71,5 +71,8 @@ jobs:
 
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
+      # Fails when an entity or convention changed without a migration.
+      - run: dotnet tool restore
+      - run: dotnet ef migrations has-pending-model-changes --project src/StrategyTradingLab.Api --no-build --configuration Release
       # Tests against a Neon branch skip here: CI has no Neon variables.
       - run: dotnet test --no-build --configuration Release

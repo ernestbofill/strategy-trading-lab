@@ -1,5 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -11,10 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Locally, `neon deploy` / `neon env pull` write the Neon variables to .env.local at the repo root.
 if (builder.Environment.IsDevelopment()) builder.Configuration.AddNeonDotEnv(AppContext.BaseDirectory);
 
-var connectionString = NeonEnvironment.ConnectionString(builder.Configuration)
+// Read when a context is created, so configuration added after this point (tests) applies.
+builder.Services.AddDbContext<AppDbContext>((services, options) => AppDbContextOptions.Configure(options,
+    NeonEnvironment.ConnectionString(services.GetRequiredService<IConfiguration>())
     ?? throw new InvalidOperationException(
-        "No database: set DATABASE_URL (run `neon env pull`) or ConnectionStrings:Default.");
-builder.Services.AddDbContext<AppDbContext>(options => AppDbContextOptions.Configure(options, connectionString));
+        "No database: set DATABASE_URL (run `neon env pull`) or ConnectionStrings:Default.")));
 
 builder.Services.AddOpenApi();
 
@@ -33,17 +35,29 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Strategy Trading Lab API"));
 }
 
-app.UseHttpsRedirection();
-
 // Checks each Neon service the API depends on can be reached.
-app.MapGet("/health", async (AppDbContext db, [FromServices] IAmazonS3? s3, IOptions<ObjectStorageOptions> storage,
+// Outside Development it only says "ok": the server version and bucket aren't for anyone to read.
+app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>> (AppDbContext db,
+    [FromServices] IAmazonS3? s3, IOptions<ObjectStorageOptions> storage, IHostEnvironment environment,
     CancellationToken cancellationToken) =>
 {
     var bucket = storage.Value.Bucket;
     var postgres = db.Database.SqlQueryRaw<string>("select version() as \"Value\"").SingleAsync(cancellationToken);
     var listing = s3?.ListObjectsV2Async(new ListObjectsV2Request { BucketName = bucket, MaxKeys = 1 }, cancellationToken);
-    await Task.WhenAll(listing is null ? [postgres] : [postgres, listing]);
+    try
+    {
+        await Task.WhenAll(listing is null ? [postgres] : [postgres, listing]);
+    }
+    catch (Exception error) when (error is not OperationCanceledException)
+    {
+        return TypedResults.Problem(environment.IsDevelopment() ? error.Message : null,
+            statusCode: StatusCodes.Status503ServiceUnavailable, title: "A Neon service can't be reached.");
+    }
 
+    if (!environment.IsDevelopment())
+    {
+        return TypedResults.Ok(new HealthResponse("ok", listing is null ? "not configured" : "ok"));
+    }
     var objectStorage = listing is null
         ? "not configured"
         : $"ok: bucket {bucket} ({listing.Result.KeyCount ?? 0} key(s) in the first page)";

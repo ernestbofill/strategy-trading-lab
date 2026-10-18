@@ -18,6 +18,16 @@ public class SnakeCaseEnumConverterTests
     }
 
     [Fact]
+    public void Names_the_enum_when_the_database_has_an_unknown_value()
+    {
+        var error = Assert.Throws<InvalidOperationException>(
+            () => new SnakeCaseEnumConverter<SkipReason>().ConvertFromProvider("market_closed"));
+
+        Assert.Contains("market_closed", error.Message);
+        Assert.Contains(nameof(SkipReason), error.Message);
+    }
+
+    [Fact]
     public void Lists_every_value_for_the_check()
     {
         Assert.Equal(["waiting", "confirmed", "skipped", "missed"], SnakeCaseEnumConverter<SignalStatus>.StoredValues);

@@ -33,7 +33,7 @@ public record DipParams : IValidatableObject
     [Range(20, 100)] public int FloorDays { get; init; } = 50;
 
     /// <summary>Calendar days after a step before the next buy signal.</summary>
-    [Range(0, 120)] public int CooldownDays { get; init; } = 20;
+    [Range(0, 120)] public int CooldownDays { get; init; } = 10;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

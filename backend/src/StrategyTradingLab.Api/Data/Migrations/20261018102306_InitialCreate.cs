@@ -129,7 +129,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     table.CheckConstraint("ck_strategies_ended_at", "(status = 'ended') = (ended_at IS NOT NULL)");
                     table.CheckConstraint("ck_strategies_mode", "mode IN ('simulation', 'live')");
                     table.CheckConstraint("ck_strategies_status", "status IN ('running', 'ended')");
-                    table.CheckConstraint("ck_strategies_template_key", "template_key IN ('dip', 'comeback', 'drop', 'trend', 'ai')");
+                    table.CheckConstraint("ck_strategies_template_key", "template_key IN ('dip', 'comeback', 'bear', 'trend', 'ai')");
                     table.ForeignKey(
                         name: "fk_strategies_strategies_source_strategy_id",
                         column: x => x.source_strategy_id,

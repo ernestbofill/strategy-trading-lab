@@ -543,7 +543,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                             t.HasCheckConstraint("ck_strategies_status", "status IN ('running', 'ended')");
 
-                            t.HasCheckConstraint("ck_strategies_template_key", "template_key IN ('dip', 'comeback', 'drop', 'trend', 'ai')");
+                            t.HasCheckConstraint("ck_strategies_template_key", "template_key IN ('dip', 'comeback', 'bear', 'trend', 'ai')");
                         });
                 });
 

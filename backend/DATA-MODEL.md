@@ -116,7 +116,7 @@ AI data-sharing consent is added with the AI feature.
 | --- | --- | --- |
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade | |
-| template_key | text, not null | `CHECK` on the five keys (`dip`, `comeback`, `drop`, `trend`, `ai`); a new template updates the check |
+| template_key | text, not null | `CHECK` on the five keys (`dip`, `comeback`, `bear`, `trend`, `ai`); a new template updates the check |
 | defaults_version | int, not null | The template's tested-defaults version at creation |
 | name | text, not null | Unique per user among running strategies, case-insensitive: unique index on `(user_id, lower(name)) WHERE status = 'running'`. Ending one frees its name |
 | mode | text, not null | `simulation` \| `live`. Never changes |

@@ -19,7 +19,7 @@ static class Money
 
 public static class TemplateKeys
 {
-    public static readonly string[] All = ["dip", "comeback", "drop", "trend", "ai"];
+    public static readonly string[] All = ["dip", "comeback", "bear", "trend", "ai"];
 }
 
 class AssetConfiguration : IEntityTypeConfiguration<Asset>

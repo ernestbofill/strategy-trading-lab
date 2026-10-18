@@ -12,6 +12,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Opening the API in a tab must reach the server, not the app shell.
+      workbox: { navigateFallbackDenylist: [/^\/api\//] },
       manifest: {
         name: 'Strategy Trading Lab',
         short_name: 'STL',

@@ -1,0 +1,27 @@
+# Installed to /etc/systemd/system by install.sh on every deploy.
+[Unit]
+Description=Strategy Trading Lab API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=stlab-api
+WorkingDirectory=/opt/strategy-trading-lab-api/current
+ExecStart=/opt/strategy-trading-lab-api/current/StrategyTradingLab.Api
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# nginx proxies https://<host>/api/ here.
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5080
+Environment=DOTNET_NOLOGO=1
+# The production Neon branch's variables (DATABASE_URL, DATABASE_URL_UNPOOLED, AWS_*). Settings in it override the ones above.
+EnvironmentFile=/etc/strategy-trading-lab/api.env
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+SyslogIdentifier=strategy-trading-lab-api
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

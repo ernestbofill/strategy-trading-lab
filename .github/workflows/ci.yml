@@ -69,6 +69,30 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # Against main as it is now, not as it was when the PR opened. The deploy workflow checks again
+      # (two open PRs can both pass with the same bump).
+      - name: Check the version was bumped
+        working-directory: .
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin main
+          if git diff --quiet FETCH_HEAD HEAD -- backend ':(exclude,glob)backend/**/*.md' ':(exclude)backend/tests'; then
+            echo "No backend code changed."
+            exit 0
+          fi
+          version() { dotnet msbuild "$1" -getProperty:Version; }
+          old=$(git show FETCH_HEAD:backend/Directory.Build.props > "$RUNNER_TEMP/main.props" 2>/dev/null && version "$RUNNER_TEMP/main.props" || true)
+          new=$(version backend/Directory.Build.props)
+          # sort -V orders 0.9.0-alpha < 0.10.0-alpha (but would put 1.0.0 before 1.0.0-alpha: revisit when leaving alpha).
+          if [ "$old" = "$new" ] || [ "$(printf '%s\n' "$old" "$new" | sort -V | tail -n 1)" != "$new" ]; then
+            echo "::error file=backend/Directory.Build.props::The backend changed: bump <Version> above main's $old (it's $new)."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/backend-v$new" > /dev/null; then
+            echo "::error file=backend/Directory.Build.props::backend-v$new is already deployed: pick a new version."
+            exit 1
+          fi
+          echo "Backend version: ${old:-none} -> $new"
+
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
       # Fails when an entity or convention changed without a migration.

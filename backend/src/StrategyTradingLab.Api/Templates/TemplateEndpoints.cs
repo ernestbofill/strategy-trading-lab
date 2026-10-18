@@ -13,7 +13,7 @@ public static class TemplateEndpoints
         group.MapGet("/", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
             var locale = await UserLocale(db, cancellationToken);
-            return TemplateCatalog.All.Select(template => Summary(template, TemplateCopy.For(template, locale))).ToList();
+            return TemplateCatalog.All.Select(template => Summary(template, TemplateTexts.For(template, locale))).ToList();
         })
         .WithName("GetTemplates")
         .WithSummary("The templates for the pick screen, in catalogue order.");
@@ -25,7 +25,7 @@ public static class TemplateEndpoints
 
             var locale = await UserLocale(db, cancellationToken);
             var securities = await Securities(db, template, locale, cancellationToken);
-            return TypedResults.Ok(Detail(template, TemplateCopy.For(template, locale), securities));
+            return TypedResults.Ok(Detail(template, TemplateTexts.For(template, locale), securities));
         })
         .WithName("GetTemplate")
         .WithSummary("One template with its rules, starter list or fund, backtest and tested defaults.");
@@ -44,22 +44,22 @@ public static class TemplateEndpoints
             .Where(asset => ids.Contains(asset.Id))
             .Select(asset => new SecurityDto(asset.Id, asset.Symbol, asset.Name,
                 asset.Texts.Where(t => t.Locale == locale).Select(t => t.What).FirstOrDefault()
-                    ?? asset.Texts.Where(t => t.Locale == TemplateCopy.DefaultLocale).Select(t => t.What).First()))
+                    ?? asset.Texts.Where(t => t.Locale == TemplateTexts.DefaultLocale).Select(t => t.What).First()))
             .ToListAsync(cancellationToken);
         return [.. securities.OrderBy(security => security.Name, StringComparer.InvariantCultureIgnoreCase)];
     }
 
-    static TemplateSummary Summary(Template template, TemplateCopy copy) => new(
-        template.Key, template.EngineKey, copy.Name, copy.Tagline, copy.Idea, template.InvestsIn, template.Signals,
+    static TemplateSummary Summary(Template template, TemplateTexts texts) => new(
+        template.Key, template.EngineKey, texts.Name, texts.Tagline, texts.Idea, template.InvestsIn, template.Signals,
         template.Params is AiParams ai ? new AiRoundDto(ai.EveryWeeks, ai.TopN) : null);
 
-    static TemplateDetail Detail(Template template, TemplateCopy copy, List<SecurityDto> securities) =>
-        new(Summary(template, copy))
+    static TemplateDetail Detail(Template template, TemplateTexts texts, List<SecurityDto> securities) =>
+        new(Summary(template, texts))
         {
-            Rationale = copy.Rationale,
-            Rules = copy.Rules,
+            Rationale = texts.Rationale,
+            Rules = texts.Rules,
             Watches = template.Watches is DefaultFund ? new FundWatches(securities.Single()) : new StockWatches(securities),
-            Backtest = template.Backtest is { } periods && copy.Backtest is { } words
+            Backtest = template.Backtest is { } periods && texts.Backtest is { } words
                 ? new BacktestDto(words.Scope, periods, TemplateCatalog.PriceProvider, words.Years, words.Universe,
                     words.TestedDefaults, TemplateCatalog.Fee.Fixed, TemplateCatalog.Fee.Percent)
                 : null,

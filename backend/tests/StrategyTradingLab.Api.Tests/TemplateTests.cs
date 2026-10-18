@@ -4,7 +4,7 @@ using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
-/// <summary>The five templates' definitions, copy and seeded assets. No database.</summary>
+/// <summary>The five templates' definitions, texts and seeded assets. No database.</summary>
 public class TemplateTests
 {
     [Fact]
@@ -14,21 +14,21 @@ public class TemplateTests
     }
 
     [Fact]
-    public void Every_template_has_english_copy_with_rules()
+    public void Every_template_has_english_texts_with_rules()
     {
         foreach (var template in TemplateCatalog.All)
         {
-            var copy = TemplateCopy.For(template, "en");
-            Assert.NotEmpty(copy.Name);
-            Assert.Equal(3, copy.Rules.Count);
-            Assert.Equal(template.Backtest is null, copy.Backtest is null);
+            var texts = TemplateTexts.For(template, "en");
+            Assert.NotEmpty(texts.Name);
+            Assert.Equal(3, texts.Rules.Count);
+            Assert.Equal(template.Backtest is null, texts.Backtest is null);
         }
     }
 
     [Fact]
-    public void A_language_without_copy_falls_back_to_english()
+    public void A_language_without_texts_falls_back_to_english()
     {
-        Assert.Equal("Dip in winners", TemplateCopy.For(TemplateCatalog.Dip, "ca").Name);
+        Assert.Equal("Dip in winners", TemplateTexts.For(TemplateCatalog.Dip, "ca").Name);
     }
 
     [Fact]

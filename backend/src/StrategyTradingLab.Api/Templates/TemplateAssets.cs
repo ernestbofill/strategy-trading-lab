@@ -63,7 +63,7 @@ public static class TemplateAssets
         modelBuilder.Entity<AssetText>().HasData(All.Select(seed => new AssetText
         {
             AssetId = seed.Id,
-            Locale = TemplateCopy.DefaultLocale,
+            Locale = TemplateTexts.DefaultLocale,
             What = seed.What,
             CreatedAt = DevSeed.SeededAt,
         }));

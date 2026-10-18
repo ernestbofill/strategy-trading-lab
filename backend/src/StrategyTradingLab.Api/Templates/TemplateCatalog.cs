@@ -32,7 +32,7 @@ public sealed record DefaultFund(Seed Fund) : TemplateWatches
 
 /// <summary>
 /// A template: the rules the engine runs and its tested defaults, which a new strategy copies.
-/// <c>Params</c> is the template's params record (TemplateParams.cs). Its copy is in Copy/{locale}.json.
+/// <c>Params</c> is the template's params record (TemplateParams.cs). Its texts are in Texts/{locale}.json.
 /// </summary>
 public sealed record Template(
     string Key,

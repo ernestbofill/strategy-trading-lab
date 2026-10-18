@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Template copy, one file per language, read as templates/{locale}.json -->
-    <Content Remove="Templates\Copy\*.json" />
-    <EmbeddedResource Include="Templates\Copy\*.json" LogicalName="templates/%(Filename)%(Extension)" />
+    <!-- Template texts, one file per language, read as templates/{locale}.json -->
+    <Content Remove="Templates\Texts\*.json" />
+    <EmbeddedResource Include="Templates\Texts\*.json" LogicalName="templates/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

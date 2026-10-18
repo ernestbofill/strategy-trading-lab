@@ -20,3 +20,4 @@ It's not the complete plan. We will add more steps as we go.
     - Try to make reusable components when that makes sense.
 3. Sticky side panel
 4. Screen 4
+5. Screen 5 in a PR

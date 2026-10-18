@@ -4,6 +4,8 @@ applyTo: "frontend/**"
 
 # Frontend (React + TypeScript PWA)
 
+Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
+
 ## Commands (run in `frontend/`)
 
 - `npm run dev`: dev server on http://localhost:5173
@@ -56,3 +58,10 @@ applyTo: "frontend/**"
 - Unit-test `src/lib/` helpers and the rules in components: the last AI source can't be turned off; "Use this template" is disabled with no stocks ticked.
 - Test through roles and visible text, not class names.
 - Put a test next to the file it covers as `*.test.ts(x)`.
+
+## Worktrees
+
+If I ask you to use a worktree, apply the workspace theme in .vscode/settings.json in the worktree folder.
+{
+    "workbench.colorTheme": "Cyberpunk"
+}

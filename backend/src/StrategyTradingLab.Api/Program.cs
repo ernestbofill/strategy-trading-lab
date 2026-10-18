@@ -27,8 +27,6 @@ builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
-builder.Services.AddHostedService<TemplateAssetsCheck>();
-
 builder.Services.Configure<ObjectStorageOptions>(builder.Configuration.GetSection("ObjectStorage"));
 if (ObjectStorage.IsConfigured(builder.Configuration))
 {

@@ -100,6 +100,16 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
     }
 
     [NeonFact]
+    public async Task Every_template_asset_is_in_the_database()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var ids = TemplateAssets.All.Select(asset => asset.Id).ToList();
+
+        Assert.Equal(ids.Count, await db.Assets.CountAsync(asset => ids.Contains(asset.Id)));
+    }
+
+    [NeonFact]
     public async Task Templates_list_the_five_in_order()
     {
         using var client = factory.CreateClient();

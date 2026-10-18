@@ -56,7 +56,7 @@ erDiagram
 
 ### `assets`
 
-Stocks and funds: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs; a startup check fails if a template points at a missing asset.
+Stocks and funds: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs; a test fails if a template points at an asset that isn't seeded.
 
 | Column | Type | Notes |
 | --- | --- | --- |

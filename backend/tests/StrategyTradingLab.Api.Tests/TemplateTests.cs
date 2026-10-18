@@ -73,17 +73,15 @@ public class TemplateTests
     [Fact]
     public void Every_template_asset_is_seeded_with_the_right_kind()
     {
-        var kinds = TemplateAssets.All.ToDictionary(asset => asset.Id, asset => asset.Kind);
-
-        Assert.Empty(TemplateCatalog.All.SelectMany(template => TemplateAssetsCheck.Problems(template, kinds)));
-    }
-
-    [Fact]
-    public void The_check_reports_a_missing_asset()
-    {
-        var problems = TemplateAssetsCheck.Problems(TemplateCatalog.Bear, new Dictionary<Guid, AssetKind>());
-
-        Assert.Equal(["bear: SPY is missing"], problems);
+        foreach (var template in TemplateCatalog.All)
+        {
+            var expected = template.Watches is DefaultFund ? AssetKind.Fund : AssetKind.Stock;
+            Assert.All(template.Watches.Assets, asset =>
+            {
+                Assert.Contains(asset, TemplateAssets.All);
+                Assert.Equal(expected, asset.Kind);
+            });
+        }
     }
 
     [Fact]

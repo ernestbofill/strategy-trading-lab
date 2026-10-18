@@ -38,7 +38,7 @@ dotnet run --project src/StrategyTradingLab.Api
 
 ## Versions and deploy
 
-The version is `<Version>` in [Directory.Build.props](Directory.Build.props), currently alpha (`0.1.0-alpha.N`). Bump N in every PR that changes the backend: CI fails otherwise. Merging to `main` deploys to the Oracle server and tags `backend-v<version>`; see [deploy/backend](../deploy/backend/README.md).
+The version is `<Version>` in [Directory.Build.props](Directory.Build.props), with the frontend's scheme (`0.1.0-alpha`). Bump it in every PR that changes the backend, minor for a feature and patch for a fix: CI fails otherwise. Merging to `main` deploys to the Oracle server and tags `backend-v<version>`; see [deploy/backend](../deploy/backend/README.md).
 
 ## Migrations
 

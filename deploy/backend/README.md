@@ -9,12 +9,12 @@ Both run [deploy.ps1](deploy.ps1): it publishes the API self-contained for `linu
 
 ## Versions
 
-The version is `<Version>` in [backend/Directory.Build.props](../../backend/Directory.Build.props). We're in alpha: `0.1.0-alpha.N`. Every PR that changes the backend (not only its tests or Markdown) bumps N by one; CI fails if it doesn't, and the workflow refuses to deploy a version already tagged on another commit.
+The version is `<Version>` in [backend/Directory.Build.props](../../backend/Directory.Build.props). It follows the frontend's scheme: minor for a new feature or endpoint (`0.1.0-alpha` → `0.2.0-alpha`), patch for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`), keeping `-alpha`. Every PR that changes the backend (not only its tests or Markdown) bumps it; CI fails if it doesn't, and the workflow refuses to deploy a version already tagged on another commit.
 
 `GET /api/version` is for the client to show which API it talks to:
 
 ```json
-{ "version": "0.1.0-alpha.2", "commit": "3f9c2e1…", "builtAt": "2026-10-18T12:04:31+00:00" }
+{ "version": "0.1.0-alpha", "commit": "3f9c2e1…", "builtAt": "2026-10-18T12:04:31+00:00" }
 ```
 
 `builtAt` is when the release was built, minutes before it went live. It's `null` in Debug builds.

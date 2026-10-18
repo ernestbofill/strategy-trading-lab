@@ -19,6 +19,8 @@ var connectionString = NeonEnvironment.ConnectionString(builder.Configuration)
         "No database: set DATABASE_URL (run `neon env pull`) or ConnectionStrings:Default.");
 builder.Services.AddDbContext<AppDbContext>(options => AppDbContextOptions.Configure(options, connectionString));
 
+builder.Services.AddOpenApi();
+
 builder.Services.Configure<ObjectStorageOptions>(builder.Configuration.GetSection("ObjectStorage"));
 if (ObjectStorage.IsConfigured(builder.Configuration))
 {
@@ -26,6 +28,13 @@ if (ObjectStorage.IsConfigured(builder.Configuration))
 }
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    // The OpenAPI document at /openapi/v1.json, browsable at /swagger.
+    app.MapOpenApi();
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Strategy Trading Lab API"));
+}
 
 app.UseHttpsRedirection();
 
@@ -50,10 +59,14 @@ app.MapGet("/health", async (AppDbContext db, IServiceProvider services, IOption
         objectStorage = $"ok: bucket {storage.Value.Bucket} ({listing.KeyCount ?? 0} key(s) in the first page)";
     }
 
-    return Results.Ok(new { postgres, objectStorage });
-});
+    return TypedResults.Ok(new HealthResponse(postgres, objectStorage));
+})
+.WithName("Health")
+.WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
 app.Run();
+
+record HealthResponse(string Postgres, string ObjectStorage);
 
 /// <summary>Visible to integration tests.</summary>
 public partial class Program;

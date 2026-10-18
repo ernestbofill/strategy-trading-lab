@@ -32,7 +32,7 @@ dotnet tool restore
 dotnet run --project src/StrategyTradingLab.Api
 ```
 
-`GET http://localhost:5184/health` reports the Postgres version and the bucket.
+`GET http://localhost:5184/health` reports the Postgres version and the bucket. In Development, Swagger UI is at `http://localhost:5184/swagger` (the OpenAPI document at `/openapi/v1.json`); F5 in VS Code opens it.
 
 ## Migrations
 

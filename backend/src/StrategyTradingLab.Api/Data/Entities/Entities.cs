@@ -113,7 +113,7 @@ public class Signal
     public DateTimeOffset CreatedAt { get; set; }
 }
 
-public class RuleTrade
+public class SignalTrade
 {
     public Guid Id { get; set; }
     public Guid SignalId { get; set; }

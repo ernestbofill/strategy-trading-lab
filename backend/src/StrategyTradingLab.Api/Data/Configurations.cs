@@ -162,15 +162,15 @@ class SignalConfiguration : IEntityTypeConfiguration<Signal>
     }
 }
 
-class RuleTradeConfiguration : IEntityTypeConfiguration<RuleTrade>
+class SignalTradeConfiguration : IEntityTypeConfiguration<SignalTrade>
 {
-    public void Configure(EntityTypeBuilder<RuleTrade> entity)
+    public void Configure(EntityTypeBuilder<SignalTrade> entity)
     {
-        entity.ToTable("rule_trades", table =>
+        entity.ToTable("signal_trades", table =>
         {
             table.HasEnumCheck<TradeSide>("side");
             AddTradeSignChecks(table);
-            table.HasCheckConstraint("ck_rule_trades_step_no", "step_no IS NULL OR step_no >= 1");
+            table.HasCheckConstraint("ck_signal_trades_step_no", "step_no IS NULL OR step_no >= 1");
         });
         entity.Property(trade => trade.Price).HasColumnType(Money.Price);
         entity.Property(trade => trade.Shares).HasColumnType(Money.Shares);
@@ -183,7 +183,7 @@ class RuleTradeConfiguration : IEntityTypeConfiguration<RuleTrade>
         entity.HasIndex(trade => new { trade.StrategyId, trade.AssetId, trade.TradeDate });
 
         entity.HasOne<Signal>().WithOne()
-            .HasForeignKey<RuleTrade>(trade => trade.SignalId).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey<SignalTrade>(trade => trade.SignalId).OnDelete(DeleteBehavior.Cascade);
         entity.HasOne<Strategy>().WithMany()
             .HasForeignKey(trade => trade.StrategyId).OnDelete(DeleteBehavior.Cascade);
         entity.HasOne<Asset>().WithMany()
@@ -211,7 +211,7 @@ class UserTradeConfiguration : IEntityTypeConfiguration<UserTrade>
             table.HasEnumCheck<FxSource>("fx_source");
             table.HasEnumCheck<TradeSource>("source");
             table.HasCheckConstraint("ck_user_trades_source_signal", "(source = 'signal') = (signal_id IS NOT NULL)");
-            RuleTradeConfiguration.AddTradeSignChecks(table);
+            SignalTradeConfiguration.AddTradeSignChecks(table);
         });
         entity.Property(trade => trade.Price).HasColumnType(Money.Price);
         entity.Property(trade => trade.Amount).HasColumnType(Money.Amount);

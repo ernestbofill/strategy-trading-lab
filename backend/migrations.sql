@@ -8,14 +8,14 @@ START TRANSACTION;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE EXTENSION IF NOT EXISTS citext;
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE assets (
         id uuid NOT NULL,
         symbol text NOT NULL,
@@ -33,7 +33,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE users (
         id uuid NOT NULL,
         email citext NOT NULL,
@@ -53,7 +53,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE asset_texts (
         asset_id uuid NOT NULL,
         locale text NOT NULL,
@@ -67,7 +67,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE push_subscriptions (
         id uuid NOT NULL,
         user_id uuid NOT NULL,
@@ -84,7 +84,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE strategies (
         id uuid NOT NULL,
         user_id uuid NOT NULL,
@@ -119,7 +119,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE signals (
         id uuid NOT NULL,
         strategy_id uuid NOT NULL,
@@ -157,7 +157,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE strategy_assets (
         strategy_id uuid NOT NULL,
         asset_id uuid NOT NULL,
@@ -175,7 +175,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE notifications (
         id uuid NOT NULL,
         user_id uuid NOT NULL,
@@ -199,8 +199,8 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
-    CREATE TABLE rule_trades (
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
+    CREATE TABLE signal_trades (
         id uuid NOT NULL,
         signal_id uuid NOT NULL,
         strategy_id uuid NOT NULL,
@@ -214,24 +214,24 @@ BEGIN
         fee numeric(14,2) NOT NULL DEFAULT 0.0,
         fx_rate numeric(18,8) NOT NULL,
         created_at timestamptz NOT NULL DEFAULT (now()),
-        CONSTRAINT pk_rule_trades PRIMARY KEY (id),
-        CONSTRAINT ck_rule_trades_amount CHECK (amount > 0),
-        CONSTRAINT ck_rule_trades_fee CHECK (fee >= 0),
-        CONSTRAINT ck_rule_trades_fx_rate CHECK (fx_rate > 0),
-        CONSTRAINT ck_rule_trades_price CHECK (price > 0),
-        CONSTRAINT ck_rule_trades_shares CHECK (shares > 0),
-        CONSTRAINT ck_rule_trades_side CHECK (side IN ('buy', 'sell')),
-        CONSTRAINT ck_rule_trades_step_no CHECK (step_no IS NULL OR step_no >= 1),
-        CONSTRAINT fk_rule_trades_assets_asset_id FOREIGN KEY (asset_id) REFERENCES assets (id),
-        CONSTRAINT fk_rule_trades_signals_signal_id FOREIGN KEY (signal_id) REFERENCES signals (id) ON DELETE CASCADE,
-        CONSTRAINT fk_rule_trades_strategies_strategy_id FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE CASCADE
+        CONSTRAINT pk_signal_trades PRIMARY KEY (id),
+        CONSTRAINT ck_signal_trades_amount CHECK (amount > 0),
+        CONSTRAINT ck_signal_trades_fee CHECK (fee >= 0),
+        CONSTRAINT ck_signal_trades_fx_rate CHECK (fx_rate > 0),
+        CONSTRAINT ck_signal_trades_price CHECK (price > 0),
+        CONSTRAINT ck_signal_trades_shares CHECK (shares > 0),
+        CONSTRAINT ck_signal_trades_side CHECK (side IN ('buy', 'sell')),
+        CONSTRAINT ck_signal_trades_step_no CHECK (step_no IS NULL OR step_no >= 1),
+        CONSTRAINT fk_signal_trades_assets_asset_id FOREIGN KEY (asset_id) REFERENCES assets (id),
+        CONSTRAINT fk_signal_trades_signals_signal_id FOREIGN KEY (signal_id) REFERENCES signals (id) ON DELETE CASCADE,
+        CONSTRAINT fk_signal_trades_strategies_strategy_id FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE CASCADE
     );
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE TABLE user_trades (
         id uuid NOT NULL,
         strategy_id uuid NOT NULL,
@@ -270,7 +270,7 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     INSERT INTO users (id, created_at, currency, disclaimer_accepted_at, email, email_verified_at, locale, overview_email, password_hash, time_zone, updated_at)
     VALUES ('019a0000-0000-7000-8000-000000000001', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'EUR', TIMESTAMPTZ '2026-10-18T00:00:00+00:00', 'dev@strategytradinglab.local', NULL, 'en', TRUE, NULL, 'Europe/Madrid', TIMESTAMPTZ '2026-10-18T00:00:00+00:00');
     END IF;
@@ -278,149 +278,149 @@ END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE UNIQUE INDEX ix_assets_symbol_exchange ON assets (symbol, exchange);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_notifications_signal_id ON notifications (signal_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE UNIQUE INDEX ix_notifications_user_id_kind_channel_for_date_signal_id ON notifications (user_id, kind, channel, for_date, signal_id) NULLS NOT DISTINCT;
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE UNIQUE INDEX ix_push_subscriptions_endpoint ON push_subscriptions (endpoint);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_push_subscriptions_user_id ON push_subscriptions (user_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
-    CREATE INDEX ix_rule_trades_asset_id ON rule_trades (asset_id);
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
+    CREATE INDEX ix_signal_trades_asset_id ON signal_trades (asset_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
-    CREATE UNIQUE INDEX ix_rule_trades_signal_id ON rule_trades (signal_id);
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
+    CREATE UNIQUE INDEX ix_signal_trades_signal_id ON signal_trades (signal_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
-    CREATE INDEX ix_rule_trades_strategy_id_asset_id_trade_date ON rule_trades (strategy_id, asset_id, trade_date);
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
+    CREATE INDEX ix_signal_trades_strategy_id_asset_id_trade_date ON signal_trades (strategy_id, asset_id, trade_date);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_signals_asset_id ON signals (asset_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE UNIQUE INDEX ix_signals_strategy_id_asset_id_signal_date_side ON signals (strategy_id, asset_id, signal_date, side);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_signals_strategy_id_status ON signals (strategy_id, status);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_signals_strategy_id_waiting ON signals (strategy_id) WHERE status = 'waiting';
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_strategies_source_strategy_id ON strategies (source_strategy_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_strategies_user_id ON strategies (user_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_strategy_assets_asset_id ON strategy_assets (asset_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_user_trades_asset_id ON user_trades (asset_id);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE UNIQUE INDEX ix_user_trades_signal_id ON user_trades (signal_id) WHERE deleted_at IS NULL;
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE INDEX ix_user_trades_strategy_id_asset_id_trade_date ON user_trades (strategy_id, asset_id, trade_date);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE UNIQUE INDEX ix_users_email ON users (email);
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     CREATE UNIQUE INDEX ux_strategies_user_id_running_name ON strategies (user_id, lower(name)) WHERE status = 'running';
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018083227_InitialCreate') THEN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261018100652_InitialCreate') THEN
     INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
-    VALUES ('20261018083227_InitialCreate', '10.0.4');
+    VALUES ('20261018100652_InitialCreate', '10.0.4');
     END IF;
 END $EF$;
 COMMIT;

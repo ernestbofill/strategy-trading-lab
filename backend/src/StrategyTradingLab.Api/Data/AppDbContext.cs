@@ -12,7 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Strategy> Strategies => Set<Strategy>();
     public DbSet<StrategyAsset> StrategyAssets => Set<StrategyAsset>();
     public DbSet<Signal> Signals => Set<Signal>();
-    public DbSet<RuleTrade> RuleTrades => Set<RuleTrade>();
+    public DbSet<SignalTrade> SignalTrades => Set<SignalTrade>();
     public DbSet<UserTrade> UserTrades => Set<UserTrade>();
     public DbSet<Notification> Notifications => Set<Notification>();
 

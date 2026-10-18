@@ -14,7 +14,7 @@ using StrategyTradingLab.Api.Data;
 namespace StrategyTradingLab.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261018083227_InitialCreate")]
+    [Migration("20261018100652_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -229,96 +229,6 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     b.ToTable("push_subscriptions", (string)null);
                 });
 
-            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.RuleTrade", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("numeric(14,2)")
-                        .HasColumnName("amount");
-
-                    b.Property<Guid>("AssetId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("asset_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamptz")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<decimal>("Fee")
-                        .HasColumnType("numeric(14,2)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("fee");
-
-                    b.Property<decimal>("FxRate")
-                        .HasColumnType("numeric(18,8)")
-                        .HasColumnName("fx_rate");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("numeric(14,4)")
-                        .HasColumnName("price");
-
-                    b.Property<decimal>("Shares")
-                        .HasColumnType("numeric(18,6)")
-                        .HasColumnName("shares");
-
-                    b.Property<string>("Side")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("side");
-
-                    b.Property<Guid>("SignalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("signal_id");
-
-                    b.Property<int?>("StepNo")
-                        .HasColumnType("integer")
-                        .HasColumnName("step_no");
-
-                    b.Property<Guid>("StrategyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("strategy_id");
-
-                    b.Property<DateOnly>("TradeDate")
-                        .HasColumnType("date")
-                        .HasColumnName("trade_date");
-
-                    b.HasKey("Id")
-                        .HasName("pk_rule_trades");
-
-                    b.HasIndex("AssetId")
-                        .HasDatabaseName("ix_rule_trades_asset_id");
-
-                    b.HasIndex("SignalId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_rule_trades_signal_id");
-
-                    b.HasIndex("StrategyId", "AssetId", "TradeDate")
-                        .HasDatabaseName("ix_rule_trades_strategy_id_asset_id_trade_date");
-
-                    b.ToTable("rule_trades", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_rule_trades_amount", "amount > 0");
-
-                            t.HasCheckConstraint("ck_rule_trades_fee", "fee >= 0");
-
-                            t.HasCheckConstraint("ck_rule_trades_fx_rate", "fx_rate > 0");
-
-                            t.HasCheckConstraint("ck_rule_trades_price", "price > 0");
-
-                            t.HasCheckConstraint("ck_rule_trades_shares", "shares > 0");
-
-                            t.HasCheckConstraint("ck_rule_trades_side", "side IN ('buy', 'sell')");
-
-                            t.HasCheckConstraint("ck_rule_trades_step_no", "step_no IS NULL OR step_no >= 1");
-                        });
-                });
-
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Signal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -431,6 +341,96 @@ namespace StrategyTradingLab.Api.Data.Migrations
                             t.HasCheckConstraint("ck_signals_step_no", "step_no IS NULL OR step_no BETWEEN 1 AND max_steps");
 
                             t.HasCheckConstraint("ck_signals_step_together", "(step_no IS NULL) = (max_steps IS NULL) AND (step_no IS NULL) = (step_amount IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.SignalTrade", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(14,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<decimal>("Fee")
+                        .HasColumnType("numeric(14,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("fee");
+
+                    b.Property<decimal>("FxRate")
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("fx_rate");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("price");
+
+                    b.Property<decimal>("Shares")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("shares");
+
+                    b.Property<string>("Side")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("side");
+
+                    b.Property<Guid>("SignalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("signal_id");
+
+                    b.Property<int?>("StepNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("step_no");
+
+                    b.Property<Guid>("StrategyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("strategy_id");
+
+                    b.Property<DateOnly>("TradeDate")
+                        .HasColumnType("date")
+                        .HasColumnName("trade_date");
+
+                    b.HasKey("Id")
+                        .HasName("pk_signal_trades");
+
+                    b.HasIndex("AssetId")
+                        .HasDatabaseName("ix_signal_trades_asset_id");
+
+                    b.HasIndex("SignalId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_signal_trades_signal_id");
+
+                    b.HasIndex("StrategyId", "AssetId", "TradeDate")
+                        .HasDatabaseName("ix_signal_trades_strategy_id_asset_id_trade_date");
+
+                    b.ToTable("signal_trades", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_signal_trades_amount", "amount > 0");
+
+                            t.HasCheckConstraint("ck_signal_trades_fee", "fee >= 0");
+
+                            t.HasCheckConstraint("ck_signal_trades_fx_rate", "fx_rate > 0");
+
+                            t.HasCheckConstraint("ck_signal_trades_price", "price > 0");
+
+                            t.HasCheckConstraint("ck_signal_trades_shares", "shares > 0");
+
+                            t.HasCheckConstraint("ck_signal_trades_side", "side IN ('buy', 'sell')");
+
+                            t.HasCheckConstraint("ck_signal_trades_step_no", "step_no IS NULL OR step_no >= 1");
                         });
                 });
 
@@ -825,30 +825,6 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasConstraintName("fk_push_subscriptions_users_user_id");
                 });
 
-            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.RuleTrade", b =>
-                {
-                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Asset", null)
-                        .WithMany()
-                        .HasForeignKey("AssetId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired()
-                        .HasConstraintName("fk_rule_trades_assets_asset_id");
-
-                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Signal", null)
-                        .WithOne()
-                        .HasForeignKey("StrategyTradingLab.Api.Data.Entities.RuleTrade", "SignalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_rule_trades_signals_signal_id");
-
-                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Strategy", null)
-                        .WithMany()
-                        .HasForeignKey("StrategyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_rule_trades_strategies_strategy_id");
-                });
-
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Signal", b =>
                 {
                     b.HasOne("StrategyTradingLab.Api.Data.Entities.Asset", null)
@@ -864,6 +840,30 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_signals_strategies_strategy_id");
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.SignalTrade", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Asset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_signal_trades_assets_asset_id");
+
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Signal", null)
+                        .WithOne()
+                        .HasForeignKey("StrategyTradingLab.Api.Data.Entities.SignalTrade", "SignalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_signal_trades_signals_signal_id");
+
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Strategy", null)
+                        .WithMany()
+                        .HasForeignKey("StrategyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_signal_trades_strategies_strategy_id");
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Strategy", b =>

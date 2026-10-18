@@ -25,7 +25,7 @@ public class ModelTests
         var tables = Model.GetEntityTypes().Select(entity => entity.GetTableName()).Order();
 
         Assert.Equal(
-            ["asset_texts", "assets", "notifications", "push_subscriptions", "rule_trades", "signals",
+            ["asset_texts", "assets", "notifications", "push_subscriptions", "signal_trades", "signals",
              "strategies", "strategy_assets", "user_trades", "users"],
             tables);
     }

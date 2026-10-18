@@ -256,7 +256,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "rule_trades",
+                name: "signal_trades",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -275,27 +275,27 @@ namespace StrategyTradingLab.Api.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_rule_trades", x => x.id);
-                    table.CheckConstraint("ck_rule_trades_amount", "amount > 0");
-                    table.CheckConstraint("ck_rule_trades_fee", "fee >= 0");
-                    table.CheckConstraint("ck_rule_trades_fx_rate", "fx_rate > 0");
-                    table.CheckConstraint("ck_rule_trades_price", "price > 0");
-                    table.CheckConstraint("ck_rule_trades_shares", "shares > 0");
-                    table.CheckConstraint("ck_rule_trades_side", "side IN ('buy', 'sell')");
-                    table.CheckConstraint("ck_rule_trades_step_no", "step_no IS NULL OR step_no >= 1");
+                    table.PrimaryKey("pk_signal_trades", x => x.id);
+                    table.CheckConstraint("ck_signal_trades_amount", "amount > 0");
+                    table.CheckConstraint("ck_signal_trades_fee", "fee >= 0");
+                    table.CheckConstraint("ck_signal_trades_fx_rate", "fx_rate > 0");
+                    table.CheckConstraint("ck_signal_trades_price", "price > 0");
+                    table.CheckConstraint("ck_signal_trades_shares", "shares > 0");
+                    table.CheckConstraint("ck_signal_trades_side", "side IN ('buy', 'sell')");
+                    table.CheckConstraint("ck_signal_trades_step_no", "step_no IS NULL OR step_no >= 1");
                     table.ForeignKey(
-                        name: "fk_rule_trades_assets_asset_id",
+                        name: "fk_signal_trades_assets_asset_id",
                         column: x => x.asset_id,
                         principalTable: "assets",
                         principalColumn: "id");
                     table.ForeignKey(
-                        name: "fk_rule_trades_signals_signal_id",
+                        name: "fk_signal_trades_signals_signal_id",
                         column: x => x.signal_id,
                         principalTable: "signals",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_rule_trades_strategies_strategy_id",
+                        name: "fk_signal_trades_strategies_strategy_id",
                         column: x => x.strategy_id,
                         principalTable: "strategies",
                         principalColumn: "id",
@@ -390,19 +390,19 @@ namespace StrategyTradingLab.Api.Data.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_rule_trades_asset_id",
-                table: "rule_trades",
+                name: "ix_signal_trades_asset_id",
+                table: "signal_trades",
                 column: "asset_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_rule_trades_signal_id",
-                table: "rule_trades",
+                name: "ix_signal_trades_signal_id",
+                table: "signal_trades",
                 column: "signal_id",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_rule_trades_strategy_id_asset_id_trade_date",
-                table: "rule_trades",
+                name: "ix_signal_trades_strategy_id_asset_id_trade_date",
+                table: "signal_trades",
                 columns: new[] { "strategy_id", "asset_id", "trade_date" });
 
             migrationBuilder.CreateIndex(
@@ -487,7 +487,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                 name: "push_subscriptions");
 
             migrationBuilder.DropTable(
-                name: "rule_trades");
+                name: "signal_trades");
 
             migrationBuilder.DropTable(
                 name: "strategy_assets");

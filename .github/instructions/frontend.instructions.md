@@ -61,7 +61,7 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 
 ## Worktrees
 
-If I ask you to use a worktree, apply the workspace theme in .vscode/settings.json in the worktree folder.
+In a worktree, apply the workspace theme in .vscode/settings.json in the worktree folder.
 {
     "workbench.colorTheme": "Cyberpunk"
 }

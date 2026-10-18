@@ -17,7 +17,7 @@ How the app fits today:
 | Part of the app | Risk | Why |
 | --- | --- | --- |
 | Strategy catalogue, review pages, backtests | Low | General, educational information about how rules behaved on past data. |
-| Simulation mode | Low | Paper results of rules, the same for everyone. Nobody is told to do anything. |
+| Simulation mode | Low | Simulated results of the rules (signal trades), the same for everyone. Nobody is told to do anything. |
 | Live mode, rule-based strategies | Medium, manageable | Signals go to one user, in real time, about a specific stock. That stays outside "advice" only if the signals are the mechanical result of rules the user picked and set, are not presented as suitable for them, and use nothing about their personal situation. |
 | AI strategy, bring-your-own-AI | Low to medium | The app gives a suggested prompt; the user runs it in their own AI service and pastes the scores back. The opinion about the stocks comes from the user's AI, not from the app, and the app applies the user's rule ("top score gets a step") to it. What remains is our content: the prompt and the default stock list. Section 1 has the details. |
 | Paid broker referral links | Not allowed as is | Per-client referral fees count as client acquisition, which is reserved for licensed firms and their tied agents. |
@@ -42,7 +42,7 @@ ESMA's 2023 supervisory briefing on the definition of advice is the most useful 
 - No "recommended for you" strategies.
 - The budget is a parameter of the user's rule, not something the app suggests based on who they are. In a related Q&A on investment comparison sites, the CNMV accepted asking only for the investment amount, the time horizon and the generic product type.
 
-**The trades users confirm are financial information about them.** Live mode records what the user really bought, which describes part of their financial situation. Recording it for their own tracking is fine. Using it to change what signals say is where a regulator could argue the signals have become personal. That affects the open question in the journey about whether, after a skipped buy, signals follow the rules' paper position or the user's real one. The paper position is the cleaner choice legally: the signal is then the same for everyone running the same rules on the same stocks, whatever they actually did.
+**The trades users confirm are financial information about them.** Live mode records what the user really bought, which describes part of their financial situation. Recording it for their own tracking is fine. Using it to change what signals say is where a regulator could argue the signals have become personal. That affects the open question in the journey about whether, after a skipped buy, signals follow the rules' own position (signal trades) or the user's real one. The rules' position is the cleaner choice legally: the signal is then the same for everyone running the same rules on the same stocks, whatever they actually did.
 
 **The bring-your-own-AI design.** The AI strategy no longer runs an AI in the app. It gives the user a suggested prompt, the user runs it in their own AI service (ChatGPT, Claude, Gemini or similar), and pastes the scores back. The app then applies the strategy's rule: the top score gets a step. This moves the AI strategy from the riskiest part of the app to roughly where the rule-based strategies sit, for three reasons:
 - **The opinion isn't ours.** The scores come from a service the user chose, runs and pays for. The app never forms or publishes a view on which stock is best; it reads numbers the user brings and applies a rule they picked. It is close to the CNMV's "software sold to the client, set up by the client" case.
@@ -133,7 +133,7 @@ These keep live mode on the information-and-tools side of the line, and they cos
 1. **The user is the author of every running strategy.** They pick it, accept or change its stocks and settings, and set the budget. Defaults are the same for everyone and presented as a starting point ("the settings we tested"), never as suited to the user.
 2. **Never ask about, store or use the user's circumstances**: income, savings, goals, risk tolerance, age, experience. No "recommended for you", "people like you", "best for you" or ranking of strategies for a user.
 3. **Signals report rules, not opinions.** Every alert names the rule that fired, the facts that met it, and the date and time. No "buy now", no urgency, no price targets or return forecasts.
-4. **Don't let the user's real trades change the signals.** Live signals follow the strategy's rules (its paper position). Confirmed trades only feed the user's own results.
+4. **Don't let the user's real trades change the signals.** Live signals follow the strategy's rules (its signal trades). Confirmed trades only feed the user's own results.
 5. **Default stock lists are a universe, not picks.** Show them as "the stocks we tested this strategy on" and order them neutrally (e.g. alphabetically). Make adding and removing easy. Avoid labels like "top" or "best".
 6. **AI strategy: keep the AI the user's.**
    - The prompt is a published, versioned template: same for every user, readable and editable, asking for scored criteria with reasons and dated sources.

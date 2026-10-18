@@ -46,7 +46,7 @@ erDiagram
     assets ||--o{ strategy_assets : ""
     assets ||--|{ asset_texts : "what it does"
     strategies ||--o{ signals : raises
-    signals ||--|| rule_trades : "rules' paper trade"
+    signals ||--|| signal_trades : "the rules' trade"
     signals ||--o| user_trades : "confirmed as"
     strategies ||--o{ user_trades : "live trades"
     signals ||--o{ notifications : "alerted by"
@@ -116,7 +116,7 @@ AI data-sharing consent is added with the AI feature.
 | --- | --- | --- |
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade | |
-| template_key | text, not null | `CHECK` on the five keys (`dip`, `comeback`, `drop`, `trend`, `ai`); a new template updates the check |
+| template_key | text, not null | `CHECK` on the five keys (`dip`, `comeback`, `bear`, `trend`, `ai`); a new template updates the check |
 | defaults_version | int, not null | The template's tested-defaults version at creation |
 | name | text, not null | Unique per user among running strategies, case-insensitive: unique index on `(user_id, lower(name)) WHERE status = 'running'`. Ending one frees its name |
 | mode | text, not null | `simulation` \| `live`. Never changes |
@@ -135,7 +135,7 @@ AI data-sharing consent is added with the AI feature.
 The three `budget_*` columns map to a `Budget` value object in C#. Budget and settings can be changed while running; each change overwrites the current values.
 
 - "[n] changed" is computed in C# from `params` vs the defaults of `defaults_version`, not stored.
-- **Budget used** = cost of the buys (`amount + fee`) − cost of the shares sold, at average cost. Simulation: from `rule_trades`. Live: from non-deleted `user_trades`. A sale frees budget again. For *Ride the long trend* the next buy reinvests what the sale returned, so budget used can go over the budget after a gain.
+- **Budget used** = cost of the buys (`amount + fee`) − cost of the shares sold, at average cost. Simulation: from `signal_trades`. Live: from non-deleted `user_trades`. A sale frees budget again. For *Ride the long trend* the next buy reinvests what the sale returned, so budget used can go over the budget after a gain.
 - **Lowering the budget** below what is used is allowed: the strategy stops signalling buys, nothing is sold, and "Budget used" can read over 100%.
 - **Lowering max steps** below a stock's current step is allowed: that stock gets no more buys; its steps so far stay.
 
@@ -159,7 +159,7 @@ At create time every starter-list asset is inserted active, except the ones the 
 
 ### `signals`
 
-Both modes. Every signal gets exactly one rule trade (the rules carry on as if the step was bought, whatever the user does).
+Both modes. Every signal gets exactly one signal trade (the rules carry on as if the step was bought, whatever the user does).
 
 - **Simulation:** the app acts on the signal itself, so it is created `confirmed`.
 - **Live:** it starts `waiting`, and the user answers **Confirm**, **Skip** or **Snooze**. Snooze doesn't answer it: it stays `waiting` and the user is notified again the next day. It can be snoozed again until its window closes; then it is `missed`. A waiting signal can be confirmed later, with the real date.
@@ -198,9 +198,9 @@ Lifecycle checks, so an impossible state can't be stored:
 - `CHECK (step_no IS NULL OR step_no BETWEEN 1 AND max_steps)`
 - `CHECK (close_price > 0)`
 
-### `rule_trades`
+### `signal_trades`
 
-The rules' own paper position, per strategy and asset: one trade per signal. Drives signals in both modes, and the results in simulation ("The rules alone" in live). Its `price` is the next day's opening price that Confirm a signal prefills.
+The rules' own trades, per strategy and asset: one trade per signal, made whatever the user does. Call them *signal trades*, not paper or rule trades. Drives signals in both modes, and the results in simulation ("The rules alone" in live). Its `price` is the next day's opening price that Confirm a signal prefills.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -218,7 +218,7 @@ The rules' own paper position, per strategy and asset: one trade per signal. Dri
 | fx_rate | numeric(18,8), not null | Asset currency per strategy currency |
 | created_at | timestamptz | |
 
-Index `(strategy_id, asset_id, trade_date)`. The foreign key goes from `rule_trades` to `signals` only; `signals` has no `rule_trade_id`.
+Index `(strategy_id, asset_id, trade_date)`. The foreign key goes from `signal_trades` to `signals` only; `signals` has no `signal_trade_id`.
 
 Sign checks: `price > 0`, `shares > 0`, `amount > 0`, `fee >= 0`, `fx_rate > 0`, `step_no IS NULL OR step_no >= 1`. The maths between them (`shares = amount × fx_rate ÷ price`) is computed in C#, not checked in the database: rounding would make an exact check fail.
 
@@ -245,7 +245,7 @@ Live mode only: what the user confirmed or logged by hand. Results in live come 
 | deleted_at | timestamptz, null | Manual trades can be deleted |
 | created_at, updated_at | timestamptz | |
 
-Index `(strategy_id, asset_id, trade_date)`. Sign checks as on `rule_trades`: `price > 0`, `shares > 0`, `amount > 0`, `fee >= 0`, `fx_rate > 0`. The C# side derives the value that wasn't entered (`entered_as`) and is the only place that computes it.
+Index `(strategy_id, asset_id, trade_date)`. Sign checks as on `signal_trades`: `price > 0`, `shares > 0`, `amount > 0`, `fee >= 0`, `fx_rate > 0`. The C# side derives the value that wasn't entered (`entered_as`) and is the only place that computes it.
 
 ### `notifications`
 

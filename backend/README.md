@@ -1,0 +1,51 @@
+# Backend
+
+ASP.NET Core minimal API (.NET 10) with EF Core and PostgreSQL on Neon. The schema is [DATA-MODEL.md](DATA-MODEL.md).
+
+- `src/StrategyTradingLab.Api`: the API. `Data/` has the entities, `AppDbContext`, the table configurations and the migrations.
+- `tests/StrategyTradingLab.Api.Tests`: xUnit. Tests marked `[NeonFact]` run against the linked Neon branch and skip without it (CI).
+- `migrations.sql`: the idempotent SQL script of every migration, for review and for applying by hand.
+
+## Neon
+
+The repo root is linked to the Neon project (`.neon`, `neon.ts`). Local work uses the `dev` branch; `production` is the default branch.
+
+`neon.ts` declares the services: Postgres and the private `assets` bucket (Object Storage). `neon deploy` applies it to the linked branch and writes the branch's variables to `.env.local` at the repo root (gitignored):
+
+| Variable | Used for |
+| --- | --- |
+| `DATABASE_URL` | The API's queries (pooled, PgBouncer) |
+| `DATABASE_URL_UNPOOLED` | Migrations (`dotnet ef`), direct |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION` | Object Storage |
+
+In Development the API reads `.env.local` itself. `ConnectionStrings:Default` (user secrets or environment) overrides `DATABASE_URL` when set.
+
+## Run
+
+From `backend/`:
+
+```bash
+dotnet tool restore
+```
+
+```bash
+dotnet run --project src/StrategyTradingLab.Api
+```
+
+`GET http://localhost:5184/health` reports the Postgres version and the bucket. In Development, Swagger UI is at `http://localhost:5184/swagger` (the OpenAPI document at `/openapi/v1.json`); F5 in VS Code opens it.
+
+## Migrations
+
+```bash
+dotnet ef migrations add <Name> --project src/StrategyTradingLab.Api -o Data/Migrations
+```
+
+```bash
+dotnet ef migrations script --idempotent --project src/StrategyTradingLab.Api -o migrations.sql
+```
+
+```bash
+dotnet ef database update --project src/StrategyTradingLab.Api
+```
+
+The strategies' unique running name, `(user_id, lower(name)) WHERE status = 'running'`, is an expression index EF can't model; it's raw SQL in the initial migration.

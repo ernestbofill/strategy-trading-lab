@@ -34,6 +34,12 @@ dotnet run --project src/StrategyTradingLab.Api
 
 `GET http://localhost:5184/health` reports the Postgres version and the bucket. In Development, Swagger UI is at `http://localhost:5184/swagger` (the OpenAPI document at `/openapi/v1.json`); F5 in VS Code opens it.
 
+`GET /version` returns the version and commit.
+
+## Versions and deploy
+
+The version is `<Version>` in [Directory.Build.props](Directory.Build.props), currently alpha (`0.1.0-alpha.N`). Bump N in every PR that changes the backend: CI fails otherwise. Merging to `main` deploys to the Oracle server and tags `backend-v<version>`; see [deploy/backend](../deploy/backend/README.md).
+
 ## Migrations
 
 ```bash

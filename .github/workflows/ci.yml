@@ -69,6 +69,29 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Check the version was bumped
+        working-directory: .
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "$BASE"
+          if git diff --quiet "$BASE" HEAD -- backend ':(exclude,glob)backend/**/*.md'; then
+            echo "No backend code changed."
+            exit 0
+          fi
+          version() { grep -oP '(?<=<Version>)[^<]+' || true; }
+          old=$(git show "$BASE:backend/Directory.Build.props" 2>/dev/null | version)
+          new=$(version < backend/Directory.Build.props)
+          if [ "$old" = "$new" ]; then
+            echo "::error file=backend/Directory.Build.props::The backend changed: bump <Version> (still $new)."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/backend-v$new" > /dev/null; then
+            echo "::error file=backend/Directory.Build.props::backend-v$new is already deployed: pick a new version."
+            exit 1
+          fi
+          echo "Backend version: ${old:-none} -> $new"
+
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
       # Fails when an entity or convention changed without a migration.

@@ -1,3 +1,4 @@
+using System.Reflection;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -66,9 +67,17 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 .WithName("Health")
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
+// Version from backend/Directory.Build.props, plus the commit it was built from.
+app.MapGet("/version", () => TypedResults.Ok(new VersionResponse(
+    typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion)))
+.WithName("Version")
+.WithSummary("The API's version and the commit it was built from.");
+
 app.Run();
 
 record HealthResponse(string Postgres, string ObjectStorage);
+
+record VersionResponse(string Version);
 
 /// <summary>Visible to integration tests.</summary>
 public partial class Program;

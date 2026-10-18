@@ -1,0 +1,59 @@
+name: Deploy backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '!backend/**/*.md'
+      - 'deploy/backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+permissions:
+  # Pushes the backend-v<version> tag.
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      # The same strategy-lab host the VS Code task uses.
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo '140.238.209.178 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMumRdCTFBX8D+D6UXcv9it9BiV+KX/DksM/7vYVa2xI' > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<'EOF'
+          Host strategy-lab
+            HostName 140.238.209.178
+            User ubuntu
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+          EOF
+
+      - name: Build and install on the server
+        shell: pwsh
+        run: ./deploy/backend/deploy.ps1
+
+      - name: Tag the version
+        run: |
+          tag="backend-v$(grep -oP '(?<=<Version>)[^<]+' backend/Directory.Build.props)"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "$tag already exists (a re-run): not moved."
+          else
+            git tag "$tag" && git push origin "$tag"
+          fi

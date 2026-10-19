@@ -113,7 +113,7 @@ When the goal needs several features, decide how to split it into PRs and run th
 
 ### Feature acceptance
 
-- The spec, `ROADMAP.md` and other docs are updated.
+- The spec, `ROADMAP.md`, `docs/decisions.md` and other docs are updated.
 - The code follows these instructions and the frontend or backend ones.
 - It has meaningful tests, or needs none.
 - The PR is open and CI passes.
@@ -137,13 +137,19 @@ Keep these off for STL work: Gmail, Google Drive, Claude Docs, eToro (the app ne
 
 - When Ernest asks for an opinion or a review ("wdyt", "review this"), write the full review in the chat first, with numbered or headed points he can quote. Change things only after he answers.
 
-## Claude Code memory
+## Memory: the repo is what's shared
 
-Claude's memory is per machine: the Mac, the PC and each cloud session have their own, and none of them sees the others. These instructions are what all of them share.
+Claude Code's memory stays on, but it is per machine: the Mac, the PC and each cloud session have their own, and none sees the others. So anything another environment needs goes in the repo:
 
-- A lasting rule from Ernest goes in these instructions (in the session's PR), not only in memory.
-- Memory keeps only notes about working with Ernest that don't fit here, and they defer to these instructions.
-- Align memory in each environment: when a session starts on a machine whose memory you haven't checked against the current instructions, read it, delete entries these instructions contradict or already cover, and move any lasting rule that isn't here into a PR. Say in one line what you changed.
+| What to remember | Where |
+| --- | --- |
+| Rules and Ernest's preferences | These instructions |
+| What's built, what's next, open decisions | `ROADMAP.md` |
+| Steps waiting on Ernest | `TODO.md` → *Todos from Claude to Ernest* |
+| Decisions that outlive a PR, and why | `docs/decisions.md`: one dated line each, with the PR number |
+| Plans, review findings, what was done | The PR |
+
+Local memory is only a cache of small conveniences. If it contradicts these instructions, the instructions win: fix or delete the memory entry.
 
 ## Rules and permissions
 

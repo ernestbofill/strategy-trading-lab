@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clamp, plural, summarize, weeksToUse } from './budget'
+import { clamp, plural, resolveBudget, summarize, weeksToUse } from './budget'
 
 describe('summarize', () => {
   it('matches the default example', () => {
@@ -17,4 +17,26 @@ describe('helpers', () => {
     expect(plural(2, 'stock', 'stocks')).toBe('2 stocks')
   })
   it('counts weeks for AI rounds', () => expect(weeksToUse(30, 2)).toBe(60))
+})
+
+describe('resolveBudget', () => {
+  const none = { budget: null, step: null, maxSteps: null }
+
+  it("starts from the template's tested defaults", () => {
+    expect(resolveBudget(none, { amount: 3000, step: 600, maxSteps: 5 })).toEqual({ budget: 3000, step: 600, maxSteps: 5 })
+  })
+  it('keeps what the user set', () => {
+    expect(resolveBudget({ ...none, step: 200 }, { amount: 3000, step: 100, maxSteps: 5 })).toEqual({
+      budget: 3000,
+      step: 200,
+      maxSteps: 5,
+    })
+  })
+  it('makes the whole budget one step when the template has none (all in, all out)', () => {
+    expect(resolveBudget({ ...none, budget: 5000 }, { amount: 3000, step: null, maxSteps: null })).toEqual({
+      budget: 5000,
+      step: 5000,
+      maxSteps: 1,
+    })
+  })
 })

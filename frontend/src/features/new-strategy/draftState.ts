@@ -1,5 +1,4 @@
 import type { TemplateKey } from '../../api'
-import { DEFAULT_BUDGET } from '../../lib/budget'
 
 export type Mode = 'simulation' | 'live'
 
@@ -12,10 +11,10 @@ export interface DraftState {
   unticked: string[]
   aiSources: Record<AiSource, boolean>
   mode: Mode
-  /** Euro amounts, see lib/budget.ts. */
-  budget: number
-  step: number
-  maxSteps: number
+  /** Euro amounts, see lib/budget.ts. Null until the user changes them, so they follow the template's tested defaults. */
+  budget: number | null
+  step: number | null
+  maxSteps: number | null
   /** What the user typed on the last screen; null until then, so the name follows the template. */
   name: string | null
 }
@@ -29,9 +28,9 @@ export const initialDraft: DraftState = {
   unticked: [],
   aiSources: { news: true, mood: true, figures: true },
   mode: 'simulation',
-  budget: DEFAULT_BUDGET.budget,
-  step: DEFAULT_BUDGET.step,
-  maxSteps: DEFAULT_BUDGET.maxSteps,
+  budget: null,
+  step: null,
+  maxSteps: null,
   name: null,
 }
 

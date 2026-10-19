@@ -32,7 +32,7 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 ├── /log-in                Log in ➕
 ├── /forgot-password       Reset password ➕
 └── /legal
-    ├── /legal/disclaimer      "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
+    ├── /legal/disclaimer      "Not financial advice. Signals follow your rules."
     ├── /legal/terms           Terms of use
     ├── /legal/privacy         Privacy policy (GDPR), incl. AI data sharing
     └── /legal/cookies         Cookie policy
@@ -145,7 +145,7 @@ All sent after the US market close.
 ## 5. Shared components (🧩)
 
 - Public top navigation; app navigation (Dashboard · New strategy · Account)
-- Disclaimer line wherever results or signals appear, and in the footer: "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
+- Disclaimer line wherever results or signals appear, and in the footer: "Not financial advice. Signals follow your rules."
 - Mode label (Simulation / Live) on every strategy
 - Strategy name with template, mode and start date, e.g. "Zscaler & friends · *Dip in winners* · Live · since Oct 13"
 - Template card (name, tagline, idea, Learn more)

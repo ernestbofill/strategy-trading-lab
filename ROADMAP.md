@@ -15,13 +15,14 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 Draft order, for Ernest to confirm.
 
-1. **Save a started strategy.** `POST /strategies` from the Confirm screen, stored with its mode, budget, parameters and stocks. Needs the decision on the user before sign-up (see below).
-2. **Dashboard (`Home`):** the user's strategies, each with its mode.
-3. **Strategy page (`StrategyDetail`):** Live variant first, as drawn.
-4. **Sign-up and log-in.** High risk. Not designed yet: design it first.
-5. **Market data:** daily prices and the euro-dollar rate, once the provider is chosen.
-6. **Daily evaluation and signals** (high risk), then **Confirm a signal** (`Signal`).
-7. **Advanced settings** for *Dip in winners*, replacing the placeholder.
+1. **Catalan.** A priority, and cheaper now, while there are few screens. Move the frontend's copy into per-language files (English and Catalan) with a language switch the user picks (English by default, never guessed from the browser, as the spec says), and add `Texts/ca.json` for the templates. The API already serves template texts per language, from the user's record, so it needs a way to receive the choice before accounts exist. Claude drafts the Catalan; Ernest reviews it.
+2. **Save a started strategy.** `POST /strategies` from the Confirm screen, stored with its mode, budget, parameters and stocks. Needs the decision on the user before sign-up (see below).
+3. **Dashboard (`Home`):** the user's strategies, each with its mode.
+4. **Strategy page (`StrategyDetail`):** Live variant first, as drawn.
+5. **Sign-up and log-in.** High risk. Not designed yet: design it first.
+6. **Market data:** daily prices and the euro-dollar rate, once the provider is chosen.
+7. **Daily evaluation and signals** (high risk), then **Confirm a signal** (`Signal`).
+8. **Advanced settings** for *Dip in winners*, replacing the placeholder.
 
 ## Later
 
@@ -36,7 +37,6 @@ From the spec's *Not designed yet* list, roughly in the order they become useful
 - AI rounds: prompt editor, history, error state, comparison page.
 - Backtest page and History.
 - Account page, data and privacy (AI sharing, export, delete account).
-- Catalan.
 - Empty, loading and error states everywhere.
 
 ## Ideas
@@ -49,4 +49,5 @@ From the spec's *Not designed yet* list, roughly in the order they become useful
 
 - **A user before sign-up:** to save strategies before log-in exists, use one fixed development user, or build sign-up first?
 - **Price data provider:** terms that allow commercial use, and the cost at many free users. The POC uses eToro and Yahoo.
-- The rest are in the spec's [Open questions](docs/strategy-trading-lab-app-spec.md#10-open-questions): regulation, AI data, the suggested prompt, web push on iPhone, Catalan copy.
+- **Catalan copy:** Claude drafts, Ernest reviews. Is that enough, or does a native speaker review it before release?
+- The rest are in the spec's [Open questions](docs/strategy-trading-lab-app-spec.md#10-open-questions): regulation, AI data, the suggested prompt, web push on iPhone.

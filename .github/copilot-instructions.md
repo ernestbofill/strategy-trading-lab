@@ -108,7 +108,7 @@ At any time, be critical: point out inconsistencies, problems and possible impro
 When the goal needs several features, decide how to split it into PRs and run the steps above in a loop, one PR per item, taking items from `ROADMAP.md` in order.
 
 - In a loop you may merge your own PRs once they meet *Feature acceptance*, including backend PRs, which deploy to production. After a backend merge, check that the deploy workflow passed and `/api/health` answers before starting the next item.
-- High-risk PRs are the exception: stop and ask Ernest before merging them.
+- High-risk PRs and docs-only PRs are the exceptions: leave them open for Ernest. He reviews docs himself.
 - Stop when the goal is reached, when you are stuck, or when the next item needs a decision from Ernest. Say where you stopped and why.
 
 ### Feature acceptance

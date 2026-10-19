@@ -119,6 +119,20 @@ When the goal needs several features, decide how to split it into PRs and run th
 - The PR is open and CI passes.
 - It was reviewed as its kind of change requires.
 
+## Tools for STL work
+
+Load only what the task needs: every connector adds tools to each session. In the desktop app, connectors are switched in the composer's + → Connectors; that switch is also the default for new sessions in every project, so it affects Ernest's other repos too.
+
+| Need | Use |
+| --- | --- |
+| GitHub (PRs, reviews, CI) | `gh` locally; the GitHub connector in cloud sessions |
+| Dev database, Neon branches, schema checks | The Neon connector (production: see *Production*) |
+| Running and checking screens | The built-in browser, with the `.claude/launch.json` configs (`frontend`, `frontend-mock`, `backend`) |
+| Web research (price data, regulation, libraries) | Exa. Firecrawl only for legal or government sources, or to scrape a page. |
+| Diagrams in chat | visualize |
+
+Keep these off for STL work: Gmail, Google Drive, Claude Docs, eToro (the app never connects to a broker), Booking.com, Kiwi.com. If a task really needs one, ask Ernest before turning it on.
+
 ## Working with Ernest
 
 - When Ernest asks for an opinion or a review ("wdyt", "review this"), write the full review in the chat first, with numbered or headed points he can quote. Change things only after he answers.

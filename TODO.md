@@ -15,3 +15,5 @@
 
 ## Ideas
 - [ ] AI automation for continuous improvement.
+- [ ] User can give feedback
+- [ ] Referral program

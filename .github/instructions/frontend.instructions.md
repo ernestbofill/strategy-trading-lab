@@ -4,7 +4,7 @@ applyTo: "frontend/**"
 
 # Frontend (React + TypeScript PWA)
 
-Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
+Draft plan: [Frontend Implementation Plan](../../frontend/PLAN.md)
 
 ## Commands (run in `frontend/`)
 
@@ -37,7 +37,7 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 - **Styling:** use CSS Modules (`Component.module.css` next to the component) and only the design tokens in `src/styles/tokens.css`. Never hard-code colours.
   - Use the global classes in `src/styles/global.css` instead of repeating their rules: `.ui-strong` (uppercase labels), `.caption`, `.well`, `.btn-primary`, `.visually-hidden`.
 - **Data in, decisions in data:** branch on fields such as `template.aiRound` or `template.backtest`, not on template keys like `'ai'`.
-- **Copy:** take the spec's exact strings. Put copy used on several screens in `src/lib/copy.ts`.
+- **Copy:** take the spec's strings. Put copy used on several screens in `src/lib/copy.ts`.
 - **Format:** numbers and identifiers use the mono font. Use `eur()` and `signedPct()` from `lib/format.ts`; `signedPct` writes a true minus sign (−).
 - **Accessibility:**
   - Use native inputs (radio, checkbox), visually hidden, inside a `<label>`.
@@ -48,6 +48,7 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 - **Not built yet:** link to `NotBuiltYet` or render the control disabled (e.g. `TextAction` without `to`). Never leave a dead link.
 - Keep components small and typed. Don't add a dependency without a clear need.
 - Create components for reusable UI. But don't over-engineer it, consider if its a concept that makes sense as a reusable component.
+- UI Simplicity. The user should have the right and necessary information no more. People don't like to read.
 
 ## Versioning
 
@@ -59,6 +60,10 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 - Unit-test `src/lib/` helpers and the rules in components: the last AI source can't be turned off; "Use this template" is disabled with no stocks ticked.
 - Test through roles and visible text, not class names.
 - Put a test next to the file it covers as `*.test.ts(x)`.
+
+## Workflow
+
+- Before opening a PR: the typecheck, lint, tests and build all pass, and you have checked the changed screens in a browser at phone and desktop width.
 
 ## Worktrees
 

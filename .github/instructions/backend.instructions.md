@@ -4,8 +4,6 @@ applyTo: "backend/**"
 
 # Backend (C# .NET + PostgreSQL)
 
-Plan: [Backend Implementation Plan](./backend/PLAN.md)
-
 ## Versions
 
 - Bump `<Version>` in `backend/Directory.Build.props` in every PR that changes the backend (not only its tests or Markdown). CI fails without it.

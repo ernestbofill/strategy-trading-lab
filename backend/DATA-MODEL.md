@@ -56,16 +56,16 @@ erDiagram
 
 ### `assets`
 
-Stocks and funds: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs; a startup check fails if a template points at a missing asset.
+Stocks, funds and indexes: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs, plus a few more ([template-assets.md](src/StrategyTradingLab.Api/Templates/template-assets.md)); a test fails if a template points at an asset that isn't seeded.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid PK | Not the symbol: the same symbol can exist on two exchanges |
-| symbol | text, not null | `ZS`. Internal; the UI shows the name |
+| symbol | text, not null | Yahoo Finance symbol: `ZS`, `SU.PA`, `^NDX`. Internal; the UI shows the name |
 | exchange | text, not null | MIC code, e.g. `XNAS`, `XNYS`, `ARCX` |
 | name | text, not null | "Zscaler" |
-| kind | text, not null | `stock` \| `fund` |
-| currency | char(3), not null | Trading currency, `USD` for v1 |
+| kind | text, not null | `stock` \| `fund` \| `index` (followed, not bought) |
+| currency | char(3), not null | Trading currency: `USD`, `EUR`, `GBP`, `HKD`… |
 | active | bool, not null, default true | Delisted assets stay for history |
 
 Unique `(symbol, exchange)`.
@@ -128,7 +128,7 @@ AI data-sharing consent is added with the AI feature.
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |
 | budget_max_steps | int, null | Max steps per stock, 1–20. Null for all in, all out. `CHECK ((budget_step IS NULL) = (budget_max_steps IS NULL))` |
-| params | jsonb, not null | Every template setting, validated per template in C#. Dip in winners: `{"zoneStartPct":5,"zoneEndPct":15,"peakDays":40,"trendDays":200,"floorDays":50}` |
+| params | jsonb, not null | Every template setting, validated per template in C#. Dip in winners: `{"minGainPct":50,"gainDays":168,"peakDays":60,"zoneStartPct":5,"zoneEndPct":15,"trendDays":200,"floorDays":50,"cooldownDays":10}` (records in `Templates/TemplateParams.cs`) |
 | source_strategy_id | uuid FK → strategies, null, set null | The simulation a live strategy was copied from. A simulation can have several live copies |
 | created_at, updated_at | timestamptz | |
 

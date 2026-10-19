@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Data;
 
@@ -16,11 +17,6 @@ static class Money
     public const string Shares = "numeric(18,6)";
     public const string FxRate = "numeric(18,8)";
     public const string Currency = "char(3)";
-}
-
-public static class TemplateKeys
-{
-    public static readonly string[] All = ["dip", "comeback", "bear", "trend", "ai"];
 }
 
 class AssetConfiguration : IEntityTypeConfiguration<Asset>
@@ -74,7 +70,7 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
     {
         entity.ToTable("strategies", table =>
         {
-            table.HasInCheck("template_key", TemplateKeys.All);
+            table.HasInCheck("template_key", TemplateCatalog.Keys);
             table.HasCheckConstraint("ck_strategies_ended_at", "(status = 'ended') = (ended_at IS NOT NULL)");
             table.HasCheckConstraint("ck_strategies_budget_step", "budget_step <= budget_amount");
             table.HasCheckConstraint("ck_strategies_budget_steps",

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Neon;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
@@ -96,6 +97,68 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
 
         Assert.StartsWith("PostgreSQL", health!.Postgres);
         Assert.StartsWith("ok: bucket assets", health.ObjectStorage);
+    }
+
+    [NeonFact]
+    public async Task Every_template_asset_is_in_the_database()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var ids = TemplateAssets.All.Select(asset => asset.Id).ToList();
+
+        Assert.Equal(ids.Count, await db.Assets.CountAsync(asset => ids.Contains(asset.Id)));
+    }
+
+    [NeonFact]
+    public async Task Templates_list_the_five_in_order()
+    {
+        using var client = factory.CreateClient();
+
+        var templates = await client.GetFromJsonAsync<JsonElement>("/templates");
+
+        Assert.Equal(TemplateCatalog.Keys,
+            templates.EnumerateArray().Select(t => t.GetProperty("key").GetString()));
+        Assert.Equal("buysAndSells", templates[3].GetProperty("signals").GetString());
+        Assert.Equal(2, templates[4].GetProperty("aiRound").GetProperty("everyWeeks").GetInt32());
+    }
+
+    [NeonFact]
+    public async Task A_template_has_its_starter_list_from_the_database_sorted_by_name()
+    {
+        using var client = factory.CreateClient();
+
+        var dip = await client.GetFromJsonAsync<JsonElement>("/templates/dip");
+
+        var watches = dip.GetProperty("watches");
+        Assert.Equal("stocks", watches.GetProperty("kind").GetString());
+        Assert.Equal(
+            ["Coherent", "Eaton", "Modine", "Monolithic Power Systems", "nVent Electric", "Schneider Electric",
+             "Super Micro Computer", "Vertiv", "Vicor"],
+            watches.GetProperty("starterList").EnumerateArray().Select(s => s.GetProperty("name").GetString()));
+        Assert.Equal(60, dip.GetProperty("defaults").GetProperty("params").GetProperty("peakDays").GetInt32());
+    }
+
+    [NeonFact]
+    public async Task A_fund_template_watches_one_fund()
+    {
+        using var client = factory.CreateClient();
+
+        var trend = await client.GetFromJsonAsync<JsonElement>("/templates/trend");
+
+        var watches = trend.GetProperty("watches");
+        Assert.Equal("fund", watches.GetProperty("kind").GetString());
+        Assert.Equal("CSPX.L", watches.GetProperty("fund").GetProperty("symbol").GetString());
+        Assert.Equal(JsonValueKind.Null, trend.GetProperty("defaults").GetProperty("budget").GetProperty("step").ValueKind);
+    }
+
+    [NeonFact]
+    public async Task An_unknown_template_is_not_found()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/templates/nope");
+
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
     }
 
     record Health(string Postgres, string ObjectStorage);

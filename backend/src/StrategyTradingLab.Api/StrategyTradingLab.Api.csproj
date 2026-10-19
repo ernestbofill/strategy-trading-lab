@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Template texts, one file per language, read as templates/{locale}.json -->
+    <Content Remove="Templates\Texts\*.json" />
+    <EmbeddedResource Include="Templates\Texts\*.json" LogicalName="templates/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.104.4" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />

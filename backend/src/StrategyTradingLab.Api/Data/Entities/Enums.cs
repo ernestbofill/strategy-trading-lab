@@ -3,7 +3,7 @@ namespace StrategyTradingLab.Api.Data.Entities;
 // Stored as snake_case text with a CHECK constraint (see SnakeCaseEnumConverter).
 // A new member needs a migration that updates the matching check.
 
-public enum AssetKind { Stock, Fund }
+public enum AssetKind { Stock, Fund, Index }
 
 public enum StrategyMode { Simulation, Live }
 

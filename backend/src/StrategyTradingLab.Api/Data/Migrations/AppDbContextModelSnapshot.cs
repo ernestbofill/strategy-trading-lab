@@ -77,7 +77,328 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.ToTable("assets", null, t =>
                         {
-                            t.HasCheckConstraint("ck_assets_kind", "kind IN ('stock', 'fund')");
+                            t.HasCheckConstraint("ck_assets_kind", "kind IN ('stock', 'fund', 'index')");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000001"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "Eaton",
+                            Symbol = "ETN"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000002"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "Modine",
+                            Symbol = "MOD"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000003"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "stock",
+                            Name = "Monolithic Power Systems",
+                            Symbol = "MPWR"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000004"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "nVent Electric",
+                            Symbol = "NVT"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000005"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "stock",
+                            Name = "Super Micro Computer",
+                            Symbol = "SMCI"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000006"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "Vertiv",
+                            Symbol = "VRT"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000007"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "stock",
+                            Name = "Vicor",
+                            Symbol = "VICR"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000008"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "stock",
+                            Name = "Moderna",
+                            Symbol = "MRNA"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000009"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "stock",
+                            Name = "Palantir Technologies",
+                            Symbol = "PLTR"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000010"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "Salesforce",
+                            Symbol = "CRM"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000011"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "ServiceNow",
+                            Symbol = "NOW"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000012"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "Snowflake",
+                            Symbol = "SNOW"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000013"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "stock",
+                            Name = "Tesla",
+                            Symbol = "TSLA"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000014"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "Zeta Global",
+                            Symbol = "ZETA"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000015"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "stock",
+                            Name = "Zscaler",
+                            Symbol = "ZS"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000016"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNYS",
+                            Kind = "stock",
+                            Name = "Coherent",
+                            Symbol = "COHR"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000017"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "EUR",
+                            Exchange = "XPAR",
+                            Kind = "stock",
+                            Name = "Schneider Electric",
+                            Symbol = "SU.PA"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000018"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "HKD",
+                            Exchange = "XHKG",
+                            Kind = "stock",
+                            Name = "BYD",
+                            Symbol = "1211.HK"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000019"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "GBP",
+                            Exchange = "XLON",
+                            Kind = "stock",
+                            Name = "Molten Ventures",
+                            Symbol = "GROW.L"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000000020"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "DKK",
+                            Exchange = "XCSE",
+                            Kind = "stock",
+                            Name = "cBrain",
+                            Symbol = "CBRAIN.CO"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000001001"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "ARCX",
+                            Kind = "fund",
+                            Name = "SPDR S&P 500 ETF",
+                            Symbol = "SPY"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000001002"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XLON",
+                            Kind = "fund",
+                            Name = "iShares Core S&P 500 UCITS ETF",
+                            Symbol = "CSPX.L"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000001003"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "EUR",
+                            Exchange = "XAMS",
+                            Kind = "fund",
+                            Name = "iShares Core MSCI World UCITS ETF",
+                            Symbol = "IWDA.AS"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000001004"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "fund",
+                            Name = "Invesco QQQ Trust",
+                            Symbol = "QQQ"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000001005"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "ARCX",
+                            Kind = "fund",
+                            Name = "iShares MSCI South Korea ETF",
+                            Symbol = "EWY"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000001006"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "fund",
+                            Name = "iShares MSCI China ETF",
+                            Symbol = "MCHI"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000002001"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "USD",
+                            Exchange = "XNAS",
+                            Kind = "index",
+                            Name = "Nasdaq-100",
+                            Symbol = "^NDX"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000002002"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "EUR",
+                            Exchange = "XETR",
+                            Kind = "index",
+                            Name = "DAX",
+                            Symbol = "^GDAXI"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8001-000000002003"),
+                            Active = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Currency = "JPY",
+                            Exchange = "XJPX",
+                            Kind = "index",
+                            Name = "Nikkei 225",
+                            Symbol = "^N225"
                         });
                 });
 
@@ -106,6 +427,211 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasName("pk_asset_texts");
 
                     b.ToTable("asset_texts", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000001"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Electrical power equipment"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000002"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Cooling for data centres and vehicles"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000003"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Power chips for computers and cars"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000004"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Electrical enclosures and cooling"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000005"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Servers for AI and data centres"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000006"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Power and cooling for data centres"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000007"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Power modules for servers and electronics"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000008"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "mRNA vaccines and medicines"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000009"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Data analysis software"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000010"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Customer management software"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000011"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Workflow software for companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000012"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Cloud data platform"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000013"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Electric cars and batteries"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000014"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Marketing software and data"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000015"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Cloud security software"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000016"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Lasers and optical parts for networks"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000017"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Electrical power and automation equipment"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000018"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Electric cars and batteries"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000019"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Invests in young tech companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000000020"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Software for governments"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000001001"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Tracks the 500 largest US companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000001002"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Tracks the 500 largest US companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000001003"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Large companies in developed countries"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000001004"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Tracks the Nasdaq-100"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000001005"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Large South Korean companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000001006"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "Large Chinese companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000002001"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "The 100 largest non-financial Nasdaq companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000002002"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "The 40 largest German companies"
+                        },
+                        new
+                        {
+                            AssetId = new Guid("019a0000-0000-7000-8001-000000002003"),
+                            Locale = "en",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            What = "225 large Japanese companies"
+                        });
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Notification", b =>

@@ -51,7 +51,7 @@ These apply to every screen, email and alert.
 - **One disclaimer, everywhere results or signals appear:** "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
-- **US markets, euro results.** v1 covers US-listed stocks and funds. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in dollars (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
+- **Mostly US markets, euro results.** v1 covers the POC's stocks and funds: mostly US-listed, a few listed in Europe and Hong Kong. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
 - **English and Catalan.** v1 ships in both. The user picks the language (nothing is guessed from the browser) and can change it in the account. Emails and notifications follow it. Quoted copy in this spec is the English; the Catalan copy is still to be written.
 - **Mode always labelled.** Every strategy shows *Simulation* or *Live*; results of different modes are never mixed.
 - **Free for now.** No paywall, plans or pricing.
@@ -99,15 +99,15 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Dip in winners (Leader pullback)**
 - Candidate (trending): gained at least 50% at some point in the last 4–8 months; price > SMA 50 > SMA 150 > SMA 200; the SMA 200 is rising.
-- Signal: price in the discount zone, 5–15% below the recent peak (highest price of the last 20–60 days; the screen exposes one number, default 40), while still above the SMA 50.
+- Signal: price in the discount zone, 5–15% below the recent peak (highest price of the last 20–60 days; the screen exposes one number, default 60, the POC's), while still above the SMA 50.
 - Signal ends: the price leaves the zone (back up to the old high, or below the SMA 50).
-- Later steps: one per signal window, at least 20 days (cooldown) after the last one. The cooldown is not exposed in Advanced settings.
+- Later steps: one per signal window, at least 10 days (cooldown) after the last one. The cooldown is not exposed in Advanced settings.
 
 **The comeback (Confirmed turnaround)**
 - Candidate (beaten down): at least 30% below its 52-week high, and below the SMA 200.
 - Signal: the close is at least 15% above the SMA 50, and 5-day average volume is at least 20% above the 50-day average.
-- Signal ends: the close drops back under the signal line, or the price is more than 5% above it.
-- Later steps: one per milestone (back above the SMA 200, golden cross, within 15% of the 52-week high, breakout after an 8% pullback), each within 5% above its level. Cooldown 5 days.
+- Signal ends: the close drops back under the signal line, or the price is more than 8% above it.
+- Later steps: one per milestone (back above the SMA 200, golden cross, within 15% of the 52-week high, breakout after an 8% pullback), each within 8% above its level. Cooldown 5 days.
 
 **The big market drop (Bear-market accumulation)**
 - Normal → Drawdown (−20% from the high of the last 6 months) → track the new low → Signal (+5% above the lowest low; first step) → Accumulating (one step every 2 weeks, 5 steps by default) → Done.
@@ -277,7 +277,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- |
 | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1) |
 | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
-| "The recent peak is the highest price of the last [n] days." | 40 days | 5 | 20–60 |
+| "The recent peak is the highest price of the last [n] days." | 60 days | 5 | 20–60 |
 | "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
 | "The dip must stay above the average over [n] days." | 50 days | 5 | 20–100 |
 
@@ -570,7 +570,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **The suggested prompt:** who writes and versions it, and how it's tested across ChatGPT, Claude and Gemini.
 - **Reading the answer:** how forgiving the parser is (table vs JSON, extra text, names instead of symbols).
 - **AI model list:** which models are in the picker, and who keeps it current.
-- **Advanced settings per template:** which POC parameters each template exposes; whether *Dip in winners* should expose its 20-day cooldown.
+- **Advanced settings per template:** which POC parameters each template exposes; whether *Dip in winners* should expose its 10-day cooldown.
 - **Price data:** which provider supplies daily US prices and the euro-dollar rate, with terms that allow commercial use, and its cost at many free users. The POC uses eToro and Yahoo.
 - **Web push on iPhone:** is a home-screen prompt enough, or do iPhone users rely on email?
 - **Catalan copy:** who writes and reviews it, including template copy, emails and notifications.

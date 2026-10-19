@@ -78,7 +78,7 @@ v1 is for learning, testing and following simple strategies. It never tells anyo
 - **Simple templates.** Each one fits in a few sentences, has a catchy tagline, and can be understood without trading experience. Each review page leads with the idea behind it, before its rules.
 - **Ready out of the box.** Every template ships with suggested stocks and backtested defaults (the POC's).
 - **Open about testing.** Every backtest links to *How we tested*: the data, how a test runs, results by period, and what a backtest can't show.
-- **US markets, euro results.** v1 covers US-listed stocks and funds, like the POC. Budgets, steps and results are in euro, converted at the day's exchange rate; stock prices are shown in dollars, as the user sees them at their broker.
+- **Mostly US markets, euro results.** v1 covers the POC's stocks and funds: mostly US-listed, a few listed in Europe and Hong Kong. Budgets, steps and results are in euro, converted at the day's exchange rate; stock prices are shown in the listing's currency, as the user sees them at their broker.
 - **Free for now.**
 - **Results are measurable.** The user can always see how a template did in the past and how each of their strategies is doing since it started.
 - **Visual style:** the Cyberpunk design system, kept as its own artifact.
@@ -320,7 +320,7 @@ Still to design:
 - **AI template defaults:** a round every 2 weeks; the top 1 stock gets a step.
 - **AI model and answer:** each AI round asks for the AI model used and the full answer.
 - **Comparing AIs:** yes. With the user's opt-in consent, we keep their AI rounds anonymised (the AI model and the full answer) to improve the product and, later, to show users how AI models compare. Comparisons are by AI model, never a ranking of stocks.
-- **Markets:** US-listed stocks and funds only in v1 (no preference given; chosen to match the POC and the S&P 500 templates).
+- **Markets:** the POC's stocks and funds in v1: mostly US-listed, a few in Europe and Hong Kong (see `backend/src/StrategyTradingLab.Api/Templates/TemplateAssets.cs`).
 - **Currency:** budgets, steps and results in euro at the day's rate; stock prices in dollars.
 - **Wording:** see "Wording rules": template names describe rather than instruct (*Dip in winners*, *The comeback*, *The big market drop*, *Your AI's top picks*; *Ride the long trend* kept); taglines "Find the next Nvidia" and "Stocks on the rise"; "discount zone" instead of "buy zone"; "Choose stocks to watch"; status "Signal"; signals phrased as "Your rules for … are met"; the market-recovery claim removed; one short disclaimer everywhere.
 
@@ -343,6 +343,6 @@ Still to design:
 - [ ] **The suggested prompt.** Who writes and maintains it, how is it versioned (users who edited theirs keep their own), and how do we test it across ChatGPT, Claude and Gemini so the answer format is reliable? The POC's 0-10 news sentiment scoring is a starting point for the criteria. The shared rounds will show which models follow the format.
 - [ ] **Reading the answer.** How forgiving is the parser (table vs JSON, extra text around it, a stock name instead of its symbol)? Pasted text is treated as data only: the app reads numbers and short reasons from the scores block and never acts on anything else in it.
 - [ ] **AI model list.** Which services and models are in the picker, and who keeps it current as new models ship?
-- [ ] **Advanced settings for each template.** Only *Dip in winners* is drawn. Which POC parameters does each template expose, and how? (The POC's recent peak is a 20-60 day window; the screen shows one number, default 40.)
+- [ ] **Advanced settings for each template.** Only *Dip in winners* is drawn. Which POC parameters does each template expose, and how? (The POC's recent peak is a 20-60 day window; the screen shows one number, default 60.)
 - [ ] **Price data.** Which provider supplies daily US prices and the euro-dollar rate, with terms that allow commercial use, and what does it cost at many users, given the app is free? The POC uses eToro and Yahoo.
 - [ ] **Web push on iPhone.** It only works once the app is added to the home screen. Is a home-screen prompt enough, or do iPhone users rely on email alerts?

@@ -26,7 +26,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 
 ## Environments
 
-Ernest works from a Mac and a Windows PC (both with VS Code) and from Claude Code cloud sessions. Keep the project ready for all three, so work can continue from one to another: no machine-specific paths, scripts that run on both shells, and every manual setup step written down.
+Ernest works from a Mac and a Windows PC, each with VS Code and Claude Code, and from Claude Code cloud sessions. Keep the project ready for all three, so work can continue from one to another: no machine-specific paths, scripts that run on both shells, and every manual setup step written down.
 
 | | Mac / Windows (local) | Claude Code cloud session |
 | --- | --- | --- |

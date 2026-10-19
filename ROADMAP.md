@@ -9,19 +9,19 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 - New-strategy flow, frontend: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm (#1–#3, #10, #13, #19). Advanced settings and the dashboard are placeholders.
 - Backend: data model (#14), .NET skeleton with the first migration on Neon (#15), the five templates with the POC's tested defaults (#16), deployed to Oracle on merge (#17), the frontend loading templates from the API (#18).
 - CI on PRs, frontend deploy to Oracle, app version in the top bar, reload on a new version (#4–#9, #11).
+- Agentic workflow: instructions, ROADMAP, shared Claude settings and cloud setup hook (#20). Two disclaimers: short on screens seen again and again, full where the user commits (#21).
 
 ## Next
 
 Draft order, for Ernest to confirm.
 
-1. **Two disclaimers:** the short one on screens seen again and again, the full one where the user commits (#21).
-2. **Save a started strategy.** `POST /strategies` from the Confirm screen, stored with its mode, budget, parameters and stocks. Needs the decision on the user before sign-up (see below).
-3. **Dashboard (`Home`):** the user's strategies, each with its mode.
-4. **Strategy page (`StrategyDetail`):** Live variant first, as drawn.
-5. **Sign-up and log-in.** High risk. Not designed yet: design it first.
-6. **Market data:** daily prices and the euro-dollar rate, once the provider is chosen.
-7. **Daily evaluation and signals** (high risk), then **Confirm a signal** (`Signal`).
-8. **Advanced settings** for *Dip in winners*, replacing the placeholder.
+1. **Save a started strategy.** `POST /strategies` from the Confirm screen, stored with its mode, budget, parameters and stocks. Needs the decision on the user before sign-up (see below).
+2. **Dashboard (`Home`):** the user's strategies, each with its mode.
+3. **Strategy page (`StrategyDetail`):** Live variant first, as drawn.
+4. **Sign-up and log-in.** High risk. Not designed yet: design it first.
+5. **Market data:** daily prices and the euro-dollar rate, once the provider is chosen.
+6. **Daily evaluation and signals** (high risk), then **Confirm a signal** (`Signal`).
+7. **Advanced settings** for *Dip in winners*, replacing the placeholder.
 
 ## Later
 

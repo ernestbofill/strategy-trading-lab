@@ -14,7 +14,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 Draft order, for Ernest to confirm.
 
-1. **Shorten the disclaimer** to "Not financial advice. Signals follow your rules." in the app and the docs.
+1. **Two disclaimers:** the short one on screens seen again and again, the full one where the user commits (#21).
 2. **Save a started strategy.** `POST /strategies` from the Confirm screen, stored with its mode, budget, parameters and stocks. Needs the decision on the user before sign-up (see below).
 3. **Dashboard (`Home`):** the user's strategies, each with its mode.
 4. **Strategy page (`StrategyDetail`):** Live variant first, as drawn.

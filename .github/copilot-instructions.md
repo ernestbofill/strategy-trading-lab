@@ -36,7 +36,7 @@ Ernest works from a Mac and a Windows PC (both with VS Code) and from Claude Cod
 | Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 
-Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), stop and tell Ernest exactly what to set and where, by name, never by value.
+Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), tell Ernest exactly what to set and where, by name, never by value. Keep working if it doesn't block you: add it to `TODO.md` and the PR's *Manual steps for Ernest*, and he does it later. Stop only when you can't go on without it.
 
 ## Production
 

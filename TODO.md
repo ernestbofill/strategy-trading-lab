@@ -6,6 +6,7 @@
 - [ ] Cloud environment (claude.ai → Claude Code → environment settings): make sure Node 24 and .NET 10 are available. (#20)
 - [ ] Cloud dev DB (optional): add `DATABASE_URL` and `DATABASE_URL_UNPOOLED` from the Neon `dev` branch as environment variables, and allow outbound access to Neon in the network settings. (#20)
 - [ ] Mac: install .NET 10 (`dotnet` isn't on the PATH, so backend work here can't build or test). (#20)
+- [ ] Mac: install PowerShell (`pwsh`), needed by `deploy/backend/deploy.ps1`. (#22)
 - [ ] Check the frontend deploy after #21 shows the new disclaimers. (#21)
 - [ ] Decide who reviews the Catalan copy: you, or also a native speaker before release? (#22)
 - [ ] Global `~/.claude/settings.json` (Mac): the auto-mode environment describes the trading bot repo (default branch `master`, trusted repo `trading-strategies-bot`), and the default model is Sonnet. Move the bot's environment into that repo's settings, and pick the default model for this repo. (#22)

@@ -4,8 +4,6 @@ applyTo: "frontend/**"
 
 # Frontend (React + TypeScript PWA)
 
-Draft plan: [Frontend Implementation Plan](../../frontend/PLAN.md)
-
 ## Commands (run in `frontend/`)
 
 - `npm run dev`: dev server on http://localhost:5173. It proxies `/api` to the .NET API on http://localhost:5184 (`dotnet run` in `backend/src/StrategyTradingLab.Api`); `npm run dev:mock` uses the in-browser mock instead (`VITE_API=mock`, set in `.env.mock`).
@@ -48,7 +46,7 @@ Draft plan: [Frontend Implementation Plan](../../frontend/PLAN.md)
 - **Not built yet:** link to `NotBuiltYet` or render the control disabled (e.g. `TextAction` without `to`). Never leave a dead link.
 - Keep components small and typed. Don't add a dependency without a clear need.
 - Create components for reusable UI. But don't over-engineer it, consider if its a concept that makes sense as a reusable component.
-- UI Simplicity. The user should have the right and necessary information no more. People don't like to read.
+- **UI simplicity:** show the information the user needs, and no more. People don't like to read: prefer fewer, shorter words to the spec's longer copy.
 
 ## Versioning
 
@@ -63,9 +61,10 @@ Draft plan: [Frontend Implementation Plan](../../frontend/PLAN.md)
 
 ## Workflow
 
-- Before opening a PR: the typecheck, lint, tests and build all pass, and you have checked the changed screens in a browser at phone and desktop width.
+- Before opening a PR, from `frontend/`: `npm run lint`, `npm test` and `npm run build` (which typechecks) all pass.
+- Check the changed screens in a browser at phone (390px) and desktop width. In a cloud session there is no browser: say so in the PR.
 
-## Worktrees
+## Worktrees (local only)
 
 In a worktree, apply the workspace theme in .vscode/settings.json in the worktree folder.
 {

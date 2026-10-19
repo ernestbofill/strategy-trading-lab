@@ -36,7 +36,7 @@ These keep the app on the "information and tools" side of the line between infor
 - **Signals report rules, not opinions.** Every signal says which rule was met, the facts that met it and, for live, what that means under the user's own settings. Never "buy now", no urgency, no price targets or return forecasts.
 - **The user owns the setup.** Lists, settings and budgets are presented as the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
 - **No promises.** No claims that markets or stocks will recover or rise. Results are always shown with the comparison to an index fund and the worst year.
-- **One disclaimer, everywhere results or signals appear:** "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
+- **A disclaimer everywhere results or signals appear, in two lengths.** The user sees it over and over, so screens seen again and again (Review, How we tested, the strategy page, Confirm a signal, the footer) use the short one: "Not financial advice. Signals follow your rules." Where the user commits (accepted once at sign-up, above the button on Name, preview and confirm, and the legal page) use the full one: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." The wireframes still show the full one everywhere; this rule wins.
 
 | Where | Before | Now |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ These keep the app on the "information and tools" side of the line between infor
 | Stock status | Watching · Buy signal · Building · Holding | Watching · **Signal** · Building · Holding |
 | Market-drop idea | "…Broad markets have so far always recovered from them, though sometimes slowly…" | **Claim removed.** The idea stands on its own: wait for the first bounce after a big fall, then signal buys in small steps. |
 | Live signal | "Zscaler is in the buy zone, 8% below its recent peak. Your plan: one step of €100 (step 2 of 5)." | **"Your rules for *[strategy name]* are met for Zscaler: 8% below its recent peak, still above its 50-day average. Under your settings that's step 2 of 5 (€100)."** |
-| Disclaimer | "For learning and testing, not financial advice. Nothing is traded for you." | **"Not financial advice. Signals follow your rules; you decide and trade at your own broker."** |
+| Disclaimer | "For learning and testing, not financial advice. Nothing is traded for you." | **"Not financial advice. Signals follow your rules."** (full where the user commits: "Not financial advice. Signals follow your rules; you decide and trade at your own broker.") |
 
 ## Scope and principles
 
@@ -201,7 +201,7 @@ It also says what happens next:
 - **Live:** the user sees right away how the template did in the past; from today the app watches the stocks and alerts the user as soon as their rules are met; the user confirms each signal, and the app tracks the results of what they did. Button: **Start following it live**.
 - **AI template (either mode):** no past results; the first AI round is due now, so the next screen is the AI round (step 9).
 
-The disclaimer ("Not financial advice. Signals follow your rules; you decide and trade at your own broker.") sits just above the button. The button ends onboarding and opens the dashboard (or, for the AI template, its first AI round).
+The full disclaimer ("Not financial advice. Signals follow your rules; you decide and trade at your own broker.") sits just above the button. The button ends onboarding and opens the dashboard (or, for the AI template, its first AI round).
 
 ## 7. Get your daily overview
 

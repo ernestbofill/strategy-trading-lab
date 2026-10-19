@@ -145,7 +145,7 @@ All sent after the US market close.
 ## 5. Shared components (🧩)
 
 - Public top navigation; app navigation (Dashboard · New strategy · Account)
-- Disclaimer line wherever results or signals appear, and in the footer: "Not financial advice. Signals follow your rules."
+- Disclaimer line wherever results or signals appear, and in the footer: "Not financial advice. Signals follow your rules." The legal page and the places where the user commits use the full one (spec, section 3).
 - Mode label (Simulation / Live) on every strategy
 - Strategy name with template, mode and start date, e.g. "Zscaler & friends · *Dip in winners* · Live · since Oct 13"
 - Template card (name, tagline, idea, Learn more)

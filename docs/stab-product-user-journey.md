@@ -36,7 +36,7 @@ These keep the app on the "information and tools" side of the line between infor
 - **Signals report rules, not opinions.** Every signal says which rule was met, the facts that met it and, for live, what that means under the user's own settings. Never "buy now", no urgency, no price targets or return forecasts.
 - **The user owns the setup.** Lists, settings and budgets are presented as the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
 - **No promises.** No claims that markets or stocks will recover or rise. Results are always shown with the comparison to an index fund and the worst year.
-- **One disclaimer, everywhere results or signals appear:** "Not financial advice. Signals follow your rules." Where the user commits (the disclaimer accepted once at sign-up, above the Confirm button, and the legal page), the full version: "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
+- **A disclaimer everywhere results or signals appear, in two lengths.** The user sees it over and over, so screens seen again and again (Review, How we tested, the strategy page, Confirm a signal, the footer) use the short one: "Not financial advice. Signals follow your rules." Where the user commits (accepted once at sign-up, above the button on Name, preview and confirm, and the legal page) use the full one: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." The wireframes still show the full one everywhere; this rule wins.
 
 | Where | Before | Now |
 | --- | --- | --- |

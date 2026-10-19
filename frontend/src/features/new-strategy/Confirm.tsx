@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { TextAction } from '../../components/TextAction'
+import { resolveBudget } from '../../lib/budget'
 import { DISCLAIMER } from '../../lib/copy'
 import { eur } from '../../lib/format'
 import styles from './Confirm.module.css'
@@ -37,7 +38,8 @@ export function Confirm() {
 
 function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
-  const { mode, budget, step, maxSteps, unticked, update, reset } = draft
+  const { mode, unticked, update, reset } = draft
+  const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
   // Branch on what the template does, as the budget screen does.
   const allIn = template.signals === 'buysAndSells'

@@ -5,7 +5,16 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { StepperCard } from '../../components/StepperCard'
 import { Tag } from '../../components/Tag'
-import { BUDGET_LIMITS, MAX_STEPS_LIMITS, STEP_LIMITS, clamp, plural, summarize, weeksToUse } from '../../lib/budget'
+import {
+  BUDGET_LIMITS,
+  MAX_STEPS_LIMITS,
+  STEP_LIMITS,
+  clamp,
+  plural,
+  resolveBudget,
+  summarize,
+  weeksToUse,
+} from '../../lib/budget'
 import { eur } from '../../lib/format'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, modePath } from './paths'
@@ -26,7 +35,9 @@ export function SetBudget() {
 }
 
 function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
-  const { mode, budget, step, maxSteps, update } = useNewStrategyDraft()
+  const draft = useNewStrategyDraft()
+  const { mode, update } = draft
+  const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
   // Branch on what the template does, not on its key.
   const allIn = template.signals === 'buysAndSells'
@@ -35,7 +46,8 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
 
   const setBudget = (value: number) => {
     const next = clamp(value, BUDGET_LIMITS.min, BUDGET_LIMITS.max)
-    update({ budget: next, step: Math.min(step, next) })
+    // A step can't be more than the budget; otherwise it keeps following the tested default.
+    update(step > next ? { budget: next, step: next } : { budget: next })
   }
 
   const steps = plural(totalSteps, 'step', 'steps')

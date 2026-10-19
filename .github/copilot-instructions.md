@@ -69,6 +69,7 @@ Ask for a credential when you need one.
 
 - Work on a feature branch (`feature/<short-name>`, `fix/<short-name>`) and open a small PR into `main`. Don't push to `main` directly.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
+- Changes Ernest has staged go into your next commit, together with yours. Don't unstage or stash them.
 - Merge PRs with **squash merge** (`gh pr merge --squash --delete-branch`), so `main` stays linear with one commit per PR. Write the PR title as the final commit subject (imperative, with `(#number)`), because the squash uses it. Merge only when asked, or in a loop (see *Iterating*).
 
 ## Feature, fixes and agentic workflow

@@ -1,7 +1,8 @@
+import { httpApi } from './httpApi'
 import { mockApi } from './mock/mockApi'
 import type { Api } from './types'
 
-// Only the mock backend exists for now. An HTTP client for the .NET API will be selected here later.
-export const api: Api = mockApi
+// The .NET API, or the in-browser mock with VITE_API=mock (to work without the backend running).
+export const api: Api = import.meta.env.VITE_API === 'mock' ? mockApi : httpApi
 
 export type * from './types'

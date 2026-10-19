@@ -61,7 +61,7 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
                   b.testedDefaults,
                   "Results in euro, at each day's exchange rate.",
                   'The index fund gets the same money on the same days.',
-                  `Fees: ${eur(b.feePerTrade)} per trade. Taxes not included.`,
+                  `Fees: ${b.feePercent ? `${b.feePercent}% + ` : ''}${eur(b.feePerTrade)} per trade. Taxes not included.`,
                 ]}
               />
             </Section>

@@ -1,6 +1,6 @@
-// DTOs shared with the backend. Shapes mirror the future .NET API (camelCase JSON).
+// DTOs shared with the backend. Shapes mirror the .NET API (camelCase JSON): backend/src/StrategyTradingLab.Api/Templates/TemplateDtos.cs.
 
-export type TemplateKey = 'dip' | 'comeback' | 'drop' | 'trend' | 'ai'
+export type TemplateKey = 'dip' | 'comeback' | 'bear' | 'trend' | 'ai'
 
 export type InvestsIn = 'stockList' | 'sp500Fund' | 'indexFund'
 
@@ -28,6 +28,7 @@ export interface AiRound {
 
 /** A US-listed stock or fund. */
 export interface Security {
+  id: string
   symbol: string
   name: string
   /** One line on what the company does, or what the fund tracks. */
@@ -64,7 +65,23 @@ export interface Backtest {
   years: string
   universe: string
   testedDefaults: string
+  /** The tested fee per trade: a % of the amount plus a fixed amount in euro. */
   feePerTrade: number
+  feePercent: number
+}
+
+/** Euro amounts. `step` and `maxSteps` are null for all-in, all-out templates. */
+export interface Budget {
+  amount: number
+  step: number | null
+  maxSteps: number | null
+}
+
+/** What a new strategy from this template starts with. `params` is the template's own rule settings. */
+export interface TemplateDefaults {
+  version: number
+  budget: Budget
+  params: Record<string, number | boolean>
 }
 
 /** Everything the review screen (2 / 5) and How we tested (2c) show. */
@@ -75,6 +92,7 @@ export interface TemplateDetail extends StrategyTemplate {
   watches: Watches
   /** Null when the template can't be backtested. */
   backtest: Backtest | null
+  defaults: TemplateDefaults
 }
 
 export interface Api {

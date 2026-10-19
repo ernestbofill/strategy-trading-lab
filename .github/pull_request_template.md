@@ -24,4 +24,4 @@
 
 ## Manual steps for Ernest
 
-<!-- Secrets, environment variables, cloud environment settings, server steps. "None" if none. -->
+<!-- Secrets, environment variables, cloud environment settings, server steps. Also add each one to TODO.md under "Todos from Claude to Ernest", with this PR's number. "None" if none. -->

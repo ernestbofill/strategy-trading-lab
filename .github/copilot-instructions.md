@@ -36,7 +36,9 @@ Ernest works from a Mac and a Windows PC with VS Code. Claude Code runs both loc
 | Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 
-Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), tell Ernest exactly what to set and where, by name, never by value. Keep working if it doesn't block you: add it to `TODO.md` and the PR's *Manual steps for Ernest*, and he does it later. Stop only when you can't go on without it.
+Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), tell Ernest exactly what to set and where, by name, never by value. Keep working if it doesn't block you, and stop only when you can't go on without it.
+
+Every manual step for Ernest goes in two places: the PR's *Manual steps for Ernest*, and `TODO.md` under *Todos from Claude to Ernest*, with the PR number. Ernest works from `TODO.md`, so a step only in a PR gets lost. When a step is done, tick it.
 
 ## Production
 

@@ -8,10 +8,11 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 
 ## Commands (run in `frontend/`)
 
-- `npm run dev`: dev server on http://localhost:5173. It proxies `/api` to the .NET API on http://localhost:5184 (`dotnet run` in `backend/src/StrategyTradingLab.Api`); `VITE_API=mock npm run dev` uses the in-browser mock instead.
+- `npm run dev`: dev server on http://localhost:5173. It proxies `/api` to the .NET API on http://localhost:5184 (`dotnet run` in `backend/src/StrategyTradingLab.Api`); `npm run dev:mock` uses the in-browser mock instead (`VITE_API=mock`, set in `.env.mock`).
+- `npm run preview`: serves the production build, with the same `/api` proxy
 - `npm run build`: typecheck (`tsc -b`) and production build
 - `npm run lint`: oxlint, which should report no warnings
-- `npm test`: Vitest. Not set up yet: when adding the first tests, install `vitest`, `@testing-library/react` and `jsdom`, and add the script.
+- `npm test`: Vitest. `@testing-library/react` and `jsdom` aren't installed yet: add them with the first component test.
 
 ## Structure
 

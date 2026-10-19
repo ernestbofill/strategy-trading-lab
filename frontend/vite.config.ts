@@ -5,13 +5,14 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
+// As nginx does in production: /api/templates reaches the API's /templates (`dotnet run` in backend/src/StrategyTradingLab.Api).
+const proxy = { '/api': { target: 'http://localhost:5184', rewrite: (path: string) => path.replace(/^\/api/, '') } }
+
 // https://vite.dev/config/
 export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(version) },
-  // As nginx does in production: /api/templates reaches the API's /templates (`dotnet run` in backend/src/StrategyTradingLab.Api).
-  server: {
-    proxy: { '/api': { target: 'http://localhost:5184', rewrite: (path) => path.replace(/^\/api/, '') } },
-  },
+  server: { proxy },
+  preview: { proxy },
   plugins: [
     react(),
     VitePWA({

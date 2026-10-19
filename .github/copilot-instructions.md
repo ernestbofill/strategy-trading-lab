@@ -119,6 +119,18 @@ When the goal needs several features, decide how to split it into PRs and run th
 - The PR is open and CI passes.
 - It was reviewed as its kind of change requires.
 
+## Working with Ernest
+
+- When Ernest asks for an opinion or a review ("wdyt", "review this"), write the full review in the chat first, with numbered or headed points he can quote. Change things only after he answers.
+
+## Claude Code memory
+
+Claude's memory is per machine: the Mac, the PC and each cloud session have their own, and none of them sees the others. These instructions are what all of them share.
+
+- A lasting rule from Ernest goes in these instructions (in the session's PR), not only in memory.
+- Memory keeps only notes about working with Ernest that don't fit here, and they defer to these instructions.
+- Align memory in each environment: when a session starts on a machine whose memory you haven't checked against the current instructions, read it, delete entries these instructions contradict or already cover, and move any lasting rule that isn't here into a PR. Say in one line what you changed.
+
 ## Rules and permissions
 
 The rules and permissions in this document are guidelines. Ernest can override a rule, change a decision or grant a permission at any time, and the agent follows that. Ask when something is unclear.

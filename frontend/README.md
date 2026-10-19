@@ -1,12 +1,18 @@
 # Strategy Trading Lab — frontend
 
-React + TypeScript PWA (Vite). Runs against an in-browser mock backend for now (`src/api/mock`).
+React + TypeScript PWA (Vite). Reads its data from the .NET API in `backend/`; `npm run dev` proxies `/api` to it on http://localhost:5184.
 
 ```bash
 npm install
 npm run dev
 ```
 
-- `src/api` — DTO types and the `api` client; `api/mock` stands in for the .NET backend.
+Start the API first (`dotnet run` in `backend/src/StrategyTradingLab.Api`), or run the app against the in-browser mock backend instead:
+
+```bash
+VITE_API=mock npm run dev
+```
+
+- `src/api` — DTO types and the `api` client (`httpApi.ts`); `api/mock` stands in for the .NET backend with `VITE_API=mock`.
 - `src/features/new-strategy` — the new-strategy flow (1 / 5 … 5 / 5).
 - `src/styles/tokens.css` — Cyberpunk design-system tokens (from `design-system/cyberpunk/tokens.json`).

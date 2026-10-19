@@ -1,33 +1,33 @@
-import type { Backtest, Security, StrategyTemplate, TemplateDetail } from '../types'
+import type { Backtest, Security, StrategyTemplate, TemplateDefaults, TemplateDetail } from '../types'
 
 // Copy from docs/strategy-trading-lab-app-spec.md, sections 5 and 6.
 // Starter lists, funds and backtest figures are MOCK values until the POC's lists and the backtest engine are wired in.
 
 const winners: Security[] = [
-  { symbol: 'NVDA', name: 'Nvidia', what: 'Chips for graphics and AI' },
-  { symbol: 'AVGO', name: 'Broadcom', what: 'Chips and infrastructure software' },
-  { symbol: 'META', name: 'Meta Platforms', what: 'Facebook, Instagram and WhatsApp' },
-  { symbol: 'NFLX', name: 'Netflix', what: 'Streaming films and series' },
-  { symbol: 'ZS', name: 'Zscaler', what: 'Cloud security software' },
+  { id: 'mock-NVDA', symbol: 'NVDA', name: 'Nvidia', what: 'Chips for graphics and AI' },
+  { id: 'mock-AVGO', symbol: 'AVGO', name: 'Broadcom', what: 'Chips and infrastructure software' },
+  { id: 'mock-META', symbol: 'META', name: 'Meta Platforms', what: 'Facebook, Instagram and WhatsApp' },
+  { id: 'mock-NFLX', symbol: 'NFLX', name: 'Netflix', what: 'Streaming films and series' },
+  { id: 'mock-ZS', symbol: 'ZS', name: 'Zscaler', what: 'Cloud security software' },
 ]
 
 const beatenDown: Security[] = [
-  { symbol: 'INTC', name: 'Intel', what: 'Computer chips and chip factories' },
-  { symbol: 'NKE', name: 'Nike', what: 'Sports shoes and clothing' },
-  { symbol: 'PYPL', name: 'PayPal', what: 'Online payments' },
-  { symbol: 'BA', name: 'Boeing', what: 'Passenger planes and defence' },
-  { symbol: 'EL', name: 'Estée Lauder', what: 'Skin care and make-up' },
+  { id: 'mock-INTC', symbol: 'INTC', name: 'Intel', what: 'Computer chips and chip factories' },
+  { id: 'mock-NKE', symbol: 'NKE', name: 'Nike', what: 'Sports shoes and clothing' },
+  { id: 'mock-PYPL', symbol: 'PYPL', name: 'PayPal', what: 'Online payments' },
+  { id: 'mock-BA', symbol: 'BA', name: 'Boeing', what: 'Passenger planes and defence' },
+  { id: 'mock-EL', symbol: 'EL', name: 'Estée Lauder', what: 'Skin care and make-up' },
 ]
 
 const aiWatchList: Security[] = [
-  { symbol: 'AAPL', name: 'Apple', what: 'Phones, computers and services' },
-  { symbol: 'MSFT', name: 'Microsoft', what: 'Software and cloud computing' },
-  { symbol: 'GOOGL', name: 'Alphabet', what: 'Google search, YouTube and cloud' },
-  { symbol: 'AMZN', name: 'Amazon', what: 'Online shop and cloud computing' },
-  { symbol: 'NVDA', name: 'Nvidia', what: 'Chips for graphics and AI' },
-  { symbol: 'META', name: 'Meta Platforms', what: 'Facebook, Instagram and WhatsApp' },
-  { symbol: 'TSLA', name: 'Tesla', what: 'Electric cars and batteries' },
-  { symbol: 'ZS', name: 'Zscaler', what: 'Cloud security software' },
+  { id: 'mock-AAPL', symbol: 'AAPL', name: 'Apple', what: 'Phones, computers and services' },
+  { id: 'mock-MSFT', symbol: 'MSFT', name: 'Microsoft', what: 'Software and cloud computing' },
+  { id: 'mock-GOOGL', symbol: 'GOOGL', name: 'Alphabet', what: 'Google search, YouTube and cloud' },
+  { id: 'mock-AMZN', symbol: 'AMZN', name: 'Amazon', what: 'Online shop and cloud computing' },
+  { id: 'mock-NVDA', symbol: 'NVDA', name: 'Nvidia', what: 'Chips for graphics and AI' },
+  { id: 'mock-META', symbol: 'META', name: 'Meta Platforms', what: 'Facebook, Instagram and WhatsApp' },
+  { id: 'mock-TSLA', symbol: 'TSLA', name: 'Tesla', what: 'Electric cars and batteries' },
+  { id: 'mock-ZS', symbol: 'ZS', name: 'Zscaler', what: 'Cloud security software' },
 ]
 
 const byName = (list: Security[]) => [...list].sort((a, b) => a.name.localeCompare(b.name))
@@ -36,7 +36,14 @@ const howTested = {
   provider: 'Yahoo Finance',
   years: '2010-2024',
   feePerTrade: 1,
+  feePercent: 0.2,
 }
+
+const stockDefaults = (params: TemplateDefaults['params']): TemplateDefaults => ({
+  version: 1,
+  budget: { amount: 3000, step: 100, maxSteps: 5 },
+  params,
+})
 
 const stockTestedDefaults = 'The tested defaults: €3,000 budget, €100 steps, up to 5 per stock.'
 
@@ -60,6 +67,16 @@ export const templateDetails: TemplateDetail[] = [
       { marker: '03', text: '**The dip is not a collapse:** it is still above its `SMA 50` (average price over the last 50 days).' },
     ],
     watches: { kind: 'stocks', starterList: byName(winners) },
+    defaults: stockDefaults({
+      minGainPct: 50,
+      gainDays: 168,
+      peakDays: 60,
+      zoneStartPct: 5,
+      zoneEndPct: 15,
+      trendDays: 200,
+      floorDays: 50,
+      cooldownDays: 10,
+    }),
     backtest: backtest({
       scope: '5 stocks, 2010-2024.',
       universe: '5, the starter list',
@@ -89,6 +106,17 @@ export const templateDetails: TemplateDetail[] = [
       { marker: '03', text: '**More people are trading it:** its volume (shares traded per day) is rising.' },
     ],
     watches: { kind: 'stocks', starterList: byName(beatenDown) },
+    defaults: stockDefaults({
+      drawdownPct: 30,
+      belowSma200: true,
+      candidateDays: 60,
+      aboveSma50Pct: 15,
+      volumeRatio: 1.2,
+      maxChasePct: 8,
+      nearHighPct: 15,
+      breakoutPullbackPct: 8,
+      cooldownDays: 5,
+    }),
     backtest: backtest({
       scope: '5 stocks, 2010-2024.',
       universe: '5, the starter list',
@@ -102,7 +130,7 @@ export const templateDetails: TemplateDetail[] = [
     }),
   },
   {
-    key: 'drop',
+    key: 'bear',
     engineKey: 'bear_accumulation',
     name: 'The big market drop',
     tagline: 'When the market is on sale',
@@ -119,7 +147,12 @@ export const templateDetails: TemplateDetail[] = [
     ],
     watches: {
       kind: 'fund',
-      fund: { symbol: 'SPY', name: 'SPDR S&P 500 ETF', what: 'Tracks the 500 largest US companies' },
+      fund: { id: 'mock-SPY', symbol: 'SPY', name: 'SPDR S&P 500 ETF', what: 'Tracks the 500 largest US companies' },
+    },
+    defaults: {
+      version: 1,
+      budget: { amount: 3000, step: 600, maxSteps: 5 },
+      params: { drawdownPct: 20, highDays: 126, reboundPct: 5, stepEveryDays: 10, rearm: true },
     },
     backtest: backtest({
       scope: '3 big drops, 2000-2024.',
@@ -151,7 +184,12 @@ export const templateDetails: TemplateDetail[] = [
     ],
     watches: {
       kind: 'fund',
-      fund: { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF', what: 'The whole US stock market, large and small' },
+      fund: { id: 'mock-VTI', symbol: 'VTI', name: 'Vanguard Total Stock Market ETF', what: 'The whole US stock market, large and small' },
+    },
+    defaults: {
+      version: 1,
+      budget: { amount: 3000, step: null, maxSteps: null },
+      params: { smaDays: 200, bandPct: 3, cooldownDays: 5 },
     },
     backtest: backtest({
       scope: '2000-2024, 23 buys and sells.',
@@ -182,6 +220,7 @@ export const templateDetails: TemplateDetail[] = [
       { marker: '03', text: "If you skip a round, there's no signal that round." },
     ],
     watches: { kind: 'stocks', starterList: byName(aiWatchList) },
+    defaults: stockDefaults({ everyWeeks: 2, topN: 1 }),
     backtest: null,
   },
 ]

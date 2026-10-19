@@ -8,16 +8,16 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 
 ## Commands (run in `frontend/`)
 
-- `npm run dev`: dev server on http://localhost:5173
+- `npm run dev`: dev server on http://localhost:5173. It proxies `/api` to the .NET API on http://localhost:5184 (`dotnet run` in `backend/src/StrategyTradingLab.Api`); `VITE_API=mock npm run dev` uses the in-browser mock instead.
 - `npm run build`: typecheck (`tsc -b`) and production build
 - `npm run lint`: oxlint, which should report no warnings
 - `npm test`: Vitest. Not set up yet: when adding the first tests, install `vitest`, `@testing-library/react` and `jsdom`, and add the script.
 
 ## Structure
 
-- `src/api/`: `types.ts` holds the DTOs and the `Api` interface. `index.ts` exports the `api` client, and `mock/` is the in-browser backend.
+- `src/api/`: `types.ts` holds the DTOs and the `Api` interface. `index.ts` exports the `api` client: `httpApi.ts` (the .NET API at `/api`), or `mock/`, the in-browser backend, with `VITE_API=mock`.
   - Screens talk only to `api`, never to `mock/` directly.
-  - DTO shapes mirror the future .NET API (camelCase JSON). Change them deliberately, together with the backend.
+  - DTO shapes mirror the .NET API (camelCase JSON). Change them deliberately, together with the backend, and keep the mock in step.
   - Mock values that stand in for real data (starter lists, backtest figures) are marked as MOCK in `mock/data.ts`.
 - `src/components/`: shared, screen-agnostic UI. Reuse these before writing new markup:
   - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and the hint or disclaimer as `note`.

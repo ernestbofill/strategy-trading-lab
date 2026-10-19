@@ -30,6 +30,34 @@
         "--strictPort"
       ],
       "port": 5199
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "backend/src/StrategyTradingLab.Api",
+        "--launch-profile",
+        "http"
+      ],
+      "port": 5184,
+      "url": "http://localhost:5184"
+    },
+    {
+      "name": "frontend-mock",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:mock",
+        "--prefix",
+        "frontend",
+        "--",
+        "--port",
+        "5174",
+        "--strictPort"
+      ],
+      "port": 5174
     }
   ]
 }

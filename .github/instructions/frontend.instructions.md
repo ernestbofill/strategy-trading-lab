@@ -4,8 +4,6 @@ applyTo: "frontend/**"
 
 # Frontend (React + TypeScript PWA)
 
-Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
-
 ## Commands (run in `frontend/`)
 
 - `npm run dev`: dev server on http://localhost:5173. It proxies `/api` to the .NET API on http://localhost:5184 (`dotnet run` in `backend/src/StrategyTradingLab.Api`); `npm run dev:mock` uses the in-browser mock instead (`VITE_API=mock`, set in `.env.mock`).
@@ -37,7 +35,7 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 - **Styling:** use CSS Modules (`Component.module.css` next to the component) and only the design tokens in `src/styles/tokens.css`. Never hard-code colours.
   - Use the global classes in `src/styles/global.css` instead of repeating their rules: `.ui-strong` (uppercase labels), `.caption`, `.well`, `.btn-primary`, `.visually-hidden`.
 - **Data in, decisions in data:** branch on fields such as `template.aiRound` or `template.backtest`, not on template keys like `'ai'`.
-- **Copy:** take the spec's exact strings. Put copy used on several screens in `src/lib/copy.ts`.
+- **Copy:** take the spec's strings. Put copy used on several screens in `src/lib/copy.ts`.
 - **Format:** numbers and identifiers use the mono font. Use `eur()` and `signedPct()` from `lib/format.ts`; `signedPct` writes a true minus sign (−).
 - **Accessibility:**
   - Use native inputs (radio, checkbox), visually hidden, inside a `<label>`.
@@ -48,6 +46,7 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 - **Not built yet:** link to `NotBuiltYet` or render the control disabled (e.g. `TextAction` without `to`). Never leave a dead link.
 - Keep components small and typed. Don't add a dependency without a clear need.
 - Create components for reusable UI. But don't over-engineer it, consider if its a concept that makes sense as a reusable component.
+- **UI simplicity:** show the information the user needs, and no more. People don't like to read: prefer fewer, shorter words to the spec's longer copy.
 
 ## Versioning
 
@@ -60,7 +59,12 @@ Plan: [Frontend Implementation Plan](./frontend/PLAN.md)
 - Test through roles and visible text, not class names.
 - Put a test next to the file it covers as `*.test.ts(x)`.
 
-## Worktrees
+## Workflow
+
+- Before opening a PR, from `frontend/`: `npm run lint`, `npm test` and `npm run build` (which typechecks) all pass.
+- Check the changed screens in a browser at phone (390px) and desktop width. In a cloud session there is no browser: say so in the PR.
+
+## Worktrees (local only)
 
 In a worktree, apply the workspace theme in .vscode/settings.json in the worktree folder.
 {

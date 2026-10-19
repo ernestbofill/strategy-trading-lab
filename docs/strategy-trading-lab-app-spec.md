@@ -48,7 +48,7 @@ These apply to every screen, email and alert.
 - **Signals report rules.** Every signal says which rule was met, the facts that met it and what that means under the user's settings.
 - **The user owns the setup.** Lists, settings and budgets are the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
 - **No promises.** No claims that markets or stocks will rise or recover. Results are always shown next to the index fund and the worst year.
-- **One disclaimer, everywhere results or signals appear:** "Not financial advice. Signals follow your rules."
+- **One disclaimer, everywhere results or signals appear:** "Not financial advice. Signals follow your rules." Where the user commits (the disclaimer accepted once at sign-up, above the Confirm button, and the legal page), the full version: "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
 - **Mostly US markets, euro results.** v1 covers the POC's stocks and funds: mostly US-listed, a few listed in Europe and Hong Kong. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
@@ -144,7 +144,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Language: English or Catalan, chosen by the user. Editable later in the account.
 - Daily overview by email, on by default.
 - Time zone, guessed from the browser and editable. It sets when the overview arrives (early morning in Europe).
-- The disclaimer, accepted once: "Not financial advice. Signals follow your rules." Plus one line: the app is for learning, testing and following strategies, and it never trades for you.
+- The disclaimer, accepted once: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." Plus one line: the app is for learning, testing and following strategies, and it never trades for you.
 - No push permission and no AI data sharing at sign-up: those are asked when first needed.
 - On success, go straight to Pick a strategy template.
 

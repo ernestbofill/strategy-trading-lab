@@ -7,7 +7,7 @@ import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { TextAction } from '../../components/TextAction'
 import { resolveBudget } from '../../lib/budget'
-import { DISCLAIMER } from '../../lib/copy'
+import { DISCLAIMER_FULL } from '../../lib/copy'
 import { eur } from '../../lib/format'
 import styles from './Confirm.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
@@ -109,7 +109,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           {isLive ? 'Start following it live' : 'Start the simulation'}
         </PrimaryAction>
       }
-      note={DISCLAIMER}
+      note={DISCLAIMER_FULL}
       noteAbove
     >
       <PageHeader title="Ready to start" />

@@ -32,7 +32,7 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 ├── /log-in                Log in ➕
 ├── /forgot-password       Reset password ➕
 └── /legal
-    ├── /legal/disclaimer      "Not financial advice. Signals follow your rules."
+    ├── /legal/disclaimer      "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
     ├── /legal/terms           Terms of use
     ├── /legal/privacy         Privacy policy (GDPR), incl. AI data sharing
     └── /legal/cookies         Cookie policy

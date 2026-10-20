@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Dashboard } from './features/dashboard/Dashboard'
 import { SetBudget } from './features/new-strategy/SetBudget'
 import { ChooseMode } from './features/new-strategy/ChooseMode'
 import { NewStrategyDraftProvider } from './features/new-strategy/NewStrategyDraft'
@@ -26,7 +27,10 @@ export default function App() {
           <Route path="/new/mode" element={<ChooseMode />} />
           <Route path={budgetPath} element={<SetBudget />} />
           <Route path={confirmPath} element={<Confirm />} />
-          <Route path={dashboardPath} element={<NotBuiltYet title="Dashboard" back={confirmPath} />} />
+          <Route path={dashboardPath} element={<Dashboard />} />
+          <Route path="/strategies/:id" element={<NotBuiltYet title="Strategy page" back={dashboardPath} />} />
+          <Route path="/strategies/:id/signal" element={<NotBuiltYet title="Confirm a signal" back={dashboardPath} />} />
+          <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </NewStrategyDraftProvider>

@@ -1,0 +1,29 @@
+import type { NewStrategy, TemplateDetail } from '../../api'
+import { resolveBudget } from '../../lib/budget'
+import type { DraftState } from './draftState'
+
+/** What to send to start the strategy the user set up: their choices over the template's tested defaults. */
+export function newStrategyFrom(draft: DraftState, template: TemplateDetail, name: string): NewStrategy {
+  const { watches, defaults } = template
+  const { budget, step, maxSteps } = resolveBudget(draft, defaults.budget)
+  // An all-in, all-out template has no steps (its tested default has none).
+  const hasSteps = defaults.budget.step !== null
+  return {
+    templateKey: template.key,
+    name,
+    mode: draft.mode,
+    budget: { amount: budget, step: hasSteps ? step : null, maxSteps: hasSteps ? maxSteps : null },
+    assetIds:
+      watches.kind === 'fund'
+        ? [watches.fund.id]
+        : watches.starterList.filter((s) => !draft.unticked.includes(s.symbol)).map((s) => s.id),
+  }
+}
+
+/** The template's name, numbered ("Dip in winners 2") while a running strategy already has the name. Case is ignored. */
+export function defaultName(templateName: string, taken: string[]): string {
+  const used = new Set(taken.map((name) => name.trim().toLowerCase()))
+  let name = templateName
+  for (let n = 2; used.has(name.toLowerCase()); n++) name = `${templateName} ${n}`
+  return name
+}

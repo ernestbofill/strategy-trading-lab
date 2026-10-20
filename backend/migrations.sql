@@ -578,3 +578,22 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261020210314_SeedErnest') THEN
+    UPDATE users SET email = 'ernest@strategytradinglab.local', password_hash = 'AQAAAAIAAYagAAAAEEkw/SFwEfBT+xCwwf3uaFOLXNoGjm9pJWiDNunC/TnZTcSPl8IDVQolTo5td97WGA=='
+    WHERE id = '019a0000-0000-7000-8000-000000000001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261020210314_SeedErnest') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261020210314_SeedErnest', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

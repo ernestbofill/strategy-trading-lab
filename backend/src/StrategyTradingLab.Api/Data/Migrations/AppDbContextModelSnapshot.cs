@@ -1186,9 +1186,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Currency = "EUR",
                             DisclaimerAcceptedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Email = "dev@strategytradinglab.local",
+                            Email = "ernest@strategytradinglab.local",
                             Locale = "en",
                             OverviewEmail = true,
+                            PasswordHash = "AQAAAAIAAYagAAAAEEkw/SFwEfBT+xCwwf3uaFOLXNoGjm9pJWiDNunC/TnZTcSPl8IDVQolTo5td97WGA==",
                             TimeZone = "Europe/Madrid",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 10, 18, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
                         });

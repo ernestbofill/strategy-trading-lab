@@ -7,9 +7,11 @@ using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Neon;
+using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +25,7 @@ builder.Services.AddDbContext<AppDbContext>((services, options) => AppDbContextO
     ?? throw new InvalidOperationException(
         "No database: set DATABASE_URL (run `neon env pull`) or ConnectionStrings:Default.")));
 
+builder.Services.TryAddSingleton(TimeProvider.System);
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
@@ -74,6 +77,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
 app.MapTemplates();
+app.MapStrategies();
 
 // For the client to show which API it talks to.
 app.MapGet("/version", () => TypedResults.Ok(VersionResponse.Current))

@@ -4,6 +4,7 @@ ASP.NET Core minimal API (.NET 10) with EF Core and PostgreSQL on Neon. The sche
 
 - `src/StrategyTradingLab.Api`: the API. `Data/` has the entities, `AppDbContext`, the table configurations and the migrations.
 - `src/StrategyTradingLab.Api/Templates`: the five strategy templates (code, not data). `TemplateCatalog` has each one's tested defaults (budget, params, starter list or fund) from the POC, `TemplateParams` the typed params records, `Texts/{locale}.json` the words, and `TemplateAssets` the stocks and funds they need (seeded by migration; tests check every template's assets are seeded). Served at `GET /templates` and `GET /templates/{key}`. How to change a template's stocks or fund: [template-assets.md](src/StrategyTradingLab.Api/Templates/template-assets.md).
+- `src/StrategyTradingLab.Api/Strategies`: `POST /strategies` starts a strategy (checked by `NewStrategyValidation`: name, budget limits, stocks or fund) and `GET /dashboard` lists the user's running strategies. Until auth exists every request runs as the one seeded user, Ernest (`DevSeed`), whose password is `stl`.
 - `tests/StrategyTradingLab.Api.Tests`: xUnit. Tests marked `[NeonFact]` run against the linked Neon branch and skip without it (CI).
 - `migrations.sql`: the idempotent SQL script of every migration, for review and for applying by hand.
 

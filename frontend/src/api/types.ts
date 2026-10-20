@@ -149,8 +149,20 @@ export interface Dashboard {
   waiting: WaitingItem[]
 }
 
+/** What the Confirm screen sends to start a strategy: the choices of the five steps. Its other settings start at the template's tested defaults. */
+export interface NewStrategy {
+  templateKey: TemplateKey
+  name: string
+  mode: StrategyMode
+  budget: Budget
+  /** The stocks to watch, or the one fund. */
+  assetIds: string[]
+}
+
 export interface Api {
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
   getDashboard(): Promise<Dashboard>
+  /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
+  startStrategy(strategy: NewStrategy): Promise<StrategySummary>
 }

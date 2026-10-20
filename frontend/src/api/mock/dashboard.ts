@@ -1,5 +1,6 @@
 import { isoDate } from '../../lib/format'
-import type { Dashboard, PastResult, StrategySummary, TemplateKey } from '../types'
+import { NameTakenError } from '../errors'
+import type { Dashboard, NewStrategy, PastResult, StrategySummary, TemplateKey } from '../types'
 import { templateDetails } from './data'
 
 // MOCK: the user's strategies and what waits for them, as in the Home wireframe.
@@ -42,15 +43,39 @@ const seeds: Seed[] = [
   { id: 'my-ai-picks', name: 'My AI picks', templateKey: 'ai', mode: 'simulation', startedOn: daysAgo(4), budget: 3000, used: 0, results: null },
 ]
 
+const summarize = ({ templateKey, ...s }: Seed): StrategySummary => ({
+  ...s,
+  templateKey,
+  templateName: template(templateKey).name,
+  pastResult: pastResult(templateKey),
+})
+
+/** Strategies started in this session, newest first. */
+const started: StrategySummary[] = []
+
+/** Starts a strategy as the backend does: it runs from today, with nothing used and no results yet. */
+export function startMockStrategy({ templateKey, name, mode, budget }: NewStrategy): StrategySummary {
+  const trimmed = name.trim()
+  const taken = [...started, ...seeds].some((s) => s.name.toLowerCase() === trimmed.toLowerCase())
+  if (taken) throw new NameTakenError()
+  const strategy = summarize({
+    id: crypto.randomUUID(),
+    name: trimmed,
+    templateKey,
+    mode,
+    startedOn: daysAgo(0),
+    budget: budget.amount,
+    used: 0,
+    results: null,
+  })
+  started.unshift(strategy)
+  return strategy
+}
+
 export function dashboard(): Dashboard {
   return {
     today: daysAgo(0),
-    strategies: seeds.map(({ templateKey, ...s }) => ({
-      ...s,
-      templateKey,
-      templateName: template(templateKey).name,
-      pastResult: pastResult(templateKey),
-    })),
+    strategies: [...started, ...seeds.map(summarize)],
     waiting: [
       { id: 'w1', kind: 'buySignal', strategyId: 'zscaler-and-friends', strategyName: 'Zscaler & friends', stockName: 'Zscaler' },
       { id: 'w2', kind: 'aiRound', strategyId: 'my-ai-picks', strategyName: 'My AI picks' },

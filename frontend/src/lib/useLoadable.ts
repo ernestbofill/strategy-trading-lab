@@ -10,6 +10,9 @@ const pending = new Map<string, Promise<void>>()
 const LOADING = { status: 'loading' } as const
 const MISSING = { status: 'missing' } as const
 
+/** Forgets a result, so the next screen that asks for it loads it again. */
+export const invalidate = (cacheKey: string) => void settled.delete(cacheKey)
+
 /** Loads `load()` once per `cacheKey`; `undefined` from `load` means not found. */
 export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | undefined>): Loadable<T> {
   const [, rerender] = useReducer((n: number) => n + 1, 0)

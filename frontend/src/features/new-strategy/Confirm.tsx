@@ -1,5 +1,6 @@
-import { useId, type ReactNode } from 'react'
-import type { TemplateDetail } from '../../api'
+import { useId, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { api, NameTakenError, type TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { BulletList } from '../../components/Lists'
 import { PageHeader } from '../../components/PageHeader'
@@ -9,8 +10,11 @@ import { TextAction } from '../../components/TextAction'
 import { resolveBudget } from '../../lib/budget'
 import { DISCLAIMER_FULL } from '../../lib/copy'
 import { eur } from '../../lib/format'
+import { invalidate } from '../../lib/useLoadable'
+import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
+import { defaultName, newStrategyFrom } from './newStrategy'
 import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
 
@@ -46,14 +50,40 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const isFund = template.watches.kind === 'fund'
   const modeName = isLive ? 'Live' : 'Simulation'
   const inputId = useId()
+  const navigate = useNavigate()
+  const [starting, setStarting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // The user has no strategies yet in the mock, so there's nothing to number against.
-  const name = draft.name ?? template.name
+  // Numbered against the user's strategies once they are loaded; the server still refuses a name that is taken.
+  const dashboard = useDashboard()
+  const taken = dashboard.status === 'ready' ? dashboard.data.strategies.map((s) => s.name) : []
+  const fallback = defaultName(template.name, taken)
+  const name = draft.name ?? fallback
   // Don't repeat the template's name when the strategy still carries it.
-  const shownName = name.trim() || template.name
+  const shownName = name.trim() || fallback
   const preview = [shownName === template.name ? null : shownName, `Template ${template.name}`, modeName]
     .filter(Boolean)
     .join(' · ')
+
+  const start = async () => {
+    setStarting(true)
+    setError(null)
+    try {
+      await api.startStrategy(newStrategyFrom(draft, template, shownName))
+    } catch (e) {
+      setError(
+        e instanceof NameTakenError
+          ? 'You already run a strategy with this name. Pick another.'
+          : "We couldn't start it. Try again.",
+      )
+      setStarting(false)
+      return
+    }
+    // The dashboard loaded before; make it ask again so it lists the new strategy.
+    invalidate(dashboardCacheKey)
+    navigate(dashboardPath)
+    reset()
+  }
 
   const stocksValue = (() => {
     const { watches } = template
@@ -105,8 +135,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     <Screen
       top={top}
       action={
-        <PrimaryAction to={dashboardPath} onClick={reset}>
-          {isLive ? 'Start following it live' : 'Start the simulation'}
+        <PrimaryAction onClick={start} disabled={starting}>
+          {starting ? 'Starting…' : isLive ? 'Start following it live' : 'Start the simulation'}
         </PrimaryAction>
       }
       note={DISCLAIMER_FULL}
@@ -129,6 +159,11 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           onBlur={() => !name.trim() && update({ name: null })}
         />
         <p className={styles.preview}>{preview}</p>
+        {error && (
+          <p role="alert" className={styles.error}>
+            {error}
+          </p>
+        )}
       </div>
 
       <ul className={styles.summary}>

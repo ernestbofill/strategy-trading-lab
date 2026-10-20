@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { NameTakenError } from './errors'
 import { httpApi } from './httpApi'
+import type { NewStrategy } from './types'
 
 const respond = (status: number, body?: unknown) =>
   vi.stubGlobal('fetch', vi.fn(async () => new Response(body === undefined ? null : JSON.stringify(body), { status })))
@@ -29,5 +31,40 @@ describe('httpApi', () => {
   it('fails on a server error', async () => {
     respond(503)
     await expect(httpApi.getTemplates()).rejects.toThrow('HTTP 503')
+  })
+
+  it('reads the dashboard from /api/dashboard', async () => {
+    respond(200, { today: '2026-10-20', strategies: [], waiting: [] })
+    await expect(httpApi.getDashboard()).resolves.toMatchObject({ today: '2026-10-20' })
+    expect(fetch).toHaveBeenCalledWith('/api/dashboard', expect.anything())
+  })
+})
+
+describe('httpApi.startStrategy', () => {
+  const strategy: NewStrategy = {
+    templateKey: 'dip',
+    name: 'Mine',
+    mode: 'live',
+    budget: { amount: 3000, step: 100, maxSteps: 5 },
+    assetIds: ['a1'],
+  }
+
+  it('posts the strategy as JSON to /api/strategies and returns the created one', async () => {
+    respond(201, { id: 's1', name: 'Mine' })
+    await expect(httpApi.startStrategy(strategy)).resolves.toEqual({ id: 's1', name: 'Mine' })
+    const [path, init] = vi.mocked(fetch).mock.calls[0]
+    expect(path).toBe('/api/strategies')
+    expect(init).toMatchObject({ method: 'POST', headers: expect.objectContaining({ 'Content-Type': 'application/json' }) })
+    expect(JSON.parse(init?.body as string)).toEqual(strategy)
+  })
+
+  it('rejects with NameTakenError when the name is taken', async () => {
+    respond(409)
+    await expect(httpApi.startStrategy(strategy)).rejects.toBeInstanceOf(NameTakenError)
+  })
+
+  it('fails on any other error', async () => {
+    respond(400)
+    await expect(httpApi.startStrategy(strategy)).rejects.toThrow('HTTP 400')
   })
 })

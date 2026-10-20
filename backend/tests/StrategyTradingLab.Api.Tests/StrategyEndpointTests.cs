@@ -45,6 +45,7 @@ public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : ICl
             Assert.Equal(0, created.GetProperty("used").GetDecimal());
             Assert.Equal(JsonValueKind.Null, created.GetProperty("results").ValueKind);
             Assert.Equal(212, created.GetProperty("pastResult").GetProperty("template").GetDecimal());
+            Assert.Equal(-21, created.GetProperty("pastResult").GetProperty("worstYear").GetDecimal());
             Assert.Equal($"/strategies/{created.GetProperty("id").GetGuid()}", response.Headers.Location?.OriginalString);
 
             using (var scope = factory.Services.CreateScope())

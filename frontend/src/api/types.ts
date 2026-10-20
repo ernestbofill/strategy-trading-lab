@@ -112,6 +112,8 @@ export interface PastResult {
   years: string
   template: number
   index: number
+  /** Percent return of the template's worst calendar year in that time. */
+  worstYear: number
 }
 
 /** A strategy as shown on the dashboard. */

@@ -38,7 +38,11 @@ function Body({ s }: { s: StrategySummary }) {
         <span className={styles.figure} data-tone={toneOf(pastResult.template)}>
           {signedPct(pastResult.template)}
         </span>{' '}
-        vs <span className={styles.figure}>{signedPct(pastResult.index)}</span> for an index fund.
+        vs <span className={styles.figure}>{signedPct(pastResult.index)}</span> for an index fund. Its worst year was{' '}
+        <span className={styles.figure} data-tone={toneOf(pastResult.worstYear)}>
+          {signedPct(pastResult.worstYear)}
+        </span>
+        .
       </p>
     )
   }

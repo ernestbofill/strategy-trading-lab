@@ -56,4 +56,6 @@ dotnet ef migrations script --idempotent --project src/StrategyTradingLab.Api -o
 dotnet ef database update --project src/StrategyTradingLab.Api
 ```
 
+You rarely need that one: the launch profiles (F5, `dotnet run`) set `Database__MigrateOnStartup`, so the API brings the dev database up to date when it starts, in Development only. In Claude Code cloud sessions, where port 5432 is blocked, `python3 backend/scripts/migrate-dev-https.py` applies `migrations.sql` to the dev branch over HTTPS, and the session start hook runs it. Production gets its migrations from the deploy.
+
 The strategies' unique running name, `(user_id, lower(name)) WHERE status = 'running'`, is an expression index EF can't model; it's raw SQL in the initial migration.

@@ -19,6 +19,11 @@ else
   echo "session-start: dotnet is missing; add .NET 10 to the cloud environment's setup to build the backend."
 fi
 
+# The dev database follows the migrations on this branch (port 5432 is blocked here, so over HTTPS).
+if [ -n "${DATABASE_URL:-}${DATABASE_URL_UNPOOLED:-}" ] && command -v python3 >/dev/null 2>&1; then
+  python3 -I backend/scripts/migrate-dev-https.py >/dev/null 2>&1 || echo "session-start: migrating the dev database failed; run python3 backend/scripts/migrate-dev-https.py to see why."
+fi
+
 [ -f .env.local ] || [ -n "${DATABASE_URL:-}" ] \
   || echo "session-start: no Neon variables; [NeonFact] tests skip and the frontend should use npm run dev:mock."
 exit 0

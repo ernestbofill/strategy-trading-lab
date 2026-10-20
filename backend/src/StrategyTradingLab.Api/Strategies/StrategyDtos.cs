@@ -24,7 +24,7 @@ public record StrategySummary(
 public record StrategyResults(decimal Strategy, decimal Index, IReadOnlyList<decimal> History);
 
 /// <summary>How the template did in the past, shown while a strategy has no results of its own.</summary>
-public record PastResult(string Years, decimal Template, decimal Index);
+public record PastResult(string Years, decimal Template, decimal Index, decimal WorstYear);
 
 public enum WaitingKind { BuySignal, SellSignal, AiRound }
 

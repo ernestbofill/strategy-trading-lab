@@ -21,7 +21,9 @@ function template(key: TemplateKey) {
 function pastResult(key: TemplateKey): PastResult | null {
   const { backtest } = template(key)
   const all = backtest?.periods.at(-1)
-  return backtest && all ? { years: backtest.years, template: all.template, index: all.index } : null
+  return backtest && all
+    ? { years: backtest.years, template: all.template, index: all.index, worstYear: all.worstYear }
+    : null
 }
 
 type Seed = Pick<StrategySummary, 'id' | 'name' | 'mode' | 'startedOn' | 'budget' | 'used' | 'results'> & {

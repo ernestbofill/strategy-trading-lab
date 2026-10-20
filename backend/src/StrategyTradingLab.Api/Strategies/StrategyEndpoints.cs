@@ -90,7 +90,7 @@ public static class StrategyEndpoints
         var template = TemplateCatalog.Find(strategy.TemplateKey)!;
         var texts = TemplateTexts.For(template, locale);
         var past = template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
-            ? new PastResult(words.Years, all.Template, all.Index)
+            ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear)
             : null;
         // No trades are recorded yet, so nothing is used and there are no results of its own.
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,

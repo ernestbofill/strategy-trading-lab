@@ -3,7 +3,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
-import { DISCLAIMER } from '../../lib/copy'
+import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
 import { pickPath } from '../new-strategy/paths'
 import styles from './Dashboard.module.css'
 import { StrategyCard } from './StrategyCard'
@@ -18,7 +18,7 @@ export function Dashboard() {
   return (
     <LoadableScreen state={dashboard} top={top} what="your strategies">
       {({ today, strategies, waiting }) => (
-        <Screen top={top} note={DISCLAIMER}>
+        <Screen top={top} note={`${DISCLAIMER} ${PAST_RESULTS_CAPTION}`}>
           <PageHeader title="Your strategies" />
           <WaitingList items={waiting} />
           <div className={styles.cards}>

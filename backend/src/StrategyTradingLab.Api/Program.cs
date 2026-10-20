@@ -38,6 +38,14 @@ if (ObjectStorage.IsConfigured(builder.Configuration))
 
 var app = builder.Build();
 
+// The launch profiles set this, so running the API locally brings the dev database up to date.
+// Tests, cloud sessions (scripts/migrate-dev-https.py) and production (the deploy's migrations bundle) don't use it.
+if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     // The OpenAPI document at /openapi/v1.json, browsable at /swagger.

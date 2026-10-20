@@ -141,7 +141,7 @@ Don't use Gmail, Google Drive, Claude Docs or eToro (the app never connects to a
 
 ## Memory: the repo is what's shared
 
-Claude's memory for this repo lives in the repo, in `.claude/memories/`, so it is the same on the Mac, the PC and in cloud sessions, and Ernest can see everything that was added. Claude Code's built-in auto memory (in `~/.claude/projects/`) is turned off in `.claude/settings.json`.
+Claude's memory for this repo lives in the repo, in `.claude/memories/`, so it is the same on the Mac, the PC and in cloud sessions, and Ernest can see everything that was added. Claude Code's auto memory stays on, but in this repo save memories to `.claude/memories/`, never to its default folder (`~/.claude/projects/…/memory/`). If something is already in the default folder, move it here.
 
 | What to remember | Where |
 | --- | --- |

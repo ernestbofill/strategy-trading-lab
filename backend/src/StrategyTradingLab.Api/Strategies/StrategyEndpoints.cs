@@ -38,17 +38,12 @@ public static class StrategyEndpoints
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
             var user = await CurrentUser(db, cancellationToken);
-            var name = request.Name.Trim();
-            if (await db.Strategies.AnyAsync(strategy => strategy.UserId == user.Id && strategy.Status == StrategyStatus.Running
-                    && strategy.Name.ToLower() == name.ToLower(), cancellationToken))
-                return TypedResults.Conflict("You already have a running strategy with that name.");
-
             var strategy = new Strategy
             {
                 UserId = user.Id,
                 TemplateKey = template.Key,
                 DefaultsVersion = template.DefaultsVersion,
-                Name = name,
+                Name = request.Name.Trim(),
                 Mode = request.Mode,
                 Status = StrategyStatus.Running,
                 StartedOn = Today(user, time),
@@ -63,7 +58,7 @@ public static class StrategyEndpoints
             {
                 await db.SaveChangesAsync(cancellationToken);
             }
-            // Two requests with the same name at once: the unique running name index catches the second.
+            // The unique running name index, (user_id, lower(name)) WHERE status = 'running', refuses a taken name.
             catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
             {
                 return TypedResults.Conflict("You already have a running strategy with that name.");

@@ -43,11 +43,10 @@ const seeds: Seed[] = [
   { id: 'my-ai-picks', name: 'My AI picks', templateKey: 'ai', mode: 'simulation', startedOn: daysAgo(4), budget: 3000, used: 0, results: null },
 ]
 
-const summarize = ({ templateKey, ...s }: Seed): StrategySummary => ({
-  ...s,
-  templateKey,
-  templateName: template(templateKey).name,
-  pastResult: pastResult(templateKey),
+const summarize = (seed: Seed): StrategySummary => ({
+  ...seed,
+  templateName: template(seed.templateKey).name,
+  pastResult: pastResult(seed.templateKey),
 })
 
 /** Strategies started in this session, newest first. */

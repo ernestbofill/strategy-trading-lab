@@ -4,6 +4,8 @@ Strategy Trading Lab (STL) is a strategy lab and monitoring side app. A user pic
 
 The owner and engineer is Mr Ernest.
 
+It is a hobby project with no active users, which may launch publicly later. A broken screen or a failed deploy costs little, so favour progress over ceremony and keep reviews light where nothing is at stake. Still build it ready for launch: secrets, security and the product rules apply in full, and the *High risk* list stays high risk.
+
 ## Sources of truth
 
 Read these before building a screen. Don't invent copy or behaviour that they already define.
@@ -26,7 +28,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 
 ## Environments
 
-Ernest works from a Mac and a Windows PC (both with VS Code) and from Claude Code cloud sessions. Keep the project ready for all three, so work can continue from one to another: no machine-specific paths, scripts that run on both shells, and every manual setup step written down.
+Ernest works from a Mac and a Windows PC with VS Code. Claude Code runs both locally (on the Mac and the PC) and in cloud sessions. Keep the project ready for all three, so work can continue from one to another: no machine-specific paths, scripts that run on both shells, and every manual setup step written down.
 
 | | Mac / Windows (local) | Claude Code cloud session |
 | --- | --- | --- |
@@ -36,7 +38,9 @@ Ernest works from a Mac and a Windows PC (both with VS Code) and from Claude Cod
 | Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 
-Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), stop and tell Ernest exactly what to set and where, by name, never by value.
+Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), tell Ernest exactly what to set and where, by name, never by value. Keep working if it doesn't block you, and stop only when you can't go on without it.
+
+Every manual step for Ernest goes in two places: the PR's *Manual steps for Ernest*, and `TODO.md` under *Todos from Claude to Ernest*, with the PR number. Ernest works from `TODO.md`, so a step only in a PR gets lost. When a step is done, tick it.
 
 ## Production
 
@@ -67,6 +71,7 @@ Ask for a credential when you need one.
 
 - Work on a feature branch (`feature/<short-name>`, `fix/<short-name>`) and open a small PR into `main`. Don't push to `main` directly.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
+- Changes Ernest has staged go into your next commit, together with yours. Don't unstage or stash them.
 - Merge PRs with **squash merge** (`gh pr merge --squash --delete-branch`), so `main` stays linear with one commit per PR. Write the PR title as the final commit subject (imperative, with `(#number)`), because the squash uses it. Merge only when asked, or in a loop (see *Iterating*).
 
 ## Feature, fixes and agentic workflow
@@ -105,16 +110,53 @@ At any time, be critical: point out inconsistencies, problems and possible impro
 When the goal needs several features, decide how to split it into PRs and run the steps above in a loop, one PR per item, taking items from `ROADMAP.md` in order.
 
 - In a loop you may merge your own PRs once they meet *Feature acceptance*, including backend PRs, which deploy to production. After a backend merge, check that the deploy workflow passed and `/api/health` answers before starting the next item.
-- High-risk PRs are the exception: stop and ask Ernest before merging them.
+- High-risk PRs and docs-only PRs are the exceptions: leave them open for Ernest. He reviews docs himself.
 - Stop when the goal is reached, when you are stuck, or when the next item needs a decision from Ernest. Say where you stopped and why.
 
 ### Feature acceptance
 
-- The spec, `ROADMAP.md` and other docs are updated.
+- The spec, `ROADMAP.md`, `docs/decisions.md` and other docs are updated.
 - The code follows these instructions and the frontend or backend ones.
 - It has meaningful tests, or needs none.
 - The PR is open and CI passes.
 - It was reviewed as its kind of change requires.
+
+## Tools for STL work
+
+Tools come from Ernest's claude.ai connectors, switched in the desktop app's + → Connectors. That switch is account-wide and the default for new sessions, and the app loads connectors whatever the repo's settings say, so the repo can't limit them. Use only these for STL work:
+
+| Need | Use |
+| --- | --- |
+| GitHub (PRs, reviews, CI) | `gh` locally; the GitHub connector in cloud sessions |
+| Dev database, Neon branches, schema checks | The Neon connector (production: see *Production*) |
+| Running and checking screens | The built-in browser, with the `.claude/launch.json` configs (`frontend`, `frontend-mock`, `backend`) |
+| Web research (price data, regulation, libraries) | Exa. Firecrawl, if it's on, only for legal or government sources or to scrape a page. |
+| Diagrams in chat | visualize |
+
+Don't use Gmail, Google Drive, Claude Docs or eToro (the app never connects to a broker) for STL work, even when they are on. If a task really needs one, ask Ernest first.
+
+## Working with Ernest
+
+- When Ernest asks for an opinion or a review ("wdyt", "review this"), write the full review in the chat first, with numbered or headed points he can quote. Change things only after he answers.
+
+## Memory: the repo is what's shared
+
+Claude's memory for this repo lives in the repo, in `.claude/memories/`, so it is the same on the Mac, the PC and in cloud sessions, and Ernest can see everything that was added. Claude Code's auto memory stays on, but in this repo save memories to `.claude/memories/`, never to its default folder (`~/.claude/projects/…/memory/`). If something is already in the default folder, move it here.
+
+| What to remember | Where |
+| --- | --- |
+| Rules and Ernest's preferences | These instructions |
+| What's built, what's next, open decisions | `ROADMAP.md` |
+| Steps waiting on Ernest | `TODO.md` → *Todos from Claude to Ernest* |
+| Decisions that outlive a PR, and why | `docs/decisions.md`: one dated line each, with the PR number |
+| Small things learned while working that fit none of the above | `.claude/memories/` |
+| Plans, review findings, what was done | The PR |
+
+How to use `.claude/memories/`:
+
+- One fact per file (`kebab-case-name.md`), with a short **Why** and **How to apply**, and the date and PR it came from. Add a one-line link to it in `.claude/memories/MEMORY.md`, which `CLAUDE.md` imports into every session.
+- Save it in the session's branch and commit it with the PR, so Ernest reviews it like any other change.
+- Update or delete a memory that turns out wrong; don't add a second one. A memory never overrides these instructions: if it turns into a rule, move it here and delete the memory.
 
 ## Rules and permissions
 

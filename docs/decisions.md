@@ -1,0 +1,12 @@
+# Decisions
+
+Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
+
+- 2026-10-20 · Tools come from the claude.ai connectors. A repo-defined set (`.mcp.json` with `disableClaudeAiConnectors`) was tried and dropped: the desktop app loads the claude.ai connectors anyway, so it only made duplicates and keys to manage. (#22)
+- 2026-10-19 · Two disclaimer lengths: the short one on screens seen again and again (including Confirm a signal), the full one where the user commits (sign-up, above the Confirm button, the legal page). The user sees it over and over. (#21)
+- 2026-10-19 · Spec copy is a current version, not final: agents may shorten it, except the disclaimers and "Past results don't promise future ones." (#20)
+- 2026-10-19 · High risk means strategy and budget calculations, authentication and security. High-risk and docs-only PRs always wait for Ernest to merge, even in a loop. (#20, #22)
+- 2026-10-19 · `ROADMAP.md` is the backlog; `TODO.md` holds every manual step for Ernest, so nothing waits only in a PR. (#20, #22)
+- 2026-10-19 · Catalan is a priority: first in ROADMAP → Next, while there are few screens. (#22)
+- 2026-10-20 · The project is low risk for now: a hobby with no active users, maybe a public launch later. Favour progress, but secrets, security and the product rules apply in full. (#22)
+- 2026-10-20 · Claude's memory lives in the repo, in `.claude/memories/`, for transparency and so every environment shares it. Auto memory stays on, but is told to save there instead of its default folder. (#22)

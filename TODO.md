@@ -6,9 +6,7 @@
 - [ ] Cloud environment (claude.ai → Claude Code → environment settings): make sure Node 24 and .NET 10 are available. (#20)
 - [ ] Cloud dev DB (optional): add `DATABASE_URL` and `DATABASE_URL_UNPOOLED` from the Neon `dev` branch as environment variables, and allow outbound access to Neon in the network settings. (#20)
 - [ ] Mac: install .NET 10 (`dotnet` isn't on the PATH, so backend work here can't build or test). (#20)
-- [ ] Project tools (#22): this repo now turns off your claude.ai connectors and uses `.mcp.json` instead. Set two keys on the Mac, the PC and in the cloud environment (Mac: `export` in `~/.zshrc`, then restart the Claude app; Windows: a user environment variable; cloud: the environment's variables, and allow `api.githubcopilot.com`, `mcp.neon.tech` and `mcp.exa.ai` in its network settings). Then open a new session and ask Claude for the connector status: `github`, `neon` and `exa` should be connected.
-  - [ ] `GITHUB_PERSONAL_ACCESS_TOKEN`: a fine-grained token for `ernestbofill/strategy-trading-lab` only. Read and write for Contents, Pull requests and Issues; read for Actions.
-  - [ ] `NEON_API_KEY`: from the Neon console (Account → API keys). It can reach the production branch too; a project-scoped key, if your plan has them, limits it to STL.
+- [ ] Connectors (#22): turn off Gmail, Google Drive, Firecrawl and Claude in Chrome in + → Connectors while working on STL, if you want fewer tools loaded (it's account-wide). Then open a cloud session once and ask Claude for its connector status, to see whether the claude.ai connectors (GitHub, Neon) reach cloud sessions.
 - [ ] Install the Playwright plugin (claude.ai plugins), so Claude can check screens in cloud sessions and the live app after merges (ROADMAP → Next #2). (#22)
 - [ ] Check the frontend deploy after #21 shows the new disclaimers. (#21)
 - [ ] Decide who reviews the Catalan copy: you, or also a native speaker before release? (#22)

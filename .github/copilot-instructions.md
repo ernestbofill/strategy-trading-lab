@@ -36,7 +36,7 @@ Ernest works from a Mac and a Windows PC with VS Code. Claude Code runs both loc
 | Dev database | The Neon `dev` branch, variables in `.env.local` (gitignored, written by `neon deploy`). | Only if Ernest has added the variables to the cloud environment. Otherwise use the mock backend and say so in the PR. |
 | Browser check | The built-in browser or Chrome, at phone and desktop width. | No browser: rely on tests, and say in the PR that the screens weren't checked by eye. |
 | Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
-| GitHub | `gh` CLI. | The `github` server in `.mcp.json`, or `gh` if it is logged in. |
+| GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 
 Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), tell Ernest exactly what to set and where, by name, never by value. Keep working if it doesn't block you, and stop only when you can't go on without it.
 
@@ -123,16 +123,17 @@ When the goal needs several features, decide how to split it into PRs and run th
 
 ## Tools for STL work
 
-The repo sets its own tools, the same on every machine and in cloud sessions: `.claude/settings.json` turns off Ernest's claude.ai connectors (Gmail, Drive, eToro…) for this repo, and `.mcp.json` defines the ones STL needs. To add a tool, add it to `.mcp.json` in a PR and say why.
+Tools come from Ernest's claude.ai connectors, switched in the desktop app's + → Connectors. That switch is account-wide and the default for new sessions, and the app loads connectors whatever the repo's settings say, so the repo can't limit them. Use only these for STL work:
 
 | Need | Use |
 | --- | --- |
-| GitHub (PRs, reviews, CI) | `gh` locally; the `github` server in cloud sessions |
-| Dev database, Neon branches, schema checks | The `neon` server (production: see *Production*) |
+| GitHub (PRs, reviews, CI) | `gh` locally; the GitHub connector in cloud sessions |
+| Dev database, Neon branches, schema checks | The Neon connector (production: see *Production*) |
 | Running and checking screens | The built-in browser, with the `.claude/launch.json` configs (`frontend`, `frontend-mock`, `backend`) |
-| Web research (price data, regulation, libraries) | The `exa` server |
+| Web research (price data, regulation, libraries) | Exa. Firecrawl, if it's on, only for legal or government sources or to scrape a page. |
+| Diagrams in chat | visualize |
 
-`github` and `neon` read their keys from the `GITHUB_PERSONAL_ACCESS_TOKEN` and `NEON_API_KEY` environment variables. Where one is missing, that server fails to connect: carry on without it and add the setup to `TODO.md`.
+Don't use Gmail, Google Drive, Claude Docs or eToro (the app never connects to a broker) for STL work, even when they are on. If a task really needs one, ask Ernest first.
 
 ## Working with Ernest
 

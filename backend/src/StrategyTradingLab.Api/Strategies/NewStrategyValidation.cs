@@ -19,6 +19,8 @@ public static class NewStrategyValidation
         var name = request.Name?.Trim() ?? "";
         if (name.Length is 0 or > NameMaxLength) Fail("name", $"Use 1 to {NameMaxLength} characters.");
 
+        if (request.Mode is not { } mode || !Enum.IsDefined(mode)) Fail("mode", "Pick simulation or live.");
+
         ValidateBudget(request.Budget, template, Fail);
 
         var fund = template.Watches is DefaultFund;

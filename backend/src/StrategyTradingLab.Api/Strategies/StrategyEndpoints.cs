@@ -10,6 +10,9 @@ namespace StrategyTradingLab.Api.Strategies;
 
 public static class StrategyEndpoints
 {
+    /// <summary>The unique index on (user_id, lower(name)) WHERE status = 'running', made in the initial migration.</summary>
+    const string RunningNameIndex = "ux_strategies_user_id_running_name";
+
     public static void MapStrategies(this IEndpointRouteBuilder app)
     {
         app.MapGet("/dashboard", async (AppDbContext db, TimeProvider time, CancellationToken cancellationToken) =>
@@ -44,7 +47,7 @@ public static class StrategyEndpoints
                 TemplateKey = template.Key,
                 DefaultsVersion = template.DefaultsVersion,
                 Name = request.Name.Trim(),
-                Mode = request.Mode,
+                Mode = request.Mode!.Value,
                 Status = StrategyStatus.Running,
                 StartedOn = Today(user, time),
                 Currency = user.Currency,
@@ -58,8 +61,8 @@ public static class StrategyEndpoints
             {
                 await db.SaveChangesAsync(cancellationToken);
             }
-            // The unique running name index, (user_id, lower(name)) WHERE status = 'running', refuses a taken name.
-            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            // The running name index refuses a taken name, also when two requests race.
+            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RunningNameIndex })
             {
                 return TypedResults.Conflict("You already have a running strategy with that name.");
             }

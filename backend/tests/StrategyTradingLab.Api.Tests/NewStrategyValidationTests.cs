@@ -37,6 +37,16 @@ public class NewStrategyValidationTests
         Assert.Contains("name", Check(TemplateCatalog.Dip, TemplateCatalog.Dip.Budget, new string('a', 61), Stock()).Keys);
 
     [Theory]
+    [InlineData(null)]
+    [InlineData(99)]
+    public void A_missing_or_unknown_mode_is_rejected(int? mode)
+    {
+        var request = new NewStrategy("dip", "A", (StrategyMode?)mode, TemplateCatalog.Dip.Budget, []);
+
+        Assert.Contains("mode", NewStrategyValidation.Validate(request, TemplateCatalog.Dip, []).Keys);
+    }
+
+    [Theory]
     [InlineData(499, 100, 5)]
     [InlineData(1_000_001, 100, 5)]
     [InlineData(3000.5, 100, 5)]

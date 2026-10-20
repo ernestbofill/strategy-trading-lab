@@ -10,8 +10,11 @@ const pending = new Map<string, Promise<void>>()
 const LOADING = { status: 'loading' } as const
 const MISSING = { status: 'missing' } as const
 
-/** Forgets a result, so the next screen that asks for it loads it again. */
-export const invalidate = (cacheKey: string) => void settled.delete(cacheKey)
+/** Forgets a result, and any request still in flight for it, so the next screen that asks loads it again. */
+export function invalidate(cacheKey: string) {
+  settled.delete(cacheKey)
+  pending.delete(cacheKey)
+}
 
 /** Loads `load()` once per `cacheKey`; `undefined` from `load` means not found. */
 export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | undefined>): Loadable<T> {
@@ -25,13 +28,16 @@ export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | 
 
     let request = pending.get(cacheKey)
     if (!request) {
-      request = load()
+      // An invalidated request still finishes, but must not overwrite the newer one's result.
+      const current = (): boolean => pending.get(cacheKey) === started
+      const started: Promise<void> = load()
         .then(
-          (data) => void settled.set(cacheKey, data === undefined ? MISSING : { status: 'ready', data }),
-          () => void settled.set(cacheKey, { status: 'error' }),
+          (data) => void (current() && settled.set(cacheKey, data === undefined ? MISSING : { status: 'ready', data })),
+          () => void (current() && settled.set(cacheKey, { status: 'error' })),
         )
-        .finally(() => pending.delete(cacheKey))
-      pending.set(cacheKey, request)
+        .finally(() => void (current() && pending.delete(cacheKey)))
+      pending.set(cacheKey, started)
+      request = started
     }
     let live = true
     request.then(() => live && rerender())

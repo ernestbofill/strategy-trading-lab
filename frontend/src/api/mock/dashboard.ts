@@ -58,7 +58,7 @@ export function startMockStrategy({ templateKey, name, mode, budget }: NewStrate
   const taken = [...started, ...seeds].some((s) => s.name.toLowerCase() === trimmed.toLowerCase())
   if (taken) throw new NameTakenError()
   const strategy = summarize({
-    id: crypto.randomUUID(),
+    id: `started-${started.length + 1}`,
     name: trimmed,
     templateKey,
     mode,

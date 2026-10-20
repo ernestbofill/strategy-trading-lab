@@ -396,7 +396,8 @@ The same three settings can be changed later from the strategy page (not drawn).
   - *Your AI's top picks* (not drawn): "There are no past results for this template." / "Your first AI round is due now." / then the mode's line.
 - Above the button: the disclaimer.
 - Button, Live: "Start following it live". Simulation (not drawn): "Start the simulation".
-- The button creates the strategy and opens the dashboard; for *Your AI's top picks*, its first AI round.
+- The button creates the strategy and opens the dashboard; for *Your AI's top picks*, its first AI round (until that screen exists, the dashboard).
+- While it saves, the button reads "Starting…" and can't be pressed twice. If it fails, the user stays on this screen and sees, under the name: "You already run a strategy with this name. Pick another." when another running strategy took the name, else "We couldn't start it. Try again." (assumed copy)
 
 ### Dashboard (`Home`)
 

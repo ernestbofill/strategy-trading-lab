@@ -138,7 +138,7 @@ The repo sets its own tools, the same on every machine and in cloud sessions: `.
 
 ## Memory: the repo is what's shared
 
-Claude Code's memory stays on, but it is per machine: the Mac, the PC and each cloud session have their own, and none sees the others. So anything another environment needs goes in the repo:
+Claude's memory for this repo lives in the repo, in `.claude/memories/`, so it is the same on the Mac, the PC and in cloud sessions, and Ernest can see everything that was added. Claude Code's built-in auto memory (in `~/.claude/projects/`) is turned off in `.claude/settings.json`.
 
 | What to remember | Where |
 | --- | --- |
@@ -146,9 +146,14 @@ Claude Code's memory stays on, but it is per machine: the Mac, the PC and each c
 | What's built, what's next, open decisions | `ROADMAP.md` |
 | Steps waiting on Ernest | `TODO.md` → *Todos from Claude to Ernest* |
 | Decisions that outlive a PR, and why | `docs/decisions.md`: one dated line each, with the PR number |
+| Small things learned while working that fit none of the above | `.claude/memories/` |
 | Plans, review findings, what was done | The PR |
 
-Local memory is only a cache of small conveniences. If it contradicts these instructions, the instructions win: fix or delete the memory entry.
+How to use `.claude/memories/`:
+
+- One fact per file (`kebab-case-name.md`), with a short **Why** and **How to apply**, and the date and PR it came from. Add a one-line link to it in `.claude/memories/MEMORY.md`, which `CLAUDE.md` imports into every session.
+- Save it in the session's branch and commit it with the PR, so Ernest reviews it like any other change.
+- Update or delete a memory that turns out wrong; don't add a second one. A memory never overrides these instructions: if it turns into a rule, move it here and delete the memory.
 
 ## Rules and permissions
 

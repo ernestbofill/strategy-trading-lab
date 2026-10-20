@@ -13,14 +13,13 @@
 - [ ] Decide who reviews the Catalan copy: you, or also a native speaker before release? (#22)
 - [ ] Global `~/.claude/settings.json` (Mac): the auto-mode environment describes the trading bot repo (default branch `master`, trusted repo `trading-strategies-bot`), and the default model is Sonnet. Move the bot's environment into that repo's settings, and pick the default model for this repo. (#22)
 
-## Mine
-- [ ] Instructions from STAB
-- [ ] Make a plan and then give more autonomy to AI. Right now it is too much human driven.
+## General
 - [ ] Split FE and BE repos?
+- [x] Instructions from STAB
 - [x] CI / CD on github
 
 ## Minor
-- [ ] On Oracle Cloud review if it should be more isolated from the trading bot.
+- [ ] On Oracle Cloud, review if it should be more isolated from the trading bot.
 - [ ] Admin ssh
 - [x] Fix git history 
 - [x] worktrees template

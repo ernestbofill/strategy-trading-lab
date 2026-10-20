@@ -8,4 +8,5 @@ Decisions that outlive a PR, and why. One dated line each, newest first, with th
 - 2026-10-19 · High risk means strategy and budget calculations, authentication and security. High-risk and docs-only PRs always wait for Ernest to merge, even in a loop. (#20, #22)
 - 2026-10-19 · `ROADMAP.md` is the backlog; `TODO.md` holds every manual step for Ernest, so nothing waits only in a PR. (#20, #22)
 - 2026-10-19 · Catalan is a priority: first in ROADMAP → Next, while there are few screens. (#22)
+- 2026-10-20 · The project is low risk for now: a hobby with no active users, maybe a public launch later. Favour progress, but secrets, security and the product rules apply in full. (#22)
 - 2026-10-20 · Claude's memory lives in the repo, in `.claude/memories/`, for transparency and so every environment shares it; the built-in auto memory is off. (#22)

@@ -8,9 +8,11 @@ interface TopBarProps {
   /** Where "← BACK" goes when the screen was opened directly. Otherwise it goes one step back in the history. */
   back?: string
   step?: string
+  /** Shown on the right instead of the step: a link such as "ACCOUNT". */
+  aside?: ReactNode
 }
 
-export function TopBar({ title, back, step }: TopBarProps) {
+export function TopBar({ title, back, step, aside }: TopBarProps) {
   const navigate = useNavigate()
   // The first entry of the history has the key 'default': there is nothing to go back to.
   const hasHistory = useLocation().key !== 'default'
@@ -32,7 +34,7 @@ export function TopBar({ title, back, step }: TopBarProps) {
         <div>{title}</div>
       )}
       <div className={styles.version}>v{__APP_VERSION__}</div>
-      {step && <div className={styles.step}>{step}</div>}
+      {(step || aside) && <div className={styles.step}>{step ?? aside}</div>}
     </header>
   )
 }

@@ -27,19 +27,33 @@ public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataP
         return [.. SettingDefinitions.All.Select(definition => Resolve(definition, rows))];
     }
 
-    /// <summary>The value the app uses, or null when the setting has none.</summary>
-    public async Task<string?> GetAsync(string key, CancellationToken cancellationToken)
-    {
-        var definition = SettingDefinitions.Find(key) ?? throw new ArgumentException($"Unknown setting {key}.", nameof(key));
-        return Resolve(definition, await Rows(cancellationToken)).Value;
-    }
-
-    /// <summary>Saves the page's value. A secret is sealed with the current values of the settings it is bound to.</summary>
-    public async Task SetAsync(SettingDefinition definition, string value, CancellationToken cancellationToken)
+    /// <summary>
+    /// The values the app uses, all from one read. Code that sends a secret (the email sender) must take the secret and
+    /// the settings it is bound to from the same call, so they can't come from two moments with a change in between.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, string?>> ValuesAsync(CancellationToken cancellationToken)
     {
         var rows = await Rows(cancellationToken);
+        return SettingDefinitions.All.ToDictionary(d => d.Key, d => Resolve(d, rows).Value);
+    }
+
+    /// <summary>
+    /// Saves the page's value. A secret is sealed with the values of the settings it is bound to, and only if they are
+    /// still the ones the page showed (<paramref name="expected"/>): false when they changed meanwhile, and nothing is saved.
+    /// </summary>
+    public async Task<bool> SetAsync(SettingDefinition definition, string value, IReadOnlyDictionary<string, string?>? expected,
+        CancellationToken cancellationToken)
+    {
+        var rows = await Rows(cancellationToken);
+        if (definition.Secret)
+        {
+            var bound = definition.BoundTo ?? [];
+            if (expected is null || bound.Any(key => expected.GetValueOrDefault(key) != Resolve(SettingDefinitions.Find(key)!, rows).Value))
+                return false;
+        }
         var stored = definition.Secret ? protector.Protect(Binding(definition, rows) + Separator + value) : value;
         await Upsert(definition.Key, stored, cancellationToken);
+        return true;
     }
 
     /// <summary>Forgets the page's value, so the server's value or the default applies again (a secret has neither).</summary>

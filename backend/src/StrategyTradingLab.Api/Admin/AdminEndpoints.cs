@@ -11,7 +11,8 @@ public record AdminSetting(string Key, string Group, string Description, string?
 
 public record AdminLogIn(string Password);
 
-public record SettingValue(string Value);
+/// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
+public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
 
 /// <summary>
 /// The admin settings page's API, behind a fixed password until accounts have an admin role (Ernest's call):
@@ -57,17 +58,21 @@ public static class AdminEndpoints
             (await store.AllAsync(cancellationToken)).Select(Dto).ToList())
         .WithSummary("The settings the admin page can set, with where each value comes from.");
 
-        settings.MapPut("/{key}", async Task<Results<NoContent, NotFound, ValidationProblem>> (string key, SettingValue request,
-            SettingsStore store, CancellationToken cancellationToken) =>
+        settings.MapPut("/{key}", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (string key,
+            SettingValue request, SettingsStore store, CancellationToken cancellationToken) =>
         {
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
             // A secret is kept exactly as typed: a password may start or end with a space.
             var value = string.IsNullOrWhiteSpace(request.Value) ? "" : definition.Secret ? request.Value : request.Value.Trim();
-            var error = value.Length == 0 ? "Type a value, or use Default." : value.Length > 500 ? "Use at most 500 characters." : definition.Validate?.Invoke(value);
+            var error = value.Length == 0 ? "Type a value, or use Default."
+                : value.Length > 500 ? "Use at most 500 characters."
+                : value.Any(char.IsControl) ? "Use printable characters only."
+                : definition.Validate?.Invoke(value);
             if (error is not null) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["value"] = [error] });
 
-            await store.SetAsync(definition, value, cancellationToken);
-            return TypedResults.NoContent();
+            return await store.SetAsync(definition, value, request.Expected, cancellationToken)
+                ? TypedResults.NoContent()
+                : TypedResults.Conflict("The mail settings changed since this page loaded. Reload, check them, then type the password again.");
         })
         .WithSummary("Sets a setting. The saved password only counts while the mail server, port and user it was saved with stay.");
 

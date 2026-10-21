@@ -50,7 +50,10 @@ export function AdminSettings() {
             <h2 className={styles.groupTitle}>{group}</h2>
             {settings.map((s) => (
               // Keyed by its value, so a row starts again from what the server now has after a save.
-              <SettingRow key={`${s.key}:${s.source}:${s.value}:${s.isSet}`} setting={s} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
+              <SettingRow
+                key={`${s.key}:${s.source}:${s.value}:${s.isSet}`}
+                setting={s}
+                shown={shownValues(state.settings)} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
             ))}
           </section>
         ))}
@@ -137,7 +140,17 @@ const sourceText: Record<AdminSetting['source'], string> = {
   none: 'Not set',
 }
 
-function SettingRow({ setting: s, onChanged, onLoggedOut }: { setting: AdminSetting; onChanged: () => Promise<void>; onLoggedOut: () => void }) {
+/** The values the page shows, sent with a secret so the API can check its mail server hasn't changed since. */
+const shownValues = (settings: AdminSetting[]) => Object.fromEntries(settings.map((s) => [s.key, s.value]))
+
+interface SettingRowProps {
+  setting: AdminSetting
+  shown: Record<string, string | null>
+  onChanged: () => Promise<void>
+  onLoggedOut: () => void
+}
+
+function SettingRow({ setting: s, shown, onChanged, onLoggedOut }: SettingRowProps) {
   const [draft, setDraft] = useState(s.secret ? '' : (s.value ?? ''))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -160,7 +173,7 @@ function SettingRow({ setting: s, onChanged, onLoggedOut }: { setting: AdminSett
 
   const save = (e?: FormEvent) => {
     e?.preventDefault()
-    if (edited) void run(() => api.setAdminSetting(s.key, draft))
+    if (edited) void run(() => api.setAdminSetting(s.key, draft, s.secret ? shown : undefined))
   }
 
   const placeholder = s.secret ? (s.isSet ? 'set (hidden): type to replace' : 'not set') : (s.default ?? '')

@@ -29,6 +29,6 @@ export const mockApi: Api = {
   adminLogIn: (password) => later(() => mockAdminLogIn(password)),
   adminLogOut: () => later(mockAdminLogOut),
   getAdminSettings: () => later(mockAdminSettings),
-  setAdminSetting: (key, value) => later(() => mockSetAdminSetting(key, value)),
+  setAdminSetting: (key, value, shown) => later(() => mockSetAdminSetting(key, value, shown)),
   resetAdminSetting: (key, clear) => later(() => mockResetAdminSetting(key, clear)),
 }

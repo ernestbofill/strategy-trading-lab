@@ -61,7 +61,7 @@ export function mockAdminSettings(): AdminSetting[] {
 /** The API's email check: something before and after one '@', no spaces, at most 254 characters. */
 const isEmail = (v: string) => v.length <= 254 && v.indexOf('@') > 0 && v.indexOf('@') < v.length - 1 && !/\s/.test(v)
 
-export function mockSetAdminSetting(key: string, value: string) {
+export function mockSetAdminSetting(key: string, value: string, shown?: Record<string, string | null>) {
   requireAdmin()
   if (!value.trim()) throw new InvalidValueError('Type a value, or use Default.')
   const v = key === 'SMTP_PASSWORD' ? value : value.trim()
@@ -70,7 +70,11 @@ export function mockSetAdminSetting(key: string, value: string) {
   if (key === 'SMTP_PORT' && !(Number.isInteger(port) && port >= 1 && port <= 65535))
     throw new InvalidValueError('Use a port from 1 to 65535.')
   if ((key === 'SMTP_USER' || key === 'SMTP_FROM') && !isEmail(v)) throw new InvalidValueError('Use an email address.')
-  if (key === 'SMTP_PASSWORD') password = { value: v, binding: binding() }
+  if (key === 'SMTP_PASSWORD') {
+    if (!shown || boundToPassword.some((k) => (shown[k] ?? null) !== effective(k)))
+      throw new InvalidValueError('The mail settings changed since this page loaded. Reload, check them, then type the password again.')
+    password = { value: v, binding: binding() }
+  }
   else values.set(key, v)
 }
 

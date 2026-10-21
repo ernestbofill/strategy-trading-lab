@@ -22,7 +22,7 @@ public static class SettingDefinitions
         // Defaults are Ernest's Gmail, as in the POC, so only the app password has to be typed (Ernest's call); the sender
         // follows the account. The password comes last: changing a setting above it unsets it, so fill the page top to bottom.
         new("SMTP_USER", "Email", "The email account that sends the emails.", Default: GmailAccount, Validate: Email),
-        new("SMTP_HOST", "Email", "The mail server.", Default: "smtp.gmail.com"),
+        new("SMTP_HOST", "Email", "The mail server.", Default: "smtp.gmail.com", Validate: Host),
         new("SMTP_PORT", "Email", "The mail server's port (STARTTLS).", Default: "587", Validate: Port),
         new("SMTP_FROM", "Email", "The sender address. Empty: the account above.", Validate: Email),
         new("SMTP_PASSWORD", "Email",
@@ -38,6 +38,9 @@ public static class SettingDefinitions
         value.Length <= 254 && value.IndexOf('@') is > 0 and var at && at < value.Length - 1 && !value.Any(char.IsWhiteSpace)
             ? null
             : "Use an email address.";
+
+    static string? Host(string value) =>
+        value.Length <= 253 && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-') ? null : "Use a server name, e.g. smtp.gmail.com.";
 
     static string? Port(string value) =>
         int.TryParse(value, out var port) && port is >= 1 and <= 65535 ? null : "Use a port from 1 to 65535.";

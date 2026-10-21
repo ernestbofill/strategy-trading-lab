@@ -39,6 +39,7 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
   })
   if (response.status === 401) throw new UnauthorizedError()
   if (response.status === 429) throw new TooManyTriesError()
+  if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
   if (response.status === 400) {
     const problem = (await response.json().catch(() => null)) as { errors?: Record<string, string[]> } | null
     throw new InvalidValueError(problem?.errors?.value?.[0] ?? 'That value was refused.')
@@ -57,6 +58,6 @@ export const httpApi: Api = {
   adminLogIn: async (password) => void (await admin('POST', '/log-in', { password })),
   adminLogOut: async () => void (await admin('POST', '/log-out')),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
-  setAdminSetting: async (key, value) => void (await admin('PUT', settingPath(key), { value })),
+  setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
   resetAdminSetting: async (key, clear) => void (await admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
 }

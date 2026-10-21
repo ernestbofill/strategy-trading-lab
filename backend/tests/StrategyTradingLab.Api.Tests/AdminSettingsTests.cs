@@ -43,6 +43,14 @@ public sealed class AdminFixture : WebApplicationFactory<Program>, IAsyncLifetim
 /// <summary>The admin settings page's API, end to end against the linked Neon branch.</summary>
 public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixture>
 {
+    /// <summary>Saves the password as the page does: with the account, server and port the page shows.</summary>
+    async Task<HttpResponseMessage> PutPassword(string value)
+    {
+        var shown = (await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/settings")).EnumerateArray()
+            .ToDictionary(s => s.GetProperty("key").GetString()!, s => s.GetProperty("value").GetString());
+        return await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value, expected = shown });
+    }
+
     async Task<JsonElement> Setting(string key) =>
         (await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/settings")).EnumerateArray().Single(s => s.GetProperty("key").GetString() == key);
 
@@ -83,7 +91,7 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     [NeonFact]
     public async Task A_secret_is_never_sent_back_and_is_stored_encrypted()
     {
-        Assert.Equal(HttpStatusCode.NoContent, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "app password 123" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await PutPassword("app password 123")).StatusCode);
 
         var password = await Setting("SMTP_PASSWORD");
         Assert.Equal(JsonValueKind.Null, password.GetProperty("value").ValueKind);
@@ -92,14 +100,14 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         Assert.DoesNotContain("app password", stored.Value);
 
         using var scope = fixture.Services.CreateScope();
-        Assert.Equal("app password 123", await scope.ServiceProvider.GetRequiredService<SettingsStore>().GetAsync("SMTP_PASSWORD", default));
+        Assert.Equal("app password 123", (await scope.ServiceProvider.GetRequiredService<SettingsStore>().ValuesAsync(default))["SMTP_PASSWORD"]);
     }
 
     [NeonFact]
     public async Task Changing_the_mail_server_clears_the_password()
     {
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
-        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
+        await PutPassword("secret");
 
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.example.com" });
 
@@ -112,7 +120,7 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     public async Task Resetting_the_mail_server_to_its_default_clears_the_password_too()
     {
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.example.com" });
-        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
+        await PutPassword("secret");
 
         await fixture.Admin.DeleteAsync("/admin/settings/SMTP_HOST");
 
@@ -126,14 +134,14 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         using var withServerPassword = fixture.WithWebHostBuilder(b => b.UseSetting("SMTP_PASSWORD", "from api.env"));
         using var scope = withServerPassword.Services.CreateScope();
 
-        Assert.Null(await scope.ServiceProvider.GetRequiredService<SettingsStore>().GetAsync("SMTP_PASSWORD", default));
+        Assert.Null((await scope.ServiceProvider.GetRequiredService<SettingsStore>().ValuesAsync(default))["SMTP_PASSWORD"]);
     }
 
     [NeonFact]
     public async Task A_password_counts_again_when_its_server_comes_back()
     {
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
-        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
+        await PutPassword("secret");
 
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.example.com" });
         Assert.False((await Setting("SMTP_PASSWORD")).GetProperty("isSet").GetBoolean());
@@ -143,10 +151,39 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     }
 
     [NeonFact]
+    public async Task A_password_typed_on_a_stale_page_is_refused()
+    {
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
+        var shown = new Dictionary<string, string?> { ["SMTP_USER"] = "nest.u333@gmail.com", ["SMTP_HOST"] = "smtp.gmail.com", ["SMTP_PORT"] = "587" };
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.example.com" });
+
+        var response = await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret", expected = shown });
+        var withoutExpected = await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, withoutExpected.StatusCode);
+        Assert.False((await Setting("SMTP_PASSWORD")).GetProperty("isSet").GetBoolean());
+    }
+
+    [NeonFact]
+    public async Task A_new_mail_server_in_the_server_environment_unsets_the_password()
+    {
+        await fixture.Admin.DeleteAsync("/admin/settings/SMTP_HOST");
+        await PutPassword("secret");
+        using var withOtherServer = fixture.WithWebHostBuilder(b => b.UseSetting("SMTP_HOST", "smtp.example.com"));
+        using var scope = withOtherServer.Services.CreateScope();
+
+        var values = await scope.ServiceProvider.GetRequiredService<SettingsStore>().ValuesAsync(default);
+
+        Assert.Equal("smtp.example.com", values["SMTP_HOST"]);
+        Assert.Null(values["SMTP_PASSWORD"]);
+    }
+
+    [NeonFact]
     public async Task Saving_the_same_server_keeps_the_password()
     {
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
-        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
+        await PutPassword("secret");
 
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
 
@@ -156,10 +193,10 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     [NeonFact]
     public async Task A_secret_is_kept_exactly_as_typed()
     {
-        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = " spaced " });
+        await PutPassword(" spaced ");
 
         using var scope = fixture.Services.CreateScope();
-        Assert.Equal(" spaced ", await scope.ServiceProvider.GetRequiredService<SettingsStore>().GetAsync("SMTP_PASSWORD", default));
+        Assert.Equal(" spaced ", (await scope.ServiceProvider.GetRequiredService<SettingsStore>().ValuesAsync(default))["SMTP_PASSWORD"]);
     }
 
     [NeonFact]
@@ -168,6 +205,8 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PORT", new { value = "99999" })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_USER", new { value = "not an email" })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "  " })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com\nx" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp gmail" })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await fixture.Admin.PutAsJsonAsync("/admin/settings/DATABASE_URL", new { value = "x" })).StatusCode);
     }
 }

@@ -184,8 +184,11 @@ export interface Api {
   adminLogIn(password: string): Promise<void>
   adminLogOut(): Promise<void>
   getAdminSettings(): Promise<AdminSetting[]>
-  /** Rejects with `InvalidValueError` (its message is for the user) when the value is refused. */
-  setAdminSetting(key: string, value: string): Promise<void>
+  /**
+   * Rejects with `InvalidValueError` (its message is for the user) when the value is refused. A secret needs `shown`:
+   * the values the page shows, so the API can refuse it if its mail server changed since (409).
+   */
+  setAdminSetting(key: string, value: string, shown?: Record<string, string | null>): Promise<void>
   /** Back to the server's value or the default; `clear` leaves no value at all (secrets). */
   resetAdminSetting(key: string, clear?: boolean): Promise<void>
 }

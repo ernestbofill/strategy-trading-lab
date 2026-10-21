@@ -90,6 +90,14 @@ describe('httpApi admin', () => {
     await expect(httpApi.setAdminSetting('SMTP_PORT', '0')).rejects.toThrow(new InvalidValueError('Use a port from 1 to 65535.'))
   })
 
+  it("sends the shown values with a secret, and passes on a 409's reason", async () => {
+    respond(409, 'The mail settings changed since this page loaded.')
+    await expect(httpApi.setAdminSetting('SMTP_PASSWORD', 'x', { SMTP_HOST: 'smtp.gmail.com' })).rejects.toThrow(
+      new InvalidValueError('The mail settings changed since this page loaded.'),
+    )
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toEqual({ value: 'x', expected: { SMTP_HOST: 'smtp.gmail.com' } })
+  })
+
   it('puts a value, and deletes to reset or, with clear, to clear', async () => {
     respond(204)
     await httpApi.setAdminSetting('SMTP_HOST', 'smtp.gmail.com')

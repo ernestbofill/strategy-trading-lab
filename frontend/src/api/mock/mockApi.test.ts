@@ -28,12 +28,20 @@ describe('mockApi.startStrategy', () => {
 describe('mockApi admin', () => {
   it('clears the password when the mail server changes, as the API does', async () => {
     await mockApi.adminLogIn('STL')
-    await mockApi.setAdminSetting('SMTP_PASSWORD', 'app password')
+    const shown = Object.fromEntries((await mockApi.getAdminSettings()).map((s) => [s.key, s.value]))
+    await mockApi.setAdminSetting('SMTP_PASSWORD', 'app password', shown)
     await mockApi.setAdminSetting('SMTP_HOST', 'smtp.gmail.com')
     expect((await mockApi.getAdminSettings()).find((s) => s.key === 'SMTP_PASSWORD')?.isSet).toBe(true)
 
     await mockApi.setAdminSetting('SMTP_HOST', 'smtp.example.com')
     expect((await mockApi.getAdminSettings()).find((s) => s.key === 'SMTP_PASSWORD')?.isSet).toBe(false)
+  })
+
+  it('refuses a password typed on a page showing another mail server', async () => {
+    await mockApi.adminLogIn('STL')
+    const shown = Object.fromEntries((await mockApi.getAdminSettings()).map((s) => [s.key, s.value]))
+    await mockApi.setAdminSetting('SMTP_HOST', 'smtp.other.example')
+    await expect(mockApi.setAdminSetting('SMTP_PASSWORD', 'x', shown)).rejects.toThrow('changed since this page loaded')
   })
 
   it('refuses a port out of range', async () => {

@@ -4,8 +4,9 @@ namespace StrategyTradingLab.Api.Admin;
 /// A setting the admin page can set. Only these: the database URL and anything the API needs to start stay in
 /// the server's environment (api.env, .env.local). The page's value wins over the server's, which wins over the default.
 /// </summary>
-/// <param name="BoundTo">For a secret: the settings it belongs with. When any of them changes, by any means, the secret
-/// is cleared, so it is never sent somewhere new (a mail server swapped in by whoever knows the page's password).</param>
+/// <param name="BoundTo">For a secret: the settings it belongs with. When the page changes any of them (save or Default), the
+/// secret is cleared, so it is never sent somewhere new (a mail server swapped in by whoever knows the page's password).
+/// A change in the server's environment doesn't clear it: whoever edits api.env controls the server anyway.</param>
 public record SettingDefinition(
     string Key,
     string Group,
@@ -19,14 +20,18 @@ public static class SettingDefinitions
 {
     public static readonly IReadOnlyList<SettingDefinition> All =
     [
-        new("SMTP_USER", "Email", "The email account that sends the emails, e.g. you@gmail.com.",
-            Validate: Email),
-        new("SMTP_PASSWORD", "Email", "Its password. For Gmail, an app password.", Secret: true,
-            BoundTo: ["SMTP_USER", "SMTP_HOST", "SMTP_PORT"]),
-        new("SMTP_HOST", "Email", "The mail server. Empty with a @gmail.com user: smtp.gmail.com."),
+        // Defaults are Ernest's Gmail, as in the POC, so only the app password has to be typed (Ernest's call).
+        // The password comes last: changing a setting above it clears it, so the page is filled top to bottom.
+        new("SMTP_USER", "Email", "The email account that sends the emails.", Default: GmailAccount, Validate: Email),
+        new("SMTP_HOST", "Email", "The mail server.", Default: "smtp.gmail.com"),
         new("SMTP_PORT", "Email", "The mail server's port (STARTTLS).", Default: "587", Validate: Port),
-        new("SMTP_FROM", "Email", "The sender address. Empty: SMTP_USER.", Validate: Email),
+        new("SMTP_FROM", "Email", "The sender address.", Default: GmailAccount, Validate: Email),
+        new("SMTP_PASSWORD", "Email",
+            "The account's password: for Gmail, an app password. Changing the account, server or port above clears it.",
+            Secret: true, BoundTo: ["SMTP_USER", "SMTP_HOST", "SMTP_PORT"]),
     ];
+
+    const string GmailAccount = "nest.u333@gmail.com";
 
     public static SettingDefinition? Find(string key) => All.FirstOrDefault(setting => setting.Key == key);
 

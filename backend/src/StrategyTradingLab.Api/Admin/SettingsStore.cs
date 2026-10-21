@@ -11,7 +11,8 @@ public enum SettingSource { Page, Server, Default, None }
 public record EffectiveSetting(SettingDefinition Definition, string? Value, SettingSource Source);
 
 /// <summary>Reads and writes the admin page's settings. Secrets are encrypted with ASP.NET Core Data Protection.</summary>
-public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataProtectionProvider dataProtection)
+public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataProtectionProvider dataProtection,
+    ILogger<SettingsStore> logger)
 {
     readonly IDataProtector protector = dataProtection.CreateProtector("StrategyTradingLab.Admin.Settings");
 
@@ -77,18 +78,23 @@ public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataP
     {
         if (row is not null)
         {
-            return row.Value is null
-                ? new(definition, null, SettingSource.None)
-                : new(definition, definition.Secret ? Unprotect(row.Value) : row.Value, SettingSource.Page);
+            if (row.Value is null) return new(definition, null, SettingSource.None);
+            if (!definition.Secret) return new(definition, row.Value, SettingSource.Page);
+            // A secret the keys can no longer read counts as not set here, so the server's value still applies.
+            if (Unprotect(definition.Key, row.Value) is { } secret) return new(definition, secret, SettingSource.Page);
         }
         if (configuration[definition.Key] is { Length: > 0 } server) return new(definition, server, SettingSource.Server);
         return definition.Default is null ? new(definition, null, SettingSource.None) : new(definition, definition.Default, SettingSource.Default);
     }
 
-    /// <summary>Null when the key that encrypted it is gone (a new server): the secret has to be set again.</summary>
-    string? Unprotect(string stored)
+    /// <summary>Null when the key that encrypted it is gone (a new server or lost keys): the secret has to be set again.</summary>
+    string? Unprotect(string key, string stored)
     {
         try { return protector.Unprotect(stored); }
-        catch (System.Security.Cryptography.CryptographicException) { return null; }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            logger.LogWarning("The saved {Setting} can't be decrypted (its Data Protection key is gone). Set it again on the admin page.", key);
+            return null;
+        }
     }
 }

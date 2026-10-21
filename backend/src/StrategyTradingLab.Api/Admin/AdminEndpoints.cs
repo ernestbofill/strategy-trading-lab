@@ -31,10 +31,10 @@ public static class AdminEndpoints
         group.MapPost("/log-in", Results<NoContent, UnauthorizedHttpResult> (AdminLogIn request, HttpContext http,
             IConfiguration configuration, IDataProtectionProvider dataProtection, TimeProvider time) =>
         {
-            if (!PasswordMatches(request.Password ?? "", configuration["ADMIN_PASSWORD"] is { Length: > 0 } set ? set : DefaultPassword))
-                return TypedResults.Unauthorized();
+            var password = AdminPassword(configuration);
+            if (!PasswordMatches(request.Password ?? "", password)) return TypedResults.Unauthorized();
 
-            var ticket = Protector(dataProtection).Protect("admin", time.GetUtcNow() + SessionLength);
+            var ticket = Protector(dataProtection).Protect(TicketFor(password), time.GetUtcNow() + SessionLength);
             http.Response.Cookies.Append(CookieName, ticket, new CookieOptions
             {
                 HttpOnly = true, Secure = http.Request.IsHttps, SameSite = SameSiteMode.Strict,
@@ -61,7 +61,9 @@ public static class AdminEndpoints
             SettingsStore store, CancellationToken cancellationToken) =>
         {
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
-            var value = (request.Value ?? "").Trim();
+            // A secret is kept exactly as typed: a password may start or end with a space.
+            var value = definition.Secret ? request.Value ?? "" : (request.Value ?? "").Trim();
+            if (definition.Secret && value.Trim().Length == 0) value = "";
             var error = value.Length == 0 ? "Type a value, or use Default." : value.Length > 500 ? "Use at most 500 characters." : definition.Validate?.Invoke(value);
             if (error is not null) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["value"] = [error] });
 
@@ -97,11 +99,29 @@ public static class AdminEndpoints
         var protector = Protector(http.RequestServices.GetRequiredService<IDataProtectionProvider>());
         try
         {
-            if (http.Request.Cookies[CookieName] is { } ticket && protector.Unprotect(ticket) == "admin") return await next(context);
+            var expected = TicketFor(AdminPassword(http.RequestServices.GetRequiredService<IConfiguration>()));
+            if (http.Request.Cookies[CookieName] is { } ticket && protector.Unprotect(ticket) == expected) return await next(context);
         }
         catch (CryptographicException) { }
         return TypedResults.Unauthorized();
     }
+
+    /// <summary>The log-in rate limit's key for a client: its IPv4 address, or its IPv6 /64.</summary>
+    public static string ClientKey(System.Net.IPAddress? address)
+    {
+        if (address is null) return "unknown";
+        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+        if (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6) return address.ToString();
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 8, 8);
+        return new System.Net.IPAddress(bytes) + "/64";
+    }
+
+    static string AdminPassword(IConfiguration configuration) =>
+        configuration["ADMIN_PASSWORD"] is { Length: > 0 } set ? set : DefaultPassword;
+
+    /// <summary>The cookie's content: tied to the password, so changing ADMIN_PASSWORD logs every admin out.</summary>
+    static string TicketFor(string password) => "admin:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password)))[..16];
 
     /// <summary>Compares hashes in constant time, so the answer's timing says nothing about the password.</summary>
     static bool PasswordMatches(string given, string expected) =>

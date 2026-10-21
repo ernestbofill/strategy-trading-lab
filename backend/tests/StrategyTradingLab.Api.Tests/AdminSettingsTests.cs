@@ -110,7 +110,7 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     [NeonFact]
     public async Task Resetting_the_mail_server_to_its_default_clears_the_password_too()
     {
-        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.example.com" });
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
 
         await fixture.Admin.DeleteAsync("/admin/settings/SMTP_HOST");
@@ -127,6 +127,15 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
 
         Assert.True((await Setting("SMTP_PASSWORD")).GetProperty("isSet").GetBoolean());
+    }
+
+    [NeonFact]
+    public async Task A_secret_is_kept_exactly_as_typed()
+    {
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = " spaced " });
+
+        using var scope = fixture.Services.CreateScope();
+        Assert.Equal(" spaced ", await scope.ServiceProvider.GetRequiredService<SettingsStore>().GetAsync("SMTP_PASSWORD", default));
     }
 
     [NeonFact]
@@ -164,6 +173,22 @@ public class SettingDefinitionTests
     [InlineData("SMTP_USER", "you @gmail.com", false)]
     public void Values_are_checked(string key, string value, bool valid) =>
         Assert.Equal(valid, SettingDefinitions.Find(key)!.Validate!(value) is null);
+
+    [Fact]
+    public void Every_setting_but_the_password_has_a_default_and_the_password_comes_last()
+    {
+        Assert.All(SettingDefinitions.All.Where(s => !s.Secret), s => Assert.NotNull(s.Default));
+        Assert.Null(SettingDefinitions.Find("SMTP_PASSWORD")!.Default);
+        Assert.Equal("SMTP_PASSWORD", SettingDefinitions.All[^1].Key);
+    }
+
+    [Theory]
+    [InlineData("203.0.113.7", "203.0.113.7")]
+    [InlineData("::ffff:203.0.113.7", "203.0.113.7")]
+    [InlineData("2001:db8:1:2:aaaa:bbbb:cccc:dddd", "2001:db8:1:2::/64")]
+    [InlineData("2001:db8:1:2::1", "2001:db8:1:2::/64")]
+    public void The_log_in_limit_counts_an_ipv6_client_per_64(string address, string key) =>
+        Assert.Equal(key, AdminEndpoints.ClientKey(System.Net.IPAddress.Parse(address)));
 
     [Fact]
     public void Only_the_password_is_secret_and_it_is_bound_to_the_server_port_and_user()

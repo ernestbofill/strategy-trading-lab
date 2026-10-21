@@ -36,6 +36,10 @@ builder.Services.TryAddSingleton(TimeProvider.System);
 var dataProtection = builder.Services.AddDataProtection().SetApplicationName("StrategyTradingLab");
 if (builder.Configuration["STATE_DIRECTORY"] is { Length: > 0 } state)
     dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(state, "keys")));
+else if (builder.Environment.IsProduction())
+    // Under the unit's ProtectSystem=strict the default folder can't be written: keys would live in memory only and
+    // every restart would lose the saved secrets. Fail the deploy's health check instead.
+    throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");
 builder.Services.AddScoped<SettingsStore>();
 
 // nginx (on the same machine) passes the client's address and https on. Only loopback proxies are trusted
@@ -45,9 +49,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    // 5 tries per 15 minutes from one address: slow enough that guessing a password takes years.
+    // 5 tries per 15 minutes from one address. An IPv6 client counts per /64, since one usually has the whole block.
     options.AddPolicy(AdminEndpoints.LogInRateLimit, http => RateLimitPartition.GetFixedWindowLimiter(
-        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(15) }));
 });
 builder.Services.AddOpenApi();

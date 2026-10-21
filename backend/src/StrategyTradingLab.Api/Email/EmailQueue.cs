@@ -8,14 +8,18 @@ public record OutgoingEmail(string To, string Subject, string Body);
 /// Emails sent after the request has answered, so an answer never waits on (or reveals, by its timing) a send.
 /// In memory: an email queued just before a restart is lost, which the user fixes with "send the link again".
 /// </summary>
-public class EmailQueue
+public class EmailQueue(ILogger<EmailQueue> logger)
 {
     readonly Channel<OutgoingEmail> channel = Channel.CreateBounded<OutgoingEmail>(new BoundedChannelOptions(500)
     {
         FullMode = BoundedChannelFullMode.DropWrite,
     });
 
-    public void Enqueue(OutgoingEmail email) => channel.Writer.TryWrite(email);
+    public void Enqueue(OutgoingEmail email)
+    {
+        if (!channel.Writer.TryWrite(email))
+            logger.LogWarning("The email queue is full: \"{Subject}\" was dropped.", email.Subject);
+    }
 
     public IAsyncEnumerable<OutgoingEmail> ReadAllAsync(CancellationToken cancellationToken) => channel.Reader.ReadAllAsync(cancellationToken);
 }

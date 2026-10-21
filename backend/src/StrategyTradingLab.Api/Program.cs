@@ -51,7 +51,6 @@ builder.Services.AddHostedService<EmailWorker>();
 
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddMemoryCache();
 builder.Services.AddScoped<Sessions>();
 builder.Services.AddSingleton<LogInThrottle>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();

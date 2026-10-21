@@ -49,9 +49,14 @@ public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor a
         return user;
     }
 
-    /// <summary>Logs this device in as the user: a new session and its cookie.</summary>
+    /// <summary>Logs this device in as the user: a new session and its cookie. The session it replaces, if any, ends.</summary>
     public async Task StartAsync(User user, CancellationToken cancellationToken)
     {
+        if (Http.Request.Cookies[CookieName] is { Length: > 0 and < 100 } previous)
+        {
+            var previousHash = SecretTokens.Hash(previous);
+            await db.Sessions.Where(s => s.TokenHash == previousHash).ExecuteDeleteAsync(cancellationToken);
+        }
         var (token, hash) = SecretTokens.New();
         var now = time.GetUtcNow();
         var userAgent = Http.Request.Headers.UserAgent.ToString();

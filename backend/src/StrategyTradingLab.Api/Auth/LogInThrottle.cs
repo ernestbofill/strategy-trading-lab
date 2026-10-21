@@ -1,42 +1,56 @@
-using Microsoft.Extensions.Caching.Memory;
-
 namespace StrategyTradingLab.Api.Auth;
 
 /// <summary>
 /// 5 wrong passwords for one email within 15 minutes make it wait 15 minutes. Counted in memory per email, for
 /// emails with and without an account alike, so the lock never tells which emails have one. A restart forgets it.
+/// At most <see cref="MaxEmails"/> emails are tracked; the oldest entries go first when it is full.
 /// </summary>
-public class LogInThrottle(IMemoryCache cache, TimeProvider time)
+public class LogInThrottle(TimeProvider time)
 {
-    public const int MaxFailures = 5;
+    public const int MaxFailures = 5, MaxEmails = 100_000;
     public static readonly TimeSpan Window = TimeSpan.FromMinutes(15);
 
-    sealed class Entry
+    sealed record Entry(int Failures, DateTimeOffset FirstFailureAt, DateTimeOffset? LockedUntil)
     {
-        public int Failures;
-        public DateTimeOffset FirstFailureAt;
-        public DateTimeOffset? LockedUntil;
+        /// <summary>When the entry stops mattering: its lock is over and its failures are out of the window.</summary>
+        public DateTimeOffset Expires => LockedUntil is { } until && until > FirstFailureAt + Window ? until : FirstFailureAt + Window;
     }
 
-    static string Key(string email) => "log-in:" + email.ToLowerInvariant();
+    readonly Dictionary<string, Entry> entries = new();
+    readonly object gate = new();
 
-    public bool IsLocked(string email) =>
-        cache.TryGetValue<Entry>(Key(email), out var entry) && entry!.LockedUntil > time.GetUtcNow();
+    static string Key(string email) => email.Trim().ToLowerInvariant();
+
+    public bool IsLocked(string email)
+    {
+        lock (gate) return entries.TryGetValue(Key(email), out var entry) && entry.LockedUntil > time.GetUtcNow();
+    }
 
     public void Failed(string email)
     {
         var now = time.GetUtcNow();
-        var entry = cache.GetOrCreate(Key(email), item =>
+        lock (gate)
         {
-            item.AbsoluteExpirationRelativeToNow = Window * 2;
-            return new Entry { FirstFailureAt = now };
-        })!;
-        lock (entry)
-        {
-            if (now - entry.FirstFailureAt > Window) (entry.Failures, entry.FirstFailureAt) = (0, now);
-            if (++entry.Failures >= MaxFailures) (entry.LockedUntil, entry.Failures) = (now + Window, 0);
+            if (!entries.TryGetValue(Key(email), out var entry) || now - entry.FirstFailureAt > Window)
+            {
+                entry = new Entry(0, now, entry?.LockedUntil > now ? entry.LockedUntil : null);
+                if (entries.Count >= MaxEmails) Prune(now);
+            }
+            var failures = entry.Failures + 1;
+            entries[Key(email)] = failures >= MaxFailures ? new Entry(0, now, now + Window) : entry with { Failures = failures };
         }
     }
 
-    public void Succeeded(string email) => cache.Remove(Key(email));
+    /// <summary>A good log-in or a password reset clears the email's count and lock.</summary>
+    public void Succeeded(string email)
+    {
+        lock (gate) entries.Remove(Key(email));
+    }
+
+    void Prune(DateTimeOffset now)
+    {
+        foreach (var (key, _) in entries.Where(e => e.Value.Expires <= now).ToList()) entries.Remove(key);
+        if (entries.Count < MaxEmails) return;
+        foreach (var (key, _) in entries.OrderBy(e => e.Value.FirstFailureAt).Take(entries.Count / 10).ToList()) entries.Remove(key);
+    }
 }

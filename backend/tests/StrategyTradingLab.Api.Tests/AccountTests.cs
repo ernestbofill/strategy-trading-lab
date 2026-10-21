@@ -27,7 +27,9 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         var link = await api.Emails.WaitForAsync(email, "Confirm your email");
         Assert.NotNull(link);
         var token = CapturedEmails.Token(link!);
-        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/verify-email", new { token })).StatusCode);
+        using var stranger = api.CreateApiClient();
+        Assert.Equal(HttpStatusCode.NoContent, (await stranger.PostAsJsonAsync("/account/verify-email", new { token })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/account/me")).StatusCode); // The link logs no one in.
         Assert.True((await Me(client)).GetProperty("emailVerified").GetBoolean());
 
         var again = await client.PostAsJsonAsync("/account/verify-email", new { token });
@@ -177,6 +179,31 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         var response = await bare.PostAsJsonAsync("/account/log-in", new { email = "a@b.c", password = "x" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [NeonFact]
+    public async Task Logging_in_again_on_a_device_ends_its_previous_session()
+    {
+        var (client, email) = await api.SignedUpAsync();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userId = await db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync();
+
+        await client.PostAsJsonAsync("/account/log-in", new { email, password = "a long password" });
+        await client.PostAsJsonAsync("/account/log-in", new { email, password = "a long password" });
+
+        Assert.Equal(1, await db.Sessions.CountAsync(s => s.UserId == userId));
+    }
+
+    [NeonFact]
+    public async Task A_password_longer_than_any_account_can_have_is_refused_like_a_wrong_one()
+    {
+        var (_, email) = await api.SignedUpAsync();
+        using var client = api.CreateApiClient();
+
+        var response = await client.PostAsJsonAsync("/account/log-in", new { email, password = new string('a', 10_000) });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [NeonFact]

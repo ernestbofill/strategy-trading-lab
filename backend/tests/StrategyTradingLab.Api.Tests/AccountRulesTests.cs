@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using StrategyTradingLab.Api.Auth;
 
 namespace StrategyTradingLab.Api.Tests;
@@ -47,7 +46,7 @@ public class AccountRulesTests
     public void Five_failures_lock_for_15_minutes_and_old_failures_dont_count()
     {
         var clock = new Clock(new DateTimeOffset(2026, 10, 21, 12, 0, 0, TimeSpan.Zero));
-        var throttle = new LogInThrottle(new MemoryCache(new MemoryCacheOptions()), clock);
+        var throttle = new LogInThrottle(clock);
 
         for (var i = 0; i < 4; i++) throttle.Failed("a@b.c");
         Assert.False(throttle.IsLocked("a@b.c"));
@@ -57,6 +56,31 @@ public class AccountRulesTests
         throttle.Failed("a@b.c");
         Assert.True(throttle.IsLocked("a@b.c"));
         clock.Now += TimeSpan.FromMinutes(15);
+        Assert.False(throttle.IsLocked("a@b.c"));
+    }
+
+    [Fact]
+    public void A_lock_set_late_lasts_its_full_15_minutes()
+    {
+        var clock = new Clock(new DateTimeOffset(2026, 10, 21, 12, 0, 0, TimeSpan.Zero));
+        var throttle = new LogInThrottle(clock);
+
+        throttle.Failed("a@b.c");
+        clock.Now += TimeSpan.FromMinutes(29);
+        for (var i = 0; i < 5; i++) throttle.Failed("a@b.c");
+        clock.Now += TimeSpan.FromMinutes(14);
+
+        Assert.True(throttle.IsLocked("a@b.c"));
+    }
+
+    [Fact]
+    public void A_good_log_in_or_a_reset_clears_the_lock()
+    {
+        var throttle = new LogInThrottle(TimeProvider.System);
+        for (var i = 0; i < 5; i++) throttle.Failed("a@b.c");
+
+        throttle.Succeeded("A@B.C");
+
         Assert.False(throttle.IsLocked("a@b.c"));
     }
 }

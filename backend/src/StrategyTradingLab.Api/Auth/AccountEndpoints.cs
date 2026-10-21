@@ -55,6 +55,7 @@ public static class AccountEndpoints
             // Emails compare without case (citext); the warning goes to the address on file.
             if (await db.Users.Where(u => u.Email == email).Select(u => u.Email).SingleOrDefaultAsync(cancellationToken) is { } registered)
             {
+                hasher.HashPassword(null!, request.Password!); // The same slow step as a new account, so timing tells less.
                 emails.AlreadyRegistered(registered);
                 return answer;
             }
@@ -90,10 +91,12 @@ public static class AccountEndpoints
             if (throttle.IsLocked(email))
                 return TypedResults.Problem("Too many tries. Wait a few minutes, or reset your password.", statusCode: StatusCodes.Status429TooManyRequests);
 
-            var user = await db.Users.SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
+            // A password longer than any account can have is refused before it is hashed (it costs the same time).
+            var tooLong = (request.Password?.Length ?? 0) > AccountRules.PasswordMax;
+            var user = tooLong ? null : await db.Users.SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
             var result = user?.PasswordHash is { } hash
                 ? hasher.VerifyHashedPassword(user, hash, request.Password ?? "")
-                : Failed(hasher, request.Password);
+                : Failed(hasher, tooLong ? "" : request.Password);
             if (user is null || result == PasswordVerificationResult.Failed)
             {
                 throttle.Failed(email);
@@ -122,18 +125,20 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");
 
+        // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
+        // attacker's account, or keep using an account they created with the victim's email before the victim did.
         group.MapPost("/verify-email", async Task<Results<NoContent, ProblemHttpResult>> (TokenRequest request, AppDbContext db,
-            Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            TimeProvider time, CancellationToken cancellationToken) =>
         {
-            if (await UseToken(db, request.Token, EmailTokenPurpose.VerifyEmail, time, cancellationToken) is not { } user)
+            if (await FindToken(db, request.Token, EmailTokenPurpose.VerifyEmail, time, cancellationToken) is not { } token
+                || await Claim(db, token, time, cancellationToken) is not { } user)
                 return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
             user.EmailVerifiedAt ??= time.GetUtcNow();
             await db.SaveChangesAsync(cancellationToken);
-            await sessions.StartAsync(user, cancellationToken);
             return TypedResults.NoContent();
         })
         .RequireRateLimiting(PasswordLimit)
-        .WithSummary("Confirms the email from the link in the email, and logs that user in.");
+        .WithSummary("Confirms the email from the link in the email. It logs no one in.");
 
         group.MapPost("/resend-verification", async (AppDbContext db, Sessions sessions, AccountEmails emails, TimeProvider time,
             CancellationToken cancellationToken) =>
@@ -159,18 +164,20 @@ public static class AccountEndpoints
         .WithSummary("Emails a reset link if the email has an account. Always the same answer.");
 
         group.MapPost("/reset-password", async Task<Results<NoContent, ProblemHttpResult, ValidationProblem>> (
-            ResetPasswordRequest request, AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, TimeProvider time,
-            CancellationToken cancellationToken) =>
+            ResetPasswordRequest request, AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, LogInThrottle throttle,
+            TimeProvider time, CancellationToken cancellationToken) =>
         {
-            // The password is checked before the link is used, so a refused password doesn't use it up.
             var token = await FindToken(db, request.Token, EmailTokenPurpose.ResetPassword, time, cancellationToken);
             if (token is null) return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
-            var owner = await db.Users.AsNoTracking().SingleAsync(u => u.Id == token.UserId, cancellationToken);
-            if (AccountRules.PasswordError(request.Password, owner.Email) is { } error)
+            var user = await db.Users.SingleAsync(u => u.Id == token.UserId, cancellationToken);
+            // The password is checked before the link is used, so a refused password doesn't use it up.
+            if (AccountRules.PasswordError(request.Password, user.Email) is { } error)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [error] });
-            if (await UseToken(db, request.Token, EmailTokenPurpose.ResetPassword, time, cancellationToken) is not { } user)
-                return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
 
+            // All or nothing: the link, the other reset links, the new password and the ended sessions.
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            if (await Claim(db, token, time, cancellationToken) is null)
+                return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
             var now = time.GetUtcNow();
             user.PasswordHash = hasher.HashPassword(user, request.Password!);
             user.EmailVerifiedAt ??= now; // The link reached the inbox.
@@ -179,6 +186,8 @@ public static class AccountEndpoints
             await db.SaveChangesAsync(cancellationToken);
             await sessions.EndAllAsync(user.Id, keepThisOne: false, cancellationToken);
             await sessions.StartAsync(user, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            throttle.Succeeded(user.Email);
             return TypedResults.NoContent();
         })
         .RequireRateLimiting(PasswordLimit)
@@ -231,13 +240,11 @@ public static class AccountEndpoints
     }
 
     /// <summary>
-    /// Uses the token and returns its user, or null when it isn't valid. The claim is one UPDATE … WHERE used_at IS NULL,
-    /// so two requests with the same link can't both use it.
+    /// Uses a found token and returns its user, or null when another request used it first. The claim is one
+    /// UPDATE … WHERE used_at IS NULL, so two requests with the same link can't both use it.
     /// </summary>
-    static async Task<User?> UseToken(AppDbContext db, string? token, EmailTokenPurpose purpose, TimeProvider time,
-        CancellationToken cancellationToken)
+    static async Task<User?> Claim(AppDbContext db, EmailToken found, TimeProvider time, CancellationToken cancellationToken)
     {
-        if (await FindToken(db, token, purpose, time, cancellationToken) is not { } found) return null;
         var now = time.GetUtcNow();
         var claimed = await db.EmailTokens.Where(t => t.Id == found.Id && t.UsedAt == null)
             .ExecuteUpdateAsync(t => t.SetProperty(x => x.UsedAt, now), cancellationToken);

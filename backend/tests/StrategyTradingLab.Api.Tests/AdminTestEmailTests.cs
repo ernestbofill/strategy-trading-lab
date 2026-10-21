@@ -22,6 +22,8 @@ public class AdminTestEmailTests
             SentTo.Add(account);
             return Task.FromResult(account);
         }
+
+        public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     static WebApplicationFactory<Program> Api(FakeSender sender) => new WebApplicationFactory<Program>()
@@ -29,7 +31,7 @@ public class AdminTestEmailTests
 
     static async Task<HttpClient> Admin(WebApplicationFactory<Program> api)
     {
-        var client = api.CreateClient();
+        var client = api.CreateApiClient();
         (await client.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).EnsureSuccessStatusCode();
         return client;
     }
@@ -53,7 +55,7 @@ public class AdminTestEmailTests
     {
         var sender = new FakeSender("me@gmail.com");
         using var api = Api(sender);
-        using var stranger = api.CreateClient();
+        using var stranger = api.CreateApiClient();
 
         for (var i = 0; i < 6; i++)
             Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsync("/admin/test-email", null)).StatusCode);

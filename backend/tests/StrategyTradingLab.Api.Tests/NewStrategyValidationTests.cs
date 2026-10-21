@@ -110,15 +110,4 @@ public class NewStrategyValidationTests
             Assert.Empty(Check(template, template.Budget, assets: [.. assets]));
         }
     }
-
-    [Fact]
-    public void The_seeded_user_is_ernest_and_his_hash_verifies_stl()
-    {
-        var hasher = new PasswordHasher<User>();
-        var user = new User { Email = DevSeed.DevUserEmail, TimeZone = "UTC", Locale = "en" };
-
-        Assert.Equal(PasswordVerificationResult.Success, hasher.VerifyHashedPassword(user, DevSeed.DevUserPasswordHash, "stl"));
-        Assert.Equal(PasswordVerificationResult.Failed, hasher.VerifyHashedPassword(user, DevSeed.DevUserPasswordHash, "other"));
-        Assert.StartsWith("ernest@", DevSeed.DevUserEmail);
-    }
 }

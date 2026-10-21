@@ -15,6 +15,9 @@ public interface IEmailSender
 {
     /// <summary>Sends a plain-text email to the mail account itself and returns its address. Throws <see cref="EmailException"/>.</summary>
     Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken);
+
+    /// <summary>Sends a plain-text email to one address. Throws <see cref="EmailException"/>.</summary>
+    Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -32,6 +35,14 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
             throw new EmailNotSetUpException();
         await SendAsync(values, user, password, host, user, subject, body, cancellationToken);
         return user;
+    }
+
+    public async Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken)
+    {
+        var values = await settings.ValuesAsync(cancellationToken);
+        if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
+            throw new EmailNotSetUpException();
+        await SendAsync(values, user, password, host, to, subject, body, cancellationToken);
     }
 
     async Task SendAsync(IReadOnlyDictionary<string, string?> values, string user, string password, string host, string to,

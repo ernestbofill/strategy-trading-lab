@@ -621,3 +621,85 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    DELETE FROM users
+    WHERE id = '019a0000-0000-7000-8000-000000000001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    CREATE TABLE email_tokens (
+        id uuid NOT NULL,
+        user_id uuid NOT NULL,
+        purpose text NOT NULL,
+        token_hash bytea NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        expires_at timestamptz NOT NULL,
+        used_at timestamptz,
+        CONSTRAINT pk_email_tokens PRIMARY KEY (id),
+        CONSTRAINT ck_email_tokens_purpose CHECK (purpose IN ('verify_email', 'reset_password')),
+        CONSTRAINT fk_email_tokens_users_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    CREATE TABLE sessions (
+        id uuid NOT NULL,
+        user_id uuid NOT NULL,
+        token_hash bytea NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        last_used_at timestamptz NOT NULL,
+        expires_at timestamptz NOT NULL,
+        user_agent text,
+        CONSTRAINT pk_sessions PRIMARY KEY (id),
+        CONSTRAINT fk_sessions_users_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    CREATE UNIQUE INDEX ix_email_tokens_token_hash ON email_tokens (token_hash);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    CREATE INDEX ix_email_tokens_user_id ON email_tokens (user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    CREATE UNIQUE INDEX ix_sessions_token_hash ON sessions (token_hash);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    CREATE INDEX ix_sessions_user_id ON sessions (user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261021204337_AddAccounts') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261021204337_AddAccounts', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

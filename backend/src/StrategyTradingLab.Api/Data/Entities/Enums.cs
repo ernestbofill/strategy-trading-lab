@@ -24,3 +24,5 @@ public enum TradeSource { Signal, Manual }
 public enum NotificationKind { Signal, Snoozed }
 
 public enum NotificationChannel { Push, Email }
+
+public enum EmailTokenPurpose { VerifyEmail, ResetPassword }

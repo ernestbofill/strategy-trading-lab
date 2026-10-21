@@ -17,6 +17,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserTrade> UserTrades => Set<UserTrade>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<UserSession> Sessions => Set<UserSession>();
+    public DbSet<EmailToken> EmailTokens => Set<EmailToken>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -33,7 +35,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.HasPostgresExtension("citext");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         modelBuilder.ApplyTableConventions();
-        DevSeed.Apply(modelBuilder);
         TemplateAssets.Apply(modelBuilder);
     }
 }

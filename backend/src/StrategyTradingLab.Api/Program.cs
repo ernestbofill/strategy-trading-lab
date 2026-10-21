@@ -12,8 +12,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Identity;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
+using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.Neon;
 using StrategyTradingLab.Api.Strategies;
@@ -43,6 +46,16 @@ else if (!builder.Environment.IsDevelopment())
     throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");
 builder.Services.AddScoped<SettingsStore>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddSingleton<EmailQueue>();
+builder.Services.AddHostedService<EmailWorker>();
+
+// Accounts (backend/AUTH.md).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<Sessions>();
+builder.Services.AddSingleton<LogInThrottle>();
+builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<AccountEmails>();
 
 // nginx (on the same machine) passes the client's address and https on. Only loopback proxies are trusted
 // (ForwardedHeadersOptions' default), so a client can't fake its address to dodge the log-in rate limit.
@@ -55,6 +68,18 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(AdminEndpoints.LogInRateLimit, http => RateLimitPartition.GetFixedWindowLimiter(
         AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(15) }));
+    // Accounts, per client: guessing, sign-up spam and email floods all hit these first.
+    // RateLimits:<policy> overrides the permits; only the tests set it, to sign up many users.
+    void PerClient(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
+        RateLimitPartition.GetFixedWindowLimiter(AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue($"RateLimits:{policy}", permits), Window = window,
+            }));
+    PerClient(AccountEndpoints.SignUpLimit, 5, TimeSpan.FromHours(1));
+    PerClient(AccountEndpoints.LogInLimit, 10, TimeSpan.FromMinutes(15));
+    PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
+    PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
     // Test emails: 5 an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.
     // Only logged-in requests count (the limiter runs before the admin check), so nobody else can use them up.
     options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
@@ -75,6 +100,20 @@ if (ObjectStorage.IsConfigured(builder.Configuration))
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+// CSRF (backend/AUTH.md): every state-changing request must carry X-Requested-With: stl, which the app always sends
+// and a form or image on another site can't. With SameSite=Lax cookies and JSON-only bodies, that closes CSRF.
+app.Use(async (http, next) =>
+{
+    if (!HttpMethods.IsGet(http.Request.Method) && !HttpMethods.IsHead(http.Request.Method) && !HttpMethods.IsOptions(http.Request.Method)
+        && http.Request.Headers["X-Requested-With"] != "stl")
+    {
+        http.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await http.Response.WriteAsJsonAsync(new { title = "Missing the X-Requested-With: stl header." });
+        return;
+    }
+    await next(http);
+});
 app.UseRateLimiter();
 
 // The launch profiles set this, so running the API locally brings the dev database up to date.
@@ -126,6 +165,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 app.MapTemplates();
 app.MapStrategies();
 app.MapAdmin();
+app.MapAccount();
 
 // For the client to show which API it talks to.
 app.MapGet("/version", () => TypedResults.Ok(VersionResponse.Current))

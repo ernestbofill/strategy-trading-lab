@@ -228,3 +228,25 @@ class AppSettingConfiguration : IEntityTypeConfiguration<AppSetting>
         entity.HasKey(setting => setting.Key);
     }
 }
+
+class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
+{
+    public void Configure(EntityTypeBuilder<UserSession> entity)
+    {
+        entity.ToTable("sessions");
+        entity.HasIndex(session => session.TokenHash).IsUnique();
+        entity.HasIndex(session => session.UserId);
+        entity.HasOne<User>().WithMany().HasForeignKey(session => session.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+class EmailTokenConfiguration : IEntityTypeConfiguration<EmailToken>
+{
+    public void Configure(EntityTypeBuilder<EmailToken> entity)
+    {
+        entity.ToTable("email_tokens");
+        entity.HasIndex(token => token.TokenHash).IsUnique();
+        entity.HasIndex(token => token.UserId);
+        entity.HasOne<User>().WithMany().HasForeignKey(token => token.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}

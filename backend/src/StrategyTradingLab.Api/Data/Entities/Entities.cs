@@ -47,6 +47,30 @@ public class User : IHasUpdatedAt
     public DateTimeOffset UpdatedAt { get; set; }
 }
 
+/// <summary>A logged-in device: the hash of the token in its stl_session cookie. See backend/AUTH.md.</summary>
+public class UserSession
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public required byte[] TokenHash { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset LastUsedAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
+    public string? UserAgent { get; set; }
+}
+
+/// <summary>A single-use link sent by email: verify the address, or reset the password. Only the token's hash is kept.</summary>
+public class EmailToken
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public EmailTokenPurpose Purpose { get; set; }
+    public required byte[] TokenHash { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
+    public DateTimeOffset? UsedAt { get; set; }
+}
+
 public class PushSubscription
 {
     public Guid Id { get; set; }

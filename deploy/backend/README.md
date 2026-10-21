@@ -14,8 +14,10 @@ The version is `<Version>` in [backend/Directory.Build.props](../../backend/Dire
 `GET /api/version` is for the client to show which API it talks to:
 
 ```json
-{ "version": "0.1.0-alpha", "commit": "3f9c2e1…", "builtAt": "2026-10-18T12:04:31+00:00" }
+{ "version": "0.1.0-alpha", "commit": "3f9c2e1…", "builtAt": "2026-10-18T12:04:31+00:00", "database": "production" }
 ```
+
+`database` is the one the API uses: production unless switched to dev on the admin page (`/admin`). The switch and any URLs set there are in `/var/lib/strategy-trading-lab-api/database.json`, encrypted; the deploy's migrations always go to production, from `api.env`. Changing the database on the page needs `ADMIN_PASSWORD` in `api.env`.
 
 `builtAt` is when the release was built, minutes before it went live. It's `null` in Debug builds.
 

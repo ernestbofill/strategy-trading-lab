@@ -1,8 +1,8 @@
 namespace StrategyTradingLab.Api.Admin;
 
 /// <summary>
-/// A setting the admin page can set. Only these: the database URL and anything the API needs to start stay in
-/// the server's environment (api.env, .env.local). The page's value wins over the server's, which wins over the default.
+/// A setting the admin page can set. Only these: anything the API needs to start stays in the server's environment
+/// (api.env, .env.local), and the database URLs, which can't live in the database, are in <see cref="DatabaseSwitch"/>. The page's value wins over the server's, which wins over the default.
 /// </summary>
 /// <param name="BoundTo">For a secret: the settings it belongs with. It only counts as set while they keep the values
 /// they had when it was saved, so it is never sent somewhere new (a mail server swapped in by whoever knows the page's password).</param>

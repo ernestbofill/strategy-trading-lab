@@ -174,6 +174,32 @@ export interface AdminSetting {
   source: 'page' | 'server' | 'default' | 'none'
 }
 
+/** The API's build, and the database it uses (the top bar shows DEV for the dev one). */
+export interface BackendVersion {
+  version: string
+  commit: string | null
+  /** ISO time; null in Debug builds. */
+  builtAt: string | null
+  database: DatabaseName
+}
+
+export type DatabaseName = 'dev' | 'production'
+
+/** A database on the admin page. Its URL holds a password, so only the host is sent. */
+export interface AdminDatabase {
+  name: DatabaseName
+  /** Where its URL comes from: this page, the server's environment, or nowhere. */
+  source: 'page' | 'server' | 'none'
+  host: string | null
+}
+
+export interface AdminDatabases {
+  active: DatabaseName
+  /** The server's own database, the one its environment points at. */
+  home: DatabaseName
+  databases: AdminDatabase[]
+}
+
 export interface Api {
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
@@ -193,4 +219,12 @@ export interface Api {
   resetAdminSetting(key: string, clear?: boolean): Promise<void>
   /** Sends a test email to the mail account itself and resolves with its address; rejects with `InvalidValueError` saying why not. */
   sendAdminTestEmail(): Promise<string>
+  /** Public: the API's build and the database it uses. */
+  getVersion(): Promise<BackendVersion>
+  getAdminDatabases(): Promise<AdminDatabases>
+  /** Each of these rejects with `InvalidValueError` saying why when refused (a bad URL, a database that doesn't answer). */
+  switchAdminDatabase(name: DatabaseName): Promise<void>
+  setAdminDatabaseUrl(name: DatabaseName, url: string): Promise<void>
+  /** Forgets the URL set here: the server's own database goes back to the server's. */
+  resetAdminDatabaseUrl(name: DatabaseName): Promise<void>
 }

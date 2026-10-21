@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
-import { api, InvalidValueError, TooManyTriesError, UnauthorizedError, type AdminSetting } from '../../api'
+import {
+  api,
+  InvalidValueError,
+  TooManyTriesError,
+  UnauthorizedError,
+  type AdminDatabases,
+  type AdminSetting,
+  type BackendVersion,
+} from '../../api'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminSettings.module.css'
+import { DatabaseBox } from './DatabaseBox'
 
-type State = { status: 'loading' } | { status: 'logIn' } | { status: 'error' } | { status: 'ready'; settings: AdminSetting[] }
+type State =
+  | { status: 'loading' }
+  | { status: 'logIn' }
+  | { status: 'error' }
+  | { status: 'ready'; settings: AdminSetting[]; databases: AdminDatabases; version: BackendVersion }
 
 /** Admin settings (/admin): settings the app reads, set here instead of in the server's environment. Not linked from the app. */
 export function AdminSettings() {
@@ -44,6 +57,10 @@ export function AdminSettings() {
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
       {state.status === 'loading' && <ScreenMessage>Loading the settings…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the settings. Try again later.</ScreenMessage>}
+      {state.status === 'ready' && <BackendBox version={state.version} />}
+      {state.status === 'ready' && (
+        <DatabaseBox databases={state.databases} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
+      )}
       {state.status === 'ready' &&
         groups(state.settings).map(([group, settings]) => (
           <section key={group} className={styles.group}>
@@ -64,10 +81,33 @@ export function AdminSettings() {
 
 async function fetchSettings(): Promise<State> {
   try {
-    return { status: 'ready', settings: await api.getAdminSettings() }
+    const [settings, databases, version] = await Promise.all([api.getAdminSettings(), api.getAdminDatabases(), api.getVersion()])
+    return { status: 'ready', settings, databases, version }
   } catch (e) {
     return e instanceof UnauthorizedError ? { status: 'logIn' } : { status: 'error' }
   }
+}
+
+/** The API's build, for information. */
+function BackendBox({ version }: { version: BackendVersion }) {
+  const rows: [string, string][] = [
+    ['Version', version.version],
+    ['Commit', version.commit?.slice(0, 7) ?? 'unknown'],
+    ['Built', version.builtAt ? `${version.builtAt.slice(0, 16).replace('T', ' ')} UTC` : 'unknown (a Debug build)'],
+  ]
+  return (
+    <section className={styles.group}>
+      <h2 className={styles.groupTitle}>Backend</h2>
+      <dl className={styles.facts}>
+        {rows.map(([label, value]) => (
+          <div key={label} className={styles.fact}>
+            <dt className={styles.description}>{label}</dt>
+            <dd className={styles.key}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
 }
 
 /** The settings by group, in the order the server lists them. */

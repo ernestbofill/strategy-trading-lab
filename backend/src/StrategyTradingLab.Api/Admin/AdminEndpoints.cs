@@ -15,6 +15,13 @@ public record AdminLogIn(string Password);
 /// <summary>Where the test email went.</summary>
 public record TestEmailSent(string SentTo);
 
+/// <summary>The database box: which one the API uses, this host's own, and each one's URL source and host.</summary>
+public record AdminDatabases(DatabaseName Active, DatabaseName Home, IReadOnlyList<DatabaseInfo> Databases);
+
+public record DatabaseUrl(string Url);
+
+public record DatabaseChoice(string Name);
+
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
 
@@ -58,6 +65,7 @@ public static class AdminEndpoints
         });
 
         var settings = group.MapGroup("/settings").AddEndpointFilter(RequireAdmin);
+        MapDatabase(group);
 
         // Only ever to the account itself: with the page behind a fixed password, an address typed here would let
         // anyone who knows it send mail from the account.
@@ -115,6 +123,54 @@ public static class AdminEndpoints
             return TypedResults.NoContent();
         })
         .WithSummary("Back to the server's value or the default; with ?clear=true, no value at all.");
+    }
+
+    /// <summary>
+    /// The database box: switch dev / production and set their URLs. Each change is tested first (see <see cref="DatabaseSwitch"/>).
+    /// Outside Development they are refused while the admin password is the default, which anyone can read in this repo.
+    /// </summary>
+    static void MapDatabase(RouteGroupBuilder group)
+    {
+        var database = group.MapGroup("/database").AddEndpointFilter(RequireAdmin);
+
+        database.MapGet("/", (DatabaseSwitch databases) => new AdminDatabases(databases.Active, databases.Home, databases.Databases()))
+        .WithSummary("Which database the API uses, and where each one's URL comes from (its host only).");
+
+        database.MapPost("/active", (DatabaseChoice request, DatabaseSwitch databases, IConfiguration configuration,
+            IHostEnvironment environment, CancellationToken cancellationToken) =>
+            Change(configuration, environment, request.Name, name => databases.SwitchAsync(name, cancellationToken)))
+        .WithSummary("Switches the API to the dev or production database, once it answers and has every migration.");
+
+        database.MapPut("/{name}/url", (string name, DatabaseUrl request, DatabaseSwitch databases, IConfiguration configuration,
+            IHostEnvironment environment, CancellationToken cancellationToken) =>
+            Change(configuration, environment, name, known => databases.SetUrlAsync(known, (request.Url ?? "").Trim(), cancellationToken)))
+        .WithSummary("Sets a database's URL (a Neon one). For the active database it is tested first.");
+
+        database.MapDelete("/{name}/url", (string name, DatabaseSwitch databases, IConfiguration configuration,
+            IHostEnvironment environment, CancellationToken cancellationToken) =>
+            Change(configuration, environment, name, known => databases.ResetUrlAsync(known, cancellationToken)))
+        .WithSummary("Forgets the page's URL: this host's own database goes back to the server's.");
+    }
+
+    static async Task<Results<NoContent, NotFound, ProblemHttpResult>> Change(IConfiguration configuration, IHostEnvironment environment,
+        string? name, Func<DatabaseName, Task> change)
+    {
+        // By name only: "dev" or "production". Enum.TryParse would also take a number.
+        if (Enum.GetValues<DatabaseName>().Cast<DatabaseName?>().FirstOrDefault(d => d.ToString()!.Equals(name, StringComparison.OrdinalIgnoreCase))
+            is not { } known)
+            return TypedResults.NotFound();
+        if (!environment.IsDevelopment() && configuration["ADMIN_PASSWORD"] is not { Length: > 0 })
+            return TypedResults.Problem("Set ADMIN_PASSWORD on the server before changing the database here.",
+                statusCode: StatusCodes.Status403Forbidden);
+        try
+        {
+            await change(known);
+            return TypedResults.NoContent();
+        }
+        catch (DatabaseChangeException error)
+        {
+            return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
     }
 
     static AdminSetting Dto(EffectiveSetting setting)

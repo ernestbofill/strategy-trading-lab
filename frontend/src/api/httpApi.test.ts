@@ -131,3 +131,29 @@ describe('httpApi admin test email', () => {
     expect(error).not.toBeInstanceOf(InvalidValueError)
   })
 })
+
+describe('httpApi database', () => {
+  it('reads the version from /api/version', async () => {
+    respond(200, { version: '0.6.0-alpha', commit: null, builtAt: null, database: 'dev' })
+    await expect(httpApi.getVersion()).resolves.toMatchObject({ database: 'dev' })
+    expect(fetch).toHaveBeenCalledWith('/api/version', expect.anything())
+  })
+
+  it('switches with a post, sets and resets a url by name', async () => {
+    respond(204)
+    await httpApi.switchAdminDatabase('production')
+    await httpApi.setAdminDatabaseUrl('production', 'postgresql://u:p@ep-x.neon.tech/db')
+    await httpApi.resetAdminDatabaseUrl('dev')
+    const calls = vi.mocked(fetch).mock.calls.map(([path, init]) => [init?.method, path, init?.body])
+    expect(calls).toEqual([
+      ['POST', '/api/admin/database/active', JSON.stringify({ name: 'production' })],
+      ['PUT', '/api/admin/database/production/url', JSON.stringify({ url: 'postgresql://u:p@ep-x.neon.tech/db' })],
+      ['DELETE', '/api/admin/database/dev/url', undefined],
+    ])
+  })
+
+  it("passes on the server's reason for a refused change, a 403 included", async () => {
+    respond(403, { detail: 'Set ADMIN_PASSWORD on the server before changing the database here.' })
+    await expect(httpApi.switchAdminDatabase('dev')).rejects.toThrow(new InvalidValueError('Set ADMIN_PASSWORD on the server before changing the database here.'))
+  })
+})

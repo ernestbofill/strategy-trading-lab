@@ -49,3 +49,19 @@ describe('mockApi admin', () => {
     await expect(mockApi.setAdminSetting('SMTP_PORT', '0')).rejects.toThrow('Use a port from 1 to 65535.')
   })
 })
+
+describe('mockApi database', () => {
+  it('switches only to a database with a url, and the version follows', async () => {
+    await mockApi.adminLogIn('STL')
+    await expect(mockApi.switchAdminDatabase('production')).rejects.toThrow('has no URL')
+    await expect(mockApi.setAdminDatabaseUrl('production', 'postgresql://u:p@db.example.com/x')).rejects.toThrow('.neon.tech')
+
+    await mockApi.setAdminDatabaseUrl('production', 'postgresql://u:secret@ep-prod.neon.tech/neondb')
+    await mockApi.switchAdminDatabase('production')
+
+    expect((await mockApi.getVersion()).database).toBe('production')
+    const production = (await mockApi.getAdminDatabases()).databases.find((d) => d.name === 'production')
+    expect(production).toEqual({ name: 'production', source: 'page', host: 'ep-prod.neon.tech' })
+    await mockApi.switchAdminDatabase('dev')
+  })
+})

@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-10-21 · The admin page can switch the API between the dev and production databases and set their URLs (Ernest's ask). The choice is kept in an encrypted file in the service's state directory, not in the database it chooses; the server's own database falls back to `api.env`. Guards: each change is tested first (it answers, no pending migration), only Neon hosts, URLs are write-only (the page shows the host), and on the server it is refused while the admin password is the default. A DEV tag in the top bar shows the dev database is in use. (#29)
 - 2026-10-21 · Accounts as designed in #25, all recommended answers: no email verification before use (only before going live), sign-up never reveals a taken email, log-in by email only, passwords of 10+ characters, 5 wrong tries lock an email for 15 minutes, 30-day sessions (90 at most), template endpoints public. (#25)
 - 2026-10-21 · The seeded user (Ernest, `stl`) is removed entirely, on every database, in the same release as log-in. Local work signs up like anyone else. (#25)
 - 2026-10-21 · Email goes through Gmail SMTP with an app password, as in the POC: no domain to set up and enough volume for now. Revisit before a public launch. (#25)

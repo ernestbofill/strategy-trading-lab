@@ -151,6 +151,18 @@ public class UserTrade : IHasUpdatedAt
     public DateTimeOffset UpdatedAt { get; set; }
 }
 
+/// <summary>
+/// A setting from the admin page (Admin/SettingDefinitions.cs). A secret's value is encrypted.
+/// A null value means "cleared": it hides the server's value too.
+/// </summary>
+public class AppSetting : IHasUpdatedAt
+{
+    public required string Key { get; set; }
+    public string? Value { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
 public class Notification
 {
     public Guid Id { get; set; }

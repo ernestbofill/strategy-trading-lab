@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SignalTrade> SignalTrades => Set<SignalTrade>();
     public DbSet<UserTrade> UserTrades => Set<UserTrade>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

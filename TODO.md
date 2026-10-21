@@ -18,7 +18,7 @@
 - [x] Review the accounts design. Decided: all recommended answers. (#25)
 - [x] Email: Gmail SMTP with an app password, as in the POC. (#25)
 - [x] Email settings: set on `/admin` instead of api.env (#26); the test email works (#27).
-- [ ] Database switch (#29): on the server, add `ADMIN_PASSWORD` (a long one of your own) to `/etc/strategy-trading-lab/api.env` and restart the service (`sudo systemctl restart strategy-trading-lab-api`); until then the page refuses database changes there. Then, if you want production to be able to use dev, set the Dev URL on `/admin` to the Neon `dev` branch's pooled `DATABASE_URL`. Locally, the Production URL works the same way.
+- [ ] Database switch (#30): on the server, add `ADMIN_PASSWORD` (a long one of your own) to `/etc/strategy-trading-lab/api.env` and restart the service (`sudo systemctl restart strategy-trading-lab-api`); until then the page refuses database changes there. Then, if you want production to be able to use dev, set the Dev URL on `/admin` to the Neon `dev` branch's pooled `DATABASE_URL`. Locally, the Production URL works the same way.
 
 ## General
 - [ ] Split FE and BE repos?

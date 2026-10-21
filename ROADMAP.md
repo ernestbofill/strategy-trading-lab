@@ -8,7 +8,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 - New-strategy flow, frontend: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm (#1–#3, #10, #13, #19). Advanced settings is a placeholder.
 - The dev database migrates itself: the API does it on startup from a launch profile, and cloud sessions run `backend/scripts/migrate-dev-https.py` (the session start hook does too) (#24).
-- Admin page: switch the API between the dev and production databases and set their URLs (tested before use), the backend's build, and a DEV tag in the top bar while the dev database is in use (#29).
+- Admin page: switch the API between the dev and production databases and set their URLs (tested before use), the backend's build, and a DEV tag in the top bar while the dev database is in use (#30).
 - The email sender (SMTP, Gmail as in the POC) and "Send a test email" on the admin page, to the account itself only (#27).
 - Admin settings page (`/admin`), like the POC's: settings from an allow-list (the five `SMTP_*` for now), secrets encrypted in the database and never shown, behind a fixed password until accounts have an admin role (#26).
 - Starting a strategy: `POST /strategies` from Confirm (name, mode, budget, ticked stocks; the rest from the template's tested defaults) and `GET /dashboard`, which the dashboard (`Home`) shows. The fixed development user is Ernest, with the password `stl` for the log-in to come (#24).

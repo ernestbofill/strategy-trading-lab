@@ -1,4 +1,4 @@
-import { NameTakenError } from './errors'
+import { InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import type { Api, StrategySummary } from './types'
 
 // The .NET API. nginx serves it at /api on the app's own host; in development Vite proxies /api to it.
@@ -30,9 +30,33 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T
 }
 
+/** Sends a request to the admin API and maps its refusals to errors the page can show. */
+async function admin(method: string, path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}/admin${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) throw new UnauthorizedError()
+  if (response.status === 429) throw new TooManyTriesError()
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as { errors?: Record<string, string[]> } | null
+    throw new InvalidValueError(problem?.errors?.value?.[0] ?? 'That value was refused.')
+  }
+  if (!response.ok) throw new Error(`${method} /admin${path} failed: HTTP ${response.status}`)
+  return response
+}
+
+const settingPath = (key: string) => `/settings/${encodeURIComponent(key)}`
+
 export const httpApi: Api = {
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
+  adminLogIn: async (password) => void (await admin('POST', '/log-in', { password })),
+  adminLogOut: async () => void (await admin('POST', '/log-out')),
+  getAdminSettings: async () => (await admin('GET', '/settings')).json(),
+  setAdminSetting: async (key, value) => void (await admin('PUT', settingPath(key), { value })),
+  resetAdminSetting: async (key, clear) => void (await admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
 }

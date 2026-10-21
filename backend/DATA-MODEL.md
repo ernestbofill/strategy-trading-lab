@@ -272,6 +272,16 @@ Every notification the app sends, one row per channel. A notification goes out *
 
 No row is created for a channel the user can't receive (no push subscription) or when the strategy's notifications are off. Push goes to all the user's devices as one row; a per-device log can come later if support needs it.
 
+### `app_settings`
+
+The admin page's settings (`Admin/SettingDefinitions.cs` lists which). One row per setting set or cleared on the page; no row means the server's environment, then the default.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| key | text PK | `SMTP_USER`, `SMTP_PASSWORD`… |
+| value | text, null | Plain text, except secrets: encrypted with ASP.NET Core Data Protection (keys in the service's systemd `StateDirectory`, not in the database). Null: cleared, which hides the server's value too |
+| created_at, updated_at | timestamptz | |
+
 ## Later, with the engine or the AI feature (not in this migration)
 
 - `prices_daily (asset_id, date, open, high, low, close, volume)`.

@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { AdminSettings } from './features/admin/AdminSettings'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { SetBudget } from './features/new-strategy/SetBudget'
 import { ChooseMode } from './features/new-strategy/ChooseMode'
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/strategies/:id" element={<NotBuiltYet title="Strategy page" back={dashboardPath} />} />
           <Route path="/strategies/:id/signal" element={<NotBuiltYet title="Confirm a signal" back={dashboardPath} />} />
           <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
+          <Route path="/admin" element={<AdminSettings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </NewStrategyDraftProvider>

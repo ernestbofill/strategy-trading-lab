@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { NameTakenError } from './errors'
+import { InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { httpApi } from './httpApi'
 import type { NewStrategy } from './types'
 
@@ -66,5 +66,46 @@ describe('httpApi.startStrategy', () => {
   it('fails on any other error', async () => {
     respond(400)
     await expect(httpApi.startStrategy(strategy)).rejects.toThrow('HTTP 400')
+  })
+})
+
+describe('httpApi admin', () => {
+  it('logs in by posting the password to /api/admin/log-in', async () => {
+    respond(204)
+    await httpApi.adminLogIn('STL')
+    const [path, init] = vi.mocked(fetch).mock.calls[0]
+    expect(path).toBe('/api/admin/log-in')
+    expect(init).toMatchObject({ method: 'POST', body: JSON.stringify({ password: 'STL' }) })
+  })
+
+  it('maps 401 and 429 to their errors', async () => {
+    respond(401)
+    await expect(httpApi.getAdminSettings()).rejects.toBeInstanceOf(UnauthorizedError)
+    respond(429)
+    await expect(httpApi.adminLogIn('x')).rejects.toBeInstanceOf(TooManyTriesError)
+  })
+
+  it("passes on the server's reason when a value is refused", async () => {
+    respond(400, { errors: { value: ['Use a port from 1 to 65535.'] } })
+    await expect(httpApi.setAdminSetting('SMTP_PORT', '0')).rejects.toThrow(new InvalidValueError('Use a port from 1 to 65535.'))
+  })
+
+  it("sends the shown values with a secret, and passes on a 409's reason", async () => {
+    respond(409, 'The mail settings changed since this page loaded.')
+    await expect(httpApi.setAdminSetting('SMTP_PASSWORD', 'x', { SMTP_HOST: 'smtp.gmail.com' })).rejects.toThrow(
+      new InvalidValueError('The mail settings changed since this page loaded.'),
+    )
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toEqual({ value: 'x', expected: { SMTP_HOST: 'smtp.gmail.com' } })
+  })
+
+  it('puts a value, and deletes to reset or, with clear, to clear', async () => {
+    respond(204)
+    await httpApi.setAdminSetting('SMTP_HOST', 'smtp.gmail.com')
+    await httpApi.resetAdminSetting('SMTP_HOST')
+    await httpApi.resetAdminSetting('SMTP_PASSWORD', true)
+    const calls = vi.mocked(fetch).mock.calls
+    expect(calls[0]).toEqual(['/api/admin/settings/SMTP_HOST', expect.objectContaining({ method: 'PUT', body: '{"value":"smtp.gmail.com"}' })])
+    expect(calls[1]).toEqual(['/api/admin/settings/SMTP_HOST', expect.objectContaining({ method: 'DELETE' })])
+    expect(calls[2][0]).toBe('/api/admin/settings/SMTP_PASSWORD?clear=true')
   })
 })

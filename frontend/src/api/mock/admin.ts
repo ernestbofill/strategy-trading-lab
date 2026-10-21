@@ -84,3 +84,12 @@ export function mockResetAdminSetting(key: string, clear?: boolean) {
   else if (clear) values.set(key, null)
   else values.delete(key)
 }
+
+/** Like the API: only to the account itself, and only when the password is set for it. Nothing is sent. */
+export function mockSendTestEmail(): string {
+  requireAdmin()
+  const account = effective('SMTP_USER')
+  if (!account) throw new InvalidValueError('Set the email account first.')
+  if (!passwordIsSet()) throw new InvalidValueError("Email isn't set up: set the account, the server and the password first.")
+  return account
+}

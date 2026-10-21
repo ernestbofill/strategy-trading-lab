@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-10-21 · Email goes through Gmail SMTP with an app password, as in the POC: no domain to set up and enough volume for now. Revisit before a public launch. (#25)
 - 2026-10-21 · Accounts use server-side sessions in an `HttpOnly` cookie (not JWTs), the app and API share one origin, and the seeded Ernest can't log in on production once accounts exist (the first auth migration nulls his hash; Development puts `stl` back). Design: backend/AUTH.md. (#25)
 - 2026-10-20 · Sign-up and log-in is built right after #24, ahead of the rest of ROADMAP → Next. Until then `POST /strategies` stays open on production, accepted while there are no users. (#24)
 - 2026-10-20 · Nobody applies a migration to the dev database by hand: the API migrates it on startup from a launch profile, and cloud sessions apply `migrations.sql` over HTTPS (script and session start hook). Production keeps the deploy's migrations bundle. (#24)

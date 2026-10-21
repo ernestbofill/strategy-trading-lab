@@ -16,7 +16,8 @@
 - [x] Global `~/.claude/settings.json` (Mac): the auto-mode environment describes the trading bot repo (default branch `master`, trusted repo `trading-strategies-bot`), and the default model is Sonnet. Move the bot's environment into that repo's settings, and pick the default model for this repo. (#22)
 
 - [ ] Review the accounts design: the spec's Sign-up, Log-in, Forgot password and Account sections, and `backend/AUTH.md` (slices, cookie sessions, what happens to the seeded Ernest). I start the backend slice when you say so. (#25)
-- [ ] Decide the email provider and a sending domain (SPF and DKIM). Needed to deliver verification and reset links. (ROADMAP → Open decisions) (#25)
+- [x] Email: Gmail SMTP with an app password, as in the POC. (#25)
+- [ ] Before the email slice: set `SMTP_USER`, `SMTP_PASSWORD` (a Gmail app password), `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` in `/etc/strategy-trading-lab/api.env` on the server and in `.env.local` locally (and in the cloud environment if you want real emails from cloud sessions). Names only here, never the values. (#25)
 
 ## General
 - [ ] Split FE and BE repos?

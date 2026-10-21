@@ -29,34 +29,48 @@ public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataP
         return Resolve(definition, row).Value;
     }
 
-    /// <summary>Saves the page's value. When it changes, the settings it guards are cleared.</summary>
-    public async Task SetAsync(SettingDefinition definition, string value, CancellationToken cancellationToken)
-    {
-        var before = await GetAsync(definition.Key, cancellationToken);
-        await Upsert(definition.Key, definition.Secret ? protector.Protect(value) : value, cancellationToken);
-        if (before != value)
+    /// <summary>Saves the page's value.</summary>
+    public Task SetAsync(SettingDefinition definition, string value, CancellationToken cancellationToken) =>
+        Change(rows => Store(rows, definition.Key, definition.Secret ? protector.Protect(value) : value), cancellationToken);
+
+    /// <summary>Forgets the page's value, so the server's value or the default applies again.</summary>
+    public Task ResetAsync(string key, CancellationToken cancellationToken) =>
+        Change(rows =>
         {
-            foreach (var guarded in definition.ClearsOnChange ?? []) await Upsert(guarded, null, cancellationToken);
+            if (rows.Remove(key, out var row)) db.AppSettings.Remove(row);
+        }, cancellationToken);
+
+    /// <summary>Saves an empty value that hides the server's too (a secret the page cleared).</summary>
+    public Task ClearAsync(string key, CancellationToken cancellationToken) =>
+        Change(rows => Store(rows, key, null), cancellationToken);
+
+    /// <summary>
+    /// Every write goes through here: it applies the change, then clears each secret whose bound settings now have
+    /// another value than before. The table is a handful of rows, so it is read whole, once.
+    /// </summary>
+    async Task Change(Action<Dictionary<string, AppSetting>> change, CancellationToken cancellationToken)
+    {
+        var rows = await db.AppSettings.ToDictionaryAsync(row => row.Key, cancellationToken);
+        var before = Values(rows);
+        change(rows);
+        var after = Values(rows);
+        foreach (var secret in SettingDefinitions.All.Where(d => d.BoundTo is not null))
+        {
+            if (secret.BoundTo!.Any(key => before[key] != after[key])) Store(rows, secret.Key, null);
         }
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>Forgets the page's value, so the server's value or the default applies again.</summary>
-    public Task ResetAsync(string key, CancellationToken cancellationToken) =>
-        db.AppSettings.Where(row => row.Key == key).ExecuteDeleteAsync(cancellationToken);
+    /// <summary>The effective value of every setting that isn't secret (bound settings never are).</summary>
+    Dictionary<string, string?> Values(Dictionary<string, AppSetting> rows) =>
+        SettingDefinitions.All.Where(d => !d.Secret)
+            .ToDictionary(d => d.Key, d => Resolve(d, rows.GetValueOrDefault(d.Key)).Value);
 
-    /// <summary>Saves an empty value that hides the server's too (a secret the page cleared).</summary>
-    public async Task ClearAsync(string key, CancellationToken cancellationToken)
+    /// <summary>Sets a loaded (tracked) row's value, or adds the row.</summary>
+    void Store(Dictionary<string, AppSetting> rows, string key, string? stored)
     {
-        await Upsert(key, null, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-    }
-
-    async Task Upsert(string key, string? stored, CancellationToken cancellationToken)
-    {
-        var row = await db.AppSettings.FindAsync([key], cancellationToken);
-        if (row is null) db.AppSettings.Add(new AppSetting { Key = key, Value = stored });
-        else row.Value = stored;
+        if (rows.TryGetValue(key, out var row)) row.Value = stored;
+        else rows[key] = db.AppSettings.Add(new AppSetting { Key = key, Value = stored }).Entity;
     }
 
     EffectiveSetting Resolve(SettingDefinition definition, AppSetting? row)

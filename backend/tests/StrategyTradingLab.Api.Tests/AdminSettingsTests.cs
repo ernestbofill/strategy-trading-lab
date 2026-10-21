@@ -108,6 +108,17 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     }
 
     [NeonFact]
+    public async Task Resetting_the_mail_server_to_its_default_clears_the_password_too()
+    {
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
+
+        await fixture.Admin.DeleteAsync("/admin/settings/SMTP_HOST");
+
+        Assert.False((await Setting("SMTP_PASSWORD")).GetProperty("isSet").GetBoolean());
+    }
+
+    [NeonFact]
     public async Task Saving_the_same_server_keeps_the_password()
     {
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
@@ -155,11 +166,10 @@ public class SettingDefinitionTests
         Assert.Equal(valid, SettingDefinitions.Find(key)!.Validate!(value) is null);
 
     [Fact]
-    public void Only_the_password_is_secret_and_server_or_user_changes_clear_it()
+    public void Only_the_password_is_secret_and_it_is_bound_to_the_server_port_and_user()
     {
         Assert.Equal(["SMTP_PASSWORD"], SettingDefinitions.All.Where(s => s.Secret).Select(s => s.Key));
-        Assert.Contains("SMTP_PASSWORD", SettingDefinitions.Find("SMTP_HOST")!.ClearsOnChange!);
-        Assert.Contains("SMTP_PASSWORD", SettingDefinitions.Find("SMTP_USER")!.ClearsOnChange!);
+        Assert.Equal(["SMTP_USER", "SMTP_HOST", "SMTP_PORT"], SettingDefinitions.Find("SMTP_PASSWORD")!.BoundTo!);
         Assert.Null(SettingDefinitions.Find("DATABASE_URL"));
     }
 }

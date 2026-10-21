@@ -38,7 +38,8 @@ if (builder.Configuration["STATE_DIRECTORY"] is { Length: > 0 } state)
     dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(state, "keys")));
 builder.Services.AddScoped<SettingsStore>();
 
-// nginx (on the same machine) passes the client's address and https on; only it is trusted to.
+// nginx (on the same machine) passes the client's address and https on. Only loopback proxies are trusted
+// (ForwardedHeadersOptions' default), so a client can't fake its address to dodge the log-in rate limit.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
 builder.Services.AddRateLimiter(options =>

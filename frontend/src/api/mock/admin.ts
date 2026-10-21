@@ -42,7 +42,9 @@ export function mockAdminSettings(): AdminSetting[] {
 
 export function mockSetAdminSetting(key: string, value: string) {
   requireAdmin()
-  if (key === 'SMTP_PORT' && !/^\d{1,5}$/.test(value.trim())) throw new InvalidValueError('Use a port from 1 to 65535.')
+  const port = Number(value.trim())
+  if (key === 'SMTP_PORT' && !(Number.isInteger(port) && port >= 1 && port <= 65535))
+    throw new InvalidValueError('Use a port from 1 to 65535.')
   if (!value.trim()) throw new InvalidValueError('Type a value, or use Default.')
   values.set(key, value.trim())
 }

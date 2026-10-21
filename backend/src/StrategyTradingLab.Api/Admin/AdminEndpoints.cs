@@ -68,7 +68,7 @@ public static class AdminEndpoints
             await store.SetAsync(definition, value, cancellationToken);
             return TypedResults.NoContent();
         })
-        .WithSummary("Sets a setting. Changing the mail server or user clears the saved password.");
+        .WithSummary("Sets a setting. Changing the mail server, port or user clears the saved password.");
 
         settings.MapDelete("/{key}", async Task<Results<NoContent, NotFound>> (string key, bool? clear, SettingsStore store,
             CancellationToken cancellationToken) =>

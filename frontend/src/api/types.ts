@@ -191,4 +191,6 @@ export interface Api {
   setAdminSetting(key: string, value: string, shown?: Record<string, string | null>): Promise<void>
   /** Back to the server's value or the default; `clear` leaves no value at all (secrets). */
   resetAdminSetting(key: string, clear?: boolean): Promise<void>
+  /** Sends a test email to the mail account itself and resolves with its address; rejects with `InvalidValueError` saying why not. */
+  sendAdminTestEmail(): Promise<string>
 }

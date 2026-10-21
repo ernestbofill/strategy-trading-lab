@@ -55,6 +55,7 @@ export function AdminSettings() {
                 setting={s}
                 shown={shownValues(state.settings)} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
             ))}
+            {group === 'Email' && <TestEmail onLoggedOut={() => setState({ status: 'logIn' })} />}
           </section>
         ))}
     </Screen>
@@ -130,6 +131,55 @@ function LogIn({ top, onDone }: { top: ReactNode; onDone: () => Promise<void> })
         )}
       </form>
     </Screen>
+  )
+}
+
+/** "Send a test email": to the mail account itself, with the settings as saved. */
+function TestEmail({ onLoggedOut }: { onLoggedOut: () => void }) {
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const send = async () => {
+    setBusy(true)
+    setResult(null)
+    try {
+      const sentTo = await api.sendAdminTestEmail()
+      setResult({ ok: true, text: `Sent to ${sentTo}. Check its inbox.` })
+    } catch (e) {
+      if (e instanceof UnauthorizedError) return onLoggedOut()
+      setResult({
+        ok: false,
+        text:
+          e instanceof TooManyTriesError
+            ? 'Too many test emails. Try again in an hour.'
+            : e instanceof InvalidValueError
+              ? e.message
+              : "Couldn't send it. Try again.",
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className={styles.row}>
+      <div className={styles.text}>
+        <span className={styles.key}>Test email</span>
+        <p className={styles.description}>Sends one email to the account above, with the settings as saved.</p>
+      </div>
+      <div className={styles.controls}>
+        <div className={styles.buttons}>
+          <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={send}>
+            {busy ? 'Sending…' : 'Send a test email'}
+          </button>
+        </div>
+        {result && (
+          <p role={result.ok ? 'status' : 'alert'} className={result.ok ? styles.done : styles.error}>
+            {result.text}
+          </p>
+        )}
+      </div>
+    </div>
   )
 }
 

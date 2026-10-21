@@ -109,3 +109,25 @@ describe('httpApi admin', () => {
     expect(calls[2][0]).toBe('/api/admin/settings/SMTP_PASSWORD?clear=true')
   })
 })
+
+describe('httpApi admin test email', () => {
+  it('posts to /api/admin/test-email and returns where it went', async () => {
+    respond(200, { sentTo: 'me@gmail.com' })
+    await expect(httpApi.sendAdminTestEmail()).resolves.toBe('me@gmail.com')
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/api/admin/test-email')
+  })
+
+  it("passes on the server's reason when it can't send", async () => {
+    respond(502, { detail: 'smtp.gmail.com:587 refused it: Username and Password not accepted' })
+    await expect(httpApi.sendAdminTestEmail()).rejects.toThrow(
+      new InvalidValueError('smtp.gmail.com:587 refused it: Username and Password not accepted'),
+    )
+  })
+
+  it("treats nginx's 502 (the API down) as an error, not a refused value", async () => {
+    respond(502)
+    const error = await httpApi.sendAdminTestEmail().catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(Error)
+    expect(error).not.toBeInstanceOf(InvalidValueError)
+  })
+})

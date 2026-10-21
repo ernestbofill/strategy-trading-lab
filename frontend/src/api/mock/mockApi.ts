@@ -1,6 +1,6 @@
 import type { Api } from '../types'
 import { templateDetails, templates } from './data'
-import { mockAdminLogIn, mockAdminLogOut, mockAdminSettings, mockResetAdminSetting, mockSetAdminSetting } from './admin'
+import { mockAdminLogIn, mockAdminLogOut, mockAdminSettings, mockResetAdminSetting, mockSendTestEmail, mockSetAdminSetting } from './admin'
 import { dashboard, startMockStrategy } from './dashboard'
 
 // In-browser stand-in for the .NET backend. Adds a small delay so loading states are exercised.
@@ -31,4 +31,5 @@ export const mockApi: Api = {
   getAdminSettings: () => later(mockAdminSettings),
   setAdminSetting: (key, value, shown) => later(() => mockSetAdminSetting(key, value, shown)),
   resetAdminSetting: (key, clear) => later(() => mockResetAdminSetting(key, clear)),
+  sendAdminTestEmail: () => later(mockSendTestEmail),
 }

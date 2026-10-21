@@ -26,18 +26,20 @@ public static class SettingDefinitions
         new("SMTP_PORT", "Email", "The mail server's port (STARTTLS).", Default: "587", Validate: Port),
         new("SMTP_FROM", "Email", "The sender address. Empty: the account above.", Validate: Email),
         new("SMTP_PASSWORD", "Email",
-            "The account's password: for Gmail, an app password. It only counts while the account, server and port above stay as they were when it was saved.",
-            Secret: true, BoundTo: ["SMTP_USER", "SMTP_HOST", "SMTP_PORT"]),
+            "The account's password: for Gmail, an app password. It only counts while the settings above stay as they were when it was saved.",
+            Secret: true, BoundTo: ["SMTP_USER", "SMTP_HOST", "SMTP_PORT", "SMTP_FROM"]),
     ];
 
     const string GmailAccount = "nest.u333@gmail.com";
 
     public static SettingDefinition? Find(string key) => All.FirstOrDefault(setting => setting.Key == key);
 
+    /// <summary>Exactly one plain address: no display name, no list ("a@x.com,b@y.com" would add a recipient).</summary>
     static string? Email(string value) =>
-        value.Length <= 254 && value.IndexOf('@') is > 0 and var at && at < value.Length - 1 && !value.Any(char.IsWhiteSpace)
+        value.Length <= 254 && System.Net.Mail.MailAddress.TryCreate(value, out var address) && address.Address == value
+            && address.DisplayName.Length == 0 && value.Count(c => c == '@') == 1
             ? null
-            : "Use an email address.";
+            : "Use one email address, e.g. you@gmail.com.";
 
     static string? Host(string value) =>
         value.Length <= 253 && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-') ? null : "Use a server name, e.g. smtp.gmail.com.";

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.HttpResults;
+using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Admin;
 
@@ -10,6 +11,9 @@ public record AdminSetting(string Key, string Group, string Description, string?
     bool IsSet, SettingSource Source);
 
 public record AdminLogIn(string Password);
+
+/// <summary>Where the test email went.</summary>
+public record TestEmailSent(string SentTo);
 
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
@@ -21,6 +25,7 @@ public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? E
 public static class AdminEndpoints
 {
     public const string LogInRateLimit = "admin-log-in";
+    public const string TestEmailRateLimit = "admin-test-email";
     const string CookieName = "stl_admin";
     const string DefaultPassword = "STL";
     static readonly TimeSpan SessionLength = TimeSpan.FromHours(8);
@@ -53,6 +58,31 @@ public static class AdminEndpoints
         });
 
         var settings = group.MapGroup("/settings").AddEndpointFilter(RequireAdmin);
+
+        // Only ever to the account itself: with the page behind a fixed password, an address typed here would let
+        // anyone who knows it send mail from the account.
+        group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email,
+            TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var sentTo = await email.SendToAccountAsync("Strategy Trading Lab: test email",
+                    $"This is a test email from the Strategy Trading Lab admin page, sent {time.GetUtcNow():yyyy-MM-dd HH:mm} UTC.\n\n" +
+                    "If you got it, the app can send its emails.", cancellationToken);
+                return TypedResults.Ok(new TestEmailSent(sentTo));
+            }
+            catch (EmailNotSetUpException error)
+            {
+                return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status400BadRequest);
+            }
+            catch (EmailException error)
+            {
+                return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
+            }
+        })
+        .AddEndpointFilter(RequireAdmin)
+        .RequireRateLimiting(TestEmailRateLimit)
+        .WithSummary("Sends a test email to the mail account itself, with the settings as they are now.");
 
         settings.MapGet("/", async (SettingsStore store, CancellationToken cancellationToken) =>
             (await store.AllAsync(cancellationToken)).Select(Dto).ToList())
@@ -97,17 +127,28 @@ public static class AdminEndpoints
     static ITimeLimitedDataProtector Protector(IDataProtectionProvider dataProtection) =>
         dataProtection.CreateProtector("StrategyTradingLab.Admin.Session").ToTimeLimitedDataProtector();
 
-    static async ValueTask<object?> RequireAdmin(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    static async ValueTask<object?> RequireAdmin(EndpointFilterInvocationContext context, EndpointFilterDelegate next) =>
+        IsAdmin(context.HttpContext) ? await next(context) : TypedResults.Unauthorized();
+
+    /// <summary>Whether the request carries a valid admin cookie for the current admin password. Worked out once per request.</summary>
+    public static bool IsAdmin(HttpContext http)
     {
-        var http = context.HttpContext;
+        if (http.Items.TryGetValue(CookieName, out var known)) return (bool)known!;
+        return (bool)(http.Items[CookieName] = CheckAdminCookie(http));
+    }
+
+    static bool CheckAdminCookie(HttpContext http)
+    {
+        if (http.Request.Cookies[CookieName] is not { } ticket) return false;
         var protector = Protector(http.RequestServices.GetRequiredService<IDataProtectionProvider>());
         try
         {
-            var expected = TicketFor(AdminPassword(http.RequestServices.GetRequiredService<IConfiguration>()));
-            if (http.Request.Cookies[CookieName] is { } ticket && protector.Unprotect(ticket) == expected) return await next(context);
+            return protector.Unprotect(ticket) == TicketFor(AdminPassword(http.RequestServices.GetRequiredService<IConfiguration>()));
         }
-        catch (CryptographicException) { }
-        return TypedResults.Unauthorized();
+        catch (CryptographicException)
+        {
+            return false;
+        }
     }
 
     /// <summary>The log-in rate limit's key for a client: its IPv4 address, or its IPv6 /64.</summary>

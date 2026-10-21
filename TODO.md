@@ -16,6 +16,7 @@
 - [x] Global `~/.claude/settings.json` (Mac): the auto-mode environment describes the trading bot repo (default branch `master`, trusted repo `trading-strategies-bot`), and the default model is Sonnet. Move the bot's environment into that repo's settings, and pick the default model for this repo. (#22)
 
 - [ ] After #26 deploys: open `/admin` on the live app (password `STL`) and type the Gmail **app password** (not the account's) in `SMTP_PASSWORD`; the other email settings already default to your Gmail. Optionally set `ADMIN_PASSWORD` in `/etc/strategy-trading-lab/api.env` for a stronger page password until accounts exist. (#26)
+- [ ] After #27 deploys: type the Gmail app password once more on `/admin` (the password is now also tied to the sender address, so the one saved before reads "not set"), then press **Send a test email** and check your inbox. (#27)
 
 ## General
 - [ ] Split FE and BE repos?

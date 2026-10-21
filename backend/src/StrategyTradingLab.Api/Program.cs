@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Data;
+using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.Neon;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
@@ -41,6 +42,7 @@ else if (!builder.Environment.IsDevelopment())
     // every restart would lose the saved secrets. Fail the deploy's health check instead.
     throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");
 builder.Services.AddScoped<SettingsStore>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 
 // nginx (on the same machine) passes the client's address and https on. Only loopback proxies are trusted
 // (ForwardedHeadersOptions' default), so a client can't fake its address to dodge the log-in rate limit.
@@ -53,6 +55,12 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(AdminEndpoints.LogInRateLimit, http => RateLimitPartition.GetFixedWindowLimiter(
         AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(15) }));
+    // Test emails: 5 an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.
+    // Only logged-in requests count (the limiter runs before the admin check), so nobody else can use them up.
+    options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
+        ? RateLimitPartition.GetFixedWindowLimiter("test-email",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) })
+        : RateLimitPartition.GetNoLimiter("not-logged-in"));
 });
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>

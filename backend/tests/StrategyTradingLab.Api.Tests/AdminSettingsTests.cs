@@ -200,6 +200,26 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     }
 
     [NeonFact]
+    public async Task The_real_sender_refuses_without_a_password_and_contacts_no_server()
+    {
+        await fixture.Admin.DeleteAsync("/admin/settings/SMTP_PASSWORD");
+        using var scope = fixture.Services.CreateScope();
+
+        await Assert.ThrowsAsync<StrategyTradingLab.Api.Email.EmailNotSetUpException>(() =>
+            scope.ServiceProvider.GetRequiredService<StrategyTradingLab.Api.Email.IEmailSender>().SendToAccountAsync("s", "b", default));
+    }
+
+    [NeonFact]
+    public async Task Changing_the_sender_unsets_the_password()
+    {
+        await PutPassword("secret");
+
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_FROM", new { value = "security@bank.example" });
+
+        Assert.False((await Setting("SMTP_PASSWORD")).GetProperty("isSet").GetBoolean());
+    }
+
+    [NeonFact]
     public async Task Bad_values_and_unknown_settings_are_refused()
     {
         Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PORT", new { value = "99999" })).StatusCode);
@@ -234,6 +254,10 @@ public class SettingDefinitionTests
     [InlineData("SMTP_USER", "you@gmail.com", true)]
     [InlineData("SMTP_USER", "you@", false)]
     [InlineData("SMTP_USER", "you @gmail.com", false)]
+    [InlineData("SMTP_USER", "me@gmail.com,someone@evil.com", false)]
+    [InlineData("SMTP_USER", "me@gmail.com;someone@evil.com", false)]
+    [InlineData("SMTP_FROM", "Bank <security@bank.example>", false)]
+    [InlineData("SMTP_FROM", "a@b@c", false)]
     public void Values_are_checked(string key, string value, bool valid) =>
         Assert.Equal(valid, SettingDefinitions.Find(key)!.Validate!(value) is null);
 
@@ -257,7 +281,7 @@ public class SettingDefinitionTests
     public void Only_the_password_is_secret_and_it_is_bound_to_the_server_port_and_user()
     {
         Assert.Equal(["SMTP_PASSWORD"], SettingDefinitions.All.Where(s => s.Secret).Select(s => s.Key));
-        Assert.Equal(["SMTP_USER", "SMTP_HOST", "SMTP_PORT"], SettingDefinitions.Find("SMTP_PASSWORD")!.BoundTo!);
+        Assert.Equal(["SMTP_USER", "SMTP_HOST", "SMTP_PORT", "SMTP_FROM"], SettingDefinitions.Find("SMTP_PASSWORD")!.BoundTo!);
         Assert.Null(SettingDefinitions.Find("DATABASE_URL"));
     }
 }

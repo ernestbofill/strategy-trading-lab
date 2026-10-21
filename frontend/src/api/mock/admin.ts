@@ -15,14 +15,14 @@ const definitions: Definition[] = [
   {
     key: 'SMTP_PASSWORD',
     group: 'Email',
-    description: "The account's password: for Gmail, an app password. It only counts while the account, server and port above stay as they were when it was saved.",
+    description: "The account's password: for Gmail, an app password. It only counts while the settings above stay as they were when it was saved.",
     default: null,
     secret: true,
   },
 ]
 
 /** The password only counts while these keep the values they had when it was saved, as in the API. */
-const boundToPassword = ['SMTP_USER', 'SMTP_HOST', 'SMTP_PORT']
+const boundToPassword = ['SMTP_USER', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM']
 
 /** Values set on the page; null hides the default. */
 const values = new Map<string, string | null>()
@@ -58,8 +58,8 @@ export function mockAdminSettings(): AdminSetting[] {
   })
 }
 
-/** The API's email check: something before and after one '@', no spaces, at most 254 characters. */
-const isEmail = (v: string) => v.length <= 254 && v.indexOf('@') > 0 && v.indexOf('@') < v.length - 1 && !/\s/.test(v)
+/** The API's email check: exactly one plain address, at most 254 characters (no lists, no display name). */
+const isEmail = (v: string) => v.length <= 254 && /^[^@\s,;<>"()]+@[^@\s,;<>"()]+$/.test(v)
 
 export function mockSetAdminSetting(key: string, value: string, shown?: Record<string, string | null>) {
   requireAdmin()
@@ -69,7 +69,7 @@ export function mockSetAdminSetting(key: string, value: string, shown?: Record<s
   const port = Number(v)
   if (key === 'SMTP_PORT' && !(Number.isInteger(port) && port >= 1 && port <= 65535))
     throw new InvalidValueError('Use a port from 1 to 65535.')
-  if ((key === 'SMTP_USER' || key === 'SMTP_FROM') && !isEmail(v)) throw new InvalidValueError('Use an email address.')
+  if ((key === 'SMTP_USER' || key === 'SMTP_FROM') && !isEmail(v)) throw new InvalidValueError('Use one email address, e.g. you@gmail.com.')
   if (key === 'SMTP_PASSWORD') {
     if (!shown || boundToPassword.some((k) => (shown[k] ?? null) !== effective(k)))
       throw new InvalidValueError('The mail settings changed since this page loaded. Reload, check them, then type the password again.')
@@ -89,7 +89,6 @@ export function mockResetAdminSetting(key: string, clear?: boolean) {
 export function mockSendTestEmail(): string {
   requireAdmin()
   const account = effective('SMTP_USER')
-  if (!account) throw new InvalidValueError('Set the email account first.')
-  if (!passwordIsSet()) throw new InvalidValueError("Email isn't set up: set the account, the server and the password first.")
+  if (!account || !passwordIsSet()) throw new InvalidValueError("Email isn't set up: set the account, the server and the password first.")
   return account
 }

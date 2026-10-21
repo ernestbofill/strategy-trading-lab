@@ -42,7 +42,10 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
   if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
   if (response.status === 400 || response.status === 502) {
     const problem = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; detail?: string } | null
-    throw new InvalidValueError(problem?.errors?.value?.[0] ?? problem?.detail ?? 'That was refused.')
+    const reason = problem?.errors?.value?.[0] ?? problem?.detail
+    // A 502 without the API's reason is nginx: the API itself is down, not a refused value.
+    if (reason) throw new InvalidValueError(reason)
+    if (response.status === 400) throw new InvalidValueError('That was refused.')
   }
   if (!response.ok) throw new Error(`${method} /admin${path} failed: HTTP ${response.status}`)
   return response

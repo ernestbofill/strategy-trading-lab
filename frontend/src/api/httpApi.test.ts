@@ -123,4 +123,11 @@ describe('httpApi admin test email', () => {
       new InvalidValueError('smtp.gmail.com:587 refused it: Username and Password not accepted'),
     )
   })
+
+  it("treats nginx's 502 (the API down) as an error, not a refused value", async () => {
+    respond(502)
+    const error = await httpApi.sendAdminTestEmail().catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(Error)
+    expect(error).not.toBeInstanceOf(InvalidValueError)
+  })
 })

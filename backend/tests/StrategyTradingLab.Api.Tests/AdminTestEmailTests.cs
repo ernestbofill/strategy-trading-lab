@@ -14,13 +14,13 @@ public class AdminTestEmailTests
     sealed class FakeSender(string? account, Exception? failure = null) : IEmailSender
     {
         public List<string> SentTo { get; } = [];
-        public Task<string?> AccountAsync(CancellationToken cancellationToken) => Task.FromResult(account);
 
-        public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken)
+        public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken)
         {
+            if (account is null) throw new EmailNotSetUpException();
             if (failure is not null) throw failure;
-            SentTo.Add(to);
-            return Task.CompletedTask;
+            SentTo.Add(account);
+            return Task.FromResult(account);
         }
     }
 
@@ -72,7 +72,7 @@ public class AdminTestEmailTests
         var response = await admin.PostAsync("/admin/test-email", null);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("Set the email account first.", (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString());
+        Assert.StartsWith("Email isn't set up", (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString());
     }
 
     [Fact]

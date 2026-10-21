@@ -12,10 +12,10 @@ public record AdminSetting(string Key, string Group, string Description, string?
 
 public record AdminLogIn(string Password);
 
-/// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 /// <summary>Where the test email went.</summary>
 public record TestEmailSent(string SentTo);
 
+/// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
 
 /// <summary>
@@ -64,19 +64,21 @@ public static class AdminEndpoints
         group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email,
             TimeProvider time, CancellationToken cancellationToken) =>
         {
-            if (await email.AccountAsync(cancellationToken) is not { } account)
-                return TypedResults.Problem("Set the email account first.", statusCode: StatusCodes.Status400BadRequest);
             try
             {
-                await email.SendAsync(account, "Strategy Trading Lab: test email",
+                var sentTo = await email.SendToAccountAsync("Strategy Trading Lab: test email",
                     $"This is a test email from the Strategy Trading Lab admin page, sent {time.GetUtcNow():yyyy-MM-dd HH:mm} UTC.\n\n" +
                     "If you got it, the app can send its emails.", cancellationToken);
+                return TypedResults.Ok(new TestEmailSent(sentTo));
+            }
+            catch (EmailNotSetUpException error)
+            {
+                return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status400BadRequest);
             }
             catch (EmailException error)
             {
                 return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
             }
-            return TypedResults.Ok(new TestEmailSent(account));
         })
         .AddEndpointFilter(RequireAdmin)
         .RequireRateLimiting(TestEmailRateLimit)
@@ -128,8 +130,14 @@ public static class AdminEndpoints
     static async ValueTask<object?> RequireAdmin(EndpointFilterInvocationContext context, EndpointFilterDelegate next) =>
         IsAdmin(context.HttpContext) ? await next(context) : TypedResults.Unauthorized();
 
-    /// <summary>Whether the request carries a valid admin cookie for the current admin password.</summary>
+    /// <summary>Whether the request carries a valid admin cookie for the current admin password. Worked out once per request.</summary>
     public static bool IsAdmin(HttpContext http)
+    {
+        if (http.Items.TryGetValue(CookieName, out var known)) return (bool)known!;
+        return (bool)(http.Items[CookieName] = CheckAdminCookie(http));
+    }
+
+    static bool CheckAdminCookie(HttpContext http)
     {
         if (http.Request.Cookies[CookieName] is not { } ticket) return false;
         var protector = Protector(http.RequestServices.GetRequiredService<IDataProtectionProvider>());

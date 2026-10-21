@@ -8,6 +8,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 - New-strategy flow, frontend: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm (#1–#3, #10, #13, #19). Advanced settings is a placeholder.
 - The dev database migrates itself: the API does it on startup from a launch profile, and cloud sessions run `backend/scripts/migrate-dev-https.py` (the session start hook does too) (#24).
+- Admin settings page (`/admin`), like the POC's: settings from an allow-list (the five `SMTP_*` for now), secrets encrypted in the database and never shown, behind a fixed password until accounts have an admin role (#26).
 - Starting a strategy: `POST /strategies` from Confirm (name, mode, budget, ticked stocks; the rest from the template's tested defaults) and `GET /dashboard`, which the dashboard (`Home`) shows. The fixed development user is Ernest, with the password `stl` for the log-in to come (#24).
 - Backend: data model (#14), .NET skeleton with the first migration on Neon (#15), the five templates with the POC's tested defaults (#16), deployed to Oracle on merge (#17), the frontend loading templates from the API (#18).
 - CI on PRs, frontend deploy to Oracle, app version in the top bar, reload on a new version (#4–#9, #11).

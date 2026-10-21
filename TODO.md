@@ -15,6 +15,8 @@
 - [ ] Before sign-up and log-in exist for real: Ernest's password is `stl` (only its hash is stored, but the password is in the repo and this chat). Change it, or replace the user, before there is any way to log in. His email is `ernest@strategytradinglab.local`: tell me if you want another. (#24)
 - [x] Global `~/.claude/settings.json` (Mac): the auto-mode environment describes the trading bot repo (default branch `master`, trusted repo `trading-strategies-bot`), and the default model is Sonnet. Move the bot's environment into that repo's settings, and pick the default model for this repo. (#22)
 
+- [ ] After #26 deploys: open `/admin` on the live app (password `STL`), and set the five email settings there (a Gmail app password, not the account's). Optionally set `ADMIN_PASSWORD` in `/etc/strategy-trading-lab/api.env` for a stronger password until accounts exist. (#26)
+
 ## General
 - [ ] Split FE and BE repos?
 - [x] Instructions from STAB

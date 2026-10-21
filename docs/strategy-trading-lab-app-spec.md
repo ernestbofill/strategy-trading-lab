@@ -513,6 +513,16 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 - Every round is kept in the strategy's history: date, prompt used (and whether edited), AI model, full answer, scores, reasons.
 - **AI data sharing**, when on, keeps per round: AI model, date, prompt version and whether edited, stock list, sources on, full answer, parsed scores. Never with it: name, email, account ID, strategy name, budget, step size, trades, or whether the user acted. Before storing, remove anything that looks like an email address, phone number or URL with personal parameters. Store it apart from account data. Withdrawing stops future sharing.
 
+### Admin settings (`/admin`, not drawn, for Ernest)
+
+Like the POC's settings page. Not linked from the app; reached by its address.
+
+- Asks for the admin password first (one field, "Log in"). Wrong: "That password is wrong."; after 5 tries in 15 minutes: "Too many tries. Wait 15 minutes and try again." The password is a fixed one until accounts have an admin role.
+- Then "Settings": one box per group (Email for now). Each row: the setting's name, what it is for, where the value comes from ("Set here", "From the server's environment", "Default", "Not set"), a field, "Save", and "Default" (back to the server's value or the default). A secret's field is always empty, with "set (hidden): type to replace" or "not set", and "Clear" instead of "Default".
+- A refused value says why under the field ("Use a port from 1 to 65535.").
+- Changing the mail server, its port or the user clears the saved password, so it is never sent to a server it wasn't meant for.
+- "Log out" in the top bar. The log-in lasts 8 hours.
+
 ## 7. Notifications
 
 **Daily overview** (email, not drawn), once a day after the US close, timed for the user's time zone. Reads like a briefing; never uses buy or sell as an instruction.

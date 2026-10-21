@@ -62,7 +62,9 @@ These apply to every screen, email and alert.
 
 | Screen | Wireframe file | Reached from | Goes to |
 | --- | --- | --- | --- |
-| Sign-up (not drawn) | – | App start | Pick a template |
+| Sign-up (not drawn) | – | App start for new users; "Create an account" on Log-in | Check your email, then Pick a template |
+| Log-in (not drawn) | – | App start for returning users; any screen when the session has ended | Dashboard |
+| Forgot and reset password (not drawn) | – | "Forgot your password?" on Log-in; the link in the email | Log-in |
 | 1 · Pick a strategy template | `Main` | Sign-up; "+ New strategy" on the dashboard | The picked template's review |
 | 2 · Review a template (one per template) | `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI` | Pick screen "Continue" or "Learn more"; Edit links on Confirm | Advanced settings, How we tested, Choose the mode |
 | 2b · Advanced settings | `Advanced` | Review; "Tune the settings" on the strategy page; Confirm | Back to where it came from |
@@ -141,12 +143,32 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Sign-up (not drawn)
 
 - Email and password, with email verification.
+- **Password:** at least 10 characters, at most 128. No other rules (no forced symbols or digits). A show/hide toggle. Compared with the email: a password equal to the email is refused.
 - Language: English or Catalan, chosen by the user. Editable later in the account.
 - Daily overview by email, on by default.
 - Time zone, guessed from the browser and editable. It sets when the overview arrives (early morning in Europe).
-- The disclaimer, accepted once: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." Plus one line: the app is for learning, testing and following strategies, and it never trades for you.
+- The disclaimer, accepted once: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." Plus one line: the app is for learning, testing and following strategies, and it never trades for you. The button stays off until the box is ticked.
 - No push permission and no AI data sharing at sign-up: those are asked when first needed.
-- On success, go straight to Pick a strategy template.
+- Button: "Create my account". Link: "I already have an account" → Log-in.
+- **On success** the user is logged in at once and goes straight to Pick a strategy template. A "Check your email" notice with the verification link is shown on that screen's top, and the link is also emailed. Until the email is verified the user can use the app, but cannot go live yet (assumed; nothing gates it until live strategies send alerts). Verifying needs no log-in: the link logs the user in too, then goes to where they were.
+- **Errors** (under the field): the email is not valid; the password is too short; the disclaimer is not ticked. "That email is already registered" is never shown: the answer to every sign-up looks the same ("Check your email"), and an existing account gets an email saying someone tried to sign up with its address and a link to log in. This way nobody can find out who has an account.
+- Too many attempts: "Too many tries. Wait a few minutes and try again."
+
+### Log-in (not drawn)
+
+- H1 "Log in". Fields: email, password (with show/hide). Button "Log in". Links: "Forgot your password?" and "Create an account".
+- A wrong email or a wrong password gets the same message: "That email and password don't match." After 5 wrong tries on one email within 15 minutes, that email waits 15 minutes ("Too many tries. Wait a few minutes, or reset your password."). The message is the same for emails that have no account.
+- On success: the dashboard, or the screen the user was on when the session ended.
+- The session lasts 30 days from the last visit, at most 90 days in all. It is kept on the device, in a cookie the page's scripts can't read. "Log out" (in the account) ends it at once.
+
+### Forgot and reset password (not drawn)
+
+- "Forgot your password?" asks for the email and always answers "If that email has an account, we sent a link. It works for 1 hour." The email has one link to "Choose a new password".
+- The reset page has the new password (same rules as sign-up) and the button "Save password". On success every session of that user ends, the user is logged in on this device, and goes to the dashboard. An expired or used link says "This link has expired. Ask for a new one." and links to "Forgot your password?".
+
+### Account (first version, not drawn)
+
+- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet · Send the link again" when it applies), "Change password" (current password, new password; ends the user's other sessions), and "Log out". The rest of the account (language, overview, Data and privacy) stays in *Not designed yet*.
 
 ### 1 · Pick a strategy template (`Main`)
 
@@ -541,7 +563,7 @@ Like the POC's settings page. Not linked from the app; reached by its address.
 
 The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the summary.
 
-- **User:** email, password hash, verified flag, time zone, language (English or Catalan), overview email on/off, disclaimer accepted at, push subscriptions. AI data sharing on/off and when changed, with the AI feature.
+- **User:** email, password hash, verified flag, failed log-in count and lock time, sessions and email links (verify, reset), time zone, language (English or Catalan), overview email on/off, disclaimer accepted at, push subscriptions. AI data sharing on/off and when changed, with the AI feature.
 - **Template:** static, in the code, not the database: key, copy (per language), tested defaults with a version number, starter list or fund.
 - **Asset:** a stock or fund: symbol, exchange, name, what it does, currency.
 - **Strategy:** user, template key, the tested-defaults version it started from, name, mode, start date, status (running or ended; no pause), notifications on/off, currency, budget (budget, step size, max steps per stock; editable), parameter values, and for a live copy the simulation it came from. AI settings (sources, prompt) belong in the parameters once the AI feature is defined.
@@ -558,7 +580,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 
 ## 9. Not designed yet
 
-- Sign-up, log-in and the account page (including language, and Data and privacy: AI sharing on/off, What we keep, export, delete account).
+- The rest of the account page: language, overview email, time zone, and Data and privacy (AI sharing on/off, What we keep, export, delete account). Sign-up, log-in, forgot password and the account's first version are designed above; how they work is in [backend/AUTH.md](../backend/AUTH.md).
 - Simulation variants of Set your budget, Confirm and the strategy page; the Live variant of the AI round result.
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Ride the long trend* and *The big market drop*.

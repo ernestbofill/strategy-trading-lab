@@ -17,7 +17,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 Draft order, for Ernest to confirm.
 
-1. **Sign-up and log-in, right after #24 (Ernest's call).** High risk: design it first, then build it. It replaces the fixed user, Ernest, and his `stl` password (see the TODO), and closes `POST /strategies`, which is open on the production API until then.
+1. **Accounts: sign-up, log-in, forgot password, a first account page.** Ernest's call, right after #24. High risk, so in slices, each with an `opus` review: (a) the design, in the spec and [backend/AUTH.md](backend/AUTH.md) (docs, for Ernest's review); (b) the backend (sessions, endpoints, rate limits, the seeded user stops working on production); (c) the frontend screens and the guard; (d) the real email sender, once Ernest picks the provider and the sending domain (until then reset and verification links only reach the log). Replaces the fixed user, and closes `POST /strategies`, which is open on production until (b) is deployed.
 2. **Catalan.** A priority, and cheaper now, while there are few screens. Move the frontend's copy into per-language files (English and Catalan) with a language switch the user picks (English by default, never guessed from the browser, as the spec says), and add `Texts/ca.json` for the templates. The API already serves template texts per language, from the user's record, so it needs a way to receive the choice before accounts exist. Start with a glossary, `docs/glossary-ca.md`, that fixes the key words (stock → *acció*, fund → *fons*, step → *pas*, signal → *senyal*, …), so every agent and screen translates them the same way. Claude drafts the Catalan; Ernest reviews it.
 3. **Check the live app after a merge.** A script (bash and PowerShell) that checks production serves the merged versions: `/api/version` for the backend, and a new `/version.json` from the frontend build (today the version is only inside the bundle). Then the agent opens the live app and looks at the changed screens. Run it after every merge, in a loop before the next item. In cloud sessions the script works if the network settings allow the production domain; the visual check needs a headless browser (Playwright) in the cloud environment, otherwise it's local only. A first step towards an agent that tests the live app as a user (TODO.md → Ideas).
 4. **Strategy page (`StrategyDetail`):** Live variant first, as drawn.
@@ -48,6 +48,7 @@ From the spec's *Not designed yet* list, roughly in the order they become useful
 
 ## Open decisions (Ernest)
 
+- **Email provider and sending domain:** for verification and reset links now, the daily overview and alerts later. Needs a provider that fits the volume and cost, and a domain with SPF and DKIM (`sslip.io` can't). Blocks slice (d) of Accounts only.
 - **Price data provider:** terms that allow commercial use, and the cost at many free users. The POC uses eToro and Yahoo.
 - **Catalan copy:** Claude drafts, Ernest reviews. Is that enough, or does a native speaker review it before release?
 - The rest are in the spec's [Open questions](docs/strategy-trading-lab-app-spec.md#10-open-questions): regulation, AI data, the suggested prompt, web push on iPhone.

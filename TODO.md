@@ -15,6 +15,9 @@
 - [ ] Before sign-up and log-in exist for real: Ernest's password is `stl` (only its hash is stored, but the password is in the repo and this chat). Change it, or replace the user, before there is any way to log in. His email is `ernest@strategytradinglab.local`: tell me if you want another. (#24)
 - [x] Global `~/.claude/settings.json` (Mac): the auto-mode environment describes the trading bot repo (default branch `master`, trusted repo `trading-strategies-bot`), and the default model is Sonnet. Move the bot's environment into that repo's settings, and pick the default model for this repo. (#22)
 
+- [ ] Review the accounts design: the spec's Sign-up, Log-in, Forgot password and Account sections, and `backend/AUTH.md` (slices, cookie sessions, what happens to the seeded Ernest). I start the backend slice when you say so. (#25)
+- [ ] Decide the email provider and a sending domain (SPF and DKIM). Needed to deliver verification and reset links. (ROADMAP → Open decisions) (#25)
+
 ## General
 - [ ] Split FE and BE repos?
 - [x] Instructions from STAB

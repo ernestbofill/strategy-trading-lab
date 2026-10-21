@@ -93,11 +93,17 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | time_zone | text, not null | IANA name, e.g. `Europe/Madrid`. The overview goes out early morning in it |
 | locale | text, not null | `en` \| `ca` in v1 (BCP 47 tags). Picked by the user at sign-up, never guessed; editable in the account. Sets the language and formats of emails and notifications |
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
+| failed_login_count | smallint, not null, default 0 | Wrong passwords since the last good log-in or the last lock. Added with accounts, see [AUTH.md](AUTH.md) |
+| locked_until | timestamptz, null | Set after 5 wrong passwords in 15 minutes; log-in waits until then |
 | overview_email | bool, not null, default true | Daily overview on/off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | created_at, updated_at | timestamptz | |
 
 AI data-sharing consent is added with the AI feature.
+
+### `sessions` and `email_tokens` (planned, with accounts)
+
+Designed in [AUTH.md](AUTH.md); not in the schema yet. `sessions`: one row per logged-in device (hashed token, last used, expires). `email_tokens`: the single-use links for verifying an email and resetting a password (purpose, hashed token, expires, used). Both cascade from `users`.
 
 ### `push_subscriptions`
 

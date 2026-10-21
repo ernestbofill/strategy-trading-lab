@@ -131,3 +131,13 @@ describe('httpApi admin test email', () => {
     expect(error).not.toBeInstanceOf(InvalidValueError)
   })
 })
+
+describe('httpApi CSRF header', () => {
+  it('sends X-Requested-With: stl on state-changing requests', async () => {
+    respond(204)
+    await httpApi.adminLogOut()
+    respond(201, { id: 's1' })
+    await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [] })
+    for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'X-Requested-With': 'stl' })
+  })
+})

@@ -11,29 +11,36 @@ const definitions: Definition[] = [
   { key: 'SMTP_USER', group: 'Email', description: 'The email account that sends the emails.', default: gmail, secret: false },
   { key: 'SMTP_HOST', group: 'Email', description: 'The mail server.', default: 'smtp.gmail.com', secret: false },
   { key: 'SMTP_PORT', group: 'Email', description: "The mail server's port (STARTTLS).", default: '587', secret: false },
-  { key: 'SMTP_FROM', group: 'Email', description: 'The sender address.', default: gmail, secret: false },
+  { key: 'SMTP_FROM', group: 'Email', description: 'The sender address. Empty: the account above.', default: null, secret: false },
   {
     key: 'SMTP_PASSWORD',
     group: 'Email',
-    description: "The account's password: for Gmail, an app password. Changing the account, server or port above clears it.",
+    description: "The account's password: for Gmail, an app password. It only counts while the account, server and port above stay as they were when it was saved.",
     default: null,
     secret: true,
   },
 ]
 
-/** Changing any of these clears the password, as the API does. */
+/** The password only counts while these keep the values they had when it was saved, as in the API. */
 const boundToPassword = ['SMTP_USER', 'SMTP_HOST', 'SMTP_PORT']
 
-/** Values set on the page; null is a cleared secret. */
+/** Values set on the page; null hides the default. */
 const values = new Map<string, string | null>()
+/** The password and the bound values it was saved with. */
+let password: { value: string; binding: string } | null = null
 let loggedIn = false
+
+const effective = (key: string) =>
+  values.has(key) ? (values.get(key) ?? null) : (definitions.find((d) => d.key === key)?.default ?? null)
+const binding = () => boundToPassword.map(effective).join('\u001f')
+const passwordIsSet = () => password !== null && password.binding === binding()
 
 const requireAdmin = () => {
   if (!loggedIn) throw new UnauthorizedError()
 }
 
-export function mockAdminLogIn(password: string) {
-  if (password !== 'STL') throw new UnauthorizedError()
+export function mockAdminLogIn(given: string) {
+  if (given !== 'STL') throw new UnauthorizedError()
   loggedIn = true
 }
 
@@ -44,36 +51,32 @@ export function mockAdminLogOut() {
 export function mockAdminSettings(): AdminSetting[] {
   requireAdmin()
   return definitions.map((d) => {
-    const fromPage = values.has(d.key)
-    const value = fromPage ? (values.get(d.key) ?? null) : d.default
-    const source = fromPage ? (value === null ? 'none' : 'page') : d.default === null ? 'none' : 'default'
-    return { ...d, value: d.secret ? null : value, isSet: value !== null, source }
+    if (d.secret) return { ...d, value: null, isSet: passwordIsSet(), source: passwordIsSet() ? 'page' : 'none' }
+    const value = effective(d.key)
+    const source = values.has(d.key) ? (value === null ? 'none' : 'page') : value === null ? 'none' : 'default'
+    return { ...d, value, isSet: value !== null, source }
   })
 }
 
-const effective = (key: string) =>
-  values.has(key) ? (values.get(key) ?? null) : (definitions.find((d) => d.key === key)?.default ?? null)
-
-/** Applies a change, then clears the password if the account, server or port now differs, as the API does. */
-function change(apply: () => void) {
-  const before = boundToPassword.map(effective)
-  apply()
-  if (boundToPassword.some((key, i) => effective(key) !== before[i])) values.set('SMTP_PASSWORD', null)
-}
+/** The API's email check: something before and after one '@', no spaces, at most 254 characters. */
+const isEmail = (v: string) => v.length <= 254 && v.indexOf('@') > 0 && v.indexOf('@') < v.length - 1 && !/\s/.test(v)
 
 export function mockSetAdminSetting(key: string, value: string) {
   requireAdmin()
-  const secret = key === 'SMTP_PASSWORD'
-  const v = secret ? value : value.trim()
-  if (!v.trim()) throw new InvalidValueError('Type a value, or use Default.')
+  if (!value.trim()) throw new InvalidValueError('Type a value, or use Default.')
+  const v = key === 'SMTP_PASSWORD' ? value : value.trim()
+  if (v.length > 500) throw new InvalidValueError('Use at most 500 characters.')
   const port = Number(v)
   if (key === 'SMTP_PORT' && !(Number.isInteger(port) && port >= 1 && port <= 65535))
     throw new InvalidValueError('Use a port from 1 to 65535.')
-  if ((key === 'SMTP_USER' || key === 'SMTP_FROM') && !/^[^@\s]+@[^@\s]+$/.test(v)) throw new InvalidValueError('Use an email address.')
-  change(() => values.set(key, v))
+  if ((key === 'SMTP_USER' || key === 'SMTP_FROM') && !isEmail(v)) throw new InvalidValueError('Use an email address.')
+  if (key === 'SMTP_PASSWORD') password = { value: v, binding: binding() }
+  else values.set(key, v)
 }
 
 export function mockResetAdminSetting(key: string, clear?: boolean) {
   requireAdmin()
-  change(() => (clear ? values.set(key, null) : values.delete(key)))
+  if (key === 'SMTP_PASSWORD') password = null
+  else if (clear) values.set(key, null)
+  else values.delete(key)
 }

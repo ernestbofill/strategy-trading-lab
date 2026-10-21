@@ -10,7 +10,12 @@ public enum SettingSource { Page, Server, Default, None }
 
 public record EffectiveSetting(SettingDefinition Definition, string? Value, SettingSource Source);
 
-/// <summary>Reads and writes the admin page's settings. Secrets are encrypted with ASP.NET Core Data Protection.</summary>
+/// <summary>
+/// Reads and writes the admin page's settings. A secret comes only from the page, never from the server's environment,
+/// and is encrypted (ASP.NET Core Data Protection) together with the values of the settings it is bound to when it was
+/// saved. It only counts as set while those still have the same values, so whatever changes them (a save, Default, a
+/// new api.env, lost keys) can't send it somewhere new: the check is made on every read.
+/// </summary>
 public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataProtectionProvider dataProtection,
     ILogger<SettingsStore> logger)
 {
@@ -18,83 +23,75 @@ public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataP
 
     public async Task<IReadOnlyList<EffectiveSetting>> AllAsync(CancellationToken cancellationToken)
     {
-        var rows = await db.AppSettings.AsNoTracking().ToDictionaryAsync(row => row.Key, cancellationToken);
-        return [.. SettingDefinitions.All.Select(definition => Resolve(definition, rows.GetValueOrDefault(definition.Key)))];
+        var rows = await Rows(cancellationToken);
+        return [.. SettingDefinitions.All.Select(definition => Resolve(definition, rows))];
     }
 
     /// <summary>The value the app uses, or null when the setting has none.</summary>
     public async Task<string?> GetAsync(string key, CancellationToken cancellationToken)
     {
         var definition = SettingDefinitions.Find(key) ?? throw new ArgumentException($"Unknown setting {key}.", nameof(key));
-        var row = await db.AppSettings.AsNoTracking().SingleOrDefaultAsync(row => row.Key == key, cancellationToken);
-        return Resolve(definition, row).Value;
+        return Resolve(definition, await Rows(cancellationToken)).Value;
     }
 
-    /// <summary>Saves the page's value.</summary>
-    public Task SetAsync(SettingDefinition definition, string value, CancellationToken cancellationToken) =>
-        Change(rows => Store(rows, definition.Key, definition.Secret ? protector.Protect(value) : value), cancellationToken);
-
-    /// <summary>Forgets the page's value, so the server's value or the default applies again.</summary>
-    public Task ResetAsync(string key, CancellationToken cancellationToken) =>
-        Change(rows =>
-        {
-            if (rows.Remove(key, out var row)) db.AppSettings.Remove(row);
-        }, cancellationToken);
-
-    /// <summary>Saves an empty value that hides the server's too (a secret the page cleared).</summary>
-    public Task ClearAsync(string key, CancellationToken cancellationToken) =>
-        Change(rows => Store(rows, key, null), cancellationToken);
-
-    /// <summary>
-    /// Every write goes through here: it applies the change, then clears each secret whose bound settings now have
-    /// another value than before. The table is a handful of rows, so it is read whole, once.
-    /// </summary>
-    async Task Change(Action<Dictionary<string, AppSetting>> change, CancellationToken cancellationToken)
+    /// <summary>Saves the page's value. A secret is sealed with the current values of the settings it is bound to.</summary>
+    public async Task SetAsync(SettingDefinition definition, string value, CancellationToken cancellationToken)
     {
-        var rows = await db.AppSettings.ToDictionaryAsync(row => row.Key, cancellationToken);
-        var before = Values(rows);
-        change(rows);
-        var after = Values(rows);
-        foreach (var secret in SettingDefinitions.All.Where(d => d.BoundTo is not null))
-        {
-            if (secret.BoundTo!.Any(key => before[key] != after[key])) Store(rows, secret.Key, null);
-        }
+        var rows = await Rows(cancellationToken);
+        var stored = definition.Secret ? protector.Protect(Binding(definition, rows) + Separator + value) : value;
+        await Upsert(definition.Key, stored, cancellationToken);
+    }
+
+    /// <summary>Forgets the page's value, so the server's value or the default applies again (a secret has neither).</summary>
+    public Task ResetAsync(string key, CancellationToken cancellationToken) =>
+        db.AppSettings.Where(row => row.Key == key).ExecuteDeleteAsync(cancellationToken);
+
+    /// <summary>No value at all: a secret is forgotten; any other setting also hides the server's value.</summary>
+    public Task ClearAsync(SettingDefinition definition, CancellationToken cancellationToken) =>
+        definition.Secret ? ResetAsync(definition.Key, cancellationToken) : Upsert(definition.Key, null, cancellationToken);
+
+    const char Separator = '\n';
+
+    Task<Dictionary<string, AppSetting>> Rows(CancellationToken cancellationToken) =>
+        db.AppSettings.AsNoTracking().ToDictionaryAsync(row => row.Key, cancellationToken);
+
+    async Task Upsert(string key, string? stored, CancellationToken cancellationToken)
+    {
+        var row = await db.AppSettings.FindAsync([key], cancellationToken);
+        if (row is null) db.AppSettings.Add(new AppSetting { Key = key, Value = stored });
+        else row.Value = stored;
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>The effective value of every setting that isn't secret (bound settings never are).</summary>
-    Dictionary<string, string?> Values(Dictionary<string, AppSetting> rows) =>
-        SettingDefinitions.All.Where(d => !d.Secret)
-            .ToDictionary(d => d.Key, d => Resolve(d, rows.GetValueOrDefault(d.Key)).Value);
+    /// <summary>The bound settings' current values, as one string sealed into the secret.</summary>
+    string Binding(SettingDefinition secret, Dictionary<string, AppSetting> rows) =>
+        string.Join('\u001f', (secret.BoundTo ?? []).Select(key => Resolve(SettingDefinitions.Find(key)!, rows).Value ?? ""));
 
-    /// <summary>Sets a loaded (tracked) row's value, or adds the row.</summary>
-    void Store(Dictionary<string, AppSetting> rows, string key, string? stored)
+    EffectiveSetting Resolve(SettingDefinition definition, Dictionary<string, AppSetting> rows)
     {
-        if (rows.TryGetValue(key, out var row)) row.Value = stored;
-        else rows[key] = db.AppSettings.Add(new AppSetting { Key = key, Value = stored }).Entity;
-    }
-
-    EffectiveSetting Resolve(SettingDefinition definition, AppSetting? row)
-    {
-        if (row is not null)
+        var row = rows.GetValueOrDefault(definition.Key);
+        if (definition.Secret)
         {
-            if (row.Value is null) return new(definition, null, SettingSource.None);
-            if (!definition.Secret) return new(definition, row.Value, SettingSource.Page);
-            // A secret the keys can no longer read counts as not set here, so the server's value still applies.
-            if (Unprotect(definition.Key, row.Value) is { } secret) return new(definition, secret, SettingSource.Page);
+            return row?.Value is { } sealedValue && Unseal(definition, sealedValue, rows) is { } secret
+                ? new(definition, secret, SettingSource.Page)
+                : new(definition, null, SettingSource.None);
         }
+        if (row is not null) return new(definition, row.Value, row.Value is null ? SettingSource.None : SettingSource.Page);
         if (configuration[definition.Key] is { Length: > 0 } server) return new(definition, server, SettingSource.Server);
         return definition.Default is null ? new(definition, null, SettingSource.None) : new(definition, definition.Default, SettingSource.Default);
     }
 
-    /// <summary>Null when the key that encrypted it is gone (a new server or lost keys): the secret has to be set again.</summary>
-    string? Unprotect(string key, string stored)
+    /// <summary>The secret, or null when it can't be read (the keys are gone) or its bound settings have changed since.</summary>
+    string? Unseal(SettingDefinition definition, string sealedValue, Dictionary<string, AppSetting> rows)
     {
-        try { return protector.Unprotect(stored); }
+        string plain;
+        try { plain = protector.Unprotect(sealedValue); }
         catch (System.Security.Cryptography.CryptographicException)
         {
-            logger.LogWarning("The saved {Setting} can't be decrypted (its Data Protection key is gone). Set it again on the admin page.", key);
+            logger.LogWarning("The saved {Setting} can't be decrypted (its Data Protection key is gone). Set it again on the admin page.", definition.Key);
             return null;
         }
+        var at = plain.IndexOf(Separator);
+        return at >= 0 && plain[..at] == Binding(definition, rows) ? plain[(at + 1)..] : null;
     }
 }

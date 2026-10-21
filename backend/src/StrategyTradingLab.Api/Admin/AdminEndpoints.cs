@@ -62,21 +62,20 @@ public static class AdminEndpoints
         {
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
             // A secret is kept exactly as typed: a password may start or end with a space.
-            var value = definition.Secret ? request.Value ?? "" : (request.Value ?? "").Trim();
-            if (definition.Secret && value.Trim().Length == 0) value = "";
+            var value = string.IsNullOrWhiteSpace(request.Value) ? "" : definition.Secret ? request.Value : request.Value.Trim();
             var error = value.Length == 0 ? "Type a value, or use Default." : value.Length > 500 ? "Use at most 500 characters." : definition.Validate?.Invoke(value);
             if (error is not null) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["value"] = [error] });
 
             await store.SetAsync(definition, value, cancellationToken);
             return TypedResults.NoContent();
         })
-        .WithSummary("Sets a setting. Changing the mail server, port or user clears the saved password.");
+        .WithSummary("Sets a setting. The saved password only counts while the mail server, port and user it was saved with stay.");
 
         settings.MapDelete("/{key}", async Task<Results<NoContent, NotFound>> (string key, bool? clear, SettingsStore store,
             CancellationToken cancellationToken) =>
         {
-            if (SettingDefinitions.Find(key) is null) return TypedResults.NotFound();
-            if (clear == true) await store.ClearAsync(key, cancellationToken);
+            if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
+            if (clear == true) await store.ClearAsync(definition, cancellationToken);
             else await store.ResetAsync(key, cancellationToken);
             return TypedResults.NoContent();
         })

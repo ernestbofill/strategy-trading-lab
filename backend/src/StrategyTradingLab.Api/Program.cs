@@ -36,7 +36,7 @@ builder.Services.TryAddSingleton(TimeProvider.System);
 var dataProtection = builder.Services.AddDataProtection().SetApplicationName("StrategyTradingLab");
 if (builder.Configuration["STATE_DIRECTORY"] is { Length: > 0 } state)
     dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(state, "keys")));
-else if (builder.Environment.IsProduction())
+else if (!builder.Environment.IsDevelopment())
     // Under the unit's ProtectSystem=strict the default folder can't be written: keys would live in memory only and
     // every restart would lose the saved secrets. Fail the deploy's health check instead.
     throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");

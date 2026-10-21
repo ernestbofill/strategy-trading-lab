@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -119,6 +120,29 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     }
 
     [NeonFact]
+    public async Task The_password_never_comes_from_the_server_environment()
+    {
+        await fixture.Admin.DeleteAsync("/admin/settings/SMTP_PASSWORD");
+        using var withServerPassword = fixture.WithWebHostBuilder(b => b.UseSetting("SMTP_PASSWORD", "from api.env"));
+        using var scope = withServerPassword.Services.CreateScope();
+
+        Assert.Null(await scope.ServiceProvider.GetRequiredService<SettingsStore>().GetAsync("SMTP_PASSWORD", default));
+    }
+
+    [NeonFact]
+    public async Task A_password_counts_again_when_its_server_comes_back()
+    {
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_PASSWORD", new { value = "secret" });
+
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.example.com" });
+        Assert.False((await Setting("SMTP_PASSWORD")).GetProperty("isSet").GetBoolean());
+        await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
+
+        Assert.True((await Setting("SMTP_PASSWORD")).GetProperty("isSet").GetBoolean());
+    }
+
+    [NeonFact]
     public async Task Saving_the_same_server_keeps_the_password()
     {
         await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com" });
@@ -177,7 +201,7 @@ public class SettingDefinitionTests
     [Fact]
     public void Every_setting_but_the_password_has_a_default_and_the_password_comes_last()
     {
-        Assert.All(SettingDefinitions.All.Where(s => !s.Secret), s => Assert.NotNull(s.Default));
+        Assert.All(SettingDefinitions.All.Where(s => !s.Secret && s.Key != "SMTP_FROM"), s => Assert.NotNull(s.Default));
         Assert.Null(SettingDefinitions.Find("SMTP_PASSWORD")!.Default);
         Assert.Equal("SMTP_PASSWORD", SettingDefinitions.All[^1].Key);
     }

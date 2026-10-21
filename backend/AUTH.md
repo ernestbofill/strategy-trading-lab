@@ -1,6 +1,6 @@
 # Accounts: how sign-up, log-in and sessions work
 
-Status: **design, for review**. The screens and copy are in the [app spec](../docs/strategy-trading-lab-app-spec.md) (*Sign-up*, *Log-in*, *Forgot and reset password*, *Account*). This is the technical side. Authentication is high risk, so it is built in slices, each reviewed (see ROADMAP).
+Status: **backend built** (#28); the screens are the next slice. The screens and copy are in the [app spec](../docs/strategy-trading-lab-app-spec.md) (*Sign-up*, *Log-in*, *Forgot and reset password*, *Account*). This is the technical side. Authentication is high risk, so it is built in slices, each reviewed (see ROADMAP).
 
 ## Choices
 
@@ -12,13 +12,13 @@ Status: **design, for review**. The screens and copy are in the [app spec](../do
 | Password hashing | ASP.NET Core Identity's `PasswordHasher<User>` (PBKDF2-HMAC-SHA512, per-user salt, rehash when its settings change) | Already in the shared framework. No new package. |
 | CSRF | `SameSite=Lax`, JSON bodies only (`Content-Type: application/json` required on every POST/PUT/PATCH/DELETE), and a `X-Requested-With: stl` header that the client always sends and a plain form can't | No token plumbing, and a cross-site form or image can't make a state-changing request. |
 | Email | An `IEmailSender`: SMTP when `SMTP_USER` and `SMTP_PASSWORD` are set, else a log sender (development and tests; it writes the link to the log, never to a response). SMTP is Gmail with an app password, as in the POC (Ernest's choice): `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_HOST` (empty with a `@gmail.com` user: `smtp.gmail.com`), `SMTP_PORT` (587, STARTTLS), `SMTP_FROM` (empty: `SMTP_USER`). Sent with .NET's own `System.Net.Mail.SmtpClient`, so no new package. The values are set on the admin page (#26): everything but the app password defaults to Ernest's Gmail | No domain to set up, and Gmail's limit (about 500 emails a day) is far above what sign-up and reset need. Move to a sending service with its own domain before a public launch or when the daily overview grows past that limit. |
-| Rate limits | ASP.NET Core's rate limiter per client address on sign-up, log-in, forgot password and "send the link again"; the per-email log-in lock is on the user row | The app is behind one nginx, so the address comes from `X-Forwarded-For` (`ForwardedHeaders`, trusting only the local proxy). |
+| Rate limits | ASP.NET Core's rate limiter per client address (IPv4, or IPv6 /64): sign-up 5 an hour, log-in 10 per 15 minutes, the email links 5 an hour, password changes and links 10 per 15 minutes. The per-email log-in lock (5 wrong in 15 minutes, then 15 minutes' wait) is counted in memory for every email typed, with or without an account, so it never tells which emails have one; a restart forgets it | The app is behind one nginx, so the address comes from `X-Forwarded-For` (`ForwardedHeaders`, trusting only the local proxy). |
 | Who is the current user? | A small `ICurrentUser` read from the session. Endpoints that need a user take it; without a valid session they answer 401. The fixed user `DevSeed.DevUserId` goes away | One place decides, and a screen can't forget to check. |
 | Which endpoints are public? | `GET /templates`, `/templates/{key}`, `/health`, `/version`, and the account endpoints below. Everything else needs a session | The template pages hold no user data. Until the language choice exists they are served in English to visitors. |
 
 ## Data
 
-New columns on `users`: `failed_login_count smallint not null default 0`, `locked_until timestamptz null`.
+No new columns on `users` (the log-in lock is in memory, see Rate limits).
 
 ```
 sessions      id uuid PK · user_id FK → users (cascade) · token_hash bytea unique · created_at ·
@@ -28,6 +28,17 @@ email_tokens  id uuid PK · user_id FK → users (cascade) · purpose ('verify_e
 ```
 
 Both are new tables, so the migration changes no existing data. Expired rows are deleted by a daily clean-up (later, with the other scheduled jobs). `last_used_at` is written at most once a minute per session. IP addresses are not stored (privacy).
+
+## How it is built
+
+- `Auth/Sessions.cs`: the cookie and the `sessions` rows; `CurrentAsync` answers "who is calling?" once per request, and `RequireUser()` is the endpoint filter that answers 401 without a session. `/dashboard` and `/strategies` use it.
+- `Auth/AccountEndpoints.cs`: the endpoints below. Single-use links are claimed with one `UPDATE … WHERE used_at IS NULL`, so the same link can't be used twice at once.
+- `Auth/AccountEmails.cs` and `Email/EmailQueue.cs`: account emails go through an in-memory queue that a background worker sends, so answers never wait on Gmail and their timing never tells whether an email went out. Without email set up, Development logs the email (link included) instead; Production logs only that it failed, never a link.
+- `PublicUrl` (appsettings: the live address; `appsettings.Development.json`: `http://localhost:5173`) builds the links in emails. It is configuration, never taken from the request's Host header, so nobody can make a reset link point elsewhere.
+- CSRF: a middleware refuses any POST, PUT, PATCH or DELETE without `X-Requested-With: stl`; the frontend's client sends it on every request.
+- A wrong email takes as long as a wrong password: log-in checks a dummy hash when the email has no account.
+
+**What sign-up can still tell.** The answer is the same either way, but a new account is logged in at once (Ernest's choice) and an existing one isn't, so someone who signs up with an email can tell from the cookie whether it already had an account. The sign-up rate limit (5 an hour per client) keeps that slow. Hiding it fully would mean not logging in at sign-up.
 
 ## Endpoints
 

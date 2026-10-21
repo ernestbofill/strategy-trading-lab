@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-10-21 · The log-in lock (5 wrong passwords in 15 minutes) is counted in memory for every email typed, not on the user row, so it behaves the same for emails without an account and never reveals which have one. A restart forgets it. Account emails go through a background queue so answers never wait on, or reveal, a send. Links use the configured `PublicUrl`, never the request's Host. (#28)
 - 2026-10-21 · Accounts as designed in #25, all recommended answers: no email verification before use (only before going live), sign-up never reveals a taken email, log-in by email only, passwords of 10+ characters, 5 wrong tries lock an email for 15 minutes, 30-day sessions (90 at most), template endpoints public. (#25)
 - 2026-10-21 · The seeded user (Ernest, `stl`) is removed entirely, on every database, in the same release as log-in. Local work signs up like anyone else. (#25)
 - 2026-10-21 · Email goes through Gmail SMTP with an app password, as in the POC: no domain to set up and enough volume for now. Revisit before a public launch. (#25)

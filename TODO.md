@@ -34,3 +34,5 @@
 - [ ] User can give feedback
 - [ ] Referral program
 - [ ] Agent to test the live app and review it as a user
+- [ ] Playwright for e2e testing
+- [ ] Claude test user

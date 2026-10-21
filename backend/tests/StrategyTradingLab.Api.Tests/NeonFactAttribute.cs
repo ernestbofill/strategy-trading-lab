@@ -9,7 +9,7 @@ namespace StrategyTradingLab.Api.Tests;
 /// </summary>
 public sealed class NeonFactAttribute : FactAttribute
 {
-    static readonly bool Configured = IsConfigured();
+    public static readonly bool Configured = IsConfigured();
 
     public NeonFactAttribute()
     {

@@ -219,3 +219,12 @@ class NotificationConfiguration : IEntityTypeConfiguration<Notification>
             .HasForeignKey(n => n.SignalId).OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+class AppSettingConfiguration : IEntityTypeConfiguration<AppSetting>
+{
+    public void Configure(EntityTypeBuilder<AppSetting> entity)
+    {
+        entity.ToTable("app_settings");
+        entity.HasKey(setting => setting.Key);
+    }
+}

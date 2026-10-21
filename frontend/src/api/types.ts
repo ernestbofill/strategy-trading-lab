@@ -161,10 +161,36 @@ export interface NewStrategy {
   assetIds: string[]
 }
 
+/** A setting on the admin page. A secret's `value` is never sent: only whether it is set. */
+export interface AdminSetting {
+  key: string
+  group: string
+  description: string
+  default: string | null
+  secret: boolean
+  value: string | null
+  isSet: boolean
+  /** Where the value comes from: this page, the server's environment, the default, or nowhere. */
+  source: 'page' | 'server' | 'default' | 'none'
+}
+
 export interface Api {
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
   getDashboard(): Promise<Dashboard>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
+  /** Admin page. Each rejects with `UnauthorizedError` without the admin cookie (or a wrong password), `TooManyTriesError` when rate-limited. */
+  adminLogIn(password: string): Promise<void>
+  adminLogOut(): Promise<void>
+  getAdminSettings(): Promise<AdminSetting[]>
+  /**
+   * Rejects with `InvalidValueError` (its message is for the user) when the value is refused. A secret needs `shown`:
+   * the values the page shows, so the API can refuse it if its mail server changed since (409).
+   */
+  setAdminSetting(key: string, value: string, shown?: Record<string, string | null>): Promise<void>
+  /** Back to the server's value or the default; `clear` leaves no value at all (secrets). */
+  resetAdminSetting(key: string, clear?: boolean): Promise<void>
+  /** Sends a test email to the mail account itself and resolves with its address; rejects with `InvalidValueError` saying why not. */
+  sendAdminTestEmail(): Promise<string>
 }

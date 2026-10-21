@@ -15,9 +15,9 @@
 - [x] The seeded user Ernest (`stl`): removed entirely, with the backend slice of accounts (Ernest's call). Nothing to change by hand. (#25)
 - [x] Global `~/.claude/settings.json` (Mac): the auto-mode environment describes the trading bot repo (default branch `master`, trusted repo `trading-strategies-bot`), and the default model is Sonnet. Move the bot's environment into that repo's settings, and pick the default model for this repo. (#22)
 
-- [ ] Review the accounts design: the spec's Sign-up, Log-in, Forgot password and Account sections, and `backend/AUTH.md` (slices, cookie sessions, the open choices in the PR). I start the backend slice when you say so. (#25)
+- [x] Review the accounts design. Decided: all recommended answers. (#25)
 - [x] Email: Gmail SMTP with an app password, as in the POC. (#25)
-- [ ] Before the email slice: set `SMTP_USER`, `SMTP_PASSWORD` (a Gmail app password), `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` in `/etc/strategy-trading-lab/api.env` on the server and in `.env.local` locally (and in the cloud environment if you want real emails from cloud sessions). Names only here, never the values. (#25)
+- [x] Email settings: set on `/admin` instead of api.env (#26); the test email works (#27).
 
 ## General
 - [ ] Split FE and BE repos?

@@ -535,6 +535,17 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 - Every round is kept in the strategy's history: date, prompt used (and whether edited), AI model, full answer, scores, reasons.
 - **AI data sharing**, when on, keeps per round: AI model, date, prompt version and whether edited, stock list, sources on, full answer, parsed scores. Never with it: name, email, account ID, strategy name, budget, step size, trades, or whether the user acted. Before storing, remove anything that looks like an email address, phone number or URL with personal parameters. Store it apart from account data. Withdrawing stops future sharing.
 
+### Admin settings (`/admin`, not drawn, for Ernest)
+
+Like the POC's settings page. Not linked from the app; reached by its address.
+
+- Asks for the admin password first (one field, "Log in"). Wrong: "That password is wrong."; after 5 tries in 15 minutes: "Too many tries. Wait 15 minutes and try again." The password is a fixed one until accounts have an admin role.
+- Then "Settings": one box per group (Email for now). Every setting but the password has a default (Ernest's Gmail, `smtp.gmail.com`, 587; the sender follows the account), so only the app password has to be typed; it comes last because changing a setting above it unsets it. Each row: the setting's name, what it is for, where the value comes from ("Set here", "From the server's environment", "Default", "Not set"), a field, "Save", and "Default" (back to the server's value or the default). A secret's field is always empty, with "set (hidden): type to replace" or "not set", and "Clear" instead of "Default".
+- A refused value says why under the field ("Use a port from 1 to 65535.").
+- The saved password only counts while the mail account, server, port and sender stay as they were when it was saved; change any of them (by saving, "Default" or on the server) and it reads "not set"; it counts again only if they go back to the values it was saved with. A password typed while the page shows outdated values is refused: "The mail settings changed since this page loaded. Reload, check them, then type the password again." So it is never sent to a server it wasn't meant for. It is only ever set on this page, never taken from the server's environment.
+- Under the Email settings, "Send a test email" sends one email to the mail account itself (never to another address, so the page can't be used to send mail elsewhere), with the settings as saved. It answers "Sent to [account]. Check its inbox." or why not, in the mail server's own words ("…refused it: Username and Password not accepted"). At most 5 an hour.
+- "Log out" in the top bar. The log-in lasts 8 hours.
+
 ## 7. Notifications
 
 **Daily overview** (email, not drawn), once a day after the US close, timed for the user's time zone. Reads like a briefing; never uses buy or sell as an instruction.

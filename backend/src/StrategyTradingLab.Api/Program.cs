@@ -2,14 +2,19 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Data;
+using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.Neon;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
@@ -26,6 +31,37 @@ builder.Services.AddDbContext<AppDbContext>((services, options) => AppDbContextO
         "No database: set DATABASE_URL (run `neon env pull`) or ConnectionStrings:Default.")));
 
 builder.Services.TryAddSingleton(TimeProvider.System);
+
+// Keys that encrypt the admin page's secrets and its cookie. On the server, in the systemd StateDirectory (kept
+// across releases, readable only by the service); elsewhere, Data Protection's default per-user folder.
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("StrategyTradingLab");
+if (builder.Configuration["STATE_DIRECTORY"] is { Length: > 0 } state)
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(state, "keys")));
+else if (!builder.Environment.IsDevelopment())
+    // Under the unit's ProtectSystem=strict the default folder can't be written: keys would live in memory only and
+    // every restart would lose the saved secrets. Fail the deploy's health check instead.
+    throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");
+builder.Services.AddScoped<SettingsStore>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+// nginx (on the same machine) passes the client's address and https on. Only loopback proxies are trusted
+// (ForwardedHeadersOptions' default), so a client can't fake its address to dodge the log-in rate limit.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // 5 tries per 15 minutes from one address. An IPv6 client counts per /64, since one usually has the whole block.
+    options.AddPolicy(AdminEndpoints.LogInRateLimit, http => RateLimitPartition.GetFixedWindowLimiter(
+        AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(15) }));
+    // Test emails: 5 an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.
+    // Only logged-in requests count (the limiter runs before the admin check), so nobody else can use them up.
+    options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
+        ? RateLimitPartition.GetFixedWindowLimiter("test-email",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) })
+        : RateLimitPartition.GetNoLimiter("not-logged-in"));
+});
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
@@ -37,6 +73,9 @@ if (ObjectStorage.IsConfigured(builder.Configuration))
 }
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
+app.UseRateLimiter();
 
 // The launch profiles set this, so running the API locally brings the dev database up to date.
 // Tests, cloud sessions (scripts/migrate-dev-https.py) and production (the deploy's migrations bundle) don't use it.
@@ -86,6 +125,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 
 app.MapTemplates();
 app.MapStrategies();
+app.MapAdmin();
 
 // For the client to show which API it talks to.
 app.MapGet("/version", () => TypedResults.Ok(VersionResponse.Current))

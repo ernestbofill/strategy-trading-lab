@@ -88,7 +88,7 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | --- | --- | --- |
 | id | uuid PK | |
 | email | citext, unique, not null | Case-insensitive |
-| password_hash | text, null | ASP.NET Core Identity `PasswordHasher` hash. Null until real auth exists, except the seeded user Ernest (password `stl`, a placeholder) |
+| password_hash | text, null | ASP.NET Core Identity `PasswordHasher` hash. Null until real auth exists, except the seeded user Ernest (password `stl`, a placeholder), who is removed with log-in ([AUTH.md](AUTH.md)) |
 | email_verified_at | timestamptz, null | |
 | time_zone | text, not null | IANA name, e.g. `Europe/Madrid`. The overview goes out early morning in it |
 | locale | text, not null | `en` \| `ca` in v1 (BCP 47 tags). Picked by the user at sign-up, never guessed; editable in the account. Sets the language and formats of emails and notifications |

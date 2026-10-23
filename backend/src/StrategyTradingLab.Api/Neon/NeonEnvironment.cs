@@ -31,7 +31,11 @@ public static class NeonEnvironment
         return configuration;
     }
 
-    /// <summary>Turns a <c>postgresql://user:password@host/db?sslmode=require</c> URL into an Npgsql connection string.</summary>
+    /// <summary>
+    /// Turns a <c>postgresql://user:password@host/db?sslmode=require</c> URL into an Npgsql connection string. SSL is
+    /// required unless the URL says <c>sslmode=disable</c> (CI's local PostgreSQL); the URLs come only from the
+    /// server's environment.
+    /// </summary>
     public static string ToNpgsqlConnectionString(string databaseUrl)
     {
         var uri = new Uri(databaseUrl);
@@ -47,6 +51,7 @@ public static class NeonEnvironment
         };
 
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        if (query["sslmode"] == "disable") builder.SslMode = SslMode.Disable;
         if (query["channel_binding"] == "require") builder.ChannelBinding = ChannelBinding.Require;
 
         // The -pooler host is PgBouncer in transaction mode: skip the session reset it doesn't need.

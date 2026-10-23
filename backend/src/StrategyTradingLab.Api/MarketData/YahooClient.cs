@@ -69,6 +69,10 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         if (!result.TryGetProperty("timestamp", out var timestamps)) return []; // A symbol with no days in the range.
         var meta = result.GetProperty("meta");
         var offset = meta.TryGetProperty("gmtoffset", out var gmt) ? gmt.GetInt32() : 0;
+        // A bar's date is the day in the exchange's zone at that bar's time: the zone's offset changes with the clocks, while
+        // gmtoffset is only today's, which would date a summer-time bar a day early after the clocks go back.
+        var zone = meta.TryGetProperty("exchangeTimezoneName", out var zoneName) && zoneName.GetString() is { } id
+            && TimeZoneInfo.TryFindSystemTimeZoneById(id, out var found) ? found : null;
         // London stocks are quoted in pence (GBp) while the asset's currency is pounds.
         var scale = meta.TryGetProperty("currency", out var currency) && currency.GetString() == "GBp" ? 0.01m : 1m;
         var indicators = result.GetProperty("indicators");
@@ -94,7 +98,8 @@ public class YahooClient(HttpClient http) : IMarketDataSource
                 factor = adjustedClose.Value / close.Value;
             }
             factor *= scale;
-            var date = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(timestamps[i].GetInt64() + offset).UtcDateTime);
+            var at = DateTimeOffset.FromUnixTimeSeconds(timestamps[i].GetInt64());
+            var date = DateOnly.FromDateTime(zone is null ? at.UtcDateTime.AddSeconds(offset) : TimeZoneInfo.ConvertTime(at, zone).DateTime);
             var volume = Number(quote, "volume", i) ?? 0;
             var candle = new Candle(date, Round(open.Value * factor, adjusted), Round(high.Value * factor, adjusted), Round(low.Value * factor, adjusted), Round(close.Value * factor, adjusted), (long)volume);
             // Rounding can push a tiny price to 0, and a bad bar can have its low above its high: neither may reach the table's checks.

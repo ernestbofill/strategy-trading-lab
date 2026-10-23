@@ -748,3 +748,21 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023172056_IndexPricesByDate') THEN
+    CREATE INDEX ix_prices_daily_date ON prices_daily (date);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023172056_IndexPricesByDate') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261023172056_IndexPricesByDate', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

@@ -99,4 +99,27 @@ public class YahooClientTests
         Assert.False(state.Request());
         Assert.True(state.Running);
     }
+
+    [Fact]
+    public void A_summer_time_bar_keeps_its_date_after_the_clocks_go_back()
+    {
+        // 2026-10-22 23:00 UTC is 00:00 on the 23rd in London (BST). The zone's offset today (after 25 October) would be 0,
+        // which would date it the 22nd: the bar is dated by the zone's offset at its own time.
+        var json = "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"USD\",\"gmtoffset\":0,\"exchangeTimezoneName\":\"Europe/London\"},"
+            + "\"timestamp\":[1792710000],\"indicators\":{\"quote\":[{\"open\":[1.16],\"high\":[1.17],\"low\":[1.15],\"close\":[1.165],\"volume\":[0]}]}}],\"error\":null}}";
+
+        Assert.Equal(new DateOnly(2026, 10, 23), YahooClient.Parse(json, "EURUSD=X", adjusted: false)[0].Date);
+    }
+
+    [Fact]
+    public void A_request_that_lands_just_before_the_run_starts_does_not_run_it_twice()
+    {
+        var state = new PriceRefreshState();
+        state.Request();
+        state.Started(DateTimeOffset.UtcNow);
+        state.Finished(DateTimeOffset.UtcNow, []);
+
+        Assert.False(state.WaitForRequestAsync(default).IsCompleted);
+        Assert.True(state.Request());
+    }
 }

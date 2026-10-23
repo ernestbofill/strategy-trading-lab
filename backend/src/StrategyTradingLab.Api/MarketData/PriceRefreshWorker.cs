@@ -60,6 +60,8 @@ public class PriceRefreshState
     public void Started(DateTimeOffset now)
     {
         running = true;
+        // A request that landed after the worker woke for the timer left its count behind: it is this run.
+        requested.Wait(0);
         Interlocked.Exchange(ref pending, 0);
         last = last with { Started = now };
     }
@@ -95,6 +97,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 var values = await scope.ServiceProvider.GetRequiredService<Admin.SettingsStore>().ValuesAsync(stoppingToken);
                 var schedule = PriceSchedule.From(values);
                 if (schedule.Enabled) delay = firstWait ? options.Value.StartDelay : schedule.UntilNext(time.GetUtcNow());
+                firstWait = false; // Only once the schedule was read: a failed read keeps the start-up run for the retry.
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {
@@ -103,18 +106,19 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 delay = RetryAfterError;
                 failed = true;
             }
-            firstWait = false;
             state.Scheduled(delay == Timeout.InfiniteTimeSpan ? null : time.GetUtcNow() + delay);
 
             using var wait = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
             var timer = Task.Delay(delay, time, wait.Token);
             var asked = state.WaitForRequestAsync(wait.Token);
             var changed = state.WaitForChangeAsync(wait.Token);
-            var fired = await Task.WhenAny(timer, asked, changed);
+            await Task.WhenAny(timer, asked, changed);
             await wait.CancelAsync();
             if (stoppingToken.IsCancellationRequested) return;
-            if (fired == changed) continue; // The schedule changed: read it again.
-            if (fired == timer && failed) continue; // Only the retry after an error: read the schedule again.
+            // More than one signal can have completed at once, and WhenAny names only one: a request must never be lost
+            // (its count is used up), so it runs whatever else fired. A changed schedule or the retry only reads it again.
+            var run = asked.IsCompletedSuccessfully || (timer.IsCompletedSuccessfully && !failed && !changed.IsCompletedSuccessfully);
+            if (!run) continue;
 
             await RunAsync(stoppingToken);
         }

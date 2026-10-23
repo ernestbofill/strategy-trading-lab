@@ -301,6 +301,8 @@ One row per asset and trading day, from Yahoo, in the asset's currency, adjusted
 | open, high, low, close | numeric(14,4), not null | `> 0`, `low <= high` |
 | volume | bigint, not null | `>= 0`; 0 when Yahoo has none (indexes, rates) |
 
+Index on `date` alone, so the newest day is found without scanning the table.
+
 ### `fx_rates`
 
 Units of `quote` per one `base` on a day, from the day's close: `EUR`→`USD` is USD per EUR, the `fx_rate` of a trade. Only the euro as the base for now (`EURUSD=X`, `EURGBP=X`, `EURHKD=X`); other pairs are computed from two of these.

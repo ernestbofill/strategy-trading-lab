@@ -107,8 +107,12 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
             .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
         var days = await source.DailyAsync(symbol, fullHistory: latestStored is null, adjusted: false, cancellationToken);
         // The last month doesn't reach back to the stored days (a long outage): fetch it all, so no weeks are left missing.
+        var full = latestStored is null;
         if (latestStored is { } latest && days.Count > 0 && latest < days[0].Date)
+        {
             days = await source.DailyAsync(symbol, fullHistory: true, adjusted: false, cancellationToken);
+            full = true;
+        }
         if (days.Count == 0) throw new MarketDataException($"Yahoo returned no rates for {symbol}.");
 
         var from = days[0].Date;
@@ -118,6 +122,6 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         db.ChangeTracker.Clear();
-        return new RefreshResult($"{BaseCurrency}{quote}", latestStored is null ? RefreshOutcome.FullHistory : RefreshOutcome.Updated, days.Count);
+        return new RefreshResult($"{BaseCurrency}{quote}", full ? RefreshOutcome.FullHistory : RefreshOutcome.Updated, days.Count);
     }
 }

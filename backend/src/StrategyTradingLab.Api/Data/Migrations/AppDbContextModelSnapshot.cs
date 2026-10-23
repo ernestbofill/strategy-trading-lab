@@ -842,6 +842,9 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     b.HasKey("AssetId", "Date")
                         .HasName("pk_prices_daily");
 
+                    b.HasIndex("Date")
+                        .HasDatabaseName("ix_prices_daily_date");
+
                     b.ToTable("prices_daily", null, t =>
                         {
                             t.HasCheckConstraint("ck_prices_daily_prices", "open > 0 AND high > 0 AND low > 0 AND close > 0");

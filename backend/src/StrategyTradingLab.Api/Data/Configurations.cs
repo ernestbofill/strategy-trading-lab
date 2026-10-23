@@ -262,6 +262,7 @@ class PriceDailyConfiguration : IEntityTypeConfiguration<PriceDaily>
             table.HasCheckConstraint("ck_prices_daily_volume", "volume >= 0");
         });
         entity.HasKey(price => new { price.AssetId, price.Date });
+        entity.HasIndex(price => price.Date); // The admin page's newest day, without scanning the table.
         foreach (var column in new[] { nameof(PriceDaily.Open), nameof(PriceDaily.High), nameof(PriceDaily.Low), nameof(PriceDaily.Close) })
             entity.Property(column).HasColumnType(Money.Price);
         entity.HasOne<Asset>().WithMany()

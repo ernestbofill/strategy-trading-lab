@@ -95,14 +95,14 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
     // Test emails: 5 an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.
     // Only logged-in requests count (the limiter runs before the admin check), so nobody else can use them up.
+    options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
+        ? RateLimitPartition.GetFixedWindowLimiter("test-email",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) })
+        : RateLimitPartition.GetNoLimiter("not-logged-in"));
     // Yahoo checks: 30 an hour in all, admin only, so the page can't be used to hammer an unofficial endpoint.
     options.AddPolicy(AdminEndpoints.TestYahooRateLimit, http => AdminEndpoints.IsAdmin(http)
         ? RateLimitPartition.GetFixedWindowLimiter("test-yahoo",
             _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromHours(1) })
-        : RateLimitPartition.GetNoLimiter("not-logged-in"));
-    options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
-        ? RateLimitPartition.GetFixedWindowLimiter("test-email",
-            _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) })
         : RateLimitPartition.GetNoLimiter("not-logged-in"));
 });
 builder.Services.AddOpenApi();

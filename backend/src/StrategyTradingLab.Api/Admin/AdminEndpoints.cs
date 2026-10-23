@@ -164,14 +164,14 @@ public static class AdminEndpoints
         {
             // A stock fund and an exchange rate: the two kinds of data the refresh reads.
             var checks = new List<YahooCheck>();
-            foreach (var symbol in new[] { "SPY", "EURUSD=X" })
+            foreach (var (symbol, adjusted) in new[] { ("SPY", true), ("EURUSD=X", false) })
             {
                 var started = time.GetTimestamp();
                 YahooCheck Check(bool ok, DateOnly? day, decimal? close, string? problem) =>
                     new(symbol, ok, day, close, problem, (int)time.GetElapsedTime(started).TotalMilliseconds);
                 try
                 {
-                    var days = await source.DailyAsync(symbol, fullHistory: false, adjusted: false, cancellationToken);
+                    var days = await source.DailyAsync(symbol, fullHistory: false, adjusted: adjusted, cancellationToken);
                     checks.Add(days.Count == 0
                         ? Check(false, null, null, "Yahoo answered with no days.")
                         : Check(true, days[^1].Date, days[^1].Close, null));

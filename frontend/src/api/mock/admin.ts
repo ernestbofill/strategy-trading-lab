@@ -1,5 +1,5 @@
 import { InvalidValueError, UnauthorizedError } from '../errors'
-import type { AdminDatabase, AdminDatabases, AdminSetting, DatabaseName } from '../types'
+import type { AdminDatabase, AdminDatabases, AdminPrices, AdminSetting, DatabaseName, YahooCheck } from '../types'
 
 // MOCK: the admin page's settings, as the backend's Admin/SettingDefinitions.cs declares them. Password "STL".
 
@@ -19,6 +19,21 @@ const definitions: Definition[] = [
     default: null,
     secret: true,
   },
+  {
+    key: 'PRICES_SCHEDULE_ENABLED',
+    group: 'Prices',
+    description: 'Run the daily price refresh. Only one running copy may: the server. Off on a development computer.',
+    default: 'true',
+    secret: false,
+  },
+  { key: 'PRICES_TIME_ZONE', group: 'Prices', description: 'The time zone for the time below, e.g. Europe/Madrid.', default: 'Europe/Madrid', secret: false },
+  {
+    key: 'PRICES_DAILY_TIME',
+    group: 'Prices',
+    description: 'When the daily refresh starts, HH:MM (after the US close, which is 22:00 in Madrid).',
+    default: '22:30',
+    secret: false,
+  },
 ]
 
 /** The password only counts while these keep the values they had when it was saved, as in the API. */
@@ -34,6 +49,14 @@ const effective = (key: string) =>
   values.has(key) ? (values.get(key) ?? null) : (definitions.find((d) => d.key === key)?.default ?? null)
 const binding = () => boundToPassword.map(effective).join('\u001f')
 const passwordIsSet = () => password !== null && password.binding === binding()
+
+const isTimeZone = (zone: string) => {
+  try {
+    return Boolean(new Intl.DateTimeFormat('en', { timeZone: zone }))
+  } catch {
+    return false
+  }
+}
 
 const requireAdmin = () => {
   if (!loggedIn) throw new UnauthorizedError()
@@ -70,6 +93,9 @@ export function mockSetAdminSetting(key: string, value: string, shown?: Record<s
   if (key === 'SMTP_PORT' && !(Number.isInteger(port) && port >= 1 && port <= 65535))
     throw new InvalidValueError('Use a port from 1 to 65535.')
   if ((key === 'SMTP_USER' || key === 'SMTP_FROM') && !isEmail(v)) throw new InvalidValueError('Use one email address, e.g. you@gmail.com.')
+  if (key === 'PRICES_SCHEDULE_ENABLED' && v !== 'true' && v !== 'false') throw new InvalidValueError('Use true or false.')
+  if (key === 'PRICES_DAILY_TIME' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(v)) throw new InvalidValueError('Use HH:MM, e.g. 22:30.')
+  if (key === 'PRICES_TIME_ZONE' && !isTimeZone(v)) throw new InvalidValueError('Use a time zone name, e.g. Europe/Madrid.')
   if (key === 'SMTP_PASSWORD') {
     if (!shown || boundToPassword.some((k) => (shown[k] ?? null) !== effective(k)))
       throw new InvalidValueError('The mail settings changed since this page loaded. Reload, check them, then type the password again.')
@@ -114,4 +140,46 @@ export function mockSwitchDatabase(name: DatabaseName) {
   const database = databases.find((d) => d.name === name)!
   if (!database.host) throw new InvalidValueError(`The ${name} database has no URL: set ${database.variable} on the server.`)
   activeDatabase = name
+}
+
+// MOCK: the prices box, as Admin/AdminEndpoints.cs MapPrices. A refresh "takes" two seconds and updates everything.
+
+const prices: AdminPrices = {
+  running: false,
+  nextRun: null,
+  lastStarted: null,
+  lastFinished: null,
+  latestDay: '2026-10-22',
+  problems: [],
+  updated: 0,
+  fullHistory: 0,
+}
+
+export function mockAdminPrices(): AdminPrices {
+  requireAdmin()
+  const nextRun = new Date()
+  nextRun.setHours(22, 30, 0, 0)
+  if (nextRun.getTime() < Date.now()) nextRun.setDate(nextRun.getDate() + 1)
+  return { ...prices, nextRun: effective('PRICES_SCHEDULE_ENABLED') === 'false' ? null : nextRun.toISOString() }
+}
+
+export function mockRefreshPrices() {
+  requireAdmin()
+  if (prices.running) throw new InvalidValueError('A refresh is already running.')
+  prices.running = true
+  prices.lastStarted = new Date().toISOString()
+  setTimeout(() => {
+    prices.running = false
+    prices.lastFinished = new Date().toISOString()
+    prices.updated = 58
+    prices.fullHistory = 0
+  }, 2000)
+}
+
+export function mockTestYahoo(): YahooCheck[] {
+  requireAdmin()
+  return [
+    { symbol: 'SPY', ok: true, day: '2026-10-22', close: 612.34, problem: null, milliseconds: 310 },
+    { symbol: 'EURUSD=X', ok: true, day: '2026-10-23', close: 1.1634, problem: null, milliseconds: 280 },
+  ]
 }

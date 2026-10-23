@@ -28,6 +28,13 @@ public static class SettingDefinitions
         new("SMTP_PASSWORD", "Email",
             "The account's password: for Gmail, an app password. It only counts while the settings above stay as they were when it was saved.",
             Secret: true, BoundTo: ["SMTP_USER", "SMTP_HOST", "SMTP_PORT", "SMTP_FROM"]),
+
+        // The daily price refresh (MarketData/PriceRefreshWorker). The first value is what it uses until someone sets one here.
+        new("PRICES_SCHEDULE_ENABLED", "Prices", "Run the daily price refresh. Only one running copy may: the server. Off on a development computer.",
+            Default: "true", Validate: Bool),
+        new("PRICES_TIME_ZONE", "Prices", "The time zone for the time below, e.g. Europe/Madrid.", Default: "Europe/Madrid", Validate: TimeZone),
+        new("PRICES_DAILY_TIME", "Prices", "When the daily refresh starts, HH:MM (after the US close, which is 22:00 in Madrid).",
+            Default: "22:30", Validate: Time),
     ];
 
     const string GmailAccount = "nest.u333@gmail.com";
@@ -43,6 +50,15 @@ public static class SettingDefinitions
 
     static string? Host(string value) =>
         value.Length <= 253 && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-') ? null : "Use a server name, e.g. smtp.gmail.com.";
+
+    static string? Bool(string value) => value is "true" or "false" ? null : "Use true or false.";
+
+    static string? TimeZone(string value) =>
+        value.Length <= 64 && TimeZoneInfo.TryFindSystemTimeZoneById(value, out _) ? null : "Use a time zone name, e.g. Europe/Madrid.";
+
+    static string? Time(string value) => System.Text.RegularExpressions.Regex.IsMatch(value, @"^([01]\d|2[0-3]):[0-5]\d$")
+        ? null
+        : "Use HH:MM, e.g. 22:30.";
 
     static string? Port(string value) =>
         int.TryParse(value, out var port) && port is >= 1 and <= 65535 ? null : "Use a port from 1 to 65535.";

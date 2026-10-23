@@ -51,7 +51,7 @@ builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailWorker>();
 
-// Daily prices and exchange rates from Yahoo, refreshed once a day after the US close (PriceRefresh in appsettings).
+// Daily prices and exchange rates from Yahoo, refreshed on the schedule set on the admin page (PRICES_* settings).
 builder.Services.Configure<PriceRefreshOptions>(builder.Configuration.GetSection("PriceRefresh"));
 builder.Services.AddHttpClient<IMarketDataSource, YahooClient>(client =>
 {
@@ -95,6 +95,11 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
     // Test emails: 5 an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.
     // Only logged-in requests count (the limiter runs before the admin check), so nobody else can use them up.
+    // Yahoo checks: 30 an hour in all, admin only, so the page can't be used to hammer an unofficial endpoint.
+    options.AddPolicy(AdminEndpoints.TestYahooRateLimit, http => AdminEndpoints.IsAdmin(http)
+        ? RateLimitPartition.GetFixedWindowLimiter("test-yahoo",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromHours(1) })
+        : RateLimitPartition.GetNoLimiter("not-logged-in"));
     options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
         ? RateLimitPartition.GetFixedWindowLimiter("test-email",
             _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) })

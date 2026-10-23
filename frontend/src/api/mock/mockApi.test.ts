@@ -62,4 +62,16 @@ describe('mockApi database', () => {
     await mockApi.switchAdminDatabase('dev')
     expect((await mockApi.getVersion()).database).toBe('dev')
   })
+
+  it('checks the price schedule, tests Yahoo and refuses a second refresh while one runs', async () => {
+    await mockApi.adminLogIn('STL')
+
+    await expect(mockApi.setAdminSetting('PRICES_DAILY_TIME', '7:30')).rejects.toThrow('Use HH:MM')
+    await expect(mockApi.setAdminSetting('PRICES_TIME_ZONE', 'Mars/Base')).rejects.toThrow('time zone')
+    await mockApi.setAdminSetting('PRICES_DAILY_TIME', '22:45')
+    expect((await mockApi.testAdminYahoo()).every((c) => c.ok)).toBe(true)
+    await mockApi.refreshAdminPrices()
+    expect((await mockApi.getAdminPrices()).running).toBe(true)
+    await expect(mockApi.refreshAdminPrices()).rejects.toThrow('already running')
+  })
 })

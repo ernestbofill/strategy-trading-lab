@@ -12,6 +12,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
+import { PricesBox } from './PricesBox'
 
 type State =
   | { status: 'loading' }
@@ -78,6 +79,7 @@ export function AdminSettings() {
                 shown={shownValues(state.settings ?? [])} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
             ))}
             {group === 'Email' && <TestEmail onLoggedOut={() => setState({ status: 'logIn' })} />}
+            {group === 'Prices' && <PricesBox onLoggedOut={() => setState({ status: 'logIn' })} />}
           </section>
         ))}
     </Screen>

@@ -159,14 +159,4 @@ public class PriceRefresherTests
             await db.FxRates.Where(r => r.Quote == "TST").ExecuteDeleteAsync();
         }
     }
-
-    [Fact]
-    public void The_daily_run_waits_until_the_next_22_utc()
-    {
-        var at = new TimeOnly(22, 0);
-
-        Assert.Equal(TimeSpan.FromHours(2), PriceRefreshWorker.UntilNext(new DateTimeOffset(2026, 10, 23, 20, 0, 0, TimeSpan.Zero), at));
-        Assert.Equal(TimeSpan.FromHours(23), PriceRefreshWorker.UntilNext(new DateTimeOffset(2026, 10, 23, 23, 0, 0, TimeSpan.Zero), at));
-        Assert.Equal(TimeSpan.FromHours(24), PriceRefreshWorker.UntilNext(new DateTimeOffset(2026, 10, 23, 22, 0, 0, TimeSpan.Zero), at));
-    }
 }

@@ -1,5 +1,5 @@
 import { InvalidValueError, UnauthorizedError } from '../errors'
-import type { AdminSetting } from '../types'
+import type { AdminDatabase, AdminDatabases, AdminSetting, DatabaseName } from '../types'
 
 // MOCK: the admin page's settings, as the backend's Admin/SettingDefinitions.cs declares them. Password "STL".
 
@@ -91,4 +91,27 @@ export function mockSendTestEmail(): string {
   const account = effective('SMTP_USER')
   if (!account || !passwordIsSet()) throw new InvalidValueError("Email isn't set up: set the account, the server and the password first.")
   return account
+}
+
+// MOCK: the database box, as the backend's Admin/DatabaseSwitch.cs. The mock stands in for a local API: its own
+// database is dev, and both URLs are "in the environment", so the switch can be tried. Every database "answers".
+
+const databases: AdminDatabase[] = [
+  { name: 'dev', variable: 'DATABASE_URL', host: 'ep-mock-dev-pooler.eu-central-1.aws.neon.tech' },
+  { name: 'production', variable: 'DATABASE_URL_PRODUCTION', host: 'ep-mock-prod-pooler.eu-central-1.aws.neon.tech' },
+]
+let activeDatabase: DatabaseName = 'dev'
+
+export const mockActiveDatabase = () => activeDatabase
+
+export function mockAdminDatabases(): AdminDatabases {
+  requireAdmin()
+  return { active: activeDatabase, home: 'dev', databases }
+}
+
+export function mockSwitchDatabase(name: DatabaseName) {
+  requireAdmin()
+  const database = databases.find((d) => d.name === name)!
+  if (!database.host) throw new InvalidValueError(`The ${name} database has no URL: set ${database.variable} on the server.`)
+  activeDatabase = name
 }

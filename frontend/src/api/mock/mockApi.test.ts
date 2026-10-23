@@ -49,3 +49,16 @@ describe('mockApi admin', () => {
     await expect(mockApi.setAdminSetting('SMTP_PORT', '0')).rejects.toThrow('Use a port from 1 to 65535.')
   })
 })
+
+describe('mockApi database', () => {
+  it('switches, and the version follows', async () => {
+    await mockApi.adminLogIn('STL')
+
+    await mockApi.switchAdminDatabase('production')
+
+    expect((await mockApi.getVersion()).database).toBe('production')
+    expect((await mockApi.getAdminDatabases()).active).toBe('production')
+    await mockApi.switchAdminDatabase('dev')
+    expect((await mockApi.getVersion()).database).toBe('dev')
+  })
+})

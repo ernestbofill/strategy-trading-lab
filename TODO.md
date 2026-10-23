@@ -6,7 +6,8 @@
 - [x] Decide: a fixed dev user to save strategies before sign-up exists, or build sign-up first? Decided: one fixed user, Ernest (#24). (#20)
 - [x] Decide: the price data provider (commercial terms, cost at many free users). (#20)
       Yahoo it is.
-- [ ] Mac: install .NET 10 (`dotnet` isn't on the PATH, so backend work here can't build or test). (#20)
+- [x] Mac: install .NET 10. Claude installed it in `~/.dotnet` (no sudo). Optional: add `export PATH=$HOME/.dotnet:$PATH` and `export DOTNET_ROOT=$HOME/.dotnet` to `~/.zshrc` for your own terminal. (#20, #36)
+- [ ] After #36 deploys: open `/admin/prices` (log in on the admin page first) a few minutes after the deploy, and check the first refresh finished with no failures; if Yahoo blocks the Oracle server's address, tell Claude. (#36)
 
 - [x] Decide who reviews the Catalan copy: AI and Ernest (#22)
 - [x] Check the frontend deploy after #21 shows the new disclaimers. (#21)

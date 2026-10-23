@@ -1,0 +1,63 @@
+using StrategyTradingLab.Api.MarketData;
+
+namespace StrategyTradingLab.Api.Tests;
+
+/// <summary>Reading Yahoo's chart answer. No network: the JSON is what the endpoint returns (a stock, recorded and cut down).</summary>
+public class YahooClientTests
+{
+    // 2026-10-19 13:30 UTC, then the next day, in New York time (gmtoffset -4h): both are the same dates there.
+    const string Stock = """
+        {"chart":{"result":[{"meta":{"currency":"USD","symbol":"ZS","gmtoffset":-14400},
+        "timestamp":[1792416600,1792503000,1792589400],
+        "indicators":{"quote":[{"open":[209.91,210.81,214.5],"high":[214.88,215.9,232.06],"low":[208.01,207.23,214.5],
+                                "close":[212.53,214.51,231.33],"volume":[1694500,1341500,2764900]}],
+                      "adjclose":[{"adjclose":[106.265,214.51,231.33]}]}}],"error":null}}
+        """;
+
+    [Fact]
+    public void Adjusted_candles_scale_the_prices_by_adjclose_over_close_and_use_the_exchange_date()
+    {
+        var candles = YahooClient.Parse(Stock, "ZS", adjusted: true);
+
+        Assert.Equal(3, candles.Count);
+        Assert.Equal(new DateOnly(2026, 10, 19), candles[0].Date);
+        Assert.Equal(106.265m, candles[0].Close);
+        Assert.Equal(104.955m, candles[0].Open); // 209.91 × 0.5
+        Assert.Equal(214.51m, candles[1].Close); // Factor 1.
+        Assert.Equal(1341500, candles[1].Volume);
+    }
+
+    [Fact]
+    public void Unadjusted_candles_keep_the_raw_prices()
+    {
+        var candles = YahooClient.Parse(Stock, "ZS", adjusted: false);
+
+        Assert.Equal(212.53m, candles[0].Close);
+    }
+
+    [Fact]
+    public void A_day_without_prices_is_left_out_and_a_missing_volume_is_zero()
+    {
+        var json = """
+            {"chart":{"result":[{"meta":{"gmtoffset":0},"timestamp":[1792416600,1792503000],
+            "indicators":{"quote":[{"open":[1.1,null],"high":[1.2,null],"low":[1.0,null],"close":[1.15,null],"volume":[null,500]}]}}],"error":null}}
+            """;
+
+        var candles = YahooClient.Parse(json, "EURUSD=X", adjusted: false);
+
+        var only = Assert.Single(candles);
+        Assert.Equal(1.15m, only.Close);
+        Assert.Equal(0, only.Volume);
+    }
+
+    [Fact]
+    public void A_symbol_with_no_days_gives_no_candles() =>
+        Assert.Empty(YahooClient.Parse("""{"chart":{"result":[{"meta":{"gmtoffset":0},"indicators":{"quote":[{}]}}],"error":null}}""", "X", true));
+
+    [Theory]
+    [InlineData("""{"chart":{"result":null,"error":{"code":"Not Found","description":"No data found, symbol may be delisted"}}}""")]
+    [InlineData("not json")]
+    [InlineData("""{"unexpected":true}""")]
+    public void An_error_or_an_unexpected_answer_is_a_market_data_error(string json) =>
+        Assert.Throws<MarketDataException>(() => YahooClient.Parse(json, "BAD", true));
+}

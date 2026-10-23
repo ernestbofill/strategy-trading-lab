@@ -2,7 +2,11 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.MarketData;
 
 namespace StrategyTradingLab.Api.Admin;
 
@@ -19,6 +23,10 @@ public record TestEmailSent(string SentTo);
 public record AdminDatabases(DatabaseName Active, DatabaseName Home, IReadOnlyList<DatabaseInfo> Databases);
 
 public record DatabaseChoice(string Name);
+
+/// <summary>The prices box: whether the daily refresh runs, the last run, and the newest stored day.</summary>
+public record AdminPrices(bool Enabled, bool Running, DateTimeOffset? LastStarted, DateTimeOffset? LastFinished,
+    DateOnly? LatestDay, IReadOnlyList<RefreshResult> Problems, int Updated, int FullHistory);
 
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
@@ -64,6 +72,7 @@ public static class AdminEndpoints
 
         var settings = group.MapGroup("/settings").AddEndpointFilter(RequireAdmin);
         MapDatabase(group);
+        MapPrices(group);
 
         // Only ever to the account itself: with the page behind a fixed password, an address typed here would let
         // anyone who knows it send mail from the account.
@@ -128,6 +137,28 @@ public static class AdminEndpoints
     /// first (see <see cref="DatabaseSwitch"/>). Outside Development it is refused while the admin password is the
     /// default, which anyone can read in this repo.
     /// </summary>
+    static void MapPrices(RouteGroupBuilder group)
+    {
+        var prices = group.MapGroup("/prices").AddEndpointFilter(RequireAdmin);
+
+        prices.MapGet("/", async (PriceRefreshState state, IOptions<PriceRefreshOptions> options, AppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var latest = await db.Prices.OrderByDescending(p => p.Date).Select(p => (DateOnly?)p.Date).FirstOrDefaultAsync(cancellationToken);
+            var results = state.LastResults;
+            return new AdminPrices(options.Value.Enabled, state.Running, state.LastStarted, state.LastFinished, latest,
+                [.. results.Where(r => r.Outcome == RefreshOutcome.Failed)],
+                results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory));
+        })
+        .WithSummary("The price refresh: the last run and what failed in it.");
+
+        prices.MapPost("/refresh", Results<Accepted, Conflict<string>> (PriceRefreshState state, IOptions<PriceRefreshOptions> options) =>
+            !options.Value.Enabled ? TypedResults.Conflict("The price refresh is off here (PriceRefresh:Enabled).")
+            : state.Request() ? TypedResults.Accepted((string?)null)
+            : TypedResults.Conflict("A refresh is already running."))
+        .WithSummary("Refreshes the prices now, in the background.");
+    }
+
     static void MapDatabase(RouteGroupBuilder group)
     {
         var database = group.MapGroup("/database").AddEndpointFilter(RequireAdmin);

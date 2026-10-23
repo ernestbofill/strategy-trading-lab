@@ -7,6 +7,7 @@ const strategy = (name: string): NewStrategy => ({
   templateKey: 'dip',
   name,
   mode: 'simulation',
+  currency: 'EUR',
   budget: { amount: 3000, step: 100, maxSteps: 5 },
   assetIds: [],
 })

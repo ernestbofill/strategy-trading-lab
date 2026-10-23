@@ -34,13 +34,13 @@ public sealed class TestEmailLimit : IDisposable
 
 /// <summary>
 /// The admin settings page's API, for the owner only: a logged-in user whose role is <see cref="UserRole.Owner"/>.
-/// 401 without a log-in, 403 for any other role.
+/// 401 without a log-in, 403 for any other role (the <see cref="Policies.Owner"/> policy).
 /// </summary>
 public static class AdminEndpoints
 {
     public static void MapAdmin(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/admin").WithTags("Admin").AddEndpointFilter(RequireAdmin);
+        var group = app.MapGroup("/admin").WithTags("Admin").RequireAuthorization(Policies.Owner);
 
         var settings = group.MapGroup("/settings");
         MapDatabase(group);
@@ -140,14 +140,6 @@ public static class AdminEndpoints
         var d = setting.Definition;
         return new(d.Key, d.Group, d.Description, d.Default, d.Secret, d.Secret ? null : setting.Value,
             setting.Value is not null, setting.Source);
-    }
-
-    static async ValueTask<object?> RequireAdmin(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
-    {
-        var http = context.HttpContext;
-        var user = await http.RequestServices.GetRequiredService<Sessions>().CurrentAsync(http.RequestAborted);
-        if (user is null) return TypedResults.Unauthorized();
-        return user.Role == UserRole.Owner ? await next(context) : TypedResults.StatusCode(StatusCodes.Status403Forbidden);
     }
 
     /// <summary>The rate limit key for a client: its IPv4 address, or its IPv6 /64.</summary>

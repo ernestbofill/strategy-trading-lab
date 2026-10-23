@@ -53,6 +53,7 @@ builder.Services.AddHostedService<EmailWorker>();
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Sessions>();
+builder.Services.AddSessionAuthorization();
 builder.Services.AddSingleton<LogInThrottle>();
 builder.Services.AddSingleton<TestEmailLimit>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -106,6 +107,7 @@ app.Use(async (http, next) =>
     await next(http);
 });
 app.UseRateLimiter();
+app.UseAuthorization();
 
 // A database switched to on the admin page must still have every migration after a release. In the background, so
 // the API starts listening (and passes the deploy's health check) without waiting on it.

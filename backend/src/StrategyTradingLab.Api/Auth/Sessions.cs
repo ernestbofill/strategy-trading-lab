@@ -119,12 +119,9 @@ public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor a
     void DeleteCookie() => Http.Response.Cookies.Delete(CookieName, new CookieOptions { Path = "/" });
 }
 
-/// <summary>Endpoint filter: 401 without a logged-in user.</summary>
+/// <summary>401 without a logged-in user (see <see cref="SessionAuthentication"/>).</summary>
 public static class RequireUserExtensions
 {
     public static TBuilder RequireUser<TBuilder>(this TBuilder builder) where TBuilder : IEndpointConventionBuilder =>
-        builder.AddEndpointFilter(async (context, next) =>
-            await context.HttpContext.RequestServices.GetRequiredService<Sessions>().CurrentAsync(context.HttpContext.RequestAborted) is null
-                ? TypedResults.Unauthorized()
-                : await next(context));
+        builder.RequireAuthorization();
 }

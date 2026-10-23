@@ -57,4 +57,28 @@ describe('AccountProvider', () => {
     expect(answer).toBeUndefined()
     expect(result.current.state).toEqual({ status: 'ready', account: account('a@example.com') })
   })
+
+  it('answers an overtaken refresh with the latest result, the one the state shows', async () => {
+    const logIn = deferred<Account | null>()
+    const recheck = deferred<Account | null>()
+    vi.spyOn(api, 'getAccount')
+      .mockResolvedValueOnce(null)
+      .mockReturnValueOnce(logIn.promise)
+      .mockReturnValueOnce(recheck.promise)
+    const { result } = renderHook(() => useAccount(), { wrapper: AccountProvider })
+    await waitFor(() => expect(result.current.state.status).toBe('ready'))
+
+    let first: Promise<unknown> = Promise.resolve()
+    act(() => {
+      first = result.current.refresh() // After the log-in.
+      void result.current.refresh() // The tab came back into view meanwhile.
+    })
+    await act(async () => {
+      logIn.resolve(account('a@example.com'))
+      recheck.resolve(null)
+    })
+
+    await expect(first).resolves.toBeNull()
+    expect(result.current.state).toEqual({ status: 'ready', account: null })
+  })
 })

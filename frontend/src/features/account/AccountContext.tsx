@@ -30,14 +30,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   // so a refresh compares against the latest owner, not the one of its render.
   const [owner, setOwner] = useState<string | null>(null)
   const ownerRef = useRef<string | null>(null)
-  /** Bumped by every refresh and clear: only the latest one's answer counts, so an older /me can't undo a log-in. */
+  /**
+   * Bumped by every refresh and clear: only the latest one's answer counts, so an older /me can't undo a log-in. An
+   * overtaken refresh answers with the latest one's result, so its caller acts on what the state shows.
+   */
   const latest = useRef(0)
+  const latestResult = useRef<Promise<Account | null | undefined>>(Promise.resolve(null))
 
-  const refresh = useCallback(async () => {
-    const mine = ++latest.current
+  const check = useCallback(async (mine: number): Promise<Account | null | undefined> => {
     try {
       const account = await api.getAccount()
-      if (mine !== latest.current) return account
+      if (mine !== latest.current) return latestResult.current
       if (!account) invalidateAll()
       else {
         rememberLoggedIn()
@@ -50,14 +53,22 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       setState({ status: 'ready', account })
       return account
     } catch {
+      if (mine !== latest.current) return latestResult.current
       // A failed re-check keeps what is known; only a first check that fails shows the error.
-      if (mine === latest.current) setState((s) => (s.status === 'ready' ? s : { status: 'error' }))
+      setState((s) => (s.status === 'ready' ? s : { status: 'error' }))
       return undefined
     }
   }, [])
 
+  const refresh = useCallback(() => {
+    const result = check(++latest.current)
+    latestResult.current = result
+    return result
+  }, [check])
+
   const clear = useCallback(() => {
     latest.current++
+    latestResult.current = Promise.resolve(null)
     invalidateAll()
     setState({ status: 'ready', account: null })
   }, [])

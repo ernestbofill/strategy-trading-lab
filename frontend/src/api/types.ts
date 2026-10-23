@@ -182,10 +182,10 @@ export type Locale = 'en' | 'ca'
 /** The ISO code of a currency a user can pick (see `CURRENCIES` in `lib/format.ts`). */
 export type Currency = 'EUR' | 'USD' | 'GBP'
 
-/** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
 /** What an account may do: the owner runs the app (the admin page), a vip is invited, a user is everyone else. */
 export type Role = 'user' | 'vip' | 'owner'
 
+/** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
 export interface Account {
   email: string
   emailVerified: boolean

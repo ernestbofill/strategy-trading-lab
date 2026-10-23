@@ -7,9 +7,9 @@ Strategy Trading Lab (the productized STAB) is a strategy lab and a monitoring s
 - **Simulation**: the app trades on paper, on real prices, and shows how the strategy does from today. Nothing happens outside the app.
 - **Live**: the user follows the strategy with real money at their own broker. The app sends each signal, the user says whether they acted on it or skipped it, and the app records those trades and tracks the results.
 
-There is no broker sync in either mode. The app never places orders and never reads the user's broker account: in live mode it only knows what the user confirms. It gives no trading advice. The regulatory background is in `claude/regulation-spain-eu.md`; the wording rules that follow from it are in "Wording rules" below.
+There is no broker sync in either mode. The app never places orders and never reads the user's broker account: in live mode it only knows what the user confirms. It gives no trading advice. The regulatory background is in `regulation-spain-eu.md`; the wording rules that follow from it are in "Wording rules" below.
 
-The screens are drawn in the [Strategy Trading Lab wireframes · Cyberpunk](../wireframes/), in the [Cyberpunk design system](../design-system/cyberpunk/). The full screen-by-screen spec with final copy, for the implementation agent, is `claude/strategy-trading-lab-app-spec.md`. Where this doc and the wireframes disagreed, the wireframes won (Oct 14) and this doc was brought in line.
+The screens are drawn in the [Strategy Trading Lab wireframes · Cyberpunk](../wireframes/), in the [Cyberpunk design system](../design-system/cyberpunk/). The full screen-by-screen spec with final copy, for the implementation agent, is `strategy-trading-lab-app-spec.md`. Where this doc and the wireframes disagreed, the wireframes won (Oct 14) and this doc was brought in line.
 
 ## Words we use
 
@@ -337,7 +337,7 @@ Still to design:
 
 ## Open questions
 
-- [ ] **Regulation.** See `claude/regulation-spain-eu.md`. Live signals stay outside "investment advice" only if they are the result of rules the user chose, use nothing about the user's circumstances and aren't presented as suitable. The wording rules above support that. For the legal review: "Find the next Nvidia" (brand name, hints at exceptional returns), "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists (still our content), and the AI comparison page (results by AI model, with no stock ranking).
+- [ ] **Regulation.** See `regulation-spain-eu.md`. Live signals stay outside "investment advice" only if they are the result of rules the user chose, use nothing about the user's circumstances and aren't presented as suitable. The wording rules above support that. For the legal review: "Find the next Nvidia" (brand name, hints at exceptional returns), "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists (still our content), and the AI comparison page (results by AI model, with no stock ranking).
 - [ ] **Anonymous or pseudonymous?** Under GDPR, data is only anonymous if it can't be linked back to the user by anyone, including us. Keeping shared rounds in a separate store with no account ID (as above) gets close; anything that keeps a link, even internally, is pseudonymous and stays personal data, with access and deletion rights. Decide which before building, and word the consent box to match. The consent text and privacy policy should get the same legal look.
 - [ ] **Edited prompts.** Rounds from users who edited the prompt are less comparable. Keep them in the comparison, keep them apart, or leave them out?
 - [ ] **The suggested prompt.** Who writes and maintains it, how is it versioned (users who edited theirs keep their own), and how do we test it across ChatGPT, Claude and Gemini so the answer format is reliable? The POC's 0-10 news sentiment scoring is a starting point for the criteria. The shared rounds will show which models follow the format.

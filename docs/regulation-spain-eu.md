@@ -2,7 +2,7 @@
 
 Oct 13, 2026 · @Ernest
 
-This note covers how Strategy Trading Lab (simulation and live modes, as described in `claude/stab-product-user-journey.md`) fits the EU and Spanish rules on investment services. It also covers what changes if the app grows and makes money. It is research, not legal advice. Before charging money, get a written opinion from a Spanish securities lawyer. The questions to bring are at the end.
+This note covers how Strategy Trading Lab (simulation and live modes, as described in `stab-product-user-journey.md`) fits the EU and Spanish rules on investment services. It also covers what changes if the app grows and makes money. It is research, not legal advice. Before charging money, get a written opinion from a Spanish securities lawyer. The questions to bring are at the end.
 
 ## The short answer
 

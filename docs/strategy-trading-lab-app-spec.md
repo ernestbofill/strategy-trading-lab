@@ -8,7 +8,7 @@ This is the brief for the agent building the Strategy Trading Lab app. It descri
 
 - **Wireframes:** [Strategy Trading Lab wireframes · Cyberpunk](../wireframes/). Their source files are one `.dc.html` file per screen (named in the table in section 4) plus `canvas.json`, which lists the screens and the designer's notes. They are in the design tool's own format and don't run on their own, but their markup shows each screen's layout, copy and interactions.
 - **Visual style:** use the [Cyberpunk design system](../design-system/cyberpunk/).
-- **Product background:** `claude/stab-product-user-journey.md`. **Regulation:** `claude/regulation-spain-eu.md`.
+- **Product background:** `stab-product-user-journey.md`. **Regulation:** `regulation-spain-eu.md`.
 - **Strategy logic:** already exists in the POC (`ernestbofill/trading-strategies-bot`, see `docs/PLAN.md`).
 
 **How to read this spec.**
@@ -607,7 +607,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 
 ## 10. Open questions
 
-- **Regulation.** See `claude/regulation-spain-eu.md`. For the legal review: the taglines "Find the next Nvidia" (brand name, hints at exceptional returns) and "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists, and the AI comparison page.
+- **Regulation.** See `regulation-spain-eu.md`. For the legal review: the taglines "Find the next Nvidia" (brand name, hints at exceptional returns) and "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists, and the AI comparison page.
 - **Anonymous or pseudonymous AI data.** Decide before building, and word the consent box to match.
 - **Edited prompts** in the AI comparison: keep, keep apart, or leave out?
 - **The suggested prompt:** who writes and versions it, and how it's tested across ChatGPT, Claude and Gemini.

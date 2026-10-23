@@ -72,7 +72,7 @@ Local work and the tests sign up like anyone else: with no `SMTP_*` variables th
 ## Slices
 
 1. **Backend**: tables, `ICurrentUser`, the endpoints above, rate limits, forwarded headers, `LogEmailSender`, the removal of the seeded user, and tests (hash, token expiry and reuse, lock, enumeration-safe answers, 401 on every protected route). High risk: an `opus` review and a second round after any real finding.
-2. **Frontend**: Sign-up, Log-in, Forgot and Reset password, the check-your-email notice, the start-up check, a guard that sends visitors to Log-in and back, the 401 handling, the mock backend, and the account page's first version.
+2. **Frontend**: Sign-up, Log-in, Forgot and Reset password, the check-your-email notice, the start-up check, a guard that sends visitors to Log-in and back, the 401 handling, and the account page's first version.
 3. **Email**: the SMTP sender (Gmail, as in the POC). Ernest puts the five `SMTP_*` variables in `/etc/strategy-trading-lab/api.env` on the server and in `.env.local` for local work. Until then the links only reach the log. Small enough to ride with slice 1 if the variables are ready.
 
 ## The admin page

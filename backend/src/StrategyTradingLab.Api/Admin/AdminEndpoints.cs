@@ -120,7 +120,7 @@ public static class AdminEndpoints
             if (error is not null) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["value"] = [error] });
 
             var saved = await store.SetAsync(definition, value, request.Expected, cancellationToken);
-            if (saved && key.StartsWith("PRICES_")) prices.ScheduleChanged();
+            if (saved && IsPriceSetting(key)) prices.ScheduleChanged();
             return saved
                 ? TypedResults.NoContent()
                 : TypedResults.Conflict("The mail settings changed since this page loaded. Reload, check them, then type the password again.");
@@ -133,11 +133,13 @@ public static class AdminEndpoints
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
             if (clear == true) await store.ClearAsync(definition, cancellationToken);
             else await store.ResetAsync(key, cancellationToken);
-            if (key.StartsWith("PRICES_")) prices.ScheduleChanged();
+            if (IsPriceSetting(key)) prices.ScheduleChanged();
             return TypedResults.NoContent();
         })
         .WithSummary("Back to the server's value or the default; with ?clear=true, no value at all.");
     }
+
+    static bool IsPriceSetting(string key) => key.StartsWith("PRICES_");
 
     /// <summary>The prices box: the last refresh, a button to run it now, and a check that Yahoo answers.</summary>
     static void MapPrices(RouteGroupBuilder group)
@@ -165,17 +167,18 @@ public static class AdminEndpoints
             foreach (var symbol in new[] { "SPY", "EURUSD=X" })
             {
                 var started = time.GetTimestamp();
+                YahooCheck Check(bool ok, DateOnly? day, decimal? close, string? problem) =>
+                    new(symbol, ok, day, close, problem, (int)time.GetElapsedTime(started).TotalMilliseconds);
                 try
                 {
                     var days = await source.DailyAsync(symbol, fullHistory: false, adjusted: false, cancellationToken);
-                    var ms = (int)time.GetElapsedTime(started).TotalMilliseconds;
                     checks.Add(days.Count == 0
-                        ? new YahooCheck(symbol, false, null, null, "Yahoo answered with no days.", ms)
-                        : new YahooCheck(symbol, true, days[^1].Date, days[^1].Close, null, ms));
+                        ? Check(false, null, null, "Yahoo answered with no days.")
+                        : Check(true, days[^1].Date, days[^1].Close, null));
                 }
                 catch (Exception error) when (error is not OperationCanceledException)
                 {
-                    checks.Add(new YahooCheck(symbol, false, null, null, error.Message, (int)time.GetElapsedTime(started).TotalMilliseconds));
+                    checks.Add(Check(false, null, null, error.Message));
                 }
             }
             return checks;

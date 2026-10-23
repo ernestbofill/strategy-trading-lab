@@ -10,7 +10,7 @@ const when = (iso: string | null) =>
 /** The daily price refresh: when it ran and runs, a button to run it now, and a check that Yahoo answers. */
 export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
   const [prices, setPrices] = useState<AdminPrices | null>(null)
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const [checks, setChecks] = useState<YahooCheck[] | null>(null)
   const [testing, setTesting] = useState(false)
 
@@ -48,7 +48,7 @@ export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
       await load()
     } catch (e) {
       if (e instanceof UnauthorizedError) return onLoggedOut()
-      setMessage({ ok: false, text: e instanceof InvalidValueError ? e.message : "Couldn't start it. Try again." })
+      setMessage(e instanceof InvalidValueError ? e.message : "Couldn't start it. Try again.")
     }
   }
 
@@ -60,10 +60,7 @@ export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
       setChecks(await api.testAdminYahoo())
     } catch (e) {
       if (e instanceof UnauthorizedError) return onLoggedOut()
-      setMessage({
-        ok: false,
-        text: e instanceof TooManyTriesError ? 'Too many tests. Try again in an hour.' : "Couldn't run the test. Try again.",
-      })
+      setMessage(e instanceof TooManyTriesError ? 'Too many tests. Try again in an hour.' : "Couldn't run the test. Try again.")
     } finally {
       setTesting(false)
     }
@@ -103,8 +100,8 @@ export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
           </p>
         ))}
         {message && (
-          <p role="alert" className={message.ok ? styles.done : styles.error}>
-            {message.text}
+          <p role="alert" className={styles.error}>
+            {message}
           </p>
         )}
       </div>

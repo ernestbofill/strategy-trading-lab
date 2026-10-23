@@ -40,9 +40,9 @@ public static class AdminEndpoints
 {
     public static void MapAdmin(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/admin").WithTags("Admin");
+        var group = app.MapGroup("/admin").WithTags("Admin").AddEndpointFilter(RequireAdmin);
 
-        var settings = group.MapGroup("/settings").AddEndpointFilter(RequireAdmin);
+        var settings = group.MapGroup("/settings");
         MapDatabase(group);
 
         // Only ever to the account itself, so the page can't be used to send mail from it to anyone.
@@ -67,7 +67,6 @@ public static class AdminEndpoints
                 return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
             }
         })
-        .AddEndpointFilter(RequireAdmin)
         .WithSummary("Sends a test email to the mail account itself, with the settings as they are now.");
 
         settings.MapGet("/", async (SettingsStore store, CancellationToken cancellationToken) =>
@@ -109,7 +108,7 @@ public static class AdminEndpoints
     /// </summary>
     static void MapDatabase(RouteGroupBuilder group)
     {
-        var database = group.MapGroup("/database").AddEndpointFilter(RequireAdmin);
+        var database = group.MapGroup("/database");
 
         database.MapGet("/", (DatabaseSwitch databases) => new AdminDatabases(databases.Active, databases.Home, databases.Databases()))
         .WithSummary("Which database the API uses, and each one's server variable and host.");

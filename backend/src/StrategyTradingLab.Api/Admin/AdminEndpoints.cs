@@ -156,8 +156,10 @@ public static class AdminEndpoints
         })
         .WithSummary("The price refresh: the next and last runs and what failed in the last one.");
 
-        prices.MapPost("/refresh", Results<Accepted, Conflict<string>> (PriceRefreshState state) =>
-            state.Request() ? TypedResults.Accepted((string?)null) : TypedResults.Conflict("A refresh is already running."))
+        prices.MapPost("/refresh", Results<Accepted, Conflict<string>> (PriceRefreshState state, DatabaseSwitch databases) =>
+            databases.Active != databases.Home ? TypedResults.Conflict("The API is switched to another database: switch back to refresh the prices.")
+            : state.Request() ? TypedResults.Accepted((string?)null)
+            : TypedResults.Conflict("A refresh is already running."))
         .WithSummary("Refreshes the prices now, in the background, whatever the schedule says.");
 
         prices.MapPost("/test", async (IMarketDataSource source, TimeProvider time, CancellationToken cancellationToken) =>

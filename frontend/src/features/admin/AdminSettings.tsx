@@ -35,6 +35,8 @@ export function AdminSettings() {
     }
   }, [])
 
+  const loggedOut = useCallback(() => setState({ status: 'logIn' }), [])
+
   const logOut = async () => {
     await api.adminLogOut()
     setState({ status: 'logIn' })
@@ -79,7 +81,8 @@ export function AdminSettings() {
                 shown={shownValues(state.settings ?? [])} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
             ))}
             {group === 'Email' && <TestEmail onLoggedOut={() => setState({ status: 'logIn' })} />}
-            {group === 'Prices' && <PricesBox onLoggedOut={() => setState({ status: 'logIn' })} />}
+            {/* Keyed by the schedule, so the box asks again (next run) after a save. */}
+            {group === 'Prices' && <PricesBox key={settings.map((s) => s.value).join('|')} onLoggedOut={loggedOut} />}
           </section>
         ))}
     </Screen>

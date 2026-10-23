@@ -97,7 +97,6 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 var values = await scope.ServiceProvider.GetRequiredService<Admin.SettingsStore>().ValuesAsync(stoppingToken);
                 var schedule = PriceSchedule.From(values);
                 if (schedule.Enabled) delay = firstWait ? options.Value.StartDelay : schedule.UntilNext(time.GetUtcNow());
-                firstWait = false; // Only once the schedule was read: a failed read keeps the start-up run for the retry.
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {
@@ -117,8 +116,9 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             if (stoppingToken.IsCancellationRequested) return;
             // More than one signal can have completed at once, and WhenAny names only one: a request must never be lost
             // (its count is used up), so it runs whatever else fired. A changed schedule or the retry only reads it again.
-            var run = asked.IsCompletedSuccessfully || (timer.IsCompletedSuccessfully && !failed && !changed.IsCompletedSuccessfully);
+            var run = asked.IsCompletedSuccessfully || (timer.IsCompletedSuccessfully && !failed);
             if (!run) continue;
+            firstWait = false; // The start-up wait is over once it ended in a run (a schedule save during it starts it again).
 
             await RunAsync(stoppingToken);
         }

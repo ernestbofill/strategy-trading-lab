@@ -12,3 +12,14 @@
   color: var(--ink-muted);
   cursor: not-allowed;
 }
+
+.button {
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.button:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}

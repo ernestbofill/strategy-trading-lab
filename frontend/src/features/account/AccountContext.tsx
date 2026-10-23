@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, onSessionEnded, type Account } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
 import { rememberLoggedIn } from './knownDevice'
@@ -19,11 +19,17 @@ const AccountContext = createContext<AccountContextValue | null>(null)
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AccountState>({ status: 'loading' })
 
+  /** Whose data the caches hold: a different user (or none) means nothing loaded may show. */
+  const cachedFor = useRef<string | null>(null)
+  const switchUser = useCallback((email: string | null) => {
+    if (email !== cachedFor.current) invalidateAll()
+    cachedFor.current = email
+  }, [])
+
   const refresh = useCallback(async () => {
-    // Whatever was loaded belongs to the previous user (or to no one).
-    invalidateAll()
     try {
       const account = await api.getAccount()
+      switchUser(account?.email ?? null)
       if (account) rememberLoggedIn()
       setState({ status: 'ready', account })
       return account
@@ -31,12 +37,12 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       setState({ status: 'error' })
       return null
     }
-  }, [])
+  }, [switchUser])
 
   const clear = useCallback(() => {
-    invalidateAll()
+    switchUser(null)
     setState({ status: 'ready', account: null })
-  }, [])
+  }, [switchUser])
 
   useEffect(() => {
     // The start-up check: its state is set after the request, not synchronously.

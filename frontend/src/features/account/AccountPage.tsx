@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, InvalidFieldsError, TooManyTriesError } from '../../api'
-import { FormMessage, PasswordField } from '../../components/Field'
+import { api, InvalidFieldsError } from '../../api'
+import { FormMessage, PasswordField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
+import { Section } from '../../components/Section'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
-import { TOO_MANY_TRIES, TRY_AGAIN } from './copy'
+import { errorText } from './copy'
 import { logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 
@@ -33,30 +34,25 @@ export function AccountPage() {
     <Screen top={<TopBar back={dashboardPath} step="ACCOUNT" />}>
       <PageHeader title="Account" />
 
-      <section className={styles.section} aria-labelledby="account-email">
-        <h2 id="account-email" className={styles.sectionTitle}>
-          Email
-        </h2>
+      <Section title="Email">
         <p className={styles.line}>
           <span className={styles.email}>{account.email}</span>
         </p>
         {!account.emailVerified && (
           <>
             <p className={styles.line}>Not verified yet.</p>
-            <div>
-              <ResendLink />
-            </div>
+            <ResendLink />
           </>
         )}
-      </section>
+      </Section>
 
-      <ChangePassword email={account.email} />
+      <Section title="Change password">
+        <ChangePassword email={account.email} />
+      </Section>
 
-      <section className={styles.section}>
-        <button type="button" className={`ui-strong ${styles.button}`} disabled={loggingOut} onClick={() => void logOut()}>
-          {loggingOut ? 'Logging out…' : 'Log out'}
-        </button>
-      </section>
+      <button type="button" className={`ui-strong ${styles.button}`} disabled={loggingOut} onClick={() => void logOut()}>
+        {loggingOut ? 'Logging out…' : 'Log out'}
+      </button>
     </Screen>
   )
 }
@@ -65,7 +61,7 @@ function ChangePassword({ email }: { email: string }) {
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<{ tone: 'error' | 'done'; text: string } | null>(null)
+  const [message, setMessage] = useState<FormMessageState>(null)
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: FormEvent) => {
@@ -81,16 +77,13 @@ function ChangePassword({ email }: { email: string }) {
       setMessage({ tone: 'done', text: 'Password changed. Your other devices are logged out.' })
     } catch (err) {
       if (err instanceof InvalidFieldsError) setErrors(err.fields)
-      else setMessage({ tone: 'error', text: err instanceof TooManyTriesError ? TOO_MANY_TRIES : TRY_AGAIN })
+      else setMessage({ tone: 'error', text: errorText(err) })
     }
     setBusy(false)
   }
 
   return (
-    <form className={styles.section} onSubmit={submit} noValidate aria-labelledby="account-password">
-      <h2 id="account-password" className={styles.sectionTitle}>
-        Change password
-      </h2>
+    <form className={styles.form} onSubmit={submit} noValidate>
       {/* For password managers: which account the new password belongs to. */}
       <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
       <PasswordField

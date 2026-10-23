@@ -34,33 +34,29 @@ function verify(token: string): Promise<Result> {
 export function VerifyEmail() {
   const token = useLinkToken()
   const { state, refresh } = useAccount()
-  const [result, setResult] = useState<Result>(token ? 'checking' : 'expired')
+  const [verified, setVerified] = useState<Result>('checking')
+  const result: Result = token ? verified : 'expired'
   const loggedIn = state.status === 'ready' && state.account !== null
 
   useEffect(() => {
     if (!token) return
     let live = true
-    void verify(token).then((r) => live && setResult(r))
+    void verify(token).then((r) => {
+      if (!live) return
+      setVerified(r)
+      if (r === 'confirmed') void refresh() // A logged-in account now reads as confirmed.
+    })
     return () => {
       live = false
     }
-  }, [token])
+  }, [token, refresh])
 
-  // The logged-in account now reads as confirmed.
-  useEffect(() => {
-    if (result === 'confirmed' && loggedIn) void refresh()
-    // Once, when the result arrives.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result])
-
-  const action =
-    result === 'checking' ? undefined : loggedIn ? (
-      <PrimaryAction to={result === 'expired' ? accountPath : dashboardPath}>
-        {result === 'expired' ? 'Go to your account' : 'Go to the dashboard'}
-      </PrimaryAction>
-    ) : (
-      <PrimaryAction to={logInPath}>Log in</PrimaryAction>
-    )
+  const [to, label] = !loggedIn
+    ? [logInPath, 'Log in']
+    : result === 'expired'
+      ? [accountPath, 'Go to your account']
+      : [dashboardPath, 'Go to the dashboard']
+  const action = result === 'checking' ? undefined : <PrimaryAction to={to}>{label}</PrimaryAction>
 
   return (
     <Screen top={<TopBar title="STL // EMAIL" />} action={action}>

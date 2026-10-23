@@ -9,9 +9,7 @@ export function VerifyNotice() {
   return (
     <Callout tone="info" title="Check your email">
       <p>We sent a link to {email} to confirm it.</p>
-      <div>
-        <ResendLink label="Send it again" />
-      </div>
+      <ResendLink label="Send it again" />
     </Callout>
   )
 }

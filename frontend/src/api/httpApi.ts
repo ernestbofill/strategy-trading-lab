@@ -66,10 +66,10 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
 type Problem = { errors?: Record<string, string[]>; detail?: string } | null
 
 /**
- * POSTs to the account API. A 400 with field errors is `InvalidFieldsError`; a 400 with only a message is an expired
- * link (the only other 400 it sends); 401 is a wrong log-in or no session, 429 too many tries.
+ * POSTs to the account API. A 400 with field errors is `InvalidFieldsError`; for the link endpoints (`link`), a 400
+ * with only a message is an expired or used link. 401 is a wrong log-in or no session, 429 too many tries.
  */
-async function account(path: string, body?: unknown): Promise<Response> {
+async function account(path: string, body?: unknown, link = false): Promise<Response> {
   const response = await fetch(`${BASE_URL}/account${path}`, {
     method: 'POST',
     headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
@@ -78,7 +78,7 @@ async function account(path: string, body?: unknown): Promise<Response> {
   if (response.status === 400) {
     const problem = (await response.json().catch(() => null)) as Problem
     if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-    throw new ExpiredLinkError()
+    if (link) throw new ExpiredLinkError()
   }
   if (response.status === 401) throw new UnauthorizedError()
   if (response.status === 429) throw new TooManyTriesError()
@@ -100,10 +100,10 @@ export const httpApi: Api = {
   signUp: async (signUp) => void (await account('/sign-up', signUp)),
   logIn: async (email, password) => void (await account('/log-in', { email, password })),
   logOut: async () => void (await account('/log-out')),
-  verifyEmail: async (token) => void (await account('/verify-email', { token })),
+  verifyEmail: async (token) => void (await account('/verify-email', { token }, true)),
   resendVerification: async () => void (await account('/resend-verification')),
   forgotPassword: async (email) => void (await account('/forgot-password', { email })),
-  resetPassword: async (token, password) => void (await account('/reset-password', { token, password })),
+  resetPassword: async (token, password) => void (await account('/reset-password', { token, password }, true)),
   changePassword: async (currentPassword, newPassword) => void (await account('/change-password', { currentPassword, newPassword })),
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),

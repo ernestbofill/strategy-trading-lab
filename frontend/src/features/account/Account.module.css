@@ -12,19 +12,6 @@
   max-width: 480px;
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  max-width: 480px;
-}
-
-.sectionTitle {
-  margin: 0;
-  font: 600 16px/24px var(--font-ui);
-  color: var(--ink);
-}
-
 .line {
   margin: 0;
   font: 14px/22px var(--font-ui);
@@ -53,21 +40,5 @@
 }
 .button:disabled {
   opacity: 0.4;
-  cursor: default;
-}
-
-.textButton {
-  min-height: 44px;
-  padding: 0;
-  background: none;
-  border: 0;
-  color: var(--primary);
-  cursor: pointer;
-}
-.textButton:hover:not(:disabled) {
-  color: var(--accent);
-}
-.textButton:disabled {
-  color: var(--ink-muted);
   cursor: default;
 }

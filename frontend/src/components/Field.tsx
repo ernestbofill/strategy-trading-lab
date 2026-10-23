@@ -187,6 +187,9 @@ export function Checkbox({ checked, onChange, children, error }: CheckboxProps) 
   )
 }
 
+/** A form's message that isn't about one field, as a screen keeps it in state. */
+export type FormMessageState = { tone: 'error' | 'done'; text: string } | null
+
 /** A form's message that isn't about one field: "That email and password don't match." */
 export function FormMessage({ tone, children }: { tone: 'error' | 'done'; children: ReactNode }) {
   return (

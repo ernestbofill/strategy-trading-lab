@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
-import { api, ExpiredLinkError, InvalidFieldsError, TooManyTriesError } from '../../api'
+import { api, ExpiredLinkError, InvalidFieldsError } from '../../api'
 import { FormMessage, PasswordField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
@@ -8,7 +8,7 @@ import { TextAction } from '../../components/TextAction'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
-import { EXPIRED_LINK, TOO_MANY_TRIES, TRY_AGAIN } from './copy'
+import { EXPIRED_LINK, errorText } from './copy'
 import { forgotPasswordPath } from './paths'
 import { useLinkToken } from './useLinkToken'
 
@@ -18,7 +18,7 @@ export function ResetPassword() {
   const { refresh } = useAccount()
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [expired, setExpired] = useState(!token)
+  const [linkExpired, setLinkExpired] = useState(false)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -34,15 +34,15 @@ export function ResetPassword() {
       await refresh()
       setDone(true)
     } catch (err) {
-      if (err instanceof ExpiredLinkError) setExpired(true)
+      if (err instanceof ExpiredLinkError) setLinkExpired(true)
       else if (err instanceof InvalidFieldsError) setError(err.fields.password ?? err.message)
-      else setError(err instanceof TooManyTriesError ? TOO_MANY_TRIES : TRY_AGAIN)
+      else setError(errorText(err))
       setBusy(false)
     }
   }
 
   const top = <TopBar title="STL // PASSWORD" />
-  if (expired)
+  if (!token || linkExpired)
     return (
       <Screen top={top}>
         <PageHeader title="Choose a new password" />

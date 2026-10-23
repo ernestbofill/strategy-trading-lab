@@ -1,17 +1,17 @@
 import { useState, type FormEvent } from 'react'
-import { api, TooManyTriesError } from '../../api'
-import { FormMessage, TextField } from '../../components/Field'
+import { api } from '../../api'
+import { FormMessage, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import styles from './Account.module.css'
-import { TOO_MANY_TRIES, TRY_AGAIN } from './copy'
+import { errorText } from './copy'
 import { logInPath } from './paths'
 
 /** Forgot your password? Always the same answer, whether or not the email has an account. */
 export function ForgotPassword() {
   const [email, setEmail] = useState('')
-  const [message, setMessage] = useState<{ tone: 'error' | 'done'; text: string } | null>(null)
+  const [message, setMessage] = useState<FormMessageState>(null)
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: FormEvent) => {
@@ -23,7 +23,7 @@ export function ForgotPassword() {
       await api.forgotPassword(email)
       setMessage({ tone: 'done', text: 'If that email has an account, we sent a link. It works for 1 hour.' })
     } catch (err) {
-      setMessage({ tone: 'error', text: err instanceof TooManyTriesError ? TOO_MANY_TRIES : TRY_AGAIN })
+      setMessage({ tone: 'error', text: errorText(err) })
     }
     setBusy(false)
   }

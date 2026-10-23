@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { useAccount } from './AccountContext'
 import { hasLoggedInHere } from './knownDevice'
-import styles from './Account.module.css'
+import { TextAction } from '../../components/TextAction'
 import { logInPathFor, signUpPath } from './paths'
 
 /**
@@ -24,9 +24,7 @@ export function RequireAccount() {
       <Screen top={<TopBar title="STL" />}>
         <ScreenMessage>
           Could not reach Strategy Trading Lab.{' '}
-          <button type="button" className={`ui-strong ${styles.textButton}`} onClick={() => void refresh()}>
-            Try again
-          </button>
+          <TextAction onClick={() => void refresh()}>Try again</TextAction>
         </ScreenMessage>
       </Screen>
     )

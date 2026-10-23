@@ -7,7 +7,7 @@ import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
-import { TRY_AGAIN } from './copy'
+import { errorText } from './copy'
 import { forgotPasswordPath, safeNext, signUpPath } from './paths'
 
 /** Log-in (spec: Log-in). Afterwards the screen the user was on, or the dashboard. */
@@ -36,7 +36,7 @@ export function LogIn() {
           ? "That email and password don't match."
           : err instanceof TooManyTriesError
             ? 'Too many tries. Wait a few minutes, or reset your password.'
-            : TRY_AGAIN,
+            : errorText(err),
       )
       setBusy(false)
     }

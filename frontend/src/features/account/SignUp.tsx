@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
-import { api, InvalidFieldsError, TooManyTriesError, type Locale } from '../../api'
-import { Checkbox, FormMessage, PasswordField, SelectField, TextField } from '../../components/Field'
+import { api, InvalidFieldsError, type Locale } from '../../api'
+import { Checkbox, FormMessage, PasswordField, SelectField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
@@ -9,7 +9,7 @@ import { DISCLAIMER_FULL } from '../../lib/copy'
 import { dashboardPath, pickPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
-import { TOO_MANY_TRIES, TRY_AGAIN } from './copy'
+import { errorText } from './copy'
 import { logInPath } from './paths'
 import { guessTimeZone, timeZones } from './timeZones'
 
@@ -28,10 +28,11 @@ export function SignUp() {
   const [overviewEmail, setOverviewEmail] = useState(true)
   const [accepted, setAccepted] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<{ tone: 'error' | 'done'; text: string } | null>(null)
+  const [message, setMessage] = useState<FormMessageState>(null)
   const [busy, setBusy] = useState(false)
   const [signedUp, setSignedUp] = useState(false)
-  const zones = useMemo(() => timeZones(timeZone).map((z) => ({ value: z, label: z.replaceAll('_', ' ') })), [timeZone])
+  // Built once: the list holds the guessed zone, and any zone picked comes from it.
+  const zones = useMemo(() => timeZones(guessTimeZone()).map((z) => ({ value: z, label: z.replaceAll('_', ' ') })), [])
 
   if (state.status === 'ready' && state.account) return <Navigate to={signedUp ? pickPath : dashboardPath} replace />
 
@@ -48,7 +49,7 @@ export function SignUp() {
       if (!(await refresh())) setMessage({ tone: 'done', text: 'Check your email.' })
     } catch (err) {
       if (err instanceof InvalidFieldsError) setErrors(err.fields)
-      else setMessage({ tone: 'error', text: err instanceof TooManyTriesError ? TOO_MANY_TRIES : TRY_AGAIN })
+      else setMessage({ tone: 'error', text: errorText(err) })
     }
     setBusy(false)
   }

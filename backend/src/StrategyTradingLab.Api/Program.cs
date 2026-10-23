@@ -78,9 +78,14 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 app.UseRateLimiter();
 
+// A database switched to on the admin page must still be usable after a release; otherwise back to the home one.
+var databases = app.Services.GetRequiredService<DatabaseSwitch>();
+await databases.CheckActiveAsync(CancellationToken.None);
+
 // The launch profiles set this, so running the API locally brings the dev database up to date.
 // Tests, cloud sessions (scripts/migrate-dev-https.py) and production (the deploy's migrations bundle) don't use it.
-if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+// Only the home database: a local API switched to production must never migrate it (the deploy does).
+if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Database:MigrateOnStartup") && databases.Active == databases.Home)
 {
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();

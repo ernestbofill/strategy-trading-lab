@@ -70,6 +70,30 @@ public class DatabaseSwitch
         })];
     }
 
+    /// <summary>
+    /// At startup: a database other than the home one must still answer and have every migration (a deploy migrates
+    /// production only, so a release can leave dev behind). If not, the API goes back to its home database.
+    /// </summary>
+    public async Task CheckActiveAsync(CancellationToken cancellationToken)
+    {
+        var current = choice;
+        if (current.Active == Home || ConnectionString(current, current.Active) is not { } connection) return;
+        try
+        {
+            await CheckAsync(current.Active, connection, cancellationToken);
+        }
+        catch (DatabaseChangeException error)
+        {
+            logger.LogWarning("{Reason} Going back to the {Database} database.", error.Message, Words(Home));
+            lock (writing)
+            {
+                if (!ReferenceEquals(choice, current)) return;
+                choice = current with { Active = Home };
+                Save(choice);
+            }
+        }
+    }
+
     /// <summary>Makes <paramref name="name"/> the active database, once it answers and has every migration.</summary>
     public Task SwitchAsync(DatabaseName name, CancellationToken cancellationToken) =>
         ChangeAsync(current => current with { Active = name }, cancellationToken);
@@ -98,7 +122,8 @@ public class DatabaseSwitch
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("postgresql" or "postgres")
             || uri.AbsolutePath.Length <= 1 || !uri.UserInfo.Contains(':'))
             return example;
-        // Only Neon: whoever knows the admin password can't point the API at a server of their own elsewhere.
+        // Only Neon hosts: no server of any other kind. It doesn't tie the URL to Ernest's project: anyone can make a
+        // Neon project, so whoever knows the admin password still could (see PR #30).
         if (!uri.Host.EndsWith(".neon.tech", StringComparison.OrdinalIgnoreCase)) return "Use a Neon database (a host ending in .neon.tech).";
         try
         {
@@ -125,7 +150,10 @@ public class DatabaseSwitch
         var previous = ConnectionString(before, before.Active);
         if (after.Active != before.Active || connection != previous)
         {
-            if (connection is null) throw new DatabaseChangeException($"The {Words(after.Active)} database has no URL: set one first.");
+            if (connection is null)
+                throw new DatabaseChangeException(after.Active == before.Active
+                    ? $"The {Words(after.Active)} database is in use: switch to the other one first."
+                    : $"The {Words(after.Active)} database has no URL: set one first.");
             if (connection != previous) await CheckAsync(after.Active, connection, cancellationToken);
         }
 
@@ -179,7 +207,9 @@ public class DatabaseSwitch
         if (!File.Exists(path)) return home;
         try
         {
-            var saved = JsonSerializer.Deserialize<Choice>(protector.Unprotect(File.ReadAllText(path)))!;
+            if (JsonSerializer.Deserialize<Choice>(protector.Unprotect(File.ReadAllText(path))) is not { Urls: not null } saved
+                || !Enum.IsDefined(saved.Active))
+                throw new JsonException("Not a database choice.");
             // The active one lost its URL (a new api.env): back to the home database, keeping the URLs set on the page.
             return ConnectionString(saved, saved.Active) is null ? saved with { Active = Home } : saved;
         }

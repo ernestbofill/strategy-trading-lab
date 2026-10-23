@@ -17,7 +17,8 @@ type State =
   | { status: 'loading' }
   | { status: 'logIn' }
   | { status: 'error' }
-  | { status: 'ready'; settings: AdminSetting[]; databases: AdminDatabases; version: BackendVersion }
+  /** `settings` is null when they can't be read: they live in the database in use, which may be the broken one. */
+  | { status: 'ready'; settings: AdminSetting[] | null; databases: AdminDatabases; version: BackendVersion }
 
 /** Admin settings (/admin): settings the app reads, set here instead of in the server's environment. Not linked from the app. */
 export function AdminSettings() {
@@ -61,7 +62,11 @@ export function AdminSettings() {
       {state.status === 'ready' && (
         <DatabaseBox databases={state.databases} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
       )}
+      {state.status === 'ready' && !state.settings && (
+        <ScreenMessage>Could not load the settings: the database in use may not answer. Switch above, or try again later.</ScreenMessage>
+      )}
       {state.status === 'ready' &&
+        state.settings &&
         groups(state.settings).map(([group, settings]) => (
           <section key={group} className={styles.group}>
             <h2 className={styles.groupTitle}>{group}</h2>
@@ -70,7 +75,7 @@ export function AdminSettings() {
               <SettingRow
                 key={`${s.key}:${s.source}:${s.value}:${s.isSet}`}
                 setting={s}
-                shown={shownValues(state.settings)} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
+                shown={shownValues(state.settings ?? [])} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
             ))}
             {group === 'Email' && <TestEmail onLoggedOut={() => setState({ status: 'logIn' })} />}
           </section>
@@ -81,8 +86,13 @@ export function AdminSettings() {
 
 async function fetchSettings(): Promise<State> {
   try {
-    const [settings, databases, version] = await Promise.all([api.getAdminSettings(), api.getAdminDatabases(), api.getVersion()])
-    return { status: 'ready', settings, databases, version }
+    // The database box and the build don't need the database, so they show even when the settings can't load.
+    const settings = api.getAdminSettings().catch((e: unknown) => {
+      if (e instanceof UnauthorizedError) throw e
+      return null
+    })
+    const [databases, version, loaded] = await Promise.all([api.getAdminDatabases(), api.getVersion(), settings])
+    return { status: 'ready', settings: loaded, databases, version }
   } catch (e) {
     return e instanceof UnauthorizedError ? { status: 'logIn' } : { status: 'error' }
   }

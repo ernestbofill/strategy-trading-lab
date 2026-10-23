@@ -221,3 +221,19 @@ public class FxRate
     public required string Quote { get; set; }
     public decimal Rate { get; set; }
 }
+
+/// <summary>
+/// Where a stock stands under a strategy's rules on a trading day (the engine's verdict at that day's close), which
+/// the strategy page shows as its status. One row per strategy, stock and evaluated day.
+/// </summary>
+public class DailyEvaluation
+{
+    public Guid StrategyId { get; set; }
+    public Guid AssetId { get; set; }
+    public DateOnly Date { get; set; }
+    public EvaluationStatus Status { get; set; }
+    /// <summary>The step a buy signal is for, else null.</summary>
+    public int? StepNo { get; set; }
+    public required JsonDocument Facts { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}

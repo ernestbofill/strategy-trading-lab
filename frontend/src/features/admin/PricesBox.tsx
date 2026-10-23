@@ -76,7 +76,8 @@ export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
         </p>
         {prices && prices.lastFinished && (
           <p className={styles.source}>
-            Last run: {prices.updated} updated, {prices.fullHistory} in full, {prices.problems.length} failed.
+            Last run: {prices.updated} updated, {prices.fullHistory} in full, {prices.problems.length} failed
+            {prices.newSignals === null ? '. Strategies not evaluated.' : `; ${prices.newSignals} new signals.`}
           </p>
         )}
         {prices?.problems.map((p) => (

@@ -662,6 +662,54 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.DailyEvaluation", b =>
+                {
+                    b.Property<Guid>("StrategyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("strategy_id");
+
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<JsonDocument>("Facts")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("facts");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<int?>("StepNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("step_no");
+
+                    b.HasKey("StrategyId", "AssetId", "Date")
+                        .HasName("pk_daily_evaluations");
+
+                    b.HasIndex("AssetId")
+                        .HasDatabaseName("ix_daily_evaluations_asset_id");
+
+                    b.ToTable("daily_evaluations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_daily_evaluations_status", "status IN ('not_enough_data', 'not_candidate', 'watching', 'buy_signal', 'signal_ended', 'building', 'holding')");
+
+                            t.HasCheckConstraint("ck_daily_evaluations_step_no", "step_no IS NULL OR step_no >= 1");
+                        });
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.EmailToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1505,6 +1553,23 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_asset_texts_assets_asset_id");
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.DailyEvaluation", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Asset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_daily_evaluations_assets_asset_id");
+
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Strategy", null)
+                        .WithMany()
+                        .HasForeignKey("StrategyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_daily_evaluations_strategies_strategy_id");
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.EmailToken", b =>

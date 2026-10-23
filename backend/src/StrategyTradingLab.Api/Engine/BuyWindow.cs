@@ -13,6 +13,9 @@ public sealed class BuyWindow
     bool open;
     DateOnly? start;
 
+    /// <summary>Whether the window was open at the last <see cref="Compose"/>.</summary>
+    public bool Open => open;
+
     public (RuleStatus Status, string? Reason) Compose(DayContext day, bool candidate, bool entryOk, bool extended,
         string lostReason, string extendedReason)
     {

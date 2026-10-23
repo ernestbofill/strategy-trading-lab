@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Evaluation;
 
 namespace StrategyTradingLab.Api.MarketData;
 
@@ -16,12 +17,14 @@ public class PriceRefreshState
     readonly SemaphoreSlim changed = new(0, 1);
     int pending;
     volatile bool running;
-    volatile PriceRun last = new(null, null, [], null);
+    volatile PriceRun last = new(null, null, [], null, null);
 
     public bool Running => running || pending == 1;
     public DateTimeOffset? LastStarted => last.Started;
     public DateTimeOffset? LastFinished => last.Finished;
     public IReadOnlyList<RefreshResult> LastResults => last.Results;
+    /// <summary>What the evaluation after the last refresh did; null before the first run or when it failed.</summary>
+    public EvaluationSummary? LastEvaluation => last.Evaluation;
     /// <summary>When the next daily run starts; null while the schedule is off.</summary>
     public DateTimeOffset? NextRun => last.Next;
 
@@ -66,13 +69,14 @@ public class PriceRefreshState
         last = last with { Started = now };
     }
 
-    public void Finished(DateTimeOffset now, IReadOnlyList<RefreshResult> results)
+    public void Finished(DateTimeOffset now, IReadOnlyList<RefreshResult> results, EvaluationSummary? evaluation)
     {
-        last = last with { Finished = now, Results = results };
+        last = last with { Finished = now, Results = results, Evaluation = evaluation };
         running = false;
     }
 
-    record PriceRun(DateTimeOffset? Started, DateTimeOffset? Finished, IReadOnlyList<RefreshResult> Results, DateTimeOffset? Next);
+    record PriceRun(DateTimeOffset? Started, DateTimeOffset? Finished, IReadOnlyList<RefreshResult> Results, DateTimeOffset? Next,
+        EvaluationSummary? Evaluation);
 }
 
 /// <summary>
@@ -136,6 +140,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         }
         state.Started(time.GetUtcNow());
         IReadOnlyList<RefreshResult> results = [];
+        EvaluationSummary? evaluation = null;
         try
         {
             using var scope = scopes.CreateScope();
@@ -143,14 +148,18 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             logger.LogInformation("Prices refreshed: {Updated} updated, {Full} in full, {Failed} failed.",
                 results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory),
                 results.Count(r => r.Outcome == RefreshOutcome.Failed));
+            // The rules read the prices just stored.
+            evaluation = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().RunAsync(stoppingToken);
+            logger.LogInformation("Strategies evaluated: {Strategies}, {Signals} new signals, {Trades} new trades, {Missed} missed, {Failed} failed.",
+                evaluation.Strategies, evaluation.NewSignals, evaluation.NewTrades, evaluation.Missed, evaluation.Failed);
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            logger.LogError(error, "The price refresh failed.");
+            logger.LogError(error, "The price refresh or the evaluation failed.");
         }
         finally
         {
-            state.Finished(time.GetUtcNow(), results);
+            state.Finished(time.GetUtcNow(), results, evaluation);
         }
     }
 }

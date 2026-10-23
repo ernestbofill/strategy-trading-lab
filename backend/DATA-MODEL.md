@@ -255,6 +255,20 @@ Live mode only: what the user confirmed or logged by hand. Results in live come 
 
 Index `(strategy_id, asset_id, trade_date)`. Sign checks as on `signal_trades`: `price > 0`, `shares > 0`, `amount > 0`, `fee >= 0`, `fx_rate > 0`. The C# side derives the value that wasn't entered (`entered_as`) and is the only place that computes it.
 
+### `daily_evaluations`
+
+Where a stock stands under a strategy's rules on a trading day: the engine's verdict at that day's close. The daily check writes the newest evaluated day for each running strategy and each stock it can signal for; the strategy page's status pills read it. Cascades with its strategy.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| strategy_id | uuid FK → strategies, cascade | PK part |
+| asset_id | uuid FK → assets | PK part |
+| date | date | PK part. The evaluated trading day |
+| status | text, not null | `not_enough_data` \| `not_candidate` \| `watching` \| `buy_signal` \| `signal_ended` \| `building` \| `holding` |
+| step_no | int, null | The step a buy signal is for |
+| facts | jsonb, not null | The numbers behind the day (`belowPeakPct`, `buyLine`…) |
+| created_at | timestamptz | |
+
 ### `notifications`
 
 Every notification the app sends, one row per channel. A notification goes out **once per channel**: the unique key stops a retry or a second job run from sending it twice.
@@ -315,6 +329,5 @@ Units of `quote` per one `base` on a day, from the day's close: `EUR`→`USD` is
 
 ## Later, with the engine or the AI feature (not in this migration)
 
-- `daily_evaluations (strategy_id, asset_id, date, status, distance_pct, facts)`: the WATCHING / HOLDING / BUILDING pills and "Close to the line".
 - `backtest_results (template_key, defaults_version or params_hash, currency, period, template_pct, index_pct, worst_year_pct, trades)`, cached by parameter set.
 - AI: `ai_rounds`, `ai_round_scores`, the user's sharing consent, `signals.ai_round_id`, and `research.shared_ai_rounds` in its own schema with no user id.

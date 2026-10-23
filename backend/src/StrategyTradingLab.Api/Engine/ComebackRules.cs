@@ -96,13 +96,14 @@ public class ComebackRules : IBuyRules
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > Chase(buyLine),
                 "Price or volume fell back below the buy conditions.",
                 $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase.");
-            return new RuleDecision(status, reason, facts);
+            return new RuleDecision(status, reason, facts, window.Open);
         }
 
         var (milestones, bought) = Milestones(i, day);
         var (held, heldReason, active) = Adding(price, day, milestones, bought);
+        var activeInWindow = active is not null && InWindow(active, price);
         if (held == RuleStatus.BuySignal && active is not null) facts["milestone"] = active.Term;
-        return new RuleDecision(held, heldReason, facts);
+        return new RuleDecision(held, heldReason, facts, activeInWindow);
     }
 
     sealed record Milestone(string Key, string Term, bool Reached, decimal? Level);

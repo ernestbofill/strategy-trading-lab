@@ -117,7 +117,7 @@ public class YahooClientTests
         var state = new PriceRefreshState();
         state.Request();
         state.Started(DateTimeOffset.UtcNow);
-        state.Finished(DateTimeOffset.UtcNow, []);
+        state.Finished(DateTimeOffset.UtcNow, [], null);
 
         Assert.False(state.WaitForRequestAsync(default).IsCompleted);
         Assert.True(state.Request());

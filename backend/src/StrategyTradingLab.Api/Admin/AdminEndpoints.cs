@@ -26,7 +26,7 @@ public record DatabaseChoice(string Name);
 
 /// <summary>The prices box: the next and last runs, what failed in the last one, and the newest stored day.</summary>
 public record AdminPrices(bool Running, DateTimeOffset? NextRun, DateTimeOffset? LastStarted, DateTimeOffset? LastFinished,
-    DateOnly? LatestDay, IReadOnlyList<RefreshResult> Problems, int Updated, int FullHistory);
+    DateOnly? LatestDay, IReadOnlyList<RefreshResult> Problems, int Updated, int FullHistory, int? NewSignals);
 
 /// <summary>One symbol asked of Yahoo by "Test Yahoo": its newest day and close, or why it didn't answer.</summary>
 public record YahooCheck(string Symbol, bool Ok, DateOnly? Day, decimal? Close, string? Problem, int Milliseconds);
@@ -152,7 +152,8 @@ public static class AdminEndpoints
             var results = state.LastResults;
             return new AdminPrices(state.Running, state.NextRun, state.LastStarted, state.LastFinished, latest,
                 [.. results.Where(r => r.Outcome == RefreshOutcome.Failed)],
-                results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory));
+                results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory),
+                state.LastEvaluation?.NewSignals);
         })
         .WithSummary("The price refresh: the next and last runs and what failed in the last one.");
 

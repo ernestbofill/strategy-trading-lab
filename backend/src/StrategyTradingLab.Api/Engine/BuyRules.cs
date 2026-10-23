@@ -16,8 +16,12 @@ public readonly record struct DayContext(DateOnly Day, RuleStatus? Previous, int
     public bool HasPosition => StepsBought > 0;
 }
 
-/// <summary>A day's verdict. <c>Facts</c> are the numbers (and words) behind it, for the signal's text, e.g. <c>belowPeakPct</c>.</summary>
-public record RuleDecision(RuleStatus Status, string? Reason, IReadOnlyDictionary<string, object> Facts);
+/// <summary>
+/// A day's verdict. <c>Facts</c> are the numbers (and words) behind it, for the signal's text, e.g. <c>belowPeakPct</c>.
+/// <c>WindowOpen</c> is whether a buy could be made at today's close: the buy conditions hold. It is what keeps a signal's
+/// window open, whatever the rules' own position does.
+/// </summary>
+public record RuleDecision(RuleStatus Status, string? Reason, IReadOnlyDictionary<string, object> Facts, bool WindowOpen = false);
 
 /// <summary>
 /// A template's buy rules, prepared over one asset's whole history, for one run: some rules keep state between days, so
@@ -42,4 +46,4 @@ public record StepPlan(int MaxSteps);
 
 /// <summary>One day's result. <c>StepNo</c> is the step a buy signal is for; <c>NewBuy</c> is true on the day a signal starts.</summary>
 public record DayEvaluation(DateOnly Date, RuleStatus Status, int? StepNo, bool NewBuy, string? Reason,
-    IReadOnlyDictionary<string, object> Facts);
+    IReadOnlyDictionary<string, object> Facts, bool WindowOpen = false);

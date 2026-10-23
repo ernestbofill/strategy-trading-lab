@@ -10,12 +10,16 @@ public static class RulesRunner
 {
     static readonly IReadOnlyDictionary<string, object> NoFacts = new Dictionary<string, object>();
 
-    public static IReadOnlyList<DayEvaluation> Run(IBuyRules rules, IReadOnlyList<PriceBar> bars, StepPlan plan)
+    /// <summary>
+    /// Evaluates the days from index <paramref name="from"/> on, as the POC's backtest starts a strategy fresh on its start day:
+    /// the indicators read the earlier history, but the earlier days are not evaluated and no state is built from them.
+    /// </summary>
+    public static IReadOnlyList<DayEvaluation> Run(IBuyRules rules, IReadOnlyList<PriceBar> bars, StepPlan plan, int from = 0)
     {
         if (rules.Length != bars.Count) throw new ArgumentException($"The rules cover {rules.Length} days but {bars.Count} bars were given.", nameof(bars));
-        var results = new List<DayEvaluation>(bars.Count);
+        var results = new List<DayEvaluation>(Math.Max(bars.Count - from, 0));
         var machine = new Machine(rules, plan);
-        for (var i = 0; i < bars.Count; i++) results.Add(machine.Step(i, bars[i].Date));
+        for (var i = Math.Max(from, 0); i < bars.Count; i++) results.Add(machine.Step(i, bars[i].Date));
         return results;
     }
 
@@ -56,7 +60,7 @@ public static class RulesRunner
             previous = decision.Status;
             previousStep = step;
             if (newBuy) pendingBuy = true;
-            return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts);
+            return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen);
         }
     }
 }

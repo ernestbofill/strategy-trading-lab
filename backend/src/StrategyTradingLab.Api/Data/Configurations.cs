@@ -281,3 +281,17 @@ class FxRateConfiguration : IEntityTypeConfiguration<FxRate>
         entity.Property(rate => rate.Rate).HasColumnType(Money.FxRate);
     }
 }
+
+class DailyEvaluationConfiguration : IEntityTypeConfiguration<DailyEvaluation>
+{
+    public void Configure(EntityTypeBuilder<DailyEvaluation> entity)
+    {
+        entity.ToTable("daily_evaluations", table => table.HasCheckConstraint("ck_daily_evaluations_step_no", "step_no IS NULL OR step_no >= 1"));
+        entity.HasKey(row => new { row.StrategyId, row.AssetId, row.Date });
+        entity.Property(row => row.Facts).HasColumnType("jsonb");
+        entity.HasOne<Strategy>().WithMany()
+            .HasForeignKey(row => row.StrategyId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne<Asset>().WithMany()
+            .HasForeignKey(row => row.AssetId).OnDelete(DeleteBehavior.NoAction);
+    }
+}

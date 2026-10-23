@@ -15,6 +15,7 @@ public class DipRules : IBuyRules
     readonly IReadOnlyList<decimal> close;
     readonly decimal?[] floor, middle, trend, low, high;
     readonly bool[] trendRising;
+    readonly BuyWindow window = new();
 
     public DipRules(IReadOnlyList<PriceBar> bars, DipParams parameters)
     {
@@ -49,11 +50,14 @@ public class DipRules : IBuyRules
 
     public int CooldownDays => p.CooldownDays;
 
-    public RuleDay At(int i)
+    public RuleDecision Decide(int i, DayContext context)
     {
         if (floor[i] is not { } sma50 || middle[i] is not { } sma150 || trend[i] is not { } sma200
             || low[i] is not { } lowest || high[i] is not { } peak)
-            return new RuleDay(false, false, false, "", "", new Dictionary<string, decimal>());
+        {
+            var (none, noneReason) = window.Compose(context, candidate: false, entryOk: false, extended: false, "", "");
+            return new RuleDecision(none, noneReason, new Dictionary<string, object>());
+        }
 
         var price = close[i];
         var gain = Indicators.PctFrom(peak, lowest);
@@ -67,7 +71,8 @@ public class DipRules : IBuyRules
         var lost = price > zoneHigh
             ? "Price bounced back toward the recent high: the dip is over."
             : "Price fell through the buy zone (below the zone or the SMA 50).";
-        var facts = new Dictionary<string, decimal>
+        var (status, reason) = window.Compose(context, candidate, inZone, extended: false, lost, "");
+        var facts = new Dictionary<string, object>
         {
             ["gainPct"] = Math.Round(gain, 2),
             ["belowPeakPct"] = Math.Round(-pullback, 2),
@@ -76,6 +81,6 @@ public class DipRules : IBuyRules
             ["zoneLow"] = Math.Round(zoneLow, 4),
             ["zoneHigh"] = Math.Round(zoneHigh, 4),
         };
-        return new RuleDay(candidate, inZone, Extended: false, lost, "", facts);
+        return new RuleDecision(status, reason, facts);
     }
 }

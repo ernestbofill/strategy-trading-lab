@@ -26,9 +26,9 @@ public class DipRulesTests
         var bars = Rising(400);
         var rules = new DipRules(bars, new DipParams { TrendDays = 100, MinGainPct = 10 });
 
-        var day = rules.At(399);
+        var day = rules.Decide(399, new DayContext(new DateOnly(2021, 2, 4), null, 0, default, false, false, false));
 
-        Assert.True(day.Candidate);
+        Assert.Equal(RuleStatus.Watching, day.Status); // A candidate (not-candidate otherwise), waiting for a dip into the zone.
     }
 
     [Fact]
@@ -37,6 +37,6 @@ public class DipRulesTests
         var bars = Rising(400);
         var rules = new DipRules(bars, new DipParams { TrendDays = 100, FloorDays = 100, MinGainPct = 10 });
 
-        Assert.False(rules.At(399).Candidate);
+        Assert.Equal(RuleStatus.NotCandidate, rules.Decide(399, new DayContext(new DateOnly(2021, 2, 4), null, 0, default, false, false, false)).Status);
     }
 }

@@ -27,7 +27,7 @@ Draft order, for Ernest to confirm.
 3. **Strategy engine for *Dip in winners* and *The comeback*** (the goal Ernest set on 2026-10-23, built as a loop of PRs; the rules work like the POC's `stage2_pullback` and `turnaround`, see `ernestbofill/trading-strategies-bot`). All high risk except where noted, each with an `opus` review:
    1. ~~**Price fetching** (Yahoo, as decided)~~ Built (#38): daily prices and euro exchange rates in `prices_daily` and `fx_rates`, refreshed by a daily job after the US close. The schedule, *Refresh now* and *Test Yahoo* are on the admin page. Open: whether Yahoo answers from the Oracle server.
    2. ~~**The engine core:** the indicators and the *Dip in winners* signal, ported from the POC and checked against its results on the same prices.~~ Built (#43): `Engine/` with a golden test against the POC on real candles.
-   3. **The comeback** signal, on the same core.
+   3. ~~**The comeback** signal, on the same core.~~ Built (#44): `ComebackRules`, with a golden test against the POC on six real slices.
    4. **Daily evaluation:** a daily job runs each running strategy, stores the status and signals, and records the paper trades of Simulation strategies, with the step and budget maths.
    5. **Email:** the signal alert and the daily overview through the existing sender, with the settings to switch them off (the overview is on by default).
    The screens that show the results are the next item.

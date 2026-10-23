@@ -30,10 +30,16 @@ public class EngineTests
     /// <summary>Rules whose window is open on the listed days; always a candidate.</summary>
     sealed class OpenOn(params int[] days) : IBuyRules
     {
+        readonly BuyWindow window = new();
         public int MinHistory => 1;
         public int Length { get; init; }
         public int CooldownDays { get; init; } = 3;
-        public RuleDay At(int i) => new(true, days.Contains(i), false, "lost", "ran", new Dictionary<string, decimal>());
+
+        public RuleDecision Decide(int i, DayContext context)
+        {
+            var (status, reason) = window.Compose(context, candidate: true, entryOk: days.Contains(i), extended: false, "lost", "ran");
+            return new RuleDecision(status, reason, new Dictionary<string, object>());
+        }
     }
 
     static IReadOnlyList<PriceBar> Bars(int count) =>
@@ -87,7 +93,7 @@ public class EngineTests
         public int MinHistory => 4;
         public int Length => inner.Length;
         public int CooldownDays => inner.CooldownDays;
-        public RuleDay At(int i) => inner.At(i);
+        public RuleDecision Decide(int i, DayContext context) => inner.Decide(i, context);
     }
 
     [Fact]

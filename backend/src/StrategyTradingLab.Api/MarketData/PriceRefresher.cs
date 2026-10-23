@@ -64,28 +64,23 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         var stored = await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
             .ToDictionaryAsync(p => p.Date, p => p.Close, cancellationToken);
 
-        if (NeedsFullHistory(recent, stored))
+        var full = NeedsFullHistory(recent, stored);
+        var days = recent;
+        if (full)
         {
-            var all = await source.DailyAsync(asset.Symbol, fullHistory: true, adjusted: true, cancellationToken);
-            if (all.Count == 0) throw new MarketDataException($"Yahoo returned no history for {asset.Symbol}.");
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            await db.Prices.Where(p => p.AssetId == asset.Id).ExecuteDeleteAsync(cancellationToken);
-            Add(asset, all);
-            await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-            db.ChangeTracker.Clear();
-            return new RefreshResult(asset.Symbol, RefreshOutcome.FullHistory, all.Count);
+            days = await source.DailyAsync(asset.Symbol, fullHistory: true, adjusted: true, cancellationToken);
+            if (days.Count == 0) throw new MarketDataException($"Yahoo returned no history for {asset.Symbol}.");
         }
 
         await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
         {
-            await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from).ExecuteDeleteAsync(cancellationToken);
-            Add(asset, recent);
+            await db.Prices.Where(p => p.AssetId == asset.Id && (full || p.Date >= from)).ExecuteDeleteAsync(cancellationToken);
+            Add(asset, days);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         db.ChangeTracker.Clear();
-        return new RefreshResult(asset.Symbol, RefreshOutcome.Updated, recent.Count);
+        return new RefreshResult(asset.Symbol, full ? RefreshOutcome.FullHistory : RefreshOutcome.Updated, days.Count);
     }
 
     /// <summary>

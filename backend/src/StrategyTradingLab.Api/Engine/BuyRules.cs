@@ -4,7 +4,7 @@ namespace StrategyTradingLab.Api.Engine;
 public enum RuleStatus { NotEnoughData, NotCandidate, Watching, BuySignal, SignalEnded, Building, Holding }
 
 /// <summary>What the runner tells the rules about the rules' own position and the day before.</summary>
-/// <param name="Previous">Yesterday's status, null on the first day.</param>
+/// <param name="Previous">Yesterday's status: NotEnoughData until the history is long enough, null only on the very first day.</param>
 /// <param name="StepsBought">Steps the rules have bought so far (each signal is acted on the next day).</param>
 /// <param name="LastBuyDay">The day of the latest step; meaningless while nothing is bought.</param>
 /// <param name="ActedNow">A step was bought today (at today's open).</param>

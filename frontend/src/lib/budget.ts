@@ -29,7 +29,7 @@ export const STEP_LIMITS = { min: 10, stepBy: 10 }
 export const MAX_STEPS_LIMITS = { min: 1, max: 20, stepBy: 1 }
 
 /** Squares drawn in the summary; more steps than this are cut off. */
-export const MAX_SQUARES = 60
+const MAX_SQUARES = 60
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 

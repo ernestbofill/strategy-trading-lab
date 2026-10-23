@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, InvalidFieldsError } from '../../api'
+import { api, InvalidFieldsError, UnauthorizedError } from '../../api'
 import { FormMessage, PasswordField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
@@ -18,16 +18,23 @@ export function AccountPage() {
   const { clear } = useAccount()
   const navigate = useNavigate()
   const [loggingOut, setLoggingOut] = useState(false)
+  const [logOutError, setLogOutError] = useState<string | null>(null)
 
   const logOut = async () => {
     setLoggingOut(true)
+    setLogOutError(null)
     try {
       await api.logOut()
-    } finally {
-      // Even if the request failed, this device forgets the user; the cookie ends with its session anyway.
-      navigate(logInPath, { replace: true })
-      clear()
+    } catch (err) {
+      // Only a session that is already gone counts as logged out: otherwise the cookie still works, so say so.
+      if (!(err instanceof UnauthorizedError)) {
+        setLogOutError(errorText(err))
+        setLoggingOut(false)
+        return
+      }
     }
+    navigate(logInPath, { replace: true })
+    clear()
   }
 
   return (
@@ -53,6 +60,7 @@ export function AccountPage() {
       <button type="button" className={`ui-strong ${styles.button}`} disabled={loggingOut} onClick={() => void logOut()}>
         {loggingOut ? 'Logging out…' : 'Log out'}
       </button>
+      {logOutError && <FormMessage tone="error">{logOutError}</FormMessage>}
     </Screen>
   )
 }

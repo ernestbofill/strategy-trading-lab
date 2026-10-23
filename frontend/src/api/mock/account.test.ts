@@ -54,4 +54,20 @@ describe('mock accounts', () => {
       fields: { currentPassword: "That isn't your current password." },
     })
   })
+
+  it('keeps the email as typed, and changing the password uses up reset links', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    await signUp('Ann@Example.com')
+    expect(await mockApi.getAccount()).toMatchObject({ email: 'Ann@Example.com' })
+    await mockApi.forgotPassword('ann@example.com')
+    const token = lastLink(info)
+    await mockApi.changePassword('a long password', 'a brand new password')
+    await expect(mockApi.resetPassword(token, 'yet another password')).rejects.toBeInstanceOf(ExpiredLinkError)
+  })
+
+  it('checks the language and the time zone', async () => {
+    await expect(
+      mockApi.signUp({ email: 'tz@example.com', password: 'a long password', locale: 'en', timeZone: 'Not/AZone', overviewEmail: true, disclaimerAccepted: true }),
+    ).rejects.toMatchObject({ fields: { timeZone: 'Pick your time zone.' } })
+  })
 })

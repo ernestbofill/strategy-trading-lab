@@ -16,7 +16,7 @@ export function ForgotPassword() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy) return
+    if (busy || !email) return // Enter while the button is off.
     setBusy(true)
     setMessage(null)
     try {

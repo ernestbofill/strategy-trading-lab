@@ -24,12 +24,16 @@ export function LogIn() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy) return
+    if (busy || !email || !password) return // Enter while the button is off.
     setBusy(true)
     setError(null)
     try {
       await api.logIn(email, password)
-      await refresh()
+      // Logged in: the redirect above takes over once the account is read; if it can't be, say so.
+      if (!(await refresh())) {
+        setError(errorText(null))
+        setBusy(false)
+      }
     } catch (err) {
       setError(
         err instanceof UnauthorizedError
@@ -53,7 +57,7 @@ export function LogIn() {
     >
       <PageHeader title="Log in" />
       <form id="log-in" className={styles.form} onSubmit={submit} noValidate>
-        <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} />
+        <TextField label="Email" type="email" autoComplete="username" value={email} onChange={setEmail} />
         <PasswordField label="Password" autoComplete="current-password" value={password} onChange={setPassword} />
         {error && <FormMessage tone="error">{error}</FormMessage>}
       </form>

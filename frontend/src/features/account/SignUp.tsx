@@ -38,7 +38,7 @@ export function SignUp() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy) return
+    if (busy || !accepted) return // Enter while the button is off.
     setBusy(true)
     setErrors({})
     setMessage(null)
@@ -66,7 +66,7 @@ export function SignUp() {
     >
       <PageHeader title="Create your account" lead="Follow strategies with your own rules. The app never trades for you." />
       <form id="sign-up" className={styles.form} onSubmit={submit} noValidate>
-        <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} error={errors.email} />
+        <TextField label="Email" type="email" autoComplete="username" value={email} onChange={setEmail} error={errors.email} />
         <PasswordField
           label="Password"
           autoComplete="new-password"

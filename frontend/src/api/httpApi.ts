@@ -65,11 +65,15 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
 
 type Problem = { errors?: Record<string, string[]>; detail?: string } | null
 
-/**
- * POSTs to the account API. A 400 with field errors is `InvalidFieldsError`; for the link endpoints (`link`), a 400
- * with only a message is an expired or used link. 401 is a wrong log-in or no session, 429 too many tries.
- */
-async function account(path: string, body?: unknown, link = false): Promise<Response> {
+interface AccountCall {
+  /** A link endpoint (verify, reset): a 400 with only a message is an expired or used link. */
+  link?: boolean
+  /** Needs a session: a 401 means it ended, and the app goes to Log-in (on log-in itself, 401 is a wrong password). */
+  session?: boolean
+}
+
+/** POSTs to the account API. A 400 with field errors is `InvalidFieldsError`; 401 is `UnauthorizedError`, 429 too many tries. */
+async function account(path: string, body?: unknown, { link, session }: AccountCall = {}): Promise<Response> {
   const response = await fetch(`${BASE_URL}/account${path}`, {
     method: 'POST',
     headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
@@ -80,7 +84,10 @@ async function account(path: string, body?: unknown, link = false): Promise<Resp
     if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
     if (link) throw new ExpiredLinkError()
   }
-  if (response.status === 401) throw new UnauthorizedError()
+  if (response.status === 401) {
+    if (session) endedSession()
+    throw new UnauthorizedError()
+  }
   if (response.status === 429) throw new TooManyTriesError()
   if (!response.ok) throw new Error(`POST /account${path} failed: HTTP ${response.status}`)
   return response
@@ -100,11 +107,12 @@ export const httpApi: Api = {
   signUp: async (signUp) => void (await account('/sign-up', signUp)),
   logIn: async (email, password) => void (await account('/log-in', { email, password })),
   logOut: async () => void (await account('/log-out')),
-  verifyEmail: async (token) => void (await account('/verify-email', { token }, true)),
-  resendVerification: async () => void (await account('/resend-verification')),
+  verifyEmail: async (token) => void (await account('/verify-email', { token }, { link: true })),
+  resendVerification: async () => void (await account('/resend-verification', undefined, { session: true })),
   forgotPassword: async (email) => void (await account('/forgot-password', { email })),
-  resetPassword: async (token, password) => void (await account('/reset-password', { token, password }, true)),
-  changePassword: async (currentPassword, newPassword) => void (await account('/change-password', { currentPassword, newPassword })),
+  resetPassword: async (token, password) => void (await account('/reset-password', { token, password }, { link: true })),
+  changePassword: async (currentPassword, newPassword) =>
+    void (await account('/change-password', { currentPassword, newPassword }, { session: true })),
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),

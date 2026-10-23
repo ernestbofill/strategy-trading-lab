@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
-import { AccountProvider } from './features/account/AccountContext'
+import type { ReactNode } from 'react'
+import { AccountProvider, useAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
 import { ForgotPassword } from './features/account/ForgotPassword'
 import { LogIn } from './features/account/LogIn'
@@ -32,11 +33,17 @@ function AdvancedStub() {
   return <NotBuiltYet title="Advanced settings" back={reviewPath(key)} />
 }
 
+/** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
+function DraftPerUser({ children }: { children: ReactNode }) {
+  const { owner } = useAccount()
+  return <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AccountProvider>
-        <NewStrategyDraftProvider>
+        <DraftPerUser>
           <Routes>
             <Route path={signUpPath} element={<SignUp />} />
             <Route path={logInPath} element={<LogIn />} />
@@ -60,7 +67,7 @@ export default function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </NewStrategyDraftProvider>
+        </DraftPerUser>
       </AccountProvider>
     </BrowserRouter>
   )

@@ -179,4 +179,21 @@ describe('httpApi accounts', () => {
     stop()
     expect(ended).toHaveBeenCalledOnce()
   })
+
+  it('ends the session on a 401 from a call that needs one, but not on a wrong log-in', async () => {
+    const ended = vi.fn()
+    const stop = onSessionEnded(ended)
+    respond(401)
+    await expect(httpApi.logIn('a@b.c', 'wrong')).rejects.toBeInstanceOf(UnauthorizedError)
+    expect(ended).not.toHaveBeenCalled()
+    respond(401)
+    await expect(httpApi.changePassword('a', 'b')).rejects.toBeInstanceOf(UnauthorizedError)
+    stop()
+    expect(ended).toHaveBeenCalledOnce()
+  })
+
+  it('reads a plain 400 as an expired link only on the link endpoints', async () => {
+    respond(400, { detail: 'Bad request' })
+    await expect(httpApi.forgotPassword('a@b.c')).rejects.not.toBeInstanceOf(ExpiredLinkError)
+  })
 })

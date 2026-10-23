@@ -26,7 +26,7 @@ export function ResetPassword() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy || !token) return
+    if (busy || !token || !password) return // Enter while the button is off.
     setBusy(true)
     setError(null)
     try {

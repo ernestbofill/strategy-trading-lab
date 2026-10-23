@@ -1,6 +1,6 @@
 
 ## Todos from Claude to Ernest
-- [ ] Before merging #28: run `dotnet test` in `backend/` once against the Neon dev branch (CI skips the `[NeonFact]` tests; Claude ran them on a local PostgreSQL). Merge #28 and #31 together: #28 puts the app behind a log-in that #31 adds. (#28, #31)
+- [x] ~~Before merging #28: run `dotnet test` against the Neon dev branch.~~ Not needed: CI now runs every backend test, the database ones included (#32). #28 is merged. (#28, #31)
 - [ ] After #28 and #31 are merged: sign up on the live app with your own email, and check the confirmation email arrives. (#31)
 - [ ] Confirm or reorder ROADMAP → Next. (#20)
 - [x] Decide: a fixed dev user to save strategies before sign-up exists, or build sign-up first? Decided: one fixed user, Ernest (#24). (#20)

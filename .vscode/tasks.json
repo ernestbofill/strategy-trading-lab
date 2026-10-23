@@ -46,8 +46,8 @@
       "label": "Deploy backend environment to Oracle",
       "detail": "Upload deploy/backend/production.env to the server as api.env and restart the API (needs the strategy-lab host in ~/.ssh/config)",
       "type": "process",
-      "command": "pwsh",
-      "args": ["-NoProfile", "-File", "${workspaceFolder}/deploy/backend/deploy-env.ps1"],
+      "command": "bash",
+      "args": ["${workspaceFolder}/deploy/backend/deploy-env.sh"],
       "windows": {
         "command": "powershell.exe",
         "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/deploy/backend/deploy-env.ps1"]

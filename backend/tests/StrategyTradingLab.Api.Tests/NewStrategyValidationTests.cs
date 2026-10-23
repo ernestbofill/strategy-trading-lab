@@ -47,6 +47,18 @@ public class NewStrategyValidationTests
     }
 
     [Theory]
+    [InlineData("USD", false)]
+    [InlineData(null, false)]
+    [InlineData("JPY", true)]
+    [InlineData("eur", true)]
+    public void A_currency_off_the_list_is_rejected(string? currency, bool rejected)
+    {
+        var request = new NewStrategy("dip", "A", StrategyMode.Live, TemplateCatalog.Dip.Budget, [], currency);
+
+        Assert.Equal(rejected, NewStrategyValidation.Validate(request, TemplateCatalog.Dip, []).ContainsKey("currency"));
+    }
+
+    [Theory]
     [InlineData(499, 100, 5)]
     [InlineData(1_000_001, 100, 5)]
     [InlineData(3000.5, 100, 5)]

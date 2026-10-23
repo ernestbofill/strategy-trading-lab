@@ -38,7 +38,7 @@ applyTo: "frontend/**"
   - Use the global classes in `src/styles/global.css` instead of repeating their rules: `.ui-strong` (uppercase labels), `.caption`, `.well`, `.btn-primary`, `.visually-hidden`.
 - **Data in, decisions in data:** branch on fields such as `template.aiRound` or `template.backtest`, not on template keys like `'ai'`.
 - **Copy:** take the spec's strings. Put copy used on several screens in `src/lib/copy.ts`.
-- **Format:** numbers and identifiers use the mono font. Use `eur()` and `signedPct()` from `lib/format.ts`; `signedPct` writes a true minus sign (−).
+- **Format:** numbers and identifiers use the mono font. Use `money(n, currency)` (a strategy's or the account's currency; `eur()` for what was tested in euro) and `signedPct()` from `lib/format.ts`; `signedPct` writes a true minus sign (−).
 - **Accessibility:**
   - Use native inputs (radio, checkbox), visually hidden, inside a `<label>`.
   - Show visible focus with the `--border-focus` outline.

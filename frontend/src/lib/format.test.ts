@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isoDate, shortDate, signedPct } from './format'
+import { isoDate, money, shortDate, signedPct } from './format'
 
 describe('signedPct', () => {
   it('writes a true minus sign and a plus sign', () => {
@@ -10,6 +10,14 @@ describe('signedPct', () => {
   it('can show decimals', () => {
     expect(signedPct(6.4, 1)).toBe('+6.4%')
     expect(signedPct(-2, 1)).toBe('−2.0%')
+  })
+})
+
+describe('money', () => {
+  it('writes the symbol of the currency before the amount', () => {
+    expect(money(3000, 'EUR')).toBe('€3,000')
+    expect(money(3000, 'USD')).toBe('$3,000')
+    expect(money(1250000, 'GBP')).toBe('£1,250,000')
   })
 })
 

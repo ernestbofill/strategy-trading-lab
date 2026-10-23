@@ -46,6 +46,7 @@ describe('httpApi.startStrategy', () => {
     templateKey: 'dip',
     name: 'Mine',
     mode: 'live',
+    currency: 'EUR',
     budget: { amount: 3000, step: 100, maxSteps: 5 },
     assetIds: ['a1'],
   }
@@ -138,7 +139,7 @@ describe('httpApi CSRF header', () => {
     respond(204)
     await httpApi.adminLogOut()
     respond(201, { id: 's1' })
-    await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [] })
+    await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', currency: 'EUR', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [] })
     for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'X-Requested-With': 'stl' })
   })
 })

@@ -7,6 +7,8 @@ public static class AccountRules
 {
     public const int PasswordMin = 10, PasswordMax = 128;
     public static readonly IReadOnlyList<string> Locales = ["en", "ca"];
+    /// <summary>The currencies a user can pick for new strategies (ISO 4217). The first is the default.</summary>
+    public static readonly IReadOnlyList<string> Currencies = ["EUR", "USD", "GBP"];
 
     /// <summary>The address as stored: trimmed, exactly one plain address. Null when it isn't one.</summary>
     public static string? NormalizeEmail(string? value)

@@ -1,7 +1,23 @@
-const eurFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+import type { Currency } from '../api/types'
 
-/** €3,000 — budgets, steps and results are in euro. */
-export const eur = (n: number) => `€${eurFormat.format(n)}`
+const amountFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+
+/** The currencies a user can pick, matching the API's `AccountRules.Currencies`; the first is the default. */
+export const CURRENCIES: { code: Currency; symbol: string; name: string }[] = [
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'USD', symbol: '$', name: 'US dollar' },
+  { code: 'GBP', symbol: '£', name: 'British pound' },
+]
+
+/** "Euro", "US dollar", "British pound". */
+export const currencyName = (currency: Currency) => CURRENCIES.find((c) => c.code === currency)?.name ?? currency
+
+/** €3,000 / $3,000 / £3,000: an amount in a strategy's or an account's currency. */
+export const money = (n: number, currency: Currency) =>
+  `${CURRENCIES.find((c) => c.code === currency)?.symbol ?? ''}${amountFormat.format(n)}`
+
+/** €3,000: for what was tested in euro (a template's backtest). */
+export const eur = (n: number) => money(n, 'EUR')
 
 /** +12% / −8% with a true minus sign, so the sign carries the meaning, not only the colour. */
 export const signedPct = (n: number, digits?: number) => {

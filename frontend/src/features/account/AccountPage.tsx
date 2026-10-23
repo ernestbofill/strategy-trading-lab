@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, InvalidFieldsError, UnauthorizedError } from '../../api'
-import { FormMessage, PasswordField, type FormMessageState } from '../../components/Field'
+import { api, InvalidFieldsError, UnauthorizedError, type Currency } from '../../api'
+import { FormMessage, PasswordField, SelectField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
+import { currencyOptions } from './currencies'
 import { errorText } from './copy'
 import { logInPath } from './paths'
 import { ResendLink } from './ResendLink'
@@ -15,7 +16,7 @@ import { ResendLink } from './ResendLink'
 /** Account, first version (spec: Account): the email, change password, log out. */
 export function AccountPage() {
   const account = useCurrentAccount()
-  const { clear } = useAccount()
+  const { clear, refresh } = useAccount()
   const navigate = useNavigate()
   const [loggingOut, setLoggingOut] = useState(false)
   const [logOutError, setLogOutError] = useState<string | null>(null)
@@ -51,6 +52,10 @@ export function AccountPage() {
             <ResendLink />
           </>
         )}
+      </Section>
+
+      <Section title="Currency">
+        <CurrencyForm current={account.currency} onSaved={refresh} />
       </Section>
 
       <Section title="Change password">
@@ -112,6 +117,37 @@ function ChangePassword({ email }: { email: string }) {
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !current || !next}>
         {busy ? 'Saving…' : 'Change password'}
+      </button>
+    </form>
+  )
+}
+
+function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: () => Promise<unknown> }) {
+  const [currency, setCurrency] = useState(current)
+  const [message, setMessage] = useState<FormMessageState>(null)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      await api.setCurrency(currency)
+      if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
+      setMessage({ tone: 'done', text: 'Saved. New strategies use it; running ones keep theirs.' })
+    } catch (err) {
+      setMessage({ tone: 'error', text: (err instanceof InvalidFieldsError && err.fields.currency) || errorText(err) })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <form className={styles.form} onSubmit={submit} noValidate>
+      <SelectField label="Currency" value={currency} onChange={(v) => setCurrency(v as Currency)} options={currencyOptions} />
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || currency === current}>
+        {busy ? 'Saving…' : 'Save currency'}
       </button>
     </form>
   )

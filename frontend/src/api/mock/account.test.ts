@@ -3,7 +3,7 @@ import { ExpiredLinkError, InvalidFieldsError, TooManyTriesError, UnauthorizedEr
 import { mockApi } from './mockApi'
 
 const signUp = (email: string, password = 'a long password') =>
-  mockApi.signUp({ email, password, locale: 'en', timeZone: 'Europe/Madrid', overviewEmail: true, disclaimerAccepted: true })
+  mockApi.signUp({ email, password, locale: 'en', timeZone: 'Europe/Madrid', currency: 'EUR', overviewEmail: true, disclaimerAccepted: true })
 
 /** The token of the last link the mock "emailed" (logged). */
 const lastLink = (info: ReturnType<typeof vi.spyOn>) => String(info.mock.calls.at(-1)?.[0]).split('token=')[1]
@@ -67,7 +67,16 @@ describe('mock accounts', () => {
 
   it('checks the language and the time zone', async () => {
     await expect(
-      mockApi.signUp({ email: 'tz@example.com', password: 'a long password', locale: 'en', timeZone: 'Not/AZone', overviewEmail: true, disclaimerAccepted: true }),
+      mockApi.signUp({ email: 'tz@example.com', password: 'a long password', locale: 'en', timeZone: 'Not/AZone', currency: 'EUR', overviewEmail: true, disclaimerAccepted: true }),
     ).rejects.toMatchObject({ fields: { timeZone: 'Pick your time zone.' } })
+  })
+
+  it('keeps the currency picked at sign-up, changes it, and refuses one off the list', async () => {
+    await mockApi.signUp({ email: 'gbp@example.com', password: 'a long password', locale: 'en', timeZone: 'Europe/Madrid', currency: 'GBP', overviewEmail: true, disclaimerAccepted: true })
+    expect(await mockApi.getAccount()).toMatchObject({ currency: 'GBP' })
+
+    await mockApi.setCurrency('USD')
+    expect(await mockApi.getAccount()).toMatchObject({ currency: 'USD' })
+    await expect(mockApi.setCurrency('JPY' as 'USD')).rejects.toBeInstanceOf(InvalidFieldsError)
   })
 })

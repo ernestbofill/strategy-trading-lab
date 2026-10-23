@@ -145,6 +145,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Email and password, with email verification.
 - **Password:** at least 10 characters, at most 128. No other rules (no forced symbols or digits). A show/hide toggle. Compared with the email: a password equal to the email is refused.
 - Language: English or Catalan, chosen by the user. Editable later in the account.
+- Currency: euro (the default), US dollar or British pound. It is the currency of the user's new strategies: budgets, steps and results. Editable in the account; a running strategy keeps the currency it started with. Assumed: three currencies for now, and the same budget limits (500 to 1,000,000) in each.
 - Daily overview by email, on by default.
 - Time zone, guessed from the browser and editable. It sets when the overview arrives (early morning in Europe).
 - The disclaimer, accepted once: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." Plus one line: the app is for learning, testing and following strategies, and it never trades for you. The button stays off until the box is ticked.
@@ -169,7 +170,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### Account (first version, not drawn)
 
-- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (language, overview, Data and privacy) stays in *Not designed yet*.
+- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "Currency" (a select and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (language, overview, Data and privacy) stays in *Not designed yet*.
 
 ### 1 · Pick a strategy template (`Main`)
 
@@ -370,7 +371,7 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 - Intro, Live: "The amount you plan to put into this strategy at your broker. The app doesn't move or hold any money."
 - Intro, Simulation (not drawn): "A what-if amount. No real money moves."
 - Button: "Continue"
-- Under the button: "Amounts in euro. Dollar prices convert at the day's rate."
+- Under the button: "Amounts in [euro / US dollar / British pound]. Dollar prices convert at the day's rate." (the user's currency)
 
 **Three settings**, each a card with label, big value, − / + stepper and a help line:
 

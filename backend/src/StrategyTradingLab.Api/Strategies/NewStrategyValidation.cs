@@ -1,3 +1,4 @@
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Templates;
 
@@ -20,6 +21,8 @@ public static class NewStrategyValidation
         if (name.Length is 0 or > NameMaxLength) Fail("name", $"Use 1 to {NameMaxLength} characters.");
 
         if (request.Mode is not { } mode || !Enum.IsDefined(mode)) Fail("mode", "Pick simulation or live.");
+
+        if (request.Currency is not null && !AccountRules.Currencies.Contains(request.Currency)) Fail("currency", "Pick a currency from the list.");
 
         ValidateBudget(request.Budget, template, Fail);
 

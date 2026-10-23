@@ -125,7 +125,8 @@ export interface StrategySummary {
   mode: StrategyMode
   /** Local date, "2026-10-13". */
   startedOn: string
-  /** Euro. */
+  /** The strategy's own currency, fixed when it started. */
+  currency: Currency
   budget: number
   used: number
   /** Null until the strategy has trades (or, for AI templates, a first round). */
@@ -157,6 +158,8 @@ export interface NewStrategy {
   name: string
   mode: StrategyMode
   budget: Budget
+  /** The currency the user saw while setting the budget. */
+  currency: Currency
   /** The stocks to watch, or the one fund. */
   assetIds: string[]
 }
@@ -176,6 +179,9 @@ export interface AdminSetting {
 
 export type Locale = 'en' | 'ca'
 
+/** The ISO code of a currency a user can pick (see `CURRENCIES` in `lib/format.ts`). */
+export type Currency = 'EUR' | 'USD' | 'GBP'
+
 /** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
 export interface Account {
   email: string
@@ -183,6 +189,8 @@ export interface Account {
   locale: Locale
   timeZone: string
   overviewEmail: boolean
+  /** Of the user's new strategies; running ones keep theirs. */
+  currency: Currency
 }
 
 /** What Sign-up sends. */
@@ -193,6 +201,7 @@ export interface SignUp {
   /** IANA, e.g. "Europe/Madrid". */
   timeZone: string
   overviewEmail: boolean
+  currency: Currency
   disclaimerAccepted: boolean
 }
 
@@ -240,6 +249,8 @@ export interface Api {
   resetPassword(token: string, password: string): Promise<void>
   /** Rejects with `InvalidFieldsError` (`currentPassword`, `newPassword`). */
   changePassword(currentPassword: string, newPassword: string): Promise<void>
+  /** Sets the currency of the user's new strategies. Rejects with `InvalidFieldsError`. */
+  setCurrency(currency: Currency): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
   /** Rejects with `UnauthorizedError` when the session has ended (also for `startStrategy`). */

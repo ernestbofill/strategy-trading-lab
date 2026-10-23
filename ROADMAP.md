@@ -6,6 +6,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 ## Done
 
+- Currency: euro, US dollar or British pound, picked at sign-up and changed on the account page; new strategies start in it, and the budget screens and dashboard show it. Backtest figures and template texts stay in euro for now (Ernest's request).
 - New-strategy flow, frontend: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm (#1–#3, #10, #13, #19). Advanced settings is a placeholder.
 - The dev database migrates itself: the API does it on startup from a launch profile, and cloud sessions run `backend/scripts/migrate-dev-https.py` (the session start hook does too) (#24).
 - Admin page: switch the API between the dev and production databases (URLs only in the server's `api.env`, tested before use), the backend's build, and a DEV tag in the top bar while the dev database is in use. `deploy/backend/deploy-env.ps1` sends `api.env` to the server (#30).
@@ -37,6 +38,7 @@ Draft order, for Ernest to confirm.
 
 From the spec's *Not designed yet* list, roughly in the order they become useful:
 
+- Template texts and backtest figures in the user's currency (the tested defaults, "Results in euro", fees): today they stay in euro for every user.
 - Simulation variants of Set your budget, Confirm and the strategy page.
 - Web push notifications (email is in Next).
 - Stock page; stock list editor, stock search and fund picker.

@@ -109,9 +109,11 @@ At any time, be critical: point out inconsistencies, problems and possible impro
 
 When the goal needs several features, decide how to split it into PRs and run the steps above in a loop, one PR per item, taking items from `ROADMAP.md` in order.
 
-- In a loop you may merge your own PRs once they meet *Feature acceptance*, including backend PRs, which deploy to production. After a backend merge, check that the deploy workflow passed and `/api/health` answers before starting the next item.
-- High-risk PRs and docs-only PRs are the exceptions: leave them open for Ernest. He reviews docs himself.
-- Stop when the goal is reached, when you are stuck, or when the next item needs a decision from Ernest. Say where you stopped and why.
+**In a loop, work on your own.** Ernest does not approve each step: don't ask "shall I merge?", don't stop to report between PRs, and don't wait for a go-ahead. Do the whole cycle for each item (plan, build, PR, simplify, reviews, fixes, merge, deploy check) and start the next one.
+
+- Merge your own PRs yourself once they meet *Feature acceptance*: reviews done as the kind of change requires, CI green. This includes high-risk PRs, docs-only PRs and backend PRs, which deploy to production. After a backend merge, check that the deploy workflow passed and `/api/health` answers before starting the next item.
+- Stop only for a decision that is Ernest's (a product or money choice, a secret, a setting only he can change, something the PR couldn't verify that he must check), when you are stuck, or when the goal is reached. Say what the decision is and what you recommend, in the PR and in the chat, and keep working on anything that doesn't depend on it. A PR waiting on such a decision stays open; every other PR is merged.
+- If the tool refuses a step the loop needs (for example a permission check blocks `gh pr merge`), that is a settings problem, not a decision: say which permission rule to add, and carry on with whatever doesn't need it. Never work around a refusal.
 
 ### Feature acceptance
 

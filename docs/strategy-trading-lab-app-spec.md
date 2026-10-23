@@ -150,7 +150,8 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - The disclaimer, accepted once: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." Plus one line: the app is for learning, testing and following strategies, and it never trades for you. The button stays off until the box is ticked.
 - No push permission and no AI data sharing at sign-up: those are asked when first needed.
 - Button: "Create my account". Link: "I already have an account" → Log-in.
-- **On success** the user is logged in at once and goes straight to Pick a strategy template. A "Check your email" notice with the verification link is shown on that screen's top, and the link is also emailed. Until the email is verified the user can use the app, but cannot go live yet (assumed; nothing gates it until live strategies send alerts). Verifying needs no log-in, and the link logs no one in (so it can't be used to log someone into another account): it says "Your email is confirmed" and goes to the dashboard if logged in, else to Log-in.
+- **App start without a session** (built, #31): Sign-up on a device that has never logged in, Log-in on one that has (the device remembers it, nothing secret), and Log-in for any other address the user opened, coming back to it afterwards.
+- **On success** the user is logged in at once and goes straight to Pick a strategy template. A "Check your email" notice is shown on that screen's top until the email is confirmed ("We sent a link to [email] to confirm it." and "Send it again"); the link itself is only in the email. Until the email is verified the user can use the app, but cannot go live yet (assumed; nothing gates it until live strategies send alerts). Verifying needs no log-in, and the link logs no one in (so it can't be used to log someone into another account): it says "Your email is confirmed" and goes to the dashboard if logged in, else to Log-in. An expired or used link says "This link has expired. Ask for a new one." and goes to the account (which sends it again) if logged in, else to Log-in.
 - **Errors** (under the field): the email is not valid; the password is too short; the disclaimer is not ticked. "That email is already registered" is never shown: the answer to every sign-up looks the same ("Check your email"), and an existing account gets an email saying someone tried to sign up with its address and a link to log in. This way nobody can find out who has an account.
 - Too many attempts: "Too many tries. Wait a few minutes and try again."
 
@@ -164,11 +165,11 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Forgot and reset password (not drawn)
 
 - "Forgot your password?" asks for the email and always answers "If that email has an account, we sent a link. It works for 1 hour." The email has one link to "Choose a new password".
-- The reset page has the new password (same rules as sign-up) and the button "Save password". On success every session of that user ends, the user is logged in on this device, and goes to the dashboard. An expired or used link says "This link has expired. Ask for a new one." and links to "Forgot your password?".
+- The reset page has the new password (same rules as sign-up) and the button "Save password". A used or expired link is found out when the password is saved, not when the page opens. On success every session of that user ends, the user is logged in on this device, and goes to the dashboard. An expired or used link says "This link has expired. Ask for a new one." and links to "Forgot your password?".
 
 ### Account (first version, not drawn)
 
-- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet · Send the link again" when it applies), "Change password" (current password, new password; ends the user's other sessions), and "Log out". The rest of the account (language, overview, Data and privacy) stays in *Not designed yet*.
+- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (language, overview, Data and privacy) stays in *Not designed yet*.
 
 ### 1 · Pick a strategy template (`Main`)
 

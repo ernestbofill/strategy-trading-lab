@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useSyncExternalStore } from 'react'
 
 export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status: 'missing' } | { status: 'ready'; data: T }
 
@@ -16,9 +16,30 @@ export function invalidate(cacheKey: string) {
   pending.delete(cacheKey)
 }
 
+/** Bumped by `invalidateAll`; screens already showing data load again when it changes. */
+let generation = 0
+const generationListeners = new Set<() => void>()
+const subscribeGeneration = (listener: () => void) => {
+  generationListeners.add(listener)
+  return () => void generationListeners.delete(listener)
+}
+const currentGeneration = () => generation
+
+/**
+ * Forgets every result: another user logged in (or out), so nothing loaded for the last one may show. Screens that
+ * are open load again.
+ */
+export function invalidateAll() {
+  settled.clear()
+  pending.clear()
+  generation++
+  for (const listener of generationListeners) listener()
+}
+
 /** Loads `load()` once per `cacheKey`; `undefined` from `load` means not found. */
 export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | undefined>): Loadable<T> {
   const [, rerender] = useReducer((n: number) => n + 1, 0)
+  const loadGeneration = useSyncExternalStore(subscribeGeneration, currentGeneration)
 
   useEffect(() => {
     if (!cacheKey) return
@@ -46,7 +67,7 @@ export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | 
     }
     // `load` is identified by `cacheKey`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cacheKey])
+  }, [cacheKey, loadGeneration])
 
   if (!cacheKey) return MISSING
   return (settled.get(cacheKey) as Loadable<T> | undefined) ?? LOADING

@@ -1,4 +1,18 @@
+import { UnauthorizedError } from '../errors'
+import { sessionEnded } from '../session'
 import type { Api } from '../types'
+import {
+  mockChangePassword,
+  mockForgotPassword,
+  mockGetAccount,
+  mockLogIn,
+  mockLogOut,
+  mockResendVerification,
+  mockResetPassword,
+  mockSignUp,
+  mockVerifyEmail,
+  requireMockUser,
+} from './account'
 import { templateDetails, templates } from './data'
 import {
   mockActiveDatabase,
@@ -31,11 +45,32 @@ function later<T>(produce: () => T): Promise<T> {
 
 const respond = <T>(value: T) => later(() => value)
 
+/** Like a screen's data from the API: without a session the app hears that it ended, as on a 401. */
+const signedIn = <T>(produce: () => T) =>
+  later(() => {
+    try {
+      requireMockUser()
+    } catch (error) {
+      if (error instanceof UnauthorizedError) sessionEnded()
+      throw error
+    }
+    return produce()
+  })
+
 export const mockApi: Api = {
   getTemplates: () => respond(templates),
   getTemplate: (key) => respond(templateDetails.find((t) => t.key === key)),
-  getDashboard: () => later(dashboard),
-  startStrategy: (strategy) => later(() => startMockStrategy(strategy)),
+  getAccount: () => later(mockGetAccount),
+  signUp: (signUp) => later(() => mockSignUp(signUp)),
+  logIn: (email, password) => later(() => mockLogIn(email, password)),
+  logOut: () => later(mockLogOut),
+  verifyEmail: (token) => later(() => mockVerifyEmail(token)),
+  resendVerification: () => signedIn(mockResendVerification),
+  forgotPassword: (email) => later(() => mockForgotPassword(email)),
+  resetPassword: (token, password) => later(() => mockResetPassword(token, password)),
+  changePassword: (currentPassword, newPassword) => signedIn(() => mockChangePassword(currentPassword, newPassword)),
+  getDashboard: () => signedIn(dashboard),
+  startStrategy: (strategy) => signedIn(() => startMockStrategy(strategy)),
   adminLogIn: (password) => later(() => mockAdminLogIn(password)),
   adminLogOut: () => later(mockAdminLogOut),
   getAdminSettings: () => later(mockAdminSettings),

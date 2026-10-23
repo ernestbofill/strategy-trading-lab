@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
+import { ExpiredLinkError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
+import { onSessionEnded } from './session'
 import { httpApi } from './httpApi'
 import type { NewStrategy } from './types'
 
@@ -139,6 +140,61 @@ describe('httpApi CSRF header', () => {
     respond(201, { id: 's1' })
     await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [] })
     for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'X-Requested-With': 'stl' })
+  })
+})
+
+describe('httpApi accounts', () => {
+  it('reads the account, and null without a session', async () => {
+    respond(200, { email: 'a@b.c' })
+    await expect(httpApi.getAccount()).resolves.toEqual({ email: 'a@b.c' })
+    expect(fetch).toHaveBeenCalledWith('/api/account/me', expect.anything())
+    respond(401)
+    await expect(httpApi.getAccount()).resolves.toBeNull()
+  })
+
+  it('posts with the app header and maps the refusals', async () => {
+    respond(202, { message: 'Check your email.' })
+    await httpApi.forgotPassword('a@b.c')
+    const [url, init] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toBe('/api/account/forgot-password')
+    expect(init).toMatchObject({ method: 'POST', headers: expect.objectContaining({ 'X-Requested-With': 'stl' }) })
+
+    respond(401)
+    await expect(httpApi.logIn('a@b.c', 'wrong')).rejects.toBeInstanceOf(UnauthorizedError)
+    respond(429)
+    await expect(httpApi.logIn('a@b.c', 'wrong')).rejects.toBeInstanceOf(TooManyTriesError)
+    respond(400, { errors: { password: ['Use at least 10 characters.'] } })
+    await expect(httpApi.resetPassword('t', 'short')).rejects.toMatchObject({
+      fields: { password: 'Use at least 10 characters.' },
+    })
+    respond(400, { detail: 'This link has expired. Ask for a new one.' })
+    await expect(httpApi.verifyEmail('t')).rejects.toBeInstanceOf(ExpiredLinkError)
+  })
+
+  it('tells the app when a screen finds the session gone', async () => {
+    const ended = vi.fn()
+    const stop = onSessionEnded(ended)
+    respond(401)
+    await expect(httpApi.getDashboard()).rejects.toBeInstanceOf(UnauthorizedError)
+    stop()
+    expect(ended).toHaveBeenCalledOnce()
+  })
+
+  it('ends the session on a 401 from a call that needs one, but not on a wrong log-in', async () => {
+    const ended = vi.fn()
+    const stop = onSessionEnded(ended)
+    respond(401)
+    await expect(httpApi.logIn('a@b.c', 'wrong')).rejects.toBeInstanceOf(UnauthorizedError)
+    expect(ended).not.toHaveBeenCalled()
+    respond(401)
+    await expect(httpApi.changePassword('a', 'b')).rejects.toBeInstanceOf(UnauthorizedError)
+    stop()
+    expect(ended).toHaveBeenCalledOnce()
+  })
+
+  it('reads a plain 400 as an expired link only on the link endpoints', async () => {
+    respond(400, { detail: 'Bad request' })
+    await expect(httpApi.forgotPassword('a@b.c')).rejects.not.toBeInstanceOf(ExpiredLinkError)
   })
 })
 

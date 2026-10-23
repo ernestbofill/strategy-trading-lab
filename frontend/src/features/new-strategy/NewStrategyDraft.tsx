@@ -14,9 +14,16 @@ interface Draft extends DraftState {
 
 const DraftContext = createContext<Draft | null>(null)
 
-// Held in memory only: a reload or reopening the app starts from the defaults.
-export function NewStrategyDraftProvider({ children }: { children: ReactNode }) {
+// Held in memory only: a reload or reopening the app starts from the defaults. It belongs to `owner` (the user's
+// email): another user logging in on this tab starts it over; no user (logged out) keeps it for the same one's return.
+export function NewStrategyDraftProvider({ owner, children }: { owner: string | null; children: ReactNode }) {
   const [state, setState] = useState<DraftState>(initialDraft)
+  const [draftOwner, setDraftOwner] = useState(owner)
+  if (owner !== null && owner !== draftOwner) {
+    // Reset while rendering, not in an effect, so the next user never sees a frame of the last one's draft.
+    setDraftOwner(owner)
+    setState(initialDraft)
+  }
 
   const update = useCallback((patch: DraftPatch) => setState((s) => ({ ...s, ...patch })), [])
   const switchTemplate = useCallback((key: TemplateKey) => setState((s) => withTemplate(s, key)), [])

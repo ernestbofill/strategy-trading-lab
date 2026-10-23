@@ -81,10 +81,12 @@ interface PrimaryActionProps {
   to?: string
   onClick?: () => void
   disabled?: boolean
+  /** The id of the form it submits (the bar sits outside the form), so Enter and password managers work. */
+  form?: string
 }
 
-/** The screen's primary button: a link when it navigates, a button when it acts. */
-export function PrimaryAction({ children, to, onClick, disabled }: PrimaryActionProps) {
+/** The screen's primary button: a link when it navigates, a button when it acts, a submit button for a form. */
+export function PrimaryAction({ children, to, onClick, disabled, form }: PrimaryActionProps) {
   const className = 'btn-primary ui-strong'
   if (disabled) {
     return (
@@ -98,6 +100,13 @@ export function PrimaryAction({ children, to, onClick, disabled }: PrimaryAction
       <Link to={to} onClick={onClick} className={className}>
         {children}
       </Link>
+    )
+  }
+  if (form) {
+    return (
+      <button type="submit" form={form} className={className}>
+        {children}
+      </button>
     )
   }
   return (

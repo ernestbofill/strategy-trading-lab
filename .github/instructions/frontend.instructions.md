@@ -10,7 +10,7 @@ applyTo: "frontend/**"
 - `npm run preview`: serves the production build, with the same `/api` proxy
 - `npm run build`: typecheck (`tsc -b`) and production build
 - `npm run lint`: oxlint, which should report no warnings
-- `npm test`: Vitest. `@testing-library/react` and `jsdom` aren't installed yet: add them with the first component test.
+- `npm test`: Vitest. Component tests use `@testing-library/react` and start with `// @vitest-environment jsdom` (the rest run in Node).
 
 ## Structure
 
@@ -19,7 +19,8 @@ applyTo: "frontend/**"
   - DTO shapes mirror the .NET API (camelCase JSON). Change them deliberately, together with the backend, and keep the mock in step.
   - Mock values that stand in for real data (starter lists, backtest figures) are marked as MOCK in `mock/data.ts`.
 - `src/components/`: shared, screen-agnostic UI. Reuse these before writing new markup:
-  - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and the hint or disclaimer as `note`.
+  - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and the hint or disclaimer as `note`. A form's action is `PrimaryAction form="<form id>"`, a real submit button, so Enter and password managers work.
+  - `Field`: `TextField`, `PasswordField` (show/hide), `SelectField`, `Checkbox` and `FormMessage`, with the error under the field.
   - `LoadableScreen`: renders the loading, error and not-found states for screens that load data.
   - `PageHeader`, `Section`, `Columns` (main + aside from 1024px), `Tag`, `Tagline`.
   - `ChoiceCard`/`ChoiceList` (single choice, radio), `CheckList` (multi choice), `ToggleTiles` (`aria-pressed`), `ItemRow`, `NavRow`, `TextAction`.
@@ -28,6 +29,7 @@ applyTo: "frontend/**"
   - `paths.ts` holds the route builders.
   - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, in memory only: a reload starts again from the defaults. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started.
   - `useTemplate.ts` holds the data hooks.
+- `src/features/account/`: sign-up, log-in, password links and the account page. `AccountContext` asks `/account/me` once at start and clears the user on a 401 (`onSessionEnded` in `api/`); `RequireAccount` is the layout route of every screen that needs a user, sending others to Log-in with `?next=` (only app paths, `safeNext`). Logging in or out forgets every cached load (`invalidateAll`). The mock starts logged in as `demo@example.com` (password "a long password") and logs its emails' links to the console.
 - `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading).
 
 ## Conventions

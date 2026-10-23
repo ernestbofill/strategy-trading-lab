@@ -61,8 +61,9 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         if (recent.Count == 0) throw new MarketDataException($"Yahoo returned no days for {asset.Symbol}.");
 
         var from = recent[0].Date;
-        var stored = await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
-            .ToDictionaryAsync(p => p.Date, p => p.Close, cancellationToken);
+        // Projected in the database, so the stored rows aren't tracked (they would clash with the rows added below).
+        var stored = (await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
+            .Select(p => new { p.Date, p.Close }).ToListAsync(cancellationToken)).ToDictionary(p => p.Date, p => p.Close);
 
         var full = NeedsFullHistory(recent, stored);
         var days = recent;

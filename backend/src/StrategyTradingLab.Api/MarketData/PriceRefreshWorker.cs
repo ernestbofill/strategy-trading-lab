@@ -1,0 +1,156 @@
+using Microsoft.Extensions.Options;
+using StrategyTradingLab.Api.Admin;
+
+namespace StrategyTradingLab.Api.MarketData;
+
+public class PriceRefreshOptions
+{
+    /// <summary>The first run after the API starts, so a release doesn't leave the prices a day old.</summary>
+    public TimeSpan StartDelay { get; set; } = TimeSpan.FromMinutes(1);
+}
+
+/// <summary>What the last refresh did and when the next one is, for the admin page. In memory: a restart forgets it.</summary>
+public class PriceRefreshState
+{
+    readonly SemaphoreSlim requested = new(0, 1);
+    readonly SemaphoreSlim changed = new(0, 1);
+    int pending;
+    volatile bool running;
+    volatile PriceRun last = new(null, null, [], null);
+
+    public bool Running => running || pending == 1;
+    public DateTimeOffset? LastStarted => last.Started;
+    public DateTimeOffset? LastFinished => last.Finished;
+    public IReadOnlyList<RefreshResult> LastResults => last.Results;
+    /// <summary>When the next daily run starts; null while the schedule is off.</summary>
+    public DateTimeOffset? NextRun => last.Next;
+
+    /// <summary>Asks the worker to run now. False if a run is on, or already asked for.</summary>
+    public bool Request()
+    {
+        if (running || Interlocked.Exchange(ref pending, 1) == 1) return false;
+        Release(requested);
+        return true;
+    }
+
+    /// <summary>The schedule settings changed: the worker reads them again and recomputes the next run.</summary>
+    public void ScheduleChanged() => Release(changed);
+
+    static void Release(SemaphoreSlim semaphore)
+    {
+        try
+        {
+            semaphore.Release();
+        }
+        catch (SemaphoreFullException)
+        {
+            // Already signalled and not yet seen: this signal is the same one.
+        }
+    }
+
+    public Task WaitForRequestAsync(CancellationToken cancellationToken) => requested.WaitAsync(cancellationToken);
+
+    public Task WaitForChangeAsync(CancellationToken cancellationToken) => changed.WaitAsync(cancellationToken);
+
+    /// <summary>The run was asked for but not made (see the worker).</summary>
+    public void Skipped() => Interlocked.Exchange(ref pending, 0);
+
+    public void Scheduled(DateTimeOffset? next) => last = last with { Next = next };
+
+    public void Started(DateTimeOffset now)
+    {
+        running = true;
+        // A request that landed after the worker woke for the timer left its count behind: it is this run.
+        requested.Wait(0);
+        Interlocked.Exchange(ref pending, 0);
+        last = last with { Started = now };
+    }
+
+    public void Finished(DateTimeOffset now, IReadOnlyList<RefreshResult> results)
+    {
+        last = last with { Finished = now, Results = results };
+        running = false;
+    }
+
+    record PriceRun(DateTimeOffset? Started, DateTimeOffset? Finished, IReadOnlyList<RefreshResult> Results, DateTimeOffset? Next);
+}
+
+/// <summary>
+/// Refreshes the prices once a day at the time set on the admin page, and when the admin page asks. It reads the
+/// schedule from the database whenever it wakes (after a run, a change on the page, or an error).
+/// </summary>
+public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch databases, IServiceScopeFactory scopes,
+    IOptions<PriceRefreshOptions> options, TimeProvider time, ILogger<PriceRefreshWorker> logger) : BackgroundService
+{
+    static readonly TimeSpan RetryAfterError = TimeSpan.FromMinutes(5);
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var firstWait = true;
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var delay = Timeout.InfiniteTimeSpan;
+            var failed = false;
+            try
+            {
+                using var scope = scopes.CreateScope();
+                var values = await scope.ServiceProvider.GetRequiredService<Admin.SettingsStore>().ValuesAsync(stoppingToken);
+                var schedule = PriceSchedule.From(values);
+                if (schedule.Enabled) delay = firstWait ? options.Value.StartDelay : schedule.UntilNext(time.GetUtcNow());
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                // Typically the database in use doesn't answer: try again later, and keep the process up.
+                logger.LogWarning("The price schedule couldn't be read: {Reason}", error.Message);
+                delay = RetryAfterError;
+                failed = true;
+            }
+            state.Scheduled(delay == Timeout.InfiniteTimeSpan ? null : time.GetUtcNow() + delay);
+
+            using var wait = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+            var timer = Task.Delay(delay, time, wait.Token);
+            var asked = state.WaitForRequestAsync(wait.Token);
+            var changed = state.WaitForChangeAsync(wait.Token);
+            await Task.WhenAny(timer, asked, changed);
+            await wait.CancelAsync();
+            if (stoppingToken.IsCancellationRequested) return;
+            // More than one signal can have completed at once, and WhenAny names only one: a request must never be lost
+            // (its count is used up), so it runs whatever else fired. A changed schedule or the retry only reads it again.
+            var run = asked.IsCompletedSuccessfully || (timer.IsCompletedSuccessfully && !failed);
+            if (!run) continue;
+            firstWait = false; // The start-up wait is over once it ended in a run (a schedule save during it starts it again).
+
+            await RunAsync(stoppingToken);
+        }
+    }
+
+    async Task RunAsync(CancellationToken stoppingToken)
+    {
+        // Prices belong to the database this host owns. While the admin page has the API on the other one, a run would
+        // write there and leave the home database stale, so it waits for the next one.
+        if (databases.Active != databases.Home)
+        {
+            logger.LogWarning("The price refresh is skipped: the API is switched to the {Database} database.", databases.Active);
+            state.Skipped();
+            return;
+        }
+        state.Started(time.GetUtcNow());
+        IReadOnlyList<RefreshResult> results = [];
+        try
+        {
+            using var scope = scopes.CreateScope();
+            results = await scope.ServiceProvider.GetRequiredService<PriceRefresher>().RunAsync(stoppingToken);
+            logger.LogInformation("Prices refreshed: {Updated} updated, {Full} in full, {Failed} failed.",
+                results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory),
+                results.Count(r => r.Outcome == RefreshOutcome.Failed));
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogError(error, "The price refresh failed.");
+        }
+        finally
+        {
+            state.Finished(time.GetUtcNow(), results);
+        }
+    }
+}

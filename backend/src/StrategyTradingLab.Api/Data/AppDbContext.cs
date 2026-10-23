@@ -19,6 +19,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<UserSession> Sessions => Set<UserSession>();
     public DbSet<EmailToken> EmailTokens => Set<EmailToken>();
+    public DbSet<PriceDaily> Prices => Set<PriceDaily>();
+    public DbSet<FxRate> FxRates => Set<FxRate>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

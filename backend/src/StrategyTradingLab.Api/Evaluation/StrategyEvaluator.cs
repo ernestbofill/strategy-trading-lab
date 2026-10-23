@@ -10,6 +10,9 @@ namespace StrategyTradingLab.Api.Evaluation;
 /// <summary>What one evaluation run did.</summary>
 public record EvaluationSummary(int Strategies, int NewSignals, int NewTrades, int Missed, int Failed);
 
+/// <summary>What one strategy or stock gained in a run.</summary>
+record Changes(int NewSignals, int NewTrades, int Missed);
+
 /// <summary>
 /// The daily check (spec: How the two modes run): runs each running strategy's rules over each of its stocks' stored
 /// prices, up to the last finished US session, and keeps what they say: a signal for each step the rules call for, its
@@ -47,7 +50,7 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         return new EvaluationSummary(evaluated, signals, trades, missed, failed);
     }
 
-    async Task<EvaluationSummary> EvaluateAsync(Strategy strategy, DateOnly lastSession, DateTimeOffset now, ExchangeRates rates,
+    async Task<Changes> EvaluateAsync(Strategy strategy, DateOnly lastSession, DateTimeOffset now, ExchangeRates rates,
         CancellationToken cancellationToken)
     {
         int signals = 0, trades = 0, missed = 0;
@@ -67,10 +70,10 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             trades += run.NewTrades;
             missed += run.Missed;
         }
-        return new EvaluationSummary(1, signals, trades, missed, 0);
+        return new Changes(signals, trades, missed);
     }
 
-    async Task<EvaluationSummary> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,
+    async Task<Changes> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,
         DateTimeOffset now, ExchangeRates rates, CancellationToken cancellationToken)
     {
         int newSignals = 0, newTrades = 0, missed = 0;
@@ -121,7 +124,7 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         await db.SaveChangesAsync(cancellationToken);
 
         // Each signal's own trade, at the next trading day's open, once that day exists.
-        var traded = await db.SignalTrades.Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id).Select(t => t.SignalId).ToListAsync(cancellationToken);
+        var traded = await db.SignalTrades.Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id).Select(t => t.SignalId).ToHashSetAsync(cancellationToken);
         foreach (var signal in signals.Values.Where(s => !traded.Contains(s.Id) && s.StepAmount is not null))
         {
             var next = bars.FirstOrDefault(b => b.Date > signal.SignalDate);
@@ -137,7 +140,7 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         }
         await db.SaveChangesAsync(cancellationToken);
         db.ChangeTracker.Clear();
-        return new EvaluationSummary(0, newSignals, newTrades, missed, 0);
+        return new Changes(newSignals, newTrades, missed);
     }
 
     static JsonDocument Facts(IReadOnlyDictionary<string, object> facts) => JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);

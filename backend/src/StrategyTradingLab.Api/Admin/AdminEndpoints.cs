@@ -15,10 +15,8 @@ public record AdminLogIn(string Password);
 /// <summary>Where the test email went.</summary>
 public record TestEmailSent(string SentTo);
 
-/// <summary>The database box: which one the API uses, this host's own, and each one's URL source and host.</summary>
+/// <summary>The database box: which one the API uses, this host's own, and each one's variable and host.</summary>
 public record AdminDatabases(DatabaseName Active, DatabaseName Home, IReadOnlyList<DatabaseInfo> Databases);
-
-public record DatabaseUrl(string Url);
 
 public record DatabaseChoice(string Name);
 
@@ -126,33 +124,24 @@ public static class AdminEndpoints
     }
 
     /// <summary>
-    /// The database box: switch dev / production and set their URLs. Each change is tested first (see <see cref="DatabaseSwitch"/>).
-    /// Outside Development they are refused while the admin password is the default, which anyone can read in this repo.
+    /// The database box: switch dev / production. Their URLs are only in the server's environment; a switch is tested
+    /// first (see <see cref="DatabaseSwitch"/>). Outside Development it is refused while the admin password is the
+    /// default, which anyone can read in this repo.
     /// </summary>
     static void MapDatabase(RouteGroupBuilder group)
     {
         var database = group.MapGroup("/database").AddEndpointFilter(RequireAdmin);
 
         database.MapGet("/", (DatabaseSwitch databases) => new AdminDatabases(databases.Active, databases.Home, databases.Databases()))
-        .WithSummary("Which database the API uses, and where each one's URL comes from (its host only).");
+        .WithSummary("Which database the API uses, and each one's server variable and host.");
 
         database.MapPost("/active", (DatabaseChoice request, DatabaseSwitch databases, IConfiguration configuration,
             IHostEnvironment environment, CancellationToken cancellationToken) =>
-            Change(configuration, environment, request.Name, name => databases.SwitchAsync(name, cancellationToken)))
+            Switch(configuration, environment, request.Name, name => databases.SwitchAsync(name, cancellationToken)))
         .WithSummary("Switches the API to the dev or production database, once it answers and has every migration.");
-
-        database.MapPut("/{name}/url", (string name, DatabaseUrl request, DatabaseSwitch databases, IConfiguration configuration,
-            IHostEnvironment environment, CancellationToken cancellationToken) =>
-            Change(configuration, environment, name, known => databases.SetUrlAsync(known, (request.Url ?? "").Trim(), cancellationToken)))
-        .WithSummary("Sets a database's URL (a Neon one). For the active database it is tested first.");
-
-        database.MapDelete("/{name}/url", (string name, DatabaseSwitch databases, IConfiguration configuration,
-            IHostEnvironment environment, CancellationToken cancellationToken) =>
-            Change(configuration, environment, name, known => databases.ResetUrlAsync(known, cancellationToken)))
-        .WithSummary("Forgets the page's URL: this host's own database goes back to the server's.");
     }
 
-    static async Task<Results<NoContent, NotFound, ProblemHttpResult>> Change(IConfiguration configuration, IHostEnvironment environment,
+    static async Task<Results<NoContent, NotFound, ProblemHttpResult>> Switch(IConfiguration configuration, IHostEnvironment environment,
         string? name, Func<DatabaseName, Task> change)
     {
         // By name only: "dev" or "production". Enum.TryParse would also take a number.

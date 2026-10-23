@@ -17,25 +17,25 @@ The version is `<Version>` in [backend/Directory.Build.props](../../backend/Dire
 { "version": "0.1.0-alpha", "commit": "3f9c2e1…", "builtAt": "2026-10-18T12:04:31+00:00", "database": "production" }
 ```
 
-`database` is the one the API uses: production unless switched to dev on the admin page (`/admin`). The switch and any URLs set there are in `/var/lib/strategy-trading-lab-api/database.json`, encrypted; the deploy's migrations always go to production, from `api.env`. Changing the database on the page needs `ADMIN_PASSWORD` in `api.env`.
+`database` is the one the API uses: production unless switched to dev on the admin page (`/admin`), which needs `DATABASE_URL_DEV` and `ADMIN_PASSWORD` in `api.env`. The choice is in `/var/lib/strategy-trading-lab-api/database.json`; the deploy's migrations always go to production.
 
 `builtAt` is when the release was built, minutes before it went live. It's `null` in Debug builds.
 
 ## One-time server setup
 
-1. The production Neon branch's variables, readable by root only:
-
-   ```bash
-   sudo install -d -m 755 /etc/strategy-trading-lab
-   sudo install -m 600 /dev/null /etc/strategy-trading-lab/api.env
-   sudo nano /etc/strategy-trading-lab/api.env
-   ```
-
-   One `KEY=value` per line, no quotes: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION` (the same variables `neon env pull` writes to `.env.local`, but for the `production` branch).
+1. The API's environment, `/etc/strategy-trading-lab/api.env` (readable by root only): see *The environment file* below.
 
 2. The `/api/` location in nginx: copy [deploy/nginx/strategy-trading-lab.conf](../nginx/strategy-trading-lab.conf) to the server as its header says.
 
 install.sh creates the rest (the `stlab-api` user, `/opt/strategy-trading-lab-api`, the systemd unit) on every deploy.
+
+## The environment file
+
+`/etc/strategy-trading-lab/api.env` holds the API's secrets: the production Neon branch's variables (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `AWS_*`, as `neon env pull` writes them for the `production` branch), `DATABASE_URL_DEV` (the dev branch's pooled URL, so the admin page can switch to dev) and `ADMIN_PASSWORD`. [production.env.example](production.env.example) lists them.
+
+Keep the values in `deploy/backend/production.env` on your machine (gitignored, never committed; copy the example) and send them with [deploy-env.ps1](deploy-env.ps1), or *Terminal → Run Task → Deploy backend environment to Oracle*. It checks the file (one `KEY=value` per line, the two database URLs present), uploads it, and [install-env.sh](install-env.sh) installs it on the server: root-only (`600`), the old one kept as `api.env.previous`, the API restarted and checked on `/health`, and the old file put back if it isn't healthy. It prints variable names only, never values. A file with Windows line ends is fine.
+
+The database URLs are set only here, never on the admin page: the page switches between `DATABASE_URL` (production) and `DATABASE_URL_DEV`, so knowing its password can't point the API at another database.
 
 ## On the server
 

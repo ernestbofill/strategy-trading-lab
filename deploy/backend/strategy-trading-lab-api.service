@@ -12,11 +12,12 @@ Environment=ASPNETCORE_ENVIRONMENT=Production
 # nginx proxies https://<host>/api/ here.
 Environment=ASPNETCORE_URLS=http://127.0.0.1:5080
 Environment=DOTNET_NOLOGO=1
-# The production Neon branch's variables (DATABASE_URL, DATABASE_URL_UNPOOLED, AWS_*). Settings in it override the ones above.
+# The production Neon branch's variables (DATABASE_URL, DATABASE_URL_UNPOOLED, AWS_*), DATABASE_URL_DEV and ADMIN_PASSWORD,
+# sent by deploy-env.ps1. Settings in it override the ones above.
 EnvironmentFile=/etc/strategy-trading-lab/api.env
 # /var/lib/strategy-trading-lab-api, writable only by the service ($STATE_DIRECTORY): the Data Protection keys
-# that encrypt the admin page's secrets, and database.json (the database switch and URLs set on the admin page).
-# Kept across releases; losing it means setting those again (the API then uses production from api.env).
+# that encrypt the admin page's secrets, and database.json (the database the admin page switched to).
+# Kept across releases; losing it means setting those secrets again (and the API uses production).
 StateDirectory=strategy-trading-lab-api
 StateDirectoryMode=0700
 Restart=always

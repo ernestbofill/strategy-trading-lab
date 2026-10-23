@@ -52,7 +52,6 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
 }
 
 const settingPath = (key: string) => `/settings/${encodeURIComponent(key)}`
-const databaseUrlPath = (name: string) => `/database/${encodeURIComponent(name)}/url`
 
 export const httpApi: Api = {
   getTemplates: () => getRequired('/templates'),
@@ -68,6 +67,4 @@ export const httpApi: Api = {
   getVersion: () => getRequired('/version'),
   getAdminDatabases: async () => (await admin('GET', '/database')).json(),
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
-  setAdminDatabaseUrl: async (name, url) => void (await admin('PUT', databaseUrlPath(name), { url })),
-  resetAdminDatabaseUrl: async (name) => void (await admin('DELETE', databaseUrlPath(name))),
 }

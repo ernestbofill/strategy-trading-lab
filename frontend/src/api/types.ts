@@ -185,11 +185,12 @@ export interface BackendVersion {
 
 export type DatabaseName = 'dev' | 'production'
 
-/** A database on the admin page. Its URL holds a password, so only the host is sent. */
+/** A database on the admin page. Its URL is set only on the server and holds a password, so only the host is sent. */
 export interface AdminDatabase {
   name: DatabaseName
-  /** Where its URL comes from: this page, the server's environment, or nowhere. */
-  source: 'page' | 'server' | 'none'
+  /** The server variable its URL comes from: DATABASE_URL for the server's own, else DATABASE_URL_DEV or _PRODUCTION. */
+  variable: string
+  /** Null when the variable isn't set. */
   host: string | null
 }
 
@@ -222,9 +223,6 @@ export interface Api {
   /** Public: the API's build and the database it uses. */
   getVersion(): Promise<BackendVersion>
   getAdminDatabases(): Promise<AdminDatabases>
-  /** Each of these rejects with `InvalidValueError` saying why when refused (a bad URL, a database that doesn't answer). */
+  /** Rejects with `InvalidValueError` saying why when refused (no URL on the server, a database that doesn't answer). */
   switchAdminDatabase(name: DatabaseName): Promise<void>
-  setAdminDatabaseUrl(name: DatabaseName, url: string): Promise<void>
-  /** Forgets the URL set here: the server's own database goes back to the server's. */
-  resetAdminDatabaseUrl(name: DatabaseName): Promise<void>
 }

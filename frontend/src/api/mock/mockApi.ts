@@ -7,10 +7,8 @@ import {
   mockAdminLogOut,
   mockAdminSettings,
   mockResetAdminSetting,
-  mockResetDatabaseUrl,
   mockSendTestEmail,
   mockSetAdminSetting,
-  mockSetDatabaseUrl,
   mockSwitchDatabase,
 } from './admin'
 import { dashboard, startMockStrategy } from './dashboard'
@@ -47,6 +45,4 @@ export const mockApi: Api = {
   getVersion: () => later(() => ({ version: 'mock', commit: null, builtAt: null, database: mockActiveDatabase() })),
   getAdminDatabases: () => later(mockAdminDatabases),
   switchAdminDatabase: (name) => later(() => mockSwitchDatabase(name)),
-  setAdminDatabaseUrl: (name, url) => later(() => mockSetDatabaseUrl(name, url)),
-  resetAdminDatabaseUrl: (name) => later(() => mockResetDatabaseUrl(name)),
 }

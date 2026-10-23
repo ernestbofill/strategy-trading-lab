@@ -139,17 +139,11 @@ describe('httpApi database', () => {
     expect(fetch).toHaveBeenCalledWith('/api/version', expect.anything())
   })
 
-  it('switches with a post, sets and resets a url by name', async () => {
+  it('switches with a post to /api/admin/database/active', async () => {
     respond(204)
     await httpApi.switchAdminDatabase('production')
-    await httpApi.setAdminDatabaseUrl('production', 'postgresql://u:p@ep-x.neon.tech/db')
-    await httpApi.resetAdminDatabaseUrl('dev')
     const calls = vi.mocked(fetch).mock.calls.map(([path, init]) => [init?.method, path, init?.body])
-    expect(calls).toEqual([
-      ['POST', '/api/admin/database/active', JSON.stringify({ name: 'production' })],
-      ['PUT', '/api/admin/database/production/url', JSON.stringify({ url: 'postgresql://u:p@ep-x.neon.tech/db' })],
-      ['DELETE', '/api/admin/database/dev/url', undefined],
-    ])
+    expect(calls).toEqual([['POST', '/api/admin/database/active', JSON.stringify({ name: 'production' })]])
   })
 
   it("passes on the server's reason for a refused change, a 403 included", async () => {

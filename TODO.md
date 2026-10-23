@@ -18,7 +18,7 @@
 - [x] Review the accounts design. Decided: all recommended answers. (#25)
 - [x] Email: Gmail SMTP with an app password, as in the POC. (#25)
 - [x] Email settings: set on `/admin` instead of api.env (#26); the test email works (#27).
-- [ ] Database switch (#30): on the server, add `ADMIN_PASSWORD` (a long one of your own) to `/etc/strategy-trading-lab/api.env` and restart the service (`sudo systemctl restart strategy-trading-lab-api`); until then the page refuses database changes there. Then, if you want production to be able to use dev, set the Dev URL on `/admin` to the Neon `dev` branch's pooled `DATABASE_URL`. Locally, the Production URL works the same way.
+- [ ] Database switch (#30): copy `deploy/backend/production.env.example` to `deploy/backend/production.env` (gitignored) and fill it in: the production branch's variables (as in today's `api.env`), `DATABASE_URL_DEV` (the dev branch's pooled URL) and `ADMIN_PASSWORD` (a long one of your own). Then run *Terminal → Run Task → Deploy backend environment to Oracle* (or `deploy/backend/deploy-env.ps1`). Until `ADMIN_PASSWORD` is there the page can't switch the database on the server. Optional, locally: `DATABASE_URL_PRODUCTION` in `.env.local` lets your local API switch to production.
 
 ## General
 - [ ] Split FE and BE repos?

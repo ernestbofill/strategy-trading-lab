@@ -150,8 +150,10 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
     [Fact]
     public async Task The_home_database_is_refused_under_the_other_name_pooled_or_not()
     {
-        using var server = fixture.WithWebHostBuilder(b => b.UseSetting("DATABASE_URL",
-            "postgresql://u:p@ep-home-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"));
+        // ConnectionStrings:Default, not DATABASE_URL: .env.local (added after test settings) would replace that one.
+        using var state = new TemporaryDirectory();
+        using var server = fixture.WithWebHostBuilder(b => b.UseSetting("STATE_DIRECTORY", state.Path).UseSetting(
+            "ConnectionStrings:Default", "Host=ep-home-pooler.eu-central-1.aws.neon.tech;Database=neondb;Username=u;Password=p"));
         using var admin = await fixture.LoggedIn(server);
 
         var direct = await admin.PutAsJsonAsync("/admin/database/production/url",

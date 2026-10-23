@@ -38,11 +38,13 @@ public sealed class CapturedEmails : IEmailSender
     }
 
     /// <summary>The email to that address with that subject start, waiting for the background worker.</summary>
-    public async Task<OutgoingEmail?> WaitForAsync(string to, string subjectStart, int timeoutMs = 3000)
+    /// <summary>The latest matching email, or with <paramref name="skip"/> the one after that many earlier matches.</summary>
+    public async Task<OutgoingEmail?> WaitForAsync(string to, string subjectStart, int timeoutMs = 3000, int? skip = null)
     {
         for (var waited = 0; waited < timeoutMs; waited += 50)
         {
-            if (sent.LastOrDefault(e => e.To == to && e.Subject.StartsWith(subjectStart)) is { } email) return email;
+            var matches = sent.Where(e => e.To == to && e.Subject.StartsWith(subjectStart)).ToList();
+            if ((skip is { } n ? matches.ElementAtOrDefault(n) : matches.LastOrDefault()) is { } email) return email;
             await Task.Delay(50);
         }
         return null;

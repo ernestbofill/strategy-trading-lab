@@ -88,7 +88,8 @@ public static class AccountEndpoints
             IPasswordHasher<User> hasher, Sessions sessions, LogInThrottle throttle, CancellationToken cancellationToken) =>
         {
             var email = AccountRules.NormalizeEmail(request.Email) ?? (request.Email ?? "").Trim();
-            if (throttle.IsLocked(email))
+            // Counted before the password is checked, so tries sent at once can't all get past the lock.
+            if (!throttle.TryAttempt(email))
                 return TypedResults.Problem("Too many tries. Wait a few minutes, or reset your password.", statusCode: StatusCodes.Status429TooManyRequests);
 
             // A password longer than any account can have is refused before it is hashed (it costs the same time).
@@ -98,10 +99,7 @@ public static class AccountEndpoints
                 ? hasher.VerifyHashedPassword(user, hash, request.Password ?? "")
                 : Failed(hasher, tooLong ? "" : request.Password);
             if (user is null || result == PasswordVerificationResult.Failed)
-            {
-                throttle.Failed(email);
                 return TypedResults.Problem(WrongLogIn, statusCode: StatusCodes.Status401Unauthorized);
-            }
             if (result == PasswordVerificationResult.SuccessRehashNeeded) user.PasswordHash = hasher.HashPassword(user, request.Password!);
             throttle.Succeeded(email);
             await sessions.StartAsync(user, cancellationToken);
@@ -155,9 +153,19 @@ public static class AccountEndpoints
         group.MapPost("/forgot-password", async (EmailRequest request, AppDbContext db, AccountEmails emails, TimeProvider time,
             CancellationToken cancellationToken) =>
         {
-            var email = AccountRules.NormalizeEmail(request.Email);
-            if (email is not null && await db.Users.SingleOrDefaultAsync(u => u.Email == email, cancellationToken) is { } user)
-                emails.Reset(user.Email, await NewToken(db, user, EmailTokenPurpose.ResetPassword, time.GetUtcNow() + ResetFor, cancellationToken));
+            // One statement finds the user and stores the link, so a known email takes as many round trips as an unknown one.
+            if (AccountRules.NormalizeEmail(request.Email) is { } email)
+            {
+                var (token, hash) = SecretTokens.New();
+                var expiresAt = time.GetUtcNow() + ResetFor;
+                var registered = await db.Database.SqlQuery<string>($"""
+                    WITH u AS (SELECT id, email FROM users WHERE email = {email}::citext),
+                         t AS (INSERT INTO email_tokens (id, user_id, purpose, token_hash, expires_at)
+                               SELECT {Guid.CreateVersion7()}, id, 'reset_password', {hash}, {expiresAt} FROM u)
+                    SELECT email::text FROM u
+                    """).ToListAsync(cancellationToken); // Not composed: Postgres allows an INSERT in WITH only at the top level.
+                if (registered is [var to]) emails.Reset(to, token);
+            }
             return TypedResults.Accepted((string?)null, new AccountMessage("If that email has an account, we sent a link. It works for 1 hour."));
         })
         .RequireRateLimiting(EmailLimit)
@@ -176,13 +184,14 @@ public static class AccountEndpoints
 
             // All or nothing: the link, the other reset links, the new password and the ended sessions.
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            // One reset at a time per user: two links used at once would otherwise each wait on the other's row.
+            await db.Database.ExecuteSqlAsync($"SELECT 1 FROM users WHERE id = {user.Id} FOR UPDATE", cancellationToken);
             if (await Claim(db, token, time, cancellationToken) is null)
                 return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
             var now = time.GetUtcNow();
             user.PasswordHash = hasher.HashPassword(user, request.Password!);
             user.EmailVerifiedAt ??= now; // The link reached the inbox.
-            await db.EmailTokens.Where(t => t.UserId == user.Id && t.Purpose == EmailTokenPurpose.ResetPassword && t.UsedAt == null)
-                .ExecuteUpdateAsync(t => t.SetProperty(x => x.UsedAt, now), cancellationToken);
+            await BurnResetLinks(db, user.Id, now, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
             await sessions.EndAllAsync(user.Id, keepThisOne: false, cancellationToken);
             await sessions.StartAsync(user, cancellationToken);
@@ -194,7 +203,7 @@ public static class AccountEndpoints
         .WithSummary("Sets a new password from the link in the email: ends every session, then logs this device in.");
 
         group.MapPost("/change-password", async Task<Results<NoContent, ValidationProblem>> (ChangePasswordRequest request,
-            AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, CancellationToken cancellationToken) =>
+            AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             if (user.PasswordHash is null
@@ -204,13 +213,14 @@ public static class AccountEndpoints
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["newPassword"] = [error] });
 
             user.PasswordHash = hasher.HashPassword(user, request.NewPassword!);
+            await BurnResetLinks(db, user.Id, time.GetUtcNow(), cancellationToken); // A link sent earlier could undo it.
             await db.SaveChangesAsync(cancellationToken);
             await sessions.EndAllAsync(user.Id, keepThisOne: true, cancellationToken);
             return TypedResults.NoContent();
         })
         .RequireUser()
         .RequireRateLimiting(PasswordLimit)
-        .WithSummary("Changes the password; ends the user's other sessions.");
+        .WithSummary("Changes the password; ends the user's other sessions and unused reset links.");
     }
 
     static PasswordVerificationResult Failed(IPasswordHasher<User> hasher, string? password)
@@ -227,6 +237,11 @@ public static class AccountEndpoints
         await db.SaveChangesAsync(cancellationToken);
         return token;
     }
+
+    /// <summary>Uses up the user's unused reset links, once the password has changed.</summary>
+    static Task BurnResetLinks(AppDbContext db, Guid userId, DateTimeOffset now, CancellationToken cancellationToken) =>
+        db.EmailTokens.Where(t => t.UserId == userId && t.Purpose == EmailTokenPurpose.ResetPassword && t.UsedAt == null)
+            .ExecuteUpdateAsync(t => t.SetProperty(x => x.UsedAt, now), cancellationToken);
 
     /// <summary>The unused, unexpired token of that purpose, looked up by its hash.</summary>
     static Task<EmailToken?> FindToken(AppDbContext db, string? token, EmailTokenPurpose purpose, TimeProvider time,

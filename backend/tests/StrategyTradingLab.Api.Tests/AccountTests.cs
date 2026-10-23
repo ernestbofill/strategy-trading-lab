@@ -159,6 +159,40 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
+    public async Task Changing_the_password_uses_up_reset_links_sent_before()
+    {
+        var (client, email) = await api.SignedUpAsync();
+        await client.PostAsJsonAsync("/account/forgot-password", new { email = email.ToUpperInvariant() }); // Emails compare without case.
+        var token = CapturedEmails.Token((await api.Emails.WaitForAsync(email, "Choose a new password"))!);
+
+        await client.PostAsJsonAsync("/account/change-password", new { currentPassword = "a long password", newPassword = "a brand new password" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/reset-password", new { token, password = "yet another password" })).StatusCode);
+    }
+
+    [NeonFact]
+    public async Task Two_reset_links_used_at_once_set_one_password_and_refuse_the_other()
+    {
+        var (client, email) = await api.SignedUpAsync();
+        var tokens = new List<string>();
+        for (var i = 0; i < 2; i++)
+        {
+            await client.PostAsJsonAsync("/account/forgot-password", new { email });
+            var message = await api.Emails.WaitForAsync(email, "Choose a new password", skip: i);
+            tokens.Add(CapturedEmails.Token(message!));
+        }
+        Assert.NotEqual(tokens[0], tokens[1]);
+
+        using var a = api.CreateApiClient();
+        using var b = api.CreateApiClient();
+        var answers = await Task.WhenAll(
+            a.PostAsJsonAsync("/account/reset-password", new { token = tokens[0], password = "first new password" }),
+            b.PostAsJsonAsync("/account/reset-password", new { token = tokens[1], password = "second new password" }));
+
+        Assert.Equal([HttpStatusCode.NoContent, HttpStatusCode.BadRequest], answers.Select(r => r.StatusCode).Order());
+    }
+
+    [NeonFact]
     public async Task Protected_routes_need_a_session_and_templates_dont()
     {
         using var visitor = api.CreateApiClient();

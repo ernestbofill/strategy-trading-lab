@@ -52,4 +52,5 @@ From the spec's *Not designed yet* list, roughly in the order they become useful
 
 - **Price data provider:** terms that allow commercial use, and the cost at many free users. The POC uses eToro and Yahoo.
 - **Catalan copy:** Claude drafts, Ernest reviews. Is that enough, or does a native speaker review it before release?
+- **An account pre-registered with someone else's email** (#28): the owner gets it back with a password reset, but until then the other person keeps it, even after the owner clicks the confirmation link. Should that link instead ask the owner to choose the password? See [backend/AUTH.md](backend/AUTH.md).
 - The rest are in the spec's [Open questions](docs/strategy-trading-lab-app-spec.md#10-open-questions): regulation, AI data, the suggested prompt, web push on iPhone.

@@ -11,8 +11,8 @@ using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Tests;
 
-/// <summary>One API and one logged-in client for the class; the settings rows are put back as they were afterwards.</summary>
-public sealed class AdminFixture : WebApplicationFactory<Program>, IAsyncLifetime
+/// <summary>One API and one logged-in owner for the class; the settings rows are put back as they were afterwards.</summary>
+public sealed class AdminFixture : AccountsApi, IAsyncLifetime
 {
     List<AppSetting> saved = [];
     public HttpClient Admin { get; private set; } = null!;
@@ -23,8 +23,7 @@ public sealed class AdminFixture : WebApplicationFactory<Program>, IAsyncLifetim
     {
         if (!NeonFactAttribute.Configured) return;
         saved = await Db().AppSettings.AsNoTracking().ToListAsync();
-        Admin = this.CreateApiClient();
-        (await Admin.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).EnsureSuccessStatusCode();
+        Admin = await OwnerAsync();
     }
 
     async Task IAsyncLifetime.DisposeAsync()
@@ -55,22 +54,26 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         (await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/settings")).EnumerateArray().Single(s => s.GetProperty("key").GetString() == key);
 
     [NeonFact]
-    public async Task Settings_need_the_admin_cookie()
+    public async Task Settings_need_a_log_in()
     {
         using var stranger = fixture.CreateApiClient();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/settings")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PutAsJsonAsync("/admin/settings/SMTP_USER", new { value = "a@b.c" })).StatusCode);
-        stranger.DefaultRequestHeaders.Add("Cookie", "stl_admin=forged");
+        stranger.DefaultRequestHeaders.Add("Cookie", "stl_session=forged");
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/settings")).StatusCode);
     }
 
     [NeonFact]
-    public async Task A_wrong_password_is_refused()
+    public async Task Settings_are_for_the_owner_only()
     {
-        using var stranger = fixture.CreateApiClient();
+        foreach (var role in new[] { UserRole.User, UserRole.Vip })
+        {
+            using var other = await fixture.SignedUpAsync(role);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsJsonAsync("/admin/log-in", new { password = "stl" })).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync("/admin/settings")).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await other.PutAsJsonAsync("/admin/settings/SMTP_USER", new { value = "a@b.c" })).StatusCode);
+        }
     }
 
     [NeonFact]
@@ -206,7 +209,7 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         using var scope = fixture.Services.CreateScope();
 
         await Assert.ThrowsAsync<StrategyTradingLab.Api.Email.EmailNotSetUpException>(() =>
-            scope.ServiceProvider.GetRequiredService<StrategyTradingLab.Api.Email.IEmailSender>().SendToAccountAsync("s", "b", default));
+            ActivatorUtilities.CreateInstance<StrategyTradingLab.Api.Email.SmtpEmailSender>(scope.ServiceProvider).SendToAccountAsync("s", "b", default));
     }
 
     [NeonFact]
@@ -228,20 +231,6 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp.gmail.com\nx" })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Admin.PutAsJsonAsync("/admin/settings/SMTP_HOST", new { value = "smtp gmail" })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await fixture.Admin.PutAsJsonAsync("/admin/settings/DATABASE_URL", new { value = "x" })).StatusCode);
-    }
-}
-
-/// <summary>Its own API, so its rate limiter counts only these tries.</summary>
-public class AdminLogInRateLimitTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
-{
-    [Fact]
-    public async Task The_sixth_try_in_15_minutes_is_refused()
-    {
-        using var client = factory.CreateApiClient();
-        for (var i = 0; i < 5; i++)
-            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/admin/log-in", new { password = "wrong" })).StatusCode);
-
-        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).StatusCode);
     }
 }
 

@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.MarketData;
 
 namespace StrategyTradingLab.Api.Tests;
 
-/// <summary>The admin page's Yahoo test and Refresh now, with a fake source (no database, no network).</summary>
+/// <summary>The admin page's Yahoo test and Refresh now, with a fake source (no network).</summary>
 public class AdminPricesTests
 {
     sealed class FakeSource(Func<string, IReadOnlyList<Candle>> days) : IMarketDataSource
@@ -17,20 +17,21 @@ public class AdminPricesTests
             Task.FromResult(days(symbol));
     }
 
-    static WebApplicationFactory<Program> Api(IMarketDataSource source) => new WebApplicationFactory<Program>()
-        .WithWebHostBuilder(b => b.ConfigureTestServices(services => services.AddSingleton(source)));
-
-    static async Task<HttpClient> Admin(WebApplicationFactory<Program> api)
+    sealed class Api(IMarketDataSource source) : AccountsApi
     {
-        var client = api.CreateApiClient();
-        (await client.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).EnsureSuccessStatusCode();
-        return client;
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder);
+            builder.ConfigureTestServices(services => services.AddSingleton(source));
+        }
     }
 
-    [Fact]
+    static Task<HttpClient> Admin(Api api) => api.OwnerAsync();
+
+    [NeonFact]
     public async Task The_test_says_what_Yahoo_answered_for_each_symbol_and_stores_nothing()
     {
-        using var api = Api(new FakeSource(symbol => symbol == "SPY"
+        using var api = new Api(new FakeSource(symbol => symbol == "SPY"
             ? [new Candle(new DateOnly(2026, 10, 22), 500, 510, 495, 505.5m, 1000)]
             : throw new MarketDataException("Yahoo answered HTTP 429 for EURUSD=X.")));
         using var admin = await Admin(api);
@@ -47,10 +48,10 @@ public class AdminPricesTests
         Assert.Equal("Yahoo answered HTTP 429 for EURUSD=X.", checks[1].GetProperty("problem").GetString());
     }
 
-    [Fact]
+    [NeonFact]
     public async Task An_empty_answer_is_not_ok()
     {
-        using var api = Api(new FakeSource(_ => []));
+        using var api = new Api(new FakeSource(_ => []));
         using var admin = await Admin(api);
 
         var checks = (await (await admin.PostAsync("/admin/prices/test", null)).Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray();
@@ -58,20 +59,20 @@ public class AdminPricesTests
         Assert.All(checks, check => Assert.False(check.GetProperty("ok").GetBoolean()));
     }
 
-    [Fact]
+    [NeonFact]
     public async Task Refresh_now_is_accepted()
     {
-        using var api = Api(new FakeSource(_ => []));
+        using var api = new Api(new FakeSource(_ => []));
         using var admin = await Admin(api);
 
         // A second ask while it runs is refused (PriceRefreshState tests): here the worker has no database to run on.
         Assert.Equal(HttpStatusCode.Accepted, (await admin.PostAsync("/admin/prices/refresh", null)).StatusCode);
     }
 
-    [Fact]
+    [NeonFact]
     public async Task The_price_endpoints_need_the_admin_login()
     {
-        using var api = Api(new FakeSource(_ => []));
+        using var api = new Api(new FakeSource(_ => []));
         using var visitor = api.CreateApiClient();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsync("/admin/prices/test", null)).StatusCode);

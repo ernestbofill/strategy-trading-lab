@@ -49,6 +49,7 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Email).HasColumnType("citext");
         entity.HasIndex(user => user.Email).IsUnique();
         entity.Property(user => user.Currency).HasColumnType(Money.Currency).HasColumnDefault("EUR");
+        entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
     }
 }

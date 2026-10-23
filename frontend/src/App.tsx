@@ -16,6 +16,7 @@ import { RequireAccount } from './features/account/RequireAccount'
 import { ResetPassword } from './features/account/ResetPassword'
 import { SignUp } from './features/account/SignUp'
 import { VerifyEmail } from './features/account/VerifyEmail'
+import { RequireOwner } from './features/account/RequireOwner'
 import { AdminSettings } from './features/admin/AdminSettings'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { SetBudget } from './features/new-strategy/SetBudget'
@@ -50,7 +51,6 @@ export default function App() {
             <Route path={forgotPasswordPath} element={<ForgotPassword />} />
             <Route path={resetPasswordPath} element={<ResetPassword />} />
             <Route path={verifyEmailPath} element={<VerifyEmail />} />
-            <Route path="/admin" element={<AdminSettings />} />
             <Route element={<RequireAccount />}>
               <Route path="/" element={<PickTemplate />} />
               <Route path="/new/templates/:key" element={<ReviewTemplate />} />
@@ -61,6 +61,9 @@ export default function App() {
               <Route path={confirmPath} element={<Confirm />} />
               <Route path={dashboardPath} element={<Dashboard />} />
               <Route path={accountPath} element={<AccountPage />} />
+              <Route element={<RequireOwner />}>
+                <Route path="/admin" element={<AdminSettings />} />
+              </Route>
               <Route path="/strategies/:id" element={<NotBuiltYet title="Strategy page" back={dashboardPath} />} />
               <Route path="/strategies/:id/signal" element={<NotBuiltYet title="Confirm a signal" back={dashboardPath} />} />
               <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />

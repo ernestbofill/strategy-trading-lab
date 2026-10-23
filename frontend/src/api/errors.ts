@@ -6,7 +6,7 @@ export class NameTakenError extends Error {
   }
 }
 
-/** Not logged in (the app), or the admin page needs its password (again), or a wrong email and password. */
+/** Not logged in (the app, the admin page), or a wrong email and password. */
 export class UnauthorizedError extends Error {
   constructor() {
     super('Not logged in.')
@@ -45,5 +45,13 @@ export class ExpiredLinkError extends Error {
   constructor() {
     super('This link has expired.')
     this.name = 'ExpiredLinkError'
+  }
+}
+
+/** Logged in, but the role isn't allowed here (the admin page is the owner's). */
+export class ForbiddenError extends Error {
+  constructor() {
+    super('Not allowed.')
+    this.name = 'ForbiddenError'
   }
 }

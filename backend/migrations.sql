@@ -752,6 +752,31 @@ START TRANSACTION;
 
 DO $EF$
 BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165841_AddUserRole') THEN
+    ALTER TABLE users ADD role text NOT NULL DEFAULT 'user';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165841_AddUserRole') THEN
+    ALTER TABLE users ADD CONSTRAINT ck_users_role CHECK (role IN ('user', 'vip', 'owner'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165841_AddUserRole') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261023165841_AddUserRole', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023172056_IndexPricesByDate') THEN
     CREATE INDEX ix_prices_daily_date ON prices_daily (date);
     END IF;

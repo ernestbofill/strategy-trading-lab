@@ -100,7 +100,14 @@ public static class AccountEndpoints
                 : Failed(hasher, tooLong ? "" : request.Password);
             if (user is null || result == PasswordVerificationResult.Failed)
                 return TypedResults.Problem(WrongLogIn, statusCode: StatusCodes.Status401Unauthorized);
-            if (result == PasswordVerificationResult.SuccessRehashNeeded) user.PasswordHash = hasher.HashPassword(user, request.Password!);
+            if (result == PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                // Only over the hash just checked, so it can't undo a reset that finished meanwhile.
+                var rehashed = hasher.HashPassword(user, request.Password!);
+                var checkedHash = user.PasswordHash;
+                await db.Users.Where(u => u.Id == user.Id && u.PasswordHash == checkedHash)
+                    .ExecuteUpdateAsync(u => u.SetProperty(x => x.PasswordHash, rehashed), cancellationToken);
+            }
             throttle.Succeeded(email);
             await sessions.StartAsync(user, cancellationToken);
             return TypedResults.NoContent();
@@ -129,10 +136,11 @@ public static class AccountEndpoints
             TimeProvider time, CancellationToken cancellationToken) =>
         {
             if (await FindToken(db, request.Token, EmailTokenPurpose.VerifyEmail, time, cancellationToken) is not { } token
-                || await Claim(db, token, time, cancellationToken) is not { } user)
+                || !await Claim(db, token, time, cancellationToken))
                 return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
-            user.EmailVerifiedAt ??= time.GetUtcNow();
-            await db.SaveChangesAsync(cancellationToken);
+            var now = time.GetUtcNow();
+            await db.Users.Where(u => u.Id == token.UserId && u.EmailVerifiedAt == null)
+                .ExecuteUpdateAsync(u => u.SetProperty(x => x.EmailVerifiedAt, now), cancellationToken);
             return TypedResults.NoContent();
         })
         .RequireRateLimiting(PasswordLimit)
@@ -181,15 +189,15 @@ public static class AccountEndpoints
             // The password is checked before the link is used, so a refused password doesn't use it up.
             if (AccountRules.PasswordError(request.Password, user.Email) is { } error)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [error] });
+            var newHash = hasher.HashPassword(user, request.Password!); // Before the transaction, so the lock isn't held over it.
 
             // All or nothing: the link, the other reset links, the new password and the ended sessions.
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            // One reset at a time per user: two links used at once would otherwise each wait on the other's row.
-            await db.Database.ExecuteSqlAsync($"SELECT 1 FROM users WHERE id = {user.Id} FOR UPDATE", cancellationToken);
-            if (await Claim(db, token, time, cancellationToken) is null)
+            await LockPasswordAsync(db, user.Id, cancellationToken);
+            if (!await Claim(db, token, time, cancellationToken))
                 return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
             var now = time.GetUtcNow();
-            user.PasswordHash = hasher.HashPassword(user, request.Password!);
+            user.PasswordHash = newHash;
             user.EmailVerifiedAt ??= now; // The link reached the inbox.
             await BurnResetLinks(db, user.Id, now, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
@@ -206,16 +214,22 @@ public static class AccountEndpoints
             AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            if (user.PasswordHash is null
-                || hasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword ?? "") == PasswordVerificationResult.Failed)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currentPassword"] = ["That isn't your current password."] });
+            var wrongCurrent = TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currentPassword"] = ["That isn't your current password."] });
+            if (user.PasswordHash is not { } checkedHash
+                || hasher.VerifyHashedPassword(user, checkedHash, request.CurrentPassword ?? "") == PasswordVerificationResult.Failed)
+                return wrongCurrent;
             if (AccountRules.PasswordError(request.NewPassword, user.Email) is { } error)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["newPassword"] = [error] });
+            var newHash = hasher.HashPassword(user, request.NewPassword!);
 
-            user.PasswordHash = hasher.HashPassword(user, request.NewPassword!);
+            // All or nothing, and after any reset that is running: if one changed the password meanwhile, this is refused.
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            if (await LockPasswordAsync(db, user.Id, cancellationToken) != checkedHash) return wrongCurrent;
+            user.PasswordHash = newHash;
             await BurnResetLinks(db, user.Id, time.GetUtcNow(), cancellationToken); // A link sent earlier could undo it.
             await db.SaveChangesAsync(cancellationToken);
             await sessions.EndAllAsync(user.Id, keepThisOne: true, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return TypedResults.NoContent();
         })
         .RequireUser()
@@ -238,6 +252,14 @@ public static class AccountEndpoints
         return token;
     }
 
+    /// <summary>
+    /// Locks the user's row until the transaction ends, so password changes for one user run one at a time, and returns
+    /// the password hash as stored now. NO KEY UPDATE still lets sessions and links be added for the user meanwhile.
+    /// </summary>
+    static async Task<string> LockPasswordAsync(AppDbContext db, Guid userId, CancellationToken cancellationToken) =>
+        (await db.Database.SqlQuery<string>($"SELECT COALESCE(password_hash, '') FROM users WHERE id = {userId} FOR NO KEY UPDATE")
+            .ToListAsync(cancellationToken)).Single(); // Not composed: a locking clause can't sit in EF's subquery.
+
     /// <summary>Uses up the user's unused reset links, once the password has changed.</summary>
     static Task BurnResetLinks(AppDbContext db, Guid userId, DateTimeOffset now, CancellationToken cancellationToken) =>
         db.EmailTokens.Where(t => t.UserId == userId && t.Purpose == EmailTokenPurpose.ResetPassword && t.UsedAt == null)
@@ -255,14 +277,13 @@ public static class AccountEndpoints
     }
 
     /// <summary>
-    /// Uses a found token and returns its user, or null when another request used it first. The claim is one
-    /// UPDATE … WHERE used_at IS NULL, so two requests with the same link can't both use it.
+    /// Uses a found token: false when another request used it first. The claim is one UPDATE … WHERE used_at IS NULL,
+    /// so two requests with the same link can't both use it.
     /// </summary>
-    static async Task<User?> Claim(AppDbContext db, EmailToken found, TimeProvider time, CancellationToken cancellationToken)
+    static async Task<bool> Claim(AppDbContext db, EmailToken found, TimeProvider time, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
-        var claimed = await db.EmailTokens.Where(t => t.Id == found.Id && t.UsedAt == null)
-            .ExecuteUpdateAsync(t => t.SetProperty(x => x.UsedAt, now), cancellationToken);
-        return claimed == 1 ? await db.Users.SingleAsync(u => u.Id == found.UserId, cancellationToken) : null;
+        return await db.EmailTokens.Where(t => t.Id == found.Id && t.UsedAt == null)
+            .ExecuteUpdateAsync(t => t.SetProperty(x => x.UsedAt, now), cancellationToken) == 1;
     }
 }

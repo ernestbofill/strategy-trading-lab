@@ -22,7 +22,8 @@ public class LogInThrottle(TimeProvider time)
 
     static string Key(string email) => email.Trim().ToLowerInvariant();
 
-    public bool IsLocked(string email)
+    /// <summary>For tests: the endpoint uses <see cref="TryAttempt"/>, which checks and counts in one step.</summary>
+    internal bool IsLocked(string email)
     {
         lock (gate) return entries.TryGetValue(Key(email), out var entry) && entry.Locked && entry.Expires > time.GetUtcNow();
     }

@@ -2,7 +2,7 @@
 ## Todos from Claude to Ernest
 - [x] ~~Before merging #28: run `dotnet test` against the Neon dev branch.~~ Not needed: CI now runs every backend test, the database ones included (#32). #28 is merged. (#28, #31)
 - [x] After #28 and #31 are merged: sign up on the live app with your own email, and check the confirmation email arrives. (#31)
-- [ ] Confirm or reorder ROADMAP → Next. (#20)
+- [x] Confirm or reorder ROADMAP → Next. (#20)
 - [x] Decide: a fixed dev user to save strategies before sign-up exists, or build sign-up first? Decided: one fixed user, Ernest (#24). (#20)
 - [x] Decide: the price data provider (commercial terms, cost at many free users). (#20)
       Yahoo it is.
@@ -21,7 +21,7 @@
 - [x] Review the accounts design. Decided: all recommended answers. (#25)
 - [x] Email: Gmail SMTP with an app password, as in the POC. (#25)
 - [x] Email settings: set on `/admin` instead of api.env (#26); the test email works (#27).
-- [ ] Database switch (#30): copy `deploy/backend/production.env.example` to `deploy/backend/production.env` (gitignored) and fill it in: the production branch's variables (as in today's `api.env`), `DATABASE_URL_DEV` (the dev branch's pooled URL) and `ADMIN_PASSWORD` (a long one of your own). Then run *Terminal → Run Task → Deploy backend environment to Oracle* (or `deploy/backend/deploy-env.sh` on the Mac, `deploy-env.ps1` on Windows). Until `ADMIN_PASSWORD` is there the page can't switch the database on the server. Optional, locally: `DATABASE_URL_PRODUCTION` in `.env.local` lets your local API switch to production.
+- [x] Database switch (#30): copy `deploy/backend/production.env.example` to `deploy/backend/production.env` (gitignored) and fill it in: the production branch's variables (as in today's `api.env`), `DATABASE_URL_DEV` (the dev branch's pooled URL) and `ADMIN_PASSWORD` (a long one of your own). Then run *Terminal → Run Task → Deploy backend environment to Oracle* (or `deploy/backend/deploy-env.sh` on the Mac, `deploy-env.ps1` on Windows). Until `ADMIN_PASSWORD` is there the page can't switch the database on the server. Optional, locally: `DATABASE_URL_PRODUCTION` in `.env.local` lets your local API switch to production.
 
 ## General
 - [ ] Split FE and BE repos?

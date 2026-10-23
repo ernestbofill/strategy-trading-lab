@@ -23,17 +23,22 @@ Draft order, for Ernest to confirm.
 1. **Accounts: sign-up, log-in, forgot password, a first account page.** Ernest's call, right after #24. High risk, so in slices, each with an `opus` review: (a) the design, in the spec and [backend/AUTH.md](backend/AUTH.md) (docs, for Ernest's review); (b) the backend: sessions, the account endpoints, rate limits, the seeded user removed (#28); (c) the frontend screens and the guard (#31); (d) the email sender: SMTP with Gmail and an app password, as in the POC (Ernest's call; until the variables are set the links only reach the log). Replaces the fixed user, and closes `POST /strategies`, which is open on production until (b) is deployed.
 2. **Catalan.** A priority, and cheaper now, while there are few screens. Move the frontend's copy into per-language files (English and Catalan) with a language switch the user picks (English by default, never guessed from the browser, as the spec says), and add `Texts/ca.json` for the templates. The API already serves template texts per language, from the user's record, so it needs a way to receive the choice before accounts exist. Start with a glossary, `docs/glossary-ca.md`, that fixes the key words (stock → *acció*, fund → *fons*, step → *pas*, signal → *senyal*, …), so every agent and screen translates them the same way. Claude drafts the Catalan; Ernest reviews it.
 3. **Check the live app after a merge.** A script (bash and PowerShell) that checks production serves the merged versions: `/api/version` for the backend, and a new `/version.json` from the frontend build (today the version is only inside the bundle). Then the agent opens the live app and looks at the changed screens. Run it after every merge, in a loop before the next item. In cloud sessions the script works if the network settings allow the production domain; the visual check needs a headless browser (Playwright) in the cloud environment, otherwise it's local only. A first step towards an agent that tests the live app as a user (TODO.md → Ideas).
-4. **Strategy page (`StrategyDetail`):** Live variant first, as drawn.
-5. **Market data:** daily prices and the euro-dollar rate, once the provider is chosen.
-6. **Daily evaluation and signals** (high risk), then **Confirm a signal** (`Signal`).
-7. **Advanced settings** for *Dip in winners*, replacing the placeholder.
+4. **Strategy engine for *Dip in winners* and *The comeback*** (the goal Ernest set on 2026-10-23, built as a loop of PRs; the rules work like the POC's `stage2_pullback` and `turnaround`, see `ernestbofill/trading-strategies-bot`). All high risk except where noted, each with an `opus` review:
+   1. **Price fetching** (Yahoo, as decided): daily prices and the euro-dollar rate for the starter stocks, stored in the database, refreshed by a daily job after the US close, with tests on recorded responses.
+   2. **The engine core:** the indicators (SMA, recent peak, 52-week high) and the *Dip in winners* signal, ported from the POC and checked against its results on the same prices.
+   3. **The comeback** signal, on the same core.
+   4. **Daily evaluation:** a daily job runs each running strategy, stores the status and signals, and records the paper trades of Simulation strategies, with the step and budget maths.
+   5. **Email:** the signal alert and the daily overview through the existing sender, with the settings to switch them off (the overview is on by default).
+   The screens that show the results are the next item.
+5. **Strategy page (`StrategyDetail`)**, Live variant first as drawn, then **Confirm a signal** (`Signal`).
+6. **Advanced settings** for *Dip in winners*, replacing the placeholder.
 
 ## Later
 
 From the spec's *Not designed yet* list, roughly in the order they become useful:
 
 - Simulation variants of Set your budget, Confirm and the strategy page.
-- Notifications: web push and the daily overview email.
+- Web push notifications (email is in Next).
 - Stock page; stock list editor, stock search and fund picker.
 - Manual trades; editing and deleting trades.
 - Strategy actions: go live with these settings, rename, change the budget, notifications switch, end.

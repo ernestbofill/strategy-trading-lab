@@ -3,7 +3,7 @@ import { CURRENCIES } from '../../lib/format'
 import type { Account, Currency, SignUp } from '../types'
 
 // MOCK: accounts as backend/AUTH.md describes them, in memory. It starts logged in as a demo user (password
-// "a long password"), so the rest of the mock app works at once; log out to try the account screens.
+// "a long password", the owner, so /admin works), so the rest of the mock app works at once; log out to try the account screens.
 // The emailed links are logged to the console instead of sent.
 
 interface MockUser extends Account {
@@ -18,6 +18,7 @@ const demo: MockUser = {
   timeZone: 'Europe/Madrid',
   overviewEmail: true,
   currency: 'EUR',
+  role: 'owner',
 }
 
 /** Keyed by the email in lower case (the API compares without case), each holding the email as typed. */
@@ -65,13 +66,14 @@ const currentUser = (): MockUser => {
   return user
 }
 
-const publicAccount = ({ email, emailVerified, locale, timeZone, overviewEmail, currency }: MockUser): Account => ({
+const publicAccount = ({ email, emailVerified, locale, timeZone, overviewEmail, currency, role }: MockUser): Account => ({
   email,
   emailVerified,
   locale,
   timeZone,
   overviewEmail,
   currency,
+  role,
 })
 
 export const mockGetAccount = (): Account | null => (current && users.has(current) ? publicAccount(currentUser()) : null)
@@ -90,7 +92,7 @@ export function mockSignUp(s: SignUp) {
   const k = key(s.email)
   const registered = users.get(k)
   if (registered) return console.info(`[mock email to ${registered.email}] Someone tried to sign up with your email.`)
-  const user: MockUser = { ...s, email: s.email.trim(), emailVerified: false }
+  const user: MockUser = { ...s, email: s.email.trim(), emailVerified: false, role: 'user' }
   users.set(k, user)
   current = k
   sendLink(user, 'verify')

@@ -183,6 +183,9 @@ export type Locale = 'en' | 'ca'
 export type Currency = 'EUR' | 'USD' | 'GBP'
 
 /** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
+/** What an account may do: the owner runs the app (the admin page), a vip is invited, a user is everyone else. */
+export type Role = 'user' | 'vip' | 'owner'
+
 export interface Account {
   email: string
   emailVerified: boolean
@@ -191,6 +194,7 @@ export interface Account {
   overviewEmail: boolean
   /** Of the user's new strategies; running ones keep theirs. */
   currency: Currency
+  role: Role
 }
 
 /** What Sign-up sends. */
@@ -257,9 +261,7 @@ export interface Api {
   getDashboard(): Promise<Dashboard>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
-  /** Admin page. Each rejects with `UnauthorizedError` without the admin cookie (or a wrong password), `TooManyTriesError` when rate-limited. */
-  adminLogIn(password: string): Promise<void>
-  adminLogOut(): Promise<void>
+  /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */
   getAdminSettings(): Promise<AdminSetting[]>
   /**
    * Rejects with `InvalidValueError` (its message is for the user) when the value is refused. A secret needs `shown`:

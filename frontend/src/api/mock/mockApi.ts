@@ -18,8 +18,6 @@ import { templateDetails, templates } from './data'
 import {
   mockActiveDatabase,
   mockAdminDatabases,
-  mockAdminLogIn,
-  mockAdminLogOut,
   mockAdminSettings,
   mockResetAdminSetting,
   mockSendTestEmail,
@@ -73,8 +71,6 @@ export const mockApi: Api = {
   setCurrency: (currency) => signedIn(() => mockSetCurrency(currency)),
   getDashboard: () => signedIn(dashboard),
   startStrategy: (strategy) => signedIn(() => startMockStrategy(strategy)),
-  adminLogIn: (password) => later(() => mockAdminLogIn(password)),
-  adminLogOut: () => later(mockAdminLogOut),
   getAdminSettings: () => later(mockAdminSettings),
   setAdminSetting: (key, value, shown) => later(() => mockSetAdminSetting(key, value, shown)),
   resetAdminSetting: (key, clear) => later(() => mockResetAdminSetting(key, clear)),

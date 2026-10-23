@@ -1,7 +1,8 @@
-import { InvalidValueError, UnauthorizedError } from '../errors'
+import { ForbiddenError, InvalidValueError, UnauthorizedError } from '../errors'
+import { mockGetAccount } from './account'
 import type { AdminDatabase, AdminDatabases, AdminSetting, DatabaseName } from '../types'
 
-// MOCK: the admin page's settings, as the backend's Admin/SettingDefinitions.cs declares them. Password "STL".
+// MOCK: the admin page's settings, as the backend's Admin/SettingDefinitions.cs declares them. Only the owner (the mock's demo user) may.
 
 type Definition = Pick<AdminSetting, 'key' | 'group' | 'description' | 'default' | 'secret'>
 
@@ -28,7 +29,6 @@ const boundToPassword = ['SMTP_USER', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_FROM']
 const values = new Map<string, string | null>()
 /** The password and the bound values it was saved with. */
 let password: { value: string; binding: string } | null = null
-let loggedIn = false
 
 const effective = (key: string) =>
   values.has(key) ? (values.get(key) ?? null) : (definitions.find((d) => d.key === key)?.default ?? null)
@@ -36,16 +36,9 @@ const binding = () => boundToPassword.map(effective).join('\u001f')
 const passwordIsSet = () => password !== null && password.binding === binding()
 
 const requireAdmin = () => {
-  if (!loggedIn) throw new UnauthorizedError()
-}
-
-export function mockAdminLogIn(given: string) {
-  if (given !== 'STL') throw new UnauthorizedError()
-  loggedIn = true
-}
-
-export function mockAdminLogOut() {
-  loggedIn = false
+  const account = mockGetAccount()
+  if (!account) throw new UnauthorizedError()
+  if (account.role !== 'owner') throw new ForbiddenError()
 }
 
 export function mockAdminSettings(): AdminSetting[] {

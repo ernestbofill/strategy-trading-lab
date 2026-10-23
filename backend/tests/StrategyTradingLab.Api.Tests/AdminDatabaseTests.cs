@@ -5,18 +5,15 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Tests;
 
-/// <summary>An API with its own state directory, deleted afterwards.</summary>
-public sealed class DatabaseFixture : WebApplicationFactory<Program>
+/// <summary>An API whose owners and other users are deleted afterwards, and which can make hosts with their own state directory.</summary>
+public sealed class DatabaseFixture : AccountsApi
 {
-    public async Task<HttpClient> LoggedIn(WebApplicationFactory<Program>? factory = null)
-    {
-        var client = (factory ?? this).CreateApiClient();
-        (await client.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).EnsureSuccessStatusCode();
-        return client;
-    }
+    /// <summary>A client logged in as a new owner, on this API or a host made from it.</summary>
+    public Task<HttpClient> LoggedIn(WebApplicationFactory<Program>? factory = null) => OwnerAsync(factory);
 
     /// <summary>A host with its own state directory and these settings, so no test sees another's database.json.</summary>
     public WebApplicationFactory<Program> With(TemporaryDirectory state, params (string Key, string Value)[] settings) =>
@@ -51,8 +48,8 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
     static async Task<string?> InUse(HttpClient client) =>
         (await client.GetFromJsonAsync<JsonElement>("/version")).GetProperty("database").GetString();
 
-    [Fact]
-    public async Task The_database_box_needs_the_admin_cookie()
+    [NeonFact]
+    public async Task The_database_box_needs_a_log_in()
     {
         using var stranger = fixture.CreateApiClient();
 
@@ -60,7 +57,19 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsJsonAsync("/admin/database/active", new { name = "production" })).StatusCode);
     }
 
-    [Fact]
+    [NeonFact]
+    public async Task The_database_box_is_for_the_owner_only()
+    {
+        foreach (var role in new[] { UserRole.User, UserRole.Vip })
+        {
+            using var other = await fixture.SignedUpAsync(role);
+
+            Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync("/admin/database")).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await other.PostAsJsonAsync("/admin/database/active", new { name = "production" })).StatusCode);
+        }
+    }
+
+    [NeonFact]
     public async Task Locally_the_api_uses_dev_and_each_url_comes_from_a_server_variable()
     {
         using var state = new TemporaryDirectory();
@@ -78,7 +87,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.Equal("dev", await InUse(admin));
     }
 
-    [Fact]
+    [NeonFact]
     public async Task Urls_cant_be_set_on_the_page()
     {
         using var admin = await fixture.LoggedIn();
@@ -87,7 +96,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.False((await admin.DeleteAsync("/admin/database/production/url")).IsSuccessStatusCode);
     }
 
-    [Fact]
+    [NeonFact]
     public async Task A_database_without_a_url_is_never_switched_to()
     {
         using var state = new TemporaryDirectory();
@@ -100,7 +109,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.False(File.Exists(Path.Combine(state.Path, "database.json")));
     }
 
-    [Fact]
+    [NeonFact]
     public async Task A_database_that_does_not_answer_is_never_switched_to()
     {
         using var state = new TemporaryDirectory();
@@ -115,7 +124,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.Equal("dev", await InUse(admin));
     }
 
-    [Fact]
+    [NeonFact]
     public async Task Unknown_databases_are_not_found()
     {
         using var admin = await fixture.LoggedIn();
@@ -137,7 +146,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.Equal("dev", await InUse(withoutUrl));
     }
 
-    [Fact]
+    [NeonFact]
     public async Task An_unreadable_choice_falls_back_to_the_home_database()
     {
         using var state = new TemporaryDirectory();
@@ -146,23 +155,6 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         using var client = fixture.With(state, ("DATABASE_URL_PRODUCTION", Unreachable)).CreateApiClient();
 
         Assert.Equal("dev", await InUse(client));
-    }
-
-    [Fact]
-    public async Task On_the_server_nothing_switches_while_the_admin_password_is_the_default()
-    {
-        using var state = new TemporaryDirectory();
-        using var server = fixture.With(state, ("ConnectionStrings:Default", "Host=localhost;Database=unused"))
-            .WithWebHostBuilder(b => b.UseEnvironment("Production"));
-        using var admin = await fixture.LoggedIn(server);
-
-        var response = await admin.PostAsJsonAsync("/admin/database/active", new { name = "dev" });
-
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        Assert.Equal("Set ADMIN_PASSWORD on the server before changing the database here.", await Problem(response));
-        var databases = await admin.GetFromJsonAsync<JsonElement>("/admin/database");
-        Assert.Equal("production", databases.GetProperty("home").GetString());
-        Assert.Equal("DATABASE_URL_DEV", Database(databases, "dev").GetProperty("variable").GetString());
     }
 
     [NeonFact]

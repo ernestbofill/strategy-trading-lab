@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
 import {
   api,
   InvalidValueError,
+  ForbiddenError,
   TooManyTriesError,
   UnauthorizedError,
   type AdminDatabases,
@@ -9,13 +10,12 @@ import {
   type BackendVersion,
 } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
-import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
 
 type State =
   | { status: 'loading' }
-  | { status: 'logIn' }
   | { status: 'error' }
   /** `settings` is null when they can't be read: they live in the database in use, which may be the broken one. */
   | { status: 'ready'; settings: AdminSetting[] | null; databases: AdminDatabases; version: BackendVersion | null }
@@ -34,33 +34,14 @@ export function AdminSettings() {
     }
   }, [])
 
-  const logOut = async () => {
-    await api.adminLogOut()
-    setState({ status: 'logIn' })
-  }
-
-  const top = (
-    <TopBar
-      title="STL // ADMIN"
-      aside={
-        state.status === 'ready' && (
-          <button type="button" className={`ui-strong ${styles.textButton}`} onClick={logOut}>
-            Log out
-          </button>
-        )
-      }
-    />
-  )
-
-  if (state.status === 'logIn') return <LogIn top={top} onDone={load} />
   return (
-    <Screen top={top}>
+    <Screen top={<TopBar title="STL // ADMIN" />}>
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
       {state.status === 'loading' && <ScreenMessage>Loading the settings…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the settings. Try again later.</ScreenMessage>}
       {state.status === 'ready' && state.version && <BackendBox version={state.version} />}
       {state.status === 'ready' && (
-        <DatabaseBox databases={state.databases} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
+        <DatabaseBox databases={state.databases} onChanged={load} />
       )}
       {state.status === 'ready' && !state.settings && (
         <ScreenMessage>Could not load the settings: the database in use may not answer. Switch above, or try again later.</ScreenMessage>
@@ -75,9 +56,9 @@ export function AdminSettings() {
               <SettingRow
                 key={`${s.key}:${s.source}:${s.value}:${s.isSet}`}
                 setting={s}
-                shown={shownValues(state.settings ?? [])} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
+                shown={shownValues(state.settings ?? [])} onChanged={load} />
             ))}
-            {group === 'Email' && <TestEmail onLoggedOut={() => setState({ status: 'logIn' })} />}
+            {group === 'Email' && <TestEmail />}
           </section>
         ))}
     </Screen>
@@ -88,13 +69,13 @@ async function fetchSettings(): Promise<State> {
   try {
     // The database box and the build don't need the database, so they show even when the settings can't load.
     const settings = api.getAdminSettings().catch((e: unknown) => {
-      if (e instanceof UnauthorizedError) throw e
+      if (e instanceof UnauthorizedError || e instanceof ForbiddenError) throw e
       return null
     })
     const [databases, version, loaded] = await Promise.all([api.getAdminDatabases(), api.getVersion().catch(() => null), settings])
     return { status: 'ready', settings: loaded, databases, version }
-  } catch (e) {
-    return e instanceof UnauthorizedError ? { status: 'logIn' } : { status: 'error' }
+  } catch {
+    return { status: 'error' }
   }
 }
 
@@ -127,65 +108,8 @@ function groups(settings: AdminSetting[]): [string, AdminSetting[]][] {
   return [...byGroup]
 }
 
-function LogIn({ top, onDone }: { top: ReactNode; onDone: () => Promise<void> }) {
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const id = useId()
-
-  const submit = async (e?: FormEvent) => {
-    e?.preventDefault()
-    setBusy(true)
-    setError(null)
-    try {
-      await api.adminLogIn(password)
-      await onDone()
-    } catch (err) {
-      setError(
-        err instanceof TooManyTriesError
-          ? 'Too many tries. Wait 15 minutes and try again.'
-          : err instanceof UnauthorizedError
-            ? 'That password is wrong.'
-            : "Couldn't log in. Try again.",
-      )
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Screen
-      top={top}
-      action={
-        <PrimaryAction onClick={submit} disabled={busy || !password}>
-          {busy ? 'Logging in…' : 'Log in'}
-        </PrimaryAction>
-      }
-    >
-      <PageHeader title="Admin" />
-      <form className={styles.field} onSubmit={submit}>
-        <label htmlFor={id} className="ui-strong">
-          Password
-        </label>
-        <input
-          id={id}
-          className={styles.input}
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && (
-          <p role="alert" className={styles.error}>
-            {error}
-          </p>
-        )}
-      </form>
-    </Screen>
-  )
-}
-
 /** "Send a test email": to the mail account itself, with the settings as saved. */
-function TestEmail({ onLoggedOut }: { onLoggedOut: () => void }) {
+function TestEmail() {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -196,7 +120,7 @@ function TestEmail({ onLoggedOut }: { onLoggedOut: () => void }) {
       const sentTo = await api.sendAdminTestEmail()
       setResult({ ok: true, text: `Sent to ${sentTo}. Check its inbox.` })
     } catch (e) {
-      if (e instanceof UnauthorizedError) return onLoggedOut()
+      if (e instanceof UnauthorizedError) return
       setResult({
         ok: false,
         text:
@@ -247,10 +171,9 @@ interface SettingRowProps {
   setting: AdminSetting
   shown: Record<string, string | null>
   onChanged: () => Promise<void>
-  onLoggedOut: () => void
 }
 
-function SettingRow({ setting: s, shown, onChanged, onLoggedOut }: SettingRowProps) {
+function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
   const [draft, setDraft] = useState(s.secret ? '' : (s.value ?? ''))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -264,7 +187,7 @@ function SettingRow({ setting: s, shown, onChanged, onLoggedOut }: SettingRowPro
       await action()
       await onChanged()
     } catch (e) {
-      if (e instanceof UnauthorizedError) return onLoggedOut()
+      if (e instanceof UnauthorizedError) return
       setError(e instanceof InvalidValueError ? e.message : "Couldn't save it. Try again.")
     } finally {
       setBusy(false)

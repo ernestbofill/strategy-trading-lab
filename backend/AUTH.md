@@ -77,7 +77,7 @@ Local work and the tests sign up like anyone else: with no `SMTP_*` variables th
 
 ## The admin page
 
-The admin settings page (#26) has its own fixed password, `STL` (or `ADMIN_PASSWORD` on the server), until accounts exist (Ernest's call). With accounts it moves behind an admin role on the user (Ernest's account), and the fixed password goes. The email sender reads its settings through `SettingsStore.ValuesAsync` (#26), all in one call.
+The admin settings page (#26) is the owner's: `users.role` is `user` (default), `vip` (invited people with special privileges; no invitation yet) or `owner`, and every `/admin` endpoint answers 401 without a log-in and 403 for any role but `owner`. The user with the verified email in `OWNER_EMAIL` on the server becomes the owner the next time they are looked up (`Sessions`); vip is set in the database for now. The page's old fixed password (`STL`, `ADMIN_PASSWORD`) and its cookie are gone. The email sender reads its settings through `SettingsStore.ValuesAsync` (#26), all in one call.
 
 ## Not in this design
 

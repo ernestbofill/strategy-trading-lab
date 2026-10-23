@@ -1,7 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.DataProtection;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
+using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Admin;
@@ -9,8 +9,6 @@ namespace StrategyTradingLab.Api.Admin;
 /// <summary>What the admin page shows for a setting. A secret's value is never sent, only whether it is set.</summary>
 public record AdminSetting(string Key, string Group, string Description, string? Default, bool Secret, string? Value,
     bool IsSet, SettingSource Source);
-
-public record AdminLogIn(string Password);
 
 /// <summary>Where the test email went.</summary>
 public record TestEmailSent(string SentTo);
@@ -23,53 +21,36 @@ public record DatabaseChoice(string Name);
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
 
+/// <summary>5 test emails an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.</summary>
+public sealed class TestEmailLimit : IDisposable
+{
+    readonly FixedWindowRateLimiter limiter = new(new FixedWindowRateLimiterOptions
+        { PermitLimit = 5, Window = TimeSpan.FromHours(1), QueueLimit = 0 });
+
+    public bool TryAcquire() => limiter.AttemptAcquire().IsAcquired;
+
+    public void Dispose() => limiter.Dispose();
+}
+
 /// <summary>
-/// The admin settings page's API, behind a fixed password until accounts have an admin role (Ernest's call):
-/// ADMIN_PASSWORD on the server, else "STL". Log-in sets a short-lived, encrypted, HttpOnly, SameSite=Strict cookie.
+/// The admin settings page's API, for the owner only: a logged-in user whose role is <see cref="UserRole.Owner"/>.
+/// 401 without a log-in, 403 for any other role.
 /// </summary>
 public static class AdminEndpoints
 {
-    public const string LogInRateLimit = "admin-log-in";
-    public const string TestEmailRateLimit = "admin-test-email";
-    const string CookieName = "stl_admin";
-    const string DefaultPassword = "STL";
-    static readonly TimeSpan SessionLength = TimeSpan.FromHours(8);
-
     public static void MapAdmin(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/admin").WithTags("Admin");
 
-        group.MapPost("/log-in", Results<NoContent, UnauthorizedHttpResult> (AdminLogIn request, HttpContext http,
-            IConfiguration configuration, IDataProtectionProvider dataProtection, TimeProvider time) =>
-        {
-            var password = AdminPassword(configuration);
-            if (!PasswordMatches(request.Password ?? "", password)) return TypedResults.Unauthorized();
-
-            var ticket = Protector(dataProtection).Protect(TicketFor(password), time.GetUtcNow() + SessionLength);
-            http.Response.Cookies.Append(CookieName, ticket, new CookieOptions
-            {
-                HttpOnly = true, Secure = http.Request.IsHttps, SameSite = SameSiteMode.Strict,
-                Path = "/", MaxAge = SessionLength,
-            });
-            return TypedResults.NoContent();
-        })
-        .RequireRateLimiting(LogInRateLimit)
-        .WithSummary("Logs in to the admin page with its password.");
-
-        group.MapPost("/log-out", (HttpContext http) =>
-        {
-            http.Response.Cookies.Delete(CookieName, new CookieOptions { Path = "/" });
-            return TypedResults.NoContent();
-        });
-
         var settings = group.MapGroup("/settings").AddEndpointFilter(RequireAdmin);
         MapDatabase(group);
 
-        // Only ever to the account itself: with the page behind a fixed password, an address typed here would let
-        // anyone who knows it send mail from the account.
+        // Only ever to the account itself, so the page can't be used to send mail from it to anyone.
         group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email,
-            TimeProvider time, CancellationToken cancellationToken) =>
+            TestEmailLimit limit, TimeProvider time, CancellationToken cancellationToken) =>
         {
+            if (!limit.TryAcquire())
+                return TypedResults.Problem("Too many test emails: try again in an hour.", statusCode: StatusCodes.Status429TooManyRequests);
             try
             {
                 var sentTo = await email.SendToAccountAsync("Strategy Trading Lab: test email",
@@ -87,7 +68,6 @@ public static class AdminEndpoints
             }
         })
         .AddEndpointFilter(RequireAdmin)
-        .RequireRateLimiting(TestEmailRateLimit)
         .WithSummary("Sends a test email to the mail account itself, with the settings as they are now.");
 
         settings.MapGet("/", async (SettingsStore store, CancellationToken cancellationToken) =>
@@ -125,8 +105,7 @@ public static class AdminEndpoints
 
     /// <summary>
     /// The database box: switch dev / production. Their URLs are only in the server's environment; a switch is tested
-    /// first (see <see cref="DatabaseSwitch"/>). Outside Development it is refused while the admin password is the
-    /// default, which anyone can read in this repo.
+    /// first (see <see cref="DatabaseSwitch"/>).
     /// </summary>
     static void MapDatabase(RouteGroupBuilder group)
     {
@@ -135,22 +114,17 @@ public static class AdminEndpoints
         database.MapGet("/", (DatabaseSwitch databases) => new AdminDatabases(databases.Active, databases.Home, databases.Databases()))
         .WithSummary("Which database the API uses, and each one's server variable and host.");
 
-        database.MapPost("/active", (DatabaseChoice request, DatabaseSwitch databases, IConfiguration configuration,
-            IHostEnvironment environment, CancellationToken cancellationToken) =>
-            Switch(configuration, environment, request.Name, name => databases.SwitchAsync(name, cancellationToken)))
+        database.MapPost("/active", (DatabaseChoice request, DatabaseSwitch databases, CancellationToken cancellationToken) =>
+            Switch(request.Name, name => databases.SwitchAsync(name, cancellationToken)))
         .WithSummary("Switches the API to the dev or production database, once it answers and has every migration.");
     }
 
-    static async Task<Results<NoContent, NotFound, ProblemHttpResult>> Switch(IConfiguration configuration, IHostEnvironment environment,
-        string? name, Func<DatabaseName, Task> change)
+    static async Task<Results<NoContent, NotFound, ProblemHttpResult>> Switch(string? name, Func<DatabaseName, Task> change)
     {
         // By name only: "dev" or "production". Enum.TryParse would also take a number.
         if (Enum.GetValues<DatabaseName>().Cast<DatabaseName?>().FirstOrDefault(d => d.ToString()!.Equals(name, StringComparison.OrdinalIgnoreCase))
             is not { } known)
             return TypedResults.NotFound();
-        if (!environment.IsDevelopment() && configuration["ADMIN_PASSWORD"] is not { Length: > 0 })
-            return TypedResults.Problem("Set ADMIN_PASSWORD on the server before changing the database here.",
-                statusCode: StatusCodes.Status403Forbidden);
         try
         {
             await change(known);
@@ -169,34 +143,15 @@ public static class AdminEndpoints
             setting.Value is not null, setting.Source);
     }
 
-    static ITimeLimitedDataProtector Protector(IDataProtectionProvider dataProtection) =>
-        dataProtection.CreateProtector("StrategyTradingLab.Admin.Session").ToTimeLimitedDataProtector();
-
-    static async ValueTask<object?> RequireAdmin(EndpointFilterInvocationContext context, EndpointFilterDelegate next) =>
-        IsAdmin(context.HttpContext) ? await next(context) : TypedResults.Unauthorized();
-
-    /// <summary>Whether the request carries a valid admin cookie for the current admin password. Worked out once per request.</summary>
-    public static bool IsAdmin(HttpContext http)
+    static async ValueTask<object?> RequireAdmin(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
-        if (http.Items.TryGetValue(CookieName, out var known)) return (bool)known!;
-        return (bool)(http.Items[CookieName] = CheckAdminCookie(http));
+        var http = context.HttpContext;
+        var user = await http.RequestServices.GetRequiredService<Sessions>().CurrentAsync(http.RequestAborted);
+        if (user is null) return TypedResults.Unauthorized();
+        return user.Role == UserRole.Owner ? await next(context) : TypedResults.StatusCode(StatusCodes.Status403Forbidden);
     }
 
-    static bool CheckAdminCookie(HttpContext http)
-    {
-        if (http.Request.Cookies[CookieName] is not { } ticket) return false;
-        var protector = Protector(http.RequestServices.GetRequiredService<IDataProtectionProvider>());
-        try
-        {
-            return protector.Unprotect(ticket) == TicketFor(AdminPassword(http.RequestServices.GetRequiredService<IConfiguration>()));
-        }
-        catch (CryptographicException)
-        {
-            return false;
-        }
-    }
-
-    /// <summary>The log-in rate limit's key for a client: its IPv4 address, or its IPv6 /64.</summary>
+    /// <summary>The rate limit key for a client: its IPv4 address, or its IPv6 /64.</summary>
     public static string ClientKey(System.Net.IPAddress? address)
     {
         if (address is null) return "unknown";
@@ -206,14 +161,4 @@ public static class AdminEndpoints
         Array.Clear(bytes, 8, 8);
         return new System.Net.IPAddress(bytes) + "/64";
     }
-
-    static string AdminPassword(IConfiguration configuration) =>
-        configuration["ADMIN_PASSWORD"] is { Length: > 0 } set ? set : DefaultPassword;
-
-    /// <summary>The cookie's content: tied to the password, so changing ADMIN_PASSWORD logs every admin out.</summary>
-    static string TicketFor(string password) => "admin:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(password)))[..16];
-
-    /// <summary>Compares hashes in constant time, so the answer's timing says nothing about the password.</summary>
-    static bool PasswordMatches(string given, string expected) =>
-        CryptographicOperations.FixedTimeEquals(SHA256.HashData(Encoding.UTF8.GetBytes(given)), SHA256.HashData(Encoding.UTF8.GetBytes(expected)));
 }

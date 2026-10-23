@@ -12,6 +12,7 @@ public static class RulesRunner
 
     public static IReadOnlyList<DayEvaluation> Run(IBuyRules rules, IReadOnlyList<PriceBar> bars, StepPlan plan)
     {
+        if (rules.Length != bars.Count) throw new ArgumentException($"The rules cover {rules.Length} days but {bars.Count} bars were given.", nameof(bars));
         var results = new List<DayEvaluation>(bars.Count);
         var machine = new Machine(rules, plan);
         for (var i = 0; i < bars.Count; i++) results.Add(machine.Step(i, bars[i].Date));

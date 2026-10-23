@@ -21,14 +21,31 @@ public class DipRules : IBuyRules
         p = parameters;
         close = [.. bars.Select(b => b.Close)];
         floor = Indicators.Sma(close, p.FloorDays);
-        middle = Indicators.Sma(close, MiddleDays);
+        middle = Indicators.Sma(close, MiddleDaysFor(p));
         trend = Indicators.Sma(close, p.TrendDays);
         low = Indicators.RollingLow(close, p.GainDays);
         high = Indicators.RollingHigh(close, p.PeakDays);
         trendRising = Indicators.Rising(trend, RisingDays);
+        length = bars.Count;
     }
 
-    public int MinHistory => Math.Max(MinimumHistory, p.GainDays);
+    readonly int length;
+
+    /// <summary>
+    /// The middle average of the stack (SMA 50 &gt; SMA 150 &gt; SMA 200 in the POC), kept strictly between the floor and the
+    /// trend average when either is changed. With no room between them (equal days) it is the floor's, so nothing stacks.
+    /// </summary>
+    static int MiddleDaysFor(DipParams p)
+    {
+        var lowest = p.FloorDays + 1;
+        var highest = p.TrendDays - 1;
+        return lowest <= highest ? Math.Clamp(MiddleDays, lowest, highest) : p.FloorDays;
+    }
+
+    public int Length => length;
+
+    /// <summary>The POC's 220 days, and more when a window needs more: the trend average and its rise, the low, the peak.</summary>
+    public int MinHistory => new[] { MinimumHistory, p.GainDays, p.TrendDays + RisingDays, p.PeakDays, MiddleDaysFor(p) }.Max();
 
     public int CooldownDays => p.CooldownDays;
 

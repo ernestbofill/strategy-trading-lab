@@ -21,10 +21,10 @@ public static class Indicators
     }
 
     /// <summary>The highest value of the last <paramref name="days"/> days, today included.</summary>
-    public static decimal?[] RollingHigh(IReadOnlyList<decimal> values, int days) => Rolling(values, days, (a, b) => a > b ? a : b);
+    public static decimal?[] RollingHigh(IReadOnlyList<decimal> values, int days) => Rolling(values, days, (kept, today) => kept > today);
 
     /// <summary>The lowest value of the last <paramref name="days"/> days, today included.</summary>
-    public static decimal?[] RollingLow(IReadOnlyList<decimal> values, int days) => Rolling(values, days, (a, b) => a < b ? a : b);
+    public static decimal?[] RollingLow(IReadOnlyList<decimal> values, int days) => Rolling(values, days, (kept, today) => kept < today);
 
     /// <summary>How far <paramref name="value"/> is above (+) or below (−) <paramref name="reference"/>, in percent.</summary>
     public static decimal PctFrom(decimal value, decimal reference) => (value / reference - 1) * 100;
@@ -38,14 +38,17 @@ public static class Indicators
         return result;
     }
 
-    static decimal?[] Rolling(IReadOnlyList<decimal> values, int days, Func<decimal, decimal, decimal> pick)
+    /// <summary>The best value of each window, in one pass: a deque keeps the candidates, the best first (O(n)).</summary>
+    static decimal?[] Rolling(IReadOnlyList<decimal> values, int days, Func<decimal, decimal, bool> better)
     {
         var result = new decimal?[values.Count];
-        for (var i = days - 1; i < values.Count; i++)
+        var candidates = new LinkedList<int>();
+        for (var i = 0; i < values.Count; i++)
         {
-            var best = values[i];
-            for (var j = i - days + 1; j < i; j++) best = pick(best, values[j]);
-            result[i] = best;
+            while (candidates.Last is { } last && !better(values[last.Value], values[i])) candidates.RemoveLast();
+            candidates.AddLast(i);
+            if (candidates.First!.Value <= i - days) candidates.RemoveFirst();
+            if (i >= days - 1) result[i] = values[candidates.First.Value];
         }
         return result;
     }

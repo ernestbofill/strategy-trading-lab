@@ -1,15 +1,20 @@
 """Runs the POC's Leader pullback over real stored candles, as its backtest does (every signal is acted on at the next
-open), and writes the per-day status, step and new-buy flag. Usage: gen_dip.py SYMBOL DAYS OUT.json"""
-import json, sqlite3, sys
+open), and writes the golden file the engine tests read: closes, per-day status, step, reason and the days a signal starts.
+
+Usage, with the POC's own Python (its .venv): POC_REPO=/path/to/trading-strategies-bot \
+  $POC_REPO/backend/.venv/bin/python gen_dip.py SYMBOL DAYS OUT.json [DAYS_BEFORE_END]
+"""
+import json, os, sqlite3, sys
 from datetime import date, timedelta
 import polars as pl
-sys.path.insert(0, "/Users/boyracoon/Dev/trading-strategies-bot/backend/src")
+POC = os.environ["POC_REPO"]
+sys.path.insert(0, os.path.join(POC, "backend", "src"))
 from trading_bot.strategies.stage2_pullback import Stage2Pullback, Stage2Params
 from trading_bot.strategies.base import Acted, Position, TradeLot, Status
 
 symbol, days, out = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 end = int(sys.argv[4]) if len(sys.argv) > 4 else 0
-db = sqlite3.connect("/Users/boyracoon/Dev/trading-strategies-bot/backend/data/trading.db")
+db = sqlite3.connect(os.path.join(POC, "backend", "data", "trading.db"))
 rows = db.execute("select c.day,c.open,c.high,c.low,c.close,c.volume from daily_candles c join instruments i on i.id=c.instrument_id "
                   "where i.symbol=? and c.source='yahoo' order by c.day", (symbol,)).fetchall()
 rows = rows[max(len(rows)-end-days,0):len(rows)-end]
@@ -36,8 +41,10 @@ for i, row in enumerate(prepared.iter_rows(named=True)):
         pending, signal_day = True, day
     result.append({"date": day.isoformat(), "status": ev.status.value, "step": ev.tranche.number if ev.tranche else None,
                    "newBuy": bool(ev.new_buy), "reason": ev.reason})
-bars = [{"date": r[0], "open": r[1], "high": r[2], "low": r[3], "close": r[4], "volume": int(r[5] or 0)} for r in rows]
-json.dump({"symbol": symbol, "bars": bars, "days": result}, open(out, "w"), separators=(",", ":"))
+out_doc = {"symbol": symbol, "dates": [r[0] for r in rows], "close": [r[4] for r in rows],
+           "status": [d["status"] for d in result], "step": [d["step"] or 0 for d in result],
+           "reason": [d["reason"] for d in result], "newBuy": [i for i, d in enumerate(result) if d["newBuy"]]}
+json.dump(out_doc, open(out, "w"), separators=(",", ":"))
 counts = {}
 for d in result: counts[d["status"]] = counts.get(d["status"], 0) + 1
 print(symbol, len(rows), counts, "buys:", sum(d["newBuy"] for d in result))

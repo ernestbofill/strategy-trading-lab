@@ -31,6 +31,7 @@ public class EngineTests
     sealed class OpenOn(params int[] days) : IBuyRules
     {
         public int MinHistory => 1;
+        public int Length { get; init; }
         public int CooldownDays { get; init; } = 3;
         public RuleDay At(int i) => new(true, days.Contains(i), false, "lost", "ran", new Dictionary<string, decimal>());
     }
@@ -44,7 +45,7 @@ public class EngineTests
     public void A_signal_is_acted_on_the_next_day_and_the_cooldown_holds_the_next_one_back()
     {
         // Open on days 1-2 and 4-9, cooldown 3 days from the fill: the fill is day 2 (cooldown to day 5), so day 4 is still cooling.
-        var days = RulesRunner.Run(new OpenOn(1, 2, 4, 5, 6, 7, 8, 9), Bars(12), new StepPlan(3));
+        var days = RulesRunner.Run(new OpenOn(1, 2, 4, 5, 6, 7, 8, 9) { Length = 12 }, Bars(12), new StepPlan(3));
 
         Assert.Equal(RuleStatus.Watching, days[0].Status);
         Assert.True(days[1].NewBuy);
@@ -59,7 +60,7 @@ public class EngineTests
     public void The_last_step_makes_it_holding_and_no_more_signals_follow()
     {
         // Two windows (days 1-2 and 5-6), no cooldown, two steps: one step per window, then holding.
-        var days = RulesRunner.Run(new OpenOn(1, 2, 5, 6, 9, 10) { CooldownDays = 0 }, Bars(14), new StepPlan(2));
+        var days = RulesRunner.Run(new OpenOn(1, 2, 5, 6, 9, 10) { CooldownDays = 0, Length = 14 }, Bars(14), new StepPlan(2));
 
         Assert.Equal([1, 5], NewBuyDays(days));
         Assert.Equal(RuleStatus.Holding, days[^1].Status);
@@ -68,7 +69,7 @@ public class EngineTests
     [Fact]
     public void An_open_window_gives_one_step_however_long_it_stays_open()
     {
-        var days = RulesRunner.Run(new OpenOn([.. Enumerable.Range(1, 20)]) { CooldownDays = 0 }, Bars(25), new StepPlan(5));
+        var days = RulesRunner.Run(new OpenOn([.. Enumerable.Range(1, 20)]) { CooldownDays = 0, Length = 25 }, Bars(25), new StepPlan(5));
 
         Assert.Equal(1, days.Count(d => d.NewBuy));
     }
@@ -76,7 +77,7 @@ public class EngineTests
     [Fact]
     public void Nothing_is_said_before_enough_history()
     {
-        var days = RulesRunner.Run(new Late(new OpenOn(0, 1, 2, 3)), Bars(6), new StepPlan(3));
+        var days = RulesRunner.Run(new Late(new OpenOn(0, 1, 2, 3) { Length = 6 }), Bars(6), new StepPlan(3));
 
         Assert.All(days.Take(3), d => Assert.Equal(RuleStatus.NotEnoughData, d.Status));
     }
@@ -84,7 +85,34 @@ public class EngineTests
     sealed class Late(IBuyRules inner) : IBuyRules
     {
         public int MinHistory => 4;
+        public int Length => inner.Length;
         public int CooldownDays => inner.CooldownDays;
         public RuleDay At(int i) => inner.At(i);
+    }
+
+    [Fact]
+    public void Rules_prepared_over_another_history_are_refused()
+    {
+        Assert.Throws<ArgumentException>(() => RulesRunner.Run(new OpenOn(1) { Length = 5 }, Bars(6), new StepPlan(1)));
+    }
+
+    [Fact]
+    public void The_rolling_extremes_match_a_plain_scan_on_noisy_data()
+    {
+        var random = new Random(7);
+        decimal[] values = [.. Enumerable.Range(0, 400).Select(_ => (decimal)random.Next(1, 60))];
+
+        foreach (var days in new[] { 1, 2, 5, 60, 168, 400 })
+        {
+            var high = Indicators.RollingHigh(values, days);
+            var low = Indicators.RollingLow(values, days);
+            for (var i = 0; i < values.Length; i++)
+            {
+                if (i < days - 1) { Assert.Null(high[i]); continue; }
+                var window = values.Skip(i - days + 1).Take(days).ToList();
+                Assert.Equal(window.Max(), high[i]);
+                Assert.Equal(window.Min(), low[i]);
+            }
+        }
     }
 }

@@ -7,7 +7,7 @@ namespace StrategyTradingLab.Api.Tests;
 /// <summary>The engine against the POC's own output on real prices (Golden/README.md): same status, step and signals, every day.</summary>
 public class EngineGoldenTests
 {
-    record Golden(string Symbol, string[] Dates, decimal[] Close, string[] Status, int[] Step, int[] NewBuy);
+    record Golden(string Symbol, string[] Dates, decimal[] Close, string[] Status, int[] Step, string?[] Reason, int[] NewBuy);
 
     static Golden Load(string name) =>
         JsonSerializer.Deserialize<Golden>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Golden", $"{name}.json")), JsonSerializerOptions.Web)!;
@@ -25,6 +25,7 @@ public class EngineGoldenTests
         {
             Assert.True(Status(g.Status[i]) == days[i].Status, $"{g.Symbol} {g.Dates[i]}: expected {g.Status[i]}, got {days[i].Status}");
             Assert.True(g.Step[i] == (days[i].StepNo ?? 0), $"{g.Symbol} {g.Dates[i]}: expected step {g.Step[i]}, got {days[i].StepNo}");
+            Assert.True(g.Reason[i] == days[i].Reason, $"{g.Symbol} {g.Dates[i]}: expected reason '{g.Reason[i]}', got '{days[i].Reason}'");
         }
         Assert.Equal(g.NewBuy, days.Select((d, i) => (d, i)).Where(x => x.d.NewBuy).Select(x => x.i));
     }

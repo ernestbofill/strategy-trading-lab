@@ -19,6 +19,9 @@ public interface IBuyRules
     /// <summary>The days of history the rules need before they say anything.</summary>
     int MinHistory { get; }
 
+    /// <summary>The number of days the rules were prepared over: <see cref="RulesRunner.Run"/> checks it against its bars.</summary>
+    int Length { get; }
+
     /// <summary>Calendar days after a step is bought before the next buy signal.</summary>
     int CooldownDays { get; }
 

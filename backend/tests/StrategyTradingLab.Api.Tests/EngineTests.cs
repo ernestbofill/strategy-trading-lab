@@ -38,6 +38,8 @@ public class EngineTests
     static IReadOnlyList<PriceBar> Bars(int count) =>
         [.. Enumerable.Range(0, count).Select(i => new PriceBar(new DateOnly(2026, 1, 1).AddDays(i), 10, 10, 10, 10, 0))];
 
+    static IEnumerable<int> NewBuyDays(IReadOnlyList<DayEvaluation> days) => days.Select((d, i) => (d, i)).Where(x => x.d.NewBuy).Select(x => x.i);
+
     [Fact]
     public void A_signal_is_acted_on_the_next_day_and_the_cooldown_holds_the_next_one_back()
     {
@@ -59,7 +61,7 @@ public class EngineTests
         // Two windows (days 1-2 and 5-6), no cooldown, two steps: one step per window, then holding.
         var days = RulesRunner.Run(new OpenOn(1, 2, 5, 6, 9, 10) { CooldownDays = 0 }, Bars(14), new StepPlan(2));
 
-        Assert.Equal([1, 5], days.Select((d, i) => (d, i)).Where(x => x.d.NewBuy).Select(x => x.i));
+        Assert.Equal([1, 5], NewBuyDays(days));
         Assert.Equal(RuleStatus.Holding, days[^1].Status);
     }
 
@@ -74,8 +76,7 @@ public class EngineTests
     [Fact]
     public void Nothing_is_said_before_enough_history()
     {
-        var rules = new OpenOn(0, 1, 2, 3) { };
-        var days = RulesRunner.Run(new Late(rules), Bars(6), new StepPlan(3));
+        var days = RulesRunner.Run(new Late(new OpenOn(0, 1, 2, 3)), Bars(6), new StepPlan(3));
 
         Assert.All(days.Take(3), d => Assert.Equal(RuleStatus.NotEnoughData, d.Status));
     }

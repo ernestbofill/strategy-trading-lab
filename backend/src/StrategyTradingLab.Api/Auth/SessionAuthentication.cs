@@ -21,7 +21,7 @@ public static class SessionAuthentication
         services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(Scheme, null);
         services.AddAuthorization(options =>
         {
-            // The scheme is named on each policy, so only endpoints that need a user look the session up.
+            // The scheme is named on each policy.
             options.DefaultPolicy = new AuthorizationPolicyBuilder(Scheme).RequireAuthenticatedUser().Build();
             options.AddPolicy(Policies.Owner, policy =>
                 policy.AddAuthenticationSchemes(Scheme).RequireRole(nameof(UserRole.Owner)));
@@ -39,8 +39,11 @@ class SessionAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> 
 {
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        // ASP.NET authenticates the default scheme on every request: without a session cookie, don't open the database.
-        if (!Context.Request.Cookies.ContainsKey(Sessions.CookieName)) return AuthenticateResult.NoResult();
+        // ASP.NET authenticates the default scheme on every request: only endpoints that require authorization, and
+        // only with a session cookie, look the session up (so /version and /health work with the database down).
+        if (Context.GetEndpoint()?.Metadata.GetMetadata<IAuthorizeData>() is null
+            || !Context.Request.Cookies.ContainsKey(Sessions.CookieName))
+            return AuthenticateResult.NoResult();
         var sessions = services.GetRequiredService<Sessions>();
         if (await sessions.CurrentAsync(Context.RequestAborted) is not { } user) return AuthenticateResult.NoResult();
         var identity = new ClaimsIdentity(

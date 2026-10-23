@@ -120,6 +120,8 @@ app.Use(async (http, next) =>
     }
     await next(http);
 });
+// After the forwarded headers (the session cookie's Secure flag) and the CSRF check.
+app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
 

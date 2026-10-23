@@ -96,7 +96,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
             factor *= scale;
             var date = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(timestamps[i].GetInt64() + offset).UtcDateTime);
             var volume = Number(quote, "volume", i) ?? 0;
-            var candle = new Candle(date, Price(open.Value * factor), Price(high.Value * factor), Price(low.Value * factor), Price(close.Value * factor), (long)volume);
+            var candle = new Candle(date, Round(open.Value * factor, adjusted), Round(high.Value * factor, adjusted), Round(low.Value * factor, adjusted), Round(close.Value * factor, adjusted), (long)volume);
             // Rounding can push a tiny price to 0, and a bad bar can have its low above its high: neither may reach the table's checks.
             if (candle.Low <= 0 || candle.Open <= 0 || candle.High <= 0 || candle.Close <= 0 || candle.Low > candle.High) continue;
             candles.Add(candle);
@@ -105,8 +105,8 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         return [.. candles.GroupBy(c => c.Date).Select(g => g.Last()).OrderBy(c => c.Date)];
     }
 
-    /// <summary>Stored with four decimals, like the column.</summary>
-    static decimal Price(decimal value) => Math.Round(value, 4);
+    /// <summary>Four decimals, like the price column; eight for rates, which use the rate column's precision.</summary>
+    static decimal Round(decimal value, bool adjusted) => Math.Round(value, adjusted ? 4 : 8);
 
     static decimal? Number(JsonElement list, int index) =>
         list.ValueKind == JsonValueKind.Array && index < list.GetArrayLength() && list[index].ValueKind == JsonValueKind.Number

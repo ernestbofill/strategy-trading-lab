@@ -30,7 +30,14 @@ public class PriceRefreshState
     public bool Request()
     {
         if (running || Interlocked.Exchange(ref pending, 1) == 1) return false;
-        requested.Release();
+        try
+        {
+            requested.Release();
+        }
+        catch (SemaphoreFullException)
+        {
+            // A request is already waiting for the worker: this one is the same run.
+        }
         return true;
     }
 

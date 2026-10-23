@@ -2,7 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
-- 2026-10-23 · In a loop, Claude merges its own PRs, high-risk ones included, once they are reviewed and CI is green; only a question for Ernest keeps one open. Docs-only PRs still wait for him. (Ernest: "I don't need to approve every merge", #41)
+- 2026-10-23 · Loop development is autonomous: Claude does the whole cycle per item and merges its own PRs (high-risk and docs-only ones too) once reviewed and CI is green, and stops only for a decision that is Ernest's. A PR waiting on one stays open; the rest are merged. A tool refusal is reported, with the permission rule to add, never worked around. (Ernest: "I don't need to approve every merge"; "autonomous unless there's a decision I must make", #41)
 - 2026-10-23 · The frontend's in-browser mock backend is removed (Ernest's call): the real API is the only backend, so the screens and the API can't drift apart. Cloud sessions without database variables can't run the screens; they rely on tests. (#40)
 - 2026-10-23 · The user picks a currency (euro, US dollar or British pound; euro by default) at sign-up and in the account. It is the currency of the strategies started afterwards and each strategy keeps its own, so changing it never converts a running one. The tested defaults and backtests stay in euro. (Ernest's request, #35)
 - 2026-10-23 · CI runs every backend test, the `[NeonFact]` ones included, against a throwaway PostgreSQL 16 and RustFS (MinIO no longer publishes community images) with `migrations.sql` applied, so no one has to run them by hand before a merge. A `DATABASE_URL` keeps requiring SSL unless it says `sslmode=disable`. (Ernest: "we can't depend on my manual test")

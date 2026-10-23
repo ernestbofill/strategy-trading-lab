@@ -120,9 +120,14 @@ public class DatabaseSwitch
         // Lock can't be held across an await: test outside it, then apply only if nothing changed meanwhile.
         var before = choice;
         var after = change(before);
-        if (ConnectionString(after, after.Active) is not { } connection)
-            throw new DatabaseChangeException($"The {Words(after.Active)} database has no URL: set one first.");
-        if (ConnectionString(before, before.Active) != connection) await CheckAsync(after.Active, connection, cancellationToken);
+        // Only a change to the database in use or its connection is checked: a URL for the other one is saved as it is.
+        var connection = ConnectionString(after, after.Active);
+        var previous = ConnectionString(before, before.Active);
+        if (after.Active != before.Active || connection != previous)
+        {
+            if (connection is null) throw new DatabaseChangeException($"The {Words(after.Active)} database has no URL: set one first.");
+            if (connection != previous) await CheckAsync(after.Active, connection, cancellationToken);
+        }
 
         lock (writing)
         {
@@ -131,7 +136,7 @@ public class DatabaseSwitch
             choice = after;
         }
         logger.LogWarning("Database settings changed on the admin page: the API now uses the {Database} database ({Host}).",
-            Words(after.Active), new NpgsqlConnectionStringBuilder(connection).Host);
+            Words(after.Active), connection is null ? "none" : new NpgsqlConnectionStringBuilder(connection).Host);
     }
 
     static async Task CheckAsync(DatabaseName name, string connection, CancellationToken cancellationToken)
@@ -175,7 +180,8 @@ public class DatabaseSwitch
         try
         {
             var saved = JsonSerializer.Deserialize<Choice>(protector.Unprotect(File.ReadAllText(path)))!;
-            return ConnectionString(saved, saved.Active) is null ? home : saved;
+            // The active one lost its URL (a new api.env): back to the home database, keeping the URLs set on the page.
+            return ConnectionString(saved, saved.Active) is null ? saved with { Active = Home } : saved;
         }
         catch (Exception error) when (error is System.Security.Cryptography.CryptographicException or JsonException or IOException
             or UriFormatException)

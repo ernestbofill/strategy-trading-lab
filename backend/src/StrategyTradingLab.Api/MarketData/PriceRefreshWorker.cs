@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using StrategyTradingLab.Api.Admin;
 
 namespace StrategyTradingLab.Api.MarketData;
 
@@ -15,38 +16,47 @@ public class PriceRefreshOptions
 /// <summary>What the last refresh did, for the admin page. In memory: a restart forgets it (the first run follows).</summary>
 public class PriceRefreshState
 {
-    readonly SemaphoreSlim requested = new(0);
-    public bool Running { get; private set; }
-    public DateTimeOffset? LastStarted { get; private set; }
-    public DateTimeOffset? LastFinished { get; private set; }
-    public IReadOnlyList<RefreshResult> LastResults { get; private set; } = [];
+    readonly SemaphoreSlim requested = new(0, 1);
+    int pending;
+    volatile bool running;
+    volatile PriceRun last = new(null, null, []);
 
-    /// <summary>Asks the worker to run now. False if a run is on already.</summary>
+    public bool Running => running || pending == 1;
+    public DateTimeOffset? LastStarted => last.Started;
+    public DateTimeOffset? LastFinished => last.Finished;
+    public IReadOnlyList<RefreshResult> LastResults => last.Results;
+
+    /// <summary>Asks the worker to run now. False if a run is on, or already asked for.</summary>
     public bool Request()
     {
-        if (Running) return false;
+        if (running || Interlocked.Exchange(ref pending, 1) == 1) return false;
         requested.Release();
         return true;
     }
 
     public Task WaitForRequestAsync(CancellationToken cancellationToken) => requested.WaitAsync(cancellationToken);
 
+    /// <summary>The run was asked for but not made (see the worker).</summary>
+    public void Skipped() => Interlocked.Exchange(ref pending, 0);
+
     public void Started(DateTimeOffset now)
     {
-        Running = true;
-        LastStarted = now;
+        running = true;
+        Interlocked.Exchange(ref pending, 0);
+        last = new PriceRun(now, last.Finished, last.Results);
     }
 
     public void Finished(DateTimeOffset now, IReadOnlyList<RefreshResult> results)
     {
-        Running = false;
-        LastFinished = now;
-        LastResults = results;
+        last = new PriceRun(last.Started, now, results);
+        running = false;
     }
+
+    record PriceRun(DateTimeOffset? Started, DateTimeOffset? Finished, IReadOnlyList<RefreshResult> Results);
 }
 
 /// <summary>Refreshes the prices once a day after the US close, and when the admin page asks.</summary>
-public class PriceRefreshWorker(PriceRefreshState state, IServiceScopeFactory scopes, IOptions<PriceRefreshOptions> options,
+public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch databases, IServiceScopeFactory scopes, IOptions<PriceRefreshOptions> options,
     TimeProvider time, ILogger<PriceRefreshWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -69,6 +79,14 @@ public class PriceRefreshWorker(PriceRefreshState state, IServiceScopeFactory sc
 
     async Task RunAsync(CancellationToken stoppingToken)
     {
+        // Prices belong to the database this host owns. While the admin page has the API on the other one, a run would
+        // write there and leave the home database stale, so it waits for the next one.
+        if (databases.Active != databases.Home)
+        {
+            logger.LogWarning("The price refresh is skipped: the API is switched to the {Database} database.", databases.Active);
+            state.Skipped();
+            return;
+        }
         state.Started(time.GetUtcNow());
         IReadOnlyList<RefreshResult> results = [];
         try

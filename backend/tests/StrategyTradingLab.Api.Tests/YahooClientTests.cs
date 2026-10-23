@@ -60,4 +60,43 @@ public class YahooClientTests
     [InlineData("""{"unexpected":true}""")]
     public void An_error_or_an_unexpected_answer_is_a_market_data_error(string json) =>
         Assert.Throws<MarketDataException>(() => YahooClient.Parse(json, "BAD", true));
+
+    static string Chart(string currency, string quote, string? adjclose = null)
+    {
+        var adj = adjclose is null ? "" : ",\"adjclose\":[{\"adjclose\":" + adjclose + "}]";
+        return "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"" + currency + "\",\"gmtoffset\":0},\"timestamp\":[1792416600,1792503000],"
+            + "\"indicators\":{\"quote\":[" + quote + "]" + adj + "}}],\"error\":null}}";
+    }
+
+    [Fact]
+    public void Pence_are_scaled_to_pounds()
+    {
+        var json = Chart("GBp", """{"open":[1000,1010],"high":[1020,1030],"low":[990,1000],"close":[1010,1020],"volume":[1,2]}""");
+
+        Assert.Equal(10.10m, YahooClient.Parse(json, "VOD.L", adjusted: false)[0].Close);
+    }
+
+    [Fact]
+    public void A_day_with_a_zero_price_or_without_adjclose_is_left_out()
+    {
+        var zeroOpen = Chart("USD", """{"open":[0,5],"high":[6,6],"low":[4,4],"close":[5,5],"volume":[1,2]}""");
+        var noAdjclose = Chart("USD", """{"open":[5,5],"high":[6,6],"low":[4,4],"close":[5,5],"volume":[1,2]}""", "[null,5]");
+
+        Assert.Single(YahooClient.Parse(zeroOpen, "A", adjusted: false));
+        Assert.Single(YahooClient.Parse(noAdjclose, "A", adjusted: true));
+    }
+
+    [Fact]
+    public void A_malformed_series_is_a_market_data_error() =>
+        Assert.Throws<MarketDataException>(() => YahooClient.Parse("""{"chart":{"result":[{"meta":{},"timestamp":[1],"indicators":{}}],"error":null}}""", "X", true));
+
+    [Fact]
+    public void A_refresh_asked_for_twice_runs_once()
+    {
+        var state = new PriceRefreshState();
+
+        Assert.True(state.Request());
+        Assert.False(state.Request());
+        Assert.True(state.Running);
+    }
 }

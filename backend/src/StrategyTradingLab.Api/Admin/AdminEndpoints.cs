@@ -132,11 +132,7 @@ public static class AdminEndpoints
         .WithSummary("Back to the server's value or the default; with ?clear=true, no value at all.");
     }
 
-    /// <summary>
-    /// The database box: switch dev / production. Their URLs are only in the server's environment; a switch is tested
-    /// first (see <see cref="DatabaseSwitch"/>). Outside Development it is refused while the admin password is the
-    /// default, which anyone can read in this repo.
-    /// </summary>
+    /// <summary>The prices box: the last refresh, and a button to run it now.</summary>
     static void MapPrices(RouteGroupBuilder group)
     {
         var prices = group.MapGroup("/prices").AddEndpointFilter(RequireAdmin);
@@ -144,7 +140,7 @@ public static class AdminEndpoints
         prices.MapGet("/", async (PriceRefreshState state, IOptions<PriceRefreshOptions> options, AppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var latest = await db.Prices.OrderByDescending(p => p.Date).Select(p => (DateOnly?)p.Date).FirstOrDefaultAsync(cancellationToken);
+            var latest = await db.Prices.MaxAsync(p => (DateOnly?)p.Date, cancellationToken);
             var results = state.LastResults;
             return new AdminPrices(options.Value.Enabled, state.Running, state.LastStarted, state.LastFinished, latest,
                 [.. results.Where(r => r.Outcome == RefreshOutcome.Failed)],
@@ -159,6 +155,11 @@ public static class AdminEndpoints
         .WithSummary("Refreshes the prices now, in the background.");
     }
 
+    /// <summary>
+    /// The database box: switch dev / production. Their URLs are only in the server's environment; a switch is tested
+    /// first (see <see cref="DatabaseSwitch"/>). Outside Development it is refused while the admin password is the
+    /// default, which anyone can read in this repo.
+    /// </summary>
     static void MapDatabase(RouteGroupBuilder group)
     {
         var database = group.MapGroup("/database").AddEndpointFilter(RequireAdmin);

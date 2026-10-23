@@ -47,7 +47,7 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         {
             return await refresh();
         }
-        catch (Exception error) when (error is MarketDataException or DbUpdateException)
+        catch (Exception error) when (error is not OperationCanceledException)
         {
             db.ChangeTracker.Clear();
             logger.LogWarning("Prices for {Name} weren't updated: {Reason}", name, error.Message);
@@ -102,8 +102,12 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     public async Task<RefreshResult> RefreshRateAsync(string quote, CancellationToken cancellationToken)
     {
         var symbol = $"{BaseCurrency}{quote}=X";
-        var hasRates = await db.FxRates.AnyAsync(r => r.Base == BaseCurrency && r.Quote == quote, cancellationToken);
-        var days = await source.DailyAsync(symbol, fullHistory: !hasRates, adjusted: false, cancellationToken);
+        var latestStored = await db.FxRates.Where(r => r.Base == BaseCurrency && r.Quote == quote)
+            .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
+        var days = await source.DailyAsync(symbol, fullHistory: latestStored is null, adjusted: false, cancellationToken);
+        // The last month doesn't reach back to the stored days (a long outage): fetch it all, so no weeks are left missing.
+        if (latestStored is { } latest && days.Count > 0 && latest < days[0].Date)
+            days = await source.DailyAsync(symbol, fullHistory: true, adjusted: false, cancellationToken);
         if (days.Count == 0) throw new MarketDataException($"Yahoo returned no rates for {symbol}.");
 
         var from = days[0].Date;
@@ -113,6 +117,6 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         db.ChangeTracker.Clear();
-        return new RefreshResult($"{BaseCurrency}{quote}", hasRates ? RefreshOutcome.Updated : RefreshOutcome.FullHistory, days.Count);
+        return new RefreshResult($"{BaseCurrency}{quote}", latestStored is null ? RefreshOutcome.FullHistory : RefreshOutcome.Updated, days.Count);
     }
 }

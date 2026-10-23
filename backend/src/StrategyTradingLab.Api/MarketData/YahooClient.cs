@@ -33,8 +33,9 @@ public class YahooClient(HttpClient http) : IMarketDataSource
             if (!response.IsSuccessStatusCode) throw new MarketDataException($"Yahoo answered HTTP {(int)response.StatusCode} for {symbol}.");
             json = await response.Content.ReadAsStringAsync(cancellationToken);
         }
-        catch (HttpRequestException error)
+        catch (Exception error) when (error is HttpRequestException || (error is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
+            // A timeout is a TaskCanceledException that isn't ours: it's a failure of this symbol, not a shutdown.
             throw new MarketDataException($"Couldn't reach Yahoo for {symbol}.", error);
         }
         return Parse(json, symbol, adjusted);
@@ -46,24 +47,34 @@ public class YahooClient(HttpClient http) : IMarketDataSource
     /// </summary>
     public static IReadOnlyList<Candle> Parse(string json, string symbol, bool adjusted)
     {
-        JsonElement result;
         try
         {
-            using var document = JsonDocument.Parse(json);
-            var chart = document.RootElement.GetProperty("chart");
-            if (chart.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
-                throw new MarketDataException($"Yahoo has no data for {symbol}: {error.GetProperty("description").GetString()}");
-            result = chart.GetProperty("result")[0].Clone();
+            return ParseChart(json, symbol, adjusted);
         }
-        catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
+        catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException
+            or IndexOutOfRangeException or FormatException or OverflowException)
         {
             throw new MarketDataException($"Yahoo's answer for {symbol} wasn't what we expected.", error);
         }
+    }
+
+    static IReadOnlyList<Candle> ParseChart(string json, string symbol, bool adjusted)
+    {
+        using var document = JsonDocument.Parse(json);
+        var chart = document.RootElement.GetProperty("chart");
+        if (chart.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+            throw new MarketDataException($"Yahoo has no data for {symbol}: {error.GetProperty("description").GetString()}");
+        var result = chart.GetProperty("result")[0];
 
         if (!result.TryGetProperty("timestamp", out var timestamps)) return []; // A symbol with no days in the range.
-        var offset = result.GetProperty("meta").TryGetProperty("gmtoffset", out var gmt) ? gmt.GetInt32() : 0;
+        var meta = result.GetProperty("meta");
+        var offset = meta.TryGetProperty("gmtoffset", out var gmt) ? gmt.GetInt32() : 0;
+        // London stocks are quoted in pence (GBp) while the asset's currency is pounds.
+        var scale = meta.TryGetProperty("currency", out var currency) && currency.GetString() == "GBp" ? 0.01m : 1m;
         var indicators = result.GetProperty("indicators");
         var quote = indicators.GetProperty("quote")[0];
+        // Adjusted only when the series has adjclose (indexes and rates don't); then a day without it is left out, so raw
+        // and adjusted prices never mix in one series.
         JsonElement? adjClose = adjusted && indicators.TryGetProperty("adjclose", out var adj) ? adj[0].GetProperty("adjclose") : null;
 
         var candles = new List<Candle>();
@@ -73,13 +84,21 @@ public class YahooClient(HttpClient http) : IMarketDataSource
             var high = Number(quote, "high", i);
             var low = Number(quote, "low", i);
             var close = Number(quote, "close", i);
-            if (open is null || high is null || low is null || close is not > 0) continue; // Yahoo can return a day with a volume but no prices.
+            if (open is not > 0 || high is not > 0 || low is not > 0 || close is not > 0) continue; // Yahoo can return a day with a volume but no prices.
 
-            var factor = adjClose is { } list && Number(list, i) is { } adjustedClose ? adjustedClose / close.Value : 1m;
+            var factor = 1m;
+            if (adjClose is { } list)
+            {
+                var adjustedClose = Number(list, i);
+                if (adjustedClose is not > 0) continue;
+                factor = adjustedClose.Value / close.Value;
+            }
+            factor *= scale;
             var date = DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(timestamps[i].GetInt64() + offset).UtcDateTime);
             var volume = Number(quote, "volume", i) ?? 0;
             var candle = new Candle(date, Price(open.Value * factor), Price(high.Value * factor), Price(low.Value * factor), Price(close.Value * factor), (long)volume);
-            if (candle.Low <= 0 || candle.Low > candle.High) continue;
+            // Rounding can push a tiny price to 0, and a bad bar can have its low above its high: neither may reach the table's checks.
+            if (candle.Low <= 0 || candle.Open <= 0 || candle.High <= 0 || candle.Close <= 0 || candle.Low > candle.High) continue;
             candles.Add(candle);
         }
         // One bar per day, the last one wins (a day in progress can be listed twice around midnight).

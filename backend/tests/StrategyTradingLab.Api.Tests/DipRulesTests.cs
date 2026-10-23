@@ -26,9 +26,9 @@ public class DipRulesTests
         var bars = Rising(400);
         var rules = new DipRules(bars, new DipParams { TrendDays = 100, MinGainPct = 10 });
 
-        var day = rules.At(399);
+        var day = rules.Decide(399, new DayContext(new DateOnly(2021, 2, 4), null, 0, default, false, false, false));
 
-        Assert.True(day.Candidate);
+        Assert.Equal(RuleStatus.Watching, day.Status); // A candidate (not-candidate otherwise), waiting for a dip into the zone.
     }
 
     [Fact]
@@ -37,6 +37,30 @@ public class DipRulesTests
         var bars = Rising(400);
         var rules = new DipRules(bars, new DipParams { TrendDays = 100, FloorDays = 100, MinGainPct = 10 });
 
-        Assert.False(rules.At(399).Candidate);
+        Assert.Equal(RuleStatus.NotCandidate, rules.Decide(399, new DayContext(new DateOnly(2021, 2, 4), null, 0, default, false, false, false)).Status);
+    }
+
+    [Fact]
+    public void Rules_that_were_already_run_are_refused_a_second_time()
+    {
+        var bars = Rising(300);
+        var dip = new DipRules(bars, new DipParams());
+        var comeback = new ComebackRules(bars, new ComebackParams());
+        var context = new DayContext(new DateOnly(2021, 1, 1), null, 0, default, false, false, false);
+        dip.Decide(260, context);
+        comeback.Decide(260, context);
+
+        Assert.Throws<InvalidOperationException>(() => dip.Decide(260, context));
+        Assert.Throws<InvalidOperationException>(() => comeback.Decide(100, context));
+    }
+
+    [Fact]
+    public void The_comeback_says_not_a_candidate_before_its_indicators_have_data()
+    {
+        var rules = new ComebackRules(Rising(300), new ComebackParams());
+
+        var day = rules.Decide(10, new DayContext(new DateOnly(2020, 1, 11), null, 0, default, false, false, false));
+
+        Assert.Equal(RuleStatus.NotCandidate, day.Status);
     }
 }

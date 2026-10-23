@@ -7,13 +7,13 @@ namespace StrategyTradingLab.Api.Tests;
 /// <summary>The engine against the POC's own output on real prices (Golden/README.md): same status, step and signals, every day.</summary>
 public class EngineGoldenTests
 {
-    record Golden(string Symbol, string[] Dates, decimal[] Close, string[] Status, int[] Step, string?[] Reason, int[] NewBuy);
+    record Golden(string Symbol, string[] Dates, decimal[] Close, long[]? Volume, string[] Status, int[] Step, string?[] Reason, int[] NewBuy);
 
     static Golden Load(string name) =>
         JsonSerializer.Deserialize<Golden>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Golden", $"{name}.json")), JsonSerializerOptions.Web)!;
 
     static IReadOnlyList<PriceBar> Bars(Golden g) =>
-        [.. g.Dates.Select((d, i) => new PriceBar(DateOnly.Parse(d), g.Close[i], g.Close[i], g.Close[i], g.Close[i], 0))];
+        [.. g.Dates.Select((d, i) => new PriceBar(DateOnly.Parse(d), g.Close[i], g.Close[i], g.Close[i], g.Close[i], g.Volume?[i] ?? 0))];
 
     /// <summary>The POC's status words ("not_enough_data") as the engine's names.</summary>
     static RuleStatus Status(string word) => Enum.Parse<RuleStatus>(word.Replace("_", ""), ignoreCase: true);
@@ -42,6 +42,23 @@ public class EngineGoldenTests
         var bars = Bars(golden);
 
         var days = RulesRunner.Run(new DipRules(bars, new DipParams { CooldownDays = 10 }), bars, new StepPlan(5));
+
+        Matches(golden, days);
+    }
+
+    [Theory]
+    [InlineData("comeback-MOD-800")]
+    [InlineData("comeback-NOW-2400")]
+    [InlineData("comeback-SMCI-800")]
+    [InlineData("comeback-TSLA-0")]
+    [InlineData("comeback-VICR-1600")]
+    [InlineData("comeback-VRT-800")]
+    public void The_comeback_matches_the_POC_day_by_day(string name)
+    {
+        var golden = Load(name);
+        var bars = Bars(golden);
+
+        var days = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5));
 
         Matches(golden, days);
     }

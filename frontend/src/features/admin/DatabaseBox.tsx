@@ -11,6 +11,25 @@ const sourceText: Record<AdminDatabase['source'], string> = {
   none: 'Not set',
 }
 
+/** Runs a change with a busy flag and the reason it was refused; a lapsed login goes back to the log-in form. */
+function useChange(onLoggedOut: () => void, failure: string) {
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await action()
+    } catch (e) {
+      if (e instanceof UnauthorizedError) return onLoggedOut()
+      setError(e instanceof InvalidValueError ? e.message : failure)
+    } finally {
+      setBusy(false)
+    }
+  }
+  return { error, busy, run }
+}
+
 interface Props {
   databases: AdminDatabases
   onChanged: () => Promise<void>
@@ -21,22 +40,13 @@ interface Props {
 export function DatabaseBox({ databases, onChanged, onLoggedOut }: Props) {
   const { active, home } = databases
   const other: DatabaseName = active === 'dev' ? 'production' : 'dev'
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const { error, busy, run } = useChange(onLoggedOut, "Couldn't switch. Try again.")
 
-  const switchTo = async () => {
-    setBusy(true)
-    setError(null)
-    try {
+  const switchTo = () =>
+    run(async () => {
       await api.switchAdminDatabase(other)
       await Promise.all([onChanged(), refreshBackendVersion()])
-    } catch (e) {
-      if (e instanceof UnauthorizedError) return onLoggedOut()
-      setError(e instanceof InvalidValueError ? e.message : "Couldn't switch. Try again.")
-    } finally {
-      setBusy(false)
-    }
-  }
+    })
 
   return (
     <section className={styles.group}>
@@ -75,26 +85,16 @@ export function DatabaseBox({ databases, onChanged, onLoggedOut }: Props) {
 
 function UrlRow({ database: d, onChanged, onLoggedOut }: { database: AdminDatabase } & Omit<Props, 'databases'>) {
   const [draft, setDraft] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
   const id = useId()
-
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true)
-    setError(null)
-    try {
+  const { error, busy, run: change } = useChange(onLoggedOut, "Couldn't save it. Try again.")
+  const run = (action: () => Promise<void>) =>
+    change(async () => {
       await action()
       await onChanged()
-    } catch (e) {
-      if (e instanceof UnauthorizedError) return onLoggedOut()
-      setError(e instanceof InvalidValueError ? e.message : "Couldn't save it. Try again.")
-    } finally {
-      setBusy(false)
-    }
-  }
+    })
 
-  const save = (e?: FormEvent) => {
-    e?.preventDefault()
+  const save = (e: FormEvent) => {
+    e.preventDefault()
     if (draft.trim()) void run(() => api.setAdminDatabaseUrl(d.name, draft))
   }
 

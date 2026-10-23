@@ -8,6 +8,7 @@ export {
   InvalidFieldsError,
   InvalidValueError,
   NameTakenError,
+  ForbiddenError,
   TooManyTriesError,
   UnauthorizedError,
 } from './errors'

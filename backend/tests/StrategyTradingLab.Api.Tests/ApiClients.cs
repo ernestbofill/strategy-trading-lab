@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Tests;
@@ -76,6 +77,22 @@ public class AccountsApi : WebApplicationFactory<Program>
         (await client.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(email, password))).EnsureSuccessStatusCode();
         return (client, email);
     }
+
+    /// <summary>A new account with that role, logged in on the returned client.</summary>
+    public async Task<HttpClient> SignedUpAsync(UserRole role, WebApplicationFactory<Program>? api = null)
+    {
+        var email = NewEmail();
+        var client = (api ?? this).CreateApiClient();
+        (await client.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(email))).EnsureSuccessStatusCode();
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<StrategyTradingLab.Api.Data.AppDbContext>();
+        await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ExecuteUpdateAsync(
+            db.Users.Where(u => (string)u.Email == email), set => set.SetProperty(u => u.Role, role));
+        return client;
+    }
+
+    /// <summary>A new owner's client (<paramref name="api"/>: a host made from this one, sharing its database).</summary>
+    public Task<HttpClient> OwnerAsync(WebApplicationFactory<Program>? api = null) => SignedUpAsync(UserRole.Owner, api);
 
     public override async ValueTask DisposeAsync()
     {

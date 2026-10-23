@@ -1,14 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
+using StrategyTradingLab.Api.Data.Entities;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Tests;
 
-/// <summary>The admin page's test email, with a fake sender (no database, no SMTP). Each test has its own API and rate limit.</summary>
+/// <summary>The admin page's test email, with a fake sender (no SMTP). Each test has its own API and rate limit.</summary>
 public class AdminTestEmailTests
 {
     sealed class FakeSender(string? account, Exception? failure = null) : IEmailSender
@@ -26,21 +27,22 @@ public class AdminTestEmailTests
         public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
-    static WebApplicationFactory<Program> Api(FakeSender sender) => new WebApplicationFactory<Program>()
-        .WithWebHostBuilder(b => b.ConfigureTestServices(services => services.AddScoped<IEmailSender>(_ => sender)));
-
-    static async Task<HttpClient> Admin(WebApplicationFactory<Program> api)
+    sealed class Api(FakeSender sender) : AccountsApi
     {
-        var client = api.CreateApiClient();
-        (await client.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).EnsureSuccessStatusCode();
-        return client;
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder);
+            builder.ConfigureTestServices(services => services.AddScoped<IEmailSender>(_ => sender));
+        }
     }
 
-    [Fact]
+    static Task<HttpClient> Admin(Api api) => api.OwnerAsync();
+
+    [NeonFact]
     public async Task It_goes_only_to_the_mail_account_itself()
     {
         var sender = new FakeSender("me@gmail.com");
-        using var api = Api(sender);
+        using var api = new Api(sender);
         using var admin = await Admin(api);
 
         var response = await admin.PostAsJsonAsync("/admin/test-email", new { to = "someone.else@example.com" });
@@ -50,25 +52,29 @@ public class AdminTestEmailTests
         Assert.Equal(["me@gmail.com"], sender.SentTo);
     }
 
-    [Fact]
-    public async Task It_needs_the_admin_cookie_and_strangers_dont_use_up_the_limit()
+    [NeonFact]
+    public async Task It_needs_the_owner_and_others_dont_use_up_the_limit()
     {
         var sender = new FakeSender("me@gmail.com");
-        using var api = Api(sender);
+        using var api = new Api(sender);
         using var stranger = api.CreateApiClient();
 
         for (var i = 0; i < 6; i++)
             Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsync("/admin/test-email", null)).StatusCode);
+
+        using var user = await api.SignedUpAsync(UserRole.User);
+        for (var i = 0; i < 6; i++)
+            Assert.Equal(HttpStatusCode.Forbidden, (await user.PostAsync("/admin/test-email", null)).StatusCode);
 
         Assert.Empty(sender.SentTo);
         using var admin = await Admin(api);
         Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync("/admin/test-email", null)).StatusCode);
     }
 
-    [Fact]
+    [NeonFact]
     public async Task Without_an_account_it_says_so()
     {
-        using var api = Api(new FakeSender(null));
+        using var api = new Api(new FakeSender(null));
         using var admin = await Admin(api);
 
         var response = await admin.PostAsync("/admin/test-email", null);
@@ -77,10 +83,10 @@ public class AdminTestEmailTests
         Assert.StartsWith("Email isn't set up", (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString());
     }
 
-    [Fact]
+    [NeonFact]
     public async Task A_refused_send_passes_on_the_reason()
     {
-        using var api = Api(new FakeSender("me@gmail.com", new EmailException("smtp.gmail.com:587 refused it: Username and Password not accepted")));
+        using var api = new Api(new FakeSender("me@gmail.com", new EmailException("smtp.gmail.com:587 refused it: Username and Password not accepted")));
         using var admin = await Admin(api);
 
         var response = await admin.PostAsync("/admin/test-email", null);
@@ -89,10 +95,10 @@ public class AdminTestEmailTests
         Assert.Contains("Username and Password not accepted", (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString());
     }
 
-    [Fact]
+    [NeonFact]
     public async Task The_sixth_test_email_in_an_hour_is_refused()
     {
-        using var api = Api(new FakeSender("me@gmail.com"));
+        using var api = new Api(new FakeSender("me@gmail.com"));
         using var admin = await Admin(api);
         for (var i = 0; i < 5; i++) Assert.Equal(HttpStatusCode.OK, (await admin.PostAsync("/admin/test-email", null)).StatusCode);
 

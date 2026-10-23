@@ -8,7 +8,7 @@ const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '–'
 
 /** The daily price refresh: when it ran and runs, a button to run it now, and a check that Yahoo answers. */
-export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
+export function PricesBox() {
   const [prices, setPrices] = useState<AdminPrices | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [checks, setChecks] = useState<YahooCheck[] | null>(null)
@@ -17,21 +17,21 @@ export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
   const load = useCallback(async () => {
     try {
       setPrices(await api.getAdminPrices())
-    } catch (e) {
-      if (e instanceof UnauthorizedError) onLoggedOut()
+    } catch {
+      // Unauthorized: the session ended and the app shows Log-in.
     }
-  }, [onLoggedOut])
+  }, [])
 
   useEffect(() => {
     let live = true
     api
       .getAdminPrices()
       .then((next) => live && setPrices(next))
-      .catch((e: unknown) => e instanceof UnauthorizedError && onLoggedOut())
+      .catch(() => undefined)
     return () => {
       live = false
     }
-  }, [onLoggedOut])
+  }, [])
 
   // While a refresh runs, look again every few seconds.
   const running = prices?.running ?? false
@@ -47,7 +47,7 @@ export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
       await api.refreshAdminPrices()
       await load()
     } catch (e) {
-      if (e instanceof UnauthorizedError) return onLoggedOut()
+      if (e instanceof UnauthorizedError) return
       setMessage(e instanceof InvalidValueError ? e.message : "Couldn't start it. Try again.")
     }
   }
@@ -59,7 +59,7 @@ export function PricesBox({ onLoggedOut }: { onLoggedOut: () => void }) {
     try {
       setChecks(await api.testAdminYahoo())
     } catch (e) {
-      if (e instanceof UnauthorizedError) return onLoggedOut()
+      if (e instanceof UnauthorizedError) return
       setMessage(e instanceof TooManyTriesError ? 'Too many tests. Try again in an hour.' : "Couldn't run the test. Try again.")
     } finally {
       setTesting(false)

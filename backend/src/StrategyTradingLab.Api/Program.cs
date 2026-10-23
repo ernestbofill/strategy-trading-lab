@@ -67,7 +67,10 @@ builder.Services.AddHostedService<PriceRefreshWorker>();
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Sessions>();
+builder.Services.AddSessionAuthorization();
 builder.Services.AddSingleton<LogInThrottle>();
+builder.Services.AddSingleton<TestEmailLimit>();
+builder.Services.AddSingleton<TestYahooLimit>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AccountEmails>();
 
@@ -78,10 +81,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    // 5 tries per 15 minutes from one address. An IPv6 client counts per /64, since one usually has the whole block.
-    options.AddPolicy(AdminEndpoints.LogInRateLimit, http => RateLimitPartition.GetFixedWindowLimiter(
-        AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(15) }));
     // Accounts, per client: guessing, sign-up spam and email floods all hit these first.
     // RateLimits:<policy> overrides the permits; only the tests set it, to sign up many users.
     void PerClient(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
@@ -94,17 +93,6 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.LogInLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
-    // Test emails: 5 an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.
-    // Only logged-in requests count (the limiter runs before the admin check), so nobody else can use them up.
-    options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
-        ? RateLimitPartition.GetFixedWindowLimiter("test-email",
-            _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) })
-        : RateLimitPartition.GetNoLimiter("not-logged-in"));
-    // Yahoo checks: 30 an hour in all, admin only, so the page can't be used to hammer an unofficial endpoint.
-    options.AddPolicy(AdminEndpoints.TestYahooRateLimit, http => AdminEndpoints.IsAdmin(http)
-        ? RateLimitPartition.GetFixedWindowLimiter("test-yahoo",
-            _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromHours(1) })
-        : RateLimitPartition.GetNoLimiter("not-logged-in"));
 });
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -133,7 +121,10 @@ app.Use(async (http, next) =>
     }
     await next(http);
 });
+// After the forwarded headers (the session cookie's Secure flag) and the CSRF check.
+app.UseAuthentication();
 app.UseRateLimiter();
+app.UseAuthorization();
 
 // A database switched to on the admin page must still have every migration after a release. In the background, so
 // the API starts listening (and passes the deploy's health check) without waiting on it.

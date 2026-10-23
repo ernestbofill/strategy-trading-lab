@@ -1359,6 +1359,12 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasDefaultValue("user")
+                        .HasColumnName("role");
+
                     b.Property<string>("TimeZone")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1377,7 +1383,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("users", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_users_role", "role IN ('user', 'vip', 'owner')");
+                        });
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.UserSession", b =>

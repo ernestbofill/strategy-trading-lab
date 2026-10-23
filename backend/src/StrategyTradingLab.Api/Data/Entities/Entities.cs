@@ -41,6 +41,7 @@ public class User : IHasUpdatedAt
     public required string TimeZone { get; set; }
     public required string Locale { get; set; }
     public string Currency { get; set; } = "EUR";
+    public UserRole Role { get; set; } = UserRole.User;
     public bool OverviewEmail { get; set; } = true;
     public DateTimeOffset? DisclaimerAcceptedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

@@ -93,6 +93,7 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | time_zone | text, not null | IANA name, e.g. `Europe/Madrid`. The overview goes out early morning in it |
 | locale | text, not null | `en` \| `ca` in v1 (BCP 47 tags). Picked by the user at sign-up, never guessed; editable in the account. Sets the language and formats of emails and notifications |
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
+| role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip is for invited people with special privileges (no invitation yet) |
 | overview_email | bool, not null, default true | Daily overview on/off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | created_at, updated_at | timestamptz | |

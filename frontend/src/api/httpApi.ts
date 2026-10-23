@@ -1,4 +1,4 @@
-import { ExpiredLinkError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
+import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { sessionEnded } from './session'
 import type { Account, Api, StrategySummary } from './types'
 
@@ -49,10 +49,11 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
     headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  if (response.status === 401) throw new UnauthorizedError()
+  if (response.status === 401) endedSession()
+  if (response.status === 403) throw new ForbiddenError()
   if (response.status === 429) throw new TooManyTriesError()
   if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
-  if (response.status === 400 || response.status === 403 || response.status === 502) {
+  if (response.status === 400 || response.status === 502) {
     const problem = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; detail?: string } | null
     const reason = problem?.errors?.value?.[0] ?? problem?.detail
     // A 502 without the API's reason is nginx: the API itself is down, not a refused value.
@@ -118,8 +119,6 @@ export const httpApi: Api = {
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
-  adminLogIn: async (password) => void (await admin('POST', '/log-in', { password })),
-  adminLogOut: async () => void (await admin('POST', '/log-out')),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
   sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,

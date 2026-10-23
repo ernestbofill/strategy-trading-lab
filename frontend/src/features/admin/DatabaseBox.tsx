@@ -8,14 +8,13 @@ const nameText: Record<DatabaseName, string> = { dev: 'Dev', production: 'Produc
 interface Props {
   databases: AdminDatabases
   onChanged: () => Promise<void>
-  onLoggedOut: () => void
 }
 
 /**
  * Which database the API uses (dev or production). Their URLs are set only on the server, so this box can switch
  * between them but never point the API anywhere else. The API tests a switch first.
  */
-export function DatabaseBox({ databases, onChanged, onLoggedOut }: Props) {
+export function DatabaseBox({ databases, onChanged }: Props) {
   const { active, home } = databases
   const other: DatabaseName = active === 'dev' ? 'production' : 'dev'
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +27,7 @@ export function DatabaseBox({ databases, onChanged, onLoggedOut }: Props) {
       await api.switchAdminDatabase(other)
       await Promise.all([onChanged(), refreshBackendVersion()])
     } catch (e) {
-      if (e instanceof UnauthorizedError) return onLoggedOut()
+      if (e instanceof UnauthorizedError) return
       setError(e instanceof InvalidValueError ? e.message : "Couldn't switch. Try again.")
     } finally {
       setBusy(false)

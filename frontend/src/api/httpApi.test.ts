@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ExpiredLinkError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
+import { ExpiredLinkError, ForbiddenError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { onSessionEnded } from './session'
 import { httpApi } from './httpApi'
 import type { NewStrategy } from './types'
@@ -72,19 +72,13 @@ describe('httpApi.startStrategy', () => {
 })
 
 describe('httpApi admin', () => {
-  it('logs in by posting the password to /api/admin/log-in', async () => {
-    respond(204)
-    await httpApi.adminLogIn('STL')
-    const [path, init] = vi.mocked(fetch).mock.calls[0]
-    expect(path).toBe('/api/admin/log-in')
-    expect(init).toMatchObject({ method: 'POST', body: JSON.stringify({ password: 'STL' }) })
-  })
-
-  it('maps 401 and 429 to their errors', async () => {
+  it('maps 401, 403 and 429 to their errors', async () => {
     respond(401)
     await expect(httpApi.getAdminSettings()).rejects.toBeInstanceOf(UnauthorizedError)
+    respond(403)
+    await expect(httpApi.getAdminSettings()).rejects.toBeInstanceOf(ForbiddenError)
     respond(429)
-    await expect(httpApi.adminLogIn('x')).rejects.toBeInstanceOf(TooManyTriesError)
+    await expect(httpApi.sendAdminTestEmail()).rejects.toBeInstanceOf(TooManyTriesError)
   })
 
   it("passes on the server's reason when a value is refused", async () => {
@@ -137,7 +131,7 @@ describe('httpApi admin test email', () => {
 describe('httpApi CSRF header', () => {
   it('sends X-Requested-With: stl on state-changing requests', async () => {
     respond(204)
-    await httpApi.adminLogOut()
+    await httpApi.setAdminSetting('SMTP_HOST', 'smtp.gmail.com')
     respond(201, { id: 's1' })
     await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', currency: 'EUR', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [] })
     for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'X-Requested-With': 'stl' })
@@ -213,8 +207,10 @@ describe('httpApi database', () => {
     expect(calls).toEqual([['POST', '/api/admin/database/active', JSON.stringify({ name: 'production' })]])
   })
 
-  it("passes on the server's reason for a refused change, a 403 included", async () => {
-    respond(403, { detail: 'Set ADMIN_PASSWORD on the server before changing the database here.' })
-    await expect(httpApi.switchAdminDatabase('dev')).rejects.toThrow(new InvalidValueError('Set ADMIN_PASSWORD on the server before changing the database here.'))
+  it("passes on the server's reason for a refused change", async () => {
+    respond(400, { detail: 'The production database has no URL: set DATABASE_URL_PRODUCTION on the server.' })
+    await expect(httpApi.switchAdminDatabase('production')).rejects.toThrow(
+      new InvalidValueError('The production database has no URL: set DATABASE_URL_PRODUCTION on the server.'),
+    )
   })
 })

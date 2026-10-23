@@ -29,3 +29,6 @@ public enum NotificationKind { Signal, Snoozed }
 public enum NotificationChannel { Push, Email }
 
 public enum EmailTokenPurpose { VerifyEmail, ResetPassword }
+
+/// <summary>What an account may do: Owner is the app's owner (the admin page), Vip is an invited user with extra privileges, User everyone else.</summary>
+public enum UserRole { User, Vip, Owner }

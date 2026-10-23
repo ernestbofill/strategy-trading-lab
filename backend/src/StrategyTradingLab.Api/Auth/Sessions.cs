@@ -8,7 +8,7 @@ namespace StrategyTradingLab.Api.Auth;
 /// Log-in sessions: a random token in the HttpOnly stl_session cookie, its hash in `sessions`. A session lasts 30
 /// days from its last use, 90 at most. Also answers "who is calling?" once per request.
 /// </summary>
-public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor accessor)
+public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor accessor, IConfiguration configuration)
 {
     public const string CookieName = "stl_session";
     public static readonly TimeSpan IdleLength = TimeSpan.FromDays(30), MaxLength = TimeSpan.FromDays(90);
@@ -39,6 +39,11 @@ public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor a
         }
         var user = await db.Users.SingleOrDefaultAsync(u => u.Id == session.UserId, cancellationToken);
         if (user is null) return null;
+        if (BecomesOwner(user))
+        {
+            user.Role = UserRole.Owner;
+            await db.SaveChangesAsync(cancellationToken);
+        }
         if (now - session.LastUsedAt >= TouchEvery)
         {
             session.LastUsedAt = now;
@@ -48,6 +53,14 @@ public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor a
         }
         return user;
     }
+
+    /// <summary>
+    /// The owner is the user with the verified email in OWNER_EMAIL on the server, set to the owner role the next time
+    /// they are looked up (so it holds on whichever database is in use). Other roles are set in the database.
+    /// </summary>
+    bool BecomesOwner(User user) =>
+        user.Role != UserRole.Owner && user.EmailVerifiedAt is not null
+        && configuration["OWNER_EMAIL"] is { Length: > 0 } owner && string.Equals(owner.Trim(), user.Email, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Logs this device in as the user: a new session and its cookie. The session it replaces, if any, ends.</summary>
     public async Task StartAsync(User user, CancellationToken cancellationToken)
@@ -106,12 +119,9 @@ public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor a
     void DeleteCookie() => Http.Response.Cookies.Delete(CookieName, new CookieOptions { Path = "/" });
 }
 
-/// <summary>Endpoint filter: 401 without a logged-in user.</summary>
+/// <summary>401 without a logged-in user (see <see cref="SessionAuthentication"/>).</summary>
 public static class RequireUserExtensions
 {
     public static TBuilder RequireUser<TBuilder>(this TBuilder builder) where TBuilder : IEndpointConventionBuilder =>
-        builder.AddEndpointFilter(async (context, next) =>
-            await context.HttpContext.RequestServices.GetRequiredService<Sessions>().CurrentAsync(context.HttpContext.RequestAborted) is null
-                ? TypedResults.Unauthorized()
-                : await next(context));
+        builder.RequireAuthorization();
 }

@@ -251,11 +251,11 @@ public class SettingDefinitionTests
         Assert.Equal(valid, SettingDefinitions.Find(key)!.Validate!(value) is null);
 
     [Fact]
-    public void Every_setting_but_the_password_has_a_default_and_the_password_comes_last()
+    public void Every_setting_but_the_password_has_a_default_and_the_password_comes_last_in_its_group()
     {
         Assert.All(SettingDefinitions.All.Where(s => !s.Secret && s.Key != "SMTP_FROM"), s => Assert.NotNull(s.Default));
         Assert.Null(SettingDefinitions.Find("SMTP_PASSWORD")!.Default);
-        Assert.Equal("SMTP_PASSWORD", SettingDefinitions.All[^1].Key);
+        Assert.Equal("SMTP_PASSWORD", SettingDefinitions.All.Last(s => s.Group == "Email").Key);
     }
 
     [Theory]

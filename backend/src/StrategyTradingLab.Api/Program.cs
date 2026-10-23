@@ -18,6 +18,7 @@ using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Neon;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
@@ -50,12 +51,25 @@ builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailWorker>();
 
+// Daily prices and exchange rates from Yahoo, refreshed on the schedule set on the admin page (PRICES_* settings).
+builder.Services.Configure<PriceRefreshOptions>(builder.Configuration.GetSection("PriceRefresh"));
+builder.Services.AddHttpClient<IMarketDataSource, YahooClient>(client =>
+{
+    client.BaseAddress = new Uri(YahooClient.BaseAddress);
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; StrategyTradingLab)");
+});
+builder.Services.AddScoped<PriceRefresher>();
+builder.Services.AddSingleton<PriceRefreshState>();
+builder.Services.AddHostedService<PriceRefreshWorker>();
+
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Sessions>();
 builder.Services.AddSessionAuthorization();
 builder.Services.AddSingleton<LogInThrottle>();
 builder.Services.AddSingleton<TestEmailLimit>();
+builder.Services.AddSingleton<TestYahooLimit>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AccountEmails>();
 

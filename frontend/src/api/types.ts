@@ -236,6 +236,35 @@ export interface AdminDatabases {
   databases: AdminDatabase[]
 }
 
+/** A symbol the last price refresh couldn't update. */
+export interface PriceProblem {
+  name: string
+  problem: string | null
+}
+
+/** The admin page's prices box: backend Admin/AdminEndpoints.cs (AdminPrices). Times are ISO strings, days "2026-10-22". */
+export interface AdminPrices {
+  running: boolean
+  /** Null while the daily schedule is off. */
+  nextRun: string | null
+  lastStarted: string | null
+  lastFinished: string | null
+  latestDay: string | null
+  problems: PriceProblem[]
+  updated: number
+  fullHistory: number
+}
+
+/** What Yahoo answered for one symbol in "Test Yahoo". */
+export interface YahooCheck {
+  symbol: string
+  ok: boolean
+  day: string | null
+  close: number | null
+  problem: string | null
+  milliseconds: number
+}
+
 export interface Api {
   /** The logged-in user, or null without a session: the app's start-up check. */
   getAccount(): Promise<Account | null>
@@ -272,6 +301,11 @@ export interface Api {
   resetAdminSetting(key: string, clear?: boolean): Promise<void>
   /** Sends a test email to the mail account itself and resolves with its address; rejects with `InvalidValueError` saying why not. */
   sendAdminTestEmail(): Promise<string>
+  getAdminPrices(): Promise<AdminPrices>
+  /** Starts a refresh in the background, whatever the schedule says. Rejects with `InvalidValueError` when one is running. */
+  refreshAdminPrices(): Promise<void>
+  /** Asks Yahoo for a fund and an exchange rate, and stores nothing. Rejects with `TooManyTriesError` after 30 an hour. */
+  testAdminYahoo(): Promise<YahooCheck[]>
   /** Public: the API's build and the database it uses. */
   getVersion(): Promise<BackendVersion>
   getAdminDatabases(): Promise<AdminDatabases>

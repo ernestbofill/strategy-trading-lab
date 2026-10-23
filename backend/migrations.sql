@@ -707,6 +707,51 @@ START TRANSACTION;
 
 DO $EF$
 BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165230_AddPrices') THEN
+    CREATE TABLE fx_rates (
+        date date NOT NULL,
+        base char(3) NOT NULL,
+        quote char(3) NOT NULL,
+        rate numeric(18,8) NOT NULL,
+        CONSTRAINT pk_fx_rates PRIMARY KEY (date, base, quote),
+        CONSTRAINT ck_fx_rates_rate CHECK (rate > 0)
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165230_AddPrices') THEN
+    CREATE TABLE prices_daily (
+        asset_id uuid NOT NULL,
+        date date NOT NULL,
+        open numeric(14,4) NOT NULL,
+        high numeric(14,4) NOT NULL,
+        low numeric(14,4) NOT NULL,
+        close numeric(14,4) NOT NULL,
+        volume bigint NOT NULL,
+        CONSTRAINT pk_prices_daily PRIMARY KEY (asset_id, date),
+        CONSTRAINT ck_prices_daily_prices CHECK (open > 0 AND high > 0 AND low > 0 AND close > 0),
+        CONSTRAINT ck_prices_daily_range CHECK (low <= high),
+        CONSTRAINT ck_prices_daily_volume CHECK (volume >= 0),
+        CONSTRAINT fk_prices_daily_assets_asset_id FOREIGN KEY (asset_id) REFERENCES assets (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165230_AddPrices') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261023165230_AddPrices', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165841_AddUserRole') THEN
     ALTER TABLE users ADD role text NOT NULL DEFAULT 'user';
     END IF;
@@ -724,6 +769,24 @@ BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023165841_AddUserRole') THEN
     INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
     VALUES ('20261023165841_AddUserRole', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023172056_IndexPricesByDate') THEN
+    CREATE INDEX ix_prices_daily_date ON prices_daily (date);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023172056_IndexPricesByDate') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261023172056_IndexPricesByDate', '10.0.4');
     END IF;
 END $EF$;
 COMMIT;

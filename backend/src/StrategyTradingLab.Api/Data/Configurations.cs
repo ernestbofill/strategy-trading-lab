@@ -251,3 +251,34 @@ class EmailTokenConfiguration : IEntityTypeConfiguration<EmailToken>
         entity.HasOne<User>().WithMany().HasForeignKey(token => token.UserId).OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+class PriceDailyConfiguration : IEntityTypeConfiguration<PriceDaily>
+{
+    public void Configure(EntityTypeBuilder<PriceDaily> entity)
+    {
+        entity.ToTable("prices_daily", table =>
+        {
+            table.HasCheckConstraint("ck_prices_daily_prices", "open > 0 AND high > 0 AND low > 0 AND close > 0");
+            table.HasCheckConstraint("ck_prices_daily_range", "low <= high");
+            table.HasCheckConstraint("ck_prices_daily_volume", "volume >= 0");
+        });
+        entity.HasKey(price => new { price.AssetId, price.Date });
+        entity.HasIndex(price => price.Date); // The admin page's newest day, without scanning the table.
+        foreach (var column in new[] { nameof(PriceDaily.Open), nameof(PriceDaily.High), nameof(PriceDaily.Low), nameof(PriceDaily.Close) })
+            entity.Property(column).HasColumnType(Money.Price);
+        entity.HasOne<Asset>().WithMany()
+            .HasForeignKey(price => price.AssetId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+class FxRateConfiguration : IEntityTypeConfiguration<FxRate>
+{
+    public void Configure(EntityTypeBuilder<FxRate> entity)
+    {
+        entity.ToTable("fx_rates", table => table.HasCheckConstraint("ck_fx_rates_rate", "rate > 0"));
+        entity.HasKey(rate => new { rate.Date, rate.Base, rate.Quote });
+        entity.Property(rate => rate.Base).HasColumnType(Money.Currency);
+        entity.Property(rate => rate.Quote).HasColumnType(Money.Currency);
+        entity.Property(rate => rate.Rate).HasColumnType(Money.FxRate);
+    }
+}

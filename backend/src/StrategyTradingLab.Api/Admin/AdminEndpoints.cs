@@ -2,7 +2,11 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.MarketData;
 
 namespace StrategyTradingLab.Api.Admin;
 
@@ -18,19 +22,32 @@ public record AdminDatabases(DatabaseName Active, DatabaseName Home, IReadOnlyLi
 
 public record DatabaseChoice(string Name);
 
+/// <summary>The prices box: the next and last runs, what failed in the last one, and the newest stored day.</summary>
+public record AdminPrices(bool Running, DateTimeOffset? NextRun, DateTimeOffset? LastStarted, DateTimeOffset? LastFinished,
+    DateOnly? LatestDay, IReadOnlyList<RefreshResult> Problems, int Updated, int FullHistory);
+
+/// <summary>One symbol asked of Yahoo by "Test Yahoo": its newest day and close, or why it didn't answer.</summary>
+public record YahooCheck(string Symbol, bool Ok, DateOnly? Day, decimal? Close, string? Problem, int Milliseconds);
+
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
 
-/// <summary>5 test emails an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.</summary>
-public sealed class TestEmailLimit : IDisposable
+/// <summary>An hourly limit on an admin action, shared by everyone (the owner is the only caller).</summary>
+public abstract class HourlyLimit(int permits) : IDisposable
 {
     readonly FixedWindowRateLimiter limiter = new(new FixedWindowRateLimiterOptions
-        { PermitLimit = 5, Window = TimeSpan.FromHours(1), QueueLimit = 0 });
+        { PermitLimit = permits, Window = TimeSpan.FromHours(1), QueueLimit = 0 });
 
     public bool TryAcquire() => limiter.AttemptAcquire().IsAcquired;
 
     public void Dispose() => limiter.Dispose();
 }
+
+/// <summary>5 test emails an hour in all, so the page can't be used to flood the account's inbox or Gmail's sending limit.</summary>
+public sealed class TestEmailLimit() : HourlyLimit(5);
+
+/// <summary>30 Yahoo checks an hour in all, so the page can't be used to hammer an unofficial endpoint.</summary>
+public sealed class TestYahooLimit() : HourlyLimit(30);
 
 /// <summary>
 /// The admin settings page's API, for the owner only: a logged-in user whose role is <see cref="UserRole.Owner"/>.
@@ -44,6 +61,7 @@ public static class AdminEndpoints
 
         var settings = group.MapGroup("/settings");
         MapDatabase(group);
+        MapPrices(group);
 
         // Only ever to the account itself, so the page can't be used to send mail from it to anyone.
         group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email,
@@ -74,7 +92,7 @@ public static class AdminEndpoints
         .WithSummary("The settings the admin page can set, with where each value comes from.");
 
         settings.MapPut("/{key}", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (string key,
-            SettingValue request, SettingsStore store, CancellationToken cancellationToken) =>
+            SettingValue request, SettingsStore store, PriceRefreshState prices, CancellationToken cancellationToken) =>
         {
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
             // A secret is kept exactly as typed: a password may start or end with a space.
@@ -85,21 +103,76 @@ public static class AdminEndpoints
                 : definition.Validate?.Invoke(value);
             if (error is not null) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["value"] = [error] });
 
-            return await store.SetAsync(definition, value, request.Expected, cancellationToken)
+            var saved = await store.SetAsync(definition, value, request.Expected, cancellationToken);
+            if (saved && IsPriceSetting(key)) prices.ScheduleChanged();
+            return saved
                 ? TypedResults.NoContent()
                 : TypedResults.Conflict("The mail settings changed since this page loaded. Reload, check them, then type the password again.");
         })
         .WithSummary("Sets a setting. The saved password only counts while the mail server, port and user it was saved with stay.");
 
         settings.MapDelete("/{key}", async Task<Results<NoContent, NotFound>> (string key, bool? clear, SettingsStore store,
-            CancellationToken cancellationToken) =>
+            PriceRefreshState prices, CancellationToken cancellationToken) =>
         {
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
             if (clear == true) await store.ClearAsync(definition, cancellationToken);
             else await store.ResetAsync(key, cancellationToken);
+            if (IsPriceSetting(key)) prices.ScheduleChanged();
             return TypedResults.NoContent();
         })
         .WithSummary("Back to the server's value or the default; with ?clear=true, no value at all.");
+    }
+
+    static bool IsPriceSetting(string key) => key.StartsWith("PRICES_");
+
+    /// <summary>The prices box: the last refresh, a button to run it now, and a check that Yahoo answers.</summary>
+    static void MapPrices(RouteGroupBuilder group)
+    {
+        var prices = group.MapGroup("/prices");
+
+        prices.MapGet("/", async (PriceRefreshState state, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var latest = await db.Prices.MaxAsync(p => (DateOnly?)p.Date, cancellationToken);
+            var results = state.LastResults;
+            return new AdminPrices(state.Running, state.NextRun, state.LastStarted, state.LastFinished, latest,
+                [.. results.Where(r => r.Outcome == RefreshOutcome.Failed)],
+                results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory));
+        })
+        .WithSummary("The price refresh: the next and last runs and what failed in the last one.");
+
+        prices.MapPost("/refresh", Results<Accepted, Conflict<string>> (PriceRefreshState state, DatabaseSwitch databases) =>
+            databases.Active != databases.Home ? TypedResults.Conflict("The API is switched to another database: switch back to refresh the prices.")
+            : state.Request() ? TypedResults.Accepted((string?)null)
+            : TypedResults.Conflict("A refresh is already running."))
+        .WithSummary("Refreshes the prices now, in the background, whatever the schedule says.");
+
+        prices.MapPost("/test", async Task<Results<Ok<List<YahooCheck>>, ProblemHttpResult>> (IMarketDataSource source, TestYahooLimit limit,
+            TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            if (!limit.TryAcquire())
+                return TypedResults.Problem("Too many tests: try again in an hour.", statusCode: StatusCodes.Status429TooManyRequests);
+            // A stock fund and an exchange rate: the two kinds of data the refresh reads.
+            var checks = new List<YahooCheck>();
+            foreach (var (symbol, adjusted) in new[] { ("SPY", true), ("EURUSD=X", false) })
+            {
+                var started = time.GetTimestamp();
+                YahooCheck Check(bool ok, DateOnly? day, decimal? close, string? problem) =>
+                    new(symbol, ok, day, close, problem, (int)time.GetElapsedTime(started).TotalMilliseconds);
+                try
+                {
+                    var days = await source.DailyAsync(symbol, fullHistory: false, adjusted: adjusted, cancellationToken);
+                    checks.Add(days.Count == 0
+                        ? Check(false, null, null, "Yahoo answered with no days.")
+                        : Check(true, days[^1].Date, days[^1].Close, null));
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    checks.Add(Check(false, null, null, error.Message));
+                }
+            }
+            return TypedResults.Ok(checks);
+        })
+        .WithSummary("Asks Yahoo for a fund and an exchange rate and says whether it answered. Stores nothing.");
     }
 
     /// <summary>

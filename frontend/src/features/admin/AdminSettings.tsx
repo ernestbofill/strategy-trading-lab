@@ -13,6 +13,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
+import { PricesBox } from './PricesBox'
 
 type State =
   | { status: 'loading' }
@@ -59,6 +60,8 @@ export function AdminSettings() {
                 shown={shownValues(state.settings ?? [])} onChanged={load} />
             ))}
             {group === 'Email' && <TestEmail />}
+            {/* Keyed by the schedule, so the box asks again (next run) after a save. */}
+            {group === 'Prices' && <PricesBox key={settings.map((s) => s.value).join('|')} />}
           </section>
         ))}
     </Screen>

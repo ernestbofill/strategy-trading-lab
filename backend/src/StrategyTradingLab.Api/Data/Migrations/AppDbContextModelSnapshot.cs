@@ -713,6 +713,33 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.FxRate", b =>
+                {
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<string>("Base")
+                        .HasColumnType("char(3)")
+                        .HasColumnName("base");
+
+                    b.Property<string>("Quote")
+                        .HasColumnType("char(3)")
+                        .HasColumnName("quote");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("rate");
+
+                    b.HasKey("Date", "Base", "Quote")
+                        .HasName("pk_fx_rates");
+
+                    b.ToTable("fx_rates", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_fx_rates_rate", "rate > 0");
+                        });
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -779,6 +806,52 @@ namespace StrategyTradingLab.Api.Data.Migrations
                             t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed')");
 
                             t.HasCheckConstraint("ck_notifications_signal_id", "(kind IN ('signal', 'snoozed')) = (signal_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.PriceDaily", b =>
+                {
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<decimal>("Close")
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("close");
+
+                    b.Property<decimal>("High")
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("high");
+
+                    b.Property<decimal>("Low")
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("low");
+
+                    b.Property<decimal>("Open")
+                        .HasColumnType("numeric(14,4)")
+                        .HasColumnName("open");
+
+                    b.Property<long>("Volume")
+                        .HasColumnType("bigint")
+                        .HasColumnName("volume");
+
+                    b.HasKey("AssetId", "Date")
+                        .HasName("pk_prices_daily");
+
+                    b.HasIndex("Date")
+                        .HasDatabaseName("ix_prices_daily_date");
+
+                    b.ToTable("prices_daily", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_prices_daily_prices", "open > 0 AND high > 0 AND low > 0 AND close > 0");
+
+                            t.HasCheckConstraint("ck_prices_daily_range", "low <= high");
+
+                            t.HasCheckConstraint("ck_prices_daily_volume", "volume >= 0");
                         });
                 });
 
@@ -1467,6 +1540,16 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_notifications_users_user_id");
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.PriceDaily", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Asset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_prices_daily_assets_asset_id");
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.PushSubscription", b =>

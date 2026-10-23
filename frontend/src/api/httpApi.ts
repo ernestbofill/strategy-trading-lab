@@ -124,6 +124,9 @@ export const httpApi: Api = {
   sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,
   resetAdminSetting: async (key, clear) => void (await admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
   getVersion: () => getRequired('/version'),
+  getAdminPrices: async () => (await admin('GET', '/prices')).json(),
+  refreshAdminPrices: async () => void (await admin('POST', '/prices/refresh')),
+  testAdminYahoo: async () => (await admin('POST', '/prices/test')).json(),
   getAdminDatabases: async () => (await admin('GET', '/database')).json(),
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
 }

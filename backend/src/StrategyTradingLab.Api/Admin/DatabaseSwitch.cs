@@ -19,12 +19,16 @@ public record DatabaseInfo(DatabaseName Name, DatabaseUrlSource Source, string? 
 /// <summary>Why a database change was refused, in words for the admin page. Never holds a password.</summary>
 public class DatabaseChangeException(string message) : Exception(message);
 
+/// <summary>The database answers but lacks some of this build's migrations.</summary>
+public class MissingMigrationsException(string message) : DatabaseChangeException(message);
+
 /// <summary>
-/// Which database the API uses (dev or production) and the URLs set for them on the admin page. They can't live in
-/// the database they choose, so they are kept in a file in the state directory, encrypted with Data Protection like
-/// the admin page's secrets. The host's own database (production on the server, dev locally) falls back to the
-/// environment (DATABASE_URL, ConnectionStrings:Default); the other one is used only once a URL is set on the page.
-/// A change is tested first: the database must answer and have every migration (the deploy migrates production only).
+/// Which database the API uses (dev or production) and the URL set on the admin page for the other one. They can't
+/// live in the database they choose, so they are kept in a file in the state directory, encrypted with Data Protection
+/// like the admin page's secrets. The host's own database (production on the server, dev locally) comes only from the
+/// environment (DATABASE_URL, ConnectionStrings:Default), the one the deploy and local startup migrate; the other one
+/// is used only once a URL is set on the page. A change is tested first: the database must answer and have every
+/// migration.
 /// </summary>
 public class DatabaseSwitch
 {
@@ -61,18 +65,19 @@ public class DatabaseSwitch
         var current = choice;
         return [.. Enum.GetValues<DatabaseName>().Select(name =>
         {
-            var url = current.Urls.GetValueOrDefault(name);
-            var source = url is not null ? DatabaseUrlSource.Page
-                : name == Home && ServerConnectionString() is not null ? DatabaseUrlSource.Server
-                : DatabaseUrlSource.None;
             var connection = ConnectionString(current, name);
+            var source = connection is null ? DatabaseUrlSource.None
+                : name == Home ? DatabaseUrlSource.Server
+                : DatabaseUrlSource.Page;
             return new DatabaseInfo(name, source, connection is null ? null : new NpgsqlConnectionStringBuilder(connection).Host);
         })];
     }
 
     /// <summary>
-    /// At startup: a database other than the home one must still answer and have every migration (a deploy migrates
-    /// production only, so a release can leave dev behind). If not, the API goes back to its home database.
+    /// At startup, in the background: the other database must still have every migration (a deploy migrates production
+    /// only, so a release can leave dev behind). If it lacks some, the API uses its home database until the next start,
+    /// which checks again; the saved choice stays. One that doesn't answer is left as it is: it may be a blip, and the
+    /// admin page can switch back.
     /// </summary>
     public async Task CheckActiveAsync(CancellationToken cancellationToken)
     {
@@ -82,15 +87,21 @@ public class DatabaseSwitch
         {
             await CheckAsync(current.Active, connection, cancellationToken);
         }
-        catch (DatabaseChangeException error)
+        catch (MissingMigrationsException error)
         {
-            logger.LogWarning("{Reason} Going back to the {Database} database.", error.Message, Words(Home));
+            logger.LogWarning("{Reason} Using the {Database} database until the next start.", error.Message, Words(Home));
             lock (writing)
             {
-                if (!ReferenceEquals(choice, current)) return;
-                choice = current with { Active = Home };
-                Save(choice);
+                if (ReferenceEquals(choice, current)) choice = current with { Active = Home };
             }
+        }
+        catch (DatabaseChangeException error)
+        {
+            logger.LogWarning("Startup check: {Reason}", error.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutting down.
         }
     }
 
@@ -98,22 +109,31 @@ public class DatabaseSwitch
     public Task SwitchAsync(DatabaseName name, CancellationToken cancellationToken) =>
         ChangeAsync(current => current with { Active = name }, cancellationToken);
 
-    /// <summary>Sets a database's URL on the page. Throws <see cref="DatabaseChangeException"/> for a refused value.</summary>
+    /// <summary>Sets the other database's URL on the page. Throws <see cref="DatabaseChangeException"/> for a refused value.</summary>
     public Task SetUrlAsync(DatabaseName name, string url, CancellationToken cancellationToken)
     {
+        if (name == Home) throw new DatabaseChangeException(HomeFromServer);
         if (CheckUrl(url) is { } error) throw new DatabaseChangeException(error);
+        // Not the home database under the other name: it would be migrated or written to as if it were something else.
+        if (ServerConnectionString() is { } server && Endpoint(new NpgsqlConnectionStringBuilder(server).Host) == Endpoint(new Uri(url).Host))
+            throw new DatabaseChangeException($"That is the {Words(Home)} database: use the {Words(name)} branch's URL.");
         return ChangeAsync(current => current with { Urls = new Dictionary<DatabaseName, string>(current.Urls) { [name] = url } },
             cancellationToken);
     }
 
-    /// <summary>Forgets the page's URL: the home database goes back to the server's, the other one to none.</summary>
+    /// <summary>Forgets the page's URL for the other database.</summary>
     public Task ResetUrlAsync(DatabaseName name, CancellationToken cancellationToken) =>
-        ChangeAsync(current =>
+        name == Home ? throw new DatabaseChangeException(HomeFromServer) : ChangeAsync(current =>
         {
             var urls = new Dictionary<DatabaseName, string>(current.Urls);
             urls.Remove(name);
             return current with { Urls = urls };
         }, cancellationToken);
+
+    /// <summary>A Neon host without "-pooler", so a branch's pooled and direct URLs compare equal.</summary>
+    static string? Endpoint(string? host) => host?.ToLowerInvariant().Replace("-pooler.", ".");
+
+    string HomeFromServer => $"The {Words(Home)} database's URL comes from the server's environment.";
 
     /// <summary>A Neon URL as `neon env pull` writes it: postgresql://user:password@host/db, on a *.neon.tech host.</summary>
     public static string? CheckUrl(string url)
@@ -183,12 +203,12 @@ public class DatabaseSwitch
             throw new DatabaseChangeException($"Can't reach the {Words(name)} database: {error.Message}");
         }
         if (pending.Any())
-            throw new DatabaseChangeException($"The {Words(name)} database is missing {pending.Count()} migration(s): migrate it first.");
+            throw new MissingMigrationsException($"The {Words(name)} database is missing {pending.Count()} migration(s): migrate it first.");
     }
 
     string? ConnectionString(Choice from, DatabaseName name) =>
-        from.Urls.GetValueOrDefault(name) is { } url ? NeonEnvironment.ToNpgsqlConnectionString(url)
-        : name == Home ? ServerConnectionString()
+        name == Home ? ServerConnectionString()
+        : from.Urls.GetValueOrDefault(name) is { } url ? NeonEnvironment.ToNpgsqlConnectionString(url)
         : null;
 
     string? ServerConnectionString() => NeonEnvironment.ConnectionString(configuration);
@@ -214,7 +234,7 @@ public class DatabaseSwitch
             return ConnectionString(saved, saved.Active) is null ? saved with { Active = Home } : saved;
         }
         catch (Exception error) when (error is System.Security.Cryptography.CryptographicException or JsonException or IOException
-            or UriFormatException)
+            or FormatException or ArgumentException)
         {
             // Safe side: the host's own database, as if nothing had been set.
             logger.LogWarning(error, "{Path} can't be read (lost Data Protection keys?): using the {Database} database. Set the database again on the admin page.",

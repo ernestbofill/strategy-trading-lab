@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Admin;
 
 namespace StrategyTradingLab.Api.Tests;
@@ -134,12 +136,40 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.Equal("production", databases.GetProperty("home").GetString());
     }
 
-    [NeonFact]
-    public async Task Switching_to_a_database_that_answers_moves_the_api_there_and_back()
+    [Fact]
+    public async Task The_home_database_comes_only_from_the_server_environment()
     {
         using var admin = await fixture.LoggedIn();
-        // The linked dev branch stands in for production here.
-        var devUrl = Environment.GetEnvironmentVariable("DATABASE_URL")!;
+
+        var set = await admin.PutAsJsonAsync("/admin/database/dev/url", new { url = ProductionUrl });
+        Assert.Equal(HttpStatusCode.BadRequest, set.StatusCode);
+        Assert.Equal("The dev database's URL comes from the server's environment.", await Problem(set));
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.DeleteAsync("/admin/database/dev/url")).StatusCode);
+    }
+
+    [Fact]
+    public async Task The_home_database_is_refused_under_the_other_name_pooled_or_not()
+    {
+        using var server = fixture.WithWebHostBuilder(b => b.UseSetting("DATABASE_URL",
+            "postgresql://u:p@ep-home-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require"));
+        using var admin = await fixture.LoggedIn(server);
+
+        var direct = await admin.PutAsJsonAsync("/admin/database/production/url",
+            new { url = "postgresql://u:p@ep-home.eu-central-1.aws.neon.tech/neondb?sslmode=require" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, direct.StatusCode);
+        Assert.Equal("That is the dev database: use the production branch's URL.", await Problem(direct));
+    }
+
+    [NeonFact]
+    public async Task Switching_to_a_database_that_answers_moves_the_api_there()
+    {
+        // The linked dev branch stands in for production; dev itself points nowhere, so it isn't the same host.
+        var devUrl = fixture.Services.GetRequiredService<IConfiguration>()["DATABASE_URL"]!;
+        using var state = new TemporaryDirectory();
+        using var server = fixture.WithWebHostBuilder(b => b.UseSetting("STATE_DIRECTORY", state.Path)
+            .UseSetting("ConnectionStrings:Default", "Host=unused.invalid;Database=unused"));
+        using var admin = await fixture.LoggedIn(server);
         await admin.PutAsJsonAsync("/admin/database/production/url", new { url = devUrl });
 
         Assert.Equal(HttpStatusCode.NoContent, (await admin.PostAsJsonAsync("/admin/database/active", new { name = "production" })).StatusCode);
@@ -148,11 +178,14 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
 
         var clearActive = await admin.DeleteAsync("/admin/database/production/url");
         Assert.Equal(HttpStatusCode.BadRequest, clearActive.StatusCode);
-
-        Assert.Equal(HttpStatusCode.NoContent, (await admin.PostAsJsonAsync("/admin/database/active", new { name = "dev" })).StatusCode);
-        Assert.Equal("dev", (await admin.GetFromJsonAsync<JsonElement>("/version")).GetProperty("database").GetString());
-        await admin.DeleteAsync("/admin/database/production/url");
+        Assert.Equal("The production database is in use: switch to the other one first.", await Problem(clearActive));
     }
+}
+
+sealed class TemporaryDirectory : IDisposable
+{
+    public string Path { get; } = Directory.CreateTempSubdirectory("stl-state-").FullName;
+    public void Dispose() => Directory.Delete(Path, recursive: true);
 }
 
 public class DatabaseUrlTests

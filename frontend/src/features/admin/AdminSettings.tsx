@@ -18,7 +18,7 @@ type State =
   | { status: 'logIn' }
   | { status: 'error' }
   /** `settings` is null when they can't be read: they live in the database in use, which may be the broken one. */
-  | { status: 'ready'; settings: AdminSetting[] | null; databases: AdminDatabases; version: BackendVersion }
+  | { status: 'ready'; settings: AdminSetting[] | null; databases: AdminDatabases; version: BackendVersion | null }
 
 /** Admin settings (/admin): settings the app reads, set here instead of in the server's environment. Not linked from the app. */
 export function AdminSettings() {
@@ -58,7 +58,7 @@ export function AdminSettings() {
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
       {state.status === 'loading' && <ScreenMessage>Loading the settings…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the settings. Try again later.</ScreenMessage>}
-      {state.status === 'ready' && <BackendBox version={state.version} />}
+      {state.status === 'ready' && state.version && <BackendBox version={state.version} />}
       {state.status === 'ready' && (
         <DatabaseBox databases={state.databases} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
       )}
@@ -91,7 +91,7 @@ async function fetchSettings(): Promise<State> {
       if (e instanceof UnauthorizedError) throw e
       return null
     })
-    const [databases, version, loaded] = await Promise.all([api.getAdminDatabases(), api.getVersion(), settings])
+    const [databases, version, loaded] = await Promise.all([api.getAdminDatabases(), api.getVersion().catch(() => null), settings])
     return { status: 'ready', settings: loaded, databases, version }
   } catch (e) {
     return e instanceof UnauthorizedError ? { status: 'logIn' } : { status: 'error' }

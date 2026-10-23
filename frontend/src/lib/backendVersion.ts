@@ -14,7 +14,8 @@ export async function refreshBackendVersion(): Promise<void> {
   try {
     current = await api.getVersion()
   } catch {
-    // The top bar shows nothing extra; the admin page shows its own error.
+    // The top bar shows nothing extra, and the next top bar to mount asks again.
+    requested = false
   }
   listeners.forEach((listener) => listener())
 }

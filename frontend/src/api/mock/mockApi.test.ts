@@ -62,6 +62,8 @@ describe('mockApi database', () => {
     expect((await mockApi.getVersion()).database).toBe('production')
     const production = (await mockApi.getAdminDatabases()).databases.find((d) => d.name === 'production')
     expect(production).toEqual({ name: 'production', source: 'page', host: 'ep-prod.neon.tech' })
+    await expect(mockApi.resetAdminDatabaseUrl('production')).rejects.toThrow('is in use')
+    await expect(mockApi.setAdminDatabaseUrl('dev', 'postgresql://u:p@ep-x.neon.tech/db')).rejects.toThrow("server's environment")
     await mockApi.switchAdminDatabase('dev')
   })
 })

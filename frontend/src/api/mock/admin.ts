@@ -107,9 +107,9 @@ export const mockActiveDatabase = () => activeDatabase
 export function mockAdminDatabases(): AdminDatabases {
   requireAdmin()
   const databases = (['dev', 'production'] as const).map((name): AdminDatabase => {
+    if (name === 'dev') return { name, source: 'server', host: serverDevHost }
     const url = databaseUrls.get(name)
-    if (url) return { name, source: 'page', host: hostOf(url) }
-    return name === 'dev' ? { name, source: 'server', host: serverDevHost } : { name, source: 'none', host: null }
+    return url ? { name, source: 'page', host: hostOf(url) } : { name, source: 'none', host: null }
   })
   return { active: activeDatabase, home: 'dev', databases }
 }
@@ -122,8 +122,11 @@ export function mockSwitchDatabase(name: DatabaseName) {
   activeDatabase = name
 }
 
+const homeFromServer = "The dev database's URL comes from the server's environment."
+
 export function mockSetDatabaseUrl(name: DatabaseName, url: string) {
   requireAdmin()
+  if (name === 'dev') throw new InvalidValueError(homeFromServer)
   const v = url.trim()
   if (!/^postgres(ql)?:\/\/[^:@/]+:[^@/]+@[^/]+\/[^/?]+/.test(v))
     throw new InvalidValueError("Use the Neon branch's DATABASE_URL: postgresql://user:password@ep-….neon.tech/neondb?sslmode=require.")
@@ -133,6 +136,7 @@ export function mockSetDatabaseUrl(name: DatabaseName, url: string) {
 
 export function mockResetDatabaseUrl(name: DatabaseName) {
   requireAdmin()
-  if (name === activeDatabase && name !== 'dev') throw new InvalidValueError(`The ${name} database has no URL: set one first.`)
+  if (name === 'dev') throw new InvalidValueError(homeFromServer)
+  if (name === activeDatabase) throw new InvalidValueError(`The ${name} database is in use: switch to the other one first.`)
   databaseUrls.delete(name)
 }

@@ -76,13 +76,34 @@ export function DatabaseBox({ databases, onChanged, onLoggedOut }: Props) {
           )}
         </div>
       </div>
-      {databases.databases.map((d) => (
-        <UrlRow key={`${d.name}:${d.source}:${d.host}`} database={d} onChanged={onChanged} onLoggedOut={onLoggedOut} />
-      ))}
+      {databases.databases.map((d) =>
+        d.name === home ? (
+          <ServerUrlRow key={d.name} database={d} />
+        ) : (
+          <UrlRow key={`${d.name}:${d.source}:${d.host}`} database={d} onChanged={onChanged} onLoggedOut={onLoggedOut} />
+        ),
+      )}
     </section>
   )
 }
 
+/** The server's own database: its URL is in the server's environment, the one the deploy migrates, never set here. */
+function ServerUrlRow({ database: d }: { database: AdminDatabase }) {
+  return (
+    <div className={styles.row}>
+      <div className={styles.text}>
+        <span className={styles.key}>{nameText[d.name]} URL</span>
+        <p className={styles.description}>This server&apos;s own database, from its environment (DATABASE_URL).</p>
+        <p className={styles.source}>
+          {sourceText[d.source]}
+          {d.host && `: ${d.host}`}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** The other database's URL, set here. */
 function UrlRow({ database: d, onChanged, onLoggedOut }: { database: AdminDatabase } & Omit<Props, 'databases'>) {
   const [draft, setDraft] = useState('')
   const id = useId()
@@ -95,7 +116,12 @@ function UrlRow({ database: d, onChanged, onLoggedOut }: { database: AdminDataba
 
   const save = (e: FormEvent) => {
     e.preventDefault()
-    if (draft.trim()) void run(() => api.setAdminDatabaseUrl(d.name, draft))
+    // Cleared once saved: the URL holds a password.
+    if (draft.trim())
+      void run(async () => {
+        await api.setAdminDatabaseUrl(d.name, draft)
+        setDraft('')
+      })
   }
 
   return (
@@ -131,7 +157,7 @@ function UrlRow({ database: d, onChanged, onLoggedOut }: { database: AdminDataba
             disabled={busy || d.source !== 'page'}
             onClick={() => run(() => api.resetAdminDatabaseUrl(d.name))}
           >
-            Default
+            Clear
           </button>
         </div>
         {error && (

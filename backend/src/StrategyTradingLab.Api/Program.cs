@@ -78,9 +78,10 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 app.UseRateLimiter();
 
-// A database switched to on the admin page must still be usable after a release; otherwise back to the home one.
+// A database switched to on the admin page must still have every migration after a release. In the background, so
+// the API starts listening (and passes the deploy's health check) without waiting on it.
 var databases = app.Services.GetRequiredService<DatabaseSwitch>();
-await databases.CheckActiveAsync(CancellationToken.None);
+_ = databases.CheckActiveAsync(app.Lifetime.ApplicationStopping);
 
 // The launch profiles set this, so running the API locally brings the dev database up to date.
 // Tests, cloud sessions (scripts/migrate-dev-https.py) and production (the deploy's migrations bundle) don't use it.

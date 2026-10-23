@@ -174,9 +174,48 @@ export interface AdminSetting {
   source: 'page' | 'server' | 'default' | 'none'
 }
 
+export type Locale = 'en' | 'ca'
+
+/** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
+export interface Account {
+  email: string
+  emailVerified: boolean
+  locale: Locale
+  timeZone: string
+  overviewEmail: boolean
+}
+
+/** What Sign-up sends. */
+export interface SignUp {
+  email: string
+  password: string
+  locale: Locale
+  /** IANA, e.g. "Europe/Madrid". */
+  timeZone: string
+  overviewEmail: boolean
+  disclaimerAccepted: boolean
+}
+
 export interface Api {
+  /** The logged-in user, or null without a session: the app's start-up check. */
+  getAccount(): Promise<Account | null>
+  /** Creates an account and logs it in; the same answer when the email already has one. Rejects with `InvalidFieldsError`, `TooManyTriesError`. */
+  signUp(signUp: SignUp): Promise<void>
+  /** Rejects with `UnauthorizedError` for a wrong email or password, `TooManyTriesError` while the email is locked. */
+  logIn(email: string, password: string): Promise<void>
+  logOut(): Promise<void>
+  /** Confirms the email from its link; logs no one in. Rejects with `ExpiredLinkError`. */
+  verifyEmail(token: string): Promise<void>
+  resendVerification(): Promise<void>
+  /** Always resolves the same, whether or not the email has an account. */
+  forgotPassword(email: string): Promise<void>
+  /** Sets the password from the reset link and logs this device in. Rejects with `ExpiredLinkError`, `InvalidFieldsError`. */
+  resetPassword(token: string, password: string): Promise<void>
+  /** Rejects with `InvalidFieldsError` (`currentPassword`, `newPassword`). */
+  changePassword(currentPassword: string, newPassword: string): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
+  /** Rejects with `UnauthorizedError` when the session has ended (also for `startStrategy`). */
   getDashboard(): Promise<Dashboard>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>

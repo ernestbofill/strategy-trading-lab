@@ -16,6 +16,12 @@ export function invalidate(cacheKey: string) {
   pending.delete(cacheKey)
 }
 
+/** Forgets every result: another user logged in (or out), so nothing loaded for the last one may show. */
+export function invalidateAll() {
+  settled.clear()
+  pending.clear()
+}
+
 /** Loads `load()` once per `cacheKey`; `undefined` from `load` means not found. */
 export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | undefined>): Loadable<T> {
   const [, rerender] = useReducer((n: number) => n + 1, 0)

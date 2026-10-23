@@ -3,6 +3,7 @@ import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tagline } from '../../components/Tagline'
+import { VerifyNotice } from '../account/VerifyNotice'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { homePath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
@@ -21,6 +22,7 @@ export function PickTemplate() {
       action={<PrimaryAction to={reviewPath(templateKey)}>Continue</PrimaryAction>}
       note="Pick one to start. You can add more strategies later, from any template."
     >
+      <VerifyNotice />
       <PageHeader
         eyebrow="Welcome to Strategy Trading Lab"
         title="Pick a strategy template"

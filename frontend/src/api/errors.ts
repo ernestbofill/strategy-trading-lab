@@ -6,10 +6,10 @@ export class NameTakenError extends Error {
   }
 }
 
-/** The admin page needs its password (again). */
+/** Not logged in (the app), or the admin page needs its password (again), or a wrong email and password. */
 export class UnauthorizedError extends Error {
   constructor() {
-    super('Not logged in to the admin page.')
+    super('Not logged in.')
     this.name = 'UnauthorizedError'
   }
 }
@@ -27,5 +27,23 @@ export class InvalidValueError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'InvalidValueError'
+  }
+}
+
+/** The server refused some fields: one message per field, for the user (`{ email: "Use an email address…" }`). */
+export class InvalidFieldsError extends Error {
+  readonly fields: Record<string, string>
+  constructor(fields: Record<string, string>) {
+    super(Object.values(fields)[0] ?? 'That was refused.')
+    this.name = 'InvalidFieldsError'
+    this.fields = fields
+  }
+}
+
+/** A verify or reset link that is expired, used or unknown. */
+export class ExpiredLinkError extends Error {
+  constructor() {
+    super('This link has expired.')
+    this.name = 'ExpiredLinkError'
   }
 }

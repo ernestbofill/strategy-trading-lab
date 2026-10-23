@@ -1,0 +1,98 @@
+import { useMemo, useState, type FormEvent } from 'react'
+import { Navigate } from 'react-router-dom'
+import { api, InvalidFieldsError, TooManyTriesError, type Locale } from '../../api'
+import { Checkbox, FormMessage, PasswordField, SelectField, TextField } from '../../components/Field'
+import { PageHeader } from '../../components/PageHeader'
+import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
+import { TextAction } from '../../components/TextAction'
+import { DISCLAIMER_FULL } from '../../lib/copy'
+import { dashboardPath, pickPath } from '../new-strategy/paths'
+import styles from './Account.module.css'
+import { useAccount } from './AccountContext'
+import { TOO_MANY_TRIES, TRY_AGAIN } from './copy'
+import { logInPath } from './paths'
+import { guessTimeZone, timeZones } from './timeZones'
+
+const languages: { value: Locale; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'ca', label: 'Català' },
+]
+
+/** Sign-up (spec: Sign-up). A new account is logged in at once and goes on to Pick a template. */
+export function SignUp() {
+  const { state, refresh } = useAccount()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [locale, setLocale] = useState<Locale>('en')
+  const [timeZone, setTimeZone] = useState(guessTimeZone)
+  const [overviewEmail, setOverviewEmail] = useState(true)
+  const [accepted, setAccepted] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState<{ tone: 'error' | 'done'; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [signedUp, setSignedUp] = useState(false)
+  const zones = useMemo(() => timeZones(timeZone).map((z) => ({ value: z, label: z.replaceAll('_', ' ') })), [timeZone])
+
+  if (state.status === 'ready' && state.account) return <Navigate to={signedUp ? pickPath : dashboardPath} replace />
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setErrors({})
+    setMessage(null)
+    try {
+      await api.signUp({ email, password, locale, timeZone, overviewEmail, disclaimerAccepted: accepted })
+      setSignedUp(true)
+      // A new account is logged in now; an email that already had one isn't, and gets the same answer.
+      if (!(await refresh())) setMessage({ tone: 'done', text: 'Check your email.' })
+    } catch (err) {
+      if (err instanceof InvalidFieldsError) setErrors(err.fields)
+      else setMessage({ tone: 'error', text: err instanceof TooManyTriesError ? TOO_MANY_TRIES : TRY_AGAIN })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <Screen
+      top={<TopBar title="STL // SIGN UP" />}
+      action={
+        <PrimaryAction form="sign-up" disabled={busy || !accepted}>
+          {busy ? 'Creating it…' : 'Create my account'}
+        </PrimaryAction>
+      }
+      note={accepted ? undefined : 'Tick the box above to go on.'}
+    >
+      <PageHeader title="Create your account" lead="Follow strategies with your own rules. The app never trades for you." />
+      <form id="sign-up" className={styles.form} onSubmit={submit} noValidate>
+        <TextField label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} error={errors.email} />
+        <PasswordField
+          label="Password"
+          autoComplete="new-password"
+          value={password}
+          onChange={setPassword}
+          hint="At least 10 characters."
+          error={errors.password}
+        />
+        <SelectField
+          label="Language"
+          value={locale}
+          onChange={(v) => setLocale(v as Locale)}
+          options={languages}
+          error={errors.locale}
+        />
+        <SelectField label="Time zone" value={timeZone} onChange={setTimeZone} options={zones} error={errors.timeZone} />
+        <Checkbox checked={overviewEmail} onChange={setOverviewEmail}>
+          Email me a daily overview, early in the morning.
+        </Checkbox>
+        <Checkbox checked={accepted} onChange={setAccepted} error={errors.disclaimerAccepted}>
+          {DISCLAIMER_FULL} The app is for learning, testing and following strategies; it never trades for you.
+        </Checkbox>
+        {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+      </form>
+      <div className={styles.links}>
+        <TextAction to={logInPath}>I already have an account</TextAction>
+      </div>
+    </Screen>
+  )
+}

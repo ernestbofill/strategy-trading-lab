@@ -1,0 +1,117 @@
+import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { api, InvalidFieldsError, TooManyTriesError } from '../../api'
+import { FormMessage, PasswordField } from '../../components/Field'
+import { PageHeader } from '../../components/PageHeader'
+import { Screen, TopBar } from '../../components/Screen'
+import { dashboardPath } from '../new-strategy/paths'
+import styles from './Account.module.css'
+import { useAccount, useCurrentAccount } from './AccountContext'
+import { TOO_MANY_TRIES, TRY_AGAIN } from './copy'
+import { logInPath } from './paths'
+import { ResendLink } from './ResendLink'
+
+/** Account, first version (spec: Account): the email, change password, log out. */
+export function AccountPage() {
+  const account = useCurrentAccount()
+  const { clear } = useAccount()
+  const navigate = useNavigate()
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const logOut = async () => {
+    setLoggingOut(true)
+    try {
+      await api.logOut()
+    } finally {
+      // Even if the request failed, this device forgets the user; the cookie ends with its session anyway.
+      navigate(logInPath, { replace: true })
+      clear()
+    }
+  }
+
+  return (
+    <Screen top={<TopBar back={dashboardPath} step="ACCOUNT" />}>
+      <PageHeader title="Account" />
+
+      <section className={styles.section} aria-labelledby="account-email">
+        <h2 id="account-email" className={styles.sectionTitle}>
+          Email
+        </h2>
+        <p className={styles.line}>
+          <span className={styles.email}>{account.email}</span>
+        </p>
+        {!account.emailVerified && (
+          <>
+            <p className={styles.line}>Not verified yet.</p>
+            <div>
+              <ResendLink />
+            </div>
+          </>
+        )}
+      </section>
+
+      <ChangePassword email={account.email} />
+
+      <section className={styles.section}>
+        <button type="button" className={`ui-strong ${styles.button}`} disabled={loggingOut} onClick={() => void logOut()}>
+          {loggingOut ? 'Logging out…' : 'Log out'}
+        </button>
+      </section>
+    </Screen>
+  )
+}
+
+function ChangePassword({ email }: { email: string }) {
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState<{ tone: 'error' | 'done'; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setErrors({})
+    setMessage(null)
+    try {
+      await api.changePassword(current, next)
+      setCurrent('')
+      setNext('')
+      setMessage({ tone: 'done', text: 'Password changed. Your other devices are logged out.' })
+    } catch (err) {
+      if (err instanceof InvalidFieldsError) setErrors(err.fields)
+      else setMessage({ tone: 'error', text: err instanceof TooManyTriesError ? TOO_MANY_TRIES : TRY_AGAIN })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <form className={styles.section} onSubmit={submit} noValidate aria-labelledby="account-password">
+      <h2 id="account-password" className={styles.sectionTitle}>
+        Change password
+      </h2>
+      {/* For password managers: which account the new password belongs to. */}
+      <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
+      <PasswordField
+        label="Current password"
+        autoComplete="current-password"
+        value={current}
+        onChange={setCurrent}
+        error={errors.currentPassword}
+      />
+      <PasswordField
+        label="New password"
+        autoComplete="new-password"
+        value={next}
+        onChange={setNext}
+        hint="At least 10 characters."
+        error={errors.newPassword}
+      />
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !current || !next}>
+        {busy ? 'Saving…' : 'Change password'}
+      </button>
+    </form>
+  )
+}

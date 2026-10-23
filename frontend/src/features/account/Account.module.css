@@ -1,0 +1,73 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 480px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-4);
+  max-width: 480px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 480px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font: 600 16px/24px var(--font-ui);
+  color: var(--ink);
+}
+
+.line {
+  margin: 0;
+  font: 14px/22px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.email {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.button {
+  align-self: flex-start;
+  min-height: 44px;
+  min-width: 88px;
+  padding: 0 var(--space-3);
+  background: transparent;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  cursor: pointer;
+}
+.button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.textButton {
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--primary);
+  cursor: pointer;
+}
+.textButton:hover:not(:disabled) {
+  color: var(--accent);
+}
+.textButton:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}

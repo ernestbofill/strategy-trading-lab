@@ -2,11 +2,8 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
-<<<<<<< HEAD
 - 2026-10-23 · Loop development is autonomous: Claude does the whole cycle per item and merges its own PRs (high-risk and docs-only ones too) once reviewed and CI is green, and stops only for a decision that is Ernest's. A PR waiting on one stays open; the rest are merged. A tool refusal is reported, with the permission rule to add, never worked around. (Ernest: "I don't need to approve every merge"; "autonomous unless there's a decision I must make", #41)
-=======
 - 2026-10-23 · Prices come from Yahoo's chart endpoint directly, as the POC's yfinance does (Ernest: "Yahoo it is"), adjusted for splits and dividends, one refresh a day and a minute after each start, on a schedule set on the admin page (time zone and time, default 22:30 Madrid, after the US close; Ernest's request, like the POC's settings), with "Refresh now" and "Test Yahoo" buttons. The endpoint is unofficial: a failure is logged and shown on `/admin/prices`, and the stored prices stay. Exchange rates are the euro against each currency, from the same source. (#38)
->>>>>>> origin/main
 - 2026-10-23 · The frontend's in-browser mock backend is removed (Ernest's call): the real API is the only backend, so the screens and the API can't drift apart. Cloud sessions without database variables can't run the screens; they rely on tests. (#40)
 - 2026-10-23 · The user picks a currency (euro, US dollar or British pound; euro by default) at sign-up and in the account. It is the currency of the strategies started afterwards and each strategy keeps its own, so changing it never converts a running one. The tested defaults and backtests stay in euro. (Ernest's request, #35)
 - 2026-10-23 · CI runs every backend test, the `[NeonFact]` ones included, against a throwaway PostgreSQL 16 and RustFS (MinIO no longer publishes community images) with `migrations.sql` applied, so no one has to run them by hand before a merge. A `DATABASE_URL` keeps requiring SSL unless it says `sslmode=disable`. (Ernest: "we can't depend on my manual test")

@@ -24,9 +24,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Locally, `neon deploy` / `neon env pull` write the Neon variables to .env.local at the repo root.
 if (builder.Environment.IsDevelopment()) builder.Configuration.AddNeonDotEnv(AppContext.BaseDirectory);
 
-// Read when a context is created, so configuration added after this point (tests) applies.
+// Read when a context is created, so a switch on the admin page applies to the next request (and test configuration applies).
+builder.Services.AddSingleton<DatabaseSwitch>();
 builder.Services.AddDbContext<AppDbContext>((services, options) => AppDbContextOptions.Configure(options,
-    NeonEnvironment.ConnectionString(services.GetRequiredService<IConfiguration>())
+    services.GetRequiredService<DatabaseSwitch>().ConnectionString()
     ?? throw new InvalidOperationException(
         "No database: set DATABASE_URL (run `neon env pull`) or ConnectionStrings:Default.")));
 
@@ -77,9 +78,15 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 app.UseRateLimiter();
 
+// A database switched to on the admin page must still have every migration after a release. In the background, so
+// the API starts listening (and passes the deploy's health check) without waiting on it.
+var databases = app.Services.GetRequiredService<DatabaseSwitch>();
+_ = databases.CheckActiveAsync(app.Lifetime.ApplicationStopping);
+
 // The launch profiles set this, so running the API locally brings the dev database up to date.
 // Tests, cloud sessions (scripts/migrate-dev-https.py) and production (the deploy's migrations bundle) don't use it.
-if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+// Only the home database: a local API switched to production must never migrate it (the deploy does).
+if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Database:MigrateOnStartup") && databases.Active == databases.Home)
 {
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
@@ -127,10 +134,10 @@ app.MapTemplates();
 app.MapStrategies();
 app.MapAdmin();
 
-// For the client to show which API it talks to.
-app.MapGet("/version", () => TypedResults.Ok(VersionResponse.Current))
+// For the client to show which API it talks to, and a DEV tag while it uses the dev database.
+app.MapGet("/version", (DatabaseSwitch databases) => TypedResults.Ok(VersionResponse.Current with { Database = databases.Active }))
 .WithName("Version")
-.WithSummary("The API's version, the commit it was built from and when it was built (Release builds).");
+.WithSummary("The API's version, the commit it was built from, when it was built (Release builds) and which database it uses.");
 
 app.Run();
 
@@ -138,9 +145,9 @@ record HealthResponse(string Postgres, string ObjectStorage);
 
 /// <summary>
 /// Version from backend/Directory.Build.props; Commit and BuiltAt are stamped into the assembly at build time.
-/// BuiltAt is null in Debug builds, where stamping it would rebuild the project every time.
+/// BuiltAt is null in Debug builds, where stamping it would rebuild the project every time. Database is the one in use.
 /// </summary>
-record VersionResponse(string Version, string? Commit, DateTimeOffset? BuiltAt)
+record VersionResponse(string Version, string? Commit, DateTimeOffset? BuiltAt, DatabaseName Database = default)
 {
     public static readonly VersionResponse Current = Read(typeof(Program).Assembly);
 

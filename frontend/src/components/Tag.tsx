@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import styles from './Tag.module.css'
 
-export type TagTone = 'sim' | 'live' | 'ai'
+export type TagTone = 'sim' | 'live' | 'ai' | 'dev'
 
-/** Outlined mono label: SIM, LIVE, AI. Always carries a word, never colour alone. */
-export function Tag({ tone, children }: { tone: TagTone; children: ReactNode }) {
+/** Outlined mono label: SIM, LIVE, AI, DEV. Always carries a word, never colour alone. */
+export function Tag({ tone, title, children }: { tone: TagTone; title?: string; children: ReactNode }) {
   return (
-    <span className={styles.tag} data-tone={tone}>
+    <span className={styles.tag} data-tone={tone} title={title}>
       {children}
     </span>
   )

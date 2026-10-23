@@ -8,6 +8,12 @@ using StrategyTradingLab.Api.Templates;
 namespace StrategyTradingLab.Api.Evaluation;
 
 /// <summary>What one evaluation run did.</summary>
+/// <summary>What the strategy's signals use of its budget so far.</summary>
+public sealed class BudgetUse(decimal used)
+{
+    public decimal Used { get; set; } = used;
+}
+
 public record EvaluationSummary(int Strategies, int NewSignals, int NewTrades, int Missed, int Failed);
 
 /// <summary>What one strategy or stock gained in a run.</summary>
@@ -54,18 +60,23 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         CancellationToken cancellationToken)
     {
         int signals = 0, trades = 0, missed = 0;
-        var wanted = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
+        var added = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).ToDictionary(a => a.AssetId, a => DateOnly.FromDateTime(a.AddedAt.UtcDateTime));
+        var wanted = added.Keys.ToList();
+        // The budget the signals so far use; new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
+        var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id).SumAsync(s => s.StepAmount ?? 0, cancellationToken));
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
             var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date <= lastSession).OrderBy(p => p.Date)
                 .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
-            var from = bars.FindIndex(b => b.Date >= strategy.StartedOn);
-            if (from < 0) continue; // Nothing since the strategy started.
+            // A stock added later is evaluated from the day it was added, not from the strategy's start.
+            var start = added[asset.Id] > strategy.StartedOn ? added[asset.Id] : strategy.StartedOn;
+            var from = bars.FindIndex(b => b.Date >= start);
+            if (from < 0) continue; // Nothing since the strategy (or the stock) started.
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);
-            var run = await SyncAsync(strategy, asset, bars, days, now, rates, cancellationToken);
+            var run = await SyncAsync(strategy, asset, bars, days, now, rates, budget, cancellationToken);
             signals += run.NewSignals;
             trades += run.NewTrades;
             missed += run.Missed;
@@ -74,9 +85,14 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
     }
 
     async Task<Changes> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,
-        DateTimeOffset now, ExchangeRates rates, CancellationToken cancellationToken)
+        DateTimeOffset now, ExchangeRates rates, BudgetUse budget, CancellationToken cancellationToken)
     {
         int newSignals = 0, newTrades = 0, missed = 0;
+
+        // Days up to the last one evaluated before are never given new signals: a changed setting or a revised price
+        // history must not back-date signals and trades.
+        var evaluatedUntil = await db.DailyEvaluations.Where(r => r.StrategyId == strategy.Id && r.AssetId == asset.Id)
+            .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
 
         // Where it stands today.
         var latest = days[^1];
@@ -95,8 +111,11 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         // A signal for each step the rules call for.
         var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id && s.Side == TradeSide.Buy)
             .ToDictionaryAsync(s => s.SignalDate, cancellationToken);
-        foreach (var day in days.Where(d => d.NewBuy && !signals.ContainsKey(d.Date)))
+        foreach (var day in days.Where(d => d.NewBuy && !signals.ContainsKey(d.Date) && (evaluatedUntil is null || d.Date > evaluatedUntil)))
         {
+            var stepAmount = strategy.Budget.Step ?? 0;
+            if (budget.Used + stepAmount > strategy.Budget.Amount) continue; // The budget is used up: no more signals.
+            budget.Used += stepAmount;
             var live = strategy.Mode == StrategyMode.Live;
             var signal = new Signal
             {
@@ -118,6 +137,7 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             if (signal.Status == SignalStatus.Waiting)
             {
                 signal.Status = SignalStatus.Missed;
+                signal.SnoozedUntil = null; // Only a waiting signal can be snoozed (the table's check).
                 missed++;
             }
         }

@@ -17,6 +17,10 @@ public class StrategyEvaluatorTests
     }
 
     [Fact]
+    public void The_stored_status_has_every_engine_status_by_the_same_name() =>
+        Assert.Equal(Enum.GetNames<StrategyTradingLab.Api.Engine.RuleStatus>(), Enum.GetNames<EvaluationStatus>());
+
+    [Fact]
     public void The_last_complete_session_is_the_latest_weekday_after_the_close()
     {
         // 2026-10-23 is a Friday; New York is UTC-4 then, so 16:30 there is 20:30 UTC.
@@ -182,6 +186,27 @@ public class StrategyEvaluatorTests
 
             Assert.Equal(0, run.NewSignals);
             Assert.Empty(await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).ToListAsync());
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task No_signal_is_made_when_its_step_would_not_fit_in_the_budget()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
+        try
+        {
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Budget, new Budget(50, 100, 5)));
+
+            var run = await Evaluator(db).RunAsync(default);
+
+            Assert.Equal(0, run.NewSignals);
         }
         finally
         {

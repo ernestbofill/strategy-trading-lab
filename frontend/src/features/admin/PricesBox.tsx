@@ -77,7 +77,9 @@ export function PricesBox() {
         {prices && prices.lastFinished && (
           <p className={styles.source}>
             Last run: {prices.updated} updated, {prices.fullHistory} in full, {prices.problems.length} failed
-            {prices.newSignals === null ? '. Strategies not evaluated.' : `; ${prices.newSignals} new signals.`}
+            {prices.newSignals === null
+              ? '. Strategies not evaluated.'
+              : `; ${prices.newSignals} new ${prices.newSignals === 1 ? 'signal' : 'signals'}${prices.evaluationFailures > 0 ? `, ${prices.evaluationFailures} strategies failed` : ''}.`}
           </p>
         )}
         {prices?.problems.map((p) => (

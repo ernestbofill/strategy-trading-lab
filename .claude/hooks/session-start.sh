@@ -25,5 +25,5 @@ if [ -n "${DATABASE_URL:-}${DATABASE_URL_UNPOOLED:-}" ] && command -v python3 >/
 fi
 
 [ -f .env.local ] || [ -n "${DATABASE_URL:-}" ] \
-  || echo "session-start: no Neon variables; [NeonFact] tests skip and the frontend should use npm run dev:mock."
+  || echo "session-start: no Neon variables; [NeonFact] tests skip and the API can't reach a database."
 exit 0

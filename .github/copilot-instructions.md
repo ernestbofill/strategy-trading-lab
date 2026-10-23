@@ -20,7 +20,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 
 ## Repo layout
 
-- `frontend/`: React + TypeScript PWA (Vite). It talks to the .NET API, or to an in-browser mock backend with `npm run dev:mock`. See [frontend.instructions.md](instructions/frontend.instructions.md).
+- `frontend/`: React + TypeScript PWA (Vite). It talks to the .NET API. See [frontend.instructions.md](instructions/frontend.instructions.md).
 - `backend/`: C# .NET API with PostgreSQL on Neon. See [backend.instructions.md](instructions/backend.instructions.md).
 - `deploy/`: the Oracle server setup and deploy scripts.
 - `docs/`: the spec and product docs. Keep them in step with what was built.
@@ -33,7 +33,7 @@ Ernest works from a Mac and a Windows PC with VS Code. Claude Code runs both loc
 | | Mac / Windows (local) | Claude Code cloud session |
 | --- | --- | --- |
 | Tools | Node 24, .NET 10. Ask before installing anything new. | The session start hook runs `npm ci` and `dotnet tool restore` where the tools exist. Tools it lacks are a setup step for Ernest in the cloud environment's settings. |
-| Dev database | The Neon `dev` branch, variables in `.env.local` (gitignored, written by `neon deploy`). | Only if Ernest has added the variables to the cloud environment. Otherwise use the mock backend and say so in the PR. |
+| Dev database | The Neon `dev` branch, variables in `.env.local` (gitignored, written by `neon deploy`). | Only if Ernest has added the variables to the cloud environment. Otherwise the API can't reach a database: say so in the PR. |
 | Browser check | The built-in browser or Chrome, at phone and desktop width. | No browser: rely on tests, and say in the PR that the screens weren't checked by eye. |
 | Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
@@ -129,7 +129,7 @@ Tools come from Ernest's claude.ai connectors, switched in the desktop app's + â
 | --- | --- |
 | GitHub (PRs, reviews, CI) | `gh` locally; the GitHub connector in cloud sessions |
 | Dev database, Neon branches, schema checks | The Neon connector (production: see *Production*) |
-| Running and checking screens | The built-in browser, with the `.claude/launch.json` configs (`frontend`, `frontend-mock`, `backend`) |
+| Running and checking screens | The built-in browser, with the `.claude/launch.json` configs (`frontend`, `backend`) |
 | Web research (price data, regulation, libraries) | Exa. Firecrawl, if it's on, only for legal or government sources or to scrape a page. |
 | Diagrams in chat | visualize |
 

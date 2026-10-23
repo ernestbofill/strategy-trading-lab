@@ -52,12 +52,12 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
   if (response.status === 401) throw new UnauthorizedError()
   if (response.status === 429) throw new TooManyTriesError()
   if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
-  if (response.status === 400 || response.status === 502) {
+  if (response.status === 400 || response.status === 403 || response.status === 502) {
     const problem = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; detail?: string } | null
     const reason = problem?.errors?.value?.[0] ?? problem?.detail
     // A 502 without the API's reason is nginx: the API itself is down, not a refused value.
     if (reason) throw new InvalidValueError(reason)
-    if (response.status === 400) throw new InvalidValueError('That was refused.')
+    if (response.status !== 502) throw new InvalidValueError('That was refused.')
   }
   if (!response.ok) throw new Error(`${method} /admin${path} failed: HTTP ${response.status}`)
   return response
@@ -123,4 +123,7 @@ export const httpApi: Api = {
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
   sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,
   resetAdminSetting: async (key, clear) => void (await admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
+  getVersion: () => getRequired('/version'),
+  getAdminDatabases: async () => (await admin('GET', '/database')).json(),
+  switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
 }

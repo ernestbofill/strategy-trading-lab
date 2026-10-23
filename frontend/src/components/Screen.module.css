@@ -98,10 +98,13 @@
   font: 13px/20px var(--font-ui);
 }
 
-/* The build version, centered so a tester can say which one they have. */
+/* The build version, centered so a tester can say which one they have, and DEV while the API uses the dev database. */
 .version {
   grid-column: 2;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
 }
 .step {
   grid-column: 3;

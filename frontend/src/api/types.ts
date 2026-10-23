@@ -196,6 +196,33 @@ export interface SignUp {
   disclaimerAccepted: boolean
 }
 
+/** The API's build, and the database it uses (the top bar shows DEV for the dev one). */
+export interface BackendVersion {
+  version: string
+  commit: string | null
+  /** ISO time; null in Debug builds. */
+  builtAt: string | null
+  database: DatabaseName
+}
+
+export type DatabaseName = 'dev' | 'production'
+
+/** A database on the admin page. Its URL is set only on the server and holds a password, so only the host is sent. */
+export interface AdminDatabase {
+  name: DatabaseName
+  /** The server variable its URL comes from: DATABASE_URL for the server's own, else DATABASE_URL_DEV or _PRODUCTION. */
+  variable: string
+  /** Null when the variable isn't set. */
+  host: string | null
+}
+
+export interface AdminDatabases {
+  active: DatabaseName
+  /** The server's own database, the one its environment points at. */
+  home: DatabaseName
+  databases: AdminDatabase[]
+}
+
 export interface Api {
   /** The logged-in user, or null without a session: the app's start-up check. */
   getAccount(): Promise<Account | null>
@@ -232,4 +259,9 @@ export interface Api {
   resetAdminSetting(key: string, clear?: boolean): Promise<void>
   /** Sends a test email to the mail account itself and resolves with its address; rejects with `InvalidValueError` saying why not. */
   sendAdminTestEmail(): Promise<string>
+  /** Public: the API's build and the database it uses. */
+  getVersion(): Promise<BackendVersion>
+  getAdminDatabases(): Promise<AdminDatabases>
+  /** Rejects with `InvalidValueError` saying why when refused (no URL on the server, a database that doesn't answer). */
+  switchAdminDatabase(name: DatabaseName): Promise<void>
 }

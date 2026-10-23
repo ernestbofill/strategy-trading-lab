@@ -1,6 +1,8 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useBackendVersion } from '../lib/backendVersion'
 import styles from './Screen.module.css'
+import { Tag } from './Tag'
 
 interface TopBarProps {
   /** Shown on the left. Pass `back` for a "← BACK" link instead. */
@@ -16,6 +18,7 @@ export function TopBar({ title, back, step, aside }: TopBarProps) {
   const navigate = useNavigate()
   // The first entry of the history has the key 'default': there is nothing to go back to.
   const hasHistory = useLocation().key !== 'default'
+  const onDevDatabase = useBackendVersion()?.database === 'dev'
   const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
     const plainClick = e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
     if (hasHistory && plainClick) {
@@ -33,7 +36,14 @@ export function TopBar({ title, back, step, aside }: TopBarProps) {
       ) : (
         <div>{title}</div>
       )}
-      <div className={styles.version}>v{__APP_VERSION__}</div>
+      <div className={styles.version}>
+        v{__APP_VERSION__}
+        {onDevDatabase && (
+          <Tag tone="dev" title="The API uses the dev database">
+            DEV
+          </Tag>
+        )}
+      </div>
       {(step || aside) && <div className={styles.step}>{step ?? aside}</div>}
     </header>
   )

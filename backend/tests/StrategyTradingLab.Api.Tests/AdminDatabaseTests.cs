@@ -160,10 +160,10 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
     [NeonFact]
     public async Task Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept()
     {
-        // The linked dev branch stands in for production; dev itself points nowhere.
+        // The linked dev branch stands in for production. Dev can't point nowhere here: the owner's session lives in the database in use.
         var devUrl = fixture.Services.GetRequiredService<IConfiguration>()["DATABASE_URL"]!;
         using var state = new TemporaryDirectory();
-        var settings = new[] { ("DATABASE_URL_PRODUCTION", devUrl), ("ConnectionStrings:Default", "Host=unused.invalid;Database=unused") };
+        var settings = new[] { ("DATABASE_URL_PRODUCTION", devUrl) };
         using var admin = await fixture.LoggedIn(fixture.With(state, settings));
 
         Assert.Equal(HttpStatusCode.NoContent, (await admin.PostAsJsonAsync("/admin/database/active", new { name = "production" })).StatusCode);

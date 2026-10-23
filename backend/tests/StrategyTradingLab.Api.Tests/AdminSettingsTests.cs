@@ -209,7 +209,7 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         using var scope = fixture.Services.CreateScope();
 
         await Assert.ThrowsAsync<StrategyTradingLab.Api.Email.EmailNotSetUpException>(() =>
-            scope.ServiceProvider.GetRequiredService<StrategyTradingLab.Api.Email.IEmailSender>().SendToAccountAsync("s", "b", default));
+            ActivatorUtilities.CreateInstance<StrategyTradingLab.Api.Email.SmtpEmailSender>(scope.ServiceProvider).SendToAccountAsync("s", "b", default));
     }
 
     [NeonFact]

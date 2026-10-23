@@ -47,8 +47,12 @@ public class DipRules : IBuyRules
 
     public int CooldownDays => p.CooldownDays;
 
+    int lastDecided = -1;
+
     public RuleDecision Decide(int i, DayContext context)
     {
+        if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
+        lastDecided = i;
         if (floor[i] is not { } sma50 || middle[i] is not { } sma150 || trend[i] is not { } sma200
             || low[i] is not { } lowest || high[i] is not { } peak)
         {

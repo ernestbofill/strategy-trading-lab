@@ -62,19 +62,27 @@ public class ComebackRules : IBuyRules
 
     decimal Chase(decimal level) => level * (1 + p.MaxChasePct / 100);
 
-    /// <summary>Whether the 5-day volume is at least <c>VolumeRatio</c> times the 50-day (no volume at all: no).</summary>
-    bool VolumeOk(int i) => vol5[i] is { } short5 && vol50[i] is { } long50
-        && (long50 > 0 ? short5 / long50 >= p.VolumeRatio : short5 > 0);
+    /// <summary>Whether the 5-day volume is at least <c>VolumeRatio</c> times the 50-day (no volume at all: no; the 50-day average is zero only when the 5-day one is, the POC's 0/0).</summary>
+    bool VolumeOk(int i) => vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 && short5 / long50 >= p.VolumeRatio;
+
+    int lastDecided = -1;
 
     public RuleDecision Decide(int i, DayContext day)
     {
+        if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
+        lastDecided = i;
+        if (sma50[i] is not { } slow50 || high252[i] is not { } high || sma200[i] is null)
+        {
+            var (none, noneReason) = window.Compose(day, candidate: false, entryOk: false, extended: false, "", "");
+            return new RuleDecision(none, noneReason, new Dictionary<string, object>());
+        }
+
         var price = close[i];
-        var slow50 = sma50[i]!.Value;
         var buyLine = slow50 * (1 + p.AboveSma50Pct / 100);
         var facts = new Dictionary<string, object>
         {
             ["aboveBuyLinePct"] = Math.Round(Indicators.PctFrom(price, buyLine), 2),
-            ["belowHighPct"] = Math.Round(-Indicators.PctFrom(price, high252[i]!.Value), 2),
+            ["belowHighPct"] = Math.Round(-Indicators.PctFrom(price, high), 2),
             ["buyLine"] = Math.Round(buyLine, 4),
         };
 
@@ -114,7 +122,7 @@ public class ComebackRules : IBuyRules
             breakoutHigh = Math.Max(breakoutHigh.Value, price);
             if (price <= breakoutHigh * (1 - p.BreakoutPullbackPct / 100)) pulledBack = true; // The high before the pullback is the breakout level.
         }
-        var nearHighLevel = high252[i]!.Value * (1 - p.NearHighPct / 100);
+        var nearHighLevel = high252[i]!.Value * (1 - p.NearHighPct / 100); // Non-null: Decide checked it.
         List<Milestone> milestones =
         [
             new("sma200", "Reclaims the SMA 200", price > sma200[i], sma200[i]),

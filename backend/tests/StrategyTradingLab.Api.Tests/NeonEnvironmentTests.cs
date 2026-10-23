@@ -30,4 +30,13 @@ public class NeonEnvironmentTests
 
         Assert.False(builder.NoResetOnClose);
     }
+
+    [Theory]
+    [InlineData("postgresql://u:p@localhost:5432/stl?sslmode=disable", SslMode.Disable)]
+    [InlineData("postgresql://u:p@localhost:5432/stl", SslMode.Require)]
+    [InlineData("postgresql://u:p@localhost:5432/stl?sslmode=prefer", SslMode.Require)]
+    public void Requires_ssl_unless_the_url_disables_it(string url, SslMode expected)
+    {
+        Assert.Equal(expected, new NpgsqlConnectionStringBuilder(NeonEnvironment.ToNpgsqlConnectionString(url)).SslMode);
+    }
 }

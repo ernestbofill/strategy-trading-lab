@@ -19,10 +19,11 @@ const trend = {
 
 describe('newStrategyFrom', () => {
   it('starts from the tested defaults when the user changed nothing', () => {
-    expect(newStrategyFrom(initialDraft, dip, 'Dip in winners')).toEqual({
+    expect(newStrategyFrom(initialDraft, dip, 'Dip in winners', 'EUR')).toEqual({
       templateKey: 'dip',
       name: 'Dip in winners',
       mode: 'simulation',
+      currency: 'EUR',
       budget: { amount: 3000, step: 100, maxSteps: 5 },
       assetIds: ['id-NVDA', 'id-AVGO', 'id-META'],
     })
@@ -30,15 +31,16 @@ describe('newStrategyFrom', () => {
 
   it('sends the mode, the budget the user set and only the ticked stocks', () => {
     const draft = { ...initialDraft, mode: 'live' as const, budget: 6000, step: 200, maxSteps: 4, unticked: ['AVGO'] }
-    expect(newStrategyFrom(draft, dip, 'Mine')).toMatchObject({
+    expect(newStrategyFrom(draft, dip, 'Mine', 'USD')).toMatchObject({
       mode: 'live',
+      currency: 'USD',
       budget: { amount: 6000, step: 200, maxSteps: 4 },
       assetIds: ['id-NVDA', 'id-META'],
     })
   })
 
   it('sends the one fund, and no steps for an all-in template', () => {
-    expect(newStrategyFrom({ ...initialDraft, budget: 5000 }, trend, 'Trend')).toMatchObject({
+    expect(newStrategyFrom({ ...initialDraft, budget: 5000 }, trend, 'Trend', 'EUR')).toMatchObject({
       budget: { amount: 5000, step: null, maxSteps: null },
       assetIds: ['id-CSPX'],
     })

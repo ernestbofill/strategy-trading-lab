@@ -134,10 +134,10 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: () => 
     setMessage(null)
     try {
       await api.setCurrency(currency)
-      await onSaved()
+      if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
       setMessage({ tone: 'done', text: 'Saved. New strategies use it; running ones keep theirs.' })
     } catch (err) {
-      setMessage({ tone: 'error', text: err instanceof InvalidFieldsError ? err.fields.currency : errorText(err) })
+      setMessage({ tone: 'error', text: (err instanceof InvalidFieldsError && err.fields.currency) || errorText(err) })
     }
     setBusy(false)
   }

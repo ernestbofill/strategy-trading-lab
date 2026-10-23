@@ -9,6 +9,9 @@ export const CURRENCIES: { code: Currency; symbol: string; name: string }[] = [
   { code: 'GBP', symbol: '£', name: 'British pound' },
 ]
 
+/** "Euro", "US dollar", "British pound". */
+export const currencyName = (currency: Currency) => CURRENCIES.find((c) => c.code === currency)?.name ?? currency
+
 /** €3,000 / $3,000 / £3,000: an amount in a strategy's or an account's currency. */
 export const money = (n: number, currency: Currency) =>
   `${CURRENCIES.find((c) => c.code === currency)?.symbol ?? ''}${amountFormat.format(n)}`

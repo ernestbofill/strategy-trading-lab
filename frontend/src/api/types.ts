@@ -158,6 +158,8 @@ export interface NewStrategy {
   name: string
   mode: StrategyMode
   budget: Budget
+  /** The currency the user saw while setting the budget. */
+  currency: Currency
   /** The stocks to watch, or the one fund. */
   assetIds: string[]
 }

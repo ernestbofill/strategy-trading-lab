@@ -1,7 +1,6 @@
 import { isoDate } from '../../lib/format'
 import { NameTakenError } from '../errors'
 import type { Dashboard, NewStrategy, PastResult, StrategySummary, TemplateKey } from '../types'
-import { mockGetAccount } from './account'
 import { templateDetails } from './data'
 
 // MOCK: the user's strategies and what waits for them, as in the Home wireframe.
@@ -57,7 +56,7 @@ const summarize = (seed: Seed): StrategySummary => ({
 const started: StrategySummary[] = []
 
 /** Starts a strategy as the backend does: it runs from today, with nothing used and no results yet. */
-export function startMockStrategy({ templateKey, name, mode, budget }: NewStrategy): StrategySummary {
+export function startMockStrategy({ templateKey, name, mode, budget, currency }: NewStrategy): StrategySummary {
   const trimmed = name.trim()
   const taken = [...started, ...seeds].some((s) => s.name.toLowerCase() === trimmed.toLowerCase())
   if (taken) throw new NameTakenError()
@@ -67,7 +66,7 @@ export function startMockStrategy({ templateKey, name, mode, budget }: NewStrate
     templateKey,
     mode,
     startedOn: daysAgo(0),
-    currency: mockGetAccount()?.currency ?? 'EUR',
+    currency,
     budget: budget.amount,
     used: 0,
     results: null,

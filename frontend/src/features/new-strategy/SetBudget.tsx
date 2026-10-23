@@ -15,7 +15,7 @@ import {
   summarize,
   weeksToUse,
 } from '../../lib/budget'
-import { CURRENCIES, money } from '../../lib/format'
+import { currencyName, money } from '../../lib/format'
 import { useCurrentAccount } from '../account/AccountContext'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, modePath } from './paths'
@@ -65,7 +65,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
     <Screen
       top={top}
       action={<PrimaryAction to={confirmPath}>Continue</PrimaryAction>}
-      note={`Amounts in ${CURRENCIES.find((c) => c.code === currency)?.name.toLowerCase()}. Dollar prices convert at the day's rate.`}
+      note={currency === 'USD' ? 'Amounts in US dollars.' : `Amounts in ${currencyName(currency)}. Dollar prices convert at the day's rate.`}
     >
       <PageHeader
         eyebrow={

@@ -52,7 +52,7 @@ public static class StrategyEndpoints
                 Mode = request.Mode!.Value,
                 Status = StrategyStatus.Running,
                 StartedOn = Today(user, time),
-                Currency = user.Currency,
+                Currency = request.Currency ?? user.Currency,
                 Budget = request.Budget,
                 Params = template.ParamsJson(),
                 Assets = [.. assets.Select(asset => new StrategyAsset

@@ -72,7 +72,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     setStarting(true)
     setError(null)
     try {
-      await api.startStrategy(newStrategyFrom(draft, template, shownName))
+      await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
     } catch (e) {
       setError(
         e instanceof NameTakenError

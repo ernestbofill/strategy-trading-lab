@@ -93,7 +93,7 @@ public class StrategyEvaluatorTests
         {
             UserId = user.Id, TemplateKey = "dip", Name = $"Eval {tag}", Mode = mode, Status = StrategyStatus.Running, StartedOn = start,
             Currency = "USD", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
-            Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) }],
         };
         db.Strategies.Add(strategy);
         await db.SaveChangesAsync();
@@ -202,7 +202,14 @@ public class StrategyEvaluatorTests
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
         try
         {
-            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Budget, new Budget(50, 100, 5)));
+            // A budget of one step, already used by an earlier signal.
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Budget, new Budget(100, 100, 5)));
+            db.Signals.Add(new Signal
+            {
+                StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, StepNo = 1, MaxSteps = 5, StepAmount = 100, SignalDate = new DateOnly(2020, 1, 1),
+                ClosePrice = 1, Facts = JsonDocument.Parse("{}"), Status = SignalStatus.Confirmed, AnsweredAt = DateTimeOffset.UtcNow,
+            });
+            await db.SaveChangesAsync();
 
             var run = await Evaluator(db).RunAsync(default);
 

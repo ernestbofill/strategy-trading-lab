@@ -5,7 +5,7 @@ metadata:
   type: reference
 ---
 
-`brew install --cask dotnet-sdk` needs a sudo password, so .NET 10 was installed with Microsoft's `dotnet-install.sh` into `~/.dotnet` (2026-10-23, #36). It isn't on the shell's PATH.
+`brew install --cask dotnet-sdk` needs a sudo password, so .NET 10 was installed with Microsoft's `dotnet-install.sh` into `~/.dotnet` (2026-10-23, #38). It isn't on the shell's PATH.
 
 **Why:** the cask can't run from Claude's shell, and backend work needs `dotnet build`, `dotnet test` and `dotnet ef`.
 

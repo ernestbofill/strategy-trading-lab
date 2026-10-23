@@ -4,6 +4,9 @@ import type { Api, StrategySummary } from './types'
 // The .NET API. nginx serves it at /api on the app's own host; in development Vite proxies /api to it.
 const BASE_URL = '/api'
 
+/** Every state-changing request carries it; the API refuses those without it (CSRF, backend/AUTH.md). */
+const APP_HEADER = { 'X-Requested-With': 'stl' }
+
 /** GETs `path` as JSON; a 404 is `undefined` (not found), any other failure throws. */
 async function get<T>(path: string): Promise<T | undefined> {
   const response = await fetch(`${BASE_URL}${path}`, { headers: { Accept: 'application/json' } })
@@ -22,7 +25,7 @@ async function getRequired<T>(path: string): Promise<T> {
 async function post<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...APP_HEADER },
     body: JSON.stringify(body),
   })
   if (response.status === 409) throw new NameTakenError()
@@ -34,7 +37,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 async function admin(method: string, path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}/admin${path}`, {
     method,
-    headers: { Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (response.status === 401) throw new UnauthorizedError()

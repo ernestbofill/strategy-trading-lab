@@ -23,7 +23,7 @@ public sealed class AdminFixture : WebApplicationFactory<Program>, IAsyncLifetim
     {
         if (!NeonFactAttribute.Configured) return;
         saved = await Db().AppSettings.AsNoTracking().ToListAsync();
-        Admin = CreateClient();
+        Admin = this.CreateApiClient();
         (await Admin.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).EnsureSuccessStatusCode();
     }
 
@@ -57,7 +57,7 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     [NeonFact]
     public async Task Settings_need_the_admin_cookie()
     {
-        using var stranger = fixture.CreateClient();
+        using var stranger = fixture.CreateApiClient();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/settings")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PutAsJsonAsync("/admin/settings/SMTP_USER", new { value = "a@b.c" })).StatusCode);
@@ -68,7 +68,7 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
     [NeonFact]
     public async Task A_wrong_password_is_refused()
     {
-        using var stranger = fixture.CreateClient();
+        using var stranger = fixture.CreateApiClient();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsJsonAsync("/admin/log-in", new { password = "stl" })).StatusCode);
     }
@@ -237,7 +237,7 @@ public class AdminLogInRateLimitTests(WebApplicationFactory<Program> factory) : 
     [Fact]
     public async Task The_sixth_try_in_15_minutes_is_refused()
     {
-        using var client = factory.CreateClient();
+        using var client = factory.CreateApiClient();
         for (var i = 0; i < 5; i++)
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/admin/log-in", new { password = "wrong" })).StatusCode);
 

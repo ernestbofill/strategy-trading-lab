@@ -68,6 +68,9 @@ public static class TemplateAssets
         Nasdaq100, Dax, Nikkei,
     ];
 
+    /// <summary>created_at of every seeded row.</summary>
+    public static readonly DateTimeOffset SeededAt = new(2026, 10, 18, 0, 0, 0, TimeSpan.Zero);
+
     public static void Apply(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Asset>().HasData(All.Select(seed => new Asset
@@ -78,14 +81,14 @@ public static class TemplateAssets
             Name = seed.Name,
             Kind = seed.Kind,
             Currency = seed.Currency,
-            CreatedAt = DevSeed.SeededAt,
+            CreatedAt = SeededAt,
         }));
         modelBuilder.Entity<AssetText>().HasData(All.Select(seed => new AssetText
         {
             AssetId = seed.Id,
             Locale = TemplateTexts.DefaultLocale,
             What = seed.What,
-            CreatedAt = DevSeed.SeededAt,
+            CreatedAt = SeededAt,
         }));
     }
 }

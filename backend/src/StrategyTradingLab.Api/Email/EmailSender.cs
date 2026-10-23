@@ -15,6 +15,9 @@ public interface IEmailSender
 {
     /// <summary>Sends a plain-text email to the mail account itself and returns its address. Throws <see cref="EmailException"/>.</summary>
     Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken);
+
+    /// <summary>Sends a plain-text email to one address. Throws <see cref="EmailException"/>.</summary>
+    Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -25,12 +28,19 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
 {
     static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
-    public async Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken)
+    public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken) =>
+        SendFromSettingsAsync(null, subject, body, cancellationToken);
+
+    public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken) =>
+        SendFromSettingsAsync(to, subject, body, cancellationToken);
+
+    /// <summary>Sends to <paramref name="to"/>, or to the account itself when it is null, and returns the account.</summary>
+    async Task<string> SendFromSettingsAsync(string? to, string subject, string body, CancellationToken cancellationToken)
     {
         var values = await settings.ValuesAsync(cancellationToken);
         if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
             throw new EmailNotSetUpException();
-        await SendAsync(values, user, password, host, user, subject, body, cancellationToken);
+        await SendAsync(values, user, password, host, to ?? user, subject, body, cancellationToken);
         return user;
     }
 

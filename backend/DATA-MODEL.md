@@ -16,7 +16,7 @@ Source: [app spec §8](../docs/strategy-trading-lab-app-spec.md#8-data-the-app-n
 - **No pause.** A strategy runs until it is ended. Turning its notifications off is the quiet mode; unanswered signals become *missed* when their window closes.
 - **Live signals are answered Confirm, Skip or Snooze.** There is no automatic reminder; Snooze notifies again the next day.
 - **Translation-ready.** The database stores codes and facts, never display sentences: statuses, reasons and signal facts are rendered in the reader's `locale` when shown or sent. v1 ships in English and Catalan; template copy is one file per language. The only translatable database text, what an asset does, is in `asset_texts`, one row per language.
-- **Auth is deferred**: one seeded dev user. The `user_id` foreign keys exist from the start.
+- **Accounts**: sign-up, log-in and sessions ([AUTH.md](AUTH.md)). There is no seeded user.
 - **AI specifics are deferred** (the feature isn't defined yet): no AI round tables or AI columns. The AI template's settings (sources, prompt, round frequency) will live in `params` like any other.
 - **This migration has the user-facing tables only.** Market data, FX rates, daily evaluations and backtest results come with the engine (see the end).
 
@@ -88,22 +88,24 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | --- | --- | --- |
 | id | uuid PK | |
 | email | citext, unique, not null | Case-insensitive |
-| password_hash | text, null | ASP.NET Core Identity `PasswordHasher` hash. Null until real auth exists, except the seeded user Ernest (password `stl`, a placeholder), who is removed with log-in ([AUTH.md](AUTH.md)) |
+| password_hash | text, null | ASP.NET Core Identity `PasswordHasher` hash. Set at sign-up; null only for a user who can't log in |
 | email_verified_at | timestamptz, null | |
 | time_zone | text, not null | IANA name, e.g. `Europe/Madrid`. The overview goes out early morning in it |
 | locale | text, not null | `en` \| `ca` in v1 (BCP 47 tags). Picked by the user at sign-up, never guessed; editable in the account. Sets the language and formats of emails and notifications |
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
-| failed_login_count | smallint, not null, default 0 | Wrong passwords since the last good log-in or the last lock. Added with accounts, see [AUTH.md](AUTH.md) |
-| locked_until | timestamptz, null | Set after 5 wrong passwords in 15 minutes; log-in waits until then |
 | overview_email | bool, not null, default true | Daily overview on/off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | created_at, updated_at | timestamptz | |
 
 AI data-sharing consent is added with the AI feature.
 
-### `sessions` and `email_tokens` (planned, with accounts)
+### `sessions` and `email_tokens`
 
-Designed in [AUTH.md](AUTH.md); not in the schema yet. `sessions`: one row per logged-in device (hashed token, last used, expires). `email_tokens`: the single-use links for verifying an email and resetting a password (purpose, hashed token, expires, used). Both cascade from `users`.
+How they are used: [AUTH.md](AUTH.md). Both cascade from `users`.
+
+`sessions`: one row per logged-in device. `token_hash bytea` unique (the SHA-256 of the cookie's token), `created_at`, `last_used_at` (written at most once a minute), `expires_at` (30 days after last use, at most 90 after creation), `user_agent text null`. No IP address.
+
+`email_tokens`: the single-use links. `purpose` (`verify_email` | `reset_password`, CHECK), `token_hash bytea` unique, `created_at`, `expires_at` (24 hours or 1 hour), `used_at null`.
 
 ### `push_subscriptions`
 

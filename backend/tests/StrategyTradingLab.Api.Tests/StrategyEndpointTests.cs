@@ -10,7 +10,7 @@ using StrategyTradingLab.Api.Templates;
 namespace StrategyTradingLab.Api.Tests;
 
 /// <summary>Starting a strategy and the dashboard, end to end against the linked Neon branch. Each test removes what it adds.</summary>
-public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi>
 {
     static object Request(string templateKey, string name, string mode = "simulation") => new
     {
@@ -31,7 +31,7 @@ public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : ICl
     public async Task A_strategy_starts_with_the_templates_tested_defaults_and_shows_on_the_dashboard()
     {
         var name = $"Test {Guid.NewGuid()}";
-        using var client = factory.CreateClient();
+        var (client, email) = await factory.SignedUpAsync();
         try
         {
             var response = await client.PostAsJsonAsync("/strategies", Request("dip", $"  {name}  ", "live"));
@@ -52,7 +52,7 @@ public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : ICl
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var stored = await db.Strategies.Include(s => s.Assets).SingleAsync(s => s.Name == name);
-                Assert.Equal(DevSeed.DevUserId, stored.UserId);
+                Assert.Equal(email, (await db.Users.SingleAsync(u => u.Id == stored.UserId)).Email);
                 Assert.Equal("EUR", stored.Currency);
                 Assert.Equal(StrategyTradingLab.Api.Data.Entities.StrategyStatus.Running, stored.Status);
                 Assert.Equal(3, stored.Assets.Count(asset => asset.Active));
@@ -74,7 +74,7 @@ public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : ICl
     public async Task An_all_in_strategy_starts_without_steps()
     {
         var name = $"Test {Guid.NewGuid()}";
-        using var client = factory.CreateClient();
+        var (client, email) = await factory.SignedUpAsync();
         try
         {
             var response = await client.PostAsJsonAsync("/strategies", Request("trend", name));
@@ -91,7 +91,7 @@ public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : ICl
     public async Task A_running_name_cannot_be_used_twice_ignoring_case()
     {
         var name = $"Test {Guid.NewGuid()}";
-        using var client = factory.CreateClient();
+        var (client, email) = await factory.SignedUpAsync();
         try
         {
             Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/strategies", Request("dip", name))).StatusCode);
@@ -110,7 +110,7 @@ public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : ICl
     public async Task An_invalid_strategy_is_a_validation_problem_and_stores_nothing()
     {
         var name = $"Test {Guid.NewGuid()}";
-        using var client = factory.CreateClient();
+        var (client, email) = await factory.SignedUpAsync();
 
         var response = await client.PostAsJsonAsync("/strategies", new
         {
@@ -129,7 +129,7 @@ public class StrategyEndpointTests(WebApplicationFactory<Program> factory) : ICl
     [NeonFact]
     public async Task An_unknown_template_is_not_found()
     {
-        using var client = factory.CreateClient();
+        var (client, email) = await factory.SignedUpAsync();
 
         var response = await client.PostAsJsonAsync("/strategies", new
         {

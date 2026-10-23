@@ -26,7 +26,6 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
         Assert.True(versionNum >= 150000, $"server_version_num {versionNum}");
 
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
-        Assert.True(await db.Users.AnyAsync(user => user.Id == DevSeed.DevUserId));
     }
 
     [NeonFact]
@@ -41,14 +40,15 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
         {
             // A random symbol, so it never collides with seeded assets.
             var asset = new Asset { Symbol = Guid.NewGuid().ToString("N")[..8], Exchange = "XNAS", Name = "Test asset", Kind = AssetKind.Stock, Currency = "USD" };
+            var user = new User { Id = Guid.CreateVersion7(), Email = $"test-{Guid.NewGuid():N}@example.com", TimeZone = "UTC", Locale = "en" };
             var strategy = new Strategy
             {
-                UserId = DevSeed.DevUserId, TemplateKey = "dip", Name = $"Test {Guid.NewGuid()}",
+                UserId = user.Id, TemplateKey = "dip", Name = $"Test {Guid.NewGuid()}",
                 Mode = StrategyMode.Live, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 10, 16),
                 Currency = "EUR", Budget = new Budget(3000, 300, 10),
                 Params = JsonDocument.Parse("""{"zoneStartPct":5}"""),
             };
-            db.AddRange(asset, strategy);
+            db.AddRange(asset, user, strategy);
             db.Signals.Add(new Signal
             {
                 StrategyId = strategy.Id, AssetId = asset.Id, Side = TradeSide.Buy, StepNo = 1, MaxSteps = 10,
@@ -91,7 +91,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
     [NeonFact]
     public async Task Health_reaches_postgres_and_object_storage()
     {
-        using var client = factory.CreateClient();
+        using var client = factory.CreateApiClient();
 
         var health = await client.GetFromJsonAsync<Health>("/health");
 
@@ -112,7 +112,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
     [NeonFact]
     public async Task Templates_list_the_five_in_order()
     {
-        using var client = factory.CreateClient();
+        using var client = factory.CreateApiClient();
 
         var templates = await client.GetFromJsonAsync<JsonElement>("/templates");
 
@@ -125,7 +125,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
     [NeonFact]
     public async Task A_template_has_its_starter_list_from_the_database_sorted_by_name()
     {
-        using var client = factory.CreateClient();
+        using var client = factory.CreateApiClient();
 
         var dip = await client.GetFromJsonAsync<JsonElement>("/templates/dip");
 
@@ -141,7 +141,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
     [NeonFact]
     public async Task A_fund_template_watches_one_fund()
     {
-        using var client = factory.CreateClient();
+        using var client = factory.CreateApiClient();
 
         var trend = await client.GetFromJsonAsync<JsonElement>("/templates/trend");
 
@@ -154,7 +154,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
     [NeonFact]
     public async Task An_unknown_template_is_not_found()
     {
-        using var client = factory.CreateClient();
+        using var client = factory.CreateApiClient();
 
         var response = await client.GetAsync("/templates/nope");
 

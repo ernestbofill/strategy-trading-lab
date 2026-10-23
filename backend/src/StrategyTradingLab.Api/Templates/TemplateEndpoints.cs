@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 
 namespace StrategyTradingLab.Api.Templates;
@@ -10,20 +11,20 @@ public static class TemplateEndpoints
     {
         var group = app.MapGroup("/templates").WithTags("Templates");
 
-        group.MapGet("/", async (AppDbContext db, CancellationToken cancellationToken) =>
+        group.MapGet("/", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
-            var locale = await UserLocale(db, cancellationToken);
+            var locale = await UserLocale(sessions, cancellationToken);
             return TemplateCatalog.All.Select(template => Summary(template, TemplateTexts.For(template, locale))).ToList();
         })
         .WithName("GetTemplates")
         .WithSummary("The templates for the pick screen, in catalogue order.");
 
         group.MapGet("/{key}", async Task<Results<Ok<TemplateDetail>, NotFound>> (string key, AppDbContext db,
-            CancellationToken cancellationToken) =>
+            Sessions sessions, CancellationToken cancellationToken) =>
         {
             if (TemplateCatalog.Find(key) is not { } template) return TypedResults.NotFound();
 
-            var locale = await UserLocale(db, cancellationToken);
+            var locale = await UserLocale(sessions, cancellationToken);
             var securities = await Securities(db, template, locale, cancellationToken);
             return TypedResults.Ok(Detail(template, TemplateTexts.For(template, locale), securities));
         })
@@ -31,9 +32,9 @@ public static class TemplateEndpoints
         .WithSummary("One template with its rules, starter list or fund, backtest and tested defaults.");
     }
 
-    // Until auth exists, every request runs as the dev user.
-    static Task<string> UserLocale(AppDbContext db, CancellationToken cancellationToken) =>
-        db.Users.Where(user => user.Id == DevSeed.DevUserId).Select(user => user.Locale).SingleAsync(cancellationToken);
+    /// <summary>The logged-in user's language; visitors get the default (the templates are public).</summary>
+    static async Task<string> UserLocale(Sessions sessions, CancellationToken cancellationToken) =>
+        (await sessions.CurrentAsync(cancellationToken))?.Locale ?? TemplateTexts.DefaultLocale;
 
     /// <summary>The template's assets, sorted by name, with what they do in the locale (English when missing).</summary>
     static async Task<List<SecurityDto>> Securities(AppDbContext db, Template template, string locale,

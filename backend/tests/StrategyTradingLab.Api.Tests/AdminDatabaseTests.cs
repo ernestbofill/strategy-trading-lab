@@ -13,7 +13,7 @@ public sealed class DatabaseFixture : WebApplicationFactory<Program>
 {
     public async Task<HttpClient> LoggedIn(WebApplicationFactory<Program>? factory = null)
     {
-        var client = (factory ?? this).CreateClient();
+        var client = (factory ?? this).CreateApiClient();
         (await client.PostAsJsonAsync("/admin/log-in", new { password = "STL" })).EnsureSuccessStatusCode();
         return client;
     }
@@ -54,7 +54,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
     [Fact]
     public async Task The_database_box_needs_the_admin_cookie()
     {
-        using var stranger = fixture.CreateClient();
+        using var stranger = fixture.CreateApiClient();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/database")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsJsonAsync("/admin/database/active", new { name = "production" })).StatusCode);
@@ -130,8 +130,8 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         using var state = new TemporaryDirectory();
         await File.WriteAllTextAsync(Path.Combine(state.Path, "database.json"), """{"Active":1}""");
 
-        using var withUrl = fixture.With(state, ("DATABASE_URL_PRODUCTION", Unreachable)).CreateClient();
-        using var withoutUrl = fixture.With(state).CreateClient();
+        using var withUrl = fixture.With(state, ("DATABASE_URL_PRODUCTION", Unreachable)).CreateApiClient();
+        using var withoutUrl = fixture.With(state).CreateApiClient();
 
         Assert.Equal("production", await InUse(withUrl));
         Assert.Equal("dev", await InUse(withoutUrl));
@@ -143,7 +143,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         using var state = new TemporaryDirectory();
         await File.WriteAllTextAsync(Path.Combine(state.Path, "database.json"), "not json");
 
-        using var client = fixture.With(state, ("DATABASE_URL_PRODUCTION", Unreachable)).CreateClient();
+        using var client = fixture.With(state, ("DATABASE_URL_PRODUCTION", Unreachable)).CreateApiClient();
 
         Assert.Equal("dev", await InUse(client));
     }
@@ -178,7 +178,7 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         Assert.Equal("production", await InUse(admin));
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/health")).StatusCode);
 
-        using var restarted = fixture.With(state, settings).CreateClient();
+        using var restarted = fixture.With(state, settings).CreateApiClient();
         Assert.Equal("production", await InUse(restarted));
     }
 }

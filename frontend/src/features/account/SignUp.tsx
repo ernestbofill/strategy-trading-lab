@@ -46,7 +46,9 @@ export function SignUp() {
       await api.signUp({ email, password, locale, timeZone, overviewEmail, disclaimerAccepted: accepted })
       setSignedUp(true)
       // A new account is logged in now; an email that already had one isn't, and gets the same answer.
-      if (!(await refresh())) setMessage({ tone: 'done', text: 'Check your email.' })
+      const account = await refresh()
+      if (account === null) setMessage({ tone: 'done', text: 'Check your email.' })
+      else if (account === undefined) setMessage({ tone: 'error', text: errorText(null) })
     } catch (err) {
       if (err instanceof InvalidFieldsError) setErrors(err.fields)
       else setMessage({ tone: 'error', text: errorText(err) })

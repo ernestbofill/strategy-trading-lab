@@ -7,8 +7,11 @@ type AccountState = { status: 'loading' } | { status: 'error' } | { status: 'rea
 
 interface AccountContextValue {
   state: AccountState
-  /** Reads the account again (after log-in, sign-up, a reset or a verified email). */
-  refresh: () => Promise<Account | null>
+  /**
+   * Reads the account again (after log-in, sign-up, a reset or a verified email): the account, null without a
+   * session, or undefined when it couldn't tell (the request failed).
+   */
+  refresh: () => Promise<Account | null | undefined>
   /** The last user logged in on this tab, kept through a log-out: a new one starts the new-strategy draft over. */
   owner: string | null
   /** The session is gone (log-out, or a 401). */
@@ -17,49 +20,59 @@ interface AccountContextValue {
 
 const AccountContext = createContext<AccountContextValue | null>(null)
 
-/** Who is logged in: asked once at app start (`/account/me`), then kept in step with log-in, log-out and 401s. */
+/**
+ * Who is logged in: asked at app start (`/account/me`) and whenever the tab comes back into view (another tab shares
+ * the cookie and may have logged in someone else), then kept in step with log-in, log-out and 401s.
+ */
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AccountState>({ status: 'loading' })
+  // The cached loads and the new-strategy draft belong to the owner: a different one clears both. A ref mirrors it,
+  // so a refresh compares against the latest owner, not the one of its render.
   const [owner, setOwner] = useState<string | null>(null)
+  const ownerRef = useRef<string | null>(null)
   /** Bumped by every refresh and clear: only the latest one's answer counts, so an older /me can't undo a log-in. */
   const latest = useRef(0)
-
-  /** Whose data the caches hold: a different user (or none) means nothing loaded may show. */
-  const cachedFor = useRef<string | null>(null)
-  const switchUser = useCallback((email: string | null) => {
-    if (email !== cachedFor.current) invalidateAll()
-    cachedFor.current = email
-  }, [])
 
   const refresh = useCallback(async () => {
     const mine = ++latest.current
     try {
       const account = await api.getAccount()
       if (mine !== latest.current) return account
-      switchUser(account?.email ?? null)
-      if (account) {
+      if (!account) invalidateAll()
+      else {
         rememberLoggedIn()
-        setOwner(account.email)
+        if (account.email !== ownerRef.current) {
+          invalidateAll()
+          ownerRef.current = account.email
+          setOwner(account.email)
+        }
       }
       setState({ status: 'ready', account })
       return account
     } catch {
-      if (mine === latest.current) setState({ status: 'error' })
-      return null
+      // A failed re-check keeps what is known; only a first check that fails shows the error.
+      if (mine === latest.current) setState((s) => (s.status === 'ready' ? s : { status: 'error' }))
+      return undefined
     }
-  }, [switchUser])
+  }, [])
 
   const clear = useCallback(() => {
     latest.current++
-    switchUser(null)
+    invalidateAll()
     setState({ status: 'ready', account: null })
-  }, [switchUser])
+  }, [])
 
   useEffect(() => {
     // The start-up check: its state is set after the request, not synchronously.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh()
-    return onSessionEnded(clear)
+    const recheck = () => document.visibilityState === 'visible' && void refresh()
+    document.addEventListener('visibilitychange', recheck)
+    const stop = onSessionEnded(clear)
+    return () => {
+      document.removeEventListener('visibilitychange', recheck)
+      stop()
+    }
   }, [refresh, clear])
 
   const value = useMemo(() => ({ state, refresh, owner, clear }), [state, refresh, owner, clear])

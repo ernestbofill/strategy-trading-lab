@@ -10,7 +10,7 @@ applyTo: "frontend/**"
 - `npm run preview`: serves the production build, with the same `/api` proxy
 - `npm run build`: typecheck (`tsc -b`) and production build
 - `npm run lint`: oxlint, which should report no warnings
-- `npm test`: Vitest. `@testing-library/react` and `jsdom` aren't installed yet: add them with the first component test.
+- `npm test`: Vitest. Component tests use `@testing-library/react` and start with `// @vitest-environment jsdom` (the rest run in Node).
 
 ## Structure
 

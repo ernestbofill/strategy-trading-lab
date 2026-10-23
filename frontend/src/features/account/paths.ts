@@ -19,7 +19,9 @@ export function safeNext(next: string | null | undefined): string {
   if (!next?.startsWith('/')) return dashboardPath
   try {
     const url = new URL(next, SAME_SITE)
-    return url.origin === SAME_SITE ? `${url.pathname}${url.search}${url.hash}` : dashboardPath
+    // Dot segments are resolved after the origin: "/a/..//evil.com" becomes the path "//evil.com".
+    if (url.origin !== SAME_SITE || url.pathname.startsWith('//')) return dashboardPath
+    return `${url.pathname}${url.search}${url.hash}`
   } catch {
     return dashboardPath
   }

@@ -8,7 +8,7 @@ describe('safeNext', () => {
   })
 
   it('goes to the dashboard for anything else', () => {
-    for (const next of [null, undefined, '', 'dashboard', '//evil.com', '/\\evil.com', '/\t/evil.com', '/\n/evil.com', '/\\\t\\evil.com', 'https://evil.com', 'javascript:alert(1)'])
+    for (const next of [null, undefined, '', 'dashboard', '//evil.com', '/\\evil.com', '/\t/evil.com', '/\n/evil.com', '/\\\t\\evil.com', '/a/..//evil.com', '/.//evil.com', '/%2e%2e//evil.com', '/a/%2E%2E//evil.com', 'https://evil.com', 'javascript:alert(1)'])
       expect(safeNext(next)).toBe(dashboardPath)
   })
 

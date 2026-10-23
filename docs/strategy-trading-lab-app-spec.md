@@ -539,7 +539,7 @@ Help line: "Price is prefilled with [date]'s opening price. Change anything that
 
 ### Admin settings (`/admin`, not drawn, for Ernest)
 
-Like the POC's settings page. Not linked from the app; reached by its address.
+Like the POC's settings page. Not linked from the app; reached by its address. Besides the settings it has the build, the database in use, a test email and a Prices box (next and last refresh, *Refresh now*, *Test Yahoo*, and the daily schedule).
 
 - Asks for the admin password first (one field, "Log in"). Wrong: "That password is wrong."; after 5 tries in 15 minutes: "Too many tries. Wait 15 minutes and try again." The password is a fixed one until accounts have an admin role.
 - Then "Settings": one box per group (Email for now). Every setting but the password has a default (Ernest's Gmail, `smtp.gmail.com`, 587; the sender follows the account), so only the app password has to be typed; it comes last because changing a setting above it unsets it. Each row: the setting's name, what it is for, where the value comes from ("Set here", "From the server's environment", "Default", "Not set"), a field, "Save", and "Default" (back to the server's value or the default). A secret's field is always empty, with "set (hidden): type to replace" or "not set", and "Clear" instead of "Default".

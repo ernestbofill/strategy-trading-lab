@@ -2,7 +2,11 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.MarketData;
 
 namespace StrategyTradingLab.Api.Admin;
 
@@ -20,6 +24,13 @@ public record AdminDatabases(DatabaseName Active, DatabaseName Home, IReadOnlyLi
 
 public record DatabaseChoice(string Name);
 
+/// <summary>The prices box: the next and last runs, what failed in the last one, and the newest stored day.</summary>
+public record AdminPrices(bool Running, DateTimeOffset? NextRun, DateTimeOffset? LastStarted, DateTimeOffset? LastFinished,
+    DateOnly? LatestDay, IReadOnlyList<RefreshResult> Problems, int Updated, int FullHistory);
+
+/// <summary>One symbol asked of Yahoo by "Test Yahoo": its newest day and close, or why it didn't answer.</summary>
+public record YahooCheck(string Symbol, bool Ok, DateOnly? Day, decimal? Close, string? Problem, int Milliseconds);
+
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
 
@@ -31,6 +42,7 @@ public static class AdminEndpoints
 {
     public const string LogInRateLimit = "admin-log-in";
     public const string TestEmailRateLimit = "admin-test-email";
+    public const string TestYahooRateLimit = "admin-test-yahoo";
     const string CookieName = "stl_admin";
     const string DefaultPassword = "STL";
     static readonly TimeSpan SessionLength = TimeSpan.FromHours(8);
@@ -64,6 +76,7 @@ public static class AdminEndpoints
 
         var settings = group.MapGroup("/settings").AddEndpointFilter(RequireAdmin);
         MapDatabase(group);
+        MapPrices(group);
 
         // Only ever to the account itself: with the page behind a fixed password, an address typed here would let
         // anyone who knows it send mail from the account.
@@ -95,7 +108,7 @@ public static class AdminEndpoints
         .WithSummary("The settings the admin page can set, with where each value comes from.");
 
         settings.MapPut("/{key}", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (string key,
-            SettingValue request, SettingsStore store, CancellationToken cancellationToken) =>
+            SettingValue request, SettingsStore store, PriceRefreshState prices, CancellationToken cancellationToken) =>
         {
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
             // A secret is kept exactly as typed: a password may start or end with a space.
@@ -106,21 +119,74 @@ public static class AdminEndpoints
                 : definition.Validate?.Invoke(value);
             if (error is not null) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["value"] = [error] });
 
-            return await store.SetAsync(definition, value, request.Expected, cancellationToken)
+            var saved = await store.SetAsync(definition, value, request.Expected, cancellationToken);
+            if (saved && IsPriceSetting(key)) prices.ScheduleChanged();
+            return saved
                 ? TypedResults.NoContent()
                 : TypedResults.Conflict("The mail settings changed since this page loaded. Reload, check them, then type the password again.");
         })
         .WithSummary("Sets a setting. The saved password only counts while the mail server, port and user it was saved with stay.");
 
         settings.MapDelete("/{key}", async Task<Results<NoContent, NotFound>> (string key, bool? clear, SettingsStore store,
-            CancellationToken cancellationToken) =>
+            PriceRefreshState prices, CancellationToken cancellationToken) =>
         {
             if (SettingDefinitions.Find(key) is not { } definition) return TypedResults.NotFound();
             if (clear == true) await store.ClearAsync(definition, cancellationToken);
             else await store.ResetAsync(key, cancellationToken);
+            if (IsPriceSetting(key)) prices.ScheduleChanged();
             return TypedResults.NoContent();
         })
         .WithSummary("Back to the server's value or the default; with ?clear=true, no value at all.");
+    }
+
+    static bool IsPriceSetting(string key) => key.StartsWith("PRICES_");
+
+    /// <summary>The prices box: the last refresh, a button to run it now, and a check that Yahoo answers.</summary>
+    static void MapPrices(RouteGroupBuilder group)
+    {
+        var prices = group.MapGroup("/prices").AddEndpointFilter(RequireAdmin);
+
+        prices.MapGet("/", async (PriceRefreshState state, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var latest = await db.Prices.MaxAsync(p => (DateOnly?)p.Date, cancellationToken);
+            var results = state.LastResults;
+            return new AdminPrices(state.Running, state.NextRun, state.LastStarted, state.LastFinished, latest,
+                [.. results.Where(r => r.Outcome == RefreshOutcome.Failed)],
+                results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory));
+        })
+        .WithSummary("The price refresh: the next and last runs and what failed in the last one.");
+
+        prices.MapPost("/refresh", Results<Accepted, Conflict<string>> (PriceRefreshState state, DatabaseSwitch databases) =>
+            databases.Active != databases.Home ? TypedResults.Conflict("The API is switched to another database: switch back to refresh the prices.")
+            : state.Request() ? TypedResults.Accepted((string?)null)
+            : TypedResults.Conflict("A refresh is already running."))
+        .WithSummary("Refreshes the prices now, in the background, whatever the schedule says.");
+
+        prices.MapPost("/test", async (IMarketDataSource source, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            // A stock fund and an exchange rate: the two kinds of data the refresh reads.
+            var checks = new List<YahooCheck>();
+            foreach (var (symbol, adjusted) in new[] { ("SPY", true), ("EURUSD=X", false) })
+            {
+                var started = time.GetTimestamp();
+                YahooCheck Check(bool ok, DateOnly? day, decimal? close, string? problem) =>
+                    new(symbol, ok, day, close, problem, (int)time.GetElapsedTime(started).TotalMilliseconds);
+                try
+                {
+                    var days = await source.DailyAsync(symbol, fullHistory: false, adjusted: adjusted, cancellationToken);
+                    checks.Add(days.Count == 0
+                        ? Check(false, null, null, "Yahoo answered with no days.")
+                        : Check(true, days[^1].Date, days[^1].Close, null));
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    checks.Add(Check(false, null, null, error.Message));
+                }
+            }
+            return checks;
+        })
+        .RequireRateLimiting(TestYahooRateLimit)
+        .WithSummary("Asks Yahoo for a fund and an exchange rate and says whether it answered. Stores nothing.");
     }
 
     /// <summary>

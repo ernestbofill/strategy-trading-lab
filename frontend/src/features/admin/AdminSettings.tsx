@@ -12,6 +12,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
+import { PricesBox } from './PricesBox'
 
 type State =
   | { status: 'loading' }
@@ -33,6 +34,8 @@ export function AdminSettings() {
       live = false
     }
   }, [])
+
+  const loggedOut = useCallback(() => setState({ status: 'logIn' }), [])
 
   const logOut = async () => {
     await api.adminLogOut()
@@ -78,6 +81,8 @@ export function AdminSettings() {
                 shown={shownValues(state.settings ?? [])} onChanged={load} onLoggedOut={() => setState({ status: 'logIn' })} />
             ))}
             {group === 'Email' && <TestEmail onLoggedOut={() => setState({ status: 'logIn' })} />}
+            {/* Keyed by the schedule, so the box asks again (next run) after a save. */}
+            {group === 'Prices' && <PricesBox key={settings.map((s) => s.value).join('|')} onLoggedOut={loggedOut} />}
           </section>
         ))}
     </Screen>

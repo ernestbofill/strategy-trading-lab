@@ -18,6 +18,7 @@ using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Neon;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
@@ -49,6 +50,18 @@ builder.Services.AddScoped<SettingsStore>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailWorker>();
+
+// Daily prices and exchange rates from Yahoo, refreshed on the schedule set on the admin page (PRICES_* settings).
+builder.Services.Configure<PriceRefreshOptions>(builder.Configuration.GetSection("PriceRefresh"));
+builder.Services.AddHttpClient<IMarketDataSource, YahooClient>(client =>
+{
+    client.BaseAddress = new Uri(YahooClient.BaseAddress);
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; StrategyTradingLab)");
+});
+builder.Services.AddScoped<PriceRefresher>();
+builder.Services.AddSingleton<PriceRefreshState>();
+builder.Services.AddHostedService<PriceRefreshWorker>();
 
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();
@@ -85,6 +98,11 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(AdminEndpoints.TestEmailRateLimit, http => AdminEndpoints.IsAdmin(http)
         ? RateLimitPartition.GetFixedWindowLimiter("test-email",
             _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromHours(1) })
+        : RateLimitPartition.GetNoLimiter("not-logged-in"));
+    // Yahoo checks: 30 an hour in all, admin only, so the page can't be used to hammer an unofficial endpoint.
+    options.AddPolicy(AdminEndpoints.TestYahooRateLimit, http => AdminEndpoints.IsAdmin(http)
+        ? RateLimitPartition.GetFixedWindowLimiter("test-yahoo",
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromHours(1) })
         : RateLimitPartition.GetNoLimiter("not-logged-in"));
 });
 builder.Services.AddOpenApi();

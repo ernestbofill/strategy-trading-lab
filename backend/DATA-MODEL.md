@@ -290,10 +290,31 @@ The admin page's settings (`Admin/SettingDefinitions.cs` lists which). One row p
 | value | text, null | Plain text, except secrets: encrypted with ASP.NET Core Data Protection (keys in the service's systemd `StateDirectory`, not in the database). Null: cleared, which hides the server's value too |
 | created_at, updated_at | timestamptz | |
 
+### `prices_daily`
+
+One row per asset and trading day, from Yahoo, in the asset's currency, adjusted for splits and dividends (as the POC's prices are). Refreshed once a day after the US close; a re-adjusted history (a split or dividend) is detected and replaced in full.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| asset_id | uuid FK → assets, cascade | PK part |
+| date | date | PK part. The day in the exchange's time zone |
+| open, high, low, close | numeric(14,4), not null | `> 0`, `low <= high` |
+| volume | bigint, not null | `>= 0`; 0 when Yahoo has none (indexes, rates) |
+
+Index on `date` alone, so the newest day is found without scanning the table.
+
+### `fx_rates`
+
+Units of `quote` per one `base` on a day, from the day's close: `EUR`→`USD` is USD per EUR, the `fx_rate` of a trade. Only the euro as the base for now (`EURUSD=X`, `EURGBP=X`, `EURHKD=X`); other pairs are computed from two of these.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| date | date | PK part |
+| base, quote | char(3) | PK parts |
+| rate | numeric(18,8), not null | `> 0` |
+
 ## Later, with the engine or the AI feature (not in this migration)
 
-- `prices_daily (asset_id, date, open, high, low, close, volume)`.
-- `fx_rates (date, base char(3), quote char(3), rate)`: any currency pair, not just EUR/USD. Until it exists, the reference rate for a live trade comes from the user.
 - `daily_evaluations (strategy_id, asset_id, date, status, distance_pct, facts)`: the WATCHING / HOLDING / BUILDING pills and "Close to the line".
 - `backtest_results (template_key, defaults_version or params_hash, currency, period, template_pct, index_pct, worst_year_pct, trades)`, cached by parameter set.
 - AI: `ai_rounds`, `ai_round_scores`, the user's sharing consent, `signals.ai_round_id`, and `research.shared_ai_rounds` in its own schema with no user id.

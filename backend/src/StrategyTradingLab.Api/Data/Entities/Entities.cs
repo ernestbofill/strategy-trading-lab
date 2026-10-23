@@ -200,3 +200,24 @@ public class Notification
     public string? Error { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
+
+/// <summary>One trading day of an asset, in its currency. Adjusted for splits and dividends, as the POC's Yahoo prices are.</summary>
+public class PriceDaily
+{
+    public Guid AssetId { get; set; }
+    public DateOnly Date { get; set; }
+    public decimal Open { get; set; }
+    public decimal High { get; set; }
+    public decimal Low { get; set; }
+    public decimal Close { get; set; }
+    public long Volume { get; set; }
+}
+
+/// <summary>Units of <see cref="Quote"/> per one unit of <see cref="Base"/> on a day (USD per EUR), from the day's close.</summary>
+public class FxRate
+{
+    public DateOnly Date { get; set; }
+    public required string Base { get; set; }
+    public required string Quote { get; set; }
+    public decimal Rate { get; set; }
+}

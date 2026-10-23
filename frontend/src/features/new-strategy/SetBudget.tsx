@@ -15,7 +15,8 @@ import {
   summarize,
   weeksToUse,
 } from '../../lib/budget'
-import { eur } from '../../lib/format'
+import { CURRENCIES, money } from '../../lib/format'
+import { useCurrentAccount } from '../account/AccountContext'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, modePath } from './paths'
 import styles from './SetBudget.module.css'
@@ -37,6 +38,8 @@ export function SetBudget() {
 function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
   const { mode, update } = draft
+  const { currency } = useCurrentAccount()
+  const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
   // Branch on what the template does, not on its key.
@@ -53,16 +56,16 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
   const steps = plural(totalSteps, 'step', 'steps')
   const upTo = plural(maxSteps, 'step', 'steps')
   const sentence = allIn
-    ? `The whole budget of ${eur(budget)} goes in when the rules say so, and comes out when they say so.`
+    ? `The whole budget of ${amount(budget)} goes in when the rules say so, and comes out when they say so.`
     : isFund
-      ? `Each buy is ${eur(step)}. The fund gets at most ${upTo} (${eur(perStock)}). The budget covers ${steps}.`
-      : `Each buy is ${eur(step)}. A stock gets at most ${upTo} (${eur(perStock)}). The budget covers ${steps}, enough for ${plural(fullStocks, 'stock', 'stocks')} bought in full.`
+      ? `Each buy is ${amount(step)}. The fund gets at most ${upTo} (${amount(perStock)}). The budget covers ${steps}.`
+      : `Each buy is ${amount(step)}. A stock gets at most ${upTo} (${amount(perStock)}). The budget covers ${steps}, enough for ${plural(fullStocks, 'stock', 'stocks')} bought in full.`
 
   return (
     <Screen
       top={top}
       action={<PrimaryAction to={confirmPath}>Continue</PrimaryAction>}
-      note="Amounts in euro. Dollar prices convert at the day's rate."
+      note={`Amounts in ${CURRENCIES.find((c) => c.code === currency)?.name.toLowerCase()}. Dollar prices convert at the day's rate.`}
     >
       <PageHeader
         eyebrow={
@@ -82,7 +85,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
         <StepperCard
           label="Budget"
           value={budget}
-          display={eur(budget)}
+          display={amount(budget)}
           onChange={setBudget}
           help="The most this strategy can invest in total."
           onDecrease={() => setBudget(budget - BUDGET_LIMITS.stepBy)}
@@ -95,7 +98,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
             <StepperCard
               label="Step size"
               value={step}
-              display={eur(step)}
+              display={amount(step)}
               onChange={(v) => update({ step: clamp(v, STEP_LIMITS.min, budget) })}
               help="How much each buy is."
               onDecrease={() => update({ step: clamp(step - STEP_LIMITS.stepBy, STEP_LIMITS.min, budget) })}

@@ -96,6 +96,6 @@ public static class StrategyEndpoints
             : null;
         // No trades are recorded yet, so nothing is used and there are no results of its own.
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
-            strategy.StartedOn, strategy.Budget.Amount, 0, null, past);
+            strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, 0, null, past);
     }
 }

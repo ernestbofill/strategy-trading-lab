@@ -3,6 +3,7 @@ import { sessionEnded } from '../session'
 import type { Api } from '../types'
 import {
   mockChangePassword,
+  mockSetCurrency,
   mockForgotPassword,
   mockGetAccount,
   mockLogIn,
@@ -69,6 +70,7 @@ export const mockApi: Api = {
   forgotPassword: (email) => later(() => mockForgotPassword(email)),
   resetPassword: (token, password) => later(() => mockResetPassword(token, password)),
   changePassword: (currentPassword, newPassword) => signedIn(() => mockChangePassword(currentPassword, newPassword)),
+  setCurrency: (currency) => signedIn(() => mockSetCurrency(currency)),
   getDashboard: () => signedIn(dashboard),
   startStrategy: (strategy) => signedIn(() => startMockStrategy(strategy)),
   adminLogIn: (password) => later(() => mockAdminLogIn(password)),

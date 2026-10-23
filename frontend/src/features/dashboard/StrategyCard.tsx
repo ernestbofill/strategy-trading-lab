@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { StrategySummary, WaitingItem } from '../../api'
 import { Sparkline } from '../../components/Sparkline'
 import { Tag } from '../../components/Tag'
-import { eur, shortDate, signedPct } from '../../lib/format'
+import { money, shortDate, signedPct } from '../../lib/format'
 import { strategyPath } from './paths'
 import styles from './StrategyCard.module.css'
 
@@ -73,7 +73,7 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
           <div className={styles.fill} style={{ width: `${Math.min(100, (s.used / s.budget) * 100)}%` }} />
         </div>
         <div className={styles.used}>
-          {eur(s.used)} of {eur(s.budget)} used
+          {money(s.used, s.currency)} of {money(s.budget, s.currency)} used
         </div>
       </div>
     </Link>

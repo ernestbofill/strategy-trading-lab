@@ -50,10 +50,11 @@ All JSON, under `/api`. State-changing ones follow the CSRF rule above.
 
 | Endpoint | Does |
 | --- | --- |
-| `POST /account/sign-up` | email, password, language, time zone, overview on/off, disclaimer accepted. Same answer whether or not the email exists; a new user is logged in |
+| `POST /account/sign-up` | email, password, language, time zone, currency (optional, `EUR`), overview on/off, disclaimer accepted. Same answer whether or not the email exists; a new user is logged in |
+| `POST /account/currency` | currency (`EUR`, `USD` or `GBP`) for the logged-in user's new strategies. Running ones keep theirs |
 | `POST /account/log-in` | email, password. Same error for a wrong email and a wrong password; the lock counts tries per email |
 | `POST /account/log-out` | ends this session |
-| `GET /account/me` | the user (email, verified, language, time zone) or 401. The app's start-up check |
+| `GET /account/me` | the user (email, verified, language, time zone, currency) or 401. The app's start-up check |
 | `POST /account/verify-email` | token from the email link. Confirms the email and logs no one in: a link that logged in whoever opened it would allow login CSRF and the takeover of an account someone pre-registered with a victim's email |
 | `POST /account/resend-verification` | for the logged-in user, rate-limited |
 | `POST /account/forgot-password` | email. Always the same answer |

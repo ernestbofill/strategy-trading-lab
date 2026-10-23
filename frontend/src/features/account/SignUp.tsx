@@ -1,11 +1,12 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
-import { api, InvalidFieldsError, type Locale } from '../../api'
+import { api, InvalidFieldsError, type Currency, type Locale } from '../../api'
 import { Checkbox, FormMessage, PasswordField, SelectField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { DISCLAIMER_FULL } from '../../lib/copy'
+import { currencyOptions } from './currencies'
 import { dashboardPath, pickPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
@@ -24,6 +25,7 @@ export function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [locale, setLocale] = useState<Locale>('en')
+  const [currency, setCurrency] = useState<Currency>('EUR')
   const [timeZone, setTimeZone] = useState(guessTimeZone)
   const [overviewEmail, setOverviewEmail] = useState(true)
   const [accepted, setAccepted] = useState(false)
@@ -43,7 +45,7 @@ export function SignUp() {
     setErrors({})
     setMessage(null)
     try {
-      await api.signUp({ email, password, locale, timeZone, overviewEmail, disclaimerAccepted: accepted })
+      await api.signUp({ email, password, locale, timeZone, currency, overviewEmail, disclaimerAccepted: accepted })
       setSignedUp(true)
       // A new account is logged in now; an email that already had one isn't, and gets the same answer.
       const account = await refresh()
@@ -83,6 +85,13 @@ export function SignUp() {
           onChange={(v) => setLocale(v as Locale)}
           options={languages}
           error={errors.locale}
+        />
+        <SelectField
+          label="Currency"
+          value={currency}
+          onChange={(v) => setCurrency(v as Currency)}
+          options={currencyOptions}
+          error={errors.currency}
         />
         <SelectField label="Time zone" value={timeZone} onChange={setTimeZone} options={zones} error={errors.timeZone} />
         <Checkbox checked={overviewEmail} onChange={setOverviewEmail}>

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../../api'
 import { AccountProvider, useAccount } from './AccountContext'
 
-const account = (email: string): Account => ({ email, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true })
+const account = (email: string): Account => ({ email, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, currency: 'EUR' })
 
 /** A promise the test settles by hand. */
 function deferred<T>() {

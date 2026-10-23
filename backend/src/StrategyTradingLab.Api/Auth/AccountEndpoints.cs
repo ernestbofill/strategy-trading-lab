@@ -7,15 +7,17 @@ using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Auth;
 
-public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool OverviewEmail, bool DisclaimerAccepted);
+public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool OverviewEmail, bool DisclaimerAccepted,
+    string? Currency = null);
 public record LogInRequest(string? Email, string? Password);
 public record TokenRequest(string? Token);
 public record ResetPasswordRequest(string? Token, string? Password);
 public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 public record EmailRequest(string? Email);
+public record CurrencyRequest(string? Currency);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
-public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail);
+public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency);
 
 /// <summary>A message for the user, the same whatever the email (sign-up, forgot password).</summary>
 public record AccountMessage(string Message);
@@ -46,6 +48,8 @@ public static class AccountEndpoints
             if (AccountRules.PasswordError(request.Password, email) is { } passwordError) errors["password"] = [passwordError];
             var locale = request.Locale ?? "en";
             if (!AccountRules.Locales.Contains(locale)) errors["locale"] = ["Pick English or Catalan."];
+            var currency = request.Currency ?? AccountRules.Currencies[0];
+            if (!AccountRules.Currencies.Contains(currency)) errors["currency"] = ["Pick a currency from the list."];
             if (!AccountRules.IsTimeZone(request.TimeZone)) errors["timeZone"] = ["Pick your time zone."];
             if (!request.DisclaimerAccepted) errors["disclaimerAccepted"] = ["Tick the box to go on."];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
@@ -63,7 +67,7 @@ public static class AccountEndpoints
             var now = time.GetUtcNow();
             var user = new User
             {
-                Email = email!, TimeZone = request.TimeZone!, Locale = locale, OverviewEmail = request.OverviewEmail,
+                Email = email!, TimeZone = request.TimeZone!, Locale = locale, Currency = currency, OverviewEmail = request.OverviewEmail,
                 DisclaimerAcceptedAt = now,
             };
             user.PasswordHash = hasher.HashPassword(user, request.Password!);
@@ -125,10 +129,23 @@ public static class AccountEndpoints
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            return TypedResults.Ok(new AccountDto(user.Email, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail));
+            return TypedResults.Ok(new AccountDto(user.Email, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency));
         })
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");
+
+        group.MapPost("/currency", async Task<Results<NoContent, ValidationProblem>> (CurrencyRequest request, AppDbContext db,
+            Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            if (request.Currency is not { } currency || !AccountRules.Currencies.Contains(currency))
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currency"] = ["Pick a currency from the list."] });
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            // Strategies already started keep the currency they began with; only new ones use this.
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Currency, currency), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Sets the currency of the user's new strategies. Running ones keep theirs.");
 
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.

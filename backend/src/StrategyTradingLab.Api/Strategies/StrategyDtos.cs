@@ -15,6 +15,7 @@ public record StrategySummary(
     string TemplateName,
     StrategyMode Mode,
     DateOnly StartedOn,
+    string Currency,
     decimal Budget,
     decimal Used,
     StrategyResults? Results,

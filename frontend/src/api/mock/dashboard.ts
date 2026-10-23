@@ -1,6 +1,7 @@
 import { isoDate } from '../../lib/format'
 import { NameTakenError } from '../errors'
 import type { Dashboard, NewStrategy, PastResult, StrategySummary, TemplateKey } from '../types'
+import { mockGetAccount } from './account'
 import { templateDetails } from './data'
 
 // MOCK: the user's strategies and what waits for them, as in the Home wireframe.
@@ -26,7 +27,7 @@ function pastResult(key: TemplateKey): PastResult | null {
     : null
 }
 
-type Seed = Pick<StrategySummary, 'id' | 'name' | 'mode' | 'startedOn' | 'budget' | 'used' | 'results'> & {
+type Seed = Pick<StrategySummary, 'id' | 'name' | 'mode' | 'startedOn' | 'currency' | 'budget' | 'used' | 'results'> & {
   templateKey: TemplateKey
 }
 
@@ -37,12 +38,13 @@ const seeds: Seed[] = [
     templateKey: 'dip',
     mode: 'live',
     startedOn: daysAgo(4),
+    currency: 'EUR',
     budget: 3000,
     used: 1200,
     results: { strategy: 6.4, index: 2.1, history: [8, 10, 7, 14, 16, 13, 22, 26, 30] },
   },
-  { id: 'ride-the-long-trend', name: 'Ride the long trend', templateKey: 'trend', mode: 'simulation', startedOn: daysAgo(0), budget: 3000, used: 0, results: null },
-  { id: 'my-ai-picks', name: 'My AI picks', templateKey: 'ai', mode: 'simulation', startedOn: daysAgo(4), budget: 3000, used: 0, results: null },
+  { id: 'ride-the-long-trend', name: 'Ride the long trend', templateKey: 'trend', mode: 'simulation', startedOn: daysAgo(0), currency: 'EUR', budget: 3000, used: 0, results: null },
+  { id: 'my-ai-picks', name: 'My AI picks', templateKey: 'ai', mode: 'simulation', startedOn: daysAgo(4), currency: 'EUR', budget: 3000, used: 0, results: null },
 ]
 
 const summarize = (seed: Seed): StrategySummary => ({
@@ -65,6 +67,7 @@ export function startMockStrategy({ templateKey, name, mode, budget }: NewStrate
     templateKey,
     mode,
     startedOn: daysAgo(0),
+    currency: mockGetAccount()?.currency ?? 'EUR',
     budget: budget.amount,
     used: 0,
     results: null,

@@ -9,7 +9,8 @@ import { Section } from '../../components/Section'
 import { TextAction } from '../../components/TextAction'
 import { resolveBudget } from '../../lib/budget'
 import { DISCLAIMER_FULL } from '../../lib/copy'
-import { eur } from '../../lib/format'
+import { money } from '../../lib/format'
+import { useCurrentAccount } from '../account/AccountContext'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
@@ -43,6 +44,8 @@ export function Confirm() {
 function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const draft = useNewStrategyDraft()
   const { mode, unticked, update, reset } = draft
+  const { currency } = useCurrentAccount()
+  const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
   // Branch on what the template does, as the budget screen does.
@@ -107,8 +110,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     {
       label: 'Budget',
       value: allIn
-        ? eur(budget)
-        : `${eur(budget)} · steps of ${eur(step)} · up to ${maxSteps} ${isFund ? 'for the fund' : 'per stock'}`,
+        ? amount(budget)
+        : `${amount(budget)} · steps of ${amount(step)} · up to ${maxSteps} ${isFund ? 'for the fund' : 'per stock'}`,
       to: budgetPath,
     },
     { label: 'Daily overview', value: 'By email, after the US market close' },

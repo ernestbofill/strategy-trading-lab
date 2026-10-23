@@ -1,5 +1,6 @@
 import { ExpiredLinkError, InvalidFieldsError, TooManyTriesError, UnauthorizedError } from '../errors'
-import type { Account, SignUp } from '../types'
+import { CURRENCIES } from '../../lib/format'
+import type { Account, Currency, SignUp } from '../types'
 
 // MOCK: accounts as backend/AUTH.md describes them, in memory. It starts logged in as a demo user (password
 // "a long password"), so the rest of the mock app works at once; log out to try the account screens.
@@ -16,6 +17,7 @@ const demo: MockUser = {
   locale: 'en',
   timeZone: 'Europe/Madrid',
   overviewEmail: true,
+  currency: 'EUR',
 }
 
 /** Keyed by the email in lower case (the API compares without case), each holding the email as typed. */
@@ -53,6 +55,8 @@ const isTimeZone = (zone: string) => {
   }
 }
 
+const isCurrency = (v: string) => CURRENCIES.some((c) => c.code === v)
+
 const isEmail = (v: string) => v.length <= 254 && /^[^@\s,;<>"()]+@[^@\s,;<>"()]+\.[^@\s,;<>"()]+$/.test(v.trim())
 
 const currentUser = (): MockUser => {
@@ -61,12 +65,13 @@ const currentUser = (): MockUser => {
   return user
 }
 
-const publicAccount = ({ email, emailVerified, locale, timeZone, overviewEmail }: MockUser): Account => ({
+const publicAccount = ({ email, emailVerified, locale, timeZone, overviewEmail, currency }: MockUser): Account => ({
   email,
   emailVerified,
   locale,
   timeZone,
   overviewEmail,
+  currency,
 })
 
 export const mockGetAccount = (): Account | null => (current && users.has(current) ? publicAccount(currentUser()) : null)
@@ -77,6 +82,7 @@ export function mockSignUp(s: SignUp) {
   const passwordProblem = passwordError(s.password, s.email)
   if (passwordProblem) fields.password = passwordProblem
   if (s.locale !== 'en' && s.locale !== 'ca') fields.locale = 'Pick English or Catalan.'
+  if (!isCurrency(s.currency)) fields.currency = 'Pick a currency from the list.'
   if (!isTimeZone(s.timeZone)) fields.timeZone = 'Pick your time zone.'
   if (!s.disclaimerAccepted) fields.disclaimerAccepted = 'Tick the box to go on.'
   if (Object.keys(fields).length > 0) throw new InvalidFieldsError(fields)
@@ -145,6 +151,12 @@ export function mockResetPassword(token: string, password: string) {
   user.emailVerified = true
   tries.delete(key(user.email))
   current = key(user.email)
+}
+
+export function mockSetCurrency(currency: Currency) {
+  const user = currentUser()
+  if (!isCurrency(currency)) throw new InvalidFieldsError({ currency: 'Pick a currency from the list.' })
+  user.currency = currency
 }
 
 export function mockChangePassword(currentPassword: string, newPassword: string) {

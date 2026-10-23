@@ -58,14 +58,33 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         var email = api.NewEmail();
 
         var response = await client.PostAsJsonAsync("/account/sign-up",
-            new { email = "not an email", password = "short", locale = "fr", timeZone = "Mars/Base", overviewEmail = true, disclaimerAccepted = false });
+            new { email = "not an email", password = "short", locale = "fr", timeZone = "Mars/Base", overviewEmail = true, disclaimerAccepted = false, currency = "XXX" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var errors = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
-        foreach (var field in new[] { "email", "password", "locale", "timeZone", "disclaimerAccepted" })
+        foreach (var field in new[] { "email", "password", "locale", "timeZone", "disclaimerAccepted", "currency" })
             Assert.True(errors.TryGetProperty(field, out _), field);
         var sameAsEmail = await client.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(email, email));
         Assert.Equal(HttpStatusCode.BadRequest, sameAsEmail.StatusCode);
+    }
+
+    [NeonFact]
+    public async Task The_currency_is_euro_unless_picked_at_sign_up_and_can_be_changed_in_the_account()
+    {
+        var (client, _) = await api.SignedUpAsync();
+        Assert.Equal("EUR", (await Me(client)).GetProperty("currency").GetString());
+
+        using var pounds = api.CreateApiClient();
+        var email = api.NewEmail();
+        var body = new { email, password = "a long password", locale = "en", timeZone = "Europe/Madrid", overviewEmail = true, disclaimerAccepted = true, currency = "GBP" };
+        Assert.Equal(HttpStatusCode.Accepted, (await pounds.PostAsJsonAsync("/account/sign-up", body)).StatusCode);
+        Assert.Equal("GBP", (await Me(pounds)).GetProperty("currency").GetString());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/currency", new { currency = "USD" })).StatusCode);
+        Assert.Equal("USD", (await Me(client)).GetProperty("currency").GetString());
+        var refused = await client.PostAsJsonAsync("/account/currency", new { currency = "JPY" });
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Equal("USD", (await Me(client)).GetProperty("currency").GetString());
     }
 
     [NeonFact]
@@ -202,6 +221,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.GetAsync("/account/me")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsync("/account/resend-verification", null)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/change-password", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/currency", new { currency = "USD" })).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await visitor.GetAsync("/templates")).StatusCode);
     }
 

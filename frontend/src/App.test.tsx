@@ -54,7 +54,7 @@ describe('app routes', () => {
     expect(await screen.findByText('Pick template screen')).toBeTruthy()
   })
 
-  it('goes to the dashboard after sign-up', async () => {
+  it('goes to the template picker after sign-up', async () => {
     vi.spyOn(api, 'getAccount').mockResolvedValueOnce(null).mockResolvedValueOnce(account)
     vi.spyOn(api, 'signUp').mockResolvedValue()
 
@@ -65,7 +65,7 @@ describe('app routes', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /Not financial advice/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Create my account' }))
 
-    expect(await screen.findByText('Dashboard screen')).toBeTruthy()
-    expect(screen.queryByText('Pick template screen')).toBeNull()
+    expect(await screen.findByText('Pick template screen')).toBeTruthy()
+    expect(screen.queryByText('Dashboard screen')).toBeNull()
   })
 })

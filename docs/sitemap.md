@@ -59,7 +59,7 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 
 ## 2. New strategy flow (🔒, journey steps 2–6)
 
-Entered from **+ New strategy** on the dashboard, and from **Go live with these settings** on a simulation (joins at step 4, prefilled).
+Entered from sign-up (first run), from **+ New strategy** on the dashboard, and from **Go live with these settings** on a simulation (joins at step 4, prefilled).
 
 ```
 /app/new

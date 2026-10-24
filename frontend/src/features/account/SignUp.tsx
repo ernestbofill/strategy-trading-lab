@@ -7,7 +7,7 @@ import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { DISCLAIMER_FULL } from '../../lib/copy'
 import { currencyOptions } from './currencies'
-import { dashboardPath } from '../new-strategy/paths'
+import { dashboardPath, pickPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
 import { errorText } from './copy'
@@ -19,7 +19,7 @@ const languages: { value: Locale; label: string }[] = [
   { value: 'ca', label: 'Català' },
 ]
 
-/** Sign-up (spec: Sign-up). A new account is logged in at once and goes to the dashboard. */
+/** Sign-up (spec: Sign-up). A new account is logged in at once and goes to Pick a template. */
 export function SignUp() {
   const { state, refresh } = useAccount()
   const [email, setEmail] = useState('')
@@ -32,10 +32,11 @@ export function SignUp() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<FormMessageState>(null)
   const [busy, setBusy] = useState(false)
+  const [signedUp, setSignedUp] = useState(false)
   // Built once: the list holds the guessed zone, and any zone picked comes from it.
   const zones = useMemo(() => timeZones(guessTimeZone()).map((z) => ({ value: z, label: z.replaceAll('_', ' ') })), [])
 
-  if (state.status === 'ready' && state.account) return <Navigate to={dashboardPath} replace />
+  if (state.status === 'ready' && state.account) return <Navigate to={signedUp ? pickPath : dashboardPath} replace />
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -45,6 +46,7 @@ export function SignUp() {
     setMessage(null)
     try {
       await api.signUp({ email, password, locale, timeZone, currency, overviewEmail, disclaimerAccepted: accepted })
+      setSignedUp(true)
       // A new account is logged in now; an email that already had one isn't, and gets the same answer.
       const account = await refresh()
       if (account === null) setMessage({ tone: 'done', text: 'Check your email.' })

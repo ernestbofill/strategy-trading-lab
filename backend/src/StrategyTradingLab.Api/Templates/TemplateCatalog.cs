@@ -9,7 +9,20 @@ public enum InvestsIn { StockList, Sp500Fund, IndexFund }
 public enum SignalSides { BuysOnly, BuysAndSells }
 
 /// <summary>The tested fee per trade: a % of the amount plus a fixed amount in the strategy's currency, not converted: €1, $1 or £1 (rounded on purpose).</summary>
-public record TestedFee(decimal Percent, decimal Fixed);
+public record TestedFee(decimal Percent, decimal Fixed)
+{
+    /// <summary>
+    /// Splits a step into what buys shares and the fee, so that the two add up to the step exactly: a step is what one
+    /// round spends, fee included (decisions.md, 2026-10-24). €100 is €98.80 of shares and a €1.20 fee.
+    /// </summary>
+    public (decimal Amount, decimal Fee) Split(decimal step)
+    {
+        // A step must leave something to buy with (the budget screen's minimum step is far above the fee).
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(step, Fixed + 0.01m);
+        var amount = Math.Round((step - Fixed) / (1 + Percent / 100), 2, MidpointRounding.ToZero);
+        return (amount, step - amount);
+    }
+}
 
 /// <summary>One backtest period: % return of the template, the index fund, and the worst calendar year.</summary>
 public record PeriodResult(string Period, decimal Template, decimal Index, decimal WorstYear);

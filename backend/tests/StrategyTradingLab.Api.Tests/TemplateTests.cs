@@ -96,4 +96,27 @@ public class TemplateTests
     {
         Assert.Equal(19, TemplateCatalog.Ai.Watches.Assets.Count());
     }
+
+    [Theory]
+    [InlineData(100, 98.80, 1.20)]
+    [InlineData(10, 8.98, 1.02)]
+    [InlineData(1000, 997.00, 3.00)]
+    [InlineData(250, 248.50, 1.50)]
+    public void A_step_includes_its_fee_and_the_two_add_up_to_it_exactly(decimal step, decimal amount, decimal fee)
+    {
+        var split = TemplateCatalog.Fee.Split(step);
+
+        Assert.Equal((amount, fee), split);
+        Assert.Equal(step, split.Amount + split.Fee);
+        // Within a cent of the tested fee on what buys shares, never under it.
+        var tested = split.Amount * TemplateCatalog.Fee.Percent / 100 + TemplateCatalog.Fee.Fixed;
+        Assert.InRange(split.Fee - tested, 0m, 0.01m);
+    }
+
+    [Theory]
+    [InlineData(0.50)]
+    [InlineData(1)]
+    [InlineData(1.01)]
+    public void A_step_that_leaves_nothing_to_buy_with_is_refused(decimal step) =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => TemplateCatalog.Fee.Split(step));
 }

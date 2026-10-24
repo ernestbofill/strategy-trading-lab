@@ -27,6 +27,7 @@ Source: [app spec §8](../docs/strategy-trading-lab-app-spec.md#8-data-the-app-n
 - **Currencies:** ISO 4217 codes, `char(3)` (`EUR`, `USD`).
 - **FX on a trade:** `fx_rate numeric(18,8)` = units of the asset's currency per one unit of the strategy's currency, on the trade date (USD per EUR today). It is 1 when the two currencies are the same.
 - **Trade maths:** `amount` never includes the fee. `shares = amount × fx_rate ÷ price`. Cost of a buy = `amount + fee`; proceeds of a sale = `amount − fee`.
+- **A step includes its fee:** a signal trade splits the step so that `amount + fee = step` (`TestedFee.Split`: `amount = (step − fixed fee) ÷ (1 + fee %)`, rounded down to the cent, and the fee is the rest). So the budget fills exactly budget ÷ step steps. Live trades keep the fee the user entered.
 - Dates are `date` (US market date, see above). Moments are `timestamptz` (UTC).
 - Status and kind fields are `text` with a `CHECK` constraint, not Postgres enums (easier to extend). C# maps them to enums through one snake_case converter (`PriceRanAway` ↔ `price_ran_away`).
 - Every table has `created_at timestamptz not null default now()`; mutable tables also have `updated_at`, set by a SaveChanges interceptor.

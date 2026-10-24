@@ -106,6 +106,10 @@ public class StrategyEvaluatorTests
         await db.Assets.Where(a => a.Id == assetId).ExecuteDeleteAsync();
     }
 
+    static Task<int> SignalCount(AppDbContext db, Guid strategyId) => db.Signals.CountAsync(s => s.StrategyId == strategyId);
+
+    static Task<int> TradeCount(AppDbContext db, Guid strategyId) => db.SignalTrades.CountAsync(t => t.StrategyId == strategyId);
+
     static StrategyEvaluator Evaluator(AppDbContext db) =>
         new(db, new Clock(new DateTimeOffset(2024, 12, 2, 12, 0, 0, TimeSpan.Zero)), NullLogger<StrategyEvaluator>.Instance);
 
@@ -118,13 +122,11 @@ public class StrategyEvaluatorTests
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
         try
         {
-            var first = await Evaluator(db).RunAsync(default);
-            var second = await Evaluator(db).RunAsync(default);
-
-            Assert.Equal(1, first.NewSignals);
-            Assert.Equal(1, first.NewTrades);
-            Assert.Equal(0, second.NewSignals);
-            Assert.Equal(0, second.NewTrades);
+            // Counted on this strategy's own rows: the run evaluates every running strategy, and other test classes add theirs in parallel.
+            await Evaluator(db).RunAsync(default);
+            Assert.Equal((1, 1), (await SignalCount(db, strategyId), await TradeCount(db, strategyId)));
+            await Evaluator(db).RunAsync(default);
+            Assert.Equal((1, 1), (await SignalCount(db, strategyId), await TradeCount(db, strategyId)));
             var signal = await db.Signals.SingleAsync(s => s.StrategyId == strategyId);
             Assert.Equal(new DateOnly(2024, 1, 1).AddDays(300), signal.SignalDate);
             Assert.Equal((1, 5, 100m), (signal.StepNo, signal.MaxSteps, signal.StepAmount));
@@ -135,9 +137,9 @@ public class StrategyEvaluatorTests
             var trade = await db.SignalTrades.SingleAsync(t => t.SignalId == signal.Id);
             Assert.Equal(new DateOnly(2024, 1, 1).AddDays(301), trade.TradeDate);
             Assert.Equal(1m, trade.FxRate);
-            Assert.Equal(100m, trade.Amount);
-            Assert.Equal(1.20m, trade.Fee); // 0.2% of 100 plus 1.
-            Assert.Equal(Math.Round(100m / trade.Price, 6), trade.Shares);
+            Assert.Equal(98.80m, trade.Amount); // The step includes its fee: 98.80 + 0.2% of it + 1 = 100.
+            Assert.Equal(1.20m, trade.Fee);
+            Assert.Equal(Math.Round(98.80m / trade.Price, 6), trade.Shares);
             var today = await db.DailyEvaluations.SingleAsync(e => e.StrategyId == strategyId);
             Assert.Equal(new DateOnly(2024, 1, 1).AddDays(301), today.Date);
             Assert.Equal(EvaluationStatus.Building, today.Status);
@@ -182,9 +184,9 @@ public class StrategyEvaluatorTests
         {
             await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.StartedOn, new DateOnly(2030, 1, 1)));
 
-            var run = await Evaluator(db).RunAsync(default);
+            await Evaluator(db).RunAsync(default);
 
-            Assert.Equal(0, run.NewSignals);
+            Assert.Equal(0, await SignalCount(db, strategyId));
             Assert.Empty(await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).ToListAsync());
         }
         finally
@@ -211,9 +213,9 @@ public class StrategyEvaluatorTests
             });
             await db.SaveChangesAsync();
 
-            var run = await Evaluator(db).RunAsync(default);
+            await Evaluator(db).RunAsync(default);
 
-            Assert.Equal(0, run.NewSignals);
+            Assert.Equal(1, await SignalCount(db, strategyId)); // Only the earlier one.
         }
         finally
         {

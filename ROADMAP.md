@@ -38,7 +38,7 @@ Draft order, for Ernest to confirm.
    - **Check:** the backtest figures and the POC charge the fee on top of the step. Check whether the tested results change enough to say so on How we tested.
    - **Docs:** update DATA-MODEL (trade maths), the spec (Confirm a signal's Amount row, Metrics) and the evaluator tests.
 6. **Advanced settings** for *Dip in winners*, replacing the placeholder.
-6. **Daily overview right after the price check.** Today the overview waits for 07:00 in the user's time zone (`NotificationService.OverviewHour`), while the prices and signals are ready after the US close. By default, send it as soon as the daily check has run, so there is no delay; a later, user-chosen time can come with the overview settings. Then make the copy match everywhere: sign-up and the account page ("early in the morning"), Confirm ("after the US market close"), and the spec (*Account*, *Daily overview*). Found in the end-to-end test of 2026-10-24.
+7. **Daily overview right after the price check.** Today the overview waits for 07:00 in the user's time zone (`NotificationService.OverviewHour`), while the prices and signals are ready after the US close. By default, send it as soon as the daily check has run, so there is no delay; a later, user-chosen time can come with the overview settings. Then make the copy match everywhere: sign-up and the account page ("early in the morning"), Confirm ("after the US market close"), and the spec (*Account*, *Daily overview*). Found in the end-to-end test of 2026-10-24.
 
 ## Later
 

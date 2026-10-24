@@ -28,7 +28,7 @@ function detailOf(row: StockRow, words: StockStatusWords | null): string {
         ? `Rules: ${row.rulesSteps}${of} · You: ${row.steps}${of}`
         : steps(row.steps, row.maxSteps)
     case 'noBudget':
-      return 'Rules met, no budget left'
+      return 'No budget left for its steps'
     case 'watching':
       // 0 means it is there or past it: the rules aren't met for another reason.
       return row.distancePct !== null && row.distancePct > 0 && words

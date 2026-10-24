@@ -464,7 +464,7 @@ The same three settings can be changed later from the strategy page (not drawn).
     - "HOLDING" ("[n] of [max] steps"; also when the rules hold the stock with steps left, as *The comeback* does once its milestones are used)
     - "BUILDING" ("[n] of [max] steps"; live when it differs: "Rules: [n] of [max] · You: [n] of [max]")
     - "WATCHING" ("[n]% from [the template's zone]", "Rules not met today" when it is there or past it, or, when it isn't a candidate, the template's words: "Below its long trend" for *Dip in winners*, "Not beaten down" for *The comeback*; "Not enough price history yet" and "Not checked yet" before the daily check has a verdict). The zone is "the discount zone" for *Dip in winners* and "the buy line" for *The comeback*.
-    - "WATCHING" with "Rules met, no budget left" when the rules call for a step the budget has no room for (no signal is made).
+    - "WATCHING" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
     - Until the stock page is built, only a waiting row is a link.
     - *Ride the long trend* also needs "OUT OF THE MARKET" for the time between a sale and the next buy (not drawn).

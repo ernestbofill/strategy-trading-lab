@@ -21,7 +21,7 @@ public static class StrategyPage
             return latest == EvaluationStatus.Holding || (maxSteps is { } max && rulesSteps >= max) ? StockStatus.Holding : StockStatus.Building;
         return latest switch
         {
-            // The rules call for a step, or count one, that the budget had no room for: no signal was made.
+            // The rules call for a step, or hold steps, that the budget had no room for: no signal was made.
             EvaluationStatus.BuySignal or EvaluationStatus.Building or EvaluationStatus.Holding => StockStatus.NoBudget,
             null => StockStatus.NotChecked,
             EvaluationStatus.NotEnoughData => StockStatus.NotEnoughData,

@@ -33,7 +33,7 @@ There is no broker sync in either mode. The app never places orders and never re
 | **Strategy** | The user's own copy of a template: their name for it, their stocks, settings and budget, running in one mode from the day they start it. It keeps its own trades and results. A user can run any number of strategies, several from the same template. |
 | **Mode** | *Simulation* or *Live*. Fixed for the life of a strategy; going live means starting a new strategy. |
 | **Signal** | The moment a strategy's rules are met for a stock: a buy step, or, for *Ride the long trend*, a sale. In simulation the app acts on it by itself; in live it asks the user. |
-| **Step** | One buy of the step size. A stock gets at most the max steps per stock. |
+| **Step** | One buy of the step size, fee included: a €100 step is about €98.80 of shares and a €1.20 fee. A stock gets at most the max steps per stock. |
 | **Discount zone** | For *Dip in winners*: the range 5-15% below a stock's recent peak, where its rules signal. |
 | **AI round** | For strategies from *Your AI's top picks*: every 2 weeks the user runs our prompt in their own AI service and pastes the answer back. |
 | **Backtest** | How a template did in the past with given settings. It belongs to the template and settings, not to a running strategy. |
@@ -510,7 +510,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 | --- | --- |
 | Date | The next trading day |
 | Price per share | The next trading day's opening price, once the market has opened. Before that, the field is empty and the signal day's close is shown as a reference. |
-| Amount | The step size, without the fee. "Enter shares instead" switches the field to shares (not drawn); sells, all out, are usually entered as shares |
+| Amount | The step size minus the tested fee (what buys shares; the step includes its fee). "Enter shares instead" switches the field to shares (not drawn); sells, all out, are usually entered as shares |
 | Fee (optional) | Empty, placeholder "€0.00" |
 
 Exchange-rate line (not drawn, draft): "At $[1.0850] per €1, the rate of [date]. Change". "Change" opens a field for the rate the broker used. The rate follows the date if the date is changed, unless the user entered their own.

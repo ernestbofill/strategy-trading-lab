@@ -71,13 +71,13 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             Assert.Equal("simulation", page.GetProperty("mode").GetString());
             Assert.Equal("Dip in winners", page.GetProperty("templateName").GetString());
             var budget = page.GetProperty("budget");
-            Assert.Equal(101.2m, budget.GetProperty("used").GetDecimal()); // The step and its fee.
+            Assert.Equal(100m, budget.GetProperty("used").GetDecimal()); // The step, fee included.
             Assert.Equal((1, 30), (budget.GetProperty("steps").GetInt32(), budget.GetProperty("totalSteps").GetInt32()));
             Assert.Equal(JsonValueKind.Null, page.GetProperty("signals").ValueKind);
             Assert.Equal("the discount zone", page.GetProperty("words").GetProperty("zone").GetString());
 
-            // Bought at day 301's open, valued at day 302's close (1% up), against €100 plus a €1.20 fee.
-            var expected = Math.Round((100m * 1.01m - 101.2m) / 101.2m * 100, 1);
+            // Bought at day 301's open, valued at day 302's close (1% up), with €98.80 of shares for a €100 step (the fee is inside it).
+            var expected = Math.Round((98.8m * 1.01m - 100m) / 100m * 100, 1);
             var results = page.GetProperty("results");
             Assert.Equal(expected, results.GetProperty("you").GetDecimal());
             Assert.Equal(JsonValueKind.Null, results.GetProperty("rules").ValueKind);
@@ -86,12 +86,12 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             var stock = Assert.Single(page.GetProperty("stocks").EnumerateArray());
             Assert.Equal("building", stock.GetProperty("status").GetString());
             Assert.Equal(1, stock.GetProperty("steps").GetInt32());
-            Assert.Equal(101.2m, stock.GetProperty("invested").GetDecimal());
+            Assert.Equal(100m, stock.GetProperty("invested").GetDecimal());
             Assert.Equal(expected, stock.GetProperty("result").GetDecimal());
 
             var dashboard = await client.GetFromJsonAsync<JsonElement>("/dashboard");
             var card = dashboard.GetProperty("strategies").EnumerateArray().Single(s => s.GetProperty("id").GetGuid() == id);
-            Assert.Equal(101.2m, card.GetProperty("used").GetDecimal());
+            Assert.Equal(100m, card.GetProperty("used").GetDecimal());
             Assert.Equal(expected, card.GetProperty("results").GetProperty("strategy").GetDecimal());
         }
         finally

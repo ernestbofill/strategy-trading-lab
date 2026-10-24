@@ -150,8 +150,8 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         {
             var next = bars.FirstOrDefault(b => b.Date > signal.SignalDate);
             if (next is null || rates.Between(strategy.Currency, asset.Currency, next.Date) is not { } fx) continue;
-            var amount = signal.StepAmount!.Value;
-            var fee = Math.Round(amount * TemplateCatalog.Fee.Percent / 100 + TemplateCatalog.Fee.Fixed, 2);
+            // The step includes its fee: amount plus fee is the step.
+            var (amount, fee) = TemplateCatalog.Fee.Split(signal.StepAmount!.Value);
             db.SignalTrades.Add(new SignalTrade
             {
                 SignalId = signal.Id, StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = next.Date, Side = TradeSide.Buy, StepNo = signal.StepNo,

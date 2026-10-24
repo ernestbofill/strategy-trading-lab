@@ -135,9 +135,9 @@ public class StrategyEvaluatorTests
             var trade = await db.SignalTrades.SingleAsync(t => t.SignalId == signal.Id);
             Assert.Equal(new DateOnly(2024, 1, 1).AddDays(301), trade.TradeDate);
             Assert.Equal(1m, trade.FxRate);
-            Assert.Equal(100m, trade.Amount);
-            Assert.Equal(1.20m, trade.Fee); // 0.2% of 100 plus 1.
-            Assert.Equal(Math.Round(100m / trade.Price, 6), trade.Shares);
+            Assert.Equal(98.80m, trade.Amount); // The step includes its fee: 98.80 + 0.2% of it + 1 = 100.
+            Assert.Equal(1.20m, trade.Fee);
+            Assert.Equal(Math.Round(98.80m / trade.Price, 6), trade.Shares);
             var today = await db.DailyEvaluations.SingleAsync(e => e.StrategyId == strategyId);
             Assert.Equal(new DateOnly(2024, 1, 1).AddDays(301), today.Date);
             Assert.Equal(EvaluationStatus.Building, today.Status);

@@ -80,6 +80,37 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         return sent;
     }
 
+    /// <summary>
+    /// The reminder of each snoozed signal, once, from 07:00 of its snooze day in the user's time zone, while it still waits
+    /// and its strategy has notifications on (spec: Snooze). Snoozing again sets a later day, which gets its own reminder.
+    /// </summary>
+    public async Task<int> SendSnoozeRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        // No time zone is more than a day ahead of UTC, so later snooze days can wait.
+        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
+        var rows = await (from signal in db.Signals.AsNoTracking()
+                          join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
+                          join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
+                          join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
+                          where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest
+                              && strategy.Mode == StrategyMode.Live && strategy.Notifications && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null
+                              && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
+                                  && x.Channel == NotificationChannel.Email && x.ForDate == signal.SnoozedUntil)
+                          select new { signal, strategy, user.Id, user.Email, user.TimeZone, asset }).ToListAsync(cancellationToken);
+
+        var sent = 0;
+        foreach (var row in rows)
+        {
+            var local = LocalTime(now, row.TimeZone);
+            var day = row.signal.SnoozedUntil!.Value;
+            var localDay = DateOnly.FromDateTime(local.DateTime);
+            if (localDay < day || (localDay == day && local.Hour < OverviewHour)) continue;
+            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
+            if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl)), cancellationToken)) sent++;
+        }
+        return sent;
+    }
+
     static DateTimeOffset LocalTime(DateTimeOffset now, string timeZone)
     {
         try { return TimeZoneInfo.ConvertTime(now, TimeZoneInfo.FindSystemTimeZoneById(timeZone)); }
@@ -119,7 +150,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     }
 
     static SignalLine Line(Signal signal, Strategy strategy, Asset asset) =>
-        new(strategy.Id, strategy.Name, strategy.Mode, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate, signal.ClosePrice,
+        new(strategy.Id, signal.Id, strategy.Name, strategy.Mode, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate, signal.ClosePrice,
             signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone());
 
     /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>

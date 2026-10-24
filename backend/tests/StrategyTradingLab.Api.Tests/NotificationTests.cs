@@ -11,7 +11,7 @@ namespace StrategyTradingLab.Api.Tests;
 
 public class NotificationTests
 {
-    static SignalLine Dip(string facts = """{"belowPeakPct":8.2}""") => new(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Zscaler & friends", StrategyMode.Live, "dip", "Zscaler", "USD", "EUR",
+    static SignalLine Dip(string facts = """{"belowPeakPct":8.2}""") => new(Guid.Parse("11111111-1111-1111-1111-111111111111"), Guid.Parse("22222222-2222-2222-2222-222222222222"), "Zscaler & friends", StrategyMode.Live, "dip", "Zscaler", "USD", "EUR",
         new DateOnly(2026, 10, 22), 187.5m, 2, 5, 100, JsonDocument.Parse(facts).RootElement);
 
     [Fact]
@@ -23,7 +23,7 @@ public class NotificationTests
         Assert.Contains("Your rules for Zscaler & friends are met for Zscaler: 8.2% below its recent peak, still above its 50-day average.", body);
         Assert.Contains("Under your settings that's step 2 of 5 (€100).", body);
         Assert.Contains("Close on 22 Oct 2026: $187.5", body);
-        Assert.Contains("https://app.example/strategies/11111111-1111-1111-1111-111111111111/signal", body);
+        Assert.Contains("https://app.example/strategies/11111111-1111-1111-1111-111111111111/signals/22222222-2222-2222-2222-222222222222", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
     }
 
@@ -214,6 +214,41 @@ public class NotificationTests
         finally
         {
             foreach (var seeded in new[] { wanted, off, unverified }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_snoozed_signal_is_reminded_once_from_seven_on_its_snooze_day_while_it_waits()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var snoozed = await SeedAsync(db);
+        var answered = await SeedAsync(db);
+        try
+        {
+            var monday = new DateOnly(2026, 10, 26);
+            await db.Signals.Where(s => s.Id == snoozed.SignalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, monday));
+            await db.Signals.Where(s => s.Id == answered.SignalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Skipped)
+                .SetProperty(x => x.AnsweredAt, DateTimeOffset.UtcNow));
+            var sender = new Captured();
+
+            // Madrid is UTC+1 on 2026-10-26: 05:30 UTC is 06:30 there, 06:30 UTC is 07:30.
+            await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 26, 5, 30, 0, TimeSpan.Zero), default);
+            Assert.DoesNotContain(sender.Sent, m => m.To == snoozed.Email);
+            await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 26, 6, 30, 0, TimeSpan.Zero), default);
+            await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 26, 9, 0, 0, TimeSpan.Zero), default);
+
+            var mail = Assert.Single(sender.Sent, m => m.To == snoozed.Email);
+            Assert.StartsWith("Reminder: Test asset", mail.Subject);
+            Assert.Contains($"/strategies/{snoozed.StrategyId}/signals/{snoozed.SignalId}", mail.Body);
+            Assert.DoesNotContain(sender.Sent, m => m.To == answered.Email);
+            var row = await db.Notifications.SingleAsync(n => n.UserId == snoozed.UserId);
+            Assert.Equal((NotificationKind.Snoozed, monday), (row.Kind, row.ForDate));
+        }
+        finally
+        {
+            foreach (var seeded in new[] { snoozed, answered }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
         }
     }
 

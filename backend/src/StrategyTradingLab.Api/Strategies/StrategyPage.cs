@@ -17,12 +17,12 @@ public static class StrategyPage
     {
         if (mode == StrategyMode.Live && waiting) return StockStatus.WaitingForYou;
         if (mode == StrategyMode.Simulation && latest == EvaluationStatus.BuySignal && todaysSignal) return StockStatus.Signal;
-        if (latest == EvaluationStatus.Holding || (maxSteps is { } max && rulesSteps >= max)) return StockStatus.Holding;
-        if (rulesSteps > 0) return StockStatus.Building;
+        if (rulesSteps > 0)
+            return latest == EvaluationStatus.Holding || (maxSteps is { } max && rulesSteps >= max) ? StockStatus.Holding : StockStatus.Building;
         return latest switch
         {
             // The rules call for a step, or count one, that the budget had no room for: no signal was made.
-            EvaluationStatus.BuySignal or EvaluationStatus.Building => StockStatus.NoBudget,
+            EvaluationStatus.BuySignal or EvaluationStatus.Building or EvaluationStatus.Holding => StockStatus.NoBudget,
             null => StockStatus.NotChecked,
             EvaluationStatus.NotEnoughData => StockStatus.NotEnoughData,
             EvaluationStatus.NotCandidate => StockStatus.NotCandidate,

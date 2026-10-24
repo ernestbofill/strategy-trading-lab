@@ -175,7 +175,7 @@ public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)
     /// <summary>How far before a range prices and rates are loaded, so its first days still find the last trading day before them.</summary>
     public const int LookBackDays = 7;
 
-    /// <summary>The stored rates, from <paramref name="from"/> on (all of them when null), plus the last one before it.</summary>
+    /// <summary>The stored rates from <see cref="LookBackDays"/> before <paramref name="from"/> on (all of them when null): a rate older than that isn't used.</summary>
     public static async Task<ExchangeRates> LoadAsync(AppDbContext db, DateOnly? from, CancellationToken cancellationToken)
     {
         var since = from?.AddDays(-LookBackDays) ?? DateOnly.MinValue;

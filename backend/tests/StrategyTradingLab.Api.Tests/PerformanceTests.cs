@@ -83,6 +83,7 @@ public class PerformanceTests
     [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, true, 1, StockStatus.Signal)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, false, 0, StockStatus.NoBudget)] // No budget left for it.
     [InlineData(StrategyMode.Live, EvaluationStatus.Building, false, false, 0, StockStatus.NoBudget)]
+    [InlineData(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 0, StockStatus.NoBudget)] // Every step skipped for the budget.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Building, false, false, 5, StockStatus.Holding)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 2, StockStatus.Holding)] // Comeback milestones used.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Watching, false, false, 2, StockStatus.Building)]

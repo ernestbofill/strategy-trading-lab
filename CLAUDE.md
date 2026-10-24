@@ -35,7 +35,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 | Claude Code (default) | `CLAUDE.md`, plus `frontend/CLAUDE.md` or `backend/CLAUDE.md` when it works there | These rules and the Claude specifics (last sections) |
 | GitHub Copilot | [.github/copilot-instructions.md](.github/copilot-instructions.md), and [.github/instructions/](.github/instructions/) for `frontend/**` and `backend/**` | A pointer here, and the Copilot specifics |
 | OpenAI Codex | [AGENTS.md](AGENTS.md) | A pointer here, and the Codex specifics |
-| Google Antigravity (Gemini) | [GEMINI.md](GEMINI.md) and `AGENTS.md` | A pointer here, and the Gemini specifics |
+| Google Antigravity (Gemini) | [GEMINI.md](GEMINI.md) and `AGENTS.md` (Antigravity IDE 1.20.5 or later) | A pointer here, and the Gemini specifics |
 
 The workflow below names Claude's models and commands (`opus`, `sonnet`, `/simplify`, `/code-review`). Another tool does the same step with its own equivalent: its strongest model for analysis and high-risk work, a cheaper one for easy work, and its own review tool. It names the model in the step's PR comment, as Claude does.
 

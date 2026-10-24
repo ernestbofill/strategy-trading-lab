@@ -71,7 +71,7 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             Assert.Equal("simulation", page.GetProperty("mode").GetString());
             Assert.Equal("Dip in winners", page.GetProperty("templateName").GetString());
             var budget = page.GetProperty("budget");
-            Assert.Equal(100m, budget.GetProperty("used").GetDecimal()); // A simulation's step, without the fee.
+            Assert.Equal(101.2m, budget.GetProperty("used").GetDecimal()); // The step and its fee.
             Assert.Equal((1, 30), (budget.GetProperty("steps").GetInt32(), budget.GetProperty("totalSteps").GetInt32()));
             Assert.Equal(JsonValueKind.Null, page.GetProperty("signals").ValueKind);
             Assert.Equal("the discount zone", page.GetProperty("words").GetProperty("zone").GetString());
@@ -86,12 +86,12 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             var stock = Assert.Single(page.GetProperty("stocks").EnumerateArray());
             Assert.Equal("building", stock.GetProperty("status").GetString());
             Assert.Equal(1, stock.GetProperty("steps").GetInt32());
-            Assert.Equal(100m, stock.GetProperty("invested").GetDecimal()); // On the budget-used basis: without the fee in simulation.
+            Assert.Equal(101.2m, stock.GetProperty("invested").GetDecimal());
             Assert.Equal(expected, stock.GetProperty("result").GetDecimal());
 
             var dashboard = await client.GetFromJsonAsync<JsonElement>("/dashboard");
             var card = dashboard.GetProperty("strategies").EnumerateArray().Single(s => s.GetProperty("id").GetGuid() == id);
-            Assert.Equal(100m, card.GetProperty("used").GetDecimal());
+            Assert.Equal(101.2m, card.GetProperty("used").GetDecimal());
             Assert.Equal(expected, card.GetProperty("results").GetProperty("strategy").GetDecimal());
         }
         finally

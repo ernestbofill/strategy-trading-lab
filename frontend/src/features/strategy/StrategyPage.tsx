@@ -39,6 +39,12 @@ function Summary({ s }: { s: StrategyDetail }) {
             <Figure label="Index fund" value={results.index} />
           </div>
           <ResultsChart history={results.history} live={live} />
+          {pastResult && (
+            // The strategy has no worst year of its own until it has run a year: the template's stands in.
+            <p className={styles.worst}>
+              The template's worst year, {pastResult.years}: <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>
+            </p>
+          )}
         </>
       ) : (
         <p className={styles.text}>
@@ -106,8 +112,8 @@ function Stocks({ s }: { s: StrategyDetail }) {
           // Only a waiting signal leads somewhere yet: the stock page isn't built.
           return (
             <li key={row.assetId}>
-              {row.status === 'waitingForYou' ? (
-                <Link to={signalPath(s.id)} className={styles.stock}>
+              {row.status === 'waitingForYou' && row.signalId ? (
+                <Link to={signalPath(s.id, row.signalId)} className={styles.stock}>
                   {content}
                 </Link>
               ) : (

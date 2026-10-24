@@ -117,6 +117,13 @@
   line-height: 22px;
 }
 
+.worst {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-sidebar);
+}
+
 .mono {
   font-family: var(--font-mono);
 }

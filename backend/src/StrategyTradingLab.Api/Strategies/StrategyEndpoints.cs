@@ -33,7 +33,7 @@ public static class StrategyEndpoints
                 .Join(db.Assets, signal => signal.AssetId, asset => asset.Id, (signal, asset) => new { signal.Id, signal.Side, signal.StrategyId, asset.Name })
                 .ToListAsync(cancellationToken);
             var names = strategies.ToDictionary(s => s.Id, s => s.Name);
-            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user.Locale, book, today))],
+            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user.Locale, (book, today)))],
                 [.. waiting.Select(w => new WaitingItem(w.Id, w.Side == TradeSide.Buy ? WaitingKind.BuySignal : WaitingKind.SellSignal,
                     w.StrategyId, names[w.StrategyId], w.Name))]);
         })
@@ -113,11 +113,13 @@ public static class StrategyEndpoints
         return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), zone).DateTime);
     }
 
-    static StrategySummary Summary(Strategy strategy, string locale, StrategyBook? book = null, DateOnly? today = null)
+    /// <summary>A strategy's card; without <paramref name="trades"/> (a new strategy) it has no results and nothing used.</summary>
+    static StrategySummary Summary(Strategy strategy, string locale, (StrategyBook Book, DateOnly Today)? trades = null)
     {
         var template = TemplateCatalog.Find(strategy.TemplateKey)!;
         var texts = TemplateTexts.For(template, locale);
-        var figures = book is null ? null : book.Figures(strategy, today!.Value);
+        var book = trades?.Book;
+        var figures = trades is { } t ? t.Book.Figures(strategy, t.Today) : null;
         var results = figures is null ? null : new StrategyResults(figures.You, figures.Index, [.. figures.History.Select(p => p.You)]);
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
             strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(template, texts));
@@ -155,12 +157,13 @@ public static class StrategyEndpoints
             var buys = you.Where(b => b.AssetId == asset.Id).ToList();
             var status = StrategyPage.Status(strategy.Mode, evaluation?.Status, waiting is not null, todays is not null, own.Count, maxSteps);
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
-            decimal? distance = evaluation?.Facts.RootElement.TryGetProperty("distancePct", out var d) == true && d.TryGetDecimal(out var pct) ? pct : null;
+            decimal? distance = evaluation?.Facts.RootElement.TryGetProperty("distancePct", out var d) == true && d.ValueKind == JsonValueKind.Number
+                ? d.GetDecimal() : null;
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
                 Steps: buys.Count,
                 RulesSteps: live ? own.Count : null,
                 maxSteps, distance, signal?.Id, signal?.StepNo,
-                Invested: StrategyBook.Spent(strategy, buys),
+                Invested: buys.Sum(b => b.Cost),
                 Result: Performance.GainPct(buys, book.Prices, today, strategy.Currency));
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)

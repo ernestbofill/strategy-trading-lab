@@ -14,9 +14,10 @@ public readonly record struct DayPrice(DateOnly Date, decimal Open, decimal Clos
 /// <summary>Assets' daily prices, each in its own currency, and the exchange rates to value them in a strategy's currency.</summary>
 public sealed class PriceBook(IReadOnlyDictionary<Guid, (string Currency, IReadOnlyList<DayPrice> Days)> assets, ExchangeRates rates)
 {
-    /// <summary>The trading days of any of the assets from <paramref name="from"/> to <paramref name="to"/>, in order.</summary>
-    public IReadOnlyList<DateOnly> Days(DateOnly from, DateOnly to) =>
-        [.. assets.Values.SelectMany(a => a.Days).Select(d => d.Date).Where(d => d >= from && d <= to).Distinct().Order()];
+    /// <summary>The trading days of any of <paramref name="assetIds"/> from <paramref name="from"/> to <paramref name="to"/>, in order.</summary>
+    public IReadOnlyList<DateOnly> Days(IEnumerable<Guid> assetIds, DateOnly from, DateOnly to) =>
+        [.. assetIds.Distinct().Where(assets.ContainsKey).SelectMany(id => assets[id].Days).Select(d => d.Date)
+            .Where(d => d >= from && d <= to).Distinct().Order()];
 
     /// <summary>What <paramref name="shares"/> are worth at the last close on or before <paramref name="date"/>; null when the price or rate is unknown.</summary>
     public decimal? Value(Guid assetId, decimal shares, DateOnly date, string currency)
@@ -113,7 +114,9 @@ public static class Performance
         if (you.Count == 0) return [];
         var points = new List<ResultPoint>();
         // Thinned first, so only the days kept are valued.
-        foreach (var day in Thin(prices.Days(you.Min(b => b.Date), today), MaxPoints))
+        // The days of this strategy's own assets and the fund only: a price book can hold other strategies' too.
+        var held = you.Concat(rules ?? []).Concat(index ?? []).Select(b => b.AssetId);
+        foreach (var day in Thin(prices.Days(held, you.Min(b => b.Date), today), MaxPoints))
         {
             if (GainPct(you, prices, day, currency) is not { } gain) continue;
             points.Add(new ResultPoint(day, gain,

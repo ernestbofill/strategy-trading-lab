@@ -58,8 +58,9 @@ describe('StrategyPage', () => {
     expect(screen.getByText('−1.3%')).toBeTruthy()
     expect(screen.getByText('€1,200 of €3,000 · 12 of 30 steps')).toBeTruthy()
     expect(screen.getByText('9 did · 2 skipped · 1 missed')).toBeTruthy()
+    expect(screen.getByText(/The template's worst year, 2010-2024/).textContent).toContain('−21%')
     expect(screen.getByRole('link', { name: /Zscaler WAITING FOR YOU Signal: step 2 of 5/ }).getAttribute('href')).toBe(
-      '/strategies/live/signal',
+      '/strategies/live/signals/sig',
     )
     expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).toContain(
       "Past results don't promise future ones.",

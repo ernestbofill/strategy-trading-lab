@@ -192,6 +192,7 @@ export type StockStatus =
   | 'signal'
   | 'holding'
   | 'building'
+  | 'noBudget'
   | 'watching'
   | 'notCandidate'
   | 'notEnoughData'

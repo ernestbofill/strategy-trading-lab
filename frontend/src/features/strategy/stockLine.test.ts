@@ -44,6 +44,7 @@ describe('stockLine', () => {
     expect(stockLine(row({ distancePct: 0.3 }), 'live', 'EUR', words).detail).toBe('<1% from the discount zone')
     const notCandidate = stockLine(row({ status: 'notCandidate' }), 'live', 'EUR', words)
     expect([notCandidate.pill, notCandidate.detail]).toEqual(['WATCHING', 'Below its long trend'])
+    expect(stockLine(row({ status: 'noBudget' }), 'live', 'EUR', words).detail).toBe('Rules met, no budget left')
   })
 
   it('shows the result with what was put in, or a dash with no buys', () => {

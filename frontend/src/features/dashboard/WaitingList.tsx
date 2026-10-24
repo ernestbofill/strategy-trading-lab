@@ -5,7 +5,7 @@ import { aiRoundPath, signalPath } from './paths'
 import styles from './WaitingList.module.css'
 
 function target(item: WaitingItem) {
-  return item.kind === 'aiRound' ? aiRoundPath(item.strategyId) : signalPath(item.strategyId)
+  return item.kind === 'aiRound' ? aiRoundPath(item.strategyId) : signalPath(item.strategyId, item.id)
 }
 
 function Message({ item }: { item: WaitingItem }) {

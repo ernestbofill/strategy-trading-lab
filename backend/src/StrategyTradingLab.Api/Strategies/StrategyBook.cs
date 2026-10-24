@@ -65,14 +65,8 @@ public sealed class StrategyBook
     public IReadOnlyList<Buy>? Rules(Strategy strategy) =>
         strategy.Mode == StrategyMode.Live ? [.. signalBuys[strategy.Id].OrderBy(b => b.Date)] : null;
 
-    /// <summary>
-    /// The budget used (spec: Metrics): a simulation's signal-trade buys, a live strategy's confirmed buys with their fees.
-    /// </summary>
-    public decimal Used(Strategy strategy) => Spent(strategy, You(strategy));
-
-    /// <summary>What <paramref name="buys"/> use of the budget, on the same basis as <see cref="Used"/>.</summary>
-    public static decimal Spent(Strategy strategy, IEnumerable<Buy> buys) =>
-        strategy.Mode == StrategyMode.Live ? buys.Sum(b => b.Cost) : buys.Sum(b => b.Amount);
+    /// <summary>The budget used (DATA-MODEL: strategies): the cost of the buys, fees included, in both modes.</summary>
+    public decimal Used(Strategy strategy) => You(strategy).Sum(b => b.Cost);
 
     /// <summary>The strategy's results today: null until it has a buy that can be valued.</summary>
     public StrategyFigures? Figures(Strategy strategy, DateOnly today)

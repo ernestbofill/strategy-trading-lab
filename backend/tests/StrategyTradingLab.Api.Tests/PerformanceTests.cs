@@ -64,6 +64,13 @@ public class PerformanceTests
         Assert.Null(history[1].Rules);
         Assert.Equal(10m, history[1].Index); // $100 to $110.
         Assert.Empty(Performance.History([], null, null, Book(), Thu, "EUR"));
+        // Another asset in the book doesn't add its days.
+        var other = new PriceBook(new Dictionary<Guid, (string, IReadOnlyList<DayPrice>)>
+        {
+            [Stock] = ("USD", [new(Tue, 10, 12), new(Thu, 12, 15)]),
+            [Guid.NewGuid()] = ("USD", [new(Wed, 1, 1)]),
+        }, new ExchangeRates(new() { ["USD"] = [(Mon, 2m)] }));
+        Assert.Equal([Tue, Thu], Performance.History(you, null, null, other, Thu, "EUR").Select(p => p.Date));
 
         var thinned = Performance.Thin(Enumerable.Range(0, 1000).ToList(), 120);
         Assert.Equal(120, thinned.Count);
@@ -74,7 +81,8 @@ public class PerformanceTests
     [InlineData(StrategyMode.Live, EvaluationStatus.BuySignal, true, true, 1, StockStatus.WaitingForYou)]
     [InlineData(StrategyMode.Live, EvaluationStatus.BuySignal, false, true, 1, StockStatus.Building)] // Answered.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, true, 1, StockStatus.Signal)]
-    [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, false, 0, StockStatus.Watching)] // No budget left for it.
+    [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, false, 0, StockStatus.NoBudget)] // No budget left for it.
+    [InlineData(StrategyMode.Live, EvaluationStatus.Building, false, false, 0, StockStatus.NoBudget)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Building, false, false, 5, StockStatus.Holding)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 2, StockStatus.Holding)] // Comeback milestones used.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Watching, false, false, 2, StockStatus.Building)]

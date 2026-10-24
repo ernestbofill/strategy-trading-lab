@@ -66,7 +66,7 @@ export default function App() {
                 <Route path="/admin" element={<AdminSettings />} />
               </Route>
               <Route path="/strategies/:id" element={<StrategyPage />} />
-              <Route path="/strategies/:id/signal" element={<NotBuiltYet title="Confirm a signal" back={dashboardPath} />} />
+              <Route path="/strategies/:id/signals/:signalId" element={<NotBuiltYet title="Confirm a signal" back={dashboardPath} />} />
               <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

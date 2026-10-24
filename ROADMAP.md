@@ -6,7 +6,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 ## Done
 
-- Accounts: sign-up, log-in, forgot and reset password, email confirmation, and the account page, with server-side sessions and rate limits. `POST /strategies` and `/dashboard` now need a logged-in user. Designed in [backend/AUTH.md](backend/AUTH.md) (#25), backend (#28), screens and guard (#31). The fixed development user is gone.
+- Accounts: sign-up, log-in, forgot and reset password, email confirmation, and the account page, with server-side sessions and rate limits. The signed-in home (`/`) is the dashboard; sign-up lands there, and new strategies start from its "+ New strategy" link. `POST /strategies` and `/dashboard` now need a logged-in user. Designed in [backend/AUTH.md](backend/AUTH.md) (#25), backend (#28), screens and guard (#31). The fixed development user is gone.
 - Phone installation: Account install prompt, manual iPhone and Android instructions, and home-screen icons (#50).
 - Currency: euro, US dollar or British pound, picked at sign-up and changed on the account page; new strategies start in it, and the budget screens and dashboard show it. Backtest figures and template texts stay in euro for now (Ernest's request).
 - New-strategy flow, frontend: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm (#1–#3, #10, #13, #19). Advanced settings is a placeholder.

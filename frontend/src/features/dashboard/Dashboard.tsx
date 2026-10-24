@@ -5,6 +5,7 @@ import { Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
 import { pickPath } from '../new-strategy/paths'
+import { VerifyNotice } from '../account/VerifyNotice'
 import { accountPath } from './paths'
 import styles from './Dashboard.module.css'
 import { StrategyCard } from './StrategyCard'
@@ -20,6 +21,7 @@ export function Dashboard() {
     <LoadableScreen state={dashboard} top={top} what="your strategies">
       {({ today, strategies, waiting }) => (
         <Screen top={top} note={`${DISCLAIMER} ${PAST_RESULTS_CAPTION}`}>
+          <VerifyNotice />
           <PageHeader title="Your strategies" />
           <WaitingList items={waiting} />
           <div className={styles.cards}>

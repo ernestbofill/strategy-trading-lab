@@ -28,7 +28,7 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 ├── /faq                   FAQ
 ├── /contact               Contact / feedback
 ├── /sign-up               Create account (journey step 1)
-│   └── /verify            Verify email → straight to step 2
+│   └── /verify            Verify email → dashboard if signed in, otherwise Log in
 ├── /log-in                Log in ➕
 ├── /forgot-password       Reset password ➕
 └── /legal
@@ -59,7 +59,7 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 
 ## 2. New strategy flow (🔒, journey steps 2–6)
 
-Entered from sign-up (first run), from **+ New strategy** on the dashboard, and from **Go live with these settings** on a simulation (joins at step 4, prefilled).
+Entered from **+ New strategy** on the dashboard, and from **Go live with these settings** on a simulation (joins at step 4, prefilled).
 
 ```
 /app/new

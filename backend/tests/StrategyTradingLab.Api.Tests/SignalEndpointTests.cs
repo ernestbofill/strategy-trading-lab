@@ -75,7 +75,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             var prefill = signal.GetProperty("prefill");
             Assert.Equal((SignalDay.AddDays(1), 190m, 98.80m),
                 (DateOnly.Parse(prefill.GetProperty("date").GetString()!), prefill.GetProperty("price").GetDecimal(), prefill.GetProperty("amount").GetDecimal()));
-            Assert.Equal(1m, signal.GetProperty("rates")[0].GetProperty("rate").GetDecimal()); // Euro to euro.
+            Assert.Equal(0, signal.GetProperty("rates").GetArrayLength()); // Euro to euro: no rate to show.
         }
         finally
         {

@@ -25,6 +25,11 @@ describe('stockLine', () => {
     expect([line.pill, line.detail]).toEqual(['WAITING FOR YOU', 'Signal: step 2 of 5'])
   })
 
+  it('leaves out the step when a signal has none', () => {
+    expect(stockLine(row({ status: 'waitingForYou' }), 'live', 'EUR', words).detail).toBe('Signal waiting')
+    expect(stockLine(row({ status: 'signal' }), 'simulation', 'EUR', words).detail).toBe('Bought at the next open')
+  })
+
   it('shows the rules and the user apart only when their steps differ', () => {
     expect(stockLine(row({ status: 'building', steps: 2, rulesSteps: 3 }), 'live', 'EUR', words).detail).toBe(
       'Rules: 3 of 5 · You: 2 of 5',
@@ -36,6 +41,7 @@ describe('stockLine', () => {
   it("says how far a watched stock is, in the template's words", () => {
     expect(stockLine(row({ distancePct: 6.4 }), 'live', 'EUR', words).detail).toBe('6% from the discount zone')
     expect(stockLine(row({ distancePct: 0 }), 'live', 'EUR', words).detail).toBe('Rules not met today')
+    expect(stockLine(row({ distancePct: 0.3 }), 'live', 'EUR', words).detail).toBe('<1% from the discount zone')
     const notCandidate = stockLine(row({ status: 'notCandidate' }), 'live', 'EUR', words)
     expect([notCandidate.pill, notCandidate.detail]).toEqual(['WATCHING', 'Below its long trend'])
   })

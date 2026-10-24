@@ -32,10 +32,13 @@ public class PerformanceTests
         Assert.Null(Performance.GainPct(buys, Book(), Mon.AddDays(-1), "EUR")); // Before the buy.
         Assert.Null(Performance.GainPct(buys, Book(), Mon, "GBP")); // No pound rate.
         Assert.Null(Performance.GainPct([new Buy(Guid.NewGuid(), Mon, 1, 10, 0)], Book(), Mon, "EUR")); // No prices.
+        // A buy that can't be valued is left out, cost and all, instead of hiding the others.
+        Assert.Equal(Performance.GainPct(buys, Book(), Wed, "EUR"),
+            Performance.GainPct([.. buys, new Buy(Guid.NewGuid(), Mon, 1, 10, 0)], Book(), Wed, "EUR"));
     }
 
     [Fact]
-    public void The_index_gets_the_same_money_on_the_same_day_or_the_next_one_it_trades()
+    public void The_index_gets_the_same_money_on_the_same_day_or_the_next_one_it_trades_or_the_last_close_before_it()
     {
         Buy[] buys = [new(Stock, Mon, 12.5m, 100, 1), new(Stock, Wed, 4, 50, 0)];
 
@@ -44,7 +47,9 @@ public class PerformanceTests
         // Monday's €101 buys on Tuesday, the fund's first day: $202 at $100.
         Assert.Equal(new Buy(Index, Tue, 2.02m, 101, 0), index[0]);
         Assert.Equal(new Buy(Index, Wed, 1m, 50, 0), index[1]);
-        Assert.Null(Performance.IndexBuys([new Buy(Stock, Thu, 1, 10, 0)], Book(), Index, "EUR")); // No price yet.
+        // Thursday isn't stored yet: Wednesday's close, $110, counted from Thursday.
+        Assert.Equal(new Buy(Index, Thu, 10m * 2 / 110, 10, 0), Performance.IndexBuys([new Buy(Stock, Thu, 1, 10, 0)], Book(), Index, "EUR")![0]);
+        Assert.Null(Performance.IndexBuys(buys, Book(), Guid.NewGuid(), "EUR")); // A fund with no prices.
     }
 
     [Fact]

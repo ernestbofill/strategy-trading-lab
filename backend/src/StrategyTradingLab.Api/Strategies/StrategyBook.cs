@@ -46,8 +46,7 @@ public sealed class StrategyBook
     {
         var currencies = await db.Assets.AsNoTracking().Where(a => assetIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, a => a.Currency, cancellationToken);
-        // A week back, so the first day still finds the last close before it.
-        var since = from.AddDays(-7);
+        var since = from.AddDays(-ExchangeRates.LookBackDays);
         var rows = await db.Prices.AsNoTracking()
             .Where(p => assetIds.Contains(p.AssetId) && p.Date >= since && p.Date <= today)
             .OrderBy(p => p.Date)
@@ -69,8 +68,11 @@ public sealed class StrategyBook
     /// <summary>
     /// The budget used (spec: Metrics): a simulation's signal-trade buys, a live strategy's confirmed buys with their fees.
     /// </summary>
-    public decimal Used(Strategy strategy) =>
-        strategy.Mode == StrategyMode.Live ? You(strategy).Sum(b => b.Cost) : You(strategy).Sum(b => b.Amount);
+    public decimal Used(Strategy strategy) => Spent(strategy, You(strategy));
+
+    /// <summary>What <paramref name="buys"/> use of the budget, on the same basis as <see cref="Used"/>.</summary>
+    public static decimal Spent(Strategy strategy, IEnumerable<Buy> buys) =>
+        strategy.Mode == StrategyMode.Live ? buys.Sum(b => b.Cost) : buys.Sum(b => b.Amount);
 
     /// <summary>The strategy's results today: null until it has a buy that can be valued.</summary>
     public StrategyFigures? Figures(Strategy strategy, DateOnly today)

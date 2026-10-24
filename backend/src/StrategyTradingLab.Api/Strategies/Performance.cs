@@ -27,14 +27,20 @@ public sealed class PriceBook(IReadOnlyDictionary<Guid, (string Currency, IReadO
         return shares * asset.Days[at].Close / fx;
     }
 
-    /// <summary>The first trading day on or after <paramref name="date"/>, with its opening price and the rate that day; null when there is none yet.</summary>
-    public (DateOnly Date, decimal Open, decimal Fx)? OpenOnOrAfter(Guid assetId, DateOnly date, string currency)
+    /// <summary>
+    /// The price a buy on <paramref name="date"/> gets: the opening price of the first trading day on or after it, or, when
+    /// that day isn't stored yet (a trade dated today), the last close before it. With the rate of that day; null when the
+    /// asset has no price or rate at all.
+    /// </summary>
+    public (DateOnly Date, decimal Price, decimal Fx)? BuyPrice(Guid assetId, DateOnly date, string currency)
     {
         if (!assets.TryGetValue(assetId, out var asset)) return null;
-        var at = LastOnOrBefore(asset.Days, date.AddDays(-1)) + 1;
-        if (at >= asset.Days.Count || asset.Days[at].Open <= 0) return null;
-        var day = asset.Days[at];
-        return rates.Between(currency, asset.Currency, day.Date) is { } fx ? (day.Date, day.Open, fx) : null;
+        var before = LastOnOrBefore(asset.Days, date.AddDays(-1));
+        var (day, price) = before + 1 < asset.Days.Count ? (asset.Days[before + 1].Date, asset.Days[before + 1].Open)
+            : before >= 0 ? (asset.Days[before].Date, asset.Days[before].Close)
+            : (default, 0m);
+        if (price <= 0) return null;
+        return rates.Between(currency, asset.Currency, day) is { } fx ? (day, price, fx) : null;
     }
 
     /// <summary>The index of the last day on or before <paramref name="date"/>, -1 when there is none.</summary>
@@ -65,14 +71,15 @@ public static class Performance
 
     /// <summary>
     /// The gain or loss of the buys made by <paramref name="date"/>, in percent of what they cost (fees included), valued at
-    /// that day's close. Null before the first buy, or when a price or exchange rate is unknown.
+    /// that day's close. A buy whose price or exchange rate is unknown is left out, cost and all. Null before the first buy,
+    /// or when no buy can be valued.
     /// </summary>
     public static decimal? GainPct(IEnumerable<Buy> buys, PriceBook prices, DateOnly date, string currency)
     {
         decimal cost = 0, value = 0;
         foreach (var buy in buys.Where(b => b.Date <= date))
         {
-            if (prices.Value(buy.AssetId, buy.Shares, date, currency) is not { } worth) return null;
+            if (prices.Value(buy.AssetId, buy.Shares, date, currency) is not { } worth) continue;
             cost += buy.Cost;
             value += worth;
         }
@@ -81,21 +88,23 @@ public static class Performance
 
     /// <summary>
     /// The same money put into the index fund on the same days (spec: Versus the index): each buy's cost, fee included,
-    /// buys the fund at its opening price that day, or the next day it trades. Null when a day has no price or rate yet.
+    /// buys the fund at its opening price that day, or the next day it trades (the last close while that day isn't stored
+    /// yet). Null when the fund has no prices or rates at all.
     /// </summary>
     public static IReadOnlyList<Buy>? IndexBuys(IEnumerable<Buy> buys, PriceBook prices, Guid indexId, string currency)
     {
         var result = new List<Buy>();
         foreach (var buy in buys)
         {
-            if (prices.OpenOnOrAfter(indexId, buy.Date, currency) is not { } day) return null;
-            result.Add(new Buy(indexId, day.Date, buy.Cost * day.Fx / day.Open, buy.Cost, 0));
+            if (prices.BuyPrice(indexId, buy.Date, currency) is not { } day) return null;
+            // Counted from the day it is bought, and never before the buy it mirrors.
+            result.Add(new Buy(indexId, day.Date > buy.Date ? day.Date : buy.Date, buy.Cost * day.Fx / day.Price, buy.Cost, 0));
         }
         return result;
     }
 
     /// <summary>
-    /// Each line's gain on every trading day from the first buy of <paramref name="you"/> to <paramref name="today"/>,
+    /// Each line's gain on the trading days from the first buy of <paramref name="you"/> to <paramref name="today"/>,
     /// thinned to <see cref="MaxPoints"/>. A day whose own line can't be valued is left out.
     /// </summary>
     public static IReadOnlyList<ResultPoint> History(IReadOnlyList<Buy> you, IReadOnlyList<Buy>? rules, IReadOnlyList<Buy>? index,
@@ -103,14 +112,15 @@ public static class Performance
     {
         if (you.Count == 0) return [];
         var points = new List<ResultPoint>();
-        foreach (var day in prices.Days(you.Min(b => b.Date), today))
+        // Thinned first, so only the days kept are valued.
+        foreach (var day in Thin(prices.Days(you.Min(b => b.Date), today), MaxPoints))
         {
             if (GainPct(you, prices, day, currency) is not { } gain) continue;
             points.Add(new ResultPoint(day, gain,
                 rules is null ? null : GainPct(rules, prices, day, currency),
                 index is null ? null : GainPct(index, prices, day, currency)));
         }
-        return Thin(points, MaxPoints);
+        return points;
     }
 
     /// <summary>At most <paramref name="max"/> evenly spread items, always with the first and the last.</summary>

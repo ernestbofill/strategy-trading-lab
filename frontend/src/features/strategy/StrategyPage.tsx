@@ -6,7 +6,7 @@ import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
-import { money, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
+import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { signalPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { ResultsChart } from './ResultsChart'
@@ -14,13 +14,11 @@ import styles from './StrategyPage.module.css'
 import { stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
 
-const toneOf = (pct: number | null) => (pct === null ? undefined : pct < 0 ? 'down' : pct > 0 ? 'up' : undefined)
-
 function Figure({ label, value, highlight }: { label: string; value: number | null; highlight?: boolean }) {
   return (
     <div className={styles.figure}>
       <div className={styles.figureLabel}>{label}</div>
-      <div className={styles.figureValue} data-tone={highlight ? toneOf(value) : undefined}>
+      <div className={styles.figureValue} data-tone={highlight ? pctTone(value) : undefined}>
         {signedPctOrDash(value, 1)}
       </div>
     </div>
@@ -44,7 +42,7 @@ function Summary({ s }: { s: StrategyDetail }) {
         </>
       ) : (
         <p className={styles.text}>
-          {live ? 'No trades yet.' : 'No paper trades yet.'}
+          {budget.used > 0 ? 'Results show once the prices of your trades are in.' : live ? 'No trades yet.' : 'No paper trades yet.'}
           {pastResult && (
             <>
               {' '}
@@ -98,7 +96,7 @@ function Stocks({ s }: { s: StrategyDetail }) {
                 </div>
               </div>
               <div className={styles.stockResult}>
-                <div className={styles.result} data-tone={toneOf(row.result)}>
+                <div className={styles.result} data-tone={pctTone(row.result)}>
                   {line.result}
                 </div>
                 <div className={styles.detail}>{line.note}</div>

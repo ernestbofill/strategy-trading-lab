@@ -86,7 +86,7 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             var stock = Assert.Single(page.GetProperty("stocks").EnumerateArray());
             Assert.Equal("building", stock.GetProperty("status").GetString());
             Assert.Equal(1, stock.GetProperty("steps").GetInt32());
-            Assert.Equal(101.2m, stock.GetProperty("invested").GetDecimal());
+            Assert.Equal(100m, stock.GetProperty("invested").GetDecimal()); // On the budget-used basis: without the fee in simulation.
             Assert.Equal(expected, stock.GetProperty("result").GetDecimal());
 
             var dashboard = await client.GetFromJsonAsync<JsonElement>("/dashboard");

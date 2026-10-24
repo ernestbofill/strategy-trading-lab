@@ -452,7 +452,9 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "Index fund" `[+X%]`; a chart with three lines (You solid and highlighted, The rules alone solid, Index fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "Index fund" `[+X%]`, a two-line chart, and "Budget used".
   - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, as on the dashboard card, with its worst year. The chart appears with the first buy.
-  - A figure that can't be worked out (the index fund's prices are missing) shows "–".
+  - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
+  - A figure that can't be worked out (the index fund has no prices at all) shows "–".
+  - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".
 - **"Stocks · [n]"**, with an **"Edit list"** link on the right that opens the stock list editor (same list as on the review, for this strategy).
 - One row per stock, each a link to that stock's page (not drawn):
   - The name, a status pill and a detail line:

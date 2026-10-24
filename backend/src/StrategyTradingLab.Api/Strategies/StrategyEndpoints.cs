@@ -157,10 +157,10 @@ public static class StrategyEndpoints
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
             decimal? distance = evaluation?.Facts.RootElement.TryGetProperty("distancePct", out var d) == true && d.TryGetDecimal(out var pct) ? pct : null;
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
-                Steps: live ? buys.Count : own.Count,
+                Steps: buys.Count,
                 RulesSteps: live ? own.Count : null,
                 maxSteps, distance, signal?.Id, signal?.StepNo,
-                Invested: buys.Sum(b => b.Cost),
+                Invested: StrategyBook.Spent(strategy, buys),
                 Result: Performance.GainPct(buys, book.Prices, today, strategy.Currency));
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)

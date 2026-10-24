@@ -39,3 +39,6 @@ export const shortDate = (iso: string) => {
 
 /** `signedPct`, or "–" when the figure isn't known (an index fund without prices). */
 export const signedPctOrDash = (n: number | null, digits?: number) => (n === null ? '–' : signedPct(n, digits))
+
+/** The colour of a gain: up, down, or none for zero or an unknown figure. */
+export const pctTone = (n: number | null) => (n === null || n === 0 ? undefined : n < 0 ? 'down' : 'up')

@@ -2,11 +2,9 @@ import { Link } from 'react-router-dom'
 import type { StrategySummary, WaitingItem } from '../../api'
 import { Sparkline } from '../../components/Sparkline'
 import { Tag } from '../../components/Tag'
-import { money, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
+import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { strategyPath } from './paths'
 import styles from './StrategyCard.module.css'
-
-const toneOf = (pct: number) => (pct < 0 ? 'down' : 'up')
 
 /** The dot before the mode tag that points at a card with something waiting. */
 function WaitingDot({ item }: { item: WaitingItem }) {
@@ -20,26 +18,27 @@ function Body({ s }: { s: StrategySummary }) {
     return (
       <div className={styles.results}>
         <div className={styles.figures}>
-          <div className={styles.big} data-tone={toneOf(results.strategy)}>
+          <div className={styles.big} data-tone={pctTone(results.strategy)}>
             {signedPct(results.strategy, 1)}
           </div>
           <div className={styles.index}>Index fund: {signedPctOrDash(results.index, 1)}</div>
         </div>
-        <span className={styles.chart} data-tone={toneOf(results.strategy)}>
+        <span className={styles.chart} data-tone={pctTone(results.strategy)}>
           <Sparkline values={results.history} />
         </span>
       </div>
     )
   }
+  if (s.used > 0) return <p className={styles.text}>Results show once the prices of your trades are in.</p>
   if (pastResult) {
     return (
       <p className={styles.text}>
         {s.mode === 'live' ? 'No trades yet.' : 'No paper trades yet.'} In the past, {pastResult.years}, the template did{' '}
-        <span className={styles.figure} data-tone={toneOf(pastResult.template)}>
+        <span className={styles.figure} data-tone={pctTone(pastResult.template)}>
           {signedPct(pastResult.template)}
         </span>{' '}
         vs <span className={styles.figure}>{signedPct(pastResult.index)}</span> for an index fund. Its worst year was{' '}
-        <span className={styles.figure} data-tone={toneOf(pastResult.worstYear)}>
+        <span className={styles.figure} data-tone={pctTone(pastResult.worstYear)}>
           {signedPct(pastResult.worstYear)}
         </span>
         .

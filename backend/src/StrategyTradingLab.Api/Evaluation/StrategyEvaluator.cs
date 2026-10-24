@@ -172,11 +172,13 @@ public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)
 {
     public const string Base = "EUR";
 
+    /// <summary>How far before a range prices and rates are loaded, so its first days still find the last trading day before them.</summary>
+    public const int LookBackDays = 7;
+
     /// <summary>The stored rates, from <paramref name="from"/> on (all of them when null), plus the last one before it.</summary>
     public static async Task<ExchangeRates> LoadAsync(AppDbContext db, DateOnly? from, CancellationToken cancellationToken)
     {
-        // A week back, so a day early in the range still finds the rate of the last trading day before it.
-        var since = from?.AddDays(-7) ?? DateOnly.MinValue;
+        var since = from?.AddDays(-LookBackDays) ?? DateOnly.MinValue;
         var rows = await db.FxRates.AsNoTracking().Where(r => r.Base == Base && r.Date >= since).OrderBy(r => r.Date)
             .Select(r => new { r.Quote, r.Date, r.Rate }).ToListAsync(cancellationToken);
         return new ExchangeRates(rows.GroupBy(r => r.Quote).ToDictionary(g => g.Key, g => g.Select(r => (r.Date, r.Rate)).ToList()));

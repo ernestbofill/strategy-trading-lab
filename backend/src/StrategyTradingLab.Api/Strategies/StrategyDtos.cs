@@ -47,9 +47,10 @@ public record SignalCounts(int Did, int Skipped, int Missed);
 public enum StockStatus { WaitingForYou, Signal, Holding, Building, Watching, NotCandidate, NotEnoughData, NotChecked }
 
 /// <summary>
-/// A stock of a strategy. <c>Steps</c> are the ones the results count (live: the user's confirmed buys), <c>RulesSteps</c>
-/// the rules' own (live only). <c>Signal</c> is the waiting signal (live) or today's (simulation). <c>Result</c> is the
-/// gain in percent of what was invested, null with no buys.
+/// A stock of a strategy. <c>Steps</c> are the buys the results count (simulation: signal trades; live: the user's
+/// confirmed buys), <c>RulesSteps</c> the rules' own signals (live only). <c>Signal</c> is the waiting signal (live) or
+/// today's (simulation). <c>Invested</c> is on the budget-used basis; <c>Result</c> is the gain in percent of the cost
+/// with fees, null with no buys.
 /// </summary>
 public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Status, int Steps, int? RulesSteps, int? MaxSteps,
     decimal? DistancePct, Guid? SignalId, int? SignalStep, decimal Invested, decimal? Result);

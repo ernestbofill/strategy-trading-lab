@@ -18,9 +18,9 @@ function detailOf(row: StockRow, words: StockStatusWords | null): string {
   const of = row.maxSteps === null ? '' : ` of ${row.maxSteps}`
   switch (row.status) {
     case 'waitingForYou':
-      return `Signal: step ${row.signalStep}${of}`
+      return row.signalStep === null ? 'Signal waiting' : `Signal: step ${row.signalStep}${of}`
     case 'signal':
-      return `Step ${row.signalStep}${of}, bought at the next open`
+      return row.signalStep === null ? 'Bought at the next open' : `Step ${row.signalStep}${of}, bought at the next open`
     case 'holding':
     case 'building':
       // Live, when the user's steps differ from the rules': both.
@@ -28,7 +28,10 @@ function detailOf(row: StockRow, words: StockStatusWords | null): string {
         ? `Rules: ${row.rulesSteps}${of} · You: ${row.steps}${of}`
         : steps(row.steps, row.maxSteps)
     case 'watching':
-      return row.distancePct && words ? `${Math.round(row.distancePct)}% from ${words.zone}` : 'Rules not met today'
+      // 0 means it is there or past it: the rules aren't met for another reason.
+      return row.distancePct !== null && row.distancePct > 0 && words
+        ? `${row.distancePct < 1 ? '<1' : Math.round(row.distancePct)}% from ${words.zone}`
+        : 'Rules not met today'
     case 'notCandidate':
       return words?.notCandidate ?? 'Not a candidate yet'
     case 'notEnoughData':

@@ -52,12 +52,11 @@ const PILLS: Record<StockRow['status'], [string, PillTone]> = {
 /** The words of a stock's row on the strategy page (spec: Strategy page, one row per stock). */
 export function stockLine(row: StockRow, mode: StrategyMode, currency: Currency, words: StockStatusWords | null): StockLine {
   const [pill, tone] = PILLS[row.status]
-  const bought = row.result !== null
   return {
     pill,
     tone,
     detail: detailOf(row, words),
-    result: bought ? signedPct(row.result!, 1) : '–',
-    note: !bought ? 'No buys yet' : `${mode === 'live' ? 'You ' : ''}${money(row.invested, currency)} in`,
+    result: row.result === null ? '–' : signedPct(row.result, 1),
+    note: row.result === null ? 'No buys yet' : `${mode === 'live' ? 'You ' : ''}${money(row.invested, currency)} in`,
   }
 }

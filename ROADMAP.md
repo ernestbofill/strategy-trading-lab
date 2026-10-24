@@ -22,7 +22,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 
 Draft order, for Ernest to confirm.
 
-- **In progress — phone installation:** add an Account install prompt and mobile home-screen icons; move to Done when this PR merges.
+- **In progress — phone installation** (#50): add an Account install prompt and mobile home-screen icons; move to Done when this PR merges.
 
 1. **Catalan.** A priority, and cheaper now, while there are few screens. Move the frontend's copy into per-language files (English and Catalan) with a language switch the user picks (English by default, never guessed from the browser, as the spec says), and add `Texts/ca.json` for the templates. The API already serves template texts per language, from the user's record, and the user record now has a locale, so the choice only needs a switch on the account page. Start with a glossary, `docs/glossary-ca.md`, that fixes the key words (stock → *acció*, fund → *fons*, step → *pas*, signal → *senyal*, …), so every agent and screen translates them the same way. Claude drafts the Catalan; Ernest reviews it.
 2. **Check the live app after a merge.** A script (bash and PowerShell) that checks production serves the merged versions: `/api/version` for the backend, and a new `/version.json` from the frontend build (today the version is only inside the bundle). Then the agent opens the live app and looks at the changed screens. Run it after every merge, in a loop before the next item. In cloud sessions the script works if the network settings allow the production domain; the visual check needs a headless browser (Playwright) in the cloud environment, otherwise it's local only. A first step towards an agent that tests the live app as a user (TODO.md → Ideas).

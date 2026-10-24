@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { StrategySummary, WaitingItem } from '../../api'
 import { Sparkline } from '../../components/Sparkline'
 import { Tag } from '../../components/Tag'
-import { money, shortDate, signedPct } from '../../lib/format'
+import { money, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { strategyPath } from './paths'
 import styles from './StrategyCard.module.css'
 
@@ -23,7 +23,7 @@ function Body({ s }: { s: StrategySummary }) {
           <div className={styles.big} data-tone={toneOf(results.strategy)}>
             {signedPct(results.strategy, 1)}
           </div>
-          <div className={styles.index}>Index fund: {signedPct(results.index, 1)}</div>
+          <div className={styles.index}>Index fund: {signedPctOrDash(results.index, 1)}</div>
         </div>
         <span className={styles.chart} data-tone={toneOf(results.strategy)}>
           <Sparkline values={results.history} />

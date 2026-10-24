@@ -1,0 +1,270 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  margin: 0;
+  font: 600 28px/36px var(--font-mono);
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-sidebar);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: var(--space-3);
+  background: var(--surface-deep);
+  border: 1px solid var(--border-hairline);
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.figures[data-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.figureLabel {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+
+.figureValue {
+  font: 600 22px/30px var(--font-mono);
+}
+.figureValue[data-tone="up"],
+.result[data-tone="up"] {
+  color: var(--success);
+}
+.figureValue[data-tone="down"],
+.result[data-tone="down"] {
+  color: var(--danger-ink);
+}
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.axis {
+  stroke: var(--border-hairline);
+  stroke-width: 1;
+}
+.lineYou,
+.lineRules,
+.lineIndex {
+  fill: none;
+  stroke-linejoin: round;
+}
+.lineYou {
+  stroke: var(--success);
+  stroke-width: 2;
+}
+.lineRules {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.lineIndex {
+  stroke: var(--ink-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  line-height: 16px;
+}
+.keyYou {
+  color: var(--success);
+}
+.keyRules {
+  color: var(--ink);
+}
+.keyIndex {
+  color: var(--ink-muted);
+}
+
+.text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-hairline);
+  font-size: 13px;
+  line-height: 20px;
+}
+.facts > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+.facts dd {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+
+.stocks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+}
+.stocks > li + li {
+  border-top: 1px solid var(--surface-editor);
+}
+
+.stock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px var(--space-3);
+  color: var(--ink);
+  text-decoration: none;
+}
+a.stock:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.stockMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stockName {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.stockStatus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill {
+  padding: 0 6px;
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--radius-sm);
+  font: 11px/16px var(--font-mono);
+  color: var(--ink);
+}
+.pill[data-tone="waiting"] {
+  border-color: var(--hot-pink);
+  background: var(--hot-pink);
+  color: var(--on-action);
+}
+.pill[data-tone="signal"] {
+  border-color: var(--info);
+  background: var(--info);
+  color: var(--on-action);
+}
+.pill[data-tone="holding"] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.pill[data-tone="building"] {
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.detail {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-sidebar);
+}
+
+.stockResult {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.result {
+  font: 14px/20px var(--font-mono);
+}
+
+.caption {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 10px 12px;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tileTitle {
+  color: var(--primary);
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 36px;
+    line-height: 44px;
+  }
+}

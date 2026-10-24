@@ -26,6 +26,7 @@ import { NotBuiltYet } from './features/new-strategy/NotBuiltYet'
 import { Confirm } from './features/new-strategy/Confirm'
 import { budgetPath, confirmPath, dashboardPath, reviewPath } from './features/new-strategy/paths'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
+import { StrategyPage } from './features/strategy/StrategyPage'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 
@@ -64,7 +65,7 @@ export default function App() {
               <Route element={<RequireOwner />}>
                 <Route path="/admin" element={<AdminSettings />} />
               </Route>
-              <Route path="/strategies/:id" element={<NotBuiltYet title="Strategy page" back={dashboardPath} />} />
+              <Route path="/strategies/:id" element={<StrategyPage />} />
               <Route path="/strategies/:id/signal" element={<NotBuiltYet title="Confirm a signal" back={dashboardPath} />} />
               <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
             </Route>

@@ -119,6 +119,7 @@ export const httpApi: Api = {
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
+  getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),

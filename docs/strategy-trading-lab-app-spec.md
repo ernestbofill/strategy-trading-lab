@@ -451,14 +451,18 @@ The same three settings can be changed later from the strategy page (not drawn).
 - **Summary box**
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "Index fund" `[+X%]`; a chart with three lines (You solid and highlighted, The rules alone solid, Index fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "Index fund" `[+X%]`, a two-line chart, and "Budget used".
+  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, as on the dashboard card, with its worst year. The chart appears with the first buy.
+  - A figure that can't be worked out (the index fund's prices are missing) shows "–".
 - **"Stocks · [n]"**, with an **"Edit list"** link on the right that opens the stock list editor (same list as on the review, for this strategy).
 - One row per stock, each a link to that stock's page (not drawn):
   - The name, a status pill and a detail line:
     - "WAITING FOR YOU" (live; "Signal: step [n] of [max]") → Confirm a signal
-    - "SIGNAL" (simulation; "Bought a step today", draft)
-    - "HOLDING" ("[n] of [max] steps")
+    - "SIGNAL" (simulation, a signal on the latest checked day; "Step [n] of [max], bought at the next open")
+    - "HOLDING" ("[n] of [max] steps"; also when the rules hold the stock with steps left, as *The comeback* does once its milestones are used)
     - "BUILDING" ("[n] of [max] steps"; live when it differs: "Rules: [n] of [max] · You: [n] of [max]")
-    - "WATCHING" ("[n]% from the discount zone", or "Below its long trend" when it isn't a candidate)
+    - "WATCHING" ("[n]% from [the template's zone]", "Rules not met today" when it is there or past it, or, when it isn't a candidate, the template's words: "Below its long trend" for *Dip in winners*, "Not beaten down" for *The comeback*; "Not enough price history yet" and "Not checked yet" before the daily check has a verdict). The zone is "the discount zone" for *Dip in winners* and "the buy line" for *The comeback*.
+    - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
+    - Until the stock page is built, only a waiting row is a link.
     - *Ride the long trend* also needs "OUT OF THE MARKET" for the time between a sale and the next buy (not drawn).
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
@@ -475,8 +479,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 | Budget used | Signal-trade buys minus the cost of signal-trade sales, vs budget | Confirmed buys, with fees, minus the cost of confirmed sales, vs budget |
 | Average cost | Signal-trade buys | Confirmed buys, with fees |
 | Current value | Signal-trade buys, latest price and exchange rate | Confirmed trades, latest price and exchange rate |
-| Gain or loss (money and %) | Current value − invested | Same |
-| Versus the index | Same money into a broad index on the same days | Same, on the confirmed buy days |
+| Gain or loss (money and %) | Current value − invested (buys with their fees) | Same |
+| Versus the index | Same money (fees included) into a broad index fund (SPY) on the same days, at its opening price | Same, on the confirmed buy days |
 | Versus the rules | – | The rules' own position (signal trades) |
 | Followed signals | – | Did / skipped / missed |
 | Picks vs the rest (AI only) | Top-scored stocks vs the unpicked ones since each round | Same |

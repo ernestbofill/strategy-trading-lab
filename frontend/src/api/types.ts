@@ -101,7 +101,8 @@ export type StrategyMode = 'simulation' | 'live'
 export interface StrategyResults {
   /** Percent return, to one decimal. */
   strategy: number
-  index: number
+  /** Null when the index fund's prices are missing. */
+  index: number | null
   /** The strategy's value over time, oldest first, for the small line chart. */
   history: number[]
 }
@@ -150,6 +151,99 @@ export interface Dashboard {
   today: string
   strategies: StrategySummary[]
   waiting: WaitingItem[]
+}
+
+/** The budget and what the strategy's buys use of it. Steps are null for all-in, all-out templates. */
+export interface BudgetUsed {
+  amount: number
+  used: number
+  step: number | null
+  maxSteps: number | null
+  /** Steps bought (live: confirmed) and how many the budget holds. */
+  steps: number | null
+  totalSteps: number | null
+}
+
+/** A point of the results chart: each line's gain in percent that day. */
+export interface ResultPoint {
+  date: string
+  you: number
+  rules: number | null
+  index: number | null
+}
+
+/** A strategy's gain since it started, in percent. `rules` is live only: the rules' own trades. */
+export interface StrategyFigures {
+  you: number
+  rules: number | null
+  index: number | null
+  history: ResultPoint[]
+}
+
+/** How a live strategy's signals were answered. */
+export interface SignalCounts {
+  did: number
+  skipped: number
+  missed: number
+}
+
+export type StockStatus =
+  | 'waitingForYou'
+  | 'signal'
+  | 'holding'
+  | 'building'
+  | 'watching'
+  | 'notCandidate'
+  | 'notEnoughData'
+  | 'notChecked'
+
+/** A stock of a strategy on its page. */
+export interface StockRow {
+  assetId: string
+  symbol: string
+  name: string
+  status: StockStatus
+  /** Steps the results count (live: the user's confirmed buys). */
+  steps: number
+  /** The rules' own steps, live only. */
+  rulesSteps: number | null
+  maxSteps: number | null
+  /** How far the price is from the rules, in percent (0 when there or past it). */
+  distancePct: number | null
+  /** The waiting signal (live) or today's (simulation). */
+  signalId: string | null
+  signalStep: number | null
+  /** What was put in, fees included, and its gain in percent (null with no buys). */
+  invested: number
+  result: number | null
+}
+
+/** The template's words for a stock that isn't bought: "the discount zone", "Below its long trend". */
+export interface StockStatusWords {
+  zone: string
+  notCandidate: string
+}
+
+/** The strategy page: backend Strategies/StrategyDtos.cs (StrategyDetail). */
+export interface StrategyDetail {
+  id: string
+  name: string
+  templateKey: TemplateKey
+  templateName: string
+  mode: StrategyMode
+  startedOn: string
+  /** The user's local date. */
+  today: string
+  currency: Currency
+  budget: BudgetUsed
+  /** Null until the strategy has a buy. */
+  results: StrategyFigures | null
+  pastResult: PastResult | null
+  /** Live only. */
+  signals: SignalCounts | null
+  /** Null for templates the engine doesn't run yet. */
+  words: StockStatusWords | null
+  stocks: StockRow[]
 }
 
 /** What the Confirm screen sends to start a strategy: the choices of the five steps. Its other settings start at the template's tested defaults. */
@@ -294,6 +388,8 @@ export interface Api {
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
   /** Rejects with `UnauthorizedError` when the session has ended (also for `startStrategy`). */
   getDashboard(): Promise<Dashboard>
+  /** The strategy page; undefined when the user has no such strategy. */
+  getStrategy(id: string): Promise<StrategyDetail | undefined>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */

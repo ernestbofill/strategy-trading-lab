@@ -36,3 +36,6 @@ export const shortDate = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number)
   return shortDateFormat.format(new Date(y, m - 1, d))
 }
+
+/** `signedPct`, or "–" when the figure isn't known (an index fund without prices). */
+export const signedPctOrDash = (n: number | null, digits?: number) => (n === null ? '–' : signedPct(n, digits))

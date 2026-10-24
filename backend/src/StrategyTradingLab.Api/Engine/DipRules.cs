@@ -81,6 +81,8 @@ public class DipRules : IBuyRules
             ["sma50"] = Math.Round(sma50, 4),
             ["zoneLow"] = Math.Round(zoneLow, 4),
             ["zoneHigh"] = Math.Round(zoneHigh, 4),
+            // How far the price still has to fall to reach the zone (0 inside or below it): "close to the line".
+            ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(price, zoneHigh)), 2),
         };
         return new RuleDecision(status, reason, facts, window.Open);
     }

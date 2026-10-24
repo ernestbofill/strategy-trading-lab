@@ -27,6 +27,9 @@ record Changes(int NewSignals, int NewTrades, int Missed);
 /// </summary>
 public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<StrategyEvaluator> logger)
 {
+    /// <summary>The signals this run created, for the alerts that follow it.</summary>
+    public List<Guid> NewSignalIds { get; } = [];
+
     public async Task<EvaluationSummary> RunAsync(CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
@@ -125,6 +128,7 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
                 Facts = Facts(day.Facts), Status = live ? SignalStatus.Waiting : SignalStatus.Confirmed, AnsweredAt = live ? null : now,
             };
             db.Signals.Add(signal);
+            NewSignalIds.Add(signal.Id);
             signals[day.Date] = signal;
             newSignals++;
         }

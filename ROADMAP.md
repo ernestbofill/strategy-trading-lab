@@ -29,7 +29,7 @@ Draft order, for Ernest to confirm.
    2. ~~**The engine core:** the indicators and the *Dip in winners* signal, ported from the POC and checked against its results on the same prices.~~ Built (#43): `Engine/` with a golden test against the POC on real candles.
    3. ~~**The comeback** signal, on the same core.~~ Built (#44): `ComebackRules`, with a golden test against the POC on six real slices.
    4. ~~**Daily evaluation:** a daily job runs each running strategy, stores the status and signals, and records the paper trades of Simulation strategies, with the step and budget maths.~~ Built (#45): `Evaluation/`, run after each price refresh; signals, signal trades and `daily_evaluations`. Not yet: results (budget used, returns) from the trades, the dashboard and strategy page reading them.
-   5. **Email:** the signal alert and the daily overview through the existing sender, with the settings to switch them off (the overview is on by default).
+   5. ~~**Email:** the signal alert and the daily overview through the existing sender, with the settings to switch them off (the overview is on by default).~~ Built (#46): alerts and overview, `EMAILS_ENABLED` on the admin page and the overview switch on the account page. Not yet: web push, the snooze reminder, a per-strategy alerts switch (with the strategy actions), results in the scoreboard, Catalan texts.
    The screens that show the results are the next item.
 4. **Strategy page (`StrategyDetail`)**, Live variant first as drawn, then **Confirm a signal** (`Signal`).
 5. **Advanced settings** for *Dip in winners*, replacing the placeholder.

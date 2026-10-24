@@ -115,6 +115,7 @@ export const httpApi: Api = {
   changePassword: async (currentPassword, newPassword) =>
     void (await account('/change-password', { currentPassword, newPassword }, { session: true })),
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
+  setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),

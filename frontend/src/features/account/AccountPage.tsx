@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, UnauthorizedError, type Currency } from '../../api'
-import { FormMessage, PasswordField, SelectField, type FormMessageState } from '../../components/Field'
+import { Checkbox, FormMessage, PasswordField, SelectField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
@@ -56,6 +56,10 @@ export function AccountPage() {
 
       <Section title="Currency">
         <CurrencyForm current={account.currency} onSaved={refresh} />
+      </Section>
+
+      <Section title="Emails">
+        <OverviewEmail current={account.overviewEmail} onSaved={refresh} />
       </Section>
 
       <Section title="Change password">
@@ -150,5 +154,32 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: () => 
         {busy ? 'Saving…' : 'Save currency'}
       </button>
     </form>
+  )
+}
+
+function OverviewEmail({ current, onSaved }: { current: boolean; onSaved: () => Promise<unknown> }) {
+  const [message, setMessage] = useState<FormMessageState>(null)
+  const [busy, setBusy] = useState(false)
+
+  const change = async (enabled: boolean) => {
+    if (busy) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      await api.setOverviewEmail(enabled)
+      await onSaved()
+    } catch (err) {
+      setMessage({ tone: 'error', text: errorText(err) })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className={styles.form}>
+      <Checkbox checked={current} onChange={(enabled) => void change(enabled)}>
+        Email me a daily overview, early in the morning.
+      </Checkbox>
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+    </div>
   )
 }

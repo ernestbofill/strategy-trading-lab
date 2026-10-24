@@ -279,7 +279,7 @@ Every notification the app sends, one row per channel. A notification goes out *
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade | |
 | signal_id | uuid FK → signals, cascade, null | What the notification is about, for `signal` and `snoozed`. Null for kinds about nothing in particular (`overview`, later) |
-| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze). Later: `overview`, `ai_round_due` |
+| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the daily overview, no signal). Later: `ai_round_due` |
 | channel | text, not null | `push` \| `email` |
 | for_date | date, not null | The day it is for: the signal day, or the `snoozed_until` day |
 | sent_at | timestamptz, null | Null while queued |

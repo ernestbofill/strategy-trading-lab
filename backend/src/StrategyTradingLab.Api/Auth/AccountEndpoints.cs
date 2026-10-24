@@ -15,6 +15,7 @@ public record ResetPasswordRequest(string? Token, string? Password);
 public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
+public record OverviewEmailRequest(bool Enabled);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
 public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role);
@@ -146,6 +147,15 @@ public static class AccountEndpoints
         })
         .RequireUser()
         .WithSummary("Sets the currency of the user's new strategies. Running ones keep theirs.");
+
+        group.MapPost("/overview-email", async (OverviewEmailRequest request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewEmail, request.Enabled), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Turns the daily overview email on or off for the logged-in user.");
 
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.

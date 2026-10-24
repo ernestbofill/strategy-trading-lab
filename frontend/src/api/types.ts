@@ -253,6 +253,10 @@ export interface AdminPrices {
   problems: PriceProblem[]
   updated: number
   fullHistory: number
+  /** Signals the rules created after the last refresh; null before the first run or when the evaluation failed. */
+  newSignals: number | null
+  /** Strategies the last evaluation couldn't run. */
+  evaluationFailures: number
 }
 
 /** What Yahoo answered for one symbol in "Test Yahoo". */

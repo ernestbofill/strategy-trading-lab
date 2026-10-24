@@ -791,3 +791,41 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023181830_AddDailyEvaluations') THEN
+    CREATE TABLE daily_evaluations (
+        strategy_id uuid NOT NULL,
+        asset_id uuid NOT NULL,
+        date date NOT NULL,
+        status text NOT NULL,
+        step_no integer,
+        facts jsonb NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_daily_evaluations PRIMARY KEY (strategy_id, asset_id, date),
+        CONSTRAINT ck_daily_evaluations_status CHECK (status IN ('not_enough_data', 'not_candidate', 'watching', 'buy_signal', 'signal_ended', 'building', 'holding')),
+        CONSTRAINT ck_daily_evaluations_step_no CHECK (step_no IS NULL OR step_no >= 1),
+        CONSTRAINT fk_daily_evaluations_assets_asset_id FOREIGN KEY (asset_id) REFERENCES assets (id),
+        CONSTRAINT fk_daily_evaluations_strategies_strategy_id FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023181830_AddDailyEvaluations') THEN
+    CREATE INDEX ix_daily_evaluations_asset_id ON daily_evaluations (asset_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261023181830_AddDailyEvaluations') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261023181830_AddDailyEvaluations', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

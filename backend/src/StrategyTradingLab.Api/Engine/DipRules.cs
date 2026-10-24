@@ -82,6 +82,6 @@ public class DipRules : IBuyRules
             ["zoneLow"] = Math.Round(zoneLow, 4),
             ["zoneHigh"] = Math.Round(zoneHigh, 4),
         };
-        return new RuleDecision(status, reason, facts);
+        return new RuleDecision(status, reason, facts, window.Open);
     }
 }

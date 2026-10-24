@@ -60,6 +60,7 @@ builder.Services.AddHttpClient<IMarketDataSource, YahooClient>(client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; StrategyTradingLab)");
 });
 builder.Services.AddScoped<PriceRefresher>();
+builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>();
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();
 

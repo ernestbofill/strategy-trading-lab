@@ -24,7 +24,7 @@ import { ChooseMode } from './features/new-strategy/ChooseMode'
 import { NewStrategyDraftProvider } from './features/new-strategy/NewStrategyDraft'
 import { NotBuiltYet } from './features/new-strategy/NotBuiltYet'
 import { Confirm } from './features/new-strategy/Confirm'
-import { budgetPath, confirmPath, dashboardPath, reviewPath } from './features/new-strategy/paths'
+import { budgetPath, confirmPath, dashboardPath, homePath, pickPath, reviewPath } from './features/new-strategy/paths'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { StrategyPage } from './features/strategy/StrategyPage'
 import { HowTested } from './features/new-strategy/review/HowTested'
@@ -53,14 +53,15 @@ export default function App() {
             <Route path={resetPasswordPath} element={<ResetPassword />} />
             <Route path={verifyEmailPath} element={<VerifyEmail />} />
             <Route element={<RequireAccount />}>
-              <Route path="/" element={<PickTemplate />} />
+              <Route path={homePath} element={<Dashboard />} />
+              <Route path={pickPath} element={<PickTemplate />} />
               <Route path="/new/templates/:key" element={<ReviewTemplate />} />
               <Route path="/new/templates/:key/how-tested" element={<HowTested />} />
               <Route path="/new/templates/:key/advanced" element={<AdvancedStub />} />
               <Route path="/new/mode" element={<ChooseMode />} />
               <Route path={budgetPath} element={<SetBudget />} />
               <Route path={confirmPath} element={<Confirm />} />
-              <Route path={dashboardPath} element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path={accountPath} element={<AccountPage />} />
               <Route element={<RequireOwner />}>
                 <Route path="/admin" element={<AdminSettings />} />

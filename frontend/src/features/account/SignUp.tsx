@@ -19,7 +19,7 @@ const languages: { value: Locale; label: string }[] = [
   { value: 'ca', label: 'Català' },
 ]
 
-/** Sign-up (spec: Sign-up). A new account is logged in at once and goes on to Pick a template. */
+/** Sign-up (spec: Sign-up). A new account is logged in at once and goes to Pick a template. */
 export function SignUp() {
   const { state, refresh } = useAccount()
   const [email, setEmail] = useState('')

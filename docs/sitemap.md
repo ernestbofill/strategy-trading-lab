@@ -28,7 +28,7 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 ├── /faq                   FAQ
 ├── /contact               Contact / feedback
 ├── /sign-up               Create account (journey step 1)
-│   └── /verify            Verify email → straight to step 2
+│   └── /verify            Verify email → dashboard if signed in, otherwise Log in
 ├── /log-in                Log in ➕
 ├── /forgot-password       Reset password ➕
 └── /legal

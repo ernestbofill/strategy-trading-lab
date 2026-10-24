@@ -2,7 +2,7 @@ import { Callout } from '../../components/Callout'
 import { useCurrentAccount } from './AccountContext'
 import { ResendLink } from './ResendLink'
 
-/** "Check your email" at the top of Pick a template, until the email is confirmed (spec: Sign-up). */
+/** "Check your email" at the top of the dashboard and new-strategy flow until the email is confirmed. */
 export function VerifyNotice() {
   const { email, emailVerified } = useCurrentAccount()
   if (emailVerified) return null

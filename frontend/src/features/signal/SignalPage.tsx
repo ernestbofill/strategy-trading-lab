@@ -152,6 +152,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
     }
   }
 
+  const following = nextStep(s)
   const priceHint =
     s.prefill.price !== null
       ? `Prefilled with ${shortDate(s.prefill.date)}'s opening price. Change anything that differs from your broker.`
@@ -288,7 +289,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
             </fieldset>
             <p className={styles.plain}>
               A skip uses no budget. The rules carry on as if the step was bought
-              {nextStep(s) ? `, so the next signal for ${s.stockName} is ${nextStep(s)}.` : '.'}
+              {following ? `, so the next signal for ${s.stockName} is ${following}.` : '.'}
             </p>
           </div>
         )}

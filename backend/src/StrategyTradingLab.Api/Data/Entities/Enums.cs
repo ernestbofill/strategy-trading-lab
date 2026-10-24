@@ -24,7 +24,7 @@ public enum FxSource { Reference, User }
 
 public enum TradeSource { Signal, Manual }
 
-public enum NotificationKind { Signal, Snoozed }
+public enum NotificationKind { Signal, Snoozed, Overview }
 
 public enum NotificationChannel { Push, Email }
 

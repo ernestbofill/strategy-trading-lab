@@ -84,6 +84,8 @@ public class ComebackRules : IBuyRules
             ["aboveBuyLinePct"] = Math.Round(Indicators.PctFrom(price, buyLine), 2),
             ["belowHighPct"] = Math.Round(-Indicators.PctFrom(price, high), 2),
             ["buyLine"] = Math.Round(buyLine, 4),
+            // How far the price still has to rise to reach the buy line (0 at or above it): "close to the line".
+            ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(buyLine, price)), 2),
         };
 
         if (!day.HasPosition)

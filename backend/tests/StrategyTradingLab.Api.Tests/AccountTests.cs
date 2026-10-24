@@ -88,6 +88,22 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
+    public async Task The_daily_overview_can_be_switched_off_and_on_in_the_account()
+    {
+        var (client, _) = await api.SignedUpAsync();
+        Assert.True((await Me(client)).GetProperty("overviewEmail").GetBoolean());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-email", new { enabled = false })).StatusCode);
+        Assert.False((await Me(client)).GetProperty("overviewEmail").GetBoolean());
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-email", new { enabled = true })).StatusCode);
+        Assert.True((await Me(client)).GetProperty("overviewEmail").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/overview-email", new { })).StatusCode); // A missing field is refused, not read as off.
+        Assert.True((await Me(client)).GetProperty("overviewEmail").GetBoolean());
+        using var visitor = api.CreateApiClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/overview-email", new { enabled = false })).StatusCode);
+    }
+
+    [NeonFact]
     public async Task A_wrong_password_and_an_unknown_email_get_the_same_answer()
     {
         var (_, email) = await api.SignedUpAsync();

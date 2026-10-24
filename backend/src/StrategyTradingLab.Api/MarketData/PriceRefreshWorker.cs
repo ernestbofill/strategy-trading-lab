@@ -149,7 +149,8 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory),
                 results.Count(r => r.Outcome == RefreshOutcome.Failed));
             // The rules read the prices just stored.
-            evaluation = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().RunAsync(stoppingToken);
+            var evaluator = scope.ServiceProvider.GetRequiredService<StrategyEvaluator>();
+            evaluation = await evaluator.RunAsync(stoppingToken);
             logger.LogInformation("Strategies evaluated: {Strategies}, {Signals} new signals, {Trades} new trades, {Missed} missed, {Failed} failed.",
                 evaluation.Strategies, evaluation.NewSignals, evaluation.NewTrades, evaluation.Missed, evaluation.Failed);
         }
@@ -160,6 +161,26 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         finally
         {
             state.Finished(time.GetUtcNow(), results, evaluation);
+        }
+        await SendAlertsAsync(stoppingToken);
+    }
+
+    /// <summary>
+    /// Right after the check that found them, the alerts for live signals still waiting. After the run is recorded as finished,
+    /// and apart from it: an email problem is not a refresh failure.
+    /// </summary>
+    async Task SendAlertsAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
+            if (await notifications.EnabledAsync(stoppingToken))
+                logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken));
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The signal alerts couldn't be sent: {Reason}", error.Message);
         }
     }
 }

@@ -22,6 +22,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var user = await db.Users.SingleAsync(u => u.Email == email);
+        user.EmailVerifiedAt = DateTimeOffset.UtcNow; // A snooze needs an address its reminder can go to.
         var tag = Guid.NewGuid().ToString("N")[..10];
         var asset = new Asset { Symbol = $"S{tag}", Exchange = "TEST", Name = "Test asset", Currency = "EUR" };
         db.Assets.Add(asset);
@@ -127,6 +128,14 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync($"/signals/{second}/skip", new { reason = "noCash" })).StatusCode);
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{second}/trade", Trade())).StatusCode);
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{second}/snooze", null)).StatusCode);
+
+            using (var setup = factory.Services.CreateScope())
+            {
+                var setupDb = setup.ServiceProvider.GetRequiredService<AppDbContext>();
+                await setupDb.Strategies.Where(s => s.Assets.Any(a => a.AssetId == assetId)).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, false));
+                Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{first}/snooze", null)).StatusCode); // No reminder could be sent.
+                await setupDb.Strategies.Where(s => s.Assets.Any(a => a.AssetId == assetId)).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, true));
+            }
 
             var snooze = await client.PostAsync($"/signals/{first}/snooze", null);
             Assert.Equal(HttpStatusCode.OK, snooze.StatusCode);

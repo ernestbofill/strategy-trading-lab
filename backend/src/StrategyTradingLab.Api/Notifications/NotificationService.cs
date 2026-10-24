@@ -149,9 +149,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         return EmailTexts.Overview(day, waiting, changed, close, scoreboard, AppUrl);
     }
 
-    static SignalLine Line(Signal signal, Strategy strategy, Asset asset) =>
-        new(strategy.Id, signal.Id, strategy.Name, strategy.Mode, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate, signal.ClosePrice,
-            signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone());
+    static SignalLine Line(Signal signal, Strategy strategy, Asset asset) => SignalLine.From(signal, strategy, asset);
 
     /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>
     async Task<Guid?> ClaimAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, CancellationToken cancellationToken)

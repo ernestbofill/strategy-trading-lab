@@ -37,11 +37,16 @@ describe('signalForm', () => {
 
   it('reads numbers with a dot or a comma', () => {
     expect([parseNumber('98.80'), parseNumber('98,80'), parseNumber('1,234.5'), parseNumber(''), parseNumber('abc')]).toEqual([98.8, 98.8, 1234.5, null, null])
+    expect([parseNumber('1,250'), parseNumber('12,345,678'), parseNumber('1,2'), parseNumber('1,2500')]).toEqual([1250, 12345678, 1.2, 1.25])
   })
 
   it('uses the latest rate on or before the day', () => {
     expect(rateOn(signal().rates, '2026-10-25')?.rate).toBe(1.09)
     expect(rateOn(signal().rates, '2026-10-21')).toBeNull()
+  })
+
+  it('sends an emptied date as null, so the server names the field', () => {
+    expect(tradeRequest({ ...initialForm(signal()), date: '' }).date).toBeNull()
   })
 
   it('sends what was typed, with the reference rate unless the user gave their own', () => {

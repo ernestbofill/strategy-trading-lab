@@ -51,9 +51,12 @@ interface TextFieldProps {
   error?: string | null
   /** Next to the field: a toggle such as "Enter shares instead". */
   aside?: ReactNode
+  /** The first and last day a date field allows ("2026-10-22"). */
+  min?: string
+  max?: string
 }
 
-export function TextField({ label, value, onChange, type = 'text', autoComplete, placeholder, hint, error, aside }: TextFieldProps) {
+export function TextField({ label, value, onChange, type = 'text', autoComplete, placeholder, hint, error, aside, min, max }: TextFieldProps) {
   const id = useId()
   return (
     <FieldShell id={id} label={label} hint={hint} error={error} aside={aside}>
@@ -63,6 +66,8 @@ export function TextField({ label, value, onChange, type = 'text', autoComplete,
         type={type === 'decimal' ? 'text' : type}
         inputMode={type === 'email' ? 'email' : type === 'decimal' ? 'decimal' : undefined}
         placeholder={placeholder}
+        min={min}
+        max={max}
         autoComplete={autoComplete}
         autoCapitalize="off"
         spellCheck={false}

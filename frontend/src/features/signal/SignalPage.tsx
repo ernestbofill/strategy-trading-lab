@@ -95,6 +95,8 @@ function AnswerLine({ s }: { s: SignalDetail }) {
     const reason = SKIP_REASONS.find((r) => r.id === a.skipReason)?.label
     return <p className={styles.plain}>You skipped it{reason ? `: ${reason.toLowerCase()}` : ''}.</p>
   }
+  // The trade may have been deleted since (manual trades can be): the answer stands without its numbers.
+  if (a.shares === null) return <p className={styles.plain}>You did it.</p>
   return (
     <p className={styles.plain}>
       You did it: <span className={styles.mono}>{a.shares}</span> shares at{' '}
@@ -202,7 +204,15 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
 
         {answer === 'did' ? (
           <div className={styles.fields}>
-            <TextField label="Date" type="date" value={form.date} onChange={(date) => set({ date })} error={errors.date} />
+            <TextField
+              label="Date"
+              type="date"
+              value={form.date}
+              min={s.signalDate}
+              max={s.today}
+              onChange={(date) => set({ date })}
+              error={errors.date}
+            />
             <TextField
               label={`Price per share (${s.assetCurrency})`}
               type="decimal"

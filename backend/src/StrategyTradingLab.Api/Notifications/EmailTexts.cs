@@ -7,7 +7,12 @@ namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>A signal as the alert and the overview describe it.</summary>
 public record SignalLine(Guid StrategyId, Guid SignalId, string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, string AssetCurrency, string StrategyCurrency,
-    DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts);
+    DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts)
+{
+    public static SignalLine From(Signal signal, Strategy strategy, Asset asset) =>
+        new(strategy.Id, signal.Id, strategy.Name, strategy.Mode, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate,
+            signal.ClosePrice, signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone());
+}
 
 /// <summary>A stock a strategy is watching and how far it is from the rules.</summary>
 public record CloseLine(string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, decimal DistancePct);

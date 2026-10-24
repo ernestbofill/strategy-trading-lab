@@ -130,19 +130,21 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         }
 
         // Where a signal's window closed: the first later day the buy conditions no longer hold. A signal still waiting is missed.
+        var closedIds = new List<Guid>();
         foreach (var signal in signals.Values.Where(s => s.EndedOn is null))
         {
             var closed = days.FirstOrDefault(d => d.Date > signal.SignalDate && !d.WindowOpen);
             if (closed is null) continue;
             signal.EndedOn = closed.Date;
-            if (signal.Status == SignalStatus.Waiting)
-            {
-                signal.Status = SignalStatus.Missed;
-                signal.SnoozedUntil = null; // Only a waiting signal can be snoozed (the table's check).
-                missed++;
-            }
+            closedIds.Add(signal.Id);
         }
         await db.SaveChangesAsync(cancellationToken);
+        // Missed only if it is still waiting in the database: the user may have answered since these rows were read
+        // (Confirm a signal), and that answer must not be overwritten.
+        if (closedIds.Count > 0)
+            missed += await db.Signals.Where(s => closedIds.Contains(s.Id) && s.Status == SignalStatus.Waiting)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
+                    .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken); // Only a waiting signal can be snoozed (the table's check).
 
         // Each signal's own trade, at the next trading day's open, once that day exists.
         var traded = await db.SignalTrades.Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id).Select(t => t.SignalId).ToHashSetAsync(cancellationToken);

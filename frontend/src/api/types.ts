@@ -310,7 +310,7 @@ export interface SignalDetail {
 
 /** "I did it". `fxRate` is only read when `fxSource` is 'user'. */
 export interface SignalTrade {
-  date: string
+  date: string | null
   price: number
   enteredAs: 'amount' | 'shares'
   amount: number | null

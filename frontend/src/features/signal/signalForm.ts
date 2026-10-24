@@ -29,11 +29,16 @@ export const initialForm = (s: SignalDetail): TradeForm => ({
   ownRate: null,
 })
 
-/** A typed number, with a dot or a comma for the decimals; null when empty or not a number. */
+/**
+ * A typed number; null when empty or not a number. With a dot, commas group thousands ("1,250.50"). Without one, a lone
+ * comma before exactly three digits groups thousands too ("1,250" is 1250, as the app writes numbers); any other is the
+ * decimal comma ("98,80").
+ */
 export function parseNumber(text: string): number | null {
   const clean = text.trim().replace(/\s/g, '')
   if (!clean) return null
-  const n = Number(clean.includes('.') ? clean.replace(/,/g, '') : clean.replace(',', '.'))
+  const grouped = clean.includes('.') || /^\d{1,3}(,\d{3})+$/.test(clean)
+  const n = Number(grouped ? clean.replace(/,/g, '') : clean.replace(',', '.'))
   return Number.isFinite(n) ? n : null
 }
 
@@ -48,7 +53,7 @@ export function rateOn(rates: SignalDetail['rates'], date: string): SignalDetail
 export function tradeRequest(form: TradeForm): SignalTrade {
   const byAmount = form.enteredAs === 'amount'
   return {
-    date: form.date,
+    date: form.date || null,
     price: parseNumber(form.price) ?? 0,
     enteredAs: form.enteredAs,
     amount: byAmount ? parseNumber(form.amount) : null,

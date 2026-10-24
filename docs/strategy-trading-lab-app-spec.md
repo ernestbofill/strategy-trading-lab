@@ -616,6 +616,18 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Daily overview email and its settings.
 - Empty, loading and error states.
 
+Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP.md) → *The launch product*; each gets its section here when it is built):
+
+- "Coming soon" cards on Pick a template for templates the engine can't run yet.
+- Live mode gated on a confirmed email, with email-only alerts until web push exists.
+- Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.
+- Ended strategies: an "Ended" section on the dashboard, a read-only page, and deleting them.
+- The public landing page and public template pages; the legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest).
+- Account: download my data, delete my account.
+- Unsubscribe links in emails.
+- Admin: health and failure alerts, users (block, delete), sign-ups open, invite only or closed, and feedback.
+- Limits per user (running strategies, stocks per strategy).
+
 ## 10. Open questions
 
 - **Regulation.** See `regulation-spain-eu.md`. For the legal review: the taglines "Find the next Nvidia" (brand name, hints at exceptional returns) and "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists, and the AI comparison page.

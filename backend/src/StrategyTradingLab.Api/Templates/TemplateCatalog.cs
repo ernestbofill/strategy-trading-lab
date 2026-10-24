@@ -8,7 +8,7 @@ public enum InvestsIn { StockList, Sp500Fund, IndexFund }
 
 public enum SignalSides { BuysOnly, BuysAndSells }
 
-/// <summary>The tested fee per trade: a % of the amount plus a fixed amount in the strategy's currency.</summary>
+/// <summary>The tested fee per trade: a % of the amount plus a fixed amount in the strategy's currency, not converted: €1, $1 or £1 (rounded on purpose).</summary>
 public record TestedFee(decimal Percent, decimal Fixed);
 
 /// <summary>One backtest period: % return of the template, the index fund, and the worst calendar year.</summary>

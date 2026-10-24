@@ -65,7 +65,7 @@ export interface Backtest {
   years: string
   universe: string
   testedDefaults: string
-  /** The tested fee per trade: a % of the amount plus a fixed amount in euro. */
+  /** The tested fee per trade: a % of the amount plus a fixed amount, 1 in the strategy's currency (€1, $1 or £1, rounded on purpose). */
   feePerTrade: number
   feePercent: number
 }

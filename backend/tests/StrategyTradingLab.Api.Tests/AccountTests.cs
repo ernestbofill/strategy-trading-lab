@@ -97,6 +97,8 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.False((await Me(client)).GetProperty("overviewEmail").GetBoolean());
         Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-email", new { enabled = true })).StatusCode);
         Assert.True((await Me(client)).GetProperty("overviewEmail").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/overview-email", new { })).StatusCode); // A missing field is refused, not read as off.
+        Assert.True((await Me(client)).GetProperty("overviewEmail").GetBoolean());
         using var visitor = api.CreateApiClient();
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/overview-email", new { enabled = false })).StatusCode);
     }

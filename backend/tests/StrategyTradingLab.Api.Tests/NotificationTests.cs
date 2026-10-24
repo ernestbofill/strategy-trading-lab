@@ -11,7 +11,7 @@ namespace StrategyTradingLab.Api.Tests;
 
 public class NotificationTests
 {
-    static SignalLine Dip(string facts = """{"belowPeakPct":8.2}""") => new(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Zscaler & friends", "dip", "Zscaler", "USD", "EUR",
+    static SignalLine Dip(string facts = """{"belowPeakPct":8.2}""") => new(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Zscaler & friends", StrategyMode.Live, "dip", "Zscaler", "USD", "EUR",
         new DateOnly(2026, 10, 22), 187.5m, 2, 5, 100, JsonDocument.Parse(facts).RootElement);
 
     [Fact]
@@ -89,7 +89,7 @@ public class NotificationTests
     }
 
     static async Task<(Guid UserId, Guid StrategyId, Guid AssetId, Guid SignalId, string Email)> SeedAsync(AppDbContext db, bool verified = true, bool overview = true,
-        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid")
+        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid", bool evaluated = true)
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         var asset = new Asset { Symbol = $"N{tag}", Exchange = "TEST", Name = "Test asset", Currency = "USD" };
@@ -112,6 +112,10 @@ public class NotificationTests
             AnsweredAt = mode == StrategyMode.Live ? null : DateTimeOffset.UtcNow,
         };
         db.Signals.Add(signal);
+        // The daily check has evaluated the sessions the overview tests ask about (Thursday 22 and Friday 23 October).
+        if (evaluated)
+            foreach (var day in new[] { new DateOnly(2026, 10, 22), new DateOnly(2026, 10, 23) })
+                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategy.Id, AssetId = asset.Id, Date = day, Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{\"distancePct\":3.2}") });
         await db.SaveChangesAsync();
         return (user.Id, strategy.Id, asset.Id, signal.Id, user.Email);
     }
@@ -238,5 +242,47 @@ public class NotificationTests
         {
             await CleanAsync(db, userId, assetId);
         }
+    }
+
+    [NeonFact]
+    public async Task No_overview_before_the_daily_check_has_evaluated_the_session_and_one_once_it_has()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId, _, _) = await SeedAsync(db, evaluated: false);
+        try
+        {
+            var sender = new Captured();
+            var morning = new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero);
+
+            var before = await Service(scope, sender).SendOverviewsAsync(morning, default);
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = new DateOnly(2026, 10, 22), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+            var after = await Service(scope, sender).SendOverviewsAsync(morning, default);
+
+            Assert.Equal(0, before);
+            Assert.True(after >= 1);
+            Assert.Contains("(Live)", sender.Sent.Single(m => m.Subject.StartsWith("Your daily overview")).Body.Replace("Waiting for you", ""));
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [Fact]
+    public void The_hourly_check_waits_until_the_next_top_of_the_hour()
+    {
+        Assert.Equal(TimeSpan.FromMinutes(30), NotificationWorker.UntilNextHour(new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero)));
+        Assert.Equal(TimeSpan.FromHours(1), NotificationWorker.UntilNextHour(new DateTimeOffset(2026, 10, 23, 5, 0, 0, TimeSpan.Zero)));
+    }
+
+    [Fact]
+    public void An_amount_in_another_currency_carries_its_code_and_a_distance_is_never_zero_in_the_list()
+    {
+        var other = Dip() with { StrategyCurrency = "CHF", StepAmount = 100 };
+
+        Assert.Contains("(CHF 100)", EmailTexts.SignalText(other));
     }
 }

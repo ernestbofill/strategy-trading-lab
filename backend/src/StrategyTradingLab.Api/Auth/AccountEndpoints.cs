@@ -15,7 +15,7 @@ public record ResetPasswordRequest(string? Token, string? Password);
 public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
-public record OverviewEmailRequest(bool Enabled);
+public record OverviewEmailRequest(bool? Enabled);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
 public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role);
@@ -148,10 +148,12 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("Sets the currency of the user's new strategies. Running ones keep theirs.");
 
-        group.MapPost("/overview-email", async (OverviewEmailRequest request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (OverviewEmailRequest request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
+            if (request.Enabled is not { } enabled)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = ["Say true or false."] });
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewEmail, request.Enabled), cancellationToken);
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewEmail, enabled), cancellationToken);
             return TypedResults.NoContent();
         })
         .RequireUser()

@@ -6,7 +6,7 @@ using StrategyTradingLab.Api.Data.Entities;
 namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>A signal as the alert and the overview describe it.</summary>
-public record SignalLine(Guid StrategyId, string StrategyName, string TemplateKey, string StockName, string AssetCurrency, string StrategyCurrency,
+public record SignalLine(Guid StrategyId, string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, string AssetCurrency, string StrategyCurrency,
     DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts);
 
 /// <summary>A stock a strategy is watching and how far it is from the rules.</summary>
@@ -24,7 +24,7 @@ public static class EmailTexts
     public const string Disclaimer = "Not financial advice. Signals follow your rules.";
 
     static string Money(decimal amount, string currency) =>
-        (currency switch { "EUR" => "€", "USD" => "$", "GBP" => "£", _ => "" }) + amount.ToString("#,0.##", CultureInfo.InvariantCulture);
+        (currency switch { "EUR" => "€", "USD" => "$", "GBP" => "£", _ => currency + " " }) + amount.ToString("#,0.##", CultureInfo.InvariantCulture);
 
     /// <summary>A number with a dot, whatever the server's culture (the texts are English).</summary>
     static string Pct(decimal value) => value.ToString("0.#", CultureInfo.InvariantCulture);
@@ -75,7 +75,7 @@ public static class EmailTexts
         }
         text.Append("\nWhat changed today\n");
         if (changed.Count == 0) text.Append("- No rules were newly met.\n");
-        foreach (var s in changed) text.Append($"- {SignalText(s).Replace("\n", " ")}\n");
+        foreach (var s in changed) text.Append($"- ({(s.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {SignalText(s).Replace("\n", " ")}\n");
         if (close.Count > 0)
         {
             text.Append("\nClose to the line\n");

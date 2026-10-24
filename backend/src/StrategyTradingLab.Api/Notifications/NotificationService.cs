@@ -49,7 +49,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         foreach (var row in rows)
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
-            if (await SendAsync(claimed, row.Email, () => EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl), cancellationToken)) sent++;
+            if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl)), cancellationToken)) sent++;
         }
         return sent;
     }
@@ -63,7 +63,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         var lastSession = UsSession.LastComplete(now);
         var users = await db.Users.AsNoTracking()
             .Where(u => u.OverviewEmail && u.EmailVerifiedAt != null && db.Strategies.Any(s => s.UserId == u.Id && s.Status == StrategyStatus.Running)
-                && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.ForDate == lastSession))
+                && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.ForDate == lastSession)
+                // Only once the daily check has evaluated that session for them: an overview of stale data would say nothing happened.
+                && db.Strategies.Any(s => s.UserId == u.Id && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == lastSession)))
             .Select(u => new { u.Id, u.Email, u.TimeZone }).ToListAsync(cancellationToken);
         var sent = 0;
         foreach (var user in users)
@@ -73,7 +75,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             if (await ClaimAsync(user.Id, null, NotificationKind.Overview, lastSession, cancellationToken) is not { } claimed) continue;
 
             var today = DateOnly.FromDateTime(local.DateTime);
-            if (await SendAsync(claimed, user.Email, () => ComposeOverviewAsync(user.Id, today, lastSession, cancellationToken).GetAwaiter().GetResult(), cancellationToken)) sent++;
+            if (await SendAsync(claimed, user.Email, () => ComposeOverviewAsync(user.Id, today, lastSession, cancellationToken), cancellationToken)) sent++;
         }
         return sent;
     }
@@ -106,7 +108,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             .Where(x => x.eval.Status == EvaluationStatus.Watching);
         var close = watching
             .Select(x => (x.eval.StrategyId, x.Name, Distance: x.eval.Facts.RootElement.TryGetProperty("distancePct", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetDecimal() : (decimal?)null))
-            .Where(x => x.Distance is not null)
+            .Where(x => x.Distance is > 0)
             .OrderBy(x => x.Distance).Take(5)
             .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
 
@@ -117,7 +119,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     }
 
     static SignalLine Line(Signal signal, Strategy strategy, Asset asset) =>
-        new(strategy.Id, strategy.Name, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate, signal.ClosePrice,
+        new(strategy.Id, strategy.Name, strategy.Mode, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate, signal.ClosePrice,
             signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone());
 
     /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>
@@ -139,15 +141,15 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
 
     /// <summary>
     /// Writes and sends the email of a claimed notification and records whether it worked. Email not set up yet releases the claim
-    /// (nothing happened: a later run tries again); a refused send is recorded as failed; a shutdown releases the claim too, so
-    /// "once" never turns into "never". Any other error is recorded and does not stop the others.
+    /// (nothing happened: a later run tries again); a refused send is recorded as failed; a shutdown keeps the claim (once, never twice).
+    /// Any other error is recorded and does not stop the others.
     /// </summary>
-    async Task<bool> SendAsync(Guid notificationId, string to, Func<(string Subject, string Body)> compose, CancellationToken cancellationToken)
+    async Task<bool> SendAsync(Guid notificationId, string to, Func<Task<(string Subject, string Body)>> compose, CancellationToken cancellationToken)
     {
         string? error = null;
         try
         {
-            var (subject, body) = compose();
+            var (subject, body) = await compose();
             await sender.SendAsync(to, subject, body, cancellationToken);
         }
         catch (EmailNotSetUpException)
@@ -155,11 +157,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             await ReleaseAsync(notificationId);
             return false;
         }
-        catch (OperationCanceledException)
-        {
-            await ReleaseAsync(notificationId);
-            throw;
-        }
+        // A shutdown keeps the claim: the mail server may have accepted the email already, and losing one is better than sending it twice.
         catch (Exception problem)
         {
             error = problem is EmailException ? problem.Message : "The email couldn't be written or sent."; // Never the body: it is the user's data.

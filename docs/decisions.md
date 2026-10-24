@@ -32,4 +32,4 @@ Decisions that outlive a PR, and why. One dated line each, newest first, with th
 - 2026-10-20 · The project is low risk for now: a hobby with no active users, maybe a public launch later. Favour progress, but secrets, security and the product rules apply in full. (#22)
 - 2026-10-20 · Claude's memory lives in the repo, in `.claude/memories/`, for transparency and so every environment shares it. Auto memory stays on, but is told to save there instead of its default folder. (#22)
 - 2026-10-23 · Accounts have a role: user, vip (invited people with special privileges, not built yet) or owner (Ernest). Only the owner opens `/admin`; its fixed password is gone. The owner is the verified email in `OWNER_EMAIL` on the server. (#39)
-- 2026-10-24 · The daily overview goes out right after the daily price check by default, not at a fixed morning hour, so there is no delay between the signals and the email. Not built yet: ROADMAP → Next. (#PR)
+- 2026-10-24 · The daily overview goes out right after the daily price check by default, not at a fixed morning hour, so there is no delay between the signals and the email. Not built yet: ROADMAP → Next. (#51)

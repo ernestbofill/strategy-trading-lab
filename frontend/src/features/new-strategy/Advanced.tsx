@@ -5,7 +5,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
-import { DISCLAIMER } from '../../lib/copy'
+import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
 import styles from './Advanced.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { reviewPath } from './paths'
@@ -84,8 +84,8 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
             <>
               <PeriodTable periods={template.backtest.periods} />
               <p className="caption">
-                These are the tested defaults' results. Re-running the test with your settings comes later. Past
-                results don't promise future ones.
+                These are the tested defaults' results. Re-running the test with your settings comes later.{' '}
+                {PAST_RESULTS_CAPTION}
               </p>
             </>
           ) : (

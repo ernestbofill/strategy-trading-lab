@@ -39,10 +39,21 @@ public static class TemplateSettings
             }
             else
             {
-                json[key] = value;
+                // Without trailing zeros, so 40.0 reads as 40 into a whole-day param.
+                json[key] = value / 1.0000000000000000000000000000m;
             }
         }
         if (!ok) return null;
+
+        // The screen keeps a setting at least a step under the one it must stay below; so does the API.
+        foreach (var setting in template.Settings.Where(s => s.Below is not null))
+        {
+            if (json[setting.Key]!.GetValue<decimal>() + setting.Step > json[setting.Below!]!.GetValue<decimal>())
+            {
+                fail($"settings.{setting.Key}", $"Keep it at least {setting.Step:0.##} under the setting after it.");
+                return null;
+            }
+        }
 
         var merged = json.Deserialize(template.Params.GetType(), JsonSerializerOptions.Web)!;
         var results = new List<ValidationResult>();

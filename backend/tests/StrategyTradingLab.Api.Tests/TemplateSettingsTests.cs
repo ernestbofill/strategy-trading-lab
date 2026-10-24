@@ -88,13 +88,25 @@ public class TemplateSettingsTests
         Assert.Contains($"settings.{key}", errors.Keys);
     }
 
-    [Fact]
-    public void A_zone_that_ends_before_it_starts_is_refused()
+    [Theory]
+    [InlineData(20, 10)]
+    [InlineData(10, 10)]
+    public void A_zone_that_does_not_end_a_step_after_it_starts_is_refused(int start, int end)
     {
-        var (stored, errors) = Apply(TemplateCatalog.Dip, new() { ["zoneStartPct"] = 20, ["zoneEndPct"] = 10 });
+        var (stored, errors) = Apply(TemplateCatalog.Dip, new() { ["zoneStartPct"] = start, ["zoneEndPct"] = end });
 
         Assert.Null(stored);
-        Assert.Contains("settings", errors.Keys);
+        Assert.Contains("settings.zoneStartPct", errors.Keys);
+    }
+
+    [Fact]
+    public void A_whole_number_written_with_a_decimal_point_is_accepted_for_a_day_count()
+    {
+        var (stored, errors) = Apply(TemplateCatalog.Dip, new() { ["peakDays"] = 40.0m, ["zoneEndPct"] = 12.0m });
+
+        Assert.Empty(errors);
+        Assert.Equal(40, stored!.RootElement.GetProperty("peakDays").GetInt32());
+        Assert.Equal(12, stored.RootElement.GetProperty("zoneEndPct").GetDecimal());
     }
 
     [Fact]

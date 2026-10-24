@@ -67,7 +67,9 @@ public static class TemplateEndpoints
             Defaults = new TemplateDefaults(template.DefaultsVersion, template.Budget, template.Params),
             Settings = [.. template.Settings.Select(setting =>
             {
-                var words = texts.Settings![setting.Key];
+                // A language without a setting's words shows the English ones.
+                var words = texts.Settings?.GetValueOrDefault(setting.Key)
+                    ?? TemplateTexts.For(template, TemplateTexts.DefaultLocale).Settings![setting.Key];
                 return new SettingDto(setting.Key, words.Sentence, words.Value, setting.Step, setting.Min, setting.Max, setting.Below);
             })],
         };

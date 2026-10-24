@@ -63,6 +63,8 @@ builder.Services.AddScoped<PriceRefresher>();
 builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>();
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();
+builder.Services.AddScoped<StrategyTradingLab.Api.Notifications.NotificationService>();
+builder.Services.AddHostedService<StrategyTradingLab.Api.Notifications.NotificationWorker>();
 
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();

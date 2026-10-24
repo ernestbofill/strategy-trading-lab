@@ -42,3 +42,14 @@ export const signedPctOrDash = (n: number | null, digits?: number) => (n === nul
 
 /** The colour of a gain: up, down, or none for zero or an unknown figure. */
 export const pctTone = (n: number | null) => (n === null || n === 0 ? undefined : n < 0 ? 'down' : 'up')
+
+const centsFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/** "€", "$", "£", or the code itself for a currency the user can't pick ("JPY"). */
+export const symbolOf = (currency: string) => CURRENCIES.find((c) => c.code === currency)?.symbol ?? currency
+
+/** €98.80 / $187.50 / JPY 1,234.00: an amount or a price to the cent, in any currency (a stock's may be one the user can't pick). */
+export const exact = (n: number, currency: string) => {
+  const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol
+  return symbol ? `${symbol}${centsFormat.format(n)}` : `${currency} ${centsFormat.format(n)}`
+}

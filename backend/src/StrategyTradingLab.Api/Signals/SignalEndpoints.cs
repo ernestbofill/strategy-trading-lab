@@ -85,8 +85,11 @@ public static class SignalEndpoints
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict("This strategy has ended, so there is no reminder to send.");
             if (!found.Strategy.Notifications) return TypedResults.Conflict("This strategy's notifications are off, so there is no reminder to send.");
             if (user.EmailVerifiedAt is null) return TypedResults.Conflict("Confirm your email address to get reminders.");
-            // The next US market day (spec: a day is a US market day); the user's time zone only sets when the email arrives.
-            var until = SignalRules.NextWeekday(UsSession.Today(time.GetUtcNow()));
+            // The next US market day (spec: a day is a US market day), counted from the later of New York's date and the user's,
+            // so it is always after the user's own today: the reminder goes out from 07:00 of that day in their time zone.
+            var newYork = UsSession.Today(time.GetUtcNow());
+            var local = StrategyEndpoints.Today(user, time);
+            var until = SignalRules.NextWeekday(local > newYork ? local : newYork);
             // Conditional, like the answers: the signal may have been answered or missed since it was read.
             var snoozed = await db.Signals.Where(s => s.Id == id && s.Status == SignalStatus.Waiting)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, until), cancellationToken);

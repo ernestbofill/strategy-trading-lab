@@ -47,4 +47,4 @@
 - [ ] Referral program
 - [ ] Agent to test the live app and review it as a user
 - [ ] Playwright for e2e testing
-- [ ] Claude test user
+- [x] Claude test user: created a dev-only browser account; credentials are in the ignored root `.env.local`. (#50)

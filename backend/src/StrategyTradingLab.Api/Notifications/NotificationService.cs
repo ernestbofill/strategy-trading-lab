@@ -97,7 +97,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         var byId = strategies.ToDictionary(s => s.Id);
         SignalLine ToLine(Signal s, Asset a) => Line(s, byId[s.StrategyId], a);
         var waiting = signals.Where(x => x.signal.Status == SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).OrderBy(l => l.Date).ToList();
-        var changed = signals.Where(x => x.signal.SignalDate == lastSession).Select(x => ToLine(x.signal, x.asset)).ToList();
+        var changed = signals.Where(x => x.signal.SignalDate == lastSession && x.signal.Status != SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).ToList();
 
         // Each stock's latest evaluation only, and only if it is still watching.
         var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
@@ -110,7 +110,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             .Select(x => (x.eval.StrategyId, x.Name, Distance: x.eval.Facts.RootElement.TryGetProperty("distancePct", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetDecimal() : (decimal?)null))
             .Where(x => x.Distance is > 0)
             .OrderBy(x => x.Distance).Take(5)
-            .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
+            .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].Mode, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
 
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
@@ -160,8 +160,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         // A shutdown keeps the claim: the mail server may have accepted the email already, and losing one is better than sending it twice.
         catch (Exception problem)
         {
-            error = problem is EmailException ? problem.Message : "The email couldn't be written or sent."; // Never the body: it is the user's data.
-            logger.LogWarning("Couldn't send notification {Id}: {Reason}", notificationId, problem.Message);
+            // Not the server's own words (they often quote the address) and never the body: both are the user's data.
+            error = problem is EmailException ? "The mail server refused or couldn't send it." : "The email couldn't be written or sent.";
+            logger.LogWarning("Couldn't send notification {Id}: {Kind}", notificationId, problem.GetType().Name);
         }
         var now = DateTimeOffset.UtcNow;
         await db.Notifications.Where(n => n.Id == notificationId)

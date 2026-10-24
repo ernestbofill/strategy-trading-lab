@@ -41,7 +41,7 @@ public class NotificationTests
     public void The_overview_has_its_sections_describes_and_never_instructs()
     {
         var waiting = new[] { Dip() };
-        var close = new[] { new CloseLine("Zscaler & friends", "dip", "Palantir", 3.2m), new CloseLine("The comeback", "comeback", "Intel", 4.5m) };
+        var close = new[] { new CloseLine("Zscaler & friends", StrategyMode.Live, "dip", "Palantir", 3.2m), new CloseLine("The comeback", StrategyMode.Simulation, "comeback", "Intel", 4.5m) };
         var score = new[] { new ScoreLine("Zscaler & friends", StrategyMode.Live, new DateOnly(2026, 10, 1), 1), new ScoreLine("The comeback", StrategyMode.Simulation, new DateOnly(2026, 10, 5), 0) };
 
         var (subject, body) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, [], close, score, "https://app.example");
@@ -49,8 +49,8 @@ public class NotificationTests
         Assert.Equal("Your daily overview, 23 Oct 2026", subject);
         foreach (var section in new[] { "Waiting for you", "What changed today", "Close to the line", "Your strategies" }) Assert.Contains(section, body);
         Assert.Contains("- No rules were newly met.", body);
-        Assert.Contains("Palantir, Zscaler & friends: 3.2% above the discount zone", body);
-        Assert.Contains("Intel, The comeback: 4.5% below the buy line", body);
+        Assert.Contains("(Live) Palantir, Zscaler & friends: 3.2% above the discount zone", body);
+        Assert.Contains("(Simulation) Intel, The comeback: 4.5% below the buy line", body);
         Assert.Contains("The comeback (Simulation): since 5 Oct 2026, 0 signals", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
         Assert.DoesNotContain("buy now", body, StringComparison.OrdinalIgnoreCase);

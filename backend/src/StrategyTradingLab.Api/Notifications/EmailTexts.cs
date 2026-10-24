@@ -10,7 +10,7 @@ public record SignalLine(Guid StrategyId, string StrategyName, StrategyMode Mode
     DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts);
 
 /// <summary>A stock a strategy is watching and how far it is from the rules.</summary>
-public record CloseLine(string StrategyName, string TemplateKey, string StockName, decimal DistancePct);
+public record CloseLine(string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, decimal DistancePct);
 
 /// <summary>One strategy in the scoreboard.</summary>
 public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals);
@@ -42,7 +42,7 @@ public static class EmailTexts
             var below = Fact(s.Facts, "belowPeakPct");
             return below is null ? "its rules are met" : $"{Pct(below.Value)}% below its recent peak, still above its 50-day average";
         }
-        var milestone = s.Facts.ValueKind == JsonValueKind.Object && s.Facts.TryGetProperty("milestone", out var m) ? m.GetString() : null;
+        var milestone = s.Facts.ValueKind == JsonValueKind.Object && s.Facts.TryGetProperty("milestone", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
         if (milestone is not null) return $"a new sign that the recovery is real: {milestone.ToLowerInvariant()}";
         var above = Fact(s.Facts, "aboveBuyLinePct");
         return above is null ? "its rules are met" : $"{Pct(Math.Abs(above.Value))}% {(above >= 0 ? "above" : "below")} its buy line, on rising volume";
@@ -80,7 +80,7 @@ public static class EmailTexts
         {
             text.Append("\nClose to the line\n");
             foreach (var c in close)
-                text.Append($"- {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {(c.TemplateKey == "dip" ? "above the discount zone" : "below the buy line")}\n");
+                text.Append($"- ({(c.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {(c.TemplateKey == "dip" ? "above the discount zone" : "below the buy line")}\n");
         }
         text.Append("\nYour strategies\n");
         foreach (var s in scoreboard)

@@ -40,10 +40,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         var sent = 0;
         foreach (var row in rows)
         {
-            if (!await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken)) continue;
-            var line = Line(row.signal, row.strategy, row.asset);
-            var (subject, body) = EmailTexts.SignalAlert(line, AppUrl);
-            if (await SendAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, row.Email, subject, body, cancellationToken)) sent++;
+            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
+            var (subject, body) = EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl);
+            if (await SendAsync(claimed, row.Email, subject, body, cancellationToken)) sent++;
         }
         return sent;
     }
@@ -61,10 +60,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var local = LocalTime(now, user.TimeZone);
             if (local.Hour < OverviewHour) continue;
             var day = DateOnly.FromDateTime(local.DateTime);
-            if (!await ClaimAsync(user.Id, null, NotificationKind.Overview, day, cancellationToken)) continue;
+            if (await ClaimAsync(user.Id, null, NotificationKind.Overview, day, cancellationToken) is not { } claimed) continue;
 
             var (subject, body) = await ComposeOverviewAsync(user.Id, day, lastSession, cancellationToken);
-            if (await SendAsync(user.Id, null, NotificationKind.Overview, day, user.Email, subject, body, cancellationToken)) sent++;
+            if (await SendAsync(claimed, user.Email, subject, body, cancellationToken)) sent++;
         }
         return sent;
     }
@@ -93,10 +92,11 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
                               where ids.Contains(eval.StrategyId) && eval.Status == EvaluationStatus.Watching
                               select new { eval, asset.Name }).ToListAsync(cancellationToken);
         var close = watching
-            .Select(x => (x, Distance: x.eval.Facts.RootElement.TryGetProperty("distancePct", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetDecimal() : (decimal?)null))
-            .Where(x => x.Distance is not null && x.x.eval.Date >= lastSession.AddDays(-4))
+            .Where(x => x.eval.Date >= lastSession.AddDays(-4))
+            .Select(x => (x.eval.StrategyId, x.Name, Distance: x.eval.Facts.RootElement.TryGetProperty("distancePct", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetDecimal() : (decimal?)null))
+            .Where(x => x.Distance is not null)
             .OrderBy(x => x.Distance).Take(5)
-            .Select(x => new CloseLine(byId[x.x.eval.StrategyId].Name, byId[x.x.eval.StrategyId].TemplateKey, x.x.Name, x.Distance!.Value)).ToList();
+            .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
 
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
@@ -108,24 +108,25 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         new(strategy.Id, strategy.Name, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate, signal.ClosePrice,
             signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone());
 
-    /// <summary>Takes the right to send this notification, once: false when it was already claimed (a retry, a second run).</summary>
-    async Task<bool> ClaimAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, CancellationToken cancellationToken)
+    /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>
+    async Task<Guid?> ClaimAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, CancellationToken cancellationToken)
     {
-        db.Notifications.Add(new Notification { UserId = userId, SignalId = signalId, Kind = kind, Channel = NotificationChannel.Email, ForDate = forDate });
+        var notification = new Notification { UserId = userId, SignalId = signalId, Kind = kind, Channel = NotificationChannel.Email, ForDate = forDate };
+        db.Notifications.Add(notification);
         try
         {
             await db.SaveChangesAsync(cancellationToken);
-            return true;
+            return notification.Id;
         }
         catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             db.ChangeTracker.Clear();
-            return false;
+            return null;
         }
     }
 
-    async Task<bool> SendAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, string to, string subject, string body,
-        CancellationToken cancellationToken)
+    /// <summary>Sends the email of a claimed notification and records whether it worked.</summary>
+    async Task<bool> SendAsync(Guid notificationId, string to, string subject, string body, CancellationToken cancellationToken)
     {
         string? error = null;
         try
@@ -135,10 +136,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         catch (EmailException problem)
         {
             error = problem.Message; // Never the body: it is the user's data.
-            logger.LogWarning("Couldn't send the {Kind} email: {Reason}", kind, problem.Message);
+            logger.LogWarning("Couldn't send notification {Id}: {Reason}", notificationId, problem.Message);
         }
         var now = DateTimeOffset.UtcNow;
-        await db.Notifications.Where(n => n.UserId == userId && n.Kind == kind && n.Channel == NotificationChannel.Email && n.ForDate == forDate && n.SignalId == signalId)
+        await db.Notifications.Where(n => n.Id == notificationId)
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, error is null ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, error is null ? (DateTimeOffset?)null : now).SetProperty(x => x.Error, error), cancellationToken);
         db.ChangeTracker.Clear();

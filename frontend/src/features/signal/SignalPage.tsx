@@ -14,7 +14,7 @@ import { strategyPath } from '../dashboard/paths'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { strategyCacheKey } from '../strategy/useStrategy'
 import styles from './SignalPage.module.css'
-import { initialForm, nextStep, rateOn, SKIP_REASONS, tradeRequest, type TradeForm } from './signalForm'
+import { ambiguousFields, initialForm, nextStep, rateOn, SKIP_REASONS, tradeRequest, type TradeForm } from './signalForm'
 
 const signalCacheKey = (id: string) => `signal:${id}`
 const FORM_ID = 'signal-answer'
@@ -133,6 +133,12 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
     setSaving(true)
     setErrors({})
     setMessage(null)
+    const unclear = answer === 'did' ? ambiguousFields(form) : {}
+    if (Object.keys(unclear).length > 0) {
+      setErrors(unclear)
+      setSaving(false)
+      return
+    }
     try {
       if (answer === 'did') await api.confirmSignal(s.id, tradeRequest(form))
       else await api.skipSignal(s.id, reason)

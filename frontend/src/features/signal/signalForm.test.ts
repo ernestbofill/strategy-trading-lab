@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SignalDetail } from '../../api'
-import { initialForm, nextStep, parseNumber, rateOn, tradeRequest } from './signalForm'
+import { ambiguousFields, initialForm, isAmbiguous, nextStep, parseNumber, rateOn, tradeRequest } from './signalForm'
 
 const signal = (fields: Partial<SignalDetail> = {}): SignalDetail => ({
   id: 's',
@@ -37,7 +37,14 @@ describe('signalForm', () => {
 
   it('reads numbers with a dot or a comma', () => {
     expect([parseNumber('98.80'), parseNumber('98,80'), parseNumber('1,234.5'), parseNumber(''), parseNumber('abc')]).toEqual([98.8, 98.8, 1234.5, null, null])
-    expect([parseNumber('1,250'), parseNumber('12,345,678'), parseNumber('1,2'), parseNumber('1,2500')]).toEqual([1250, 12345678, 1.2, 1.25])
+    expect([parseNumber('12,345,678'), parseNumber('1,2'), parseNumber('1,2500'), parseNumber('0,125'), parseNumber('1.250,50')]).toEqual([
+      12345678, 1.2, 1.25, 0.125, 1250.5,
+    ])
+  })
+
+  it('asks rather than guess at a number that reads two ways', () => {
+    expect([parseNumber('1,250'), isAmbiguous('1,250'), isAmbiguous('0,125'), isAmbiguous('1,25')]).toEqual([null, true, false, false])
+    expect(Object.keys(ambiguousFields({ ...initialForm(signal()), price: '1,250', fee: '1,20' }))).toEqual(['price'])
   })
 
   it('uses the latest rate on or before the day', () => {

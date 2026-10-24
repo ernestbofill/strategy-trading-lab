@@ -22,6 +22,9 @@ function Body({ s }: { s: StrategySummary }) {
             {signedPct(results.strategy, 1)}
           </div>
           <div className={styles.index}>Index fund: {signedPctOrDash(results.index, 1)}</div>
+          {pastResult && (
+            <div className={styles.index}>Template's worst year: {signedPct(pastResult.worstYear)}</div>
+          )}
         </div>
         <span className={styles.chart} data-tone={pctTone(results.strategy)}>
           <Sparkline values={results.history} />

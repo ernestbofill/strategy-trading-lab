@@ -74,7 +74,9 @@ public sealed class StrategyBook
         var you = You(strategy);
         if (Performance.GainPct(you, Prices, today, strategy.Currency) is not { } gain) return null;
         var rules = Rules(strategy);
-        var index = Performance.IndexBuys(you, Prices, IndexFundId, strategy.Currency);
+        // The fund gets the same money as the buys "You" counts: not those that can't be valued yet.
+        var valued = you.Where(b => Prices.Value(b.AssetId, b.Shares, today, strategy.Currency) is not null);
+        var index = Performance.IndexBuys(valued, Prices, IndexFundId, strategy.Currency);
         return new StrategyFigures(
             gain,
             rules is null ? null : Performance.GainPct(rules, Prices, today, strategy.Currency),

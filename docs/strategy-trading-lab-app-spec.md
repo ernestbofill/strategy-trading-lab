@@ -439,7 +439,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Header: the strategy name; under it "*[template]* · since [date]" or "*[template]* · started today"; on the right the mode tag ("LIVE" or "SIM"). A small glowing dot before the tag marks a card with something waiting, with an accessible label ("Signal waiting" or "AI round due"). The Waiting for you list carries the detail; the dot only points to the card.
 - Running: the result since start, big, "[+X.X%]"; under it "Index fund: [+X.X%]"; a small line chart on the right; a budget bar and "€[used] of €[budget] used".
 - Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an index fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
-- A running strategy's own figures are since its start, so they have no worst year yet; it shows on the strategy page once a year has passed. The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
+- A running strategy's own figures are since its start, so they have no worst year yet: until it has a year of its own, the card adds "Template's worst year: [−X%]" under the index fund (product rule: results next to the worst year). The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
 - AI strategy with no results: "No results yet. They start after your first AI round."
 - Below the cards: a dashed button "+ New strategy" → Pick a template.
 

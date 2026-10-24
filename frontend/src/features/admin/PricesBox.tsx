@@ -79,7 +79,7 @@ export function PricesBox() {
             Last run: {prices.updated} updated, {prices.fullHistory} in full, {prices.problems.length} failed
             {prices.newSignals === null
               ? '. Strategies not evaluated.'
-              : `; ${prices.newSignals} new ${prices.newSignals === 1 ? 'signal' : 'signals'}${prices.evaluationFailures > 0 ? `, ${prices.evaluationFailures} strategies failed` : ''}.`}
+              : `; ${prices.newSignals} new ${prices.newSignals === 1 ? 'signal' : 'signals'}${prices.evaluationFailures > 0 ? `, ${prices.evaluationFailures} ${prices.evaluationFailures === 1 ? 'strategy' : 'strategies'} failed` : ''}.`}
           </p>
         )}
         {prices?.problems.map((p) => (

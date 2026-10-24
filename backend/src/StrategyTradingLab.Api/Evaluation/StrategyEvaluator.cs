@@ -7,13 +7,13 @@ using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Evaluation;
 
-/// <summary>What one evaluation run did.</summary>
 /// <summary>What the strategy's signals use of its budget so far.</summary>
 public sealed class BudgetUse(decimal used)
 {
     public decimal Used { get; set; } = used;
 }
 
+/// <summary>What one evaluation run did.</summary>
 public record EvaluationSummary(int Strategies, int NewSignals, int NewTrades, int Missed, int Failed);
 
 /// <summary>What one strategy or stock gained in a run.</summary>
@@ -62,8 +62,9 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         int signals = 0, trades = 0, missed = 0;
         var added = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).ToDictionary(a => a.AssetId, a => DateOnly.FromDateTime(a.AddedAt.UtcDateTime));
         var wanted = added.Keys.ToList();
-        // The budget the signals so far use; new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
-        var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id).SumAsync(s => s.StepAmount ?? 0, cancellationToken));
+        // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
+        var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id && (s.Status == SignalStatus.Confirmed || s.Status == SignalStatus.Waiting))
+            .SumAsync(s => s.StepAmount ?? 0, cancellationToken));
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {

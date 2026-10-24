@@ -23,6 +23,10 @@
       "years": "2010-2024",
       "universe": "9, the starter list",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+    },
+    "stockStatus": {
+      "zone": "the discount zone",
+      "notCandidate": "Below its long trend"
     }
   },
   "comeback": {
@@ -49,6 +53,10 @@
       "years": "2010-2024",
       "universe": "16, the starter list",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+    },
+    "stockStatus": {
+      "zone": "the buy line",
+      "notCandidate": "Not beaten down"
     }
   },
   "bear": {

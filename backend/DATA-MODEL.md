@@ -223,7 +223,7 @@ The rules' own trades, per strategy and asset: one trade per signal, made whatev
 | price | numeric(14,4), not null | Opening price, in the asset's currency |
 | shares | numeric(18,6), not null | |
 | amount | numeric(14,2), not null | In the strategy's currency, without the fee |
-| fee | numeric(14,2), not null, default 0 | The tested fee per trade, so simulations match the backtest |
+| fee | numeric(14,2), not null, default 0 | The tested fee per trade, so simulations match the backtest: 0.2% of the amount plus 1 in the strategy's currency (€1, $1 or £1, not converted) |
 | fx_rate | numeric(18,8), not null | Asset currency per strategy currency |
 | created_at | timestamptz | |
 

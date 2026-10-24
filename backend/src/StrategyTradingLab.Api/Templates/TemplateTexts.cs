@@ -14,7 +14,8 @@ public record TemplateTexts(
     string Idea,
     string Rationale,
     IReadOnlyList<RuleDto> Rules,
-    BacktestTexts? Backtest)
+    BacktestTexts? Backtest,
+    StockStatusTexts? StockStatus = null)
 {
     public const string DefaultLocale = "en";
 
@@ -40,6 +41,13 @@ public record TemplateTexts(
                 });
     }
 }
+
+/// <summary>
+/// How the strategy page words a stock that is not bought: <c>Zone</c> is what <c>distancePct</c> measures to ("the discount
+/// zone"), <c>NotCandidate</c> the detail line of a stock the rules don't watch yet ("Below its long trend"). Only for
+/// templates the engine runs.
+/// </summary>
+public record StockStatusTexts(string Zone, string NotCandidate);
 
 /// <summary>The words of the "Tested" box and How we tested.</summary>
 public record BacktestTexts(string Scope, string Years, string Universe, string TestedDefaults);

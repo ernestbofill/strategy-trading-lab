@@ -133,7 +133,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - All rules are checked **once a day, after the US market close**, as in the POC.
 - **A day is a US market day** (New York trading calendar): start dates, signal dates, snoozes and "the next day" all follow it. The user's time zone only sets when emails arrive.
 - **Signals follow the rules, not the user's trades.** Each strategy keeps the rules' own position (its signal trades), and signals come from it, in both modes. After a skip, the rules carry on as if the step had been bought (the next signal for that stock is the next step), and a *Ride the long trend* sell signal arrives even if the user never bought.
-- **Simulation:** the app records every trade the rules call for, at the next trading day's opening price, with the tested fee per trade (as in the backtest). Results come from those signal trades.
+- **Simulation:** the app records every trade the rules call for, at the next trading day's opening price, with the tested fee per trade (as in the backtest): 0.2% of the amount plus 1 in the strategy's currency (€1, $1 or £1; rounded, not converted). Results come from those signal trades.
 - **Live:** the app sends each signal and the user confirms it. Results come only from confirmed trades at the prices the user entered; the rules' own position is shown next to them.
 - **Budget used** is what the buys cost (with fees) minus the cost of the shares sold since, at average cost: a sale frees budget again. Simulation counts signal trades; live counts only confirmed and hand-logged trades. When the budget is used up, the strategy stops signalling buys.
 - **Budget and settings can change while a strategy runs** (strategy page). The new values apply from then on. Lowering the budget below what is already used, or the max steps below a stock's current step, stops further buys; nothing is sold.
@@ -439,7 +439,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Header: the strategy name; under it "*[template]* · since [date]" or "*[template]* · started today"; on the right the mode tag ("LIVE" or "SIM"). A small glowing dot before the tag marks a card with something waiting, with an accessible label ("Signal waiting" or "AI round due"). The Waiting for you list carries the detail; the dot only points to the card.
 - Running: the result since start, big, "[+X.X%]"; under it "Index fund: [+X.X%]"; a small line chart on the right; a budget bar and "€[used] of €[budget] used".
 - Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an index fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
-- A running strategy's own figures are since its start, so they have no worst year yet; it shows on the strategy page once a year has passed. The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
+- A running strategy's own figures are since its start, so they have no worst year yet: until it has a year of its own, the card adds "Template's worst year: [−X%]" under the index fund (product rule: results next to the worst year). The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
 - AI strategy with no results: "No results yet. They start after your first AI round."
 - Below the cards: a dashed button "+ New strategy" → Pick a template.
 
@@ -451,14 +451,22 @@ The same three settings can be changed later from the strategy page (not drawn).
 - **Summary box**
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "Index fund" `[+X%]`; a chart with three lines (You solid and highlighted, The rules alone solid, Index fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "Index fund" `[+X%]`, a two-line chart, and "Budget used".
+  - Under the chart, until the strategy has a year of its own: "The template's worst year, [years]: [−X%]" (product rule: results next to the worst year).
+  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, as on the dashboard card, with its worst year. The chart appears with the first buy.
+  - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
+  - A figure that can't be worked out (the index fund has no prices at all) shows "–".
+  - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".
 - **"Stocks · [n]"**, with an **"Edit list"** link on the right that opens the stock list editor (same list as on the review, for this strategy).
 - One row per stock, each a link to that stock's page (not drawn):
   - The name, a status pill and a detail line:
     - "WAITING FOR YOU" (live; "Signal: step [n] of [max]") → Confirm a signal
-    - "SIGNAL" (simulation; "Bought a step today", draft)
-    - "HOLDING" ("[n] of [max] steps")
+    - "SIGNAL" (simulation, a signal on the latest checked day; "Step [n] of [max], bought at the next open")
+    - "HOLDING" ("[n] of [max] steps"; also when the rules hold the stock with steps left, as *The comeback* does once its milestones are used)
     - "BUILDING" ("[n] of [max] steps"; live when it differs: "Rules: [n] of [max] · You: [n] of [max]")
-    - "WATCHING" ("[n]% from the discount zone", or "Below its long trend" when it isn't a candidate)
+    - "WATCHING" ("[n]% from [the template's zone]", "Rules not met today" when it is there or past it, or, when it isn't a candidate, the template's words: "Below its long trend" for *Dip in winners*, "Not beaten down" for *The comeback*; "Not enough price history yet" and "Not checked yet" before the daily check has a verdict). The zone is "the discount zone" for *Dip in winners* and "the buy line" for *The comeback*.
+    - "WATCHING" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
+    - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
+    - Until the stock page is built, only a waiting row is a link.
     - *Ride the long trend* also needs "OUT OF THE MARKET" for the time between a sale and the next buy (not drawn).
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
@@ -472,11 +480,11 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 | Metric | Simulation: from | Live: from |
 | --- | --- | --- |
-| Budget used | Signal-trade buys minus the cost of signal-trade sales, vs budget | Confirmed buys, with fees, minus the cost of confirmed sales, vs budget |
+| Budget used | Signal-trade buys, with fees, minus the cost of signal-trade sales, vs budget | Confirmed buys, with fees, minus the cost of confirmed sales, vs budget |
 | Average cost | Signal-trade buys | Confirmed buys, with fees |
 | Current value | Signal-trade buys, latest price and exchange rate | Confirmed trades, latest price and exchange rate |
-| Gain or loss (money and %) | Current value − invested | Same |
-| Versus the index | Same money into a broad index on the same days | Same, on the confirmed buy days |
+| Gain or loss (money and %) | Current value − invested (buys with their fees) | Same |
+| Versus the index | Same money (fees included) into a broad index fund (SPY) on the same days, at its opening price | Same, on the confirmed buy days |
 | Versus the rules | – | The rules' own position (signal trades) |
 | Followed signals | – | Did / skipped / missed |
 | Picks vs the rest (AI only) | Top-scored stocks vs the unpicked ones since each round | Same |

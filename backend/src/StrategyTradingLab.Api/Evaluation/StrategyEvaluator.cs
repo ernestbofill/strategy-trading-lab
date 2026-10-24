@@ -33,7 +33,7 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         var lastSession = UsSession.LastComplete(now);
         var strategies = await db.Strategies.AsNoTracking().Include(s => s.Assets)
             .Where(s => s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
-        var rates = await LoadRatesAsync(cancellationToken);
+        var rates = await ExchangeRates.LoadAsync(db, null, cancellationToken);
 
         int signals = 0, trades = 0, missed = 0, failed = 0, evaluated = 0;
         foreach (var strategy in strategies.Where(s => TemplateRules.Supports(s.TemplateKey)))
@@ -165,19 +165,24 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
     }
 
     static JsonDocument Facts(IReadOnlyDictionary<string, object> facts) => JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);
-
-    async Task<ExchangeRates> LoadRatesAsync(CancellationToken cancellationToken)
-    {
-        var rows = await db.FxRates.AsNoTracking().Where(r => r.Base == ExchangeRates.Base).OrderBy(r => r.Date)
-            .Select(r => new { r.Quote, r.Date, r.Rate }).ToListAsync(cancellationToken);
-        return new ExchangeRates(rows.GroupBy(r => r.Quote).ToDictionary(g => g.Key, g => g.Select(r => (r.Date, r.Rate)).ToList()));
-    }
 }
 
 /// <summary>The euro against each currency by day, and the rate between any two through it.</summary>
 public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)>> byQuote)
 {
     public const string Base = "EUR";
+
+    /// <summary>How far before a range prices and rates are loaded, so its first days still find the last trading day before them.</summary>
+    public const int LookBackDays = 7;
+
+    /// <summary>The stored rates from <see cref="LookBackDays"/> before <paramref name="from"/> on (all of them when null): a rate older than that isn't used.</summary>
+    public static async Task<ExchangeRates> LoadAsync(AppDbContext db, DateOnly? from, CancellationToken cancellationToken)
+    {
+        var since = from?.AddDays(-LookBackDays) ?? DateOnly.MinValue;
+        var rows = await db.FxRates.AsNoTracking().Where(r => r.Base == Base && r.Date >= since).OrderBy(r => r.Date)
+            .Select(r => new { r.Quote, r.Date, r.Rate }).ToListAsync(cancellationToken);
+        return new ExchangeRates(rows.GroupBy(r => r.Quote).ToDictionary(g => g.Key, g => g.Select(r => (r.Date, r.Rate)).ToList()));
+    }
 
     /// <summary>Units of <paramref name="quote"/> per euro on the latest day on or before <paramref name="date"/>; null when unknown.</summary>
     decimal? PerEuro(string currency, DateOnly date)

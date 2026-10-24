@@ -8,13 +8,15 @@ interface FieldShellProps {
   error?: string | null
   children: ReactNode
   aside?: ReactNode
+  /** Keep the label for screen readers only, where a section heading above already says it. */
+  hideLabel?: boolean
 }
 
 /** Label, control, hint and the error under it ("Use at least 10 characters."). */
-function FieldShell({ id, label, hint, error, aside, children }: FieldShellProps) {
+function FieldShell({ id, label, hint, error, aside, hideLabel, children }: FieldShellProps) {
   return (
     <div className={styles.field}>
-      <label htmlFor={id} className="ui-strong">
+      <label htmlFor={id} className={hideLabel ? 'visually-hidden' : 'ui-strong'}>
         {label}
       </label>
       <div className={styles.control}>
@@ -124,12 +126,13 @@ interface SelectFieldProps {
   onChange: (value: string) => void
   options: { value: string; label: string }[]
   error?: string | null
+  hideLabel?: boolean
 }
 
-export function SelectField({ label, value, onChange, options, error }: SelectFieldProps) {
+export function SelectField({ label, value, onChange, options, error, hideLabel }: SelectFieldProps) {
   const id = useId()
   return (
-    <FieldShell id={id} label={label} error={error}>
+    <FieldShell id={id} label={label} error={error} hideLabel={hideLabel}>
       <select
         id={id}
         className={styles.input}

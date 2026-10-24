@@ -148,7 +148,7 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: () => 
 
   return (
     <form className={styles.form} onSubmit={submit} noValidate>
-      <SelectField label="Currency" value={currency} onChange={(v) => setCurrency(v as Currency)} options={currencyOptions} />
+      <SelectField label="Currency" hideLabel value={currency} onChange={(v) => setCurrency(v as Currency)} options={currencyOptions} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || currency === current}>
         {busy ? 'Saving…' : 'Save currency'}

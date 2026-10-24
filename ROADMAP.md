@@ -33,6 +33,7 @@ Draft order, for Ernest to confirm.
    The screens that show the results are the next item.
 4. **Strategy page (`StrategyDetail`)**, Live variant first as drawn, then **Confirm a signal** (`Signal`).
 5. **Advanced settings** for *Dip in winners*, replacing the placeholder.
+6. **Daily overview right after the price check.** Today the overview waits for 07:00 in the user's time zone (`NotificationService.OverviewHour`), while the prices and signals are ready after the US close. By default, send it as soon as the daily check has run, so there is no delay; a later, user-chosen time can come with the overview settings. Then make the copy match everywhere: sign-up and the account page ("early in the morning"), Confirm ("after the US market close"), and the spec (*Account*, *Daily overview*). Found in the end-to-end test of 2026-10-24.
 
 ## Later
 
@@ -49,6 +50,10 @@ From the spec's *Not designed yet* list, roughly in the order they become useful
 - Backtest page and History.
 - Account page, data and privacy (AI sharing, export, delete account).
 - Empty, loading and error states everywhere.
+- **Top bar and navigation.** The top bar wraps on phones ("STL // DASHBOARD" on two lines at 375px), "← BACK" on Pick a template right after sign-up goes back to the sign-up form, and logging out sends you to `/log-in?next=/account`, so logging back in lands on Account instead of the dashboard. Rethink the top bar and how screens link to each other as a whole.
+- **Validate *How we tested* against the POC.** The backtest figures on the template pages (*Tested*, *By period*) aren't checked yet. The POC (`ernestbofill/trading-strategies-bot`) has a lot of backtest research: use it to check or replace the figures, and say on the page that each period is an independent test (fresh money at its start), which is why the periods don't add up to *All*.
+- **Set your budget, with the ticked stocks** (low priority). "Enough for 6 stocks bought in full" ignores how many stocks are ticked: with 3 ticked, only 15 of the 30 steps can ever be used. Say so, and avoid "enough for 0 stocks bought in full" when a step is larger than a stock's maximum.
+- **Set your budget, out-of-range values** (low priority). A typed value outside the limits is changed without a word (0 becomes €500; a step larger than the budget becomes the budget). Tell the user what changed and why, next to the field.
 
 ## Ideas
 

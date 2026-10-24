@@ -104,7 +104,7 @@ Defaults:
 
 ### Kinds of change
 
-- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, READMEs, instructions, `.claude/`, comments): no version bump (CI skips the check), no `/simplify`, no `/code-review`. Steps 1, 3 and 7 only.
+- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, READMEs, instructions, `.claude/`, comments): no version bump (CI skips the check), no `/simplify`, no `/code-review`. Steps 1, 3 and 7 only.
 - **Normal** (UI, an isolated fix or feature): steps 1–5, with one review round. Run `/simplify` only when the diff has real new code (about 50+ changed lines); a one-line fix skips it.
 - **High risk**: strategy and budget calculations (signals, steps, results, backtests), authentication, and security. Also foundational work that much else will build on. All steps, an `opus` review, and a second round after any real finding.
 

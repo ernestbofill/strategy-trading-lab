@@ -93,6 +93,23 @@ export interface TemplateDetail extends StrategyTemplate {
   /** Null when the template can't be backtested. */
   backtest: Backtest | null
   defaults: TemplateDefaults
+  /** The rules Advanced settings can tune, in screen order; empty when the template has none yet. */
+  settings: Setting[]
+}
+
+/**
+ * A rule on Advanced settings. `key` is its name in `defaults.params`, which holds the tested value. `sentence` has
+ * `{value}` where the value goes; `value` reads a number, with `{n}` for it ("{n}%", "{n} days"). The screen offers
+ * `min` to `max` in steps of `step`; `below` names the setting this one stays at least a step under.
+ */
+export interface Setting {
+  key: string
+  sentence: string
+  value: string
+  step: number
+  min: number
+  max: number
+  below?: string
 }
 
 export type StrategyMode = 'simulation' | 'live'
@@ -257,6 +274,8 @@ export interface NewStrategy {
   currency: Currency
   /** The stocks to watch, or the one fund. */
   assetIds: string[]
+  /** The Advanced settings the user changed (setting key → value); the rest keep the tested defaults. */
+  settings: Record<string, number>
 }
 
 /** A setting on the admin page. A secret's `value` is never sent: only whether it is set. */

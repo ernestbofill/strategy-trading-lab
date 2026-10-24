@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { AccountProvider, useAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
@@ -19,21 +19,17 @@ import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
 import { AdminSettings } from './features/admin/AdminSettings'
 import { Dashboard } from './features/dashboard/Dashboard'
+import { Advanced } from './features/new-strategy/Advanced'
 import { SetBudget } from './features/new-strategy/SetBudget'
 import { ChooseMode } from './features/new-strategy/ChooseMode'
 import { NewStrategyDraftProvider } from './features/new-strategy/NewStrategyDraft'
 import { NotBuiltYet } from './features/new-strategy/NotBuiltYet'
 import { Confirm } from './features/new-strategy/Confirm'
-import { budgetPath, confirmPath, dashboardPath, homePath, pickPath, reviewPath } from './features/new-strategy/paths'
+import { budgetPath, confirmPath, dashboardPath, homePath, pickPath } from './features/new-strategy/paths'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { StrategyPage } from './features/strategy/StrategyPage'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
-
-function AdvancedStub() {
-  const { key = '' } = useParams()
-  return <NotBuiltYet title="Advanced settings" back={reviewPath(key)} />
-}
 
 /** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
@@ -57,7 +53,7 @@ export default function App() {
               <Route path={pickPath} element={<PickTemplate />} />
               <Route path="/new/templates/:key" element={<ReviewTemplate />} />
               <Route path="/new/templates/:key/how-tested" element={<HowTested />} />
-              <Route path="/new/templates/:key/advanced" element={<AdvancedStub />} />
+              <Route path="/new/templates/:key/advanced" element={<Advanced />} />
               <Route path="/new/mode" element={<ChooseMode />} />
               <Route path={budgetPath} element={<SetBudget />} />
               <Route path={confirmPath} element={<Confirm />} />

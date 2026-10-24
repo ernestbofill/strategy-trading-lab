@@ -17,6 +17,7 @@ import { ToggleTiles } from '../../../components/ToggleTiles'
 import { DISCLAIMER } from '../../../lib/copy'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
+import { settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
 import { AiPrompt } from './AiPrompt'
 import { AI_SOURCES } from './aiSources'
@@ -109,7 +110,16 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       {aiRound ? (
         <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedPath(template.key)} />
       ) : (
-        <NavRow label="Advanced settings" to={advancedPath(template.key)} />
+        <NavRow
+          label="Advanced settings"
+          meta={
+            template.settings.length > 0
+              ? // Another template's draft changes belong to that one.
+                settingsSummary(draft.templateKey === template.key ? draft.settings : {}).toLowerCase()
+              : undefined
+          }
+          to={advancedPath(template.key)}
+        />
       )}
     </>
   )

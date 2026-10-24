@@ -291,7 +291,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 **Copy**
 - Top bar: "← BACK" · "[template name]"
 - H1: "Advanced settings"
-- Intro: "Every rule as an exact number. Change one and the backtest re-runs, next to the tested defaults."
+- Intro: "Every rule as an exact number, next to the tested default." (Shortened while the backtest can't re-run; bring back "Change one and the backtest re-runs" with the re-run.)
 - Secondary button: "⟳ Reset to tested"
 - Button: "Save settings"
 
@@ -299,7 +299,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 | Sentence | Default | Step | Min–max |
 | --- | --- | --- | --- |
-| "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1) |
+| "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |
 | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
 | "The recent peak is the highest price of the last [n] days." | 60 days | 5 | 20–60 |
 | "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
@@ -309,10 +309,13 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
 - As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide. Past results don't promise future ones."
 - Re-run on each change (debounced), with a loading state.
+- **Until the backtest engine exists** (built version): with a change, the screen shows the tested results by period (Template, Index, Worst yr, as on How we tested) and "These are the tested defaults' results. Re-running the test with your settings comes later. Past results don't promise future ones." When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
 
 **Behaviour**
 - "Reset to tested" puts every value back.
-- "Save settings" stores the values and returns to the screen that opened it. Leaving with unsaved changes asks first (not drawn).
+- "Save settings" stores the values and returns to the screen that opened it. Leaving with unsaved changes asks first (not drawn, not built yet).
+- Each changed row's stepper stops at its range; the zone's start stays at least a step under its end, and the end a step over the start.
+- During the new-strategy flow the values live in the draft; Review's row reads "Advanced settings · tested defaults" or "· [n] changed", and so does Confirm's Settings row. Templates without settings yet show "This template's settings come in a later step." and Confirm leaves out the Settings row.
 - Values belong to the user's strategy; the template's defaults never change.
 
 ### 2c · How we tested (`HowTested`)

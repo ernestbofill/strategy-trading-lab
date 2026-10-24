@@ -49,6 +49,7 @@ describe('httpApi.startStrategy', () => {
     currency: 'EUR',
     budget: { amount: 3000, step: 100, maxSteps: 5 },
     assetIds: ['a1'],
+    settings: {},
   }
 
   it('posts the strategy as JSON to /api/strategies and returns the created one', async () => {
@@ -133,7 +134,7 @@ describe('httpApi CSRF header', () => {
     respond(204)
     await httpApi.setAdminSetting('SMTP_HOST', 'smtp.gmail.com')
     respond(201, { id: 's1' })
-    await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', currency: 'EUR', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [] })
+    await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', currency: 'EUR', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [], settings: {} })
     for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'X-Requested-With': 'stl' })
   })
 })

@@ -15,7 +15,8 @@ public record TemplateTexts(
     string Rationale,
     IReadOnlyList<RuleDto> Rules,
     BacktestTexts? Backtest,
-    StockStatusTexts? StockStatus = null)
+    StockStatusTexts? StockStatus = null,
+    IReadOnlyDictionary<string, SettingTexts>? Settings = null)
 {
     public const string DefaultLocale = "en";
 
@@ -51,3 +52,9 @@ public record StockStatusTexts(string Zone, string NotCandidate);
 
 /// <summary>The words of the "Tested" box and How we tested.</summary>
 public record BacktestTexts(string Scope, string Years, string Universe, string TestedDefaults);
+
+/// <summary>
+/// The words of a setting on Advanced settings. <c>Sentence</c> holds <c>{value}</c> where the value goes, and <c>Value</c>
+/// how a value reads, with <c>{n}</c> for the number ("{n}%", "{n} days").
+/// </summary>
+public record SettingTexts(string Sentence, string Value);

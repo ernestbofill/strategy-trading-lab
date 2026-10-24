@@ -26,7 +26,13 @@ describe('newStrategyFrom', () => {
       currency: 'EUR',
       budget: { amount: 3000, step: 100, maxSteps: 5 },
       assetIds: ['id-NVDA', 'id-AVGO', 'id-META'],
+      settings: {},
     })
+  })
+
+  it('sends the settings the user changed', () => {
+    const draft = { ...initialDraft, settings: { peakDays: 40 } }
+    expect(newStrategyFrom(draft, dip, 'Mine', 'EUR').settings).toEqual({ peakDays: 40 })
   })
 
   it('sends the mode, the budget the user set and only the ticked stocks', () => {

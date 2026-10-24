@@ -127,6 +127,51 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
     }
 
     [NeonFact]
+    public async Task A_strategy_stores_the_settings_the_user_changed_over_the_tested_defaults()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.SignedUpAsync();
+        try
+        {
+            var response = await client.PostAsJsonAsync("/strategies", new
+            {
+                templateKey = "dip", name, mode = "simulation",
+                budget = new { amount = 3000, step = 100, maxSteps = 5 },
+                assetIds = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).Take(2),
+                settings = new Dictionary<string, decimal> { ["peakDays"] = 40 },
+            });
+
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            using var scope = factory.Services.CreateScope();
+            var stored = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Strategies.SingleAsync(s => s.Name == name);
+            Assert.Equal(40, stored.Params.RootElement.GetProperty("peakDays").GetInt32());
+            Assert.Equal(5, stored.Params.RootElement.GetProperty("zoneStartPct").GetDecimal());
+        }
+        finally
+        {
+            await Remove(name);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_setting_out_of_range_is_a_validation_problem()
+    {
+        var (client, _) = await factory.SignedUpAsync();
+
+        var response = await client.PostAsJsonAsync("/strategies", new
+        {
+            templateKey = "dip", name = $"Test {Guid.NewGuid()}", mode = "simulation",
+            budget = new { amount = 3000, step = 100, maxSteps = 5 },
+            assetIds = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).Take(1),
+            settings = new Dictionary<string, decimal> { ["peakDays"] = 200 },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(problem.GetProperty("errors").TryGetProperty("settings.peakDays", out _));
+    }
+
+    [NeonFact]
     public async Task An_unknown_template_is_not_found()
     {
         var (client, email) = await factory.SignedUpAsync();

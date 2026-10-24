@@ -33,5 +33,6 @@ describe('InstallApp', () => {
 
     act(() => window.dispatchEvent(new Event('appinstalled')))
     expect(await screen.findByText('The app is installed on this device.')).toBeTruthy()
+    expect(screen.queryByText('Installation started.')).toBeNull()
   })
 })

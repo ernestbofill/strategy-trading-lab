@@ -12,15 +12,12 @@ export function InstallApp() {
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  if (installed) return <FormMessage tone="done">The app is installed on this device.</FormMessage>
+
   const install = async () => {
     if (busy) return
     setStatus(null)
     setError(null)
-
-    if (installed) {
-      setStatus('The app is already installed on this device.')
-      return
-    }
 
     if (!prompt) {
       setStatus(manualInstallInstructions)
@@ -43,12 +40,9 @@ export function InstallApp() {
 
   return (
     <>
-      {!installed && (
-        <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => void install()}>
-          {busy ? 'Opening install prompt…' : 'Install the app'}
-        </button>
-      )}
-      {installed && <FormMessage tone="done">The app is installed on this device.</FormMessage>}
+      <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => void install()}>
+        {busy ? 'Opening install prompt…' : 'Install the app'}
+      </button>
       {status && <FormMessage tone="done">{status}</FormMessage>}
       {error && <FormMessage tone="error">{error}</FormMessage>}
     </>

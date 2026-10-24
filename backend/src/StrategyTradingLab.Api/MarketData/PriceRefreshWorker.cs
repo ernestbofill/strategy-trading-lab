@@ -156,7 +156,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             // Right after the check that found them, the alerts for the new live signals.
             var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
             if (await notifications.EnabledAsync(stoppingToken))
-                logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(evaluator.NewSignalIds, stoppingToken));
+                logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(Evaluation.UsSession.LastComplete(time.GetUtcNow()), stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

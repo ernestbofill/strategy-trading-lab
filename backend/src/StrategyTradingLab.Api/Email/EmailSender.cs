@@ -76,7 +76,7 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
             try
             {
                 await client.SendMailAsync(message, timeout.Token);
-                logger.LogInformation("Sent \"{Subject}\" through {Host}:{Port}.", subject, host, port);
+                logger.LogInformation("Sent an email through {Host}:{Port}.", host, port); // Not the subject: it holds names.
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

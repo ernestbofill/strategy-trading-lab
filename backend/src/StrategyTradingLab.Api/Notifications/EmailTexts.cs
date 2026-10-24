@@ -70,7 +70,8 @@ public static class EmailTexts
         if (waiting.Count > 0)
         {
             text.Append("\nWaiting for you\n");
-            foreach (var s in waiting) text.Append($"- {s.StockName}, {s.StrategyName}: step {s.StepNo} of {s.MaxSteps}, close on {Date(s.Date)}. {appUrl}/strategies/{s.StrategyId}/signal\n");
+            foreach (var s in waiting)
+                text.Append($"- {s.StockName}, {s.StrategyName}{(s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "")}, close on {Date(s.Date)}. {appUrl}/strategies/{s.StrategyId}/signal\n");
         }
         text.Append("\nWhat changed today\n");
         if (changed.Count == 0) text.Append("- No rules were newly met.\n");

@@ -75,6 +75,19 @@ public class NotificationTests
         }
     }
 
+    sealed class NotSetUpThenWorks : IEmailSender
+    {
+        public bool SetUp { get; set; }
+        public int Sent { get; private set; }
+        public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken)
+        {
+            if (!SetUp) throw new EmailNotSetUpException();
+            Sent++;
+            return Task.CompletedTask;
+        }
+    }
+
     static async Task<(Guid UserId, Guid StrategyId, Guid AssetId, Guid SignalId, string Email)> SeedAsync(AppDbContext db, bool verified = true, bool overview = true,
         StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid")
     {
@@ -122,8 +135,8 @@ public class NotificationTests
         try
         {
             var sender = new Captured();
-            var first = await Service(scope, sender).SendSignalAlertsAsync([signalId], default);
-            var second = await Service(scope, sender).SendSignalAlertsAsync([signalId], default);
+            var first = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var second = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
 
             Assert.Equal((1, 0), (first, second));
             Assert.Equal(email, Assert.Single(sender.Sent).To);
@@ -151,7 +164,7 @@ public class NotificationTests
             await db.Strategies.Where(s => s.Id == off.StrategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, false));
             var sender = new Captured();
 
-            var sent = await Service(scope, sender).SendSignalAlertsAsync([unverified.SignalId, simulation.SignalId, off.SignalId], default);
+            var sent = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
 
             Assert.Equal(0, sent);
             Assert.Empty(sender.Sent);
@@ -178,14 +191,18 @@ public class NotificationTests
             var early = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 4, 30, 0, TimeSpan.Zero), default);
             var morning = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero), default);
             var again = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 9, 0, 0, TimeSpan.Zero), default);
+            // Saturday morning: Friday's session is over, so Friday's overview goes out. Sunday and Monday morning add nothing: still Friday's.
             var next = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 24, 6, 0, 0, TimeSpan.Zero), default);
+            var sunday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 25, 6, 0, 0, TimeSpan.Zero), default);
+            var monday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 26, 6, 0, 0, TimeSpan.Zero), default);
 
             Assert.Equal(0, early);
             Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your daily overview, 23 Oct 2026");
             Assert.DoesNotContain(sender.Sent, m => m.To == off.Email || m.To == unverified.Email);
             Assert.True(morning >= 1);
             Assert.Equal(0, again);
-            Assert.True(next >= 1); // The next day's.
+            Assert.True(next >= 1); // Friday's, on Saturday morning.
+            Assert.Equal((0, 0), (sunday, monday));
             var mail = sender.Sent.First(m => m.To == wanted.Email);
             Assert.Contains("Waiting for you", mail.Body); // The seeded live signal is still waiting.
             Assert.Equal(2, await db.Notifications.CountAsync(n => n.UserId == wanted.UserId && n.Kind == NotificationKind.Overview));
@@ -193,6 +210,33 @@ public class NotificationTests
         finally
         {
             foreach (var seeded in new[] { wanted, off, unverified }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task An_alert_that_could_not_be_sent_because_email_is_not_set_up_is_tried_again_later()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, _, assetId, _, _) = await SeedAsync(db);
+        try
+        {
+            var sender = new NotSetUpThenWorks();
+            var service = ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
+
+            var before = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            Assert.Equal(0, await db.Notifications.CountAsync(n => n.UserId == userId)); // The claim was given back.
+            sender.SetUp = true;
+            var after = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var again = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+
+            Assert.Equal((0, 1, 0), (before, after, again));
+            Assert.Equal(1, sender.Sent);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
         }
     }
 }

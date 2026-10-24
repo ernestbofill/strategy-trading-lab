@@ -1,7 +1,9 @@
+using StrategyTradingLab.Api.Admin;
+
 namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>Looks every hour for users whose morning has begun and who haven't had today's overview (see <see cref="NotificationService"/>).</summary>
-public class NotificationWorker(IServiceScopeFactory scopes, TimeProvider time, ILogger<NotificationWorker> logger) : BackgroundService
+public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory scopes, TimeProvider time, ILogger<NotificationWorker> logger) : BackgroundService
 {
     static readonly TimeSpan Every = TimeSpan.FromHours(1);
 
@@ -12,6 +14,12 @@ public class NotificationWorker(IServiceScopeFactory scopes, TimeProvider time, 
         while (!stoppingToken.IsCancellationRequested)
         {
             await Task.Delay(delay, time, stoppingToken);
+            // Like the price refresh: while the admin page has the API on the other database, its users are not ours to email.
+            if (databases.Active != databases.Home)
+            {
+                delay = Every;
+                continue;
+            }
             try
             {
                 using var scope = scopes.CreateScope();

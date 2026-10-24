@@ -17,6 +17,8 @@ public record TestedFee(decimal Percent, decimal Fixed)
     /// </summary>
     public (decimal Amount, decimal Fee) Split(decimal step)
     {
+        // A step must leave something to buy with (the budget screen's minimum step is far above the fee).
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(step, Fixed + 0.01m);
         var amount = Math.Round((step - Fixed) / (1 + Percent / 100), 2, MidpointRounding.ToZero);
         return (amount, step - amount);
     }

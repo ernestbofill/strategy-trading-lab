@@ -112,4 +112,11 @@ public class TemplateTests
         var tested = split.Amount * TemplateCatalog.Fee.Percent / 100 + TemplateCatalog.Fee.Fixed;
         Assert.InRange(split.Fee - tested, 0m, 0.01m);
     }
+
+    [Theory]
+    [InlineData(0.50)]
+    [InlineData(1)]
+    [InlineData(1.01)]
+    public void A_step_that_leaves_nothing_to_buy_with_is_refused(decimal step) =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => TemplateCatalog.Fee.Split(step));
 }

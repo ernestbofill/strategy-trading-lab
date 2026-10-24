@@ -12,6 +12,7 @@ import { currencyOptions } from './currencies'
 import { errorText } from './copy'
 import { logInPath } from './paths'
 import { ResendLink } from './ResendLink'
+import { InstallApp } from './InstallApp'
 
 /** Account, first version (spec: Account): the email, change password, log out. */
 export function AccountPage() {
@@ -52,6 +53,10 @@ export function AccountPage() {
             <ResendLink />
           </>
         )}
+      </Section>
+
+      <Section title="App">
+        <InstallApp />
       </Section>
 
       <Section title="Currency">

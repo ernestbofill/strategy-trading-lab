@@ -82,9 +82,11 @@ public static class SignalEndpoints
             // Only a waiting signal can be snoozed (the table's check): a missed one has nothing left to remind of.
             if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict("Only a signal still waiting can be snoozed.");
             // A snooze promises a reminder: refuse it when none could be sent.
+            if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict("This strategy has ended, so there is no reminder to send.");
             if (!found.Strategy.Notifications) return TypedResults.Conflict("This strategy's notifications are off, so there is no reminder to send.");
             if (user.EmailVerifiedAt is null) return TypedResults.Conflict("Confirm your email address to get reminders.");
-            var until = SignalRules.NextWeekday(StrategyEndpoints.Today(user, time));
+            // The next US market day (spec: a day is a US market day); the user's time zone only sets when the email arrives.
+            var until = SignalRules.NextWeekday(UsSession.Today(time.GetUtcNow()));
             // Conditional, like the answers: the signal may have been answered or missed since it was read.
             var snoozed = await db.Signals.Where(s => s.Id == id && s.Status == SignalStatus.Waiting)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, until), cancellationToken);
@@ -158,7 +160,9 @@ public static class SignalEndpoints
         var rates = new List<RateDay>();
         // Only days with both rates stored: another day (a weekend, a holiday, today before the rates are in) would repeat an
         // earlier rate under its own date. The form picks the latest on or before its date, as the server does.
-        for (var day = signal.SignalDate; day <= today; day = day.AddDays(1))
+        // From the look-back before the signal, as the server's own lookup reads them, so a signal day without a stored rate
+        // (a European holiday) still shows the earlier one the server would use.
+        for (var day = signal.SignalDate.AddDays(-ExchangeRates.LookBackDays); day <= today; day = day.AddDays(1))
             if ((strategy.Currency == asset.Currency || (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(asset.Currency, day)))
                 && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && exchange.Between(strategy.Currency, asset.Currency, day) is { } rate)
                 rates.Add(new RateDay(day, rate));

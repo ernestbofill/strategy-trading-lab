@@ -18,7 +18,7 @@ public record SignalAnswer(SignalStatus Status, SkipReason? SkipReason, DateOnly
 
 /// <summary>
 /// Confirm a signal. <c>Reason</c> is what the rules found, in words ("8% below its recent peak, still above its 50-day
-/// average"). <c>Rates</c> are the stored reference rates of the weekdays from the signal day to today, for the rate line to follow the date.
+/// average"). <c>Rates</c> are the stored reference rates of the weekdays from a week before the signal to today, for the rate line to follow the date.
 /// </summary>
 public record SignalDetail(
     Guid Id,

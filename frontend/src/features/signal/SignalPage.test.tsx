@@ -91,7 +91,7 @@ describe('SignalPage', () => {
     open(detail())
     vi.spyOn(api, 'snoozeSignal').mockResolvedValue('2026-10-26')
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Remind me tomorrow' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Remind me next trading day' }))
 
     expect(await screen.findByText("We'll remind you on Oct 26.")).toBeTruthy()
   })

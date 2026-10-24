@@ -502,7 +502,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Signal box: "Your rules for **[strategy name]** are met for [stock]: [8]% below its recent peak, still above its 50-day average. Under your settings that's step [2] of [5] ([€100])." Then "Close on [date]: $[XXX.XX]". The fact list depends on the template's rules.
 - Sell signal for *Ride the long trend* (not drawn): "Your rules for **[strategy name]** are met for a sale: the market closed [3.2]% below its 200-day average."
 - **"Did you act on it?"** with two choices side by side: "✓ I did it" and "× I skipped it". "I did it" is preselected in the wireframe.
-- A third, quieter action: **Snooze**, "Remind me tomorrow", under the form while the signal waits. It doesn't answer the signal; once snoozed it reads "We'll remind you on [date]." 
+- A third, quieter action: **Snooze**, "Remind me next trading day", under the form while the signal waits. It doesn't answer the signal; once snoozed it reads "We'll remind you on [date]." 
 
 **I did it**: four fields, each with a visible label, and an exchange-rate line:
 
@@ -523,7 +523,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 
 **I skipped it**: "Why? (optional)" with single-choice chips "Price ran away", "Didn't trust it", "No cash", "Other". Text: "A skip uses no budget. The rules carry on as if the step was bought, so the next signal for [stock] is step [n+1] of [max]." Button: "Save the skip".
 
-**Snooze**: the signal stays in Waiting for you, and the user is reminded the next weekday from 07:00 in their time zone (email "Reminder: [stock], your rules for [strategy]"), once per channel. It can be snoozed again until the signal ends. A missed or answered signal can't be snoozed.
+**Snooze**: the signal stays in Waiting for you, and the user is reminded the next US market weekday (New York's date; holidays aren't known yet) from 07:00 in their time zone, that day or the next (not later) (email "Reminder: [stock], your rules for [strategy]"), once per channel. It can be snoozed again until the signal ends. A missed or answered signal can't be snoozed, nor one whose reminder couldn't be sent (strategy ended or its notifications off, email not confirmed).
 
 **Behaviour**
 - Saving records the trade or the skip and returns to the strategy page. A trade updates budget used, steps and results.

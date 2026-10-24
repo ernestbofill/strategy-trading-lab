@@ -50,6 +50,6 @@ export const symbolOf = (currency: string) => CURRENCIES.find((c) => c.code === 
 
 /** €98.80 / $187.50 / JPY 1,234.00: an amount or a price to the cent, in any currency (a stock's may be one the user can't pick). */
 export const exact = (n: number, currency: string) => {
-  const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol
-  return symbol ? `${symbol}${centsFormat.format(n)}` : `${currency} ${centsFormat.format(n)}`
+  const symbol = symbolOf(currency)
+  return symbol !== currency ? `${symbol}${centsFormat.format(n)}` : `${currency} ${centsFormat.format(n)}`
 }

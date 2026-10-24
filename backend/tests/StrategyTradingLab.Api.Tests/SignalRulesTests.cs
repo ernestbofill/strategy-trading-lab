@@ -54,6 +54,7 @@ public class SignalRulesTests
         Assert.Contains("amount", SignalRules.CheckTrade(Trade(amount: 10.005m), SignalDay, Today, Rate).Errors.Keys); // Cents only.
         Assert.Contains("shares", SignalRules.CheckTrade(Trade(enteredAs: EnteredAs.Shares, amount: null), SignalDay, Today, Rate).Errors.Keys);
         Assert.Contains("fxRate", SignalRules.CheckTrade(Trade(source: FxSource.User), SignalDay, Today, Rate).Errors.Keys);
+        Assert.Contains("shares", SignalRules.CheckTrade(Trade(enteredAs: EnteredAs.Shares, amount: null, shares: 0.1234567m), SignalDay, Today, Rate).Errors.Keys);
     }
 
     [Fact]

@@ -273,7 +273,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
                       "No reference rate for that day yet: enter your broker's."
                     )}
                   </p>
-                  <TextAction onClick={() => set({ ownRate: reference ? reference.rate.toFixed(4) : '' })}>Change</TextAction>
+                  <TextAction onClick={() => set({ ownRate: reference ? String(reference.rate) : '' })}>Change</TextAction>
                   {errors.fxRate && <FormMessage tone="error">{errors.fxRate}</FormMessage>}
                 </div>
               ) : (
@@ -319,7 +319,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
               We'll remind you on {shortDate(snoozedUntil)}.
             </p>
           ) : (
-            <TextAction onClick={snooze}>Remind me tomorrow</TextAction>
+            <TextAction onClick={snooze}>Remind me next trading day</TextAction>
           )}
         </div>
       )}

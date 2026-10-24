@@ -40,6 +40,8 @@ public static class SignalRules
             Fail("amount", "Enter the amount you spent, without the fee.");
         if (enteredAs == EnteredAs.Shares && request.Shares is not (> 0 and < 1_000_000_000))
             Fail("shares", "Enter the number of shares.");
+        else if (enteredAs == EnteredAs.Shares && request.Shares != Math.Round(request.Shares.Value, 6))
+            Fail("shares", "Use up to 6 decimals.");
 
         var fee = request.Fee ?? 0;
         if (fee is < 0 or > MaxAmount || fee != Math.Round(fee, 2)) Fail("fee", "Enter the fee, or leave it empty.");

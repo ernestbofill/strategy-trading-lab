@@ -105,6 +105,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var day = row.signal.SnoozedUntil!.Value;
             var localDay = DateOnly.FromDateTime(local.DateTime);
             if (localDay < day || (localDay == day && local.Hour < OverviewHour)) continue;
+            // A day already gone (the reminder couldn't go out then, e.g. notifications were off) isn't reminded late.
+            if (localDay > day.AddDays(1)) continue;
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl)), cancellationToken)) sent++;
         }

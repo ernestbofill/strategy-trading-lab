@@ -236,6 +236,9 @@ public class NotificationTests
             // Madrid is UTC+1 on 2026-10-26: 05:30 UTC is 06:30 there, 06:30 UTC is 07:30.
             await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 26, 5, 30, 0, TimeSpan.Zero), default);
             Assert.DoesNotContain(sender.Sent, m => m.To == snoozed.Email);
+            // Two days late: a reminder for a day gone by isn't sent.
+            await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 28, 9, 0, 0, TimeSpan.Zero), default);
+            Assert.DoesNotContain(sender.Sent, m => m.To == snoozed.Email);
             await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 26, 6, 30, 0, TimeSpan.Zero), default);
             await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 26, 9, 0, 0, TimeSpan.Zero), default);
 

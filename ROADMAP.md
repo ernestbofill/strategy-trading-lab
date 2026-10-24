@@ -7,6 +7,7 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 ## Done
 
 - Accounts: sign-up, log-in, forgot and reset password, email confirmation, and the account page, with server-side sessions and rate limits. `POST /strategies` and `/dashboard` now need a logged-in user. Designed in [backend/AUTH.md](backend/AUTH.md) (#25), backend (#28), screens and guard (#31). The fixed development user is gone.
+- Phone installation: Account install prompt, manual iPhone and Android instructions, and home-screen icons (#50).
 - Currency: euro, US dollar or British pound, picked at sign-up and changed on the account page; new strategies start in it, and the budget screens and dashboard show it. Backtest figures and template texts stay in euro for now (Ernest's request).
 - New-strategy flow, frontend: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm (#1–#3, #10, #13, #19). Advanced settings is a placeholder.
 - The dev database migrates itself: the API does it on startup from a launch profile, and cloud sessions run `backend/scripts/migrate-dev-https.py` (the session start hook does too) (#24).
@@ -21,8 +22,6 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 ## Next
 
 Draft order, for Ernest to confirm.
-
-- **In progress — phone installation** (#50): add an Account install prompt and mobile home-screen icons; move to Done when this PR merges.
 
 1. **Catalan.** A priority, and cheaper now, while there are few screens. Move the frontend's copy into per-language files (English and Catalan) with a language switch the user picks (English by default, never guessed from the browser, as the spec says), and add `Texts/ca.json` for the templates. The API already serves template texts per language, from the user's record, and the user record now has a locale, so the choice only needs a switch on the account page. Start with a glossary, `docs/glossary-ca.md`, that fixes the key words (stock → *acció*, fund → *fons*, step → *pas*, signal → *senyal*, …), so every agent and screen translates them the same way. Claude drafts the Catalan; Ernest reviews it.
 2. **Check the live app after a merge.** A script (bash and PowerShell) that checks production serves the merged versions: `/api/version` for the backend, and a new `/version.json` from the frontend build (today the version is only inside the bundle). Then the agent opens the live app and looks at the changed screens. Run it after every merge, in a loop before the next item. In cloud sessions the script works if the network settings allow the production domain; the visual check needs a headless browser (Playwright) in the cloud environment, otherwise it's local only. A first step towards an agent that tests the live app as a user (TODO.md → Ideas).

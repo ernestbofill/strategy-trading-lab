@@ -156,9 +156,11 @@ public static class SignalEndpoints
 
         var exchange = await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
         var rates = new List<RateDay>();
-        // Weekdays only: a weekend day would repeat Friday's rate under its own date.
+        // Only days with both rates stored: another day (a weekend, a holiday, today before the rates are in) would repeat an
+        // earlier rate under its own date. The form picks the latest on or before its date, as the server does.
         for (var day = signal.SignalDate; day <= today; day = day.AddDays(1))
-            if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && exchange.Between(strategy.Currency, asset.Currency, day) is { } rate)
+            if ((strategy.Currency == asset.Currency || (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(asset.Currency, day)))
+                && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && exchange.Between(strategy.Currency, asset.Currency, day) is { } rate)
                 rates.Add(new RateDay(day, rate));
 
         SignalAnswer? answer = null;

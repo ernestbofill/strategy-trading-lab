@@ -195,6 +195,10 @@ public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)
         return at < 0 ? null : days[at].Rate;
     }
 
+    /// <summary>Whether <paramref name="currency"/> has a rate stored for that very day (the euro always has).</summary>
+    public bool StoredOn(string currency, DateOnly date) =>
+        currency == Base || (byQuote.TryGetValue(currency, out var days) && days.Exists(d => d.Date == date));
+
     /// <summary>Units of <paramref name="assetCurrency"/> per one unit of <paramref name="strategyCurrency"/> on a day (USD per EUR, a trade's fx rate).</summary>
     public decimal? Between(string strategyCurrency, string assetCurrency, DateOnly date)
     {

@@ -30,10 +30,10 @@ export const initialForm = (s: SignalDetail): TradeForm => ({
 })
 
 /**
- * Whether a number can be read two ways: one comma, no dot, three digits after it and not "0," ("1,250" is 1250 or 1.25).
- * The screen asks instead of guessing.
+ * Whether a number can be read two ways: one comma or one dot, three digits after it and not "0" before ("1,250" and
+ * "1.250" are 1250 or 1.25, by country). The screen asks instead of guessing.
  */
-export const isAmbiguous = (text: string) => /^[1-9]\d{0,2},\d{3}$/.test(text.trim().replace(/\s/g, ''))
+export const isAmbiguous = (text: string) => /^[1-9]\d{0,2}[,.]\d{3}$/.test(text.trim().replace(/\s/g, ''))
 
 /**
  * A typed number; null when empty, not a number or ambiguous. The last of a dot and a comma is the decimal mark and the
@@ -57,7 +57,7 @@ export function parseNumber(text: string): number | null {
 /** The fields whose text could be read two ways, keyed as the server names them, with what to write instead. */
 export function ambiguousFields(form: TradeForm): Record<string, string> {
   const errors: Record<string, string> = {}
-  const ask = 'Write decimals with a dot (1.25) and whole numbers without a comma (1250).'
+  const ask = 'Is that 1250 or 1.25? Write it as 1250 or 1.25.'
   const check = (field: string, text: string | null) => text !== null && isAmbiguous(text) && (errors[field] = ask)
   check('price', form.price)
   check(form.enteredAs === 'amount' ? 'amount' : 'shares', form.enteredAs === 'amount' ? form.amount : form.shares)

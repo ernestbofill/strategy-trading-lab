@@ -45,7 +45,8 @@ public static class SignalEndpoints
             var (signal, strategy, asset) = found;
             if (!Answerable(signal)) return TypedResults.Conflict(AlreadyAnswered);
 
-            var rates = await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
+            // The same currency needs no rate (it is 1): nothing to load.
+            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
             var (trade, errors) = SignalRules.CheckTrade(request, signal.SignalDate, StrategyEndpoints.Today(user, time),
                 day => rates.Between(strategy.Currency, asset.Currency, day));
             if (trade is null) return TypedResults.ValidationProblem(errors);
@@ -159,14 +160,16 @@ public static class SignalEndpoints
         var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open,
             signal.StepAmount is { } step && step > TemplateCatalog.Fee.Fixed + 0.01m ? TemplateCatalog.Fee.Split(step).Amount : null);
 
-        var exchange = await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
         var rates = new List<RateDay>();
+        // The screen shows no rate line when the currencies match, so nothing to load then.
+        var exchange = strategy.Currency == asset.Currency ? null : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
+        if (exchange is not null)
         // Only days with both rates stored: another day (a weekend, a holiday, today before the rates are in) would repeat an
         // earlier rate under its own date. The form picks the latest on or before its date, as the server does.
         // From the look-back before the signal, as the server's own lookup reads them, so a signal day without a stored rate
         // (a European holiday) still shows the earlier one the server would use.
         for (var day = signal.SignalDate.AddDays(-ExchangeRates.LookBackDays); day <= today; day = day.AddDays(1))
-            if ((strategy.Currency == asset.Currency || (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(asset.Currency, day)))
+            if (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(asset.Currency, day)
                 && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && exchange.Between(strategy.Currency, asset.Currency, day) is { } rate)
                 rates.Add(new RateDay(day, rate));
 

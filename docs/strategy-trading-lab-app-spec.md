@@ -519,7 +519,7 @@ Help line under the price: "Prefilled with [date]'s opening price. Change anythi
 
 The date is from the signal day to today; a field the server refuses shows why under it ("Enter the price per share.").
 
-**Answered or missed** (not drawn): an answered signal shows the box and "You did it: [n] shares at $[XXX.XX] on [date] (€[amount], fee €[fee])." or "You skipped it: [reason].", with "Back to the strategy" instead of the form. A missed signal keeps the form, under "This signal ended on [date] without an answer. You can still record what you did."
+**Answered or missed** (not drawn): an answered signal shows the box and "You did it: [n] shares at $[XXX.XX] on [date] (€[amount], fee €[fee])." or "You skipped it: [reason].", with "Back to the strategy" instead of the form. A missed signal keeps the form, under "This signal ended on [date] without an answer. You can still record what you did." Its trade counts in budget used like any other, even when later signals used that budget meanwhile, so budget used can read over 100% (open decision, ROADMAP).
 
 **I skipped it**: "Why? (optional)" with single-choice chips "Price ran away", "Didn't trust it", "No cash", "Other". Text: "A skip uses no budget. The rules carry on as if the step was bought, so the next signal for [stock] is step [n+1] of [max]." Button: "Save the skip".
 

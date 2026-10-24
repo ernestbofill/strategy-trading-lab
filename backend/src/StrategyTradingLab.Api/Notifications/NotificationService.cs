@@ -88,11 +88,13 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     {
         // No time zone is more than a day ahead of UTC, so later snooze days can wait.
         var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
+        // Nor more than a day behind, plus a day for time zones: older snooze days are no longer reminded (see below).
+        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
         var rows = await (from signal in db.Signals.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
-                          where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest
+                          where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest && signal.SnoozedUntil >= earliest
                               && strategy.Mode == StrategyMode.Live && strategy.Notifications && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
                                   && x.Channel == NotificationChannel.Email && x.ForDate == signal.SnoozedUntil)

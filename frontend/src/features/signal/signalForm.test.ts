@@ -43,7 +43,7 @@ describe('signalForm', () => {
   })
 
   it('asks rather than guess at a number that reads two ways', () => {
-    expect([parseNumber('1,250'), isAmbiguous('1,250'), isAmbiguous('0,125'), isAmbiguous('1,25')]).toEqual([null, true, false, false])
+    expect([parseNumber('1,250'), isAmbiguous('1,250'), isAmbiguous('0,125'), isAmbiguous('1,25'), isAmbiguous('1.250')]).toEqual([null, true, false, false, true])
     expect(Object.keys(ambiguousFields({ ...initialForm(signal()), price: '1,250', fee: '1,20' }))).toEqual(['price'])
   })
 

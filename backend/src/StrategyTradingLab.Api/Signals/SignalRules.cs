@@ -33,7 +33,8 @@ public static class SignalRules
         else if (date < signalDate) Fail("date", "Use a day on or after the signal.");
         else if (date > today) Fail("date", "Use a day up to today.");
 
-        if (request.Price is not (> 0 and < 1_000_000)) Fail("price", "Enter the price per share.");
+        if (request.Price is not (>= 0.0001m and < 1_000_000)) Fail("price", "Enter the price per share.");
+        else if (request.Price != Math.Round(request.Price.Value, 4)) Fail("price", "Use up to 4 decimals.");
 
         var enteredAs = request.EnteredAs ?? EnteredAs.Amount;
         if (enteredAs == EnteredAs.Amount && (request.Amount is not (> 0 and <= MaxAmount) || request.Amount != Math.Round(request.Amount.Value, 2)))
@@ -51,6 +52,7 @@ public static class SignalRules
         if (source == FxSource.User)
         {
             if (request.FxRate is not (> 0 and < 1_000_000)) Fail("fxRate", "Enter the rate your broker used.");
+            else if (request.FxRate != Math.Round(request.FxRate.Value, 8)) Fail("fxRate", "Use up to 8 decimals.");
             else fx = request.FxRate;
         }
         else if (request.Date is { } day && !errors.ContainsKey("date"))
@@ -65,7 +67,7 @@ public static class SignalRules
             ? (request.Amount!.Value, Math.Round(request.Amount!.Value * rate / price, 6))
             : (Math.Round(request.Shares!.Value * price / rate, 2), request.Shares!.Value);
         if (amount <= 0 || shares <= 0) Fail(enteredAs == EnteredAs.Amount ? "amount" : "shares", "That is too small to be a trade.");
-        else if (amount > MaxAmount) Fail("shares", "That is more than one trade can be.");
+        else if (amount > MaxAmount || shares >= 1_000_000_000) Fail(enteredAs == EnteredAs.Amount ? "amount" : "shares", "That is more than one trade can be.");
         return errors.Count > 0 ? (null, errors) : (new CheckedTrade(request.Date!.Value, price, enteredAs, amount, shares, fee, rate, source), errors);
     }
 }

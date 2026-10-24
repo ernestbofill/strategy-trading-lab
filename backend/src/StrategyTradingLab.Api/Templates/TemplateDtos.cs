@@ -32,7 +32,23 @@ public record TemplateDetail : TemplateSummary
     public required Watches Watches { get; init; }
     public required BacktestDto? Backtest { get; init; }
     public required TemplateDefaults Defaults { get; init; }
+    /// <summary>The rules Advanced settings can tune, in screen order; empty when the template has none yet.</summary>
+    public required IReadOnlyList<SettingDto> Settings { get; init; }
 }
+
+/// <summary>
+/// A setting on Advanced settings (2b). <c>Key</c> is its name in <c>Defaults.Params</c>, which holds the tested value.
+/// <c>Sentence</c> has <c>{value}</c> where the value goes; <c>Value</c> reads a number, with <c>{n}</c> for it.
+/// <c>Below</c> names the setting this one stays at least a step under.
+/// </summary>
+public record SettingDto(
+    string Key,
+    string Sentence,
+    string Value,
+    decimal Step,
+    decimal Min,
+    decimal Max,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Below);
 
 /// <summary>One line of "It signals when". <c>Marker</c> is "01", "BUY", "SELL"…</summary>
 public record RuleDto(

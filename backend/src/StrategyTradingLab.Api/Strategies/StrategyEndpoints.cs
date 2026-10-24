@@ -66,7 +66,8 @@ public static class StrategyEndpoints
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
             var errors = NewStrategyValidation.Validate(request, template, assets);
-            if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = new Strategy
@@ -80,7 +81,7 @@ public static class StrategyEndpoints
                 StartedOn = Today(user, time),
                 Currency = request.Currency ?? user.Currency,
                 Budget = request.Budget,
-                Params = template.ParamsJson(),
+                Params = parameters,
                 Assets = [.. assets.Select(asset => new StrategyAsset
                     { AssetId = asset.Id, Active = true, AddedAt = time.GetUtcNow() })],
             };

@@ -1,0 +1,104 @@
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 640px;
+}
+
+.row {
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+  padding: 12px var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.row[data-changed] {
+  border-color: var(--warning);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sentence {
+  font: 14px/20px var(--font-ui);
+}
+
+.value {
+  font: 600 14px/20px var(--font-mono);
+  color: var(--syntax-number);
+}
+
+.tested {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font: 11px/16px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.changed {
+  font-family: var(--font-mono);
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: var(--warning-surface);
+  color: var(--ink);
+  border: 1px solid var(--warning);
+}
+
+.stepper {
+  display: flex;
+  flex: none;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+}
+.stepper button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: var(--surface-input);
+  color: var(--primary);
+  font: 18px var(--font-mono);
+  cursor: pointer;
+}
+.stepper button + button {
+  border-left: 1px solid var(--primary);
+}
+.stepper button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.stepper button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.stepper button:focus-visible,
+.reset:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.reset {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.message {
+  margin: 0;
+  padding: var(--space-3);
+  font: 14px/22px var(--font-ui);
+}

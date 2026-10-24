@@ -38,7 +38,7 @@ Draft order, for Ernest to confirm.
    - **Live:** Confirm a signal prefills Amount as the step minus the tested fee. The user still enters their broker's real fee, so a live step may spend a little more or less than the step.
    - **Check:** the backtest figures and the POC charge the fee on top of the step. Check whether the tested results change enough to say so on How we tested.
    - **Docs:** update DATA-MODEL (trade maths), the spec (Confirm a signal's Amount row, Metrics) and the evaluator tests.
-6. **Advanced settings** for *Dip in winners*, replacing the placeholder.
+6. ~~**Advanced settings** for *Dip in winners*, replacing the placeholder.~~ Built: each template lists its tunable settings (`Template.Settings`, words in the texts), the screen keeps the changes in the draft, Confirm shows "[n] changed", and a new strategy stores them in its params. Not yet: the backtest re-run with the user's values (needs the backtest engine; the screen shows the tested results meanwhile), asking before leaving with unsaved changes (needs a data router for `useBlocker`), *Tune the settings* on a running strategy, and the other four templates' settings.
 7. **Daily overview right after the price check.** Today the overview waits for 07:00 in the user's time zone (`NotificationService.OverviewHour`), while the prices and signals are ready after the US close. By default, send it as soon as the daily check has run, so there is no delay; a later, user-chosen time can come with the overview settings. Then make the copy match everywhere: sign-up and the account page ("early in the morning"), Confirm ("after the US market close"), and the spec (*Account*, *Daily overview*). Found in the end-to-end test of 2026-10-24.
 
 ## Later

@@ -5,9 +5,13 @@ namespace StrategyTradingLab.Api.Strategies;
 
 // The strategy DTOs of frontend/src/api/types.ts (camelCase JSON, enums as camelCase strings).
 
-/// <summary>What the Confirm screen sends. Params are not sent yet: a new strategy starts from the template's tested defaults. <c>Currency</c> is the one the user saw while setting the budget; without it the user's current one is used.</summary>
+/// <summary>
+/// What the Confirm screen sends. <c>Currency</c> is the one the user saw while setting the budget; without it the user's
+/// current one is used. <c>Settings</c> are the Advanced settings the user changed (setting key → value); the rest keep the
+/// template's tested defaults.
+/// </summary>
 public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, Budget Budget, IReadOnlyList<Guid> AssetIds,
-    string? Currency = null);
+    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null);
 
 /// <summary>A strategy as shown on the dashboard.</summary>
 public record StrategySummary(

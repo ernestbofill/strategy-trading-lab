@@ -27,6 +27,28 @@
     "stockStatus": {
       "zone": "the discount zone",
       "notCandidate": "Below its long trend"
+    },
+    "settings": {
+      "zoneStartPct": {
+        "sentence": "The discount zone starts {value} below the recent peak.",
+        "value": "{n}%"
+      },
+      "zoneEndPct": {
+        "sentence": "It ends {value} below the recent peak.",
+        "value": "{n}%"
+      },
+      "peakDays": {
+        "sentence": "The recent peak is the highest price of the last {value}.",
+        "value": "{n} days"
+      },
+      "trendDays": {
+        "sentence": "The long trend is the average price over {value}.",
+        "value": "{n} days"
+      },
+      "floorDays": {
+        "sentence": "The dip must stay above the average over {value}.",
+        "value": "{n} days"
+      }
     }
   },
   "comeback": {

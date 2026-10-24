@@ -1,0 +1,57 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
+namespace StrategyTradingLab.Api.Templates;
+
+/// <summary>
+/// A rule the user can tune on Advanced settings (2b): a number of the template's params, by its camelCase JSON name.
+/// The screen offers <c>Min</c> to <c>Max</c> in steps of <c>Step</c>. <c>Below</c> names another setting this one must stay
+/// at least a step under (the discount zone starts before it ends). Its words are in the template's texts.
+/// </summary>
+public record Setting(string Key, decimal Step, decimal Min, decimal Max, string? Below = null);
+
+/// <summary>How the user's settings become a strategy's params.</summary>
+public static class TemplateSettings
+{
+    /// <summary>
+    /// The template's params with <paramref name="settings"/> (setting key → value) over the tested defaults, as
+    /// strategies.params stores them. Null, with the reasons in <paramref name="fail"/>, when a value is refused.
+    /// </summary>
+    public static JsonDocument? Apply(Template template, IReadOnlyDictionary<string, decimal>? settings, Action<string, string> fail)
+    {
+        if (settings is null || settings.Count == 0) return template.ParamsJson();
+
+        var json = (JsonObject)JsonSerializer.SerializeToNode(template.Params, template.Params.GetType(), JsonSerializerOptions.Web)!;
+        var ok = true;
+        foreach (var (key, value) in settings)
+        {
+            var field = $"settings.{key}";
+            if (template.Settings.FirstOrDefault(s => s.Key == key) is not { } setting)
+            {
+                fail(field, "This template has no such setting.");
+                ok = false;
+            }
+            else if (value < setting.Min || value > setting.Max || (value - setting.Min) % setting.Step != 0)
+            {
+                fail(field, $"Use {setting.Min:0.##} to {setting.Max:0.##}, in steps of {setting.Step:0.##}.");
+                ok = false;
+            }
+            else
+            {
+                json[key] = value;
+            }
+        }
+        if (!ok) return null;
+
+        var merged = json.Deserialize(template.Params.GetType(), JsonSerializerOptions.Web)!;
+        var results = new List<ValidationResult>();
+        if (!Validator.TryValidateObject(merged, new ValidationContext(merged), results, validateAllProperties: true))
+        {
+            // The params' own checks, such as a discount zone that ends before it starts.
+            fail("settings", string.Join(" ", results.Select(r => r.ErrorMessage)));
+            return null;
+        }
+        return JsonSerializer.SerializeToDocument(merged, merged.GetType(), JsonSerializerOptions.Web);
+    }
+}

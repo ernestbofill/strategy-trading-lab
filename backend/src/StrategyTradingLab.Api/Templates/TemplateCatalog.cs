@@ -47,6 +47,9 @@ public sealed record Template(
     /// <summary>Bumped when the tested defaults are retuned; strategies record the one they started from.</summary>
     public int DefaultsVersion { get; init; } = 1;
 
+    /// <summary>The rules the user can tune on Advanced settings, in screen order. Empty until the template's are designed.</summary>
+    public IReadOnlyList<Setting> Settings { get; init; } = [];
+
     /// <summary>The params as strategies.params stores them.</summary>
     public JsonDocument ParamsJson() => JsonSerializer.SerializeToDocument(Params, Params.GetType(), JsonSerializerOptions.Web);
 }
@@ -69,7 +72,18 @@ public static class TemplateCatalog
         "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList([Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor]),
         [new("2010-14", 38, 61, -9), new("2015-19", 71, 58, -12), new("2020-24", 64, 79, -21), new("All", 212, 248, -21)],
-        new DipParams());
+        new DipParams())
+    {
+        // The spec's (2b). The cooldown and the proven-growth rule are not exposed.
+        Settings =
+        [
+            new("zoneStartPct", 1, 1, 39, Below: "zoneEndPct"),
+            new("zoneEndPct", 1, 2, 40),
+            new("peakDays", 5, 20, 60),
+            new("trendDays", 10, 100, 300),
+            new("floorDays", 5, 20, 100),
+        ],
+    };
 
     public static readonly Template Comeback = new(
         "comeback", "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,

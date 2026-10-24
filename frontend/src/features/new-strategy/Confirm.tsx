@@ -15,6 +15,7 @@ import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
+import { settingsSummary } from './settings'
 import { defaultName, newStrategyFrom } from './newStrategy'
 import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
@@ -106,7 +107,10 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       to: modePath,
     },
     { label: 'Stocks', value: stocksValue, to: reviewPath(template.key) },
-    { label: 'Settings', value: 'Tested defaults', to: advancedPath(template.key) },
+    // Only templates with settings to tune list them.
+    ...(template.settings.length > 0
+      ? [{ label: 'Settings', value: settingsSummary(draft.settings), to: advancedPath(template.key) }]
+      : []),
     {
       label: 'Budget',
       value: allIn

@@ -65,5 +65,10 @@ public static class TemplateEndpoints
                     words.TestedDefaults, TemplateCatalog.Fee.Fixed, TemplateCatalog.Fee.Percent)
                 : null,
             Defaults = new TemplateDefaults(template.DefaultsVersion, template.Budget, template.Params),
+            Settings = [.. template.Settings.Select(setting =>
+            {
+                var words = texts.Settings![setting.Key];
+                return new SettingDto(setting.Key, words.Sentence, words.Value, setting.Step, setting.Min, setting.Max, setting.Below);
+            })],
         };
 }

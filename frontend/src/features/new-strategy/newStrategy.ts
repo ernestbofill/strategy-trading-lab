@@ -18,6 +18,7 @@ export function newStrategyFrom(draft: DraftState, template: TemplateDetail, nam
       watches.kind === 'fund'
         ? [watches.fund.id]
         : watches.starterList.filter((s) => !draft.unticked.includes(s.symbol)).map((s) => s.id),
+    settings: draft.settings,
   }
 }
 

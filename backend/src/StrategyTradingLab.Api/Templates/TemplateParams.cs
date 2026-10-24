@@ -4,8 +4,8 @@ namespace StrategyTradingLab.Api.Templates;
 
 // What a strategy stores in strategies.params, one record per template (camelCase JSON).
 // Defaults and ranges are the POC's (trading-strategies-bot, strategies/*.py), except the ranges of
-// TrendDays, FloorDays and the AI params, which the POC doesn't have: placeholders until Advanced
-// settings are designed. Left out on purpose: the stop-loss and trailing stop (not in the product),
+// TrendDays, FloorDays and the AI params, which the POC doesn't have. These ranges are what the engine accepts; what the
+// user can choose is narrower, the template's Settings (Advanced settings). Left out on purpose: the stop-loss and trailing stop (not in the product),
 // the "getting close" alert threshold and the backtest's baseline. Day counts are trading days unless they say otherwise.
 
 /// <summary>Dip in winners (POC Leader pullback, <c>stage2_pullback</c>).</summary>
@@ -21,7 +21,7 @@ public record DipParams : IValidatableObject
     [Range(10, 120)] public int PeakDays { get; init; } = 60;
 
     /// <summary>The discount zone starts this % below the recent peak.</summary>
-    [Range(0.5, 30)] public decimal ZoneStartPct { get; init; } = 5;
+    [Range(0.5, 39)] public decimal ZoneStartPct { get; init; } = 5;
 
     /// <summary>The discount zone ends this % below the recent peak.</summary>
     [Range(2, 40)] public decimal ZoneEndPct { get; init; } = 15;

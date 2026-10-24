@@ -112,7 +112,12 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       ) : (
         <NavRow
           label="Advanced settings"
-          meta={template.settings.length > 0 ? settingsSummary(draft.settings).toLowerCase() : undefined}
+          meta={
+            template.settings.length > 0
+              ? // Another template's draft changes belong to that one.
+                settingsSummary(draft.templateKey === template.key ? draft.settings : {}).toLowerCase()
+              : undefined
+          }
           to={advancedPath(template.key)}
         />
       )}

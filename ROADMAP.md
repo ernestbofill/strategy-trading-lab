@@ -34,7 +34,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Phone installation: Account install prompt, manual iPhone and Android instructions, and home-screen icons (#50).
 - Currency: euro, US dollar or British pound, picked at sign-up and changed on the account page; new strategies start in it (#35, #51). Backtest figures and template texts stay in euro for now (Ernest's request).
 - New-strategy flow: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm, in both modes (#1–#3, #10, #13, #19). Starting a strategy, `POST /strategies` (#24).
-- Advanced settings for *Dip in winners* and *Ride the long trend*: tunable settings per template (`Template.Settings`), kept in the draft, stored in the strategy's params (#55; this PR).
+- Advanced settings for *Dip in winners* and *Ride the long trend*: tunable settings per template (`Template.Settings`), kept in the draft, stored in the strategy's params (#55, #64).
 - Prices: daily prices and euro exchange rates from Yahoo, refreshed after the US close, with the schedule, *Refresh now* and *Test Yahoo* on the admin page (#38). The exchange rates follow the assets' currencies.
 - Strategy engine: the indicators and *Dip in winners* (#43), *The comeback* (#44), *The big market drop* and *Ride the long trend*, each checked against the POC on real prices.
 - Daily check: runs every running price-based strategy after each price refresh, stores each stock's status and the buy and sell signals, and records the signal trades (#45). A step includes its fee (#56); *Ride the long trend* reinvests sale proceeds on the next buy.

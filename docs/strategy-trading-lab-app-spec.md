@@ -156,7 +156,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - **On success** the user is logged in at once and goes straight to Pick a strategy template. A "Check your email" notice is shown at the top of the dashboard and new-strategy flow until the email is confirmed ("We sent a link to [email] to confirm it." and "Send it again"); the link itself is only in the email. Until the email is verified the user can use the app, but cannot go live yet (assumed; nothing gates it until live strategies send alerts). Verifying needs no log-in, and the link logs no one in (so it can't be used to log someone into another account): it says "Your email is confirmed" and goes to the dashboard if logged in, else to Log-in. An expired or used link says "This link has expired. Ask for a new one." and goes to the account (which sends it again) if logged in, else to Log-in.
 - **Errors** (under the field): the email is not valid; the password is too short; the disclaimer is not ticked. "That email is already registered" is never shown: the answer to every sign-up looks the same ("Check your email"), and an existing account gets an email saying someone tried to sign up with its address and a link to log in. This way nobody can find out who has an account.
 - Too many attempts: "Too many tries. Wait a few minutes and try again."
-- **Who can sign up** (assumed copy): nobody signs up without an invite (decided). A setting on the admin page, *invite only* or *closed*; an *open* setting may come with the public beta. Sign-up works only from an invite link; without one, or with a used-up link, the form is replaced by "Sign-ups are by invitation for now." (closed: "Sign-ups are closed for now."). Ernest's own links give the *vip* role. Each vip has their own invite link on the account page ("Invite a friend · [n] invites left"), with 3 uses by default (a setting on the admin page); the people a vip invites get the *user* role and can't invite. The account records who invited it. No rewards for inviting.
+- **Who can sign up** (assumed copy): a setting on the admin page, *open*, *invite only* or *closed*. It stays open while the app is built; from the quiet launch it is invite only, and nobody signs up without an invite until sign-ups open for the public beta (decided). With the gate on, sign-up works only from an invite link; without one, or with a used-up link, the form is replaced by "Sign-ups are by invitation for now." (closed: "Sign-ups are closed for now."). Ernest's own links give the *vip* role. Each vip has their own invite link on the account page ("Invite a friend · [n] invites left"), with 3 uses by default (a setting on the admin page); the people a vip invites get the *user* role and can't invite. The account records who invited it. No rewards for inviting.
 - **"Skip for now, look around"**, under the button: opens Pick a strategy template as a guest (below).
 
 ### Looking around without an account (not drawn)
@@ -227,7 +227,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Heading "Choose stocks to watch", counter on the right: "[n] of [total] ticked".
 - Each row: a checkbox, the stock's name, one line on what the company does. All ticked by default, alphabetical. Tapping a row ticks or unticks it; unticked names are dimmed.
 - Last row: "+ Add a stock" (not drawn): search by name or symbol. Each result shows the name, symbol, exchange and type; only stocks, from the exchanges the app supports (to start, those of the seeded assets; a setting on the admin page). Picking one adds it to the list, ticked, at the end. Its line under the name is its sector and industry from the price source ("Technology · Software infrastructure"); the seeded stocks keep their written lines. Until its price history is in, its row on the strategy page says "Not enough price history yet". No result: "Nothing found. Try the company's name or its symbol." A strategy watches at most 60 stocks: at 60, the row reads "60 stocks, the most for now".
-- Adding a stock never needs a deploy: the app looks it up, stores it and fetches its prices on its own (ROADMAP item 13).
+- Adding a stock never needs a deploy: the app looks it up, stores it and fetches its prices on its own (ROADMAP item 14).
 - Under the list: "ⓘ In our tests, longer lists gave steadier results."
 - The starter lists come from the POC. Zscaler ("Cloud security software") is the only real example in the wireframes.
 
@@ -638,7 +638,7 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 - The legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest), linked from a footer.
 - Account: download my data, delete my account, "Invite a friend".
 - Unsubscribe links in emails.
-- Admin: health and failure alerts, users (block, delete), invites and test invites, assets, an audit log of owner actions, and feedback.
+- Admin: a data table for the management pages, health and failure alerts, users (block, delete), invites and test invites, assets, an audit log of owner actions, and feedback.
 - Owner access for Claude: an owner account of its own on dev and production, for testing and validation.
 
 ## 10. Open questions

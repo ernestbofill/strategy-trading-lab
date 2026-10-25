@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useIsOwner } from '../features/account/AccountContext'
 import { useBackendVersion } from '../lib/backendVersion'
 import { useT } from '../i18n/I18n'
 import styles from './Screen.module.css'
@@ -8,6 +9,10 @@ import { Tag } from './Tag'
 interface TopBarProps {
   /** Shown on the left. Pass `back` for a "← BACK" link instead. */
   title?: string
+  /** Where clicking the title goes (e.g. "/" for home). */
+  titleLink?: string
+  /** Accessible label for the title link. Defaults to `${title}, home`. */
+  titleLinkAriaLabel?: string
   /** Where "← BACK" goes when the screen was opened directly. Otherwise it goes one step back in the history. */
   back?: string
   step?: string
@@ -15,11 +20,12 @@ interface TopBarProps {
   aside?: ReactNode
 }
 
-export function TopBar({ title, back, step, aside }: TopBarProps) {
+export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside }: TopBarProps) {
   const t = useT()
   const navigate = useNavigate()
   // The first entry of the history has the key 'default': there is nothing to go back to.
   const hasHistory = useLocation().key !== 'default'
+  const isOwner = useIsOwner()
   const onDevDatabase = useBackendVersion()?.database === 'dev'
   const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
     const plainClick = e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
@@ -35,15 +41,27 @@ export function TopBar({ title, back, step, aside }: TopBarProps) {
         <Link to={back} onClick={goBack} className={styles.back}>
           {t('common.back')}
         </Link>
+      ) : titleLink ? (
+        <Link
+          to={titleLink}
+          className={styles.titleLink}
+          aria-label={titleLinkAriaLabel ?? (title ? `${title}, home` : undefined)}
+        >
+          {title}
+        </Link>
       ) : (
         <div>{title}</div>
       )}
       <div className={styles.version}>
-        v{__APP_VERSION__}
-        {onDevDatabase && (
-          <Tag tone="dev" title={t('common.devDatabase')}>
-            DEV
-          </Tag>
+        {isOwner && (
+          <>
+            v{__APP_VERSION__}
+            {onDevDatabase && (
+              <Tag tone="dev" title={t('common.devDatabase')}>
+                DEV
+              </Tag>
+            )}
+          </>
         )}
       </div>
       {(step || aside) && <div className={styles.step}>{step ?? aside}</div>}

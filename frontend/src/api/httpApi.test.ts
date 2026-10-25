@@ -105,6 +105,22 @@ describe('httpApi admin', () => {
     expect(calls[1]).toEqual(['/api/admin/settings/SMTP_HOST', expect.objectContaining({ method: 'DELETE' })])
     expect(calls[2][0]).toBe('/api/admin/settings/SMTP_PASSWORD?clear=true')
   })
+
+  it('reads and updates admin assets', async () => {
+    respond(200, [{ id: 'a1', symbol: 'ZS' }])
+    await expect(httpApi.getAdminAssets()).resolves.toEqual([{ id: 'a1', symbol: 'ZS' }])
+    expect(fetch).toHaveBeenCalledWith('/api/admin/assets', expect.anything())
+
+    respond(204)
+    await httpApi.setAdminAssetActive('a1', false)
+    expect(fetch).toHaveBeenCalledWith('/api/admin/assets/a1/active', expect.objectContaining({ method: 'PUT', body: '{"active":false}' }))
+  })
+
+  it('updates strategy settings', async () => {
+    respond(204)
+    await httpApi.updateStrategySettings('s1', { peakDays: 40 })
+    expect(fetch).toHaveBeenCalledWith('/api/strategies/s1/settings', expect.objectContaining({ method: 'PUT', body: '{"settings":{"peakDays":40}}' }))
+  })
 })
 
 describe('httpApi admin test email', () => {
@@ -227,6 +243,77 @@ describe('httpApi database', () => {
     respond(400, { detail: 'The production database has no URL: set DATABASE_URL_PRODUCTION on the server.' })
     await expect(httpApi.switchAdminDatabase('production')).rejects.toThrow(
       new InvalidValueError('The production database has no URL: set DATABASE_URL_PRODUCTION on the server.'),
+    )
+  })
+})
+
+
+describe('httpApi feedback', () => {
+  it('submits, lists, updates and deletes feedback items via /api/feedback', async () => {
+    const created = {
+      id: 'f1',
+      userEmail: 'reader@example.com',
+      kind: 'bug',
+      status: 'open',
+      text: 'Typo here',
+      route: '/dashboard',
+      element: 'main > p',
+      selectedText: 'strtegy',
+      closedAt: null,
+      createdAt: '2026-10-25T10:00:00Z',
+      updatedAt: '2026-10-25T10:00:00Z',
+    }
+    respond(201, created)
+    await expect(
+      httpApi.submitFeedback({
+        kind: 'bug',
+        text: 'Typo here',
+        route: '/dashboard',
+        element: 'main > p',
+        selectedText: 'strtegy',
+      }),
+    ).resolves.toEqual(created)
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ 'X-Requested-With': 'stl' }),
+      }),
+    )
+
+    respond(200, [created])
+    await expect(httpApi.getFeedback('open')).resolves.toEqual([created])
+    expect(fetch).toHaveBeenCalledWith('/api/feedback?status=open', expect.objectContaining({ method: 'GET' }))
+
+    respond(200, { ...created, status: 'closed', closedAt: '2026-10-25T11:00:00Z' })
+    await expect(httpApi.updateFeedback('f1', { status: 'closed' })).resolves.toMatchObject({ status: 'closed' })
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/feedback/f1',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'closed' }),
+      }),
+    )
+
+    respond(204)
+    await expect(httpApi.deleteFeedback('f1')).resolves.toBeUndefined()
+    expect(fetch).toHaveBeenCalledWith('/api/feedback/f1', expect.objectContaining({ method: 'DELETE' }))
+  })
+
+  it('maps 403 and 429 refusals on feedback endpoints', async () => {
+    respond(403)
+    await expect(httpApi.submitFeedback({ kind: 'note', text: 'Unconfirmed email' })).rejects.toBeInstanceOf(
+      ForbiddenError,
+    )
+
+    respond(429)
+    await expect(httpApi.submitFeedback({ kind: 'note', text: 'Rate limited' })).rejects.toBeInstanceOf(
+      TooManyTriesError,
+    )
+
+    respond(400, { errors: { text: ['Use at most 4,000 characters.'] } })
+    await expect(httpApi.submitFeedback({ kind: 'note', text: 'Too long' })).rejects.toThrow(
+      new InvalidValueError('Use at most 4,000 characters.'),
     )
   })
 })

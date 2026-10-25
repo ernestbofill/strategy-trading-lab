@@ -48,7 +48,7 @@ public static class SignalEndpoints
             // The same currency needs no rate (it is 1): nothing to load.
             var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
             var (trade, errors) = SignalRules.CheckTrade(request, signal.SignalDate, StrategyEndpoints.Today(user, time),
-                day => rates.Between(strategy.Currency, asset.Currency, day), user.Locale);
+                day => rates.Between(strategy.Currency, asset.Currency, day), locale: user.Locale);
             if (trade is null) return TypedResults.ValidationProblem(errors);
 
             var userTrade = new UserTrade
@@ -81,11 +81,11 @@ public static class SignalEndpoints
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             // Only a waiting signal can be snoozed (the table's check): a missed one has nothing left to remind of.
-            if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict("Only a signal still waiting can be snoozed.");
+            if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict(Messages.OnlyWaitingCanSnooze.In(user.Locale));
             // A snooze promises a reminder: refuse it when none could be sent.
-            if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict("This strategy has ended, so there is no reminder to send.");
-            if (!found.Strategy.Notifications) return TypedResults.Conflict("This strategy's notifications are off, so there is no reminder to send.");
-            if (user.EmailVerifiedAt is null) return TypedResults.Conflict("Confirm your email address to get reminders.");
+            if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyEnded.In(user.Locale));
+            if (!found.Strategy.Notifications) return TypedResults.Conflict(Messages.NotificationsOff.In(user.Locale));
+            if (user.EmailVerifiedAt is null) return TypedResults.Conflict(Messages.ConfirmEmailForReminders.In(user.Locale));
             // The next US market day (spec: a day is a US market day), counted from the later of New York's date and the user's,
             // so it is always after the user's own today: the reminder goes out from 07:00 of that day in their time zone.
             var newYork = UsSession.Today(time.GetUtcNow());
@@ -94,19 +94,19 @@ public static class SignalEndpoints
             // Conditional, like the answers: the signal may have been answered or missed since it was read.
             var snoozed = await db.Signals.Where(s => s.Id == id && s.Status == SignalStatus.Waiting)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, until), cancellationToken);
-            return snoozed == 1 ? TypedResults.Ok(new SnoozeResult(until)) : TypedResults.Conflict("Only a signal still waiting can be snoozed.");
+            return snoozed == 1 ? TypedResults.Ok(new SnoozeResult(until)) : TypedResults.Conflict(Messages.OnlyWaitingCanSnooze.In(user.Locale));
         })
         .WithName("SnoozeSignal")
         .WithSummary("Snooze: the signal stays waiting and the user is reminded the next weekday.");
     }
 
-    /// <summary>A buy signal of one of the user's live strategies; null for anything else (also another user's). Read only: the answers update it conditionally.</summary>
+    /// <summary>A signal of one of the user's live strategies; null for anything else (also another user's). Read only: the answers update it conditionally.</summary>
     static async Task<(Signal Signal, Strategy Strategy, Asset Asset)?> FindAsync(AppDbContext db, Guid id, Guid userId, CancellationToken cancellationToken)
     {
         var row = await (from signal in db.Signals.AsNoTracking()
                          join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
                          join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
-                         where signal.Id == id && strategy.UserId == userId && strategy.Mode == StrategyMode.Live && signal.Side == TradeSide.Buy
+                         where signal.Id == id && strategy.UserId == userId && strategy.Mode == StrategyMode.Live
                          select new { signal, strategy, asset }).SingleOrDefaultAsync(cancellationToken);
         return row is null ? null : (row.signal, row.strategy, row.asset);
     }
@@ -157,8 +157,20 @@ public static class SignalEndpoints
         var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date > signal.SignalDate).OrderBy(p => p.Date)
             .Select(p => new { p.Date, p.Open }).FirstOrDefaultAsync(cancellationToken);
         var nextDay = next?.Date ?? SignalRules.NextWeekday(signal.SignalDate);
-        var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open,
-            signal.StepAmount is { } step && step > TemplateCatalog.Fee.Fixed + 0.01m ? TemplateCatalog.Fee.Split(step).Amount : null);
+        decimal? prefillAmount = null, prefillShares = null;
+        if (signal.Side == TradeSide.Buy)
+        {
+            var step = signal.StepAmount ?? strategy.Budget.Amount;
+            if (step > TemplateCatalog.Fee.Fixed + 0.01m) prefillAmount = TemplateCatalog.Fee.Split(step).Amount;
+        }
+        else
+        {
+            var held = await db.UserTrades.AsNoTracking()
+                .Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id && t.DeletedAt == null)
+                .SumAsync(t => t.Side == TradeSide.Buy ? t.Shares : -t.Shares, cancellationToken);
+            if (held > 0) prefillShares = held;
+        }
+        var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open, prefillAmount, prefillShares);
 
         var rates = new List<RateDay>();
         // The screen shows no rate line when the currencies match, so nothing to load then.
@@ -184,6 +196,6 @@ public static class SignalEndpoints
         var reason = EmailTexts.FactSentence(SignalLine.From(signal, strategy, asset), user.Locale);
         return new SignalDetail(signal.Id, strategy.Id, strategy.Name, texts.Name, strategy.Currency, asset.Name, asset.Currency, signal.StepNo,
             signal.MaxSteps, signal.StepAmount, signal.SignalDate, signal.ClosePrice, reason, signal.Status, signal.SnoozedUntil, signal.EndedOn,
-            today, prefill, rates, answer);
+            today, prefill, rates, answer, signal.Side);
     }
 }

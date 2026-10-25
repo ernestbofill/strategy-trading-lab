@@ -4,18 +4,15 @@ import type { Setting, TemplateDetail, TemplateKey } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
-import { Section } from '../../components/Section'
 import { useT } from '../../i18n/I18n'
+import { AdvancedSettingsBody } from './AdvancedSettingsBody'
 import styles from './Advanced.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { reviewPath } from './paths'
-import { PeriodTable } from './review/Results'
 import {
   changedSettings,
   formatSetting,
-  settingBounds,
   settingValues,
-  testedValues,
   type SettingValues,
 } from './settings'
 import { useTemplate } from './useTemplate'
@@ -51,13 +48,9 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
     )
   }
 
-  const tested = testedValues(template)
-  const changed = changedSettings(template, values)
-  const anyChanged = Object.keys(changed).length > 0
-
   const save = () => {
     if (!ownDraft) draft.switchTemplate(template.key)
-    draft.update({ settings: changed })
+    draft.update({ settings: changedSettings(template, values) })
     if (hasHistory) navigate(-1)
     else navigate(reviewPath(template.key))
   }
@@ -65,41 +58,12 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   return (
     <Screen top={top} action={<PrimaryAction onClick={save}>{t('newStrategy.advanced.save')}</PrimaryAction>} note={t('common.disclaimer')}>
       <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
-      <div className={styles.rows}>
-        {template.settings.map((setting) => (
-          <SettingRow
-            key={setting.key}
-            setting={setting}
-            value={values[setting.key]}
-            tested={tested[setting.key]}
-            bounds={settingBounds(setting, template.settings, values)}
-            onChange={(value) => setValues((v) => ({ ...v, [setting.key]: value }))}
-          />
-        ))}
-        <button type="button" className={`ui-strong ${styles.reset}`} onClick={() => setValues(tested)} disabled={!anyChanged}>
-          {t('newStrategy.advanced.reset')}
-        </button>
-      </div>
-      {template.backtest && (
-        <Section title={t('newStrategy.advanced.backtest')}>
-          {anyChanged ? (
-            <>
-              <PeriodTable periods={template.backtest.periods} />
-              <p className="caption">
-                {t('newStrategy.advanced.defaultsResults')}{' '}
-                {t('common.pastResults')}
-              </p>
-            </>
-          ) : (
-            <p className={`well ${styles.message}`}>{t('newStrategy.advanced.onDefaults')}</p>
-          )}
-        </Section>
-      )}
+      <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
     </Screen>
   )
 }
 
-interface SettingRowProps {
+export interface SettingRowProps {
   setting: Setting
   value: number
   tested: number
@@ -108,7 +72,7 @@ interface SettingRowProps {
 }
 
 /** The setting as a sentence with its value highlighted, a − / + stepper and the tested value. */
-function SettingRow({ setting, value, tested, bounds, onChange }: SettingRowProps) {
+export function SettingRow({ setting, value, tested, bounds, onChange }: SettingRowProps) {
   const t = useT()
   const id = useId()
   const [before, after] = setting.sentence.split('{value}')

@@ -7,10 +7,11 @@ import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { signalPath } from '../dashboard/paths'
+import { signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
+import { SignalsAndTrades } from './SignalsAndTrades'
 import { stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
 
@@ -61,6 +62,7 @@ function Summary({ s }: { s: StrategyDetail }) {
               <span className={styles.mono}>{signedPct(pastResult.template)}</span> {t('strategy.pastSummary.vs')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.index)}</span> {t('strategy.pastSummary.after')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>.
+              {s.templateKey === 'bear' && ' Big drops are rare: it may not signal for years.'}
             </>
           )}
         </p>
@@ -173,8 +175,12 @@ export function StrategyPage() {
             </div>
             <Summary s={s} />
             <Stocks s={s} />
+            <SignalsAndTrades s={s} />
             <div className={styles.tiles}>
-              <SoonTile title={t('strategy.tile.tuneTitle')} sub={t('strategy.tile.tuneSub')} />
+              <Link to={strategySettingsPath(s.id)} className={styles.tileLink}>
+                <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
+                <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
+              </Link>
               <SoonTile title={t('strategy.tile.backtestTitle')} sub={t('strategy.tile.backtestSub')} />
             </div>
           </Screen>

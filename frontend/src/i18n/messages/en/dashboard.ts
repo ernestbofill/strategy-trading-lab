@@ -16,6 +16,7 @@ export const dashboard = {
   'dashboard.card.pastBefore': 'In the past, {years}, the template did',
   'dashboard.card.pastVs': 'vs',
   'dashboard.card.pastAfter': 'for an index fund. Its worst year was',
+  'dashboard.card.bearRare': 'Big drops are rare: it may not signal for years.',
   'dashboard.card.noResultsAi': 'No results yet. They start after your first AI round.',
   'dashboard.card.budgetUsed': '{used} of {budget} used',
   'dashboard.waiting.buy': 'Your rules for {strategy} are met for {stock}. Did you act on it?',

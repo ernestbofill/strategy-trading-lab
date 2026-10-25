@@ -7,7 +7,7 @@
 - [x] Decide: the price data provider (commercial terms, cost at many free users). (#20)
       Yahoo it is.
 - [x] Mac: install .NET 10. Claude installed it in `~/.dotnet` (no sudo). Optional: add `export PATH=$HOME/.dotnet:$PATH` and `export DOTNET_ROOT=$HOME/.dotnet` to `~/.zshrc` for your own terminal. (#20, #38)
-- [ ] After #38 deploys: on `/admin`, press *Test Yahoo* in the Prices box, then *Refresh now* and check *Last run* shows no failures; if Yahoo blocks the Oracle server's address, tell Claude. (#38)
+- [x] After #38 deploys: on `/admin`, press *Test Yahoo* in the Prices box, then *Refresh now* and check *Last run* shows no failures; if Yahoo blocks the Oracle server's address, tell Claude. (#38)
 
 - [x] Decide who reviews the Catalan copy: AI and Ernest (#22)
 - [x] Check the frontend deploy after #21 shows the new disclaimers. (#21)

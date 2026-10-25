@@ -1,7 +1,7 @@
 import { currentLocale } from '../i18n/locale'
 import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { sessionEnded } from './session'
-import type { Account, Api, StrategySummary } from './types'
+import type { Account, Api, FeedbackItem, StrategySummary, StrategyTradeItem } from './types'
 
 // The .NET API. nginx serves it at /api on the app's own host; in development Vite proxies /api to it.
 const BASE_URL = '/api'
@@ -43,6 +43,39 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   if (response.status === 401) endedSession()
   if (!response.ok) throw new Error(`POST ${path} failed: HTTP ${response.status}`)
   return (await response.json()) as T
+}
+
+async function put(path: string, body: unknown): Promise<void> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...APP_HEADER },
+    body: JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+  }
+  if (!response.ok) throw new Error(`PUT ${path} failed: HTTP ${response.status}`)
+}
+
+async function tradesRequest(method: string, path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 409) {
+    const message = (await response.json().catch(() => null)) as string | null
+    throw new InvalidValueError(message ?? 'Could not perform trade action.')
+  }
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+  }
+  if (!response.ok) throw new Error(`${method} ${path} failed: HTTP ${response.status}`)
+  return response
 }
 
 /** POSTs an answer to a signal. A 400 with field errors is `InvalidFieldsError`; a 409 (already answered) is `InvalidValueError`. */
@@ -123,6 +156,25 @@ async function getAccount(): Promise<Account | null> {
 
 const settingPath = (key: string) => `/settings/${encodeURIComponent(key)}`
 
+/** Sends a request to the feedback API and maps its refusals to errors the UI can show. */
+async function feedback(method: string, path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}/feedback${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 403) throw new ForbiddenError()
+  if (response.status === 429) throw new TooManyTriesError()
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    const firstFieldError = problem?.errors ? Object.values(problem.errors).flat()[0] : undefined
+    throw new InvalidValueError(firstFieldError ?? problem?.detail ?? 'That comment was refused.')
+  }
+  if (!response.ok) throw new Error(`${method} /feedback${path} failed: HTTP ${response.status}`)
+  return response
+}
+
 export const httpApi: Api = {
   getAccount,
   signUp: async (signUp) => void (await account('/sign-up', signUp)),
@@ -141,8 +193,15 @@ export const httpApi: Api = {
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
+  updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),
   getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),
   confirmSignal: async (id, trade) => void (await signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
+  logManualTrade: async (strategyId, trade) =>
+    (await (await tradesRequest('POST', `/strategies/${encodeURIComponent(strategyId)}/trades`, trade)).json()) as StrategyTradeItem,
+  updateTrade: async (tradeId, trade) =>
+    void (await tradesRequest('PUT', `/trades/${encodeURIComponent(tradeId)}`, trade)),
+  deleteTrade: async (tradeId) =>
+    void (await tradesRequest('DELETE', `/trades/${encodeURIComponent(tradeId)}`)),
   skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
   snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
@@ -156,4 +215,13 @@ export const httpApi: Api = {
   testAdminYahoo: async () => (await admin('POST', '/prices/test')).json(),
   getAdminDatabases: async () => (await admin('GET', '/database')).json(),
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
+  getAdminAssets: async () => (await admin('GET', '/assets')).json(),
+  setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
+  submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
+  getFeedback: async (status) =>
+    (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],
+  updateFeedback: async (id, patch) =>
+    (await (await feedback('PATCH', `/${encodeURIComponent(id)}`, patch)).json()) as FeedbackItem,
+  deleteFeedback: async (id) => void (await feedback('DELETE', `/${encodeURIComponent(id)}`)),
+
 }

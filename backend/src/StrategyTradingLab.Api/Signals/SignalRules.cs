@@ -20,27 +20,30 @@ public static class SignalRules
     }
 
     /// <summary>
-    /// Checks "I did it" and works out the value the user didn't type (<c>shares = amount × fx ÷ price</c>). The date is from
-    /// the signal day to today. A reference rate comes from <paramref name="referenceRate"/> (the date's), a user rate from the
-    /// request. Errors by field, empty when the trade is valid, in <paramref name="locale"/> ("ca", else English).
+    /// Checks a trade (signal or manual) and works out the value the user didn't type (<c>shares = amount × fx ÷ price</c>).
+    /// The date is from <paramref name="minDate"/> to today. A reference rate comes from <paramref name="referenceRate"/> (the date's),
+    /// a user rate from the request. Errors by field, empty when the trade is valid, in <paramref name="locale"/> ("ca", else English).
     /// </summary>
-    public static (CheckedTrade? Trade, Dictionary<string, string[]> Errors) CheckTrade(SignalTradeRequest request, DateOnly signalDate,
-        DateOnly today, Func<DateOnly, decimal?> referenceRate, string locale = "en")
+    public static (CheckedTrade? Trade, Dictionary<string, string[]> Errors) CheckTrade(SignalTradeRequest request, DateOnly? minDate,
+        DateOnly today, Func<DateOnly, decimal?> referenceRate, string? minDateMessage = null, string locale = "en")
     {
         var errors = new Dictionary<string, string[]>();
         void Fail(string field, string message) => errors[field] = [message];
 
         if (request.Date is not { } date) Fail("date", Messages.EnterTradeDay.In(locale));
-        else if (date < signalDate) Fail("date", Messages.DayAfterSignal.In(locale));
+        else if (minDate is { } min && date < min) Fail("date", minDateMessage ?? Messages.DayAfterSignal.In(locale));
         else if (date > today) Fail("date", Messages.DayUpToToday.In(locale));
 
         if (request.Price is not (>= 0.0001m and < 1_000_000)) Fail("price", Messages.EnterPrice.In(locale));
         else if (request.Price != Math.Round(request.Price.Value, 4)) Fail("price", Messages.UpToDecimals.In(locale, 4));
 
         var enteredAs = request.EnteredAs ?? EnteredAs.Amount;
-        if (enteredAs == EnteredAs.Amount && (request.Amount is not (> 0 and <= MaxAmount) || request.Amount != Math.Round(request.Amount.Value, 2)))
-            Fail("amount", Messages.EnterAmount.In(locale));
-        if (enteredAs == EnteredAs.Shares)
+        if (enteredAs == EnteredAs.Amount)
+        {
+            if (request.Amount is not (> 0 and <= MaxAmount) || request.Amount != Math.Round(request.Amount.Value, 2))
+                Fail("amount", Messages.EnterAmount.In(locale));
+        }
+        else if (enteredAs == EnteredAs.Shares)
         {
             if (request.Shares is not (> 0 and < 1_000_000_000)) Fail("shares", Messages.EnterShares.In(locale));
             else if (request.Shares != Math.Round(request.Shares.Value, 6)) Fail("shares", Messages.UpToDecimals.In(locale, 6));

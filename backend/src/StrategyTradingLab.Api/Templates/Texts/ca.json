@@ -101,10 +101,16 @@
       }
     ],
     "backtest": {
-      "scope": "3 grans caigudes, 2000-2024.",
+      "scope": "3 grans caigudes, 2000-2024. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
       "years": "2000-2024",
       "universe": "El fons de l'S&P 500",
       "testedDefaults": "Els valors provats: pressupost de €3,000, 5 passos de €600."
+    },
+    "stockStatus": {
+      "zone": "la línia de rebot",
+      "notCandidate": "{n}% per sota del seu màxim de 6 mesos",
+      "watching": "En una caiguda: {n}% per sobre del seu mínim",
+      "holding": "Els passos d'aquesta caiguda ja estan comprats"
     }
   },
   "trend": {
@@ -112,16 +118,26 @@
     "tagline": "Queda't amb els guanys, esquiva les pèrdues",
     "idea": "L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa.",
     "rationale": "Els mercats es mouen en ones llargues. L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa, per esquivar la caiguda. Després de la caiguda busca un nou senyal de compra.",
+    "settings": {
+      "smaDays": {
+        "sentence": "La línia de tendència és el preu mitjà dels últims {value}.",
+        "value": "{n} dies"
+      },
+      "bandPct": {
+        "sentence": "Les línies de compra i de venda són un {value} per sobre i per sota de la línia de tendència.",
+        "value": "{n}%"
+      }
+    },
     "rules": [
       {
         "marker": "COMPRA",
         "tone": "buy",
-        "text": "El mercat tanca més d'un `3%` per sobre de la seva `SMA 200` (preu mitjà dels últims 200 dies)."
+        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies)."
       },
       {
         "marker": "VENDA",
         "tone": "sell",
-        "text": "El mercat tanca més d'un `3%` per sota de la seva SMA 200."
+        "text": "El mercat tanca més d'un `{bandPct}%` per sota de la seva `SMA {smaDays}`."
       },
       {
         "marker": "TOT",
@@ -133,6 +149,10 @@
       "years": "2000-2024",
       "universe": "El fons indexat",
       "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora."
+    },
+    "stockStatus": {
+      "zone": "la línia de compra",
+      "notCandidate": "Per sota de la seva mitjana de 200 dies"
     }
   },
   "ai": {

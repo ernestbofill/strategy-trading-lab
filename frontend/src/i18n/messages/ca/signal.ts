@@ -7,6 +7,8 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.rules': 'Les teves regles per a {strategy} es compleixen per a {stock}: {reason}.',
   'signal.step': 'Segons la teva configuració, és el pas {step}.',
   'signal.stepAmount': 'Segons la teva configuració, és el pas {step} ({amount}).',
+  'signal.rulesSell': 'Les teves regles per a {strategy} es compleixen per a una venda: {reason}.',
+  'signal.amountOnly': 'Segons la teva configuració, són {amount}.',
   'signal.stepOf': '{n} de {max}',
   'signal.nextStep': 'pas {n} de {max}',
   'signal.close': 'Tancament del {date}: {price}',
@@ -23,6 +25,7 @@ export const signal: Record<keyof typeof en, string> = {
     'Emplenat amb el preu d’obertura del {date}. Canvia el que sigui diferent al teu broker.',
   'signal.hint.noOpen': 'Encara no hi ha el preu d’obertura següent. El tancament del {date} va ser {price}.',
   'signal.hint.amount': 'El que ha comprat accions. El teu pas de {step} inclou la comissió.',
+  'signal.hint.amountBudget': 'El que ha comprat accions. El teu pressupost de {step} inclou la comissió.',
   'signal.save.did': 'Desa l’operació',
   'signal.save.skip': 'Desa l’omissió',
   'signal.missed.title': 'Perdut',
@@ -51,6 +54,9 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.skip.note': 'Ometre no gasta pressupost. Les regles continuen com si el pas s’hagués comprat.',
   'signal.skip.noteNext':
     'Ometre no gasta pressupost. Les regles continuen com si el pas s’hagués comprat, així que el proper senyal per a {stock} serà el {next}.',
+  'signal.skip.noteSale': 'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet.',
+  'signal.skip.noteSaleNext':
+    'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet, així que el proper senyal per a {stock} serà el {next}.',
   'signal.snooze.until': 'T’ho recordarem el {date}.',
   'signal.snooze.action': 'Ajorna-ho al proper dia de borsa',
 }

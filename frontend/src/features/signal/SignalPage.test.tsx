@@ -66,6 +66,29 @@ describe('SignalPage', () => {
     })
   })
 
+  it('describes a sell signal and defaults to shares prefilled with held shares', async () => {
+    open(
+      detail({
+        side: 'sell',
+        stepNo: null,
+        maxSteps: null,
+        stepAmount: null,
+        reason: 'the market closed 3.1% below its 200-day average',
+        prefill: { date: '2026-10-23', price: 190, amount: null, shares: 5.25 },
+      }),
+    )
+    const confirm = vi.spyOn(api, 'confirmSignal').mockResolvedValue()
+
+    expect(await screen.findByText(/are met for a sale: the market closed 3.1% below its 200-day average/)).toBeTruthy()
+    expect((screen.getByLabelText('Shares') as HTMLInputElement).value).toBe('5.25')
+    fireEvent.click(screen.getByRole('button', { name: 'Save the trade' }))
+
+    await screen.findByText('Strategy page')
+    expect(confirm).toHaveBeenCalledWith('sig', {
+      date: '2026-10-23', price: 190, enteredAs: 'shares', amount: null, shares: 5.25, fee: null, fxSource: 'reference', fxRate: null,
+    })
+  })
+
   it('shows what the server refused under its field', async () => {
     open(detail())
     vi.spyOn(api, 'confirmSignal').mockRejectedValue(new InvalidFieldsError({ price: 'Enter the price per share.' }))

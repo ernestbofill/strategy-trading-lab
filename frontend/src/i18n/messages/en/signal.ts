@@ -6,6 +6,8 @@ export const signal = {
   'signal.rules': 'Your rules for {strategy} are met for {stock}: {reason}.',
   'signal.step': "Under your settings that's step {step}.",
   'signal.stepAmount': "Under your settings that's step {step} ({amount}).",
+  'signal.rulesSell': 'Your rules for {strategy} are met for a sale: {reason}.',
+  'signal.amountOnly': "Under your settings that's {amount}.",
   /** "2 of 5" in the sentence above. */
   'signal.stepOf': '{n} of {max}',
   /** "step 3 of 5", the next signal's step after a skip. */
@@ -23,6 +25,7 @@ export const signal = {
   'signal.hint.prefilled': "Prefilled with {date}'s opening price. Change anything that differs from your broker.",
   'signal.hint.noOpen': "The next opening price isn't in yet. The close on {date} was {price}.",
   'signal.hint.amount': 'What bought shares. Your step of {step} includes the fee.',
+  'signal.hint.amountBudget': 'What bought shares. Your budget of {step} includes the fee.',
   'signal.save.did': 'Save the trade',
   'signal.save.skip': 'Save the skip',
   'signal.missed.title': 'Missed',
@@ -51,6 +54,9 @@ export const signal = {
   'signal.skip.note': 'A skip uses no budget. The rules carry on as if the step was bought.',
   'signal.skip.noteNext':
     'A skip uses no budget. The rules carry on as if the step was bought, so the next signal for {stock} is {next}.',
+  'signal.skip.noteSale': 'A skip uses no budget. The rules carry on as if the sale was made.',
+  'signal.skip.noteSaleNext':
+    'A skip uses no budget. The rules carry on as if the sale was made, so the next signal for {stock} is {next}.',
   'signal.snooze.until': "We'll remind you on {date}.",
   'signal.snooze.action': 'Remind me next trading day',
 } as const

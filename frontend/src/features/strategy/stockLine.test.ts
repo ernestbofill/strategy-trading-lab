@@ -25,9 +25,11 @@ describe('stockLine', () => {
     expect([line.pill, line.detail]).toEqual(['WAITING FOR YOU', 'Signal: step 2 of 5'])
   })
 
-  it('leaves out the step when a signal has none', () => {
+  it('leaves out the step when a signal has none, and names a sale', () => {
     expect(stockLine(row({ status: 'waitingForYou' }), 'live', 'EUR', words).detail).toBe('Signal waiting')
     expect(stockLine(row({ status: 'signal' }), 'simulation', 'EUR', words).detail).toBe('Bought at the next open')
+    expect(stockLine(row({ status: 'waitingForYou', signalSide: 'sell' }), 'live', 'EUR', words).detail).toBe('Sell signal waiting')
+    expect(stockLine(row({ status: 'signal', signalSide: 'sell' }), 'simulation', 'EUR', words).detail).toBe('Sold at the next open')
   })
 
   it('shows the rules and the user apart only when their steps differ', () => {
@@ -36,6 +38,29 @@ describe('stockLine', () => {
     )
     expect(stockLine(row({ status: 'holding', steps: 5, rulesSteps: 5 }), 'live', 'EUR', words).detail).toBe('5 of 5 steps')
     expect(stockLine(row({ status: 'building', steps: 2 }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
+  })
+
+  it('formats bear drop statuses and trend out-of-the-market pills', () => {
+    const bearWords = {
+      zone: 'the bounce line',
+      notCandidate: '{n}% below its 6-month high',
+      watching: 'In a drop: {n}% above its low',
+      holding: "This drop's steps are bought",
+    }
+    expect(stockLine(row({ status: 'notCandidate', distancePct: 4.2 }), 'simulation', 'EUR', bearWords).detail).toBe(
+      '4% below its 6-month high',
+    )
+    expect(stockLine(row({ status: 'watching', distancePct: 2.3 }), 'simulation', 'EUR', bearWords).detail).toBe(
+      'In a drop: 2% above its low',
+    )
+    const done = stockLine(row({ status: 'done', steps: 5 }), 'simulation', 'EUR', bearWords)
+    expect([done.pill, done.detail]).toEqual(['DONE', "This drop's steps are bought"])
+
+    const trendWords = { zone: 'the buy line', notCandidate: 'Below its long trend', holding: 'In the market' }
+    const out = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, distancePct: 1.8 }), 'simulation', 'EUR', trendWords)
+    expect([out.pill, out.detail]).toEqual(['OUT OF THE MARKET', '2% from the buy line'])
+    const holding = stockLine(row({ status: 'holding', maxSteps: null, steps: 1 }), 'simulation', 'EUR', trendWords)
+    expect([holding.pill, holding.detail]).toEqual(['HOLDING', 'In the market'])
   })
 
   it("says how far a watched stock is, in the template's words", () => {

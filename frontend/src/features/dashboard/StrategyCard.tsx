@@ -49,7 +49,7 @@ function Body({ s }: { s: StrategySummary }) {
         <span className={styles.figure} data-tone={pctTone(pastResult.worstYear)}>
           {signedPct(pastResult.worstYear)}
         </span>
-        .
+        .{s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
       </p>
     )
   }

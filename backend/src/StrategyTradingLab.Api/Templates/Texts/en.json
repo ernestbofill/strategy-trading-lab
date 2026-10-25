@@ -101,10 +101,16 @@
       }
     ],
     "backtest": {
-      "scope": "3 big drops, 2000-2024.",
+      "scope": "3 big drops, 2000-2024. Big drops are rare: it may not signal for years.",
       "years": "2000-2024",
       "universe": "The S&P 500 fund",
       "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."
+    },
+    "stockStatus": {
+      "zone": "the bounce line",
+      "notCandidate": "{n}% below its 6-month high",
+      "watching": "In a drop: {n}% above its low",
+      "holding": "This drop's steps are bought"
     }
   },
   "trend": {
@@ -112,16 +118,26 @@
     "tagline": "Take the wins, dodge the losses",
     "idea": "The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down.",
     "rationale": "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal.",
+    "settings": {
+      "smaDays": {
+        "sentence": "The trend line is the average price over {value}.",
+        "value": "{n} days"
+      },
+      "bandPct": {
+        "sentence": "The buy and sell lines are {value} above and below the trend line.",
+        "value": "{n}%"
+      }
+    },
     "rules": [
       {
         "marker": "BUY",
         "tone": "buy",
-        "text": "The market closes more than `3%` above its `SMA 200` (average price over the last 200 days)."
+        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days)."
       },
       {
         "marker": "SELL",
         "tone": "sell",
-        "text": "The market closes more than `3%` below its SMA 200."
+        "text": "The market closes more than `{bandPct}%` below its `SMA {smaDays}`."
       },
       {
         "marker": "ALL",
@@ -133,6 +149,10 @@
       "years": "2000-2024",
       "universe": "The index fund",
       "testedDefaults": "The whole €3,000 budget, all in, all out."
+    },
+    "stockStatus": {
+      "zone": "the buy line",
+      "notCandidate": "Below its 200-day average"
     }
   },
   "ai": {

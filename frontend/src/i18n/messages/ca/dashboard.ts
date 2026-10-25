@@ -18,6 +18,7 @@ export const dashboard: Record<keyof typeof en, string> = {
   'dashboard.card.pastBefore': 'En el passat, {years}, la plantilla va fer un',
   'dashboard.card.pastVs': 'enfront del',
   'dashboard.card.pastAfter': 'd’un fons indexat. El seu pitjor any va ser del',
+  'dashboard.card.bearRare': 'Les grans caigudes són poc freqüents: pot passar anys sense senyal.',
   'dashboard.card.noResultsAi': 'Encara no hi ha resultats. Comencen després de la teva primera ronda d’IA.',
   'dashboard.card.budgetUsed': '{used} de {budget} utilitzats',
   'dashboard.waiting.buy': 'Les teves regles per a {strategy} es compleixen per a {stock}. Hi has actuat?',

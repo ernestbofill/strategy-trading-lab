@@ -172,6 +172,61 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
     }
 
     [NeonFact]
+    public async Task Strategy_settings_can_be_updated_and_retrieved()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.SignedUpAsync();
+        try
+        {
+            var startResponse = await client.PostAsJsonAsync("/strategies", Request("dip", name));
+            Assert.Equal(HttpStatusCode.Created, startResponse.StatusCode);
+            var created = await startResponse.Content.ReadFromJsonAsync<JsonElement>();
+            var strategyId = created.GetProperty("id").GetGuid();
+
+            var detail = await client.GetFromJsonAsync<JsonElement>($"/strategies/{strategyId}");
+            Assert.Equal(60, detail.GetProperty("settings").GetProperty("peakDays").GetDecimal());
+
+            var updateResponse = await client.PutAsJsonAsync($"/strategies/{strategyId}/settings", new
+            {
+                settings = new Dictionary<string, decimal> { ["peakDays"] = 40, ["zoneStartPct"] = 10, ["zoneEndPct"] = 15 }
+            });
+            Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
+
+            var updatedDetail = await client.GetFromJsonAsync<JsonElement>($"/strategies/{strategyId}");
+            Assert.Equal(40, updatedDetail.GetProperty("settings").GetProperty("peakDays").GetDecimal());
+            Assert.Equal(10, updatedDetail.GetProperty("settings").GetProperty("zoneStartPct").GetDecimal());
+            Assert.Equal(15, updatedDetail.GetProperty("settings").GetProperty("zoneEndPct").GetDecimal());
+        }
+        finally
+        {
+            await Remove(name);
+        }
+    }
+
+    [NeonFact]
+    public async Task Updating_settings_with_invalid_value_returns_validation_problem()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.SignedUpAsync();
+        try
+        {
+            var startResponse = await client.PostAsJsonAsync("/strategies", Request("dip", name));
+            var created = await startResponse.Content.ReadFromJsonAsync<JsonElement>();
+            var strategyId = created.GetProperty("id").GetGuid();
+
+            var response = await client.PutAsJsonAsync($"/strategies/{strategyId}/settings", new
+            {
+                settings = new Dictionary<string, decimal> { ["peakDays"] = 999 }
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally
+        {
+            await Remove(name);
+        }
+    }
+
+    [NeonFact]
     public async Task An_unknown_template_is_not_found()
     {
         var (client, email) = await factory.SignedUpAsync();

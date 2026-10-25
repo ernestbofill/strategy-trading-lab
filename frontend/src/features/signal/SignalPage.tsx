@@ -37,6 +37,7 @@ export function SignalPage() {
 
 function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
   const t = useT()
+  const sell = s.side === 'sell'
   const header = (
     <div className={styles.header}>
       <div className={styles.eyebrow}>
@@ -51,18 +52,24 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
   const box = (
     <div className={styles.box}>
       <p className={styles.text}>
-        {t('signal.rules', { strategy: s.strategyName, stock: s.stockName, reason: s.reason })}
-        {s.stepNo !== null && s.maxSteps !== null && (
+        {sell
+          ? t('signal.rulesSell', { strategy: s.strategyName, reason: s.reason })
+          : t('signal.rules', { strategy: s.strategyName, stock: s.stockName, reason: s.reason })}
+        {!sell && s.stepAmount !== null && (
           <>
             {' '}
-            {s.stepAmount !== null
+            {s.stepNo !== null && s.maxSteps !== null
               ? t('signal.stepAmount', {
                   step: t('signal.stepOf', { n: s.stepNo, max: s.maxSteps }),
                   amount: money(s.stepAmount, s.strategyCurrency),
                 })
-              : t('signal.step', {
-                  step: t('signal.stepOf', { n: s.stepNo, max: s.maxSteps }),
-                })}
+              : t('signal.amountOnly', { amount: money(s.stepAmount, s.strategyCurrency) })}
+          </>
+        )}
+        {!sell && s.stepAmount === null && s.stepNo !== null && s.maxSteps !== null && (
+          <>
+            {' '}
+            {t('signal.step', { step: t('signal.stepOf', { n: s.stepNo, max: s.maxSteps }) })}
           </>
         )}
       </p>
@@ -121,6 +128,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   const [saving, setSaving] = useState(false)
   const [snoozedUntil, setSnoozedUntil] = useState(s.snoozedUntil)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
+  const sell = s.side === 'sell'
 
   const otherCurrency = s.assetCurrency !== s.strategyCurrency
   const reference = rateOn(s.rates, form.date)
@@ -239,7 +247,13 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
                 type="decimal"
                 value={form.amount}
                 onChange={(amount) => set({ amount })}
-                hint={s.stepAmount !== null ? t('signal.hint.amount', { step: money(s.stepAmount, s.strategyCurrency) }) : undefined}
+                hint={
+                  !sell && s.stepAmount !== null
+                    ? t(s.stepNo !== null ? 'signal.hint.amount' : 'signal.hint.amountBudget', {
+                        step: money(s.stepAmount, s.strategyCurrency),
+                      })
+                    : undefined
+                }
                 error={errors.amount}
                 aside={<TextAction onClick={() => set({ enteredAs: 'shares' })}>{t('signal.field.sharesInstead')}</TextAction>}
               />
@@ -306,9 +320,10 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
               ))}
             </fieldset>
             <p className={styles.plain}>
-              {following
-                ? t('signal.skip.noteNext', { stock: s.stockName, next: following })
-                : t('signal.skip.note')}
+              {t(sell ? (following ? 'signal.skip.noteSaleNext' : 'signal.skip.noteSale') : following ? 'signal.skip.noteNext' : 'signal.skip.note', {
+                stock: s.stockName,
+                next: following ?? '',
+              })}
             </p>
           </div>
         )}

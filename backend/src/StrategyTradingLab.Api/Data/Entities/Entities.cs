@@ -238,3 +238,22 @@ public class DailyEvaluation
     public required JsonDocument Facts { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
+
+/// <summary>
+/// A comment or issue about the app, submitted by a user with a confirmed email (from selected text on a screen,
+/// or by the owner from the feedback box) and reviewed by the owner.
+/// </summary>
+public class FeedbackItem : IHasUpdatedAt
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public FeedbackKind Kind { get; set; }
+    public FeedbackStatus Status { get; set; } = FeedbackStatus.Open;
+    public required string Text { get; set; }
+    public string? Route { get; set; }
+    public string? Element { get; set; }
+    public string? SelectedText { get; set; }
+    public DateTimeOffset? ClosedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}

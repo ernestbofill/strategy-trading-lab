@@ -45,10 +45,10 @@ public record TemplateTexts(
 
 /// <summary>
 /// How the strategy page words a stock that is not bought: <c>Zone</c> is what <c>distancePct</c> measures to ("the discount
-/// zone"), <c>NotCandidate</c> the detail line of a stock the rules don't watch yet ("Below its long trend"). Only for
-/// templates the engine runs.
+/// zone"), <c>NotCandidate</c> the detail line of a stock the rules don't watch yet ("Below its long trend" or "{n}% below its
+/// 6-month high"), <c>Watching</c> a custom watching line ("In a drop: {n}% above its low"), and <c>Holding</c> a custom done line.
 /// </summary>
-public record StockStatusTexts(string Zone, string NotCandidate);
+public record StockStatusTexts(string Zone, string NotCandidate, string? Watching = null, string? Holding = null);
 
 /// <summary>The words of the "Tested" box and How we tested.</summary>
 public record BacktestTexts(string Scope, string Years, string Universe, string TestedDefaults);

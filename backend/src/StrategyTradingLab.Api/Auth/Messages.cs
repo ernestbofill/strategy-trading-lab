@@ -47,6 +47,11 @@ public static class Messages
         "Les notificacions d'aquesta estratègia estan desactivades, així que no hi ha cap recordatori per enviar.");
     public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma la teva adreça de correu per rebre recordatoris.");
 
+    public static readonly Message LiveOnlyLog = new("Trades can only be logged for live strategies.", "Només es poden registrar operacions en estratègies en directe.");
+    public static readonly Message LiveOnlyEdit = new("Only live trades can be edited.", "Només es poden editar les operacions en directe.");
+    public static readonly Message LiveOnlyDelete = new("Only live trades can be deleted.", "Només es poden eliminar les operacions en directe.");
+    public static readonly Message PickStrategyStock = new("Pick one of the strategy's stocks.", "Tria una de les accions de l'estratègia.");
+
     public static readonly Message EnterTradeDay = new("Enter the day you traded.", "Indica el dia que vas operar.");
     public static readonly Message DayAfterSignal = new("Use a day on or after the signal.", "Tria un dia igual o posterior al senyal.");
     public static readonly Message DayUpToToday = new("Use a day up to today.", "Tria un dia fins a avui.");

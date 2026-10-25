@@ -1,0 +1,22 @@
+/** Select-text feedback, seen by every signed-in user. The owner's review list is English only. */
+export const feedback = {
+  'feedback.addComment': 'Add comment',
+  'feedback.selectionActions': 'Selection actions',
+  'feedback.copy': 'Copy',
+  'feedback.dialogTitle': 'Add a comment',
+  'feedback.page': 'Page:',
+  'feedback.yourComment': 'Your comment',
+  'feedback.placeholder': 'What looks wrong, unclear, or worth changing here?',
+  'feedback.cancel': 'Cancel',
+  'feedback.saving': 'Saving…',
+  'feedback.save': 'Save',
+  'feedback.saved': 'Comment saved ✓',
+  'feedback.errorForbidden': 'Confirm your email address first to send feedback.',
+  'feedback.errorTooMany': 'Too many comments sent recently. Try again later.',
+  'feedback.errorSave': 'Could not save comment. Try again.',
+  'feedback.kind.type': 'Type',
+  'feedback.kind.bug': 'Bug',
+  'feedback.kind.idea': 'Idea',
+  'feedback.kind.note': 'Note',
+  'feedback.kind.feature': 'Feature',
+} as const

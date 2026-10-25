@@ -17,7 +17,7 @@ import { ToggleTiles } from '../../../components/ToggleTiles'
 import { useT } from '../../../i18n/I18n'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
-import { settingsSummary } from '../settings'
+import { rulesWithSettings, settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
 import { AiPrompt } from './AiPrompt'
 import { AI_SOURCES } from './aiSources'
@@ -70,7 +70,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
         <p className={styles.plain}>{template.rationale}</p>
       </Section>
       <Section title={t('newStrategy.review.signalsWhen')}>
-        <RuleList rules={template.rules} />
+        <RuleList rules={rulesWithSettings(template, draft.templateKey === template.key ? draft.settings : {})} />
       </Section>
       {aiRound ? (
         <AiSettings />

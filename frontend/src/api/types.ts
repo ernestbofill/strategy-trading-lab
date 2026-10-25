@@ -208,12 +208,16 @@ export type StockStatus =
   | 'waitingForYou'
   | 'signal'
   | 'holding'
+  | 'done'
   | 'building'
+  | 'outOfTheMarket'
   | 'noBudget'
   | 'watching'
   | 'notCandidate'
   | 'notEnoughData'
   | 'notChecked'
+
+export type TradeSide = 'buy' | 'sell'
 
 /** A stock of a strategy on its page. */
 export interface StockRow {
@@ -231,6 +235,7 @@ export interface StockRow {
   /** The waiting signal (live) or today's (simulation). */
   signalId: string | null
   signalStep: number | null
+  signalSide?: TradeSide | null
   /** What was put in, fees included, and its gain in percent (null with no buys). */
   invested: number
   result: number | null
@@ -240,6 +245,8 @@ export interface StockRow {
 export interface StockStatusWords {
   zone: string
   notCandidate: string
+  watching?: string | null
+  holding?: string | null
 }
 
 /** The strategy page: backend Strategies/StrategyDtos.cs (StrategyDetail). */
@@ -262,6 +269,88 @@ export interface StrategyDetail {
   /** Null for templates the engine doesn't run yet. */
   words: StockStatusWords | null
   stocks: StockRow[]
+  trades: StrategyTradeItem[]
+  signalHistory: StrategySignalItem[]
+  rates: CurrencyRates[]
+  settings?: Record<string, number> | null
+}
+
+export type EnteredAs = 'amount' | 'shares'
+export type FxSource = 'reference' | 'user'
+export type TradeSource = 'signal' | 'manual'
+
+export interface RateDay {
+  date: string
+  rate: number
+}
+
+export interface CurrencyRates {
+  currency: string
+  rates: RateDay[]
+}
+
+export interface StrategyTradeItem {
+  id: string
+  assetId: string
+  symbol: string
+  stockName: string
+  tradeDate: string
+  side: TradeSide
+  price: number
+  assetCurrency: string
+  enteredAs: EnteredAs
+  amount: number
+  shares: number
+  fee: number
+  strategyCurrency: Currency
+  fxRate: number
+  fxSource: FxSource
+  source: TradeSource
+  signalId: string | null
+}
+
+export interface StrategySignalItem {
+  id: string
+  assetId: string
+  symbol: string
+  stockName: string
+  signalDate: string
+  side: TradeSide
+  stepNo: number | null
+  maxSteps: number | null
+  stepAmount: number | null
+  closePrice: number
+  assetCurrency: string
+  reason: string
+  status: SignalStatus
+  skipReason: SkipReason | null
+  snoozedUntil: string | null
+  endedOn: string | null
+  createdAt: string
+}
+
+export interface ManualTradeRequest {
+  assetId: string
+  side: TradeSide
+  date: string | null
+  price: number | null
+  enteredAs: EnteredAs | null
+  amount: number | null
+  shares: number | null
+  fee: number | null
+  fxSource: FxSource | null
+  fxRate: number | null
+}
+
+export interface UpdateTradeRequest {
+  date: string | null
+  price: number | null
+  enteredAs: EnteredAs | null
+  amount: number | null
+  shares: number | null
+  fee: number | null
+  fxSource: FxSource | null
+  fxRate: number | null
 }
 
 export type SignalStatus = 'waiting' | 'confirmed' | 'skipped' | 'missed'
@@ -301,11 +390,12 @@ export interface SignalDetail {
   endedOn: string | null
   /** The user's local date. */
   today: string
-  /** The next trading day, its opening price once stored (else null), and the step without the tested fee. */
-  prefill: { date: string; price: number | null; amount: number | null }
+  /** The next trading day, its opening price once stored (else null), the step without the tested fee, and held shares for a sale. */
+  prefill: { date: string; price: number | null; amount: number | null; shares?: number | null }
   /** Reference rates by day: asset currency per one unit of the strategy's. */
   rates: { date: string; rate: number }[]
   answer: SignalAnswer | null
+  side?: TradeSide
 }
 
 /** "I did it". `fxRate` is only read when `fxSource` is 'user'. */
@@ -354,6 +444,39 @@ export type Currency = 'EUR' | 'USD' | 'GBP'
 
 /** What an account may do: the owner runs the app (the admin page), a vip is invited, a user is everyone else. */
 export type Role = 'user' | 'vip' | 'owner'
+
+export type FeedbackKind = 'bug' | 'idea' | 'note' | 'feature'
+
+export type FeedbackStatus = 'open' | 'closed'
+
+/** A feedback comment, optionally pinned to selected text on a screen: backend Feedback/FeedbackEndpoints.cs (FeedbackDto). */
+export interface FeedbackItem {
+  id: string
+  userEmail: string
+  kind: FeedbackKind
+  status: FeedbackStatus
+  text: string
+  route: string | null
+  element: string | null
+  selectedText: string | null
+  createdAt: string
+  updatedAt: string
+  closedAt: string | null
+}
+
+export interface NewFeedback {
+  kind: FeedbackKind
+  text: string
+  route?: string | null
+  element?: string | null
+  selectedText?: string | null
+}
+
+export interface FeedbackPatch {
+  kind?: FeedbackKind
+  status?: FeedbackStatus
+  text?: string
+}
 
 /** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
 export interface Account {
@@ -439,6 +562,24 @@ export interface YahooCheck {
   milliseconds: number
 }
 
+export type AssetKind = 'stock' | 'fund' | 'index'
+
+/** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
+export interface AdminAsset {
+  id: string
+  symbol: string
+  exchange: string
+  name: string
+  what: string
+  kind: AssetKind
+  currency: string
+  active: boolean
+  /** Running strategies currently watching this asset. */
+  strategies: number
+  /** Newest stored price day ("2026-10-22"), or null if none is stored yet. */
+  latestPriceDate: string | null
+}
+
 export interface Api {
   /** The logged-in user, or null without a session: the app's start-up check. */
   getAccount(): Promise<Account | null>
@@ -468,10 +609,18 @@ export interface Api {
   getDashboard(): Promise<Dashboard>
   /** The strategy page; undefined when the user has no such strategy. */
   getStrategy(id: string): Promise<StrategyDetail | undefined>
+  /** Updates the settings (rules) of a running strategy. */
+  updateStrategySettings(id: string, settings: Record<string, number>): Promise<void>
   /** A live signal for Confirm a signal; undefined when the user has no such signal. */
   getSignal(id: string): Promise<SignalDetail | undefined>
   /** Rejects with `InvalidFieldsError` (by field) or `InvalidValueError` (already answered). */
   confirmSignal(id: string, trade: SignalTrade): Promise<void>
+  /** Log a trade by hand on one of the strategy's stocks (marked Manual). Rejects with `InvalidFieldsError`, `InvalidValueError`. */
+  logManualTrade(strategyId: string, trade: ManualTradeRequest): Promise<StrategyTradeItem>
+  /** Edit a trade's date, price, amount/shares, fee, or rate. Rejects with `InvalidFieldsError`, `InvalidValueError`. */
+  updateTrade(tradeId: string, trade: UpdateTradeRequest): Promise<void>
+  /** Soft-deletes a live trade. */
+  deleteTrade(tradeId: string): Promise<void>
   skipSignal(id: string, reason: SkipReason | null): Promise<void>
   /** Resolves with the day the user is reminded. */
   snoozeSignal(id: string): Promise<string>
@@ -498,4 +647,15 @@ export interface Api {
   getAdminDatabases(): Promise<AdminDatabases>
   /** Rejects with `InvalidValueError` saying why when refused (no URL on the server, a database that doesn't answer). */
   switchAdminDatabase(name: DatabaseName): Promise<void>
+/** All assets, for the admin assets page. */
+  getAdminAssets(): Promise<AdminAsset[]>
+  /** Hides or restores an asset. */
+  setAdminAssetActive(id: string, active: boolean): Promise<void>
+/** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidValueError` or `TooManyTriesError`. */
+  submitFeedback(feedback: NewFeedback): Promise<FeedbackItem>
+  /** Owner only: lists, edits, closes/reopens or deletes feedback comments. */
+  getFeedback(status?: FeedbackStatus): Promise<FeedbackItem[]>
+  updateFeedback(id: string, patch: FeedbackPatch): Promise<FeedbackItem>
+  deleteFeedback(id: string): Promise<void>
+
 }

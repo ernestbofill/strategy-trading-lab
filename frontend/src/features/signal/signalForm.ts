@@ -30,16 +30,19 @@ export const SKIP_REASONS: { id: SkipReason; label: string }[] = [
 export const skipReasons = (t?: (key: MessageKey) => string) =>
   SKIP_REASONS.map((r) => ({ id: r.id, label: t ? t(SKIP_REASON_KEYS[r.id]) : r.label }))
 
-/** The form as the signal prefills it: the next trading day, its open when known, the step without the fee, no fee. */
-export const initialForm = (s: SignalDetail): TradeForm => ({
-  date: s.prefill.date,
-  price: s.prefill.price === null ? '' : String(s.prefill.price),
-  enteredAs: 'amount',
-  amount: s.prefill.amount === null ? '' : s.prefill.amount.toFixed(2),
-  shares: '',
-  fee: '',
-  ownRate: null,
-})
+/** The form as the signal prefills it: the next trading day, its open when known, the step without the fee (or held shares for a sale), no fee. */
+export const initialForm = (s: SignalDetail): TradeForm => {
+  const sell = s.side === 'sell'
+  return {
+    date: s.prefill.date,
+    price: s.prefill.price === null ? '' : String(s.prefill.price),
+    enteredAs: sell ? 'shares' : 'amount',
+    amount: s.prefill.amount === null ? '' : s.prefill.amount.toFixed(2),
+    shares: s.prefill.shares == null ? '' : String(s.prefill.shares),
+    fee: '',
+    ownRate: null,
+  }
+}
 
 /**
  * Whether a number can be read two ways: one comma or one dot, three digits after it and not "0" before ("1,250" and

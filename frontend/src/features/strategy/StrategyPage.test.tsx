@@ -22,6 +22,9 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   signals: { did: 9, skipped: 2, missed: 1 },
   words: { zone: 'the discount zone', notCandidate: 'Below its long trend' },
   stocks: [],
+  trades: [],
+  signalHistory: [],
+  rates: [],
   ...fields,
 })
 
@@ -61,6 +64,9 @@ describe('StrategyPage', () => {
     expect(screen.getByText(/The template's worst year, 2010-2024/).textContent).toContain('−21%')
     expect(screen.getByRole('link', { name: /Zscaler WAITING FOR YOU Signal: step 2 of 5/ }).getAttribute('href')).toBe(
       '/strategies/live/signals/sig',
+    )
+    expect(screen.getByRole('link', { name: /Tune the settings Change its rules/i }).getAttribute('href')).toBe(
+      '/strategies/live/settings',
     )
     expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).toContain(
       "Past results don't promise future ones.",

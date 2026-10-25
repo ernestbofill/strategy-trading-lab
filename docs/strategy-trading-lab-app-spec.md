@@ -261,7 +261,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   2. "**The first bounce:** it climbs 5% off its low. That's the first step."
   3. "**Then in steps:** one more step every 2 weeks, until the budget is used."
 - Fund: "[S&P 500 fund name]" / "Tracks the 500 largest US companies" / "Change".
-- Tested: "[N] big drops, [year]-[year]."
+- Tested: "[N] big drops, [year]-[year]. Big drops are rare: it may not signal for years." (Also added on the dashboard card and strategy page while there are no trades yet.)
 - What can go wrong: "the market can keep falling after the first bounce, and stay low for years."
 
 *Ride the long trend* (`ReviewTrend`)
@@ -298,7 +298,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2b · Advanced settings (`Advanced`)
 
-**Purpose:** tune each rule as an exact number and see the effect on the backtest. Drawn for *Dip in winners*; every template needs its own set, from its POC parameters (open question). For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
+**Purpose:** tune each rule as an exact number and see the effect on the backtest. Designed for *Dip in winners* and *Ride the long trend*; each exposes selected POC parameters, not every engine parameter. For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
 
 **Copy**
 - Top bar: "← BACK" · "[template name]"
@@ -317,6 +317,15 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
 | "The dip must stay above the average over [n] days." | 50 days | 5 | 20–100 |
 
+For *Ride the long trend*:
+
+| Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- |
+| "The trend line is the average price over [n] days." | 200 days | 10 | 50–300 |
+| "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+
+The cooldown is not exposed for either template. The shown settings are available when starting a strategy; changing settings on an already-running strategy is not built yet.
+
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
 - As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide. Past results don't promise future ones."
@@ -327,6 +336,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - "Reset to tested" puts every value back.
 - "Save settings" stores the values and returns to the screen that opened it. Leaving with unsaved changes asks first (not drawn, not built yet).
 - Each changed row's stepper stops at its range; the zone's start stays at least a step under its end, and the end a step over the start.
+- On Review, rules that use settings show the tested defaults or the user's chosen values.
 - During the new-strategy flow the values live in the draft; Review's row reads "Advanced settings · tested defaults" or "· [n] changed", and so does Confirm's Settings row. Templates without settings yet show "This template's settings come in a later step." and Confirm leaves out the Settings row.
 - Values belong to the user's strategy; the template's defaults never change.
 
@@ -482,9 +492,18 @@ The same three settings can be changed later from the strategy page (not drawn).
     - "WATCHING" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
     - Until the stock page is built, only a waiting row is a link.
-    - *Ride the long trend* also needs "OUT OF THE MARKET" for the time between a sale and the next buy (not drawn).
+    - *The big market drop* shows "WATCHING" with "[n]% below its 6-month high" in normal markets and "In a drop: [n]% above its low" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought.
+    - *Ride the long trend* shows "OUT OF THE MARKET" ("[n]% from the buy line", or "Below its long trend") when not holding, and "HOLDING" ("In the market") when holding.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
+- **Signals and trades** (`SignalsAndTrades`):
+  - A chronological timeline of every signal and trade recorded for this strategy, ordered newest first.
+  - Heading: "Signals and trades" with the item count ("· [n]").
+  - Live mode action: "+ Log a trade by hand" button that toggles an inline form to record manual buy or sale trades on any of the strategy's active stocks (Stock, Action BUY/SELL, Date, Price, Amount or Shares toggle, Fee, and Exchange rate). Manual trades are marked with a `MANUAL` badge. Manual trades can be dated on any past day up to today (including before the strategy started), but not in the future.
+  - In Live mode, each trade row has an "Edit" button to modify its fields (Date, Price, Amount or Shares, Fee, Exchange rate) or "Delete" with inline confirmation to soft-delete the trade (`deleted_at`).
+  - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
+  - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
+  - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For simulations, a third link: "Go live with these settings" (not drawn).
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
@@ -566,9 +585,11 @@ The date is from the signal day to today; a field the server refuses shows why u
 
 ### Admin settings (`/admin`, not drawn, for Ernest)
 
-Like the POC's settings page. Not linked from the app; reached by its address. Only the **owner** (the account role, below) can open it: a visitor who isn't logged in goes to Log-in and comes back; a user or vip goes to the start page, as if the page weren't there. The API answers 401 and 403 the same way. Besides the settings it has the build, the database in use, a test email and a Prices box (next and last refresh, *Refresh now*, *Test Yahoo*, and the daily schedule).
+Like the POC's settings page. Not linked from the app; reached by its address. Only the **owner** (the account role, below) can open it: a visitor who isn't logged in goes to Log-in and comes back; a user or vip goes to the start page, as if the page weren't there. The API answers 401 and 403 the same way. Besides the settings it has the build, the database in use, a test email, a Prices box (next and last refresh, *Refresh now*, *Test Yahoo*, and the daily schedule), and a link to **Assets** (`/admin/assets`).
 
 - **Roles:** every account has one: *user* (everyone), *vip* (people Ernest invites; they get special privileges later, and there is no invitation yet) or *owner* (Ernest). The account's role is in `GET /account/me`. The owner is the account whose verified email is `OWNER_EMAIL` on the server; a vip is set in the database for now.
+- **Management pages and data table:** the admin management pages share one headless table component (`DataTable`, built on TanStack Table and styled with the design tokens): sort by a column, search, dropdown filters, paging ("1–10 of N", "Previous", "Next"), and an action per row; on narrow containers (< 640px) rows turn into cards with no sideways scrolling. Only `/admin` routes load it (and the service worker skips precaching `Admin*` chunks), so regular users never download it.
+- **Assets (`/admin/assets`, linked from `/admin`):** lists every asset in the database (`GET /admin/assets`) in the data table: asset name, what it does and symbol/exchange/currency, kind (*Stock* or *Fund*), running strategies watching it, latest price date (or "No prices"), status (*Active* or *Hidden*), and a *Hide* / *Show* action per row (`PUT /admin/assets/{id}/active`). Adding by symbol and editing a name or description come with item 13.
 - Then "Settings": one box per group (Email for now). Every setting but the password has a default (Ernest's Gmail, `smtp.gmail.com`, 587; the sender follows the account), so only the app password has to be typed; it comes last because changing a setting above it unsets it. Each row: the setting's name, what it is for, where the value comes from ("Set here", "From the server's environment", "Default", "Not set"), a field, "Save", and "Default" (back to the server's value or the default). A secret's field is always empty, with "set (hidden): type to replace" or "not set", and "Clear" instead of "Default".
 - A refused value says why under the field ("Use a port from 1 to 65535.").
 - The saved password only counts while the mail account, server, port and sender stay as they were when it was saved; change any of them (by saving, "Default" or on the server) and it reads "not set"; it counts again only if they go back to the values it was saved with. A password typed while the page shows outdated values is refused: "The mail settings changed since this page loaded. Reload, check them, then type the password again." So it is never sent to a server it wasn't meant for. It is only ever set on this page, never taken from the server's environment.
@@ -580,6 +601,7 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 - The Backend and Database boxes don't need the database, so they show even when the settings can't load ("Could not load the settings: the database in use may not answer. Switch above, or try again later."). Only Postgres is switched; object storage stays on the server's own branch.
 - While the API uses the dev database, every screen's top bar shows a **DEV** tag next to the version (from `GET /version`, which says which database is in use).
 - Log-in is the app's own. Sessions live in the database in use, so after switching database the owner logs in again there (the account must exist in both).
+- **Feedback** (in-app, from selected text, and reviewed on `/admin` and `/feedback`): any signed-in user with a confirmed email can select text on any screen to see a floating `💬 Add comment` button (pinned to the bottom of the screen, or below the sticky header when the selection is near the bottom so it never covers the phone's Copy menu; on desktop, right-clicking a selection also opens `💬 Add comment` / `📋 Copy`). Pressing it opens a modal dialog (`Add a comment`) with a kind picker (`🐞 Bug`, `💡 Idea`, `📝 Note`, `✨ Feature`), the page path, the quoted text and a comment box (`POST /feedback`). Only the **owner** can list, edit, close/reopen or delete feedback (`GET /feedback`, `PATCH /feedback/{id}`, `DELETE /feedback/{id}`), in the **Feedback** section on `/admin` and on `/feedback`, with `Open` / `Closed` / `All` filters, a general comment form and `Copy open as Markdown`.
 
 ## 7. Notifications
 
@@ -613,6 +635,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
 - **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
 - **Market data:** daily US prices and volumes, exchange rates.
+- **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed`), comment text, optional page route, DOM selector and selected text quote, timestamps.
 
 ## 9. Not designed yet
 
@@ -625,7 +648,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Stock list editor from the strategy page, stock search ("+ Add a stock"), fund picker ("Change").
 - Prompt editor ("Edit prompt", "Reset to suggested").
 - Sell signals for *Ride the long trend*, and its "Out of the market" status.
-- Manual trade form; editing and deleting trades.
+- ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - AI round history, error state when the answer can't be read, and the AI comparison page (later: results by AI model, never a ranking of stocks).
 - Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
 - Go live with these settings; renaming; changing the budget; the notifications switch; ending a strategy.
@@ -637,12 +660,12 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 
 - "Coming soon" cards on Pick a template for templates the engine can't run yet.
 - Live mode gated on a confirmed email, with email-only alerts until web push exists.
-- Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.
+- ~~Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.~~ (both built: #60, #61)
 - Ended strategies (where they go is an open decision).
 - The legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest), linked from a footer.
 - Account: download my data, delete my account, "Invite a friend".
 - Unsubscribe links in emails.
-- Admin: a data table for the management pages, health and failure alerts, users (block, delete), invites and test invites, assets, an audit log of owner actions, and feedback.
+- Admin: health and failure alerts, users (block, delete), invites and test invites, adding and editing assets, an audit log of owner actions, and feedback.
 - Owner access for Claude: an owner account of its own on dev and production, for testing and validation.
 
 ## 10. Open questions

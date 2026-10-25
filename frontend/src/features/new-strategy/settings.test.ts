@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Setting, TemplateDetail } from '../../api'
-import { changedSettings, formatSetting, settingBounds, settingValues, settingsSummary } from './settings'
+import { changedSettings, formatSetting, rulesWithSettings, settingBounds, settingValues, settingsSummary } from './settings'
 
 const start: Setting = { key: 'zoneStartPct', sentence: '', value: '{n}%', step: 1, min: 1, max: 39, below: 'zoneEndPct' }
 const end: Setting = { key: 'zoneEndPct', sentence: '', value: '{n}%', step: 1, min: 2, max: 40 }
@@ -32,5 +32,28 @@ describe('settings', () => {
     expect(formatSetting(peak, 45)).toBe('45 days')
     expect(settingsSummary({})).toBe('Tested defaults')
     expect(settingsSummary({ peakDays: 40, zoneEndPct: 12 })).toBe('2 changed')
+  })
+
+  it('fills rule placeholders from tested defaults and the user’s settings', () => {
+    const trend = {
+      defaults: { params: { smaDays: 200, bandPct: 3 } },
+      settings: [
+        { key: 'smaDays', sentence: '', value: '{n}', step: 10, min: 50, max: 300 },
+        { key: 'bandPct', sentence: '', value: '{n}', step: 1, min: 0, max: 10 },
+      ],
+      rules: [
+        { marker: 'BUY', text: 'Above {bandPct}% and SMA {smaDays} over {smaDays} days.' },
+        { marker: 'SELL', text: 'Below {bandPct}%.' },
+      ],
+    } as unknown as TemplateDetail
+
+    expect(rulesWithSettings(trend, { smaDays: 150, bandPct: 4 })).toEqual([
+      { marker: 'BUY', text: 'Above 4% and SMA 150 over 150 days.' },
+      { marker: 'SELL', text: 'Below 4%.' },
+    ])
+    expect(rulesWithSettings(trend, {})).toEqual([
+      { marker: 'BUY', text: 'Above 3% and SMA 200 over 200 days.' },
+      { marker: 'SELL', text: 'Below 3%.' },
+    ])
   })
 })

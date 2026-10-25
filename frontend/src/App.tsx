@@ -1,5 +1,5 @@
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { useEffect, type ReactNode } from 'react'
 import { I18nProvider, useI18n } from './i18n/I18n'
 import { AccountProvider, useAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
@@ -18,7 +18,7 @@ import { ResetPassword } from './features/account/ResetPassword'
 import { SignUp } from './features/account/SignUp'
 import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
-import { AdminSettings } from './features/admin/AdminSettings'
+import { FeedbackPage } from './features/feedback/FeedbackSection'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { Advanced } from './features/new-strategy/Advanced'
 import { SetBudget } from './features/new-strategy/SetBudget'
@@ -30,8 +30,13 @@ import { budgetPath, confirmPath, dashboardPath, homePath, pickPath } from './fe
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { SignalPage } from './features/signal/SignalPage'
 import { StrategyPage } from './features/strategy/StrategyPage'
+import { StrategySettings } from './features/strategy/StrategySettings'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
+
+// Loaded only when an owner opens /admin, so users never download the admin pages or TanStack Table.
+const AdminSettings = lazy(() => import('./features/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })))
+const AdminAssets = lazy(() => import('./features/admin/AdminAssets').then((m) => ({ default: m.AdminAssets })))
 
 /** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
@@ -58,7 +63,7 @@ export default function App() {
       <I18nProvider>
         <AccountProvider>
           <LocaleFromAccount />
-          <DraftPerUser>
+        <DraftPerUser>
             <Routes>
               <Route path={signUpPath} element={<SignUp />} />
               <Route path={logInPath} element={<LogIn />} />
@@ -77,9 +82,26 @@ export default function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path={accountPath} element={<AccountPage />} />
                 <Route element={<RequireOwner />}>
-                  <Route path="/admin" element={<AdminSettings />} />
+                  <Route
+                    path="/admin"
+                    element={
+                      <Suspense fallback={null}>
+                        <AdminSettings />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/admin/assets"
+                    element={
+                      <Suspense fallback={null}>
+                        <AdminAssets />
+                      </Suspense>
+                    }
+                  />
+                  <Route path="/feedback" element={<FeedbackPage />} />
                 </Route>
                 <Route path="/strategies/:id" element={<StrategyPage />} />
+                <Route path="/strategies/:id/settings" element={<StrategySettings />} />
                 <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
                 <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
               </Route>

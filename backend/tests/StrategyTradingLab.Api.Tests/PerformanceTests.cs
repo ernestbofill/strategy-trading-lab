@@ -38,6 +38,26 @@ public class PerformanceTests
     }
 
     [Fact]
+    public void Sales_count_in_the_gain_the_used_budget_and_the_reinvested_next_buy()
+    {
+        Buy buy1 = new(Stock, Mon, 10m, 100m, 1m);
+        Buy sell = new(Stock, Tue, 10m, 120m, 1m, TradeSide.Sell);
+        Buy buy2 = new(Stock, Wed, 16m, 118m, 1m);
+
+        Assert.Equal(101m, Performance.Used([buy1]));
+        Assert.Equal(0m, Performance.Used([buy1, sell]));
+        Assert.Equal(119m, Performance.Used([buy1, sell, buy2]));
+        // After Tuesday's sale, the strategy holds €119 in cash against €101 invested.
+        Assert.Equal(Math.Round((119m - 101m) / 101m * 100m, 1), Performance.GainPct([buy1, sell], Book(), Tue, "EUR"));
+        // Wednesday reinvests the €119 proceeds into 16 shares (worth 16 * $15 / 2 = €120 on Wednesday) with no extra cash added.
+        Assert.Equal(Math.Round((120m - 101m) / 101m * 100m, 1), Performance.GainPct([buy1, sell, buy2], Book(), Wed, "EUR"));
+        // The index benchmark only gets the initial €101 because Wednesday's buy came entirely from Tuesday's sale proceeds.
+        var index = Performance.IndexBuys([buy1, sell, buy2], Book(), Index, "EUR")!;
+        Assert.Single(index);
+        Assert.Equal(101m, index[0].Cost);
+    }
+
+    [Fact]
     public void The_index_gets_the_same_money_on_the_same_day_or_the_next_one_it_trades_or_the_last_close_before_it()
     {
         Buy[] buys = [new(Stock, Mon, 12.5m, 100, 1), new(Stock, Wed, 4, 50, 0)];
@@ -94,4 +114,15 @@ public class PerformanceTests
     public void A_stocks_pill_follows_the_waiting_signal_then_the_steps_then_the_rules(StrategyMode mode, EvaluationStatus? latest,
         bool waiting, bool todaysSignal, int rulesSteps, StockStatus expected) =>
         Assert.Equal(expected, StrategyPage.Status(mode, latest, waiting, todaysSignal, rulesSteps, maxSteps: 5));
+
+    [Fact]
+    public void Bear_and_trend_pills_show_done_and_out_of_the_market()
+    {
+        Assert.Equal(StockStatus.Done, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 5, 5, "bear"));
+        Assert.Equal(StockStatus.Building, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Building, false, false, 2, 5, "bear"));
+        Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.NotCandidate, false, false, 0, null, "trend"));
+        Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 1, null, "trend"));
+        Assert.Equal(StockStatus.Signal, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.SellSignal, false, true, 0, null, "trend"));
+        Assert.Equal(StockStatus.WaitingForYou, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.SellSignal, true, true, 1, null, "trend"));
+    }
 }

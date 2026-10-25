@@ -1,0 +1,47 @@
+.assetCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.what {
+  font: 12px/18px var(--font-ui);
+  font-weight: 400;
+  color: var(--ink-sidebar);
+}
+
+.active {
+  color: var(--success);
+  font-family: var(--font-mono);
+}
+
+.hidden {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+}
+
+.actionButton {
+  min-height: 44px;
+  min-width: 72px;
+  padding: 0 var(--space-3);
+  background: transparent;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.actionButton:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.actionButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.error {
+  margin: 0;
+  color: var(--danger-ink);
+  font: 14px/20px var(--font-mono);
+}

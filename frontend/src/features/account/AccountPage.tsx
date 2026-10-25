@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, UnauthorizedError, type Currency, type Locale } from '../../api'
 import { Checkbox, FormMessage, PasswordField, SelectField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
@@ -69,6 +69,15 @@ export function AccountPage() {
       <Section title={t('account.page.currency')}>
         <CurrencyForm current={account.currency} onSaved={refresh} />
       </Section>
+
+      {account.role === 'owner' && (
+        <Section title={t('account.page.admin')}>
+          <p className={styles.line}>{t('account.page.adminLine')}</p>
+          <Link to="/admin" className={`ui-strong ${styles.button} ${styles.linkButton}`}>
+            {t('account.page.adminLink')}
+          </Link>
+        </Section>
+      )}
 
       <Section title={t('account.page.emails')}>
         <OverviewEmail current={account.overviewEmail} onSaved={refresh} />

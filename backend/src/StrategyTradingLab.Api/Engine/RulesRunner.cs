@@ -1,7 +1,7 @@
 namespace StrategyTradingLab.Api.Engine;
 
 /// <summary>
-/// Runs a template's buy rules over an asset's history, day by day, as the POC's backtest does: a signal on day D is
+/// Runs a template's rules over an asset's history, day by day, as the POC's backtest does: a signal on day D is
 /// acted on at day D+1's open, whatever the user does ("the rules carry on as if the step had been bought"), and the
 /// cooldown counts from that day. The rules decide each day's status (<see cref="IBuyRules"/>); this keeps the rules' own
 /// position, the cooldown and the step numbers, as the POC's <c>Strategy.step</c> does. Pure: bars in, evaluations out.
@@ -31,17 +31,24 @@ public static class RulesRunner
         int stepsBought;
         DateOnly lastBuyDay;
         bool pendingBuy;
+        bool pendingSell;
 
         public DayEvaluation Step(int i, DateOnly day)
         {
-            // 1) Yesterday's signal is acted on at today's open: a step is bought, and the cooldown starts today.
-            var actedNow = pendingBuy;
+            // 1) Yesterday's signal is acted on at today's open: a step is bought (or the position is sold), and the cooldown starts today.
+            var actedNow = pendingBuy || pendingSell;
             if (pendingBuy)
             {
                 stepsBought++;
                 lastBuyDay = day;
                 cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
                 pendingBuy = false;
+            }
+            else if (pendingSell)
+            {
+                stepsBought = 0;
+                cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
+                pendingSell = false;
             }
 
             // 2) Today's evaluation, at the close.
@@ -52,15 +59,20 @@ public static class RulesRunner
                 return new DayEvaluation(day, RuleStatus.NotEnoughData, null, false, null, NoFacts);
             }
 
+            var cooling = cooldownUntil is { } until && day < until;
             var context = new DayContext(day, previous, stepsBought, lastBuyDay, actedNow,
-                Cooling: cooldownUntil is { } until && day < until, Full: stepsBought >= plan.MaxSteps);
+                Cooling: cooling, Full: stepsBought >= plan.MaxSteps, MaxSteps: plan.MaxSteps);
             var decision = rules.Decide(i, context);
-            int? step = decision.Status == RuleStatus.BuySignal ? Math.Clamp(stepsBought + 1, 1, plan.MaxSteps) : null;
-            var newBuy = step is not null && (previous != RuleStatus.BuySignal || previousStep != step);
+            int? step = decision.Status == RuleStatus.BuySignal
+                ? (decision.StepNo ?? Math.Clamp(stepsBought + 1, 1, plan.MaxSteps))
+                : null;
+            var newBuy = step is not null && (previous != RuleStatus.BuySignal || previousStep != step || (actedNow && !cooling));
+            var newSell = decision.Status == RuleStatus.SellSignal && (previous != RuleStatus.SellSignal || (actedNow && !cooling));
             previous = decision.Status;
             previousStep = step;
             if (newBuy) pendingBuy = true;
-            return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen);
+            if (newSell) pendingSell = true;
+            return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell);
         }
     }
 }

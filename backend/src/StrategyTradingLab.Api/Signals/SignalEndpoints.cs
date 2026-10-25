@@ -100,13 +100,13 @@ public static class SignalEndpoints
         .WithSummary("Snooze: the signal stays waiting and the user is reminded the next weekday.");
     }
 
-    /// <summary>A buy signal of one of the user's live strategies; null for anything else (also another user's). Read only: the answers update it conditionally.</summary>
+    /// <summary>A signal of one of the user's live strategies; null for anything else (also another user's). Read only: the answers update it conditionally.</summary>
     static async Task<(Signal Signal, Strategy Strategy, Asset Asset)?> FindAsync(AppDbContext db, Guid id, Guid userId, CancellationToken cancellationToken)
     {
         var row = await (from signal in db.Signals.AsNoTracking()
                          join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
                          join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
-                         where signal.Id == id && strategy.UserId == userId && strategy.Mode == StrategyMode.Live && signal.Side == TradeSide.Buy
+                         where signal.Id == id && strategy.UserId == userId && strategy.Mode == StrategyMode.Live
                          select new { signal, strategy, asset }).SingleOrDefaultAsync(cancellationToken);
         return row is null ? null : (row.signal, row.strategy, row.asset);
     }
@@ -157,8 +157,20 @@ public static class SignalEndpoints
         var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date > signal.SignalDate).OrderBy(p => p.Date)
             .Select(p => new { p.Date, p.Open }).FirstOrDefaultAsync(cancellationToken);
         var nextDay = next?.Date ?? SignalRules.NextWeekday(signal.SignalDate);
-        var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open,
-            signal.StepAmount is { } step && step > TemplateCatalog.Fee.Fixed + 0.01m ? TemplateCatalog.Fee.Split(step).Amount : null);
+        decimal? prefillAmount = null, prefillShares = null;
+        if (signal.Side == TradeSide.Buy)
+        {
+            var step = signal.StepAmount ?? strategy.Budget.Amount;
+            if (step > TemplateCatalog.Fee.Fixed + 0.01m) prefillAmount = TemplateCatalog.Fee.Split(step).Amount;
+        }
+        else
+        {
+            var held = await db.UserTrades.AsNoTracking()
+                .Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id && t.DeletedAt == null)
+                .SumAsync(t => t.Side == TradeSide.Buy ? t.Shares : -t.Shares, cancellationToken);
+            if (held > 0) prefillShares = held;
+        }
+        var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open, prefillAmount, prefillShares);
 
         var rates = new List<RateDay>();
         // The screen shows no rate line when the currencies match, so nothing to load then.
@@ -184,6 +196,6 @@ public static class SignalEndpoints
         var reason = EmailTexts.FactSentence(SignalLine.From(signal, strategy, asset));
         return new SignalDetail(signal.Id, strategy.Id, strategy.Name, texts.Name, strategy.Currency, asset.Name, asset.Currency, signal.StepNo,
             signal.MaxSteps, signal.StepAmount, signal.SignalDate, signal.ClosePrice, reason, signal.Status, signal.SnoozedUntil, signal.EndedOn,
-            today, prefill, rates, answer);
+            today, prefill, rates, answer, signal.Side);
     }
 }

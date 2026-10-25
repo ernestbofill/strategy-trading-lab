@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-10-25 · *The big market drop* (`bear_accumulation`) and *Ride the long trend* (`index_trend`) match the POC day by day on stored SPY prices. *The big market drop* shows `WATCHING` with the distance below the 6-month high or above the drop's low, `BUILDING`, and `DONE` once the drop's steps are bought, and notes on the review, dashboard card and strategy page that big drops may not signal for years. *Ride the long trend* shows `OUT OF THE MARKET` and `HOLDING`, includes sales in the results and average-cost budget used, reinvests sale proceeds on the next buy, and prefills live sell signals with the held shares.
 - 2026-10-25 · The launch path: Milestone 1 (core loop), Milestone 2 (ready to publish), a quiet launch, then the public beta, as in ROADMAP.md. *Your AI's top picks* comes into the launch if there's time; the rest of the launch scope is still open. (#58)
 - 2026-10-25 · Template pages are public, and sign-up has "Skip for now, look around": a guest goes through the new-strategy flow (draft in the browser) and signs up to start it. (Ernest, #58)
 - 2026-10-25 · The admin pages' data table is built on TanStack Table (headless, small, styled with the design tokens, rows as cards on a phone), not AG Grid. (Ernest, #58)

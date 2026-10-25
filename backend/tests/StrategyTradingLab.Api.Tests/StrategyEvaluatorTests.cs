@@ -222,4 +222,59 @@ public class StrategyEvaluatorTests
             await CleanAsync(db, userId, assetId);
         }
     }
+
+    [NeonFact]
+    public async Task A_trend_strategy_buys_all_in_sells_all_out_and_reinvests_the_proceeds_on_the_next_buy()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var tag = Guid.NewGuid().ToString("N")[..10];
+        var asset = new Asset { Symbol = $"T{tag}", Exchange = "TEST", Name = "Trend asset", Currency = "USD", Kind = AssetKind.Index };
+        var user = new User { Email = $"trend-{tag}@example.com", TimeZone = "UTC", Locale = "en" };
+        db.Assets.Add(asset);
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        var first = new DateOnly(2024, 1, 1);
+        var prices = new List<PriceDaily>();
+        for (var i = 0; i < 200; i++)
+            prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(i), Open = 100, High = 100, Low = 100, Close = 100, Volume = 1000 });
+        for (var i = 200; i < 206; i++)
+            prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(i), Open = 105, High = 105, Low = 105, Close = 105, Volume = 1000 });
+        prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(206), Open = 90, High = 90, Low = 90, Close = 90, Volume = 1000 });
+        for (var i = 207; i < 212; i++)
+            prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(i), Open = 120, High = 120, Low = 100, Close = 100, Volume = 1000 });
+        prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(212), Open = 120, High = 120, Low = 120, Close = 120, Volume = 1000 });
+        prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(213), Open = 120, High = 120, Low = 120, Close = 120, Volume = 1000 });
+        db.Prices.AddRange(prices);
+        var start = first.AddDays(199);
+        var strategy = new Strategy
+        {
+            UserId = user.Id, TemplateKey = "trend", Name = $"Trend {tag}", Mode = StrategyMode.Simulation, Status = StrategyStatus.Running, StartedOn = start,
+            Currency = "USD", Budget = new Budget(1000, null, null), Params = TemplateCatalog.Trend.ParamsJson(),
+            Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) }],
+        };
+        db.Strategies.Add(strategy);
+        await db.SaveChangesAsync();
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+
+            var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id).OrderBy(s => s.SignalDate).ToListAsync();
+            Assert.Equal(3, signals.Count);
+            Assert.Equal((TradeSide.Buy, TradeSide.Sell, TradeSide.Buy), (signals[0].Side, signals[1].Side, signals[2].Side));
+
+            var trades = await db.SignalTrades.Where(t => t.StrategyId == strategy.Id).OrderBy(t => t.TradeDate).ToListAsync();
+            Assert.Equal(3, trades.Count);
+            Assert.Equal((TradeSide.Buy, TradeSide.Sell, TradeSide.Buy), (trades[0].Side, trades[1].Side, trades[2].Side));
+            Assert.Equal(1000m, trades[0].Amount + trades[0].Fee);
+            Assert.Equal(trades[0].Shares, trades[1].Shares); // All out.
+            Assert.True(trades[2].Amount + trades[2].Fee > 1000m); // Reinvested the higher sale proceeds from day 207.
+            Assert.Equal(trades[1].Amount - trades[1].Fee, trades[2].Amount + trades[2].Fee);
+        }
+        finally
+        {
+            await CleanAsync(db, user.Id, asset.Id);
+        }
+    }
 }

@@ -13,7 +13,7 @@ namespace StrategyTradingLab.Api.Tests;
 /// <summary>Confirm a signal, end to end: a user's live strategy with waiting signals, answered through the API.</summary>
 public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi>
 {
-    static readonly DateOnly SignalDay = new(2026, 10, 22);
+    static readonly DateOnly SignalDay = new(2026, 9, 22);
 
     /// <summary>A signed-up user's strategy on a euro stock (no exchange rate needed), with two waiting signals and the next day's price.</summary>
     async Task<(HttpClient Client, Guid StrategyId, Guid AssetId, Guid First, Guid Second)> SeedAsync(StrategyMode mode = StrategyMode.Live)
@@ -32,7 +32,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             new PriceDaily { AssetId = asset.Id, Date = SignalDay.AddDays(1), Open = 190, High = 191, Low = 189, Close = 190.5m, Volume = 1000 });
         var strategy = new Strategy
         {
-            UserId = user.Id, TemplateKey = "dip", Name = $"Signals {tag}", Mode = mode, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 10, 1),
+            UserId = user.Id, TemplateKey = "dip", Name = $"Signals {tag}", Mode = mode, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 9, 1),
             Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
             Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = DateTimeOffset.UtcNow }],
         };
@@ -112,6 +112,58 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
                 page.GetProperty("signals").GetProperty("missed").GetInt32()));
             var answer = (await client.GetFromJsonAsync<JsonElement>($"/signals/{first}")).GetProperty("answer");
             Assert.Equal(("confirmed", 190m), (answer.GetProperty("status").GetString(), answer.GetProperty("price").GetDecimal()));
+        }
+        finally
+        {
+            await CleanAsync(assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_sell_signal_prefills_the_held_shares_and_records_the_sale()
+    {
+        var (client, strategyId, assetId, _, _) = await SeedAsync();
+        try
+        {
+            Guid sellId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s =>
+                    s.SetProperty(x => x.TemplateKey, "trend").SetProperty(x => x.Budget, new Budget(1000, null, null)).SetProperty(x => x.Notifications, false));
+                db.UserTrades.Add(new UserTrade
+                {
+                    StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, TradeDate = SignalDay.AddDays(-5),
+                    Price = 180m, Shares = 5m, Amount = 900m, Fee = 2.80m, FxRate = 1m, FxSource = FxSource.Reference,
+                    EnteredAs = EnteredAs.Shares, Source = TradeSource.Manual,
+                });
+                var sell = new Signal
+                {
+                    StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Sell, SignalDate = SignalDay,
+                    ClosePrice = 187.5m, Facts = JsonDocument.Parse("""{"belowSmaPct":3.1}"""), Status = SignalStatus.Waiting,
+                };
+                db.Signals.Add(sell);
+                await db.SaveChangesAsync();
+                sellId = sell.Id;
+            }
+
+            var detail = await client.GetFromJsonAsync<JsonElement>($"/signals/{sellId}");
+            Assert.Equal("sell", detail.GetProperty("side").GetString());
+            Assert.Equal("the market closed 3.1% below its 200-day average", detail.GetProperty("reason").GetString());
+            Assert.Equal(5m, detail.GetProperty("prefill").GetProperty("shares").GetDecimal());
+
+            var post = await client.PostAsJsonAsync($"/signals/{sellId}/trade",
+                new { date = SignalDay.AddDays(1), price = 190m, enteredAs = "shares", shares = 5m, fee = 1.20m, fxSource = "reference" });
+            Assert.Equal(HttpStatusCode.NoContent, post.StatusCode);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var trade = await db.UserTrades.SingleAsync(t => t.SignalId == sellId);
+                Assert.Equal((TradeSide.Sell, 5m, 950m), (trade.Side, trade.Shares, trade.Amount));
+            }
+            var page = await client.GetFromJsonAsync<JsonElement>($"/strategies/{strategyId}");
+            Assert.Equal(0m, page.GetProperty("budget").GetProperty("used").GetDecimal()); // All shares sold: budget is free again.
         }
         finally
         {

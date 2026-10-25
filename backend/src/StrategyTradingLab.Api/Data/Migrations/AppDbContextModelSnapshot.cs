@@ -704,7 +704,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.ToTable("daily_evaluations", null, t =>
                         {
-                            t.HasCheckConstraint("ck_daily_evaluations_status", "status IN ('not_enough_data', 'not_candidate', 'watching', 'buy_signal', 'signal_ended', 'building', 'holding')");
+                            t.HasCheckConstraint("ck_daily_evaluations_status", "status IN ('not_enough_data', 'not_candidate', 'watching', 'buy_signal', 'signal_ended', 'building', 'holding', 'sell_signal')");
 
                             t.HasCheckConstraint("ck_daily_evaluations_step_no", "step_no IS NULL OR step_no >= 1");
                         });

@@ -266,7 +266,7 @@ Where a stock stands under a strategy's rules on a trading day: the engine's ver
 | strategy_id | uuid FK → strategies, cascade | PK part |
 | asset_id | uuid FK → assets | PK part |
 | date | date | PK part. The evaluated trading day |
-| status | text, not null | `not_enough_data` \| `not_candidate` \| `watching` \| `buy_signal` \| `signal_ended` \| `building` \| `holding` |
+| status | text, not null | `not_enough_data` \| `not_candidate` \| `watching` \| `buy_signal` \| `signal_ended` \| `building` \| `holding` \| `sell_signal` |
 | step_no | int, null | The step a buy signal is for |
 | facts | jsonb, not null | The numbers behind the day (`belowPeakPct`, `buyLine`…) |
 | created_at | timestamptz | |

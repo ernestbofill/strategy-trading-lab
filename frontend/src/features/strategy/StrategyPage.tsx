@@ -55,6 +55,7 @@ function Summary({ s }: { s: StrategyDetail }) {
               In the past, {pastResult.years}, the template did <span className={styles.mono}>{signedPct(pastResult.template)}</span> vs{' '}
               <span className={styles.mono}>{signedPct(pastResult.index)}</span> for an index fund. Its worst year was{' '}
               <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>.
+              {s.templateKey === 'bear' && ' Big drops are rare: it may not signal for years.'}
             </>
           )}
         </p>

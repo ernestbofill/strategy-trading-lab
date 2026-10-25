@@ -4,6 +4,8 @@ Decisions that outlive a PR, and why. One dated line each, newest first, with th
 
 - 2026-10-25 · The launch path: Milestone 1 (core loop), Milestone 2 (ready to publish), a quiet launch, then the public beta, as in ROADMAP.md. *Your AI's top picks* comes into the launch if there's time; the rest of the launch scope is still open. (#58)
 - 2026-10-25 · Template pages are public, and sign-up has "Skip for now, look around": a guest goes through the new-strategy flow (draft in the browser) and signs up to start it. (Ernest, #58)
+- 2026-10-25 · The admin pages' data table is built on TanStack Table (headless, small, styled with the design tokens, rows as cards on a phone), not AG Grid. (Ernest, #58)
+- 2026-10-25 · Edit list on a running strategy is in the launch; anything else not built has its controls hidden until it is. (Ernest, #58)
 - 2026-10-25 · Claude has an owner account of its own, on dev and production, to test and check every feature; once the invite gate is on, it gets past it with owner invite links, never a bypass in the code. Owner actions go to an audit log, and the *Production* rules in `CLAUDE.md` still apply. (Ernest, #58)
 - 2026-10-25 · From the quiet launch, no sign-up without an invite, until Ernest decides to open sign-ups for the public beta. Until the quiet launch the gate stays off: sign-up is open while the app is built. (Ernest, #58)
 - 2026-10-25 · The quiet launch is invite only. Ernest's invite links give the vip role; each vip can invite a few people (3 by default) with their own link; those people are users and can't invite. (Ernest, #58)

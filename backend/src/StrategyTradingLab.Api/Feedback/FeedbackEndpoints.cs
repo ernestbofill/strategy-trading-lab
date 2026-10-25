@@ -62,15 +62,26 @@ public static partial class FeedbackEndpoints
         .RequireRateLimiting(SubmitLimit)
         .WithSummary("Submits a feedback comment, optionally pinned to selected text on a screen. Requires a confirmed email.");
 
-        group.MapGet("/", async (FeedbackStatus? status, AppDbContext db, CancellationToken cancellationToken) =>
+        group.MapGet("/", async (string? status, AppDbContext db, CancellationToken cancellationToken) =>
         {
+            FeedbackStatus? parsedStatus = null;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<FeedbackStatus>(status, ignoreCase: true, out var s))
+                    return Results.BadRequest(new HttpValidationProblemDetails(new Dictionary<string, string[]>
+                    {
+                        ["status"] = ["Pick open or closed."]
+                    }));
+                parsedStatus = s;
+            }
+
             var query = from item in db.FeedbackItems.AsNoTracking()
                         join user in db.Users.AsNoTracking() on item.UserId equals user.Id
-                        where status == null || item.Status == status
+                        where parsedStatus == null || item.Status == parsedStatus
                         orderby item.CreatedAt descending, item.Id descending
                         select new FeedbackDto(item.Id, user.Email, item.Kind, item.Status, item.Text, item.Route, item.Element,
                             item.SelectedText, item.CreatedAt, item.UpdatedAt, item.ClosedAt);
-            return await query.ToListAsync(cancellationToken);
+            return Results.Ok(await query.ToListAsync(cancellationToken));
         })
         .RequireAuthorization(Policies.Owner)
         .WithSummary("Lists feedback comments, newest first, optionally filtered by status (open or closed). Owner only.");

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using StrategyTradingLab.Api.Neon;
 
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace StrategyTradingLab.Api.Tests;
 
 /// <summary>

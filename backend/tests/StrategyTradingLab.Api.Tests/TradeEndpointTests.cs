@@ -73,9 +73,31 @@ public class TradeEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi
     public async Task Log_manual_trade_validates_asset_date_and_mode()
     {
         var (client, strategyId, assetId, _, outsideAssetId) = await SeedAsync();
-        var (_, simStrategyId, _, _, _) = await SeedAsync(StrategyMode.Simulation);
+        Guid simStrategyId = Guid.Empty;
         try
         {
+            using (var simScope = factory.Services.CreateScope())
+            {
+                var simDb = simScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var liveStrategy = await simDb.Strategies.SingleAsync(s => s.Id == strategyId);
+                var simStrategy = new Strategy
+                {
+                    UserId = liveStrategy.UserId,
+                    TemplateKey = "dip",
+                    Name = $"Sim {Guid.NewGuid():N}"[..18],
+                    Mode = StrategyMode.Simulation,
+                    Status = StrategyStatus.Running,
+                    StartedOn = StrategyStartedOn,
+                    Currency = "EUR",
+                    Budget = new Budget(3000, 100, 5),
+                    Params = TemplateCatalog.Dip.ParamsJson(),
+                    Assets = [new StrategyAsset { AssetId = assetId, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+                };
+                simDb.Strategies.Add(simStrategy);
+                await simDb.SaveChangesAsync();
+                simStrategyId = simStrategy.Id;
+            }
+
             // Simulation strategy refused
             var simRes = await client.PostAsJsonAsync($"/strategies/{simStrategyId}/trades", new
             {

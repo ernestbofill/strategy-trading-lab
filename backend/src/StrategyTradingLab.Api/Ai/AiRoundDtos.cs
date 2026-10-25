@@ -23,6 +23,7 @@ public record AiRoundDetail(
     string StrategyName,
     string TemplateName,
     StrategyMode Mode,
+    string Currency,
     Guid RoundId,
     DateOnly DueOn,
     DateOnly LastDay,
@@ -34,6 +35,7 @@ public record AiRoundDetail(
     AiSetup Setup,
     string Suggested,
     IReadOnlyList<AiStockDto> Stocks,
+    int EveryWeeks,
     int TopN,
     string? LastModel,
     bool Sharing,
@@ -62,7 +64,7 @@ public record AiReadingDto(IReadOnlyList<AiScoreDto> Scores, IReadOnlyList<strin
 public record AiRoundResult(Guid RoundId, IReadOnlyList<Guid> SignalIds, StrategyMode Mode);
 
 /// <summary>A strategy's AI rounds, newest first, and how the picks did against the rest since each round.</summary>
-public record AiRoundHistory(Guid StrategyId, string StrategyName, StrategyMode Mode, IReadOnlyList<AiRoundItem> Rounds, PicksVsRest? PicksVsRest);
+public record AiRoundHistory(Guid StrategyId, string StrategyName, StrategyMode Mode, DateOnly Today, IReadOnlyList<AiRoundItem> Rounds, PicksVsRest? PicksVsRest);
 
 /// <summary>
 /// A round in the history. <c>Picks</c> and <c>Rest</c> are the average price change of the stocks that got a step and of the

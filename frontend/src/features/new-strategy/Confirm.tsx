@@ -17,7 +17,8 @@ import styles from './Confirm.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, newStrategyFrom } from './newStrategy'
-import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, reviewPath } from './paths'
+import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
+import { aiRoundPath } from '../dashboard/paths'
 import { useTemplate } from './useTemplate'
 
 const NAME_MAX_LENGTH = 60
@@ -72,8 +73,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const start = async () => {
     setStarting(true)
     setError(null)
+    let created
     try {
-      await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
+      created = await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
     } catch (e) {
       setError(
         e instanceof NameTakenError
@@ -85,7 +87,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     }
     // The dashboard loaded before; make it ask again so it lists the new strategy.
     invalidate(dashboardCacheKey)
-    navigate(dashboardPath)
+    // Its first AI round is due now.
+    navigate(template.aiRound ? aiRoundPath(created.id) : dashboardPath)
     reset()
   }
 
@@ -120,7 +123,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     },
     { label: 'Daily overview', value: 'By email, after the US market close' },
     ...(isLive ? [{ label: 'Alerts', value: 'App and email' }] : []),
-    ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: reviewPath(template.key) }] : []),
+    ...(template.aiRound
+      ? [{ label: 'Prompt', value: draft.aiInstructions === null ? 'Suggested' : 'Edited', to: promptPath(template.key) }]
+      : []),
   ]
 
   const next = [

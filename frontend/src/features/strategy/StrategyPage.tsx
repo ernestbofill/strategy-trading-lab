@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import type { StrategyDetail } from '../../api'
+import type { AiRoundsSummary, StrategyDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
@@ -7,7 +7,7 @@ import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { signalPath, strategySettingsPath } from '../dashboard/paths'
+import { aiRoundPath, aiRoundsPath, signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
@@ -49,7 +49,13 @@ function Summary({ s }: { s: StrategyDetail }) {
         </>
       ) : (
         <p className={styles.text}>
-          {budget.used > 0 ? 'Results show once the prices of your trades are in.' : live ? 'No trades yet.' : 'No paper trades yet.'}
+          {budget.used > 0
+            ? 'Results show once the prices of your trades are in.'
+            : s.aiRounds?.done === 0
+              ? 'No results yet. They start after your first AI round.'
+              : live
+                ? 'No trades yet.'
+                : 'No paper trades yet.'}
           {pastResult && (
             <>
               {' '}
@@ -69,6 +75,7 @@ function Summary({ s }: { s: StrategyDetail }) {
             {budget.totalSteps !== null && ` · ${budget.steps} of ${budget.totalSteps} steps`}
           </dd>
         </div>
+        {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
         {signals && (
           <div>
             <dt>Signals</dt>
@@ -79,6 +86,36 @@ function Summary({ s }: { s: StrategyDetail }) {
         )}
       </dl>
     </div>
+  )
+}
+
+/** AI strategies: when the next round is due, and how the picks did against the rest. */
+function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummary }) {
+  return (
+    <>
+      <div>
+        <dt>AI round</dt>
+        <dd>
+          {rounds.due ? (
+            <Link to={aiRoundPath(s.id)}>Due now ›</Link>
+          ) : rounds.nextDueOn ? (
+            `Next on ${shortDate(rounds.nextDueOn)}`
+          ) : (
+            '–'
+          )}
+          {` · ${rounds.done} done${rounds.skipped > 0 ? ` · ${rounds.skipped} skipped` : ''}`}
+        </dd>
+      </div>
+      {rounds.picksVsRest && (
+        <div>
+          <dt>Picks vs the rest</dt>
+          <dd>
+            <span className={styles.mono}>{signedPct(rounds.picksVsRest.picks, 1)}</span> vs{' '}
+            <span className={styles.mono}>{signedPct(rounds.picksVsRest.rest, 1)}</span>
+          </dd>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -174,7 +211,14 @@ export function StrategyPage() {
                 <span className={`ui-strong ${styles.tileTitle}`}>Tune the settings</span>
                 <span className={styles.detail}>Change its rules</span>
               </Link>
-              <SoonTile title="Backtest" sub="How the template did" />
+              {s.aiRounds ? (
+                <Link to={aiRoundsPath(s.id)} className={styles.tileLink}>
+                  <span className={`ui-strong ${styles.tileTitle}`}>AI rounds</span>
+                  <span className={styles.detail}>Every round and its scores</span>
+                </Link>
+              ) : (
+                <SoonTile title="Backtest" sub="How the template did" />
+              )}
             </div>
           </Screen>
         )

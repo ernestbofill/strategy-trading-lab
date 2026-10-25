@@ -10,6 +10,8 @@ export interface DraftState {
   /** Symbols the user unticked. */
   unticked: string[]
   aiSources: Record<AiSource, boolean>
+  /** The prompt's instructions in the user's words (Edit prompt); null for the suggested ones. */
+  aiInstructions: string | null
   mode: Mode
   /** Euro amounts, see lib/budget.ts. Null until the user changes them, so they follow the template's tested defaults. */
   budget: number | null
@@ -29,6 +31,7 @@ export const initialDraft: DraftState = {
   templateKey: 'dip',
   unticked: [],
   aiSources: { news: true, mood: true, figures: true },
+  aiInstructions: null,
   mode: 'simulation',
   budget: null,
   step: null,

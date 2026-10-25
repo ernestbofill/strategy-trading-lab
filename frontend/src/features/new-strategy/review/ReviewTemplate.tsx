@@ -16,10 +16,11 @@ import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { DISCLAIMER } from '../../../lib/copy'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
-import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
-import { rulesWithSettings, settingsSummary } from '../settings'
+import { advancedPath, howTestedPath, modePath, pickPath, promptPath } from '../paths'
+import { rulesWithSettings, settingsSummary, settingValues } from '../settings'
 import { useTemplate } from '../useTemplate'
-import { AiPrompt } from './AiPrompt'
+import { PromptText } from '../../ai-round/PromptText'
+import { useAiPromptPreview } from '../../ai-round/useAiPromptPreview'
 import { AI_SOURCES } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
@@ -71,7 +72,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
         <RuleList rules={rulesWithSettings(template, draft.templateKey === template.key ? draft.settings : {})} />
       </Section>
       {aiRound ? (
-        <AiSettings />
+        <AiSettings template={template} />
       ) : watches.kind === 'stocks' ? (
         <Section
           title="Choose stocks to watch"
@@ -153,9 +154,17 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
 }
 
 /** "What the AI reads" and "The prompt", for templates driven by AI rounds. */
-function AiSettings() {
-  const { aiSources, update } = useNewStrategyDraft()
+function AiSettings({ template }: { template: TemplateDetail }) {
+  const { aiSources, aiInstructions, settings, unticked, update } = useNewStrategyDraft()
   const toggle = (id: AiSource) => update({ aiSources: { ...aiSources, [id]: !aiSources[id] } })
+  const stocks = template.watches.kind === 'stocks' ? template.watches.starterList : []
+  const everyWeeks = Number(settingValues(template, settings).everyWeeks ?? template.aiRound?.everyWeeks ?? 2)
+  const { preview, failed } = useAiPromptPreview({
+    ...aiSources,
+    instructions: aiInstructions,
+    everyWeeks,
+    assetIds: stocks.filter((s) => !unticked.includes(s.symbol)).map((s) => s.id),
+  })
 
   return (
     <>
@@ -163,8 +172,12 @@ function AiSettings() {
         <ToggleTiles tiles={AI_SOURCES} isOn={(id) => aiSources[id]} onToggle={toggle} keepOne />
         <p className="caption">At least one stays on. Each one adds a section to the prompt.</p>
       </Section>
-      <Section title="The prompt" aside={<TextAction>Edit prompt</TextAction>}>
-        <AiPrompt sources={aiSources} />
+      <Section title="The prompt" aside={<TextAction to={promptPath(template.key)}>Edit prompt</TextAction>}>
+        {preview ? (
+          <PromptText text={preview.text} version={preview.version} edited={aiInstructions !== null} collapsed />
+        ) : (
+          <p className={styles.plain}>{failed ? "We couldn't load the prompt. Try again later." : 'Loading the prompt…'}</p>
+        )}
         <p className="caption">It asks for scores against stated criteria, never which stock to buy.</p>
       </Section>
     </>

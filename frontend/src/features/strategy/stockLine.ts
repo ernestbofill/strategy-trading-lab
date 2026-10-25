@@ -46,6 +46,7 @@ function detailOf(row: StockRow, words: StockStatusWords | null): string {
         ? `${pct(row.distancePct)}% from ${words.zone}`
         : (words?.notCandidate ?? 'Rules not met today')
     case 'watching':
+      if (row.aiScore !== undefined && row.aiScore !== null) return `Last score: ${row.aiScore}`
       if (words?.watching) return row.distancePct !== null ? fillN(words.watching, row.distancePct) : 'Rules not met today'
       // 0 means it is there or past it: the rules aren't met for another reason.
       return row.distancePct !== null && row.distancePct > 0 && words

@@ -57,10 +57,10 @@ public static class AiRoundEndpoints
             var lastModel = await db.AiRounds.AsNoTracking().Where(r => r.StrategyId == strategy.Id && r.Status == AiRoundStatus.Done)
                 .OrderByDescending(r => r.DoneAt).Select(r => r.AiModel).FirstOrDefaultAsync(cancellationToken);
             var texts = TemplateTexts.For(TemplateCatalog.Ai, user.Locale);
-            return TypedResults.Ok(new AiRoundDetail(strategy.Id, strategy.Name, texts.Name, strategy.Mode, round.Id, round.DueOn,
+            return TypedResults.Ok(new AiRoundDetail(strategy.Id, strategy.Name, texts.Name, strategy.Mode, strategy.Currency, round.Id, round.DueOn,
                 AiRoundRules.LastDay(round.DueOn, parameters), round.DueOn <= today, today, AiPrompt.Version, parameters.Instructions is not null,
                 AiPrompt.Build(parameters, today, stocks), SetupOf(parameters), AiPrompt.SuggestedInstructions(AiPrompt.On(parameters)),
-                [.. stocks.Select(s => new AiStockDto(s.AssetId, s.Symbol, s.Name))], parameters.TopN, lastModel, user.AiSharing,
+                [.. stocks.Select(s => new AiStockDto(s.AssetId, s.Symbol, s.Name))], parameters.EveryWeeks, parameters.TopN, lastModel, user.AiSharing,
                 user.AiSharingChangedAt is not null));
         })
         .WithName("GetAiRound")
@@ -105,9 +105,10 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken, running: false) is not { } strategy) return TypedResults.NotFound();
-            await rounds.SweepAsync([new(strategy, StrategyEndpoints.Today(user, time))], cancellationToken);
+            var today = StrategyEndpoints.Today(user, time);
+            await rounds.SweepAsync([new(strategy, today)], cancellationToken);
             var (items, total) = await rounds.HistoryAsync(strategy, cancellationToken);
-            return TypedResults.Ok(new AiRoundHistory(strategy.Id, strategy.Name, strategy.Mode, items, total));
+            return TypedResults.Ok(new AiRoundHistory(strategy.Id, strategy.Name, strategy.Mode, today, items, total));
         })
         .WithName("GetAiRounds")
         .WithSummary("Every AI round of the strategy, newest first, with how the picks did against the rest.");

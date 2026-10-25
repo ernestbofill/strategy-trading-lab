@@ -227,8 +227,9 @@ public static class StrategyEndpoints
                 : strategy.TemplateKey == "bear" && !live ? rulesSteps
                 : trades.Count(b => b.Side == TradeSide.Buy);
 
-            // An AI strategy's stock is "not scored yet" until its first daily check.
-            var latestStatus = evaluation?.Status ?? (ai is not null ? EvaluationStatus.NotCandidate : null);
+            // Before an AI strategy's daily check has a verdict: watching once a round scored the stock, else not scored yet.
+            var latestStatus = evaluation?.Status
+                ?? (ai is null ? null : aiScores!.ContainsKey(asset.Id) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
             var status = StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey);
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
             var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";

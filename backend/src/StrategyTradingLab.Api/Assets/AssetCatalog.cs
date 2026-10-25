@@ -69,8 +69,9 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
         return new AddedAsset(asset, created, await LoadPricesAsync(asset, cancellationToken));
     }
 
+    /// <summary>By symbol alone: Yahoo's are unique across exchanges, and stored ones are in upper case (seeded and added).</summary>
     Task<Asset?> FindAsync(string symbol, CancellationToken cancellationToken) =>
-        db.Assets.AsNoTracking().Include(a => a.Texts).FirstOrDefaultAsync(a => a.Symbol.ToUpper() == symbol, cancellationToken);
+        db.Assets.AsNoTracking().Include(a => a.Texts).OrderBy(a => a.CreatedAt).FirstOrDefaultAsync(a => a.Symbol == symbol, cancellationToken);
 
     /// <summary>The history if none is stored, and the exchange rate if its currency has none. Null when both are in.</summary>
     async Task<string?> LoadPricesAsync(Asset asset, CancellationToken cancellationToken)

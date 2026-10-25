@@ -84,15 +84,17 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
         return problems.Count == 0 ? null : string.Join(" ", problems);
     }
 
-    static async Task TryAsync(Func<Task<RefreshResult>> load, List<string> problems)
+    /// <summary>Any failure but a cancellation is a problem to report, as in the daily refresh: the row is already saved.</summary>
+    async Task TryAsync(Func<Task<RefreshResult>> load, List<string> problems)
     {
         try
         {
             await load();
         }
-        catch (MarketDataException error)
+        catch (Exception error) when (error is not OperationCanceledException)
         {
-            problems.Add(error.Message);
+            db.ChangeTracker.Clear();
+            problems.Add(error is MarketDataException ? error.Message : $"The prices couldn't be stored: {error.Message}");
         }
     }
 

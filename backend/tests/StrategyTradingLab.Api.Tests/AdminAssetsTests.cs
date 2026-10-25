@@ -121,6 +121,24 @@ public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture
             Assert.False(again.GetProperty("created").GetBoolean());
             Assert.Equal(id, again.GetProperty("asset").GetProperty("id").GetGuid());
 
+            // Unticked on a running strategy, it still counts: its prices are still fetched daily (PriceRefresher.Watched).
+            using (var scope = api.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var user = new User { Email = api.NewEmail(), TimeZone = "UTC", Locale = "en" };
+                db.Users.Add(user);
+                await db.SaveChangesAsync();
+                db.Strategies.Add(new Strategy
+                {
+                    UserId = user.Id, TemplateKey = "dip", Name = $"Count {symbol}", Mode = StrategyMode.Simulation, Status = StrategyStatus.Running,
+                    StartedOn = new DateOnly(2026, 10, 1), Currency = "USD", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+                    Assets = [new StrategyAsset { AssetId = id, Active = false, AddedAt = DateTimeOffset.UtcNow }],
+                });
+                await db.SaveChangesAsync();
+            }
+            var counted = (await admin.GetFromJsonAsync<JsonElement>("/admin/assets")).EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == id);
+            Assert.Equal(1, counted.GetProperty("strategies").GetInt32());
+
             var edit = await admin.PutAsJsonAsync($"/admin/assets/{id}", new { name = " Example ", what = "Machines for factories" });
             Assert.Equal(HttpStatusCode.NoContent, edit.StatusCode);
             var edited = (await admin.GetFromJsonAsync<JsonElement>("/admin/assets")).EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == id);
@@ -138,7 +156,9 @@ public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture
         finally
         {
             using var scope = api.Services.CreateScope();
-            await scope.ServiceProvider.GetRequiredService<AppDbContext>().Assets.Where(a => a.Symbol == symbol).ExecuteDeleteAsync();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.Strategies.Where(s => s.Name == $"Count {symbol}").ExecuteDeleteAsync();
+            await db.Assets.Where(a => a.Symbol == symbol).ExecuteDeleteAsync();
         }
     }
 

@@ -48,8 +48,15 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     /// prices), and the index fund results are compared with. An asset nobody watches isn't fetched; once a strategy
     /// lists it, the next run catches up (after a gap of over a month it fetches the whole history again).
     /// </summary>
-    public IQueryable<Asset> Watched() => db.Assets.Where(a => a.Active && (a.Id == StrategyBook.IndexFundId
-        || db.StrategyAssets.Any(sa => sa.AssetId == a.Id && db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running))));
+    public IQueryable<Asset> Watched()
+    {
+        var listed = Listings(db);
+        return db.Assets.Where(a => a.Active && (a.Id == StrategyBook.IndexFundId || listed.Any(sa => sa.AssetId == a.Id)));
+    }
+
+    /// <summary>The running strategies' list entries, ticked or not: what makes an asset watched (one per strategy and asset).</summary>
+    public static IQueryable<StrategyAsset> Listings(AppDbContext db) =>
+        db.StrategyAssets.Where(sa => db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running));
 
     async Task<RefreshResult> GuardedAsync(string name, Func<Task<RefreshResult>> refresh, CancellationToken cancellationToken)
     {

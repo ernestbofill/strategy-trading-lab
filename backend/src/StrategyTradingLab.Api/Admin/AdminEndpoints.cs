@@ -223,11 +223,14 @@ public static class AdminEndpoints
         })
         .WithSummary("All assets, with how many running strategies watch each and its newest stored price date.");
 
-        assets.MapPost("/", async Task<Results<Ok<AdminAddedAsset>, ValidationProblem, ProblemHttpResult>> (AssetSymbol request,
-            ClaimsPrincipal principal, AssetCatalog catalog, AppDbContext db, CancellationToken cancellationToken) =>
+        assets.MapPost("/", async Task<Results<Ok<AdminAddedAsset>, ValidationProblem, ProblemHttpResult, Conflict<string>>> (AssetSymbol request,
+            ClaimsPrincipal principal, AssetCatalog catalog, AppDbContext db, DatabaseSwitch databases, CancellationToken cancellationToken) =>
         {
             var symbol = request.Symbol?.Trim() ?? "";
             if (SymbolProblem(symbol) is { } symbolProblem) return Invalid("symbol", symbolProblem);
+            // Adding fetches prices, and prices belong to the database this host owns (as Refresh now).
+            if (databases.Active != databases.Home)
+                return TypedResults.Conflict("The API is switched to another database: switch back to add an asset.");
             try
             {
                 var added = await catalog.AddAsync(symbol, Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!), cancellationToken);
@@ -276,20 +279,24 @@ public static class AdminEndpoints
     }
 
     /// <summary>The admin page's rows for those assets.</summary>
-    static IQueryable<AdminAsset> AdminAssets(AppDbContext db, IQueryable<Asset> assets) => assets
-        .AsNoTracking()
-        .Select(asset => new AdminAsset(
-            asset.Id,
-            asset.Symbol,
-            asset.Exchange,
-            asset.Name,
-            asset.Texts.Where(t => t.Locale == Templates.TemplateTexts.DefaultLocale).Select(t => t.What).FirstOrDefault() ?? "",
-            asset.Kind,
-            asset.Currency,
-            asset.Active,
-            db.StrategyAssets.Count(sa => sa.AssetId == asset.Id && sa.Active && sa.RemovedAt == null
-                && db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running)),
-            db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date)));
+    static IQueryable<AdminAsset> AdminAssets(AppDbContext db, IQueryable<Asset> assets)
+    {
+        // The strategies that keep its prices fetched daily (PriceRefresher.Watched), so a stock unticked but still held isn't shown as unused.
+        var listed = PriceRefresher.Listings(db);
+        return assets
+            .AsNoTracking()
+            .Select(asset => new AdminAsset(
+                asset.Id,
+                asset.Symbol,
+                asset.Exchange,
+                asset.Name,
+                asset.Texts.Where(t => t.Locale == Templates.TemplateTexts.DefaultLocale).Select(t => t.What).FirstOrDefault() ?? "",
+                asset.Kind,
+                asset.Currency,
+                asset.Active,
+                listed.Count(sa => sa.AssetId == asset.Id),
+                db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date)));
+    }
 
     static ValidationProblem Invalid(string field, string message) =>
         TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });

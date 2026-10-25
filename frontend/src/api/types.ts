@@ -574,7 +574,7 @@ export interface AdminAsset {
   kind: AssetKind
   currency: string
   active: boolean
-  /** Running strategies currently watching this asset. */
+  /** Running strategies that list this asset, ticked or not: its prices are fetched daily. */
   strategies: number
   /** Newest stored price day ("2026-10-22"), or null if none is stored yet. */
   latestPriceDate: string | null

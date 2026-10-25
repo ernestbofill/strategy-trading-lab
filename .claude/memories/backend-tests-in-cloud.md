@@ -17,6 +17,6 @@ psql "postgresql://stl:stl@localhost:5432/stl_test" -q -f backend/migrations.sql
 dotnet test
 ```
 
-**Why:** Without it the database tests only run in CI, after the push. Worked on 2026-10-25 (PR #62's rework): every test passed but the three that need object storage (`NeonBranchTests` ×2, `AdminDatabaseTests.Switching_…`), which need CI's RustFS.
+**Why:** Without it the database tests only run in CI, after the push. Worked on 2026-10-25 (#68): every test passed but the three that need object storage (`NeonBranchTests` ×2, `AdminDatabaseTests.Switching_…`), which need CI's RustFS.
 
-**How to apply:** Use it before pushing backend changes from a cloud session. A test must never write fake prices or exchange rates for a real symbol or currency: on a developer's Neon `dev` branch it would corrupt real data. (2026-10-25, #62)
+**How to apply:** Use it before pushing backend changes from a cloud session. A test must never write fake prices or exchange rates for a real symbol or currency: on a developer's Neon `dev` branch it would corrupt real data. (2026-10-25, #68)

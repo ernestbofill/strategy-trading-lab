@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   api,
@@ -38,46 +38,30 @@ export function FeedbackSection() {
 
   const [copied, setCopied] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      const data = await api.getFeedback()
-      setItems(data)
-      setError(null)
-    } catch (e) {
-      if (e instanceof UnauthorizedError) return
-      setError('Could not load feedback.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
     let live = true
-    void api
-      .getFeedback()
-      .then((data) => {
-        if (!live) return
-        setItems(data)
-        setError(null)
-        setLoading(false)
-      })
-      .catch((e: unknown) => {
-        if (!live || e instanceof UnauthorizedError) return
-        setError('Could not load feedback.')
-        setLoading(false)
-      })
+    const fetchFeedback = () => {
+      void api
+        .getFeedback()
+        .then((data) => {
+          if (!live) return
+          setItems(data)
+          setError(null)
+          setLoading(false)
+        })
+        .catch((e: unknown) => {
+          if (!live || e instanceof UnauthorizedError) return
+          setError('Could not load feedback.')
+          setLoading(false)
+        })
+    }
+    fetchFeedback()
+    window.addEventListener(FEEDBACK_SUBMITTED_EVENT, fetchFeedback)
     return () => {
       live = false
+      window.removeEventListener(FEEDBACK_SUBMITTED_EVENT, fetchFeedback)
     }
   }, [])
-
-  useEffect(() => {
-    const onSubmitted = () => {
-      void load()
-    }
-    window.addEventListener(FEEDBACK_SUBMITTED_EVENT, onSubmitted)
-    return () => window.removeEventListener(FEEDBACK_SUBMITTED_EVENT, onSubmitted)
-  }, [load])
 
   useEffect(() => {
     if (!copied) return
@@ -197,6 +181,7 @@ export function FeedbackSection() {
           aria-label="New comment"
           className={styles.textarea}
           rows={2}
+          maxLength={4000}
           value={newText}
           onChange={(e) => setNewText(e.target.value)}
           placeholder="Add a bug, idea, note, or feature request (or select any text on any screen)…"
@@ -289,6 +274,7 @@ export function FeedbackSection() {
                       aria-label="Edit comment"
                       className={styles.textarea}
                       rows={3}
+                      maxLength={4000}
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
                     />

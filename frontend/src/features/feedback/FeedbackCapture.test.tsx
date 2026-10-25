@@ -35,7 +35,6 @@ describe('FeedbackCapture', () => {
   it('lets any user with a confirmed email select text and submit feedback', async () => {
     const submitSpy = vi.spyOn(api, 'submitFeedback').mockResolvedValue({
       id: 'f1',
-      userId: 'u1',
       userEmail: 'reader@example.com',
       kind: 'bug',
       status: 'open',

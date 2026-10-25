@@ -13,6 +13,7 @@ public class FeedbackValidationTests
     [InlineData("/new/templates/dip?x=1", true)]
     [InlineData("javascript:alert(1)", false)]
     [InlineData("//evil.example/x", false)]
+    [InlineData("/a/..//evil.example", false)]
     [InlineData("https://evil.example", false)]
     [InlineData("dashboard", false)]
     [InlineData(@"/\evil.example", false)]

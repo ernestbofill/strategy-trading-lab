@@ -362,7 +362,6 @@ export type FeedbackStatus = 'open' | 'closed'
 /** A feedback comment, optionally pinned to selected text on a screen: backend Feedback/FeedbackEndpoints.cs (FeedbackDto). */
 export interface FeedbackItem {
   id: string
-  userId?: string
   userEmail: string
   kind: FeedbackKind
   status: FeedbackStatus
@@ -530,7 +529,7 @@ export interface Api {
   getAdminDatabases(): Promise<AdminDatabases>
   /** Rejects with `InvalidValueError` saying why when refused (no URL on the server, a database that doesn't answer). */
   switchAdminDatabase(name: DatabaseName): Promise<void>
-  /** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidFieldsError` or `TooManyTriesError`. */
+  /** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidValueError` or `TooManyTriesError`. */
   submitFeedback(feedback: NewFeedback): Promise<FeedbackItem>
   /** Owner only: lists, edits, closes/reopens or deletes feedback comments. */
   getFeedback(status?: FeedbackStatus): Promise<FeedbackItem[]>

@@ -16,7 +16,15 @@ const cell = (value: string | null | undefined) =>
 
 /** True only for safe in-app paths (`/dashboard`, `/strategies/123`), never `//evil` or `javascript:`. */
 export function isAppPath(route: string | null | undefined): route is string {
-  return Boolean(route && /^\/(?!\/)[^\s\\]*$/.test(route))
+  return Boolean(route && /^\/(?!\/)(?!.*\/\/)[^\\\s]*$/.test(route) && !hasControlChar(route))
+}
+
+function hasControlChar(value: string): boolean {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i)
+    if (code <= 0x1f || code === 0x7f) return true
+  }
+  return false
 }
 
 /** Format open feedback items as a Markdown table ready to paste into an issue or AI agent. */

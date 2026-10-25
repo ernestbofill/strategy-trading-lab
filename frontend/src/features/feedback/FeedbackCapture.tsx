@@ -58,7 +58,7 @@ function readSelection(): CapturedSelection | null {
   return {
     ...pos,
     text: text.slice(0, 1000),
-    element: elementPath(range.commonAncestorContainer),
+    element: elementPath(range.commonAncestorContainer)?.slice(0, 300) ?? null,
     side: buttonSide(pos, window.innerHeight || 800, headerBottom),
     headerBottom,
   }
@@ -229,7 +229,7 @@ export function FeedbackCapture() {
       await api.submitFeedback({
         kind,
         text: trimmed,
-        route,
+        route: route.slice(0, 300),
         element: selection?.element ?? null,
         selectedText: selection?.text ?? null,
       })
@@ -324,6 +324,7 @@ export function FeedbackCapture() {
                 ref={textareaRef}
                 className={styles.textarea}
                 rows={3}
+                maxLength={4000}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="What looks wrong, unclear, or worth changing here?"

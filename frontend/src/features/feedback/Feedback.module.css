@@ -353,6 +353,9 @@
 }
 
 .routeLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--link);
   font: 12px/18px var(--font-mono);
   text-decoration: underline;

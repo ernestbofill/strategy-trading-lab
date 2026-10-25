@@ -26,7 +26,7 @@ public static partial class FeedbackEndpoints
 
     // A path inside the app: one leading "/", then no second "/" or backslash (browsers read "/\x" as "//x"),
     // no whitespace or control characters (browsers drop tabs and newlines, so "/<tab>/x" is "//x").
-    [GeneratedRegex(@"^/(?![/\\])[^\\\s\x00-\x1f\x7f]*$")]
+    [GeneratedRegex(@"^/(?!/)(?!.*//)[^\\\s\x00-\x1f\x7f]*$")]
     public static partial Regex InAppPath();
 
     public static void MapFeedback(this IEndpointRouteBuilder app)

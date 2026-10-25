@@ -132,8 +132,8 @@ async function feedback(method: string, path: string, body?: unknown): Promise<R
   if (response.status === 429) throw new TooManyTriesError()
   if (response.status === 400) {
     const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-    throw new InvalidValueError(problem?.detail ?? 'That comment was refused.')
+    const firstFieldError = problem?.errors ? Object.values(problem.errors).flat()[0] : undefined
+    throw new InvalidValueError(firstFieldError ?? problem?.detail ?? 'That comment was refused.')
   }
   if (!response.ok) throw new Error(`${method} /feedback${path} failed: HTTP ${response.status}`)
   return response

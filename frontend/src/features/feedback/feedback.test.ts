@@ -5,7 +5,6 @@ import { buttonSide, elementPath, feedbackMarkdown, isAppPath, topOffset } from 
 
 const item = (overrides: Partial<FeedbackItem> = {}): FeedbackItem => ({
   id: '019a0000-0000-7000-8000-000000000001',
-  userId: '019a0000-0000-7000-8000-000000000002',
   userEmail: 'reader@example.com',
   kind: 'bug',
   status: 'open',
@@ -89,6 +88,8 @@ describe('isAppPath', () => {
     expect(isAppPath('/dashboard')).toBe(true)
     expect(isAppPath('/strategies/123?tab=signals')).toBe(true)
     expect(isAppPath('//evil.example')).toBe(false)
+    expect(isAppPath('/a/..//evil.example')).toBe(false)
+    expect(isAppPath('/\t/evil.example')).toBe(false)
     expect(isAppPath('https://evil.example')).toBe(false)
     expect(isAppPath(null)).toBe(false)
   })

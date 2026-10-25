@@ -65,7 +65,7 @@ export function AdminSettings() {
             {group === 'Prices' && <PricesBox key={settings.map((s) => s.value).join('|')} />}
           </section>
         ))}
-      {state.status === 'ready' && <FeedbackSection />}
+      {state.status === 'ready' && <FeedbackSection key={state.databases.active} />}
     </Screen>
   )
 }

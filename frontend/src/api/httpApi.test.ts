@@ -221,7 +221,6 @@ describe('httpApi feedback', () => {
   it('submits, lists, updates and deletes feedback items via /api/feedback', async () => {
     const created = {
       id: 'f1',
-      userId: 'u1',
       userEmail: 'reader@example.com',
       kind: 'bug',
       status: 'open',
@@ -279,6 +278,11 @@ describe('httpApi feedback', () => {
     respond(429)
     await expect(httpApi.submitFeedback({ kind: 'note', text: 'Rate limited' })).rejects.toBeInstanceOf(
       TooManyTriesError,
+    )
+
+    respond(400, { errors: { text: ['Use at most 4,000 characters.'] } })
+    await expect(httpApi.submitFeedback({ kind: 'note', text: 'Too long' })).rejects.toThrow(
+      new InvalidValueError('Use at most 4,000 characters.'),
     )
   })
 })

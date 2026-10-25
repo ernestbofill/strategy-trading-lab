@@ -7,7 +7,6 @@ import { FeedbackSection } from './FeedbackSection'
 
 const makeItem = (overrides: Partial<FeedbackItem> = {}): FeedbackItem => ({
   id: 'f1',
-  userId: 'u1',
   userEmail: 'reader@example.com',
   kind: 'bug',
   status: 'open',

@@ -12,9 +12,11 @@ export const CURRENCIES: { code: Currency; symbol: string; name: string }[] = [
 /** "Euro", "US dollar", "British pound". */
 export const currencyName = (currency: Currency) => CURRENCIES.find((c) => c.code === currency)?.name ?? currency
 
+/** "€", "$", "£", or the code itself for a currency the user can't pick ("JPY"). */
+export const symbolOf = (currency: string) => CURRENCIES.find((c) => c.code === currency)?.symbol ?? currency
+
 /** €3,000 / $3,000 / £3,000: an amount in a strategy's or an account's currency. */
-export const money = (n: number, currency: Currency) =>
-  `${CURRENCIES.find((c) => c.code === currency)?.symbol ?? ''}${amountFormat.format(n)}`
+export const money = (n: number, currency: Currency) => `${symbolOf(currency)}${amountFormat.format(n)}`
 
 /** €3,000: for what was tested in euro (a template's backtest). */
 export const eur = (n: number) => money(n, 'EUR')
@@ -42,3 +44,11 @@ export const signedPctOrDash = (n: number | null, digits?: number) => (n === nul
 
 /** The colour of a gain: up, down, or none for zero or an unknown figure. */
 export const pctTone = (n: number | null) => (n === null || n === 0 ? undefined : n < 0 ? 'down' : 'up')
+
+const centsFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/** €98.80 / $187.50 / JPY 1,234.00: an amount or a price to the cent, in any currency (a stock's may be one the user can't pick). */
+export const exact = (n: number, currency: string) => {
+  const symbol = symbolOf(currency)
+  return symbol !== currency ? `${symbol}${centsFormat.format(n)}` : `${currency} ${centsFormat.format(n)}`
+}

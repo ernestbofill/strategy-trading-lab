@@ -6,8 +6,13 @@ using StrategyTradingLab.Api.Data.Entities;
 namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>A signal as the alert and the overview describe it.</summary>
-public record SignalLine(Guid StrategyId, string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, string AssetCurrency, string StrategyCurrency,
-    DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts);
+public record SignalLine(Guid StrategyId, Guid SignalId, string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, string AssetCurrency, string StrategyCurrency,
+    DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts)
+{
+    public static SignalLine From(Signal signal, Strategy strategy, Asset asset) =>
+        new(strategy.Id, signal.Id, strategy.Name, strategy.Mode, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate,
+            signal.ClosePrice, signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone());
+}
 
 /// <summary>A stock a strategy is watching and how far it is from the rules.</summary>
 public record CloseLine(string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, decimal DistancePct);
@@ -58,9 +63,17 @@ public static class EmailTexts
                $"Close on {Date(s.Date)}: {Money(s.ClosePrice, s.AssetCurrency)}";
     }
 
+    /// <summary>The signal's Confirm a signal page.</summary>
+    public static string SignalUrl(SignalLine s, string appUrl) => $"{appUrl}/strategies/{s.StrategyId}/signals/{s.SignalId}";
+
+    /// <summary>The reminder the day after a snooze: the same text as the alert.</summary>
+    public static (string Subject, string Body) SnoozeReminder(SignalLine s, string appUrl) =>
+        ($"Reminder: {s.StockName}, your rules for {s.StrategyName}",
+         $"You asked to be reminded of this signal.\n\n{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{Disclaimer}");
+
     public static (string Subject, string Body) SignalAlert(SignalLine s, string appUrl) =>
         ($"{s.StockName}: your rules for {s.StrategyName} are met",
-         $"{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{appUrl}/strategies/{s.StrategyId}/signal\n\n{Disclaimer}");
+         $"{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{Disclaimer}");
 
     /// <summary>The daily overview: what waits, what changed, what is close, and one line per strategy.</summary>
     public static (string Subject, string Body) Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
@@ -71,7 +84,7 @@ public static class EmailTexts
         {
             text.Append("\nWaiting for you\n");
             foreach (var s in waiting)
-                text.Append($"- {s.StockName}, {s.StrategyName}{(s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "")}, close on {Date(s.Date)}. {appUrl}/strategies/{s.StrategyId}/signal\n");
+                text.Append($"- {s.StockName}, {s.StrategyName}{(s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "")}, close on {Date(s.Date)}. {SignalUrl(s, appUrl)}\n");
         }
         text.Append("\nWhat changed today\n");
         if (changed.Count == 0) text.Append("- No rules were newly met.\n");

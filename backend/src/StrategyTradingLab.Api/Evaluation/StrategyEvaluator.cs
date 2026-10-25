@@ -135,14 +135,13 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             var closed = days.FirstOrDefault(d => d.Date > signal.SignalDate && !d.WindowOpen);
             if (closed is null) continue;
             signal.EndedOn = closed.Date;
-            if (signal.Status == SignalStatus.Waiting)
-            {
-                signal.Status = SignalStatus.Missed;
-                signal.SnoozedUntil = null; // Only a waiting signal can be snoozed (the table's check).
-                missed++;
-            }
         }
         await db.SaveChangesAsync(cancellationToken);
+        // Every ended signal still waiting in the database is missed: not only today's, so a run stopped between the two
+        // writes is repaired by the next. Read in the database, so an answer saved since these rows were read stands.
+        missed += await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id && s.EndedOn != null && s.Status == SignalStatus.Waiting)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
+                    .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken); // Only a waiting signal can be snoozed (the table's check).
 
         // Each signal's own trade, at the next trading day's open, once that day exists.
         var traded = await db.SignalTrades.Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id).Select(t => t.SignalId).ToHashSetAsync(cancellationToken);
@@ -192,6 +191,10 @@ public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)
         var at = days.FindLastIndex(d => d.Date <= date);
         return at < 0 ? null : days[at].Rate;
     }
+
+    /// <summary>Whether <paramref name="currency"/> has a rate stored for that very day (the euro always has).</summary>
+    public bool StoredOn(string currency, DateOnly date) =>
+        currency == Base || (byQuote.TryGetValue(currency, out var days) && days.Exists(d => d.Date == date));
 
     /// <summary>Units of <paramref name="assetCurrency"/> per one unit of <paramref name="strategyCurrency"/> on a day (USD per EUR, a trade's fx rate).</summary>
     public decimal? Between(string strategyCurrency, string assetCurrency, DateOnly date)

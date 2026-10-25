@@ -43,21 +43,31 @@ interface TextFieldProps {
   label: string
   value: string
   onChange: (value: string) => void
-  type?: 'email' | 'text'
+  /** 'decimal' is a text field with the number keypad: a price, an amount. */
+  type?: 'email' | 'text' | 'date' | 'decimal'
   autoComplete?: string
+  placeholder?: string
   hint?: ReactNode
   error?: string | null
+  /** Next to the field: a toggle such as "Enter shares instead". */
+  aside?: ReactNode
+  /** The first and last day a date field allows ("2026-10-22"). */
+  min?: string
+  max?: string
 }
 
-export function TextField({ label, value, onChange, type = 'text', autoComplete, hint, error }: TextFieldProps) {
+export function TextField({ label, value, onChange, type = 'text', autoComplete, placeholder, hint, error, aside, min, max }: TextFieldProps) {
   const id = useId()
   return (
-    <FieldShell id={id} label={label} hint={hint} error={error}>
+    <FieldShell id={id} label={label} hint={hint} error={error} aside={aside}>
       <input
         id={id}
         className={styles.input}
-        type={type}
-        inputMode={type === 'email' ? 'email' : undefined}
+        type={type === 'decimal' ? 'text' : type}
+        inputMode={type === 'email' ? 'email' : type === 'decimal' ? 'decimal' : undefined}
+        placeholder={placeholder}
+        min={min}
+        max={max}
         autoComplete={autoComplete}
         autoCapitalize="off"
         spellCheck={false}

@@ -132,12 +132,12 @@
       {
         "marker": "BUY",
         "tone": "buy",
-        "text": "The market closes more than `3%` above its `SMA 200` (average price over the last 200 days)."
+        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days)."
       },
       {
         "marker": "SELL",
         "tone": "sell",
-        "text": "The market closes more than `3%` below its SMA 200."
+        "text": "The market closes more than `{bandPct}%` below its `SMA {smaDays}`."
       },
       {
         "marker": "ALL",

@@ -336,6 +336,7 @@ The cooldown is not exposed for either template. The shown settings are availabl
 - "Reset to tested" puts every value back.
 - "Save settings" stores the values and returns to the screen that opened it. Leaving with unsaved changes asks first (not drawn, not built yet).
 - Each changed row's stepper stops at its range; the zone's start stays at least a step under its end, and the end a step over the start.
+- On Review, rules that use settings show the tested defaults or the user's chosen values.
 - During the new-strategy flow the values live in the draft; Review's row reads "Advanced settings · tested defaults" or "· [n] changed", and so does Confirm's Settings row. Templates without settings yet show "This template's settings come in a later step." and Confirm leaves out the Settings row.
 - Values belong to the user's strategy; the template's defaults never change.
 

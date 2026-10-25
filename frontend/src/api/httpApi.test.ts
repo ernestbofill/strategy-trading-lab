@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ExpiredLinkError, ForbiddenError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
+import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { onSessionEnded } from './session'
 import { httpApi } from './httpApi'
 import type { NewStrategy } from './types'
@@ -114,6 +114,16 @@ describe('httpApi admin', () => {
     respond(204)
     await httpApi.setAdminAssetActive('a1', false)
     expect(fetch).toHaveBeenCalledWith('/api/admin/assets/a1/active', expect.objectContaining({ method: 'PUT', body: '{"active":false}' }))
+  })
+
+  it('adds an asset by symbol and edits one, with the refused fields by name', async () => {
+    respond(200, { asset: { id: 'a1' }, created: true, problem: null })
+    await expect(httpApi.addAdminAsset('AAPL')).resolves.toEqual({ asset: { id: 'a1' }, created: true, problem: null })
+    expect(fetch).toHaveBeenCalledWith('/api/admin/assets', expect.objectContaining({ method: 'POST', body: '{"symbol":"AAPL"}' }))
+
+    respond(400, { errors: { name: ['Type something.'] } })
+    await expect(httpApi.updateAdminAsset('a1', { name: '', what: 'x' })).rejects.toEqual(new InvalidFieldsError({ name: 'Type something.' }))
+    expect(fetch).toHaveBeenCalledWith('/api/admin/assets/a1', expect.objectContaining({ method: 'PUT', body: '{"name":"","what":"x"}' }))
   })
 
   it('updates strategy settings', async () => {

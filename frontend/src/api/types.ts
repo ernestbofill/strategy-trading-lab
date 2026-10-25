@@ -580,6 +580,15 @@ export interface AdminAsset {
   latestPriceDate: string | null
 }
 
+/** What adding a symbol did: backend Admin/AdminEndpoints.cs (AdminAddedAsset). */
+export interface AdminAddedAsset {
+  asset: AdminAsset
+  /** False when the asset was already there. */
+  created: boolean
+  /** Why its prices or exchange rate didn't load; adding it again tries again. */
+  problem: string | null
+}
+
 export interface Api {
   /** The logged-in user, or null without a session: the app's start-up check. */
   getAccount(): Promise<Account | null>
@@ -649,6 +658,10 @@ export interface Api {
   getAdminAssets(): Promise<AdminAsset[]>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
+  /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */
+  addAdminAsset(symbol: string): Promise<AdminAddedAsset>
+  /** Changes an asset's name and English description. Rejects with `InvalidFieldsError` (`name`, `what`). */
+  updateAdminAsset(id: string, edit: { name: string; what: string }): Promise<void>
 /** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidValueError` or `TooManyTriesError`. */
   submitFeedback(feedback: NewFeedback): Promise<FeedbackItem>
   /** Owner only: lists, edits, closes/reopens or deletes feedback comments. */

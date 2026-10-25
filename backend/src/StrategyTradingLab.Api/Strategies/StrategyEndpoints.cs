@@ -145,12 +145,15 @@ public static class StrategyEndpoints
         (await sessions.CurrentAsync(cancellationToken))!;
 
     /// <summary>The user's local date; UTC if their time zone isn't known to the server.</summary>
-    internal static DateOnly Today(User user, TimeProvider time)
+    internal static DateOnly Today(User user, TimeProvider time) => Today(user.TimeZone, time.GetUtcNow());
+
+    /// <summary>The date in a time zone at <paramref name="now"/>; UTC if the server doesn't know the zone.</summary>
+    internal static DateOnly Today(string timeZone, DateTimeOffset now)
     {
         TimeZoneInfo zone;
-        try { zone = TimeZoneInfo.FindSystemTimeZoneById(user.TimeZone); }
+        try { zone = TimeZoneInfo.FindSystemTimeZoneById(timeZone); }
         catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { zone = TimeZoneInfo.Utc; }
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), zone).DateTime);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, zone).DateTime);
     }
 
     /// <summary>A strategy's card; without <paramref name="trades"/> (a new strategy) it has no results and nothing used.</summary>

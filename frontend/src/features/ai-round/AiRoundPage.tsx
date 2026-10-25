@@ -19,6 +19,7 @@ import styles from './AiRound.module.css'
 import { AiSharingDetails } from './AiSharingDetails'
 import { PromptText } from './PromptText'
 import { ScoreList } from './ScoreList'
+import { stepOf } from './stepOf'
 import { aiRoundCacheKey, aiRoundsCacheKey, useAiRound } from './useAiRound'
 
 /** AI round (wireframe `AIRound`): copy the prompt, paste the answer, check the scores, use them. */
@@ -52,6 +53,14 @@ function Header({ r }: { r: AiRoundDetail }) {
       </div>
       <h1 className={styles.title}>{t(r.open ? 'aiRound.title' : 'aiRound.nextTitle')}</h1>
     </div>
+  )
+}
+
+function StepTitle({ n, children }: { n: string; children: ReactNode }) {
+  return (
+    <h2 className={`ui-strong ${styles.stepTitle}`}>
+      <span className={styles.stepNumber}>{n}</span> {children}
+    </h2>
   )
 }
 
@@ -147,9 +156,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
       <p className={styles.plain}>{t('aiRound.intro')}</p>
 
       <section className={styles.step}>
-        <h2 className={`ui-strong ${styles.stepTitle}`}>
-          <span className={styles.stepNumber}>01</span> {t('aiRound.step.copy')}
-        </h2>
+        <StepTitle n="01">{t('aiRound.step.copy')}</StepTitle>
         <PromptText text={r.prompt} version={r.promptVersion} edited={r.promptEdited} collapsed />
         <div className={styles.row}>
           <button type="button" className={`ui-strong ${styles.copy}`} data-copied={copied || undefined} onClick={() => void copy()}>
@@ -171,9 +178,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
       </section>
 
       <section className={styles.step}>
-        <h2 className={`ui-strong ${styles.stepTitle}`}>
-          <span className={styles.stepNumber}>02</span> {t('aiRound.step.paste')}
-        </h2>
+        <StepTitle n="02">{t('aiRound.step.paste')}</StepTitle>
         <TextAreaField
           label={t('aiRound.answer')}
           value={answer}
@@ -199,9 +204,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
 
       {shown && (
         <section className={styles.step}>
-          <h2 className={`ui-strong ${styles.stepTitle}`}>
-            <span className={styles.stepNumber}>03</span> {t('aiRound.step.scores')}
-          </h2>
+          <StepTitle n="03">{t('aiRound.step.scores')}</StepTitle>
           {shown.problems.length > 0 && (
             <Callout tone="warning" title={t('aiRound.askAgain')}>
               <ul className={styles.problems}>
@@ -246,7 +249,7 @@ function stepLine(reading: AiReading, r: AiRoundDetail, t: Translate): string {
   const picks = reading.scores.filter((s) => s.step !== null)
   if (picks.length === 0) return t(reading.short === 'budget' ? 'aiRound.noStepBudget' : 'aiRound.noStepAllSteps')
   const gets = picks
-    .map((p) => t('aiRound.gets', { stock: p.name, step: reading.maxSteps === null ? String(p.step) : t('signal.stepOf', { n: p.step ?? 0, max: reading.maxSteps }) }))
+    .map((p) => t('aiRound.gets', { stock: p.name, step: stepOf(t, p.step ?? 0, reading.maxSteps) }))
     .join(', ')
   const line =
     reading.stepAmount === null

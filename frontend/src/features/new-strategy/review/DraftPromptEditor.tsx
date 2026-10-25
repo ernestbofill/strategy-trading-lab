@@ -6,8 +6,8 @@ import { useT } from '../../../i18n/I18n'
 import { PromptEditor } from '../../ai-round/PromptEditor'
 import { useNewStrategyDraft } from '../NewStrategyDraft'
 import { reviewPath } from '../paths'
-import { settingValues } from '../settings'
 import { useTemplate } from '../useTemplate'
+import { aiPromptScope } from './aiSources'
 
 /** Edit prompt during the new-strategy flow: the choices live in the draft until the strategy starts. */
 export function DraftPromptEditor() {
@@ -20,14 +20,13 @@ export function DraftPromptEditor() {
     <LoadableScreen state={useTemplate(key)} top={top} what={t('newStrategy.what.template')}>
       {(template) => {
         const mine = draft.templateKey === template.key
-        const stocks = template.watches.kind === 'stocks' ? template.watches.starterList : []
-        const everyWeeks = Number(settingValues(template, mine ? draft.settings : {}).everyWeeks ?? template.aiRound?.everyWeeks ?? 2)
+        const { everyWeeks, assetIds } = aiPromptScope(template, mine ? draft.settings : {}, mine ? draft.unticked : [])
         return (
           <PromptEditor
             top={top}
             initial={mine ? { ...draft.aiSources, instructions: draft.aiInstructions } : { news: true, mood: true, figures: true, instructions: null }}
             everyWeeks={everyWeeks}
-            assetIds={stocks.filter((s) => !(mine && draft.unticked.includes(s.symbol))).map((s) => s.id)}
+            assetIds={assetIds}
             onSave={async ({ instructions, ...sources }) => {
               if (!mine) draft.switchTemplate(template.key)
               draft.update({ aiSources: sources, aiInstructions: instructions })

@@ -17,11 +17,11 @@ import { ToggleTiles } from '../../../components/ToggleTiles'
 import { useT } from '../../../i18n/I18n'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
 import { advancedPath, howTestedPath, modePath, pickPath, promptPath } from '../paths'
-import { rulesWithSettings, settingsSummary, settingValues } from '../settings'
+import { rulesWithSettings, settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
 import { PromptText } from '../../ai-round/PromptText'
 import { useAiPromptPreview } from '../../ai-round/useAiPromptPreview'
-import { aiSources as aiSourcesOf } from './aiSources'
+import { aiPromptScope, aiSources as aiSourcesOf } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
 
@@ -159,14 +159,7 @@ function AiSettings({ template }: { template: TemplateDetail }) {
   const t = useT()
   const { aiSources, aiInstructions, settings, unticked, update } = useNewStrategyDraft()
   const toggle = (id: AiSource) => update({ aiSources: { ...aiSources, [id]: !aiSources[id] } })
-  const stocks = template.watches.kind === 'stocks' ? template.watches.starterList : []
-  const everyWeeks = Number(settingValues(template, settings).everyWeeks ?? template.aiRound?.everyWeeks ?? 2)
-  const { preview, failed } = useAiPromptPreview({
-    ...aiSources,
-    instructions: aiInstructions,
-    everyWeeks,
-    assetIds: stocks.filter((s) => !unticked.includes(s.symbol)).map((s) => s.id),
-  })
+  const { preview, failed } = useAiPromptPreview({ ...aiSources, instructions: aiInstructions, ...aiPromptScope(template, settings, unticked) })
 
   return (
     <>

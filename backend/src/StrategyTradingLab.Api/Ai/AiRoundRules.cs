@@ -1,5 +1,6 @@
 using System.Text.Json;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Evaluation;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Ai;
@@ -69,7 +70,7 @@ public static class AiRoundRules
     /// </summary>
     public static DateOnly TradeAfter(DateTimeOffset now)
     {
-        var newYork = TimeZoneInfo.ConvertTime(now, TimeZoneInfo.FindSystemTimeZoneById("America/New_York"));
+        var newYork = TimeZoneInfo.ConvertTime(now, UsSession.NewYork);
         var day = DateOnly.FromDateTime(newYork.DateTime);
         return TimeOnly.FromDateTime(newYork.DateTime) >= new TimeOnly(9, 30) ? day : day.AddDays(-1);
     }

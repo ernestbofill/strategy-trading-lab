@@ -5,6 +5,7 @@ using Npgsql;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Ai;
@@ -29,15 +30,6 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     public const int MaxModel = 60;
 
     public static bool IsAi(Strategy strategy) => strategy.TemplateKey == TemplateCatalog.Ai.Key;
-
-    /// <summary>The date in the user's time zone; UTC when the server doesn't know it (as the dashboard does).</summary>
-    public static DateOnly LocalToday(string timeZone, DateTimeOffset now)
-    {
-        TimeZoneInfo zone;
-        try { zone = TimeZoneInfo.FindSystemTimeZoneById(timeZone); }
-        catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { zone = TimeZoneInfo.Utc; }
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, zone).DateTime);
-    }
 
     /// <summary>
     /// Makes sure each running AI strategy has its round due: the first on its start day, then one every <c>EveryWeeks</c>
@@ -157,6 +149,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         var picked = plan.Picks.ToDictionary(p => p.AssetId, p => p.StepNo);
         var stocks = plan.Stocks.ToDictionary(s => s.AssetId);
         var ranked = plan.Reading.Scores.OrderByDescending(s => s.Overall).Select((s, i) => (s.AssetId, Rank: i + 1)).ToDictionary(x => x.AssetId, x => x.Rank);
+        var read = plan.Reading.Scores.ToDictionary(s => s.AssetId);
         var scores = plan.Reading.Scores.Select(s => new AiRoundScore(s.AssetId, stocks[s.AssetId].Symbol, stocks[s.AssetId].Name, s.Overall,
             s.News, s.Mood, s.Figures, s.Reason, picked.TryGetValue(s.AssetId, out var step) ? step : null)).ToList();
 
@@ -175,7 +168,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         {
             var close = await db.Prices.Where(p => p.AssetId == pick.AssetId && p.Date <= session).OrderByDescending(p => p.Date)
                 .Select(p => p.Close).FirstAsync(cancellationToken);
-            var score = plan.Reading.Scores.Single(s => s.AssetId == pick.AssetId);
+            var score = read[pick.AssetId];
             var facts = new JsonObject
             {
                 ["score"] = score.Overall, ["rank"] = ranked[pick.AssetId], ["roundId"] = round.Id.ToString(),
@@ -190,16 +183,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             db.Signals.Add(signal);
             signals.Add(signal);
             // The strategy page shows the pick today, as the daily check's own signals.
-            var evaluation = await db.DailyEvaluations.FindAsync([strategy.Id, pick.AssetId, session], cancellationToken);
-            if (evaluation is null)
-                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategy.Id, AssetId = pick.AssetId, Date = session, Status = EvaluationStatus.BuySignal,
-                    StepNo = pick.StepNo, Facts = ScoreFacts(score.Overall) });
-            else
-            {
-                evaluation.Status = EvaluationStatus.BuySignal;
-                evaluation.StepNo = pick.StepNo;
-                evaluation.Facts = ScoreFacts(score.Overall);
-            }
+            await SaveEvaluationAsync(strategy.Id, pick.AssetId, session, EvaluationStatus.BuySignal, pick.StepNo, ScoreFacts(score.Overall), cancellationToken);
         }
         db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = nextDue });
 
@@ -238,6 +222,21 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         return new AiRoundResult(round.Id, [.. signals.Select(s => s.Id)], strategy.Mode);
     }
 
+    /// <summary>Stores a stock's status for a session, replacing the daily check's row for that day if there is one.</summary>
+    async Task SaveEvaluationAsync(Guid strategyId, Guid assetId, DateOnly date, EvaluationStatus status, int? stepNo, JsonDocument facts,
+        CancellationToken cancellationToken)
+    {
+        var row = await db.DailyEvaluations.FindAsync([strategyId, assetId, date], cancellationToken);
+        if (row is null)
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = date, Status = status, StepNo = stepNo, Facts = facts });
+        else
+        {
+            row.Status = status;
+            row.StepNo = stepNo;
+            row.Facts = facts;
+        }
+    }
+
     static JsonDocument ScoreFacts(decimal? score) =>
         JsonSerializer.SerializeToDocument(score is null ? new JsonObject() : new JsonObject { ["score"] = score });
 
@@ -258,7 +257,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         int trades = 0, missed = 0, failed = 0;
         foreach (var row in rows)
         {
-            var today = LocalToday(row.TimeZone, now);
+            var today = StrategyEndpoints.Today(row.TimeZone, now);
             try
             {
                 await SweepAsync([new(row.strategy, today)], cancellationToken);
@@ -279,7 +278,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     async Task<(int Trades, int Missed)> DailyAsync(Strategy strategy, DateOnly today, DateOnly session, ExchangeRates rates, CancellationToken cancellationToken)
     {
         var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.Side == TradeSide.Buy).ToListAsync(cancellationToken);
-        var traded = await db.SignalTrades.Where(t => t.StrategyId == strategy.Id).Select(t => t.SignalId).ToListAsync(cancellationToken);
+        var traded = (await db.SignalTrades.Where(t => t.StrategyId == strategy.Id).Select(t => t.SignalId).ToListAsync(cancellationToken)).ToHashSet();
         var assetIds = signals.Select(s => s.AssetId).Concat(strategy.Assets.Select(a => a.AssetId)).Distinct().ToList();
         var assets = await db.Assets.AsNoTracking().Where(a => assetIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
 
@@ -314,15 +313,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
                 : lastScores.ContainsKey(assetId) ? EvaluationStatus.Watching
                 : EvaluationStatus.NotCandidate;
             var facts = ScoreFacts(lastScores.TryGetValue(assetId, out var score) ? score : null);
-            var row = await db.DailyEvaluations.FindAsync([strategy.Id, assetId, session], cancellationToken);
-            if (row is null)
-                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategy.Id, AssetId = assetId, Date = session, Status = status, StepNo = todays?.StepNo, Facts = facts });
-            else
-            {
-                row.Status = status;
-                row.StepNo = todays?.StepNo;
-                row.Facts = facts;
-            }
+            await SaveEvaluationAsync(strategy.Id, assetId, session, status, todays?.StepNo, facts, cancellationToken);
         }
         await db.SaveChangesAsync(cancellationToken);
         // Read in the database, so an answer saved since these rows were read stands (as the daily check does).

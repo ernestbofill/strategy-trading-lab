@@ -1,6 +1,7 @@
 import type { AiScore } from '../../api'
 import { useT } from '../../i18n/I18n'
 import styles from './AiRound.module.css'
+import { stepOf } from './stepOf'
 
 /** "Your AI's scores": one row per stock, top score first, with the AI's one-line reason; a stock that gets a step stands out. */
 export function ScoreList({ scores, maxSteps }: { scores: AiScore[]; maxSteps: number | null }) {
@@ -18,7 +19,7 @@ export function ScoreList({ scores, maxSteps }: { scores: AiScore[]; maxSteps: n
             {s.name}
             {s.step !== null && (
               <span className="ui-strong">
-                {t('aiRound.scores.step', { step: maxSteps === null ? s.step : t('signal.stepOf', { n: s.step, max: maxSteps }) })}
+                {t('aiRound.scores.step', { step: stepOf(t, s.step, maxSteps) })}
               </span>
             )}
           </span>

@@ -30,7 +30,7 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
             ?? matches.FirstOrDefault();
         if (match is not null)
         {
-            var exchange = match.Exchange.Trim();
+            var exchange = NormalizeExchange(match.Exchange);
             var existing = await db.Assets.FirstOrDefaultAsync(asset => asset.Symbol.ToUpper() == lookup && asset.Exchange == exchange, cancellationToken);
             if (existing is not null)
             {
@@ -81,7 +81,7 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
         var asset = new Asset
         {
             Symbol = normalizedSymbol.ToUpperInvariant(),
-            Exchange = match.Exchange.Trim(),
+            Exchange = NormalizeExchange(match.Exchange),
             Name = match.Name.Trim(),
             Kind = resolvedKind,
             Currency = (match.Currency ?? "USD").Trim().ToUpperInvariant(),
@@ -122,6 +122,27 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
                 await refresher.RefreshRateAsync(asset.Currency, cancellationToken);
             }
         }
+    }
+
+    static string NormalizeExchange(string? exchange)
+    {
+        var normalized = (exchange ?? "").Trim();
+        if (normalized.Length == 0) return normalized;
+
+        var code = normalized.Trim().ToUpperInvariant();
+        return code switch
+        {
+            "NMS" or "NASD" or "NASDAQ" => "XNAS",
+            "NYS" or "NYSE" => "XNYS",
+            "AMS" or "AEX" => "XAMS",
+            "PAR" or "EPA" => "XPAR",
+            "HKG" or "HKSE" or "HKEX" => "XHKG",
+            "LSE" or "LON" => "XLON",
+            "CSE" or "CPH" => "XCSE",
+            "XETR" or "ETR" or "FRA" => "XETR",
+            "JPX" or "TSE" or "TYO" => "XJPX",
+            _ => code,
+        };
     }
 
     static AssetKind ResolveKind(AssetKind? kind, string? quoteType) => kind ?? quoteType?.Trim() switch

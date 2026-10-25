@@ -20,7 +20,7 @@ public class AssetCatalogTests
         }
 
         public Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<MarketQuote>>([
-            new(query, "XNAS", "Example Corp", "USD", "EQUITY", "Technology", "Consumer Electronics")
+            new(query, "NMS", "Example Corp", "USD", "EQUITY", "Technology", "Consumer Electronics")
         ]);
     }
 
@@ -67,6 +67,26 @@ public class AssetCatalogTests
         var resolved = await catalog.EnsureAsync(symbol);
 
         Assert.Equal(secondary.Id, resolved.Id);
+        Assert.Equal("XNAS", resolved.Exchange);
+    }
+
+    [NeonFact]
+    public async Task Ensuring_a_yahoo_exchange_alias_matches_the_seeded_exchange_code()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var source = new FakeSource();
+        var catalog = new AssetCatalog(db, source, new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance));
+
+        var symbol = $"TSLA{Guid.NewGuid():N}"[..10];
+        var asset = new Asset { Symbol = symbol, Exchange = "XNAS", Name = "Tesla", Kind = AssetKind.Stock, Currency = "USD", Active = true, CreatedAt = DateTimeOffset.UtcNow };
+        db.Assets.Add(asset);
+        await db.SaveChangesAsync();
+
+        var resolved = await catalog.EnsureAsync(symbol);
+
+        Assert.Equal(asset.Id, resolved.Id);
         Assert.Equal("XNAS", resolved.Exchange);
     }
 }

@@ -4,6 +4,8 @@ Decisions that outlive a PR, and why. One dated line each, newest first, with th
 
 - 2026-10-25 · The launch path: Milestone 1 (core loop), Milestone 2 (ready to publish), a quiet launch, then the public beta, as in ROADMAP.md. *Your AI's top picks* comes into the launch if there's time; the rest of the launch scope is still open. (#58)
 - 2026-10-25 · Template pages are public, and sign-up has "Skip for now, look around": a guest goes through the new-strategy flow (draft in the browser) and signs up to start it. (Ernest, #58)
+- 2026-10-25 · Claude has an owner account of its own, on dev and production, to test and check every feature; it gets past the invite gate with owner invite links, never a bypass in the code. Owner actions go to an audit log, and the *Production* rules in `CLAUDE.md` still apply. (Ernest, #58)
+- 2026-10-25 · No sign-up without an invite, until Ernest decides to open sign-ups for the public beta. (Ernest, #58)
 - 2026-10-25 · The quiet launch is invite only. Ernest's invite links give the vip role; each vip can invite a few people (3 by default) with their own link; those people are users and can't invite. (Ernest, #58)
 - 2026-10-25 · Limits: at most 10 running strategies per user and 60 stocks per strategy. (Ernest, #58)
 - 2026-10-25 · Emails go through Brevo from the app's own domain before strangers use the app; the domain is still to choose. (Ernest, #58)

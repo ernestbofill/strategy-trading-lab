@@ -707,7 +707,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.ToTable("daily_evaluations", null, t =>
                         {
-                            t.HasCheckConstraint("ck_daily_evaluations_status", "status IN ('not_enough_data', 'not_candidate', 'watching', 'buy_signal', 'signal_ended', 'building', 'holding', 'sell_signal')");
+                            t.HasCheckConstraint("ck_daily_evaluations_status", "status IN ('not_enough_data', 'not_candidate', 'watching', 'buy_signal', 'signal_ended', 'building', 'holding')");
 
                             t.HasCheckConstraint("ck_daily_evaluations_step_no", "step_no IS NULL OR step_no >= 1");
                         });
@@ -761,6 +761,80 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     b.ToTable("email_tokens", null, t =>
                         {
                             t.HasCheckConstraint("ck_email_tokens_purpose", "purpose IN ('verify_email', 'reset_password')");
+                        });
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.FeedbackItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("closed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Element")
+                        .HasColumnType("text")
+                        .HasColumnName("element");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Route")
+                        .HasColumnType("text")
+                        .HasColumnName("route");
+
+                    b.Property<string>("SelectedText")
+                        .HasColumnType("text")
+                        .HasColumnName("selected_text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasDefaultValue("open")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feedback_items");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_feedback_items_user_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_feedback_items_status_created_at");
+
+                    b.ToTable("feedback_items", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_feedback_items_closed_at", "(status = 'closed') = (closed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_feedback_items_kind", "kind IN ('bug', 'idea', 'note', 'feature')");
+
+                            t.HasCheckConstraint("ck_feedback_items_status", "status IN ('open', 'closed')");
                         });
                 });
 
@@ -1592,6 +1666,16 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_email_tokens_users_user_id");
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.FeedbackItem", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_feedback_items_users_user_id");
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Notification", b =>

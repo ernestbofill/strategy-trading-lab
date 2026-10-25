@@ -858,6 +858,55 @@ START TRANSACTION;
 
 DO $EF$
 BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025111405_AddFeedbackItems') THEN
+    CREATE TABLE feedback_items (
+        id uuid NOT NULL,
+        user_id uuid NOT NULL,
+        kind text NOT NULL,
+        status text NOT NULL DEFAULT 'open',
+        text text NOT NULL,
+        route text,
+        element text,
+        selected_text text,
+        closed_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        updated_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_feedback_items PRIMARY KEY (id),
+        CONSTRAINT ck_feedback_items_closed_at CHECK ((status = 'closed') = (closed_at IS NOT NULL)),
+        CONSTRAINT ck_feedback_items_kind CHECK (kind IN ('bug', 'idea', 'note', 'feature')),
+        CONSTRAINT ck_feedback_items_status CHECK (status IN ('open', 'closed')),
+        CONSTRAINT fk_feedback_items_users_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025111405_AddFeedbackItems') THEN
+    CREATE INDEX ix_feedback_items_status_created_at ON feedback_items (status, created_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025111405_AddFeedbackItems') THEN
+    CREATE INDEX ix_feedback_items_user_id ON feedback_items (user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025111405_AddFeedbackItems') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261025111405_AddFeedbackItems', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025120000_AddSellSignalEvaluation') THEN
     ALTER TABLE daily_evaluations DROP CONSTRAINT ck_daily_evaluations_status;
     END IF;

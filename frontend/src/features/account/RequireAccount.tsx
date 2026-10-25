@@ -3,6 +3,7 @@ import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { useAccount } from './AccountContext'
 import { hasLoggedInHere } from './knownDevice'
 import { TextAction } from '../../components/TextAction'
+import { FeedbackCapture } from '../feedback/FeedbackCapture'
 import { logInPathFor, signUpPath } from './paths'
 
 /**
@@ -32,5 +33,10 @@ export function RequireAccount() {
     const from = `${pathname}${search}`
     return <Navigate to={hasLoggedInHere() || from !== '/' ? logInPathFor(from) : signUpPath} replace />
   }
-  return <Outlet />
+  return (
+    <>
+      <Outlet />
+      <FeedbackCapture key={pathname} />
+    </>
+  )
 }

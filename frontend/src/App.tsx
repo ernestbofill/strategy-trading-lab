@@ -18,6 +18,7 @@ import { SignUp } from './features/account/SignUp'
 import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
 import { AdminSettings } from './features/admin/AdminSettings'
+import { FeedbackPage } from './features/feedback/FeedbackSection'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { Advanced } from './features/new-strategy/Advanced'
 import { SetBudget } from './features/new-strategy/SetBudget'
@@ -62,6 +63,7 @@ export default function App() {
               <Route path={accountPath} element={<AccountPage />} />
               <Route element={<RequireOwner />}>
                 <Route path="/admin" element={<AdminSettings />} />
+                <Route path="/feedback" element={<FeedbackPage />} />
               </Route>
               <Route path="/strategies/:id" element={<StrategyPage />} />
               <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />

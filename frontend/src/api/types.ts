@@ -363,6 +363,39 @@ export type Currency = 'EUR' | 'USD' | 'GBP'
 /** What an account may do: the owner runs the app (the admin page), a vip is invited, a user is everyone else. */
 export type Role = 'user' | 'vip' | 'owner'
 
+export type FeedbackKind = 'bug' | 'idea' | 'note' | 'feature'
+
+export type FeedbackStatus = 'open' | 'closed'
+
+/** A feedback comment, optionally pinned to selected text on a screen: backend Feedback/FeedbackEndpoints.cs (FeedbackDto). */
+export interface FeedbackItem {
+  id: string
+  userEmail: string
+  kind: FeedbackKind
+  status: FeedbackStatus
+  text: string
+  route: string | null
+  element: string | null
+  selectedText: string | null
+  createdAt: string
+  updatedAt: string
+  closedAt: string | null
+}
+
+export interface NewFeedback {
+  kind: FeedbackKind
+  text: string
+  route?: string | null
+  element?: string | null
+  selectedText?: string | null
+}
+
+export interface FeedbackPatch {
+  kind?: FeedbackKind
+  status?: FeedbackStatus
+  text?: string
+}
+
 /** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
 export interface Account {
   email: string
@@ -504,4 +537,10 @@ export interface Api {
   getAdminDatabases(): Promise<AdminDatabases>
   /** Rejects with `InvalidValueError` saying why when refused (no URL on the server, a database that doesn't answer). */
   switchAdminDatabase(name: DatabaseName): Promise<void>
+  /** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidValueError` or `TooManyTriesError`. */
+  submitFeedback(feedback: NewFeedback): Promise<FeedbackItem>
+  /** Owner only: lists, edits, closes/reopens or deletes feedback comments. */
+  getFeedback(status?: FeedbackStatus): Promise<FeedbackItem[]>
+  updateFeedback(id: string, patch: FeedbackPatch): Promise<FeedbackItem>
+  deleteFeedback(id: string): Promise<void>
 }

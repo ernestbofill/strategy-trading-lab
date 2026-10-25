@@ -175,14 +175,17 @@ public class TradeEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi
             Assert.Equal("buy", item.GetProperty("side").GetString());
             Assert.Equal(185m, item.GetProperty("price").GetDecimal());
 
-            // Check database has manual trade with signal_id == null
+            // Check database has manual trades with signal_id == null
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var trade = await db.UserTrades.SingleAsync(t => t.StrategyId == strategyId && t.Source == TradeSource.Manual);
-            Assert.Null(trade.SignalId);
-            Assert.Equal(TradeSource.Manual, trade.Source);
-            Assert.Equal(185m, trade.Price);
-            Assert.Null(trade.DeletedAt);
+            var trades = await db.UserTrades.Where(t => t.StrategyId == strategyId && t.Source == TradeSource.Manual).ToListAsync();
+            Assert.Equal(2, trades.Count);
+            Assert.All(trades, t =>
+            {
+                Assert.Null(t.SignalId);
+                Assert.Equal(TradeSource.Manual, t.Source);
+                Assert.Null(t.DeletedAt);
+            });
         }
         finally
         {

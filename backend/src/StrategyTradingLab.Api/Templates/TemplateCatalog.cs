@@ -130,7 +130,15 @@ public static class TemplateCatalog
         "ai", null, InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList([.. Dip.Watches.Assets.Union(Comeback.Watches.Assets)]),
         null,
-        new AiParams());
+        new AiParams())
+    {
+        // Every 2 weeks or more, so a round's week to run it never overlaps the next round.
+        Settings =
+        [
+            new("everyWeeks", 1, 2, 6),
+            new("topN", 1, 1, 3),
+        ],
+    };
 
     public static readonly IReadOnlyList<Template> All = [Dip, Comeback, Bear, Trend, Ai];
 

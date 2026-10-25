@@ -16,13 +16,19 @@ public static class TemplateSettings
 {
     /// <summary>
     /// The template's params with <paramref name="settings"/> (setting key → value) over the tested defaults, as
-    /// strategies.params stores them. Null, with the reasons in <paramref name="fail"/>, when a value is refused.
+    /// strategies.params stores them. Params that aren't settings keep their <paramref name="current"/> values (a running
+    /// strategy's: the AI template's prompt choices). Null, with the reasons in <paramref name="fail"/>, when a value is refused.
     /// </summary>
-    public static JsonDocument? Apply(Template template, IReadOnlyDictionary<string, decimal>? settings, Action<string, string> fail)
+    public static JsonDocument? Apply(Template template, IReadOnlyDictionary<string, decimal>? settings, Action<string, string> fail,
+        JsonDocument? current = null)
     {
-        if (settings is null || settings.Count == 0) return template.ParamsJson();
-
         var json = (JsonObject)JsonSerializer.SerializeToNode(template.Params, template.Params.GetType(), JsonSerializerOptions.Web)!;
+        if (current?.RootElement.ValueKind == JsonValueKind.Object)
+            foreach (var property in current.RootElement.EnumerateObject())
+                if (json.ContainsKey(property.Name) && template.Settings.All(s => s.Key != property.Name))
+                    json[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+        if (settings is null || settings.Count == 0) return JsonSerializer.SerializeToDocument(json, JsonSerializerOptions.Web);
+
         var ok = true;
         foreach (var (key, value) in settings)
         {

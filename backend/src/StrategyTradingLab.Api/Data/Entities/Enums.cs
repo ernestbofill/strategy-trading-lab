@@ -24,7 +24,7 @@ public enum FxSource { Reference, User }
 
 public enum TradeSource { Signal, Manual }
 
-public enum NotificationKind { Signal, Snoozed, Overview }
+public enum NotificationKind { Signal, Snoozed, Overview, AiRound }
 
 public enum NotificationChannel { Push, Email }
 
@@ -32,6 +32,9 @@ public enum EmailTokenPurpose { VerifyEmail, ResetPassword }
 
 /// <summary>What an account may do: Owner is the app's owner (the admin page), Vip is an invited user with extra privileges, User everyone else.</summary>
 public enum UserRole { User, Vip, Owner }
+
+/// <summary>An AI round: due until it is run (done) or its week runs out (skipped).</summary>
+public enum AiRoundStatus { Due, Done, Skipped }
 
 public enum FeedbackKind { Bug, Idea, Note, Feature }
 

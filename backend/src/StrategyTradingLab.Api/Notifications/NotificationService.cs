@@ -115,6 +115,40 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         return sent;
     }
 
+    /// <summary>
+    /// "Time for the AI round", once per user and due day, from 07:00 of that day in the user's time zone (spec: Notifications,
+    /// AI round due), listing every round of theirs due that day whose strategy has notifications on. Not for a strategy's first
+    /// round, which is due the day it starts (Confirm opens it), nor for a round whose week has run out.
+    /// </summary>
+    public async Task<int> SendAiRoundRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        // As for snoozes: no time zone is more than a day from UTC.
+        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
+        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
+        var rows = await (from round in db.AiRounds.AsNoTracking()
+                          join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
+                          join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
+                          where round.Status == AiRoundStatus.Due && round.DueOn <= latest && round.DueOn >= earliest && round.DueOn > strategy.StartedOn
+                              && strategy.Notifications && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null
+                              && !db.Notifications.Any(x => x.UserId == user.Id && x.Kind == NotificationKind.AiRound
+                                  && x.Channel == NotificationChannel.Email && x.ForDate == round.DueOn)
+                          select new { round.DueOn, strategy.Id, strategy.Name, UserId = user.Id, user.Email, user.TimeZone }).ToListAsync(cancellationToken);
+
+        var sent = 0;
+        foreach (var group in rows.GroupBy(r => (r.UserId, r.DueOn)))
+        {
+            var first = group.First();
+            var local = LocalTime(now, first.TimeZone);
+            var localDay = DateOnly.FromDateTime(local.DateTime);
+            if (localDay < group.Key.DueOn || (localDay == group.Key.DueOn && local.Hour < OverviewHour)) continue;
+            if (localDay > group.Key.DueOn.AddDays(1)) continue; // A day gone isn't reminded late; the overview still lists it.
+            if (await ClaimAsync(group.Key.UserId, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken) is not { } claimed) continue;
+            var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
+            if (await SendAsync(claimed, first.Email, () => Task.FromResult(EmailTexts.AiRoundDue(strategies, AppUrl)), cancellationToken)) sent++;
+        }
+        return sent;
+    }
+
     static DateTimeOffset LocalTime(DateTimeOffset now, string timeZone)
     {
         try { return TimeZoneInfo.ConvertTime(now, TimeZoneInfo.FindSystemTimeZoneById(timeZone)); }
@@ -147,10 +181,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             .OrderBy(x => x.Distance).Take(5)
             .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].Mode, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
 
+        var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= day)
+            .OrderBy(r => r.DueOn).Select(r => r.StrategyId).ToListAsync(cancellationToken);
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id))).ToList();
-        return EmailTexts.Overview(day, waiting, changed, close, scoreboard, AppUrl);
+        return EmailTexts.Overview(day, waiting, changed, close, scoreboard, AppUrl, [.. roundsDue.Select(id => (id, byId[id].Name))]);
     }
 
     static SignalLine Line(Signal signal, Strategy strategy, Asset asset) => SignalLine.From(signal, strategy, asset);

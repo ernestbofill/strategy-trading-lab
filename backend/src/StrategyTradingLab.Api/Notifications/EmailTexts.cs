@@ -47,6 +47,13 @@ public static class EmailTexts
             var belowSma = Fact(s.Facts, "belowSmaPct");
             return belowSma is null ? "its rules are met" : $"the market closed {Pct(belowSma.Value)}% below its 200-day average";
         }
+        if (s.TemplateKey == "ai")
+        {
+            var score = Fact(s.Facts, "score");
+            var rank = Fact(s.Facts, "rank");
+            return score is null ? "your AI scored it among the top"
+                : $"your AI scored it {Pct(score.Value)} out of 100, {(rank is null or 1 ? "the top score of the round" : $"number {rank:0} in the round")}";
+        }
         if (s.TemplateKey == "trend")
         {
             var aboveSma = Fact(s.Facts, "aboveSmaPct");
@@ -94,14 +101,29 @@ public static class EmailTexts
         ($"{s.StockName}: your rules for {s.StrategyName} are met",
          $"{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{Disclaimer}");
 
+    /// <summary>The AI round screen of a strategy.</summary>
+    public static string AiRoundUrl(Guid strategyId, string appUrl) => $"{appUrl}/strategies/{strategyId}/ai-round";
+
+    /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
+    public static (string Subject, string Body) AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl)
+    {
+        var names = strategies.Count == 1 ? strategies[0].Name
+            : string.Join(", ", strategies.Take(strategies.Count - 1).Select(s => s.Name)) + " and " + strategies[^1].Name;
+        var text = new StringBuilder($"Time for the AI round{(strategies.Count == 1 ? "" : "s")} of {names}. It takes about two minutes.\n\n");
+        foreach (var (id, name) in strategies) text.Append($"{name}: {AiRoundUrl(id, appUrl)}\n");
+        text.Append($"\nThe app doesn't connect to your AI. If you skip a round, there's no signal that round.\n\n{Disclaimer}");
+        return ($"Time for the AI round of {names}", text.ToString());
+    }
+
     /// <summary>The daily overview: what waits, what changed, what is close, and one line per strategy.</summary>
     public static (string Subject, string Body) Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
-        IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl)
+        IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null)
     {
         var text = new StringBuilder($"Your daily overview, {Date(day)}.\n");
-        if (waiting.Count > 0)
+        if (waiting.Count > 0 || aiRoundsDue?.Count > 0)
         {
             text.Append("\nWaiting for you\n");
+            foreach (var (id, name) in aiRoundsDue ?? []) text.Append($"- Time for the AI round of {name}. {AiRoundUrl(id, appUrl)}\n");
             foreach (var s in waiting)
             {
                 var detail = s.Side == TradeSide.Sell ? ": sale" : s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "";

@@ -18,7 +18,7 @@ public record CurrencyRequest(string? Currency);
 public record OverviewEmailRequest(bool? Enabled);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
-public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role);
+public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role, bool AiSharing = false);
 
 /// <summary>A message for the user, the same whatever the email (sign-up, forgot password).</summary>
 public record AccountMessage(string Message);
@@ -130,7 +130,7 @@ public static class AccountEndpoints
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            return TypedResults.Ok(new AccountDto(user.Email, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency, user.Role));
+            return TypedResults.Ok(new AccountDto(user.Email, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency, user.Role, user.AiSharing));
         })
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");

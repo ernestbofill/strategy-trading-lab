@@ -86,6 +86,28 @@ public class NotificationTests
         Assert.DoesNotContain("Waiting for you", body);
     }
 
+    [Fact]
+    public void The_ai_round_email_names_every_round_due_that_day()
+    {
+        var (subject, body) = EmailTexts.AiRoundDue(
+            [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks"), (Guid.Parse("33333333-3333-3333-3333-333333333333"), "Tech scores")],
+            "https://app.example");
+
+        Assert.Equal("Time for the AI round of My AI picks and Tech scores", subject);
+        Assert.StartsWith("Time for the AI rounds of My AI picks and Tech scores. It takes about two minutes.", body);
+        Assert.Contains("My AI picks: https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
+        Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
+    }
+
+    [Fact]
+    public void The_overview_lists_ai_rounds_due_with_the_signals_waiting()
+    {
+        var (_, body) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example",
+            [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks")]);
+
+        Assert.Contains("Waiting for you\n- Time for the AI round of My AI picks. https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
+    }
+
     sealed class Captured : IEmailSender
     {
         public List<(string To, string Subject, string Body)> Sent { get; } = [];

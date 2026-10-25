@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
@@ -19,14 +20,16 @@ public static class StrategyEndpoints
 
     public static void MapStrategies(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+        app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
-            var strategies = await db.Strategies
+            var strategies = await db.Strategies.AsNoTracking()
                 .Where(strategy => strategy.UserId == user.Id && strategy.Status == StrategyStatus.Running)
                 .OrderByDescending(strategy => strategy.StartedOn).ThenByDescending(strategy => strategy.CreatedAt)
                 .ToListAsync(cancellationToken);
             var today = Today(user, time);
+            // AI rounds whose week ran out are skipped before anything is shown.
+            await rounds.SweepAsync(strategies.Select(s => new AiStrategyDay(s, today)), cancellationToken);
             var book = await StrategyBook.LoadAsync(db, strategies, today, cancellationToken);
             var ids = strategies.Select(s => s.Id).ToList();
             // Live signals still waiting for an answer, newest first.
@@ -36,8 +39,13 @@ public static class StrategyEndpoints
                 .Join(db.Assets, signal => signal.AssetId, asset => asset.Id, (signal, asset) => new { signal.Id, signal.Side, signal.StrategyId, asset.Name })
                 .ToListAsync(cancellationToken);
             var names = strategies.ToDictionary(s => s.Id, s => s.Name);
+            // AI rounds due, first: a round has a week to be run, a signal waits longer.
+            var due = await db.AiRounds.AsNoTracking()
+                .Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
+                .OrderByDescending(r => r.DueOn).Select(r => new { r.Id, r.StrategyId }).ToListAsync(cancellationToken);
             return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user.Locale, (book, today)))],
-                [.. waiting.Select(w => new WaitingItem(w.Id, w.Side == TradeSide.Buy ? WaitingKind.BuySignal : WaitingKind.SellSignal,
+                [.. due.Select(r => new WaitingItem(r.Id, WaitingKind.AiRound, r.StrategyId, names[r.StrategyId], null)),
+                 .. waiting.Select(w => new WaitingItem(w.Id, w.Side == TradeSide.Buy ? WaitingKind.BuySignal : WaitingKind.SellSignal,
                     w.StrategyId, names[w.StrategyId], w.Name))]);
         })
         .RequireUser()
@@ -46,13 +54,16 @@ public static class StrategyEndpoints
         .WithSummary("The user's running strategies, with their results, and the live signals waiting for an answer.");
 
         app.MapGet("/strategies/{id:guid}", async Task<Results<Ok<StrategyDetail>, NotFound>> (
-            Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
                 .SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
-            return TypedResults.Ok(await DetailAsync(db, strategy, user, Today(user, time), cancellationToken));
+            var today = Today(user, time);
+            var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : null;
+            var scores = ai is null ? null : await rounds.LastScoresAsync(strategy.Id, cancellationToken);
+            return TypedResults.Ok(await DetailAsync(db, strategy, user, today, cancellationToken, ai, scores));
         })
         .RequireUser()
         .WithTags("Strategies")
@@ -70,6 +81,9 @@ public static class StrategyEndpoints
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
             var errors = NewStrategyValidation.Validate(request, template, assets);
             var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            // The AI template's prompt choices (Review: "What the AI reads", Edit prompt).
+            if (parameters is not null && template == TemplateCatalog.Ai)
+                parameters = AiRoundEndpoints.Apply(parameters, request.Ai, (field, message) => errors[$"ai.{field}"] = [message]);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             var user = await CurrentUser(sessions, cancellationToken);
@@ -89,6 +103,8 @@ public static class StrategyEndpoints
                     { AssetId = asset.Id, Active = true, AddedAt = time.GetUtcNow() })],
             };
             db.Strategies.Add(strategy);
+            // Its first AI round is due now (spec: Confirm, "Your first AI round is due now").
+            if (template == TemplateCatalog.Ai) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, DueOn = strategy.StartedOn, Status = AiRoundStatus.Due });
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
@@ -113,7 +129,7 @@ public static class StrategyEndpoints
             if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
 
             var errors = new Dictionary<string, string[]>();
-            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], strategy.Params);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             strategy.Params = parameters;
@@ -154,7 +170,8 @@ public static class StrategyEndpoints
             ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear)
             : null;
 
-    static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, User user, DateOnly today, CancellationToken cancellationToken)
+    static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, User user, DateOnly today, CancellationToken cancellationToken,
+        AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null)
     {
         var template = TemplateCatalog.Find(strategy.TemplateKey)!;
         var texts = TemplateTexts.For(template, user.Locale);
@@ -210,7 +227,9 @@ public static class StrategyEndpoints
                 : strategy.TemplateKey == "bear" && !live ? rulesSteps
                 : trades.Count(b => b.Side == TradeSide.Buy);
 
-            var status = StrategyPage.Status(strategy.Mode, evaluation?.Status, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey);
+            // An AI strategy's stock is "not scored yet" until its first daily check.
+            var latestStatus = evaluation?.Status ?? (ai is not null ? EvaluationStatus.NotCandidate : null);
+            var status = StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey);
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
             var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
             decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
@@ -221,7 +240,8 @@ public static class StrategyEndpoints
                 maxSteps, distance, signal?.Id, signal?.StepNo,
                 Invested: invested,
                 Result: Performance.GainPct(trades, book.Prices, today, strategy.Currency),
-                SignalSide: signal?.Side);
+                SignalSide: signal?.Side,
+                AiScore: aiScores is not null && aiScores.TryGetValue(asset.Id, out var score) ? score : null);
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
         .ToList();
@@ -322,6 +342,6 @@ public static class StrategyEndpoints
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.StartedOn, today,
             strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings);
+            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai);
     }
 }

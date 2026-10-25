@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import {
   api,
   InvalidValueError,
@@ -38,7 +37,7 @@ export function AdminSettings() {
   }, [])
 
   return (
-    <Screen top={<TopBar title="STL // ADMIN" aside={<Link to="/admin/assets">ASSETS</Link>} />}>
+    <Screen top={<TopBar title="STL // ADMIN" />}>
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
       <section className={styles.group}>
         <h2 className={styles.groupTitle}>Management</h2>

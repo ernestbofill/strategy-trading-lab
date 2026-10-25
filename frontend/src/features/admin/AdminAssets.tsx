@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, UnauthorizedError, type AdminAsset, type AssetKind } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -73,14 +73,6 @@ export function AdminAssets() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    try {
-      setState({ status: 'ready', assets: await api.getAdminAssets() })
-    } catch {
-      setState({ status: 'error' })
-    }
-  }, [])
-
   useEffect(() => {
     let live = true
     api
@@ -97,7 +89,7 @@ export function AdminAssets() {
     setError(null)
     try {
       await api.setAdminAssetActive(asset.id, !asset.active)
-      await load()
+      setState({ status: 'ready', assets: await api.getAdminAssets() })
     } catch (e) {
       if (e instanceof UnauthorizedError) return
       setError("Couldn't update the asset. Try again.")

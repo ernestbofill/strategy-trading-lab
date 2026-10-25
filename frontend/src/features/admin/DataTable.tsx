@@ -4,7 +4,6 @@ import {
   createPaginatedRowModel,
   createSortedRowModel,
   filterFn_equalsString,
-  filterFn_includesString,
   flexRender,
   globalFilteringFeature,
   rowPaginationFeature,
@@ -34,10 +33,6 @@ const features = tableFeatures({
   columnFilteringFeature,
   globalFilteringFeature,
   filteredRowModel: createFilteredRowModel(),
-  filterFns: {
-    includesString: filterFn_includesString,
-    equalsString: filterFn_equalsString,
-  },
   rowPaginationFeature,
   paginatedRowModel: createPaginatedRowModel(),
 })
@@ -129,8 +124,7 @@ export function DataTable<T extends RowData>({
       accessorFn: (row) => col.accessorFn(row) ?? '',
       enableSorting: col.sortable ?? true,
       sortDescFirst: false,
-      filterFn: (row, columnId, filterValue: string) =>
-        String(row.getValue(columnId) ?? '').toLowerCase() === filterValue.toLowerCase(),
+      filterFn: filterFn_equalsString,
       cell: ({ row }) => (col.cell ? col.cell(row.original) : String(col.accessorFn(row.original) ?? '–')),
     }))
     if (rowAction) {

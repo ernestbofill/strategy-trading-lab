@@ -273,11 +273,13 @@ public static class StrategyEndpoints
         var ratesList = new List<CurrencyRates>();
         if (foreignCurrencies.Count > 0)
         {
-            var exchange = await ExchangeRates.LoadAsync(db, strategy.StartedOn, cancellationToken);
+            var earliestTrade = tradeItems.Count > 0 ? tradeItems.Min(t => t.TradeDate) : strategy.StartedOn;
+            var fromDate = earliestTrade < strategy.StartedOn ? earliestTrade : strategy.StartedOn;
+            var exchange = await ExchangeRates.LoadAsync(db, fromDate, cancellationToken);
             foreach (var curr in foreignCurrencies)
             {
                 var days = new List<RateDay>();
-                for (var day = strategy.StartedOn.AddDays(-ExchangeRates.LookBackDays); day <= today; day = day.AddDays(1))
+                for (var day = fromDate.AddDays(-ExchangeRates.LookBackDays); day <= today; day = day.AddDays(1))
                 {
                     if (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(curr, day)
                         && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)

@@ -30,11 +30,13 @@ public static class TradeEndpoints
             if (asset is null)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = ["Pick one of the strategy's stocks."] });
 
-            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, strategy.StartedOn, cancellationToken);
+            var tradeDate = request.Date;
+            var minRatesDate = tradeDate.HasValue && tradeDate.Value < strategy.StartedOn ? tradeDate.Value : strategy.StartedOn;
+            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, minRatesDate, cancellationToken);
             var signalRequest = new SignalTradeRequest(request.Date, request.Price, request.EnteredAs, request.Amount, request.Shares, request.Fee,
                 request.FxSource, request.FxRate);
-            var (trade, errors) = SignalRules.CheckTrade(signalRequest, strategy.StartedOn, StrategyEndpoints.Today(user, time),
-                day => rates.Between(strategy.Currency, asset.Currency, day), minDateMessage: "Use a day on or after the strategy started.");
+            var (trade, errors) = SignalRules.CheckTrade(signalRequest, minDate: null, StrategyEndpoints.Today(user, time),
+                day => rates.Between(strategy.Currency, asset.Currency, day));
             if (trade is null) return TypedResults.ValidationProblem(errors);
 
             var userTrade = new UserTrade
@@ -81,21 +83,23 @@ public static class TradeEndpoints
             var asset = await db.Assets.FindAsync([trade.AssetId], cancellationToken);
             if (asset is null) return TypedResults.NotFound();
 
-            DateOnly minDate;
+            DateOnly? minDate;
             string minDateMessage;
             if (trade.Source == TradeSource.Signal && trade.SignalId is { } signalId)
             {
                 var signal = await db.Signals.FindAsync([signalId], cancellationToken);
-                minDate = signal?.SignalDate ?? strategy.StartedOn;
+                minDate = signal?.SignalDate;
                 minDateMessage = "Use a day on or after the signal.";
             }
             else
             {
-                minDate = strategy.StartedOn;
-                minDateMessage = "Use a day on or after the strategy started.";
+                minDate = null;
+                minDateMessage = "";
             }
 
-            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, minDate, cancellationToken);
+            var tradeDate = request.Date;
+            var minRatesDate = tradeDate.HasValue && tradeDate.Value < strategy.StartedOn ? tradeDate.Value : (minDate ?? strategy.StartedOn);
+            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, minRatesDate, cancellationToken);
             var signalRequest = new SignalTradeRequest(request.Date, request.Price, request.EnteredAs, request.Amount, request.Shares, request.Fee,
                 request.FxSource, request.FxRate);
             var (checkedTrade, errors) = SignalRules.CheckTrade(signalRequest, minDate, StrategyEndpoints.Today(user, time),

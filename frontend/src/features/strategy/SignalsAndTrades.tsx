@@ -401,7 +401,6 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
         label="Date"
         type="date"
         value={date}
-        min={s.startedOn}
         max={s.today}
         error={errors.date}
         onChange={setDate}
@@ -512,8 +511,8 @@ function EditTradeForm({
   const refRate = rateOn(currencyRates, date)
 
   const minDate = trade.source === 'signal' && trade.signalId
-    ? (s.signalHistory?.find((sig) => sig.id === trade.signalId)?.signalDate ?? s.startedOn)
-    : s.startedOn
+    ? (s.signalHistory?.find((sig) => sig.id === trade.signalId)?.signalDate ?? undefined)
+    : undefined
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

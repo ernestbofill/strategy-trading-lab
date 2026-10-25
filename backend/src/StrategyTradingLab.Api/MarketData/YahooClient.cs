@@ -6,11 +6,17 @@ namespace StrategyTradingLab.Api.MarketData;
 /// <summary>One trading day. Prices are in the asset's currency; a stock's are adjusted for splits and dividends.</summary>
 public record Candle(DateOnly Date, decimal Open, decimal High, decimal Low, decimal Close, long Volume);
 
+/// <summary>One quote from Yahoo Finance's search endpoint.</summary>
+public record MarketQuote(string Symbol, string Exchange, string Name, string Currency, string? QuoteType, string? Sector, string? Industry);
+
 /// <summary>Where daily candles come from, so the refresh can be tested without the network.</summary>
 public interface IMarketDataSource
 {
     /// <summary>The last month, or the whole history. Oldest first; days without prices are left out.</summary>
     Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken);
+
+    /// <summary>The best matches for a symbol, company name or keyword from Yahoo Finance's search endpoint.</summary>
+    Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken);
 }
 
 public class MarketDataException(string message, Exception? inner = null) : Exception(message, inner);
@@ -39,6 +45,49 @@ public class YahooClient(HttpClient http) : IMarketDataSource
             throw new MarketDataException($"Couldn't reach Yahoo for {symbol}.", error);
         }
         return Parse(json, symbol, adjusted);
+    }
+
+    public async Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken)
+    {
+        var term = query.Trim();
+        if (term.Length == 0) return [];
+        string json;
+        try
+        {
+            using var response = await http.GetAsync($"v1/finance/search?q={Uri.EscapeDataString(term)}&quotesCount=10&newsCount=0&enableFuzzyQuery=false", cancellationToken);
+            if (!response.IsSuccessStatusCode) throw new MarketDataException($"Yahoo answered HTTP {(int)response.StatusCode} for {term}.");
+            json = await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        catch (Exception error) when (error is HttpRequestException || (error is TaskCanceledException && !cancellationToken.IsCancellationRequested))
+        {
+            throw new MarketDataException($"Couldn't reach Yahoo for {term}.", error);
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var quotes = document.RootElement.TryGetProperty("quotes", out var list) && list.ValueKind == JsonValueKind.Array ? list : default;
+            var matches = new List<MarketQuote>();
+            foreach (var item in quotes.EnumerateArray())
+            {
+                var symbol = item.TryGetProperty("symbol", out var symbolElement) ? symbolElement.GetString() : null;
+                var exchange = item.TryGetProperty("exchange", out var exchangeElement) ? exchangeElement.GetString() : null;
+                var name = item.TryGetProperty("longName", out var longName) && longName.ValueKind == JsonValueKind.String ? longName.GetString()
+                    : item.TryGetProperty("shortName", out var shortName) && shortName.ValueKind == JsonValueKind.String ? shortName.GetString()
+                    : null;
+                var currency = item.TryGetProperty("currency", out var currencyElement) ? currencyElement.GetString() : null;
+                var quoteType = item.TryGetProperty("quoteType", out var typeElement) ? typeElement.GetString() : null;
+                var sector = item.TryGetProperty("sector", out var sectorElement) ? sectorElement.GetString() : null;
+                var industry = item.TryGetProperty("industry", out var industryElement) ? industryElement.GetString() : null;
+                if (string.IsNullOrWhiteSpace(symbol) || string.IsNullOrWhiteSpace(exchange) || string.IsNullOrWhiteSpace(name)) continue;
+                matches.Add(new MarketQuote(symbol, exchange, name, currency ?? "USD", quoteType, sector, industry));
+            }
+            return matches;
+        }
+        catch (Exception error) when (error is JsonException or InvalidOperationException)
+        {
+            throw new MarketDataException($"Yahoo's search answer for {term} wasn't what we expected.", error);
+        }
     }
 
     /// <summary>

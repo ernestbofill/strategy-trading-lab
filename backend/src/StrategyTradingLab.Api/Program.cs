@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Identity;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
@@ -62,6 +63,7 @@ builder.Services.AddHttpClient<IMarketDataSource, YahooClient>(client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; StrategyTradingLab)");
 });
 builder.Services.AddScoped<PriceRefresher>();
+builder.Services.AddScoped<AssetCatalog>();
 builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>();
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();
@@ -184,6 +186,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
 app.MapTemplates();
+app.MapAssets();
 app.MapStrategies();
 app.MapSignals();
 app.MapAdmin();

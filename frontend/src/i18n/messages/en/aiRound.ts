@@ -35,18 +35,18 @@ export const aiRound = {
   'aiRound.saveFailed': "We couldn't save it. Try again.",
   'aiRound.use': 'Use these scores',
   'aiRound.saving': 'Saving…',
-  'aiRound.sharing': 'Sharing anonymously',
+  'aiRound.sharing': 'Sharing your AI rounds',
   'aiRound.notSharing': 'Not sharing your AI rounds',
   'aiRound.change': 'Change',
   'aiRound.consent.title': 'Help us learn which AIs score stocks best',
   'aiRound.consent.text':
-    'Share this round anonymously: the AI model you used and its answer. We never keep your name, email, budget or trades with it. You can stop at any time in Account → Data and privacy.',
-  'aiRound.consent.check': 'Share my AI rounds anonymously',
+    'Share this round: the AI model you used and its answer, kept apart from your account. We never keep your name, email, budget or trades with it. You can stop at any time in Account → Data and privacy, which also removes what you shared.',
+  'aiRound.consent.check': 'Share my AI rounds',
   'aiRound.keep.title': 'What we keep',
   'aiRound.keep.what':
     "For each shared round: the AI model, the day, the prompt's version and whether you edited it, the sources on, the stocks' symbols, your AI's answer and its scores. Before it is stored, anything that looks like an email address, a phone number or a link's parameters is removed.",
   'aiRound.keep.never':
-    "Never with it: your name, email, account, strategy name, budget, steps, trades, or whether you acted. Nothing links it back to you, so a shared round can't be removed later. Turning sharing off stops it for the next rounds.",
+    "Never with it: your name, email, account, strategy name, budget, steps, trades, or whether you acted, and only the day, not the time. It has no link to your account; your own copy of the round is the only way to match it, and turning sharing off uses it to remove what you shared.",
   'aiRound.scores.aria': "Your AI's scores",
   'aiRound.scores.outOf': ' out of 100',
   'aiRound.scores.step': '· Step {step}',

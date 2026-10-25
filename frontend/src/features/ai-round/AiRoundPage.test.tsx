@@ -84,11 +84,30 @@ describe('AiRoundPage', () => {
     expect(screen.getByText('Zscaler gets step 2 of 5 (€100).')).toBeTruthy()
     expect(screen.getByText('Strong quarter')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Share my AI rounds anonymously' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Share my AI rounds' }))
     fireEvent.click(screen.getByRole('button', { name: 'Use these scores' }))
 
     await screen.findByText('Dashboard')
-    expect(use).toHaveBeenCalledWith('st', '| Stock | Overall |\n| ZS | 83 |', 'Claude · Opus', true)
+    expect(use).toHaveBeenCalledWith('st', '| Stock | Overall |\n| ZS | 83 |', 'Claude · Opus', true, round().prompt)
+  })
+
+  it('waits for a new answer to be read before its scores can be used', async () => {
+    open(round())
+    let finish: (reading: AiReading) => void = () => {}
+    vi.spyOn(api, 'readAiAnswer')
+      .mockResolvedValueOnce(reading)
+      .mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+
+    await screen.findByRole('heading', { name: 'Time for the AI round' })
+    paste('first answer')
+    await screen.findByText('✓ Every stock scored, all scores 0-100.')
+    expect(screen.getByRole('button', { name: 'Use these scores' })).toBeTruthy()
+
+    paste('second answer')
+    expect(screen.getByText('Use these scores').getAttribute('aria-disabled')).toBe('true')
+    await waitFor(() => expect(api.readAiAnswer).toHaveBeenCalledTimes(2))
+    finish(reading)
+    expect(await screen.findByRole('button', { name: 'Use these scores' })).toBeTruthy()
   })
 
   it('points out what the AI should answer again, and keeps the button off', async () => {
@@ -96,8 +115,8 @@ describe('AiRoundPage', () => {
     vi.spyOn(api, 'readAiAnswer').mockResolvedValue({ ...reading, ok: false, problems: ['Vertiv has no score.'], scores: reading.scores.slice(0, 1) })
 
     await screen.findByRole('heading', { name: 'Time for the AI round' })
-    expect(screen.getByText(/Sharing anonymously/)).toBeTruthy()
-    expect(screen.queryByRole('checkbox', { name: 'Share my AI rounds anonymously' })).toBeNull()
+    expect(screen.getByText(/Sharing your AI rounds/)).toBeTruthy()
+    expect(screen.queryByRole('checkbox', { name: 'Share my AI rounds' })).toBeNull()
     paste('something')
 
     expect(await screen.findByText('Vertiv has no score.')).toBeTruthy()
@@ -116,7 +135,7 @@ describe('AiRoundPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Use these scores' }))
 
     await screen.findByText('Signal page')
-    expect(use).toHaveBeenCalledWith('st', 'answer', 'Mistral Large', null)
+    expect(use).toHaveBeenCalledWith('st', 'answer', 'Mistral Large', null, round().prompt)
   })
 
   it('says when the next round is due before it opens', async () => {

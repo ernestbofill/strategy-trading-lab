@@ -61,9 +61,8 @@ public static class StrategyEndpoints
                 .SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var today = Today(user, time);
-            var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : null;
-            var scores = ai is null ? null : await rounds.LastScoresAsync(strategy.Id, cancellationToken);
-            return TypedResults.Ok(await DetailAsync(db, strategy, user, today, cancellationToken, ai, scores));
+            var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : default;
+            return TypedResults.Ok(await DetailAsync(db, strategy, user, today, cancellationToken, ai.Summary, ai.LastScores));
         })
         .RequireUser()
         .WithTags("Strategies")

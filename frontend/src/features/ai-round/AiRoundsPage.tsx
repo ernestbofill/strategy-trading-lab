@@ -4,9 +4,10 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
+import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
-import { shortDate, signedPct, signedPctOrDash } from '../../lib/format'
+import { isoDate, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { aiRoundPath, strategyPath } from '../dashboard/paths'
 import styles from './AiRound.module.css'
 import { ScoreList } from './ScoreList'
@@ -24,7 +25,10 @@ export function AiRoundsPage() {
       {(h) => (
         <Screen top={top} note={`${t('common.disclaimer')} ${t('common.pastResults')}`}>
           <PageHeader title={t('aiRound.history.title')} />
-          <p className={styles.plain}>{h.strategyName}</p>
+          <p className={styles.eyebrow}>
+            <Tag tone={h.mode === 'live' ? 'live' : 'sim'}>{h.mode === 'live' ? 'LIVE' : 'SIM'}</Tag>
+            <span>{h.strategyName}</span>
+          </p>
           {h.picksVsRest && (
             <Section title={t('aiRound.history.picksVsRest')}>
               <p className={styles.plain}>
@@ -69,7 +73,8 @@ function RoundBody({ strategyId, round, today }: { strategyId: string; round: Ai
       <p className={styles.plain}>
         {[
           round.aiModel,
-          round.doneAt && t('aiRound.history.run', { date: shortDate(round.doneAt.slice(0, 10), locale) }),
+          // The day it was run where the user is, not in UTC.
+          round.doneAt && t('aiRound.history.run', { date: shortDate(isoDate(new Date(round.doneAt)), locale) }),
           round.promptEdited && t('aiRound.history.yourPrompt'),
         ]
           .filter(Boolean)

@@ -245,8 +245,8 @@ export const httpApi: Api = {
   previewAiPrompt: async (request) => (await aiRequest('POST', '/templates/ai/prompt', request)).json(),
   getAiRound: (strategyId) => get(aiPath(strategyId, '/ai-round')),
   readAiAnswer: async (strategyId, answer) => (await aiRequest('POST', aiPath(strategyId, '/ai-round/read'), { answer })).json(),
-  useAiScores: async (strategyId, answer, aiModel, share) =>
-    (await aiRequest('POST', aiPath(strategyId, '/ai-round'), { answer, aiModel, share })).json(),
+  useAiScores: async (strategyId, answer, aiModel, share, prompt) =>
+    (await aiRequest('POST', aiPath(strategyId, '/ai-round'), { answer, aiModel, share, prompt })).json(),
   getAiRounds: (strategyId) => get(aiPath(strategyId, '/ai-rounds')),
   updateAiPrompt: async (strategyId, setup) => void (await aiRequest('PUT', aiPath(strategyId, '/ai-prompt'), setup)),
   setAiSharing: async (enabled) => void (await account('/ai-sharing', { enabled }, { session: true })),

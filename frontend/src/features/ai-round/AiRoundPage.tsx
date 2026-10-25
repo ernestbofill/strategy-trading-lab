@@ -90,7 +90,11 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
     const count = ++readCount.current
     const timer = setTimeout(() => {
       api.readAiAnswer(r.strategyId, answer).then(
-        (result) => count === readCount.current && setReading(result),
+        (result) => {
+          if (count !== readCount.current) return
+          setReading(result)
+          setMessage(null)
+        },
         () => count === readCount.current && setMessage({ tone: 'error', text: t('aiRound.readFailed') }),
       )
     }, 400)
@@ -125,7 +129,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
     setMessage(null)
     setModelError(null)
     try {
-      const result = await api.useAiScores(r.strategyId, answer, modelName, r.sharingAsked ? null : share)
+      const result = await api.useAiScores(r.strategyId, answer, modelName, r.sharingAsked ? null : share, r.prompt)
       for (const key of [dashboardCacheKey, strategyCacheKey(r.strategyId), aiRoundCacheKey(r.strategyId), aiRoundsCacheKey(r.strategyId)])
         invalidate(key)
       const first = result.signalIds[0]
@@ -184,7 +188,8 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
           value={answer}
           onChange={(value) => {
             setAnswer(value)
-            if (!value.trim()) setReading(null)
+            // Until the new answer is read, the scores shown are not its own: "Use these scores" waits.
+            setReading(null)
           }}
           rows={8}
           maxLength={50_000}

@@ -83,6 +83,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     /// <summary>The strategy's round that is due, or the next one. Null for a strategy that isn't a running AI one.</summary>
     public async Task<AiRound?> CurrentAsync(Strategy strategy, DateOnly today, CancellationToken cancellationToken)
     {
+        if (!IsAi(strategy) || strategy.Status != StrategyStatus.Running) return null;
         await SweepAsync([new(strategy, today)], cancellationToken);
         return await db.AiRounds.AsNoTracking().SingleOrDefaultAsync(r => r.StrategyId == strategy.Id && r.Status == AiRoundStatus.Due, cancellationToken);
     }
@@ -196,8 +197,10 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             var on = AiPrompt.On(parameters);
             db.SharedAiRounds.Add(new SharedAiRound
             {
-                // The day only, and nothing about the user, the strategy, its budget or what the user did.
+                // The day only (no exact time to match against the round's), and nothing about the user, the strategy, its budget
+                // or what the user did.
                 RoundOn = UsSession.Today(now),
+                CreatedAt = new DateTimeOffset(UsSession.Today(now).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
                 AiModel = model,
                 PromptVersion = AiPrompt.Version,
                 PromptEdited = parameters.Instructions != null,
@@ -324,15 +327,31 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     }
 
     /// <summary>Each stock's overall score in the strategy's latest done round that scored it.</summary>
-    public async Task<Dictionary<Guid, decimal>> LastScoresAsync(Guid strategyId, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, decimal>> LastScoresAsync(Guid strategyId, CancellationToken cancellationToken) =>
+        LastScores(await db.AiRounds.AsNoTracking().Where(r => r.StrategyId == strategyId && r.Status == AiRoundStatus.Done).ToListAsync(cancellationToken));
+
+    static Dictionary<Guid, decimal> LastScores(IEnumerable<AiRound> rounds)
     {
-        var rounds = await db.AiRounds.AsNoTracking().Where(r => r.StrategyId == strategyId && r.Status == AiRoundStatus.Done)
-            .OrderByDescending(r => r.DoneAt).Select(r => r.Scores).ToListAsync(cancellationToken);
         var last = new Dictionary<Guid, decimal>();
-        foreach (var scores in rounds)
-            foreach (var score in Read(scores))
+        foreach (var round in rounds.Where(r => r.Status == AiRoundStatus.Done).OrderByDescending(r => r.DoneAt))
+            foreach (var score in Read(round.Scores))
                 last.TryAdd(score.AssetId, score.Overall);
         return last;
+    }
+
+    /// <summary>
+    /// Turning sharing off also removes what the user shared. A shared round has no key to its user, so it is found by its text:
+    /// the scrubbed answer of one of the user's own done rounds.
+    /// </summary>
+    public async Task<int> ForgetSharedAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var answers = await (from round in db.AiRounds.AsNoTracking()
+                             join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
+                             where strategy.UserId == userId && round.Status == AiRoundStatus.Done && round.Answer != null
+                             select round.Answer!).ToListAsync(cancellationToken);
+        if (answers.Count == 0) return 0;
+        var shared = answers.Select(AiSharingScrub.Scrub).Distinct().ToList();
+        return await db.SharedAiRounds.Where(s => shared.Contains(s.Answer)).ExecuteDeleteAsync(cancellationToken);
     }
 
     public static IReadOnlyList<AiRoundScore> Read(JsonDocument? scores) =>
@@ -360,14 +379,18 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         return (items, Total(changes.Values));
     }
 
-    /// <summary>The strategy page's line: the next round and the picks against the rest.</summary>
-    public async Task<AiRoundsSummary> SummaryAsync(Strategy strategy, DateOnly today, CancellationToken cancellationToken)
+    /// <summary>The strategy page's line (the next round and the picks against the rest), and each stock's last score.</summary>
+    public async Task<(AiRoundsSummary Summary, Dictionary<Guid, decimal> LastScores)> SummaryAsync(Strategy strategy, DateOnly today,
+        CancellationToken cancellationToken)
     {
-        var current = await CurrentAsync(strategy, today, cancellationToken);
-        var rounds = await db.AiRounds.AsNoTracking().Where(r => r.StrategyId == strategy.Id && r.Status != AiRoundStatus.Due).ToListAsync(cancellationToken);
+        if (strategy.Status == StrategyStatus.Running) await SweepAsync([new(strategy, today)], cancellationToken);
+        var rounds = await db.AiRounds.AsNoTracking().Where(r => r.StrategyId == strategy.Id).ToListAsync(cancellationToken);
+        // A round of an ended strategy is never due.
+        var current = strategy.Status == StrategyStatus.Running ? rounds.FirstOrDefault(r => r.Status == AiRoundStatus.Due) : null;
         var changes = await ChangesAsync(rounds, cancellationToken);
-        return new AiRoundsSummary(current?.DueOn, current is not null && current.DueOn <= today, rounds.Count(r => r.Status == AiRoundStatus.Done),
+        var summary = new AiRoundsSummary(current?.DueOn, current is not null && current.DueOn <= today, rounds.Count(r => r.Status == AiRoundStatus.Done),
             rounds.Count(r => r.Status == AiRoundStatus.Skipped), Total(changes.Values));
+        return (summary, LastScores(rounds));
     }
 
     static PicksVsRest? Total(IEnumerable<(decimal? Picks, decimal? Others)> changes)
@@ -381,18 +404,19 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     {
         var done = rounds.Where(r => r.Status == AiRoundStatus.Done && r.SessionDate is not null).Select(r => (r.Id, Session: r.SessionDate!.Value, Scores: Read(r.Scores))).ToList();
         if (done.Count == 0) return [];
+        // Two closes per stock and round: its last close on or before the round's session, and its latest.
         var ids = done.SelectMany(r => r.Scores.Select(s => s.AssetId)).Distinct().ToList();
-        var from = done.Min(r => r.Session).AddDays(-ExchangeRates.LookBackDays);
-        var closes = (await db.Prices.AsNoTracking().Where(p => ids.Contains(p.AssetId) && p.Date >= from).OrderBy(p => p.Date)
-                .Select(p => new { p.AssetId, p.Date, p.Close }).ToListAsync(cancellationToken))
-            .GroupBy(p => p.AssetId).ToDictionary(g => g.Key, g => g.Select(p => (p.Date, p.Close)).ToList());
+        var latest = await LastClosesAsync(ids, null, cancellationToken);
+        var atSession = new Dictionary<DateOnly, Dictionary<Guid, (DateOnly Date, decimal Close)>>();
+        foreach (var session in done.Select(r => r.Session).Distinct())
+            atSession[session] = await LastClosesAsync([.. done.Where(r => r.Session == session).SelectMany(r => r.Scores.Select(s => s.AssetId)).Distinct()],
+                session, cancellationToken);
 
         decimal? Change(Guid assetId, DateOnly session)
         {
-            if (!closes.TryGetValue(assetId, out var days)) return null;
-            var at = days.FindLastIndex(d => d.Date <= session);
-            if (at < 0 || at == days.Count - 1) return null; // No close since the round: nothing to compare yet.
-            return (days[^1].Close / days[at].Close - 1) * 100;
+            if (!atSession[session].TryGetValue(assetId, out var then) || !latest.TryGetValue(assetId, out var now)) return null;
+            if (now.Date <= then.Date) return null; // No close since the round: nothing to compare yet.
+            return (now.Close / then.Close - 1) * 100;
         }
         decimal? Average(IEnumerable<decimal?> values) => values.Where(v => v is not null).Select(v => v!.Value).ToList() is { Count: > 0 } list
             ? Math.Round(list.Average(), 1) : null;
@@ -400,5 +424,15 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         return done.ToDictionary(r => r.Id, r => (
             Average(r.Scores.Where(s => s.Step is not null).Select(s => Change(s.AssetId, r.Session))),
             Average(r.Scores.Where(s => s.Step is null).Select(s => Change(s.AssetId, r.Session)))));
+    }
+
+    /// <summary>Each asset's last close on or before <paramref name="on"/> (the latest when null), within the look-back.</summary>
+    async Task<Dictionary<Guid, (DateOnly Date, decimal Close)>> LastClosesAsync(List<Guid> ids, DateOnly? on, CancellationToken cancellationToken)
+    {
+        var rows = await db.Prices.AsNoTracking().Where(p => ids.Contains(p.AssetId) && (on == null || p.Date <= on))
+            .GroupBy(p => p.AssetId)
+            .Select(g => g.OrderByDescending(p => p.Date).Select(p => new { p.AssetId, p.Date, p.Close }).First())
+            .ToListAsync(cancellationToken);
+        return rows.Where(r => on is null || r.Date >= on.Value.AddDays(-ExchangeRates.LookBackDays)).ToDictionary(r => r.AssetId, r => (r.Date, r.Close));
     }
 }

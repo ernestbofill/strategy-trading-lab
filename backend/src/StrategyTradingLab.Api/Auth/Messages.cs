@@ -105,5 +105,7 @@ public static class Messages
     public static readonly Message InstructionsLength = new("Keep it under {0} characters.", "Que no passi de {0} caràcters.");
     public static readonly Message InstructionsEmpty = new("Write the instructions, or reset to the suggested ones.",
         "Escriu les instruccions, o torna a les suggerides.");
+    public static readonly Message TooManyStocks = new("Use at most {0} stocks.", "Fes servir com a màxim {0} accions.");
+    public static readonly Message PromptChanged = new("The prompt changed since you copied it. Copy it again and ask your AI again.",
+        "El prompt ha canviat des que l'has copiat. Torna'l a copiar i torna-ho a demanar a la teva IA.");
 }
-

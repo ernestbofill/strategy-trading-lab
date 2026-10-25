@@ -111,7 +111,8 @@ public static partial class AiAnswerReader
                 if (At(stock) is not { } name || Clean(name).Length == 0) continue;
                 rows.Add(new Row(name, At(overall), At(news), At(mood), At(figures), At(reason)));
             }
-            return rows;
+            // A header with no rows under it (the prompt's own, quoted back): the table may come later.
+            if (rows.Count > 0) return rows;
         }
         return null;
     }
@@ -187,7 +188,10 @@ public static partial class AiAnswerReader
 
     static bool IsNews(string key) => key.Contains("news") || key.StartsWith("not", StringComparison.Ordinal);
 
-    /// <summary>A score from 0 to 100 at the start of a cell: "83", "83/100", "**83**", "82.5". Null for anything else.</summary>
+    /// <summary>
+    /// A score from 0 to 100 at the start of a cell: "83", "83/100", "**83**", "82.5". Null for anything else, a score on another
+    /// scale ("8/10") included.
+    /// </summary>
     static decimal? Score(string? cell)
     {
         if (cell is null) return null;
@@ -245,7 +249,7 @@ public static partial class AiAnswerReader
     [GeneratedRegex(@"```(?:json)?\s*([\s\S]*?)```", RegexOptions.IgnoreCase)]
     private static partial Regex JsonFence();
 
-    [GeneratedRegex(@"^\[?\s*(\d{1,3}(?:[.,]\d+)?)\s*\]?\s*(?:/\s*100|%|points?)?\b")]
+    [GeneratedRegex(@"^\[?\s*(\d{1,3}(?:[.,]\d+)?)(?![.,]?\d)\s*\]?\s*(?!\s*/\s*(?!100\b))(?:/\s*100|%|points?)?\b")]
     private static partial Regex ScoreCell();
 
     [GeneratedRegex(@"\(([^()]{1,20})\)")]

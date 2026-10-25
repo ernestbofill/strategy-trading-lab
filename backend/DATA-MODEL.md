@@ -100,7 +100,7 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | created_at, updated_at | timestamptz | |
 
-| ai_sharing | bool, not null, default false | Shares AI rounds anonymously (asked at the first round, changed in the account) |
+| ai_sharing | bool, not null, default false | Shares AI rounds (asked at the first round, changed in the account; off removes what was shared) |
 | ai_sharing_changed_at | timestamptz, null | When the user last answered; null until then (the round screen shows the consent box) |
 
 ### `sessions` and `email_tokens`
@@ -137,7 +137,7 @@ An AI round's signals are ordinary `signals` rows (side `buy`, the next step for
 
 ### `shared_ai_rounds`
 
-What a user who shares AI rounds gives anonymously, apart from account data: no user, strategy or signal id, nothing about budget, steps or trades. It can't be traced back, so turning sharing off stops future rounds only.
+What a user who shares AI rounds gives, apart from account data: no user, strategy or signal id, nothing about budget, steps or trades, and only the day (`created_at` is that day's midnight UTC, not the moment). Its answer is the scrubbed answer of a round the user keeps in `ai_rounds`, which is how it is found again: turning sharing off deletes the shared rows whose answer matches one of the user's done rounds (`AiRounds.ForgetSharedAsync`). Deleting an account must call it before the rounds go.
 
 | Column | Type | Notes |
 | --- | --- | --- |

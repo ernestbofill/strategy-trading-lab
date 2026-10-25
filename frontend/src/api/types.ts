@@ -799,8 +799,11 @@ export interface Api {
   getAiRound(strategyId: string): Promise<AiRoundDetail | undefined>
   /** Reads a pasted answer; saves nothing. */
   readAiAnswer(strategyId: string, answer: string): Promise<AiReading>
-  /** "Use these scores". Rejects with `InvalidFieldsError` (`answer`, `aiModel`) or `InvalidValueError` (not due, or done already). */
-  useAiScores(strategyId: string, answer: string, aiModel: string, share: boolean | null): Promise<AiRoundResult>
+  /**
+   * "Use these scores", with the prompt as the screen showed it. Rejects with `InvalidFieldsError` (`answer`, `aiModel`) or
+   * `InvalidValueError` (not due, done already, or the prompt changed since).
+   */
+  useAiScores(strategyId: string, answer: string, aiModel: string, share: boolean | null, prompt: string): Promise<AiRoundResult>
   getAiRounds(strategyId: string): Promise<AiRoundHistory | undefined>
   /** A running AI strategy's prompt. Rejects with `InvalidFieldsError` (`sources`, `instructions`). */
   updateAiPrompt(strategyId: string, setup: AiSetup): Promise<void>

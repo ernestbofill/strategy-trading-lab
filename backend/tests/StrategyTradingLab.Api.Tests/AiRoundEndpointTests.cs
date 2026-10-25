@@ -164,6 +164,73 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
     }
 
     [NeonFact]
+    public async Task A_prompt_changed_since_it_was_copied_is_refused_and_the_copied_one_is_kept()
+    {
+        var s = await StartAsync("simulation");
+        try
+        {
+            var shown = (await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-round")).GetProperty("prompt").GetString()!;
+            Assert.Equal(HttpStatusCode.Conflict, (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round",
+                new { answer = Answer(s), aiModel = "Claude · Opus", prompt = shown + " (edited elsewhere)" })).StatusCode);
+
+            Assert.Equal(HttpStatusCode.OK, (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round",
+                new { answer = Answer(s), aiModel = "Claude · Opus", prompt = shown })).StatusCode);
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(shown, (await db.AiRounds.AsNoTracking().SingleAsync(r => r.StrategyId == s.StrategyId && r.Status == AiRoundStatus.Done)).PromptText);
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
+    public async Task Turning_sharing_off_removes_the_shared_rounds_which_keep_only_their_day()
+    {
+        var s = await StartAsync("simulation");
+        try
+        {
+            Assert.Equal(HttpStatusCode.OK, (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round",
+                new { answer = Answer(s), aiModel = "Claude · Opus", share = true })).StatusCode);
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var shared = await db.SharedAiRounds.AsNoTracking().SingleAsync(x => x.Answer.Contains($"BE{s.Tag}"));
+            Assert.Equal(TimeSpan.Zero, shared.CreatedAt.TimeOfDay); // No time to match against the user's own round.
+
+            Assert.Equal(HttpStatusCode.NoContent, (await s.Client.PostAsJsonAsync("/account/ai-sharing", new { enabled = false })).StatusCode);
+            Assert.False(await db.SharedAiRounds.AnyAsync(x => x.Answer.Contains($"BE{s.Tag}")));
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
+    public async Task An_ended_strategy_has_no_round_due()
+    {
+        var s = await StartAsync("simulation");
+        try
+        {
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await db.Strategies.Where(x => x.Id == s.StrategyId).ExecuteUpdateAsync(x => x.SetProperty(y => y.Status, StrategyStatus.Ended)
+                    .SetProperty(y => y.EndedAt, DateTimeOffset.UtcNow));
+            }
+
+            var page = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}");
+            Assert.False(page.GetProperty("aiRounds").GetProperty("due").GetBoolean());
+            Assert.Equal(HttpStatusCode.NotFound, (await s.Client.GetAsync($"/strategies/{s.StrategyId}/ai-round")).StatusCode);
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
     public async Task A_live_round_waits_for_the_user_and_is_missed_when_the_next_round_is_due()
     {
         var s = await StartAsync("live");

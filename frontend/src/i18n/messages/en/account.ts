@@ -107,7 +107,7 @@ export const account = {
   'account.page.adminLink': 'Admin settings →',
   'account.page.changePassword': 'Change password',
   'account.page.dataPrivacy': 'Data and privacy',
-  'account.aiSharing': 'Share my AI rounds anonymously, to learn which AIs score stocks best.',
+  'account.aiSharing': 'Share my AI rounds, to learn which AIs score stocks best. Turning it off removes what I shared.',
   'account.page.currentPassword': 'Current password',
   'account.page.passwordChanged': 'Password changed. Your other devices are logged out.',
   'account.page.logOut': 'Log out',

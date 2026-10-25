@@ -15,6 +15,9 @@ namespace StrategyTradingLab.Api.Ai;
 /// </summary>
 public static class AiRoundEndpoints
 {
+    /// <summary>The most stocks a prompt preview lists.</summary>
+    const int MaxPreviewStocks = 100;
+
     public static void MapAiRounds(this IEndpointRouteBuilder app)
     {
         app.MapPost("/templates/ai/prompt", async Task<Results<Ok<AiPromptPreview>, ValidationProblem>> (AiPromptRequest request, AppDbContext db,
@@ -24,9 +27,10 @@ public static class AiRoundEndpoints
             var errors = new Dictionary<string, string[]>();
             var setup = new AiSetup(request.News, request.Mood, request.Figures, request.Instructions);
             var weeks = request.EveryWeeks ?? new AiParams().EveryWeeks;
-            if (weeks is < 1 or > 8) errors["everyWeeks"] = [Messages.SettingRange.In(locale, 1, 8, 1)];
+            var range = TemplateCatalog.Ai.Settings.Single(s => s.Key == "everyWeeks");
+            if (weeks < range.Min || weeks > range.Max) errors["everyWeeks"] = [Messages.SettingRange.In(locale, range.Min, range.Max, range.Step)];
             var ids = request.AssetIds ?? [];
-            if (ids.Count > 100) errors["assetIds"] = ["Too many stocks."];
+            if (ids.Count > MaxPreviewStocks) errors["assetIds"] = [Messages.TooManyStocks.In(locale, MaxPreviewStocks)];
             if (Apply(TemplateCatalog.Ai.ParamsJson(), setup, (field, message) => errors[field] = [message], locale) is not { } json || errors.Count > 0)
                 return TypedResults.ValidationProblem(errors);
 
@@ -91,7 +95,14 @@ public static class AiRoundEndpoints
             if (!plan.Reading.Ok) errors["answer"] = [.. plan.Reading.Problems];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
-            var prompt = AiPrompt.Build(AiRoundRules.Params(strategy), today, plan.Stocks);
+            // The prompt the screen showed: built today or, past midnight, yesterday, with the strategy's prompt as it is now.
+            var parameters = AiRoundRules.Params(strategy);
+            var prompt = AiPrompt.Build(parameters, today, plan.Stocks);
+            if (request.Prompt is { } shown && shown != prompt)
+            {
+                if (shown != AiPrompt.Build(parameters, today.AddDays(-1), plan.Stocks)) return TypedResults.Conflict(Messages.PromptChanged.In(user.Locale));
+                prompt = shown;
+            }
             var result = await rounds.SubmitAsync(strategy, user, round, plan, prompt, model, request.Share, cancellationToken);
             return result is null ? TypedResults.Conflict(Messages.RoundDone.In(user.Locale)) : TypedResults.Ok(result);
         })
@@ -128,7 +139,7 @@ public static class AiRoundEndpoints
         .WithSummary("What a running AI strategy's prompt asks for: the sources on and the user's own instructions.");
 
         app.MapPost("/account/ai-sharing", async Task<Results<NoContent, ValidationProblem>> (AiSharingRequest request, AppDbContext db,
-            Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (request.Enabled is not { } enabled)
@@ -136,12 +147,14 @@ public static class AiRoundEndpoints
             var now = time.GetUtcNow();
             await db.Users.Where(u => u.Id == user.Id)
                 .ExecuteUpdateAsync(u => u.SetProperty(x => x.AiSharing, enabled).SetProperty(x => x.AiSharingChangedAt, now), cancellationToken);
+            // Off removes what was shared too (found by its text: a shared round has no key to its user).
+            if (!enabled) await rounds.ForgetSharedAsync(user.Id, cancellationToken);
             return TypedResults.NoContent();
         })
         .RequireUser()
         .WithTags("Account")
         .WithName("SetAiSharing")
-        .WithSummary("Turns sharing AI rounds anonymously on or off. Off stops future sharing; what was shared can't be traced back to remove.");
+        .WithSummary("Turns sharing AI rounds on or off. Off stops sharing and removes the rounds the user shared.");
     }
 
     /// <summary>One of the user's AI strategies (running unless <paramref name="running"/> is false); null for anything else.</summary>

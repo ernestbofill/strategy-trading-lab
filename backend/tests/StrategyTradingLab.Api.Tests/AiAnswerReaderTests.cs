@@ -185,5 +185,39 @@ public class AiAnswerReaderTests
         Assert.Equal(82m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).News);
         Assert.Equal(["Schneider Electric no té puntuació."], reading.Problems);
     }
+
+    [Fact]
+    public void Finds_the_table_after_the_prompts_own_header_quoted_back()
+    {
+        var answer = """
+            You asked for this format:
+            | Stock | Overall | Reason |
+
+            Stocks:
+            - ZS: Zscaler
+
+            Here are the scores:
+            | Stock | Overall | Reason |
+            |---|---|---|
+            | ZS | 83 | ok |
+            | VRT | 71 | ok |
+            | SU.PA | 62 | ok |
+            """;
+
+        var reading = AiAnswerReader.Read(answer, Stocks);
+
+        Assert.True(reading.Ok, string.Join(" ", reading.Problems));
+        Assert.Equal(83m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).Overall);
+    }
+
+    [Theory]
+    [InlineData("8/10")]
+    [InlineData("4.5 / 5")]
+    public void A_score_on_another_scale_is_refused(string score)
+    {
+        var reading = AiAnswerReader.Read($"| Stock | Overall |\n|---|---|\n| ZS | {score} |\n| VRT | 50 |\n| SU.PA | 50 |", Stocks);
+
+        Assert.Equal(["Zscaler: the overall score isn't a number from 0 to 100."], reading.Problems);
+    }
 }
 

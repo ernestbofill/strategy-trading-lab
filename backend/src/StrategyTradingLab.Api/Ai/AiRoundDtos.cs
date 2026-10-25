@@ -46,8 +46,11 @@ public record AiStockDto(Guid AssetId, string Symbol, string Name);
 /// <summary>The pasted answer, to read or to use.</summary>
 public record AiAnswerRequest(string? Answer);
 
-/// <summary>"Use these scores": the answer, the AI model, and the sharing choice (null keeps the user's current one).</summary>
-public record AiRoundSubmit(string? Answer, string? AiModel, bool? Share);
+/// <summary>
+/// "Use these scores": the answer, the AI model, the sharing choice (null keeps the user's current one), and the prompt as the
+/// screen showed it, so the round keeps the words the AI was given (refused if the prompt changed since).
+/// </summary>
+public record AiRoundSubmit(string? Answer, string? AiModel, bool? Share, string? Prompt = null);
 
 /// <summary>A stock's scores as read, with the step it would get (or got).</summary>
 public record AiScoreDto(Guid AssetId, string Symbol, string Name, decimal Overall, decimal? News, decimal? Mood, decimal? Figures,

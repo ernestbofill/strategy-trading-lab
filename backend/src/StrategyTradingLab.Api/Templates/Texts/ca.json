@@ -1,0 +1,179 @@
+{
+  "dip": {
+    "name": "Retrocés en guanyadores",
+    "tagline": "Troba el pròxim Nvidia",
+    "idea": "Una acció en plena ratxa fa un petit pas enrere. L'estratègia assenyala aquest retrocés.",
+    "rationale": "Tria accions guanyadores: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera un retrocés curt, quan el preu cau uns quants punts percentuals.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "**La tendència llarga és alcista:** l'acció està per sobre de la seva `SMA 200` (preu mitjà dels últims 200 dies)."
+      },
+      {
+        "marker": "02",
+        "text": "**Espera un descompte:** entra a la zona de descompte, entre un `5-15%` per sota del seu màxim recent."
+      },
+      {
+        "marker": "03",
+        "text": "**El retrocés no és un col·lapse:** continua per sobre de la seva `SMA 50` (preu mitjà dels últims 50 dies)."
+      }
+    ],
+    "backtest": {
+      "scope": "9 accions, 2010-2024.",
+      "years": "2010-2024",
+      "universe": "9, la llista inicial",
+      "testedDefaults": "Els valors provats: pressupost de €3,000, passos de €100, fins a 5 per acció."
+    },
+    "stockStatus": {
+      "zone": "la zona de descompte",
+      "notCandidate": "Per sota de la seva tendència llarga"
+    },
+    "settings": {
+      "zoneStartPct": {
+        "sentence": "La zona de descompte comença {value} per sota del màxim recent.",
+        "value": "{n}%"
+      },
+      "zoneEndPct": {
+        "sentence": "Acaba {value} per sota del màxim recent.",
+        "value": "{n}%"
+      },
+      "peakDays": {
+        "sentence": "El màxim recent és el preu més alt dels últims {value}.",
+        "value": "{n} dies"
+      },
+      "trendDays": {
+        "sentence": "La tendència llarga és el preu mitjà durant {value}.",
+        "value": "{n} dies"
+      },
+      "floorDays": {
+        "sentence": "El retrocés s'ha de mantenir per sobre de la mitjana de {value}.",
+        "value": "{n} dies"
+      }
+    }
+  },
+  "comeback": {
+    "name": "La remuntada",
+    "tagline": "Accions en alça",
+    "idea": "Una acció que ha caigut molt comença a recuperar-se. L'estratègia busca un canvi de tendència confirmat.",
+    "rationale": "Una acció que ha caigut molt torna a pujar. En lloc d'endevinar el fons, l'estratègia espera que el canvi de tendència sembli confirmat i llavors assenyala compres per passos.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "**Havia caigut molt:** l'acció va baixar almenys un `30%` des del seu màxim de l'últim any."
+      },
+      {
+        "marker": "02",
+        "text": "**Ha girat:** puja un `15%` per sobre de la seva `SMA 50` (preu mitjà dels últims 50 dies)."
+      },
+      {
+        "marker": "03",
+        "text": "**Hi opera més gent:** el seu volum (accions negociades per dia) va a l'alça."
+      }
+    ],
+    "backtest": {
+      "scope": "16 accions, 2010-2024.",
+      "years": "2010-2024",
+      "universe": "16, la llista inicial",
+      "testedDefaults": "Els valors provats: pressupost de €3,000, passos de €100, fins a 5 per acció."
+    },
+    "stockStatus": {
+      "zone": "la línia de compra",
+      "notCandidate": "No ha caigut prou"
+    }
+  },
+  "bear": {
+    "name": "La gran caiguda del mercat",
+    "tagline": "Quan el mercat està de rebaixes",
+    "idea": "Quan tot el mercat cau un 20%, l'estratègia assenyala compres d'un fons ampli de l'S&P 500 en petits passos mentre es recupera.",
+    "rationale": "Les grans caigudes del mercat són rares i fan por, i la majoria de gent ven. En lloc d'endevinar el fons, l'estratègia espera el primer rebot i llavors assenyala compres en petits passos mentre els preus encara són baixos.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "**El mercat ha caigut molt:** l'S&P 500 està un `20%` o més per sota del seu màxim."
+      },
+      {
+        "marker": "02",
+        "text": "**El primer rebot:** puja un `5%` des del seu mínim. Aquest és el primer pas."
+      },
+      {
+        "marker": "03",
+        "text": "**Després, per passos:** un pas més cada `2 setmanes`, fins que s'acabi el pressupost."
+      }
+    ],
+    "backtest": {
+      "scope": "3 grans caigudes, 2000-2024. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
+      "years": "2000-2024",
+      "universe": "El fons de l'S&P 500",
+      "testedDefaults": "Els valors provats: pressupost de €3,000, 5 passos de €600."
+    },
+    "stockStatus": {
+      "zone": "la línia de rebot",
+      "notCandidate": "{n}% per sota del seu màxim de 6 mesos",
+      "watching": "En una caiguda: {n}% per sobre del seu mínim",
+      "holding": "Els passos d'aquesta caiguda ja estan comprats"
+    }
+  },
+  "trend": {
+    "name": "Segueix la tendència llarga",
+    "tagline": "Queda't amb els guanys, esquiva les pèrdues",
+    "idea": "L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa.",
+    "rationale": "Els mercats es mouen en ones llargues. L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa, per esquivar la caiguda. Després de la caiguda busca un nou senyal de compra.",
+    "settings": {
+      "smaDays": {
+        "sentence": "La línia de tendència és el preu mitjà dels últims {value}.",
+        "value": "{n} dies"
+      },
+      "bandPct": {
+        "sentence": "Les línies de compra i de venda són un {value} per sobre i per sota de la línia de tendència.",
+        "value": "{n}%"
+      }
+    },
+    "rules": [
+      {
+        "marker": "COMPRA",
+        "tone": "buy",
+        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies)."
+      },
+      {
+        "marker": "VENDA",
+        "tone": "sell",
+        "text": "El mercat tanca més d'un `{bandPct}%` per sota de la seva `SMA {smaDays}`."
+      },
+      {
+        "marker": "TOT",
+        "text": "Tot dins, tot fora: cada senyal cobreix tot el pressupost d'un sol cop."
+      }
+    ],
+    "backtest": {
+      "scope": "2000-2024, 23 compres i vendes.",
+      "years": "2000-2024",
+      "universe": "El fons indexat",
+      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora."
+    },
+    "stockStatus": {
+      "zone": "la línia de compra",
+      "notCandidate": "Per sota de la seva mitjana de 200 dies"
+    }
+  },
+  "ai": {
+    "name": "Les millors tries de la teva IA",
+    "tagline": "Deixa que la teva IA faci la lectura",
+    "idea": "Cada 2 setmanes la IA puntua cada acció de 0 a 100, i la puntuació més alta hauria de rebre una posició. Fes servir la teva pròpia IA.",
+    "rationale": "Ningú no pot llegir totes les notícies i tots els informes financers de totes les empreses, però una IA sí. Executes el nostre prompt a la IA que ja fas servir; ella puntua cada acció, i l'estratègia assenyala la primera. Veuràs si tanta lectura es converteix en millors tries.",
+    "rules": [
+      {
+        "marker": "01",
+        "text": "Cada `2 setmanes` fas la ronda d'IA: copia el prompt, enganxa'l a la teva IA i enganxa-hi la resposta."
+      },
+      {
+        "marker": "02",
+        "text": "L'acció amb la puntuació més alta rep un senyal per a un pas, fins que s'acabi el pressupost."
+      },
+      {
+        "marker": "03",
+        "text": "Si ometes una ronda, aquella ronda no hi ha senyal."
+      }
+    ],
+    "backtest": null
+  }
+}

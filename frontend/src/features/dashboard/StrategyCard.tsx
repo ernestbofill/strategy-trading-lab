@@ -2,17 +2,20 @@ import { Link } from 'react-router-dom'
 import type { StrategySummary, WaitingItem } from '../../api'
 import { Sparkline } from '../../components/Sparkline'
 import { Tag } from '../../components/Tag'
+import { useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { strategyPath } from './paths'
 import styles from './StrategyCard.module.css'
 
 /** The dot before the mode tag that points at a card with something waiting. */
 function WaitingDot({ item }: { item: WaitingItem }) {
-  const label = item.kind === 'aiRound' ? 'AI round due' : 'Signal waiting'
+  const t = useT()
+  const label = item.kind === 'aiRound' ? t('dashboard.dot.aiRound') : t('dashboard.dot.signal')
   return <span role="img" aria-label={label} title={label} className={styles.dot} data-kind={item.kind} />
 }
 
 function Body({ s }: { s: StrategySummary }) {
+  const t = useT()
   const { results, pastResult } = s
   if (results) {
     return (
@@ -21,9 +24,9 @@ function Body({ s }: { s: StrategySummary }) {
           <div className={styles.big} data-tone={pctTone(results.strategy)}>
             {signedPct(results.strategy, 1)}
           </div>
-          <div className={styles.index}>Index fund: {signedPctOrDash(results.index, 1)}</div>
+          <div className={styles.index}>{t('dashboard.card.index', { pct: signedPctOrDash(results.index, 1) })}</div>
           {pastResult && (
-            <div className={styles.index}>Template's worst year: {signedPct(pastResult.worstYear)}</div>
+            <div className={styles.index}>{t('dashboard.card.worstYear', { pct: signedPct(pastResult.worstYear) })}</div>
           )}
         </div>
         <span className={styles.chart} data-tone={pctTone(results.strategy)}>
@@ -32,29 +35,32 @@ function Body({ s }: { s: StrategySummary }) {
       </div>
     )
   }
-  if (s.used > 0) return <p className={styles.text}>Results show once the prices of your trades are in.</p>
+  if (s.used > 0) return <p className={styles.text}>{t('dashboard.card.noResultsBudget')}</p>
   if (pastResult) {
+    const noTrades = s.mode === 'live' ? t('dashboard.card.noTradesLive') : t('dashboard.card.noTradesSim')
     return (
       <p className={styles.text}>
-        {s.mode === 'live' ? 'No trades yet.' : 'No paper trades yet.'} In the past, {pastResult.years}, the template did{' '}
+        {noTrades} {t('dashboard.card.pastBefore', { years: pastResult.years })}{' '}
         <span className={styles.figure} data-tone={pctTone(pastResult.template)}>
           {signedPct(pastResult.template)}
         </span>{' '}
-        vs <span className={styles.figure}>{signedPct(pastResult.index)}</span> for an index fund. Its worst year was{' '}
+        {t('dashboard.card.pastVs')} <span className={styles.figure}>{signedPct(pastResult.index)}</span>{' '}
+        {t('dashboard.card.pastAfter')}{' '}
         <span className={styles.figure} data-tone={pctTone(pastResult.worstYear)}>
           {signedPct(pastResult.worstYear)}
         </span>
-        .{s.templateKey === 'bear' && ' Big drops are rare: it may not signal for years.'}
+        .{s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
       </p>
     )
   }
-  return <p className={styles.text}>No results yet. They start after your first AI round.</p>
+  return <p className={styles.text}>{t('dashboard.card.noResultsAi')}</p>
 }
 
 /** One strategy on the dashboard. The whole card links to the strategy page. */
 export function StrategyCard({ strategy: s, today, waiting }: { strategy: StrategySummary; today: string; waiting?: WaitingItem }) {
+  const t = useT()
   const live = s.mode === 'live'
-  const since = s.startedOn === today ? 'started today' : `since ${shortDate(s.startedOn)}`
+  const since = s.startedOn === today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
   return (
     <Link to={strategyPath(s.id)} className={styles.card}>
       <div className={styles.head}>
@@ -75,7 +81,7 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
           <div className={styles.fill} style={{ width: `${Math.min(100, (s.used / s.budget) * 100)}%` }} />
         </div>
         <div className={styles.used}>
-          {money(s.used, s.currency)} of {money(s.budget, s.currency)} used
+          {t('dashboard.card.budgetUsed', { used: money(s.used, s.currency), budget: money(s.budget, s.currency) })}
         </div>
       </div>
     </Link>

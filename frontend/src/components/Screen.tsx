@@ -2,6 +2,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useIsOwner } from '../features/account/AccountContext'
 import { useBackendVersion } from '../lib/backendVersion'
+import { useT } from '../i18n/I18n'
 import styles from './Screen.module.css'
 import { Tag } from './Tag'
 
@@ -20,6 +21,7 @@ interface TopBarProps {
 }
 
 export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside }: TopBarProps) {
+  const t = useT()
   const navigate = useNavigate()
   // The first entry of the history has the key 'default': there is nothing to go back to.
   const hasHistory = useLocation().key !== 'default'
@@ -37,7 +39,7 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
     <header className={styles.topBar}>
       {back ? (
         <Link to={back} onClick={goBack} className={styles.back}>
-          ← BACK
+          {t('common.back')}
         </Link>
       ) : titleLink ? (
         <Link
@@ -55,7 +57,7 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
           <>
             v{__APP_VERSION__}
             {onDevDatabase && (
-              <Tag tone="dev" title="The API uses the dev database">
+              <Tag tone="dev" title={t('common.devDatabase')}>
                 DEV
               </Tag>
             )}

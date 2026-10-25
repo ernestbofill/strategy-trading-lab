@@ -88,6 +88,25 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
+    public async Task The_locale_is_english_unless_picked_at_sign_up_and_can_be_changed_in_the_account()
+    {
+        var (client, _) = await api.SignedUpAsync();
+        Assert.Equal("en", (await Me(client)).GetProperty("locale").GetString());
+
+        using var catalan = api.CreateApiClient();
+        var email = api.NewEmail();
+        var body = new { email, password = "a long password", locale = "ca", timeZone = "Europe/Madrid", overviewEmail = true, disclaimerAccepted = true, currency = "EUR" };
+        Assert.Equal(HttpStatusCode.Accepted, (await catalan.PostAsJsonAsync("/account/sign-up", body)).StatusCode);
+        Assert.Equal("ca", (await Me(catalan)).GetProperty("locale").GetString());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/locale", new { locale = "ca" })).StatusCode);
+        Assert.Equal("ca", (await Me(client)).GetProperty("locale").GetString());
+        var refused = await client.PostAsJsonAsync("/account/locale", new { locale = "fr" });
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Equal("ca", (await Me(client)).GetProperty("locale").GetString());
+    }
+
+    [NeonFact]
     public async Task The_daily_overview_can_be_switched_off_and_on_in_the_account()
     {
         var (client, _) = await api.SignedUpAsync();
@@ -238,6 +257,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsync("/account/resend-verification", null)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/change-password", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/currency", new { currency = "USD" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/locale", new { locale = "ca" })).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await visitor.GetAsync("/templates")).StatusCode);
     }
 

@@ -7,8 +7,8 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { TextAction } from '../../components/TextAction'
+import { useT } from '../../i18n/I18n'
 import { resolveBudget } from '../../lib/budget'
-import { DISCLAIMER_FULL } from '../../lib/copy'
 import { money } from '../../lib/format'
 import { useCurrentAccount } from '../account/AccountContext'
 import { invalidate } from '../../lib/useLoadable'
@@ -31,18 +31,20 @@ interface SummaryRow {
 
 /** 5 · Name, preview and confirm (wireframe `Confirm`). */
 export function Confirm() {
+  const t = useT()
   const { templateKey } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const top = <TopBar back={budgetPath} step="5 / 5" />
 
   return (
-    <LoadableScreen state={template} top={top} what="the template">
-      {(t) => <ConfirmForm template={t} top={top} />}
+    <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>
+      {(tDetail) => <ConfirmForm template={tDetail} top={top} />}
     </LoadableScreen>
   )
 }
 
 function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
+  const t = useT()
   const draft = useNewStrategyDraft()
   const { mode, unticked, update, reset } = draft
   const { currency } = useCurrentAccount()
@@ -52,7 +54,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   // Branch on what the template does, as the budget screen does.
   const allIn = template.signals === 'buysAndSells'
   const isFund = template.watches.kind === 'fund'
-  const modeName = isLive ? 'Live' : 'Simulation'
+  const modeName = isLive ? t('newStrategy.mode.live.name') : t('newStrategy.mode.sim.name')
   const inputId = useId()
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
@@ -65,7 +67,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const name = draft.name ?? fallback
   // Don't repeat the template's name when the strategy still carries it.
   const shownName = name.trim() || fallback
-  const preview = [shownName === template.name ? null : shownName, `Template ${template.name}`, modeName]
+  const preview = [shownName === template.name ? null : shownName, t('newStrategy.confirm.preview', { name: template.name }), modeName]
     .filter(Boolean)
     .join(' · ')
 
@@ -77,8 +79,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     } catch (e) {
       setError(
         e instanceof NameTakenError
-          ? 'You already run a strategy with this name. Pick another.'
-          : "We couldn't start it. Try again.",
+          ? t('newStrategy.confirm.nameTaken')
+          : t('newStrategy.confirm.startFailed'),
       )
       setStarting(false)
       return
@@ -94,47 +96,53 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     if (watches.kind === 'fund') return watches.fund.name
     const ticked = watches.starterList.filter((s) => !unticked.includes(s.symbol))
     const more = ticked.length - 1
-    return more > 0 ? `${ticked[0].name} and ${more} more` : (ticked[0]?.name ?? '')
+    return more > 0
+      ? t('newStrategy.confirm.stocksMore', { first: ticked[0].name, n: more })
+      : (ticked[0]?.name ?? '')
   })()
 
   const rows: SummaryRow[] = [
-    { label: 'Template', value: template.name, to: pickPath },
+    { label: t('newStrategy.confirm.row.template'), value: template.name, to: pickPath },
     {
-      label: 'Mode',
+      label: t('newStrategy.confirm.row.mode'),
       value: isLive
-        ? `Live: you trade at your broker and confirm each ${template.aiRound ? 'trade' : 'signal'}`
-        : 'Simulation: the app trades on paper',
+        ? template.aiRound
+          ? t('newStrategy.confirm.modeLiveTrade')
+          : t('newStrategy.confirm.modeLiveSignal')
+        : t('newStrategy.confirm.modeSim'),
       to: modePath,
     },
-    { label: 'Stocks', value: stocksValue, to: reviewPath(template.key) },
+    { label: t('newStrategy.confirm.row.stocks'), value: stocksValue, to: reviewPath(template.key) },
     // Only templates with settings to tune list them.
     ...(template.settings.length > 0
-      ? [{ label: 'Settings', value: settingsSummary(draft.settings), to: advancedPath(template.key) }]
+      ? [{ label: t('newStrategy.confirm.row.settings'), value: settingsSummary(draft.settings), to: advancedPath(template.key) }]
       : []),
     {
-      label: 'Budget',
+      label: t('newStrategy.confirm.row.budget'),
       value: allIn
         ? amount(budget)
-        : `${amount(budget)} · steps of ${amount(step)} · up to ${maxSteps} ${isFund ? 'for the fund' : 'per stock'}`,
+        : isFund
+          ? t('newStrategy.confirm.budgetStepsFund', { budget: amount(budget), step: amount(step), max: maxSteps })
+          : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
       to: budgetPath,
     },
-    { label: 'Daily overview', value: 'By email, after the US market close' },
-    ...(isLive ? [{ label: 'Alerts', value: 'App and email' }] : []),
-    ...(template.aiRound ? [{ label: 'Prompt', value: 'Suggested', to: reviewPath(template.key) }] : []),
+    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview') },
+    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts') }] : []),
+    ...(template.aiRound ? [{ label: t('newStrategy.confirm.row.prompt'), value: t('newStrategy.confirm.prompt'), to: reviewPath(template.key) }] : []),
   ]
 
   const next = [
     ...(template.aiRound
-      ? ['There are no past results for this template.', 'Your first AI round is due now.']
-      : ['You see right away how the template did in the past.']),
+      ? [t('newStrategy.confirm.next.noPast'), t('newStrategy.confirm.next.firstAi')]
+      : [t('newStrategy.confirm.next.seePast')]),
     ...(isLive
       ? [
-          'From today the app watches your stocks and alerts you as soon as your rules are met.',
-          'You confirm each signal, and the app tracks the results of what you did.',
+          t('newStrategy.confirm.next.liveWatch'),
+          t('newStrategy.confirm.next.liveConfirm'),
         ]
       : [
-          'From today it runs on real prices and records its own paper trades.',
-          'Your first daily overview arrives tomorrow.',
+          t('newStrategy.confirm.next.simRuns'),
+          t('newStrategy.confirm.next.simFirst'),
         ]),
   ]
 
@@ -143,17 +151,17 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       top={top}
       action={
         <PrimaryAction onClick={start} disabled={starting}>
-          {starting ? 'Starting…' : isLive ? 'Start following it live' : 'Start the simulation'}
+          {starting ? t('newStrategy.confirm.starting') : isLive ? t('newStrategy.confirm.startLive') : t('newStrategy.confirm.startSim')}
         </PrimaryAction>
       }
-      note={DISCLAIMER_FULL}
+      note={t('common.disclaimerFull')}
       noteAbove
     >
-      <PageHeader title="Ready to start" />
+      <PageHeader title={t('newStrategy.confirm.title')} />
 
       <div className={styles.name}>
         <label htmlFor={inputId} className={`ui-strong ${styles.label}`}>
-          Name your strategy
+          {t('newStrategy.confirm.nameLabel')}
         </label>
         <input
           id={inputId}
@@ -181,13 +189,13 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
               <p className={styles.value}>{r.value}</p>
             </div>
             <TextAction to={r.to}>
-              Edit<span className="visually-hidden"> {r.label.toLowerCase()}</span>
+              {t('newStrategy.confirm.edit')}<span className="visually-hidden"> {r.label.toLowerCase()}</span>
             </TextAction>
           </li>
         ))}
       </ul>
 
-      <Section title="What happens next">
+      <Section title={t('newStrategy.confirm.next')}>
         <BulletList items={next} />
       </Section>
     </Screen>

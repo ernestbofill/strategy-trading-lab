@@ -46,6 +46,15 @@ public class NewStrategyValidationTests
         Assert.Contains("mode", NewStrategyValidation.Validate(request, TemplateCatalog.Dip, []).Keys);
     }
 
+    [Fact]
+    public void Errors_can_be_returned_in_catalan()
+    {
+        var request = new NewStrategy("dip", "", StrategyMode.Simulation, TemplateCatalog.Dip.Budget, []);
+        var errors = NewStrategyValidation.Validate(request, TemplateCatalog.Dip, [], locale: "ca");
+        Assert.Equal(["Fes servir d'1 a 60 caràcters."], errors["name"]);
+        Assert.Equal(["Tria almenys una acció."], errors["assetIds"]);
+    }
+
     [Theory]
     [InlineData("USD", false)]
     [InlineData(null, false)]

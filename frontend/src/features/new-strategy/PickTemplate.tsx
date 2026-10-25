@@ -3,6 +3,7 @@ import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tagline } from '../../components/Tagline'
+import { useT } from '../../i18n/I18n'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { homePath, reviewPath } from './paths'
@@ -11,6 +12,7 @@ import { useTemplates } from './useTemplate'
 
 /** 1 · Pick a strategy template (wireframe `Main`). */
 export function PickTemplate() {
+  const t = useT()
   const { templateKey, switchTemplate } = useNewStrategyDraft()
   const templates = useTemplates()
   // Back only when there is somewhere to go back to (the confirm screen's Edit template), not on a fresh start.
@@ -18,45 +20,45 @@ export function PickTemplate() {
 
   return (
     <Screen
-      top={<TopBar title="STL // NEW STRATEGY" back={hasHistory ? homePath : undefined} step="1 / 5" />}
-      action={<PrimaryAction to={reviewPath(templateKey)}>Continue</PrimaryAction>}
-      note="Pick one to start. You can add more strategies later, from any template."
+      top={<TopBar title={t('newStrategy.pick.topBar')} back={hasHistory ? homePath : undefined} step="1 / 5" />}
+      action={<PrimaryAction to={reviewPath(templateKey)}>{t('newStrategy.pick.continue')}</PrimaryAction>}
+      note={t('newStrategy.pick.note')}
     >
       <VerifyNotice />
       <PageHeader
-        eyebrow="Welcome to Strategy Trading Lab"
-        title="Pick a strategy template"
-        lead="Each template is a few simple rules with tested defaults. See how it did in the past, tune it, then run it as a simulation or live."
+        eyebrow={t('newStrategy.pick.eyebrow')}
+        title={t('newStrategy.pick.title')}
+        lead={t('newStrategy.pick.lead')}
       />
 
-      {templates.status === 'loading' && <ScreenMessage>Loading templates…</ScreenMessage>}
+      {templates.status === 'loading' && <ScreenMessage>{t('newStrategy.pick.loading')}</ScreenMessage>}
       {(templates.status === 'error' || templates.status === 'missing') && (
-        <ScreenMessage>Could not load the templates. Try again later.</ScreenMessage>
+        <ScreenMessage>{t('newStrategy.pick.loadError')}</ScreenMessage>
       )}
 
       {templates.status === 'ready' && (
-        <ChoiceList label="Strategy templates">
-          {templates.data.map((t) => (
+        <ChoiceList label={t('newStrategy.pick.listLabel')}>
+          {templates.data.map((item) => (
             <ChoiceCard
-              key={t.key}
+              key={item.key}
               name="template"
-              value={t.key}
-              checked={t.key === templateKey}
-              onSelect={() => switchTemplate(t.key)}
-              title={t.name}
-              subtitle={<Tagline text={t.tagline} />}
+              value={item.key}
+              checked={item.key === templateKey}
+              onSelect={() => switchTemplate(item.key)}
+              title={item.name}
+              subtitle={<Tagline text={item.tagline} />}
               footer={
                 <Link
-                  to={reviewPath(t.key)}
-                  onClick={() => switchTemplate(t.key)}
+                  to={reviewPath(item.key)}
+                  onClick={() => switchTemplate(item.key)}
                   className={styles.learnMore}
-                  aria-label={`Learn more about ${t.name}`}
+                  aria-label={t('newStrategy.pick.learnMoreAria', { name: item.name })}
                 >
-                  Learn more
+                  {t('newStrategy.pick.learnMore')}
                 </Link>
               }
             >
-              {t.idea}
+              {item.idea}
             </ChoiceCard>
           ))}
         </ChoiceList>

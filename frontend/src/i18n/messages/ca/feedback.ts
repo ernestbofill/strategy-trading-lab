@@ -1,0 +1,23 @@
+import type { feedback as en } from '../en/feedback'
+
+export const feedback: Record<keyof typeof en, string> = {
+  'feedback.addComment': 'Afegeix un comentari',
+  'feedback.selectionActions': 'Accions de la selecció',
+  'feedback.copy': 'Copia',
+  'feedback.dialogTitle': 'Afegeix un comentari',
+  'feedback.page': 'Pàgina:',
+  'feedback.yourComment': 'El teu comentari',
+  'feedback.placeholder': 'Què sembla incorrecte, poc clar o val la pena canviar aquí?',
+  'feedback.cancel': 'Cancel·la',
+  'feedback.saving': 'Desant…',
+  'feedback.save': 'Desa',
+  'feedback.saved': 'Comentari desat ✓',
+  'feedback.errorForbidden': 'Confirma primer la teva adreça de correu per enviar comentaris.',
+  'feedback.errorTooMany': 'Has enviat massa comentaris fa poc. Torna-ho a provar més tard.',
+  'feedback.errorSave': 'No s’ha pogut desar el comentari. Torna-ho a provar.',
+  'feedback.kind.type': 'Tipus',
+  'feedback.kind.bug': 'Error',
+  'feedback.kind.idea': 'Idea',
+  'feedback.kind.note': 'Nota',
+  'feedback.kind.feature': 'Funcionalitat',
+}

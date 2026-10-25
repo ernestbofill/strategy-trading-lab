@@ -48,4 +48,25 @@ public class AssetCatalogTests
         Assert.False(again.Created);
         Assert.Equal(created.Id, again.Id);
     }
+
+    [NeonFact]
+    public async Task Ensuring_a_symbol_on_a_different_exchange_prefers_the_matching_exchange()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var source = new FakeSource();
+        var catalog = new AssetCatalog(db, source, new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance));
+
+        var symbol = $"MSFT{Guid.NewGuid():N}"[..10];
+        var primary = new Asset { Symbol = symbol, Exchange = "XNYS", Name = "Microsoft", Kind = AssetKind.Stock, Currency = "USD", Active = true, CreatedAt = DateTimeOffset.UtcNow };
+        var secondary = new Asset { Symbol = symbol, Exchange = "XNAS", Name = "Microsoft", Kind = AssetKind.Stock, Currency = "USD", Active = true, CreatedAt = DateTimeOffset.UtcNow };
+        db.Assets.AddRange(primary, secondary);
+        await db.SaveChangesAsync();
+
+        var resolved = await catalog.EnsureAsync(symbol);
+
+        Assert.Equal(secondary.Id, resolved.Id);
+        Assert.Equal("XNAS", resolved.Exchange);
+    }
 }

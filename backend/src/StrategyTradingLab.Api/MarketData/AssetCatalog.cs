@@ -25,21 +25,55 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
         if (requested.Length == 0) throw new ValidationException("Type a symbol or company name.");
 
         var lookup = requested.ToUpperInvariant();
-        var existing = await db.Assets.FirstOrDefaultAsync(asset => asset.Symbol.ToUpper() == lookup, cancellationToken);
-        if (existing is not null)
-        {
-            await EnsureHistoryAsync(existing, cancellationToken);
-            var latestPriceDate = await db.Prices.Where(price => price.AssetId == existing.Id).MaxAsync(price => (DateOnly?)price.Date, cancellationToken);
-            var existingWhat = await db.AssetTexts.Where(text => text.AssetId == existing.Id && text.Locale == TemplateTexts.DefaultLocale)
-                .Select(text => text.What)
-                .FirstOrDefaultAsync(cancellationToken) ?? BuildWhat(existing.Kind, existing.Name, null);
-            return new AssetLookupResult(existing.Id, existing.Symbol, existing.Exchange, existing.Name, existing.Kind, existing.Currency,
-                existingWhat, false, latestPriceDate);
-        }
-
         var matches = await source.SearchAsync(requested, cancellationToken);
         var match = matches.FirstOrDefault(item => string.Equals(item.Symbol, requested, StringComparison.OrdinalIgnoreCase))
             ?? matches.FirstOrDefault();
+        if (match is not null)
+        {
+            var exchange = match.Exchange.Trim();
+            var existing = await db.Assets.FirstOrDefaultAsync(asset => asset.Symbol.ToUpper() == lookup && asset.Exchange == exchange, cancellationToken);
+            if (existing is not null)
+            {
+                await EnsureHistoryAsync(existing, cancellationToken);
+                var latestPriceDate = await db.Prices.Where(price => price.AssetId == existing.Id).MaxAsync(price => (DateOnly?)price.Date, cancellationToken);
+                var existingWhat = await db.AssetTexts.Where(text => text.AssetId == existing.Id && text.Locale == TemplateTexts.DefaultLocale)
+                    .Select(text => text.What)
+                    .FirstOrDefaultAsync(cancellationToken) ?? BuildWhat(existing.Kind, existing.Name, null);
+                return new AssetLookupResult(existing.Id, existing.Symbol, existing.Exchange, existing.Name, existing.Kind, existing.Currency,
+                    existingWhat, false, latestPriceDate);
+            }
+
+            var sameSymbol = await db.Assets.Where(asset => asset.Symbol.ToUpper() == lookup).ToListAsync(cancellationToken);
+            if (sameSymbol.Count > 0)
+            {
+                var existingBySymbol = sameSymbol.FirstOrDefault(asset => string.Equals(asset.Exchange, exchange, StringComparison.OrdinalIgnoreCase));
+                if (existingBySymbol is not null)
+                {
+                    await EnsureHistoryAsync(existingBySymbol, cancellationToken);
+                    var latestPriceDate = await db.Prices.Where(price => price.AssetId == existingBySymbol.Id).MaxAsync(price => (DateOnly?)price.Date, cancellationToken);
+                    var existingWhat = await db.AssetTexts.Where(text => text.AssetId == existingBySymbol.Id && text.Locale == TemplateTexts.DefaultLocale)
+                        .Select(text => text.What)
+                        .FirstOrDefaultAsync(cancellationToken) ?? BuildWhat(existingBySymbol.Kind, existingBySymbol.Name, null);
+                    return new AssetLookupResult(existingBySymbol.Id, existingBySymbol.Symbol, existingBySymbol.Exchange, existingBySymbol.Name, existingBySymbol.Kind, existingBySymbol.Currency,
+                        existingWhat, false, latestPriceDate);
+                }
+
+                throw new MarketDataException($"Multiple assets use {requested} on different exchanges; choose the exact exchange or symbol.");
+            }
+        }
+
+        var existingSymbolOnly = await db.Assets.FirstOrDefaultAsync(asset => asset.Symbol.ToUpper() == lookup, cancellationToken);
+        if (existingSymbolOnly is not null)
+        {
+            await EnsureHistoryAsync(existingSymbolOnly, cancellationToken);
+            var latestPriceDate = await db.Prices.Where(price => price.AssetId == existingSymbolOnly.Id).MaxAsync(price => (DateOnly?)price.Date, cancellationToken);
+            var existingWhat = await db.AssetTexts.Where(text => text.AssetId == existingSymbolOnly.Id && text.Locale == TemplateTexts.DefaultLocale)
+                .Select(text => text.What)
+                .FirstOrDefaultAsync(cancellationToken) ?? BuildWhat(existingSymbolOnly.Kind, existingSymbolOnly.Name, null);
+            return new AssetLookupResult(existingSymbolOnly.Id, existingSymbolOnly.Symbol, existingSymbolOnly.Exchange, existingSymbolOnly.Name, existingSymbolOnly.Kind, existingSymbolOnly.Currency,
+                existingWhat, false, latestPriceDate);
+        }
+
         if (match is null) throw new MarketDataException($"Yahoo found no asset for {requested}.");
 
         var resolvedKind = ResolveKind(kind, match.QuoteType);

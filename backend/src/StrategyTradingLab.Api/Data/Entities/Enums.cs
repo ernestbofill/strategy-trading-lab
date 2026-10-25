@@ -32,3 +32,7 @@ public enum EmailTokenPurpose { VerifyEmail, ResetPassword }
 
 /// <summary>What an account may do: Owner is the app's owner (the admin page), Vip is an invited user with extra privileges, User everyone else.</summary>
 public enum UserRole { User, Vip, Owner }
+
+public enum FeedbackKind { Bug, Idea, Note, Feature }
+
+public enum FeedbackStatus { Open, Closed }

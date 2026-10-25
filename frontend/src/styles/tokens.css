@@ -58,6 +58,7 @@
 
   --shadow-widget: 0 0 8px 2px #0000006b;
   --glow-primary: 0 0 12px #00ff9c66;
+  --surface-overlay: #00000099;
 }
 
 :root[data-theme="umbra"] {

@@ -192,23 +192,29 @@ export function DataTable<T extends RowData>({
               const col = table.getColumn(f.columnId)
               const current = (col?.getFilterValue() as string | undefined) ?? ''
               return (
-                <select
-                  key={f.columnId}
-                  aria-label={f.label}
-                  className={styles.filterSelect}
-                  value={current}
-                  onChange={(e) => {
-                    col?.setFilterValue(e.target.value || undefined)
-                    setPagination((p) => (p.pageIndex === 0 ? p : { ...p, pageIndex: 0 }))
-                  }}
-                >
-                  <option value="">{f.allLabel}</option>
-                  {f.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                <div key={f.columnId} className={styles.filterSelectWrap}>
+                  <select
+                    aria-label={f.label}
+                    className={styles.filterSelect}
+                    value={current}
+                    onChange={(e) => {
+                      col?.setFilterValue(e.target.value || undefined)
+                      setPagination((p) => (p.pageIndex === 0 ? p : { ...p, pageIndex: 0 }))
+                    }}
+                  >
+                    <option value="">{f.allLabel}</option>
+                    {f.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className={styles.filterSelectArrow} aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 4.5l4 4 4-4" />
+                    </svg>
+                  </span>
+                </div>
               )
             })}
           </div>

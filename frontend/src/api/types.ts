@@ -272,6 +272,7 @@ export interface StrategyDetail {
   trades: StrategyTradeItem[]
   signalHistory: StrategySignalItem[]
   rates: CurrencyRates[]
+  settings?: Record<string, number> | null
 }
 
 export type EnteredAs = 'amount' | 'shares'
@@ -606,6 +607,8 @@ export interface Api {
   getDashboard(): Promise<Dashboard>
   /** The strategy page; undefined when the user has no such strategy. */
   getStrategy(id: string): Promise<StrategyDetail | undefined>
+  /** Updates the settings (rules) of a running strategy. */
+  updateStrategySettings(id: string, settings: Record<string, number>): Promise<void>
   /** A live signal for Confirm a signal; undefined when the user has no such signal. */
   getSignal(id: string): Promise<SignalDetail | undefined>
   /** Rejects with `InvalidFieldsError` (by field) or `InvalidValueError` (already answered). */

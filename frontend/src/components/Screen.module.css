@@ -28,14 +28,16 @@
   color: var(--ink-muted);
 }
 
-.back {
+.back,
+.titleLink {
   color: var(--ink-muted);
   text-decoration: none;
   min-height: 44px;
   display: flex;
   align-items: center;
 }
-.back:hover {
+.back:hover,
+.titleLink:hover {
   color: var(--primary);
 }
 

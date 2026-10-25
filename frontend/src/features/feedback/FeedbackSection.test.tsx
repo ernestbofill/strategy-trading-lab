@@ -128,4 +128,17 @@ describe('FeedbackSection', () => {
     )
     expect(await screen.findByText('General note from admin page')).toBeTruthy()
   })
+
+  it('renders title as a link when titleLink is provided', async () => {
+    vi.spyOn(api, 'getFeedback').mockResolvedValue([])
+
+    render(
+      <MemoryRouter>
+        <FeedbackSection titleLink="/feedback" />
+      </MemoryRouter>,
+    )
+
+    const link = await screen.findByRole('link', { name: 'Feedback' })
+    expect(link.getAttribute('href')).toBe('/feedback')
+  })
 })

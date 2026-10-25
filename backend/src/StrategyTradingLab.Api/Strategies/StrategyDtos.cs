@@ -14,6 +14,9 @@ namespace StrategyTradingLab.Api.Strategies;
 public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, Budget Budget, IReadOnlyList<Guid> AssetIds,
     string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null);
 
+/// <summary>New settings (rules) for a running strategy.</summary>
+public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
+
 /// <summary>A strategy as shown on the dashboard.</summary>
 public record StrategySummary(
     Guid Id,
@@ -158,4 +161,5 @@ public record StrategyDetail(
     IReadOnlyList<StockRow> Stocks,
     IReadOnlyList<StrategyTradeItem> Trades,
     IReadOnlyList<StrategySignalItem> SignalHistory,
-    IReadOnlyList<CurrencyRates> Rates);
+    IReadOnlyList<CurrencyRates> Rates,
+    IReadOnlyDictionary<string, decimal>? Settings = null);

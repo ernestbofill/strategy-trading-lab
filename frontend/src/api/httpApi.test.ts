@@ -115,6 +115,12 @@ describe('httpApi admin', () => {
     await httpApi.setAdminAssetActive('a1', false)
     expect(fetch).toHaveBeenCalledWith('/api/admin/assets/a1/active', expect.objectContaining({ method: 'PUT', body: '{"active":false}' }))
   })
+
+  it('updates strategy settings', async () => {
+    respond(204)
+    await httpApi.updateStrategySettings('s1', { peakDays: 40 })
+    expect(fetch).toHaveBeenCalledWith('/api/strategies/s1/settings', expect.objectContaining({ method: 'PUT', body: '{"settings":{"peakDays":40}}' }))
+  })
 })
 
 describe('httpApi admin test email', () => {

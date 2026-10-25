@@ -29,6 +29,7 @@ import { budgetPath, confirmPath, dashboardPath, homePath, pickPath } from './fe
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { SignalPage } from './features/signal/SignalPage'
 import { StrategyPage } from './features/strategy/StrategyPage'
+import { StrategySettings } from './features/strategy/StrategySettings'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 
@@ -84,6 +85,7 @@ export default function App() {
                 <Route path="/feedback" element={<FeedbackPage />} />
               </Route>
               <Route path="/strategies/:id" element={<StrategyPage />} />
+              <Route path="/strategies/:id/settings" element={<StrategySettings />} />
               <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
               <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
             </Route>

@@ -143,20 +143,27 @@ export function SelectField({ label, value, onChange, options, error, hideLabel 
   const id = useId()
   return (
     <FieldShell id={id} label={label} error={error} hideLabel={hideLabel}>
-      <select
-        id={id}
-        className={styles.input}
-        value={value}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, null, error)}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <div className={styles.selectWrap}>
+        <select
+          id={id}
+          className={styles.select}
+          value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(id, null, error)}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <span className={styles.selectArrow} aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 4.5l4 4 4-4" />
+          </svg>
+        </span>
+      </div>
     </FieldShell>
   )
 }

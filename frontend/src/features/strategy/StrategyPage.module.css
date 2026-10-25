@@ -252,7 +252,8 @@ a.stock:hover {
   gap: var(--space-2);
 }
 
-.tile {
+.tile,
+.tileLink {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -261,8 +262,20 @@ a.stock:hover {
   padding: 10px 12px;
   background: var(--surface-sidebar);
   border: 1px solid var(--border-hairline);
+}
+
+.tile {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.tileLink {
+  text-decoration: none;
+  color: inherit;
+}
+.tileLink:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary);
 }
 
 .tileTitle {

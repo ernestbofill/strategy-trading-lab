@@ -102,6 +102,26 @@ public static class StrategyEndpoints
         })
         .WithName("StartStrategy")
         .WithSummary("Starts a strategy from a template, in simulation or live, with the user's budget and stocks.");
+
+        group.MapPut("/{id:guid}/settings", async Task<Results<NoContent, NotFound, ValidationProblem>> (
+            Guid id, UpdateStrategySettings request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = await CurrentUser(sessions, cancellationToken);
+            var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
+            if (strategy is null) return TypedResults.NotFound();
+
+            if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
+
+            var errors = new Dictionary<string, string[]>();
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
+
+            strategy.Params = parameters;
+            await db.SaveChangesAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithName("UpdateStrategySettings")
+        .WithSummary("Updates the settings (rules) of a running strategy.");
     }
 
     /// <summary>The logged-in user: the endpoints require one (RequireUser), so it is there.</summary>
@@ -212,7 +232,6 @@ public static class StrategyEndpoints
             ? new SignalCounts(signalEntities.Count(s => s.Status == SignalStatus.Confirmed), signalEntities.Count(s => s.Status == SignalStatus.Skipped),
                 signalEntities.Count(s => s.Status == SignalStatus.Missed))
             : null;
-
         var signalHistory = signalEntities.Select(s =>
         {
             var asset = assetsById.GetValueOrDefault(s.AssetId);
@@ -292,9 +311,17 @@ public static class StrategyEndpoints
             }
         }
 
+        var root = strategy.Params.RootElement;
+        var settings = new Dictionary<string, decimal>();
+        foreach (var s in template.Settings)
+        {
+            if (root.TryGetProperty(s.Key, out var prop) && prop.ValueKind == JsonValueKind.Number)
+                settings[s.Key] = prop.GetDecimal();
+        }
+
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.StartedOn, today,
             strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList);
+            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings);
     }
 }

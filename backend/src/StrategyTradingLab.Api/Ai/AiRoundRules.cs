@@ -8,8 +8,11 @@ namespace StrategyTradingLab.Api.Ai;
 /// <summary>A stock a round gives a step: the rules' next step for it.</summary>
 public record AiPick(Guid AssetId, int StepNo);
 
-/// <summary>Why a round gave fewer steps than its top N: the budget is used up, or every stock left has all its steps.</summary>
-public enum AiNoStep { Budget, AllSteps }
+/// <summary>
+/// Why a round gave fewer steps than its top N: the budget is used up, every stock left has all its steps, or some couldn't get
+/// a signal now (no price yet, or one already that day).
+/// </summary>
+public enum AiNoStep { Budget, AllSteps, Unavailable }
 
 /// <summary>A score as a round keeps it: the stock as it was named then, and the step it got, if any.</summary>
 public record AiRoundScore(Guid AssetId, string Symbol, string Name, decimal Overall, decimal? News, decimal? Mood, decimal? Figures,
@@ -48,6 +51,7 @@ public static class AiRoundRules
         var step = budget.Step ?? 0;
         var maxSteps = budget.MaxSteps ?? 1;
         var picks = new List<AiPick>();
+        var passedOver = false;
         var ordered = scores
             .OrderByDescending(s => s.Overall)
             .ThenBy(s => steps.GetValueOrDefault(s.AssetId))
@@ -56,12 +60,17 @@ public static class AiRoundRules
         {
             if (picks.Count == topN) break;
             var held = steps.GetValueOrDefault(score.AssetId);
-            if (held >= maxSteps || unavailable.Contains(score.AssetId)) continue;
+            if (held >= maxSteps) continue;
+            if (unavailable.Contains(score.AssetId))
+            {
+                passedOver = true;
+                continue;
+            }
             if (step <= 0 || used + step > budget.Amount) return (picks, AiNoStep.Budget);
             used += step;
             picks.Add(new AiPick(score.AssetId, held + 1));
         }
-        return (picks, picks.Count < topN ? AiNoStep.AllSteps : null);
+        return (picks, picks.Count >= topN ? null : passedOver ? AiNoStep.Unavailable : AiNoStep.AllSteps);
     }
 
     /// <summary>

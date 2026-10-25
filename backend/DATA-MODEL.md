@@ -129,6 +129,7 @@ One AI round of a *Your AI's top picks* strategy. The first is due on the strate
 | ai_model | text, null | "Claude · Opus", or the user's own name for it (60 characters at most) |
 | answer | text, null | The whole pasted answer (50,000 characters at most) |
 | scores | jsonb, null | `[{assetId, symbol, name, overall, news, mood, figures, reason, step}]`, `step` null for a stock that got none |
+| shared_round_id | uuid FK → shared_ai_rounds, set null, null | Its shared copy, when shared: the only link between the two, kept on the user's side |
 | created_at, updated_at | timestamptz | |
 
 A done round has its answer, scores, model and session (`CHECK`). One due round per strategy: partial unique index on `strategy_id WHERE status = 'due'`.
@@ -137,7 +138,7 @@ An AI round's signals are ordinary `signals` rows (side `buy`, the next step for
 
 ### `shared_ai_rounds`
 
-What a user who shares AI rounds gives, apart from account data: no user, strategy or signal id, nothing about budget, steps or trades, and only the day (`created_at` is that day's midnight UTC, not the moment). Its answer is the scrubbed answer of a round the user keeps in `ai_rounds`, which is how it is found again: turning sharing off deletes the shared rows whose answer matches one of the user's done rounds (`AiRounds.ForgetSharedAsync`). Deleting an account must call it before the rounds go.
+What a user who shares AI rounds gives, apart from account data: no user, strategy or signal id, nothing about budget, steps or trades, and only the day (`created_at` is that day's midnight UTC, not the moment). The user's round points to it (`ai_rounds.shared_round_id`); nothing here points back. Turning sharing off deletes the shared rows the user's rounds point to (`AiRounds.ForgetSharedAsync`). Deleting an account must call it before the rounds go. Saving a round locks the user's row while it reads the sharing choice, so turning sharing off at the same time either is seen or removes that round's copy too.
 
 | Column | Type | Notes |
 | --- | --- | --- |

@@ -1034,3 +1034,35 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    ALTER TABLE ai_rounds ADD shared_round_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    CREATE INDEX ix_ai_rounds_shared_round_id ON ai_rounds (shared_round_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    ALTER TABLE ai_rounds ADD CONSTRAINT fk_ai_rounds_shared_ai_rounds_shared_round_id FOREIGN KEY (shared_round_id) REFERENCES shared_ai_rounds (id) ON DELETE SET NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261025223640_LinkSharedAiRounds', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

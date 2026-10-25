@@ -129,7 +129,7 @@ Roughly in the order they become useful:
 ## Open decisions (Ernest)
 
 - **Launch scope**: *Your AI's top picks* is built (#70): in the launch unless you leave it out. Edit list is in the launch (item 15), and the controls of anything else not built are hidden until it is (item 5). Still open: anything else to move in or out (web push, the stock page, the backtest re-run, Tune the settings, change the budget, Advanced settings for the other templates).
-- **AI rounds, Claude's assumptions to confirm** (#70): shared rounds have no key to the user and keep only their day, and turning sharing off removes them (found by their text); a stock with all its steps passes its turn to the next score; a live AI signal is missed when the next round is due; the round frequency is 2 to 6 weeks and top N 1 to 3; and the suggested prompt v1's criteria.
+- **AI rounds, Claude's assumptions to confirm** (#70): shared rounds have no key to the user and keep only their day, the user's own round notes them, and turning sharing off removes them; a stock with all its steps passes its turn to the next score; a live AI signal is missed when the next round is due; the round frequency is 2 to 6 weeks and top N 1 to 3; and the suggested prompt v1's criteria.
 - **Ended strategies** (item 11): kept read-only in an "Ended" section until the user deletes them (proposed), deleted at once, or kept with no delete?
 - **Who the legal notice names** (item 19): you as a person, with a contact address (proposed for the quiet launch)? A lawyer can confirm what LSSI-CE needs for a free hobby app.
 - **The domain name** (items 21 and 22): yours to choose and buy.

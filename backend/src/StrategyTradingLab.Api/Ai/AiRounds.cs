@@ -51,7 +51,10 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
                     open = new AiRound
                     {
                         StrategyId = strategy.Id, Status = AiRoundStatus.Due,
-                        DueOn = rounds.Count == 0 ? strategy.StartedOn : AiRoundRules.NextDue(rounds[^1].DueOn, parameters),
+                        // The first round is due on the start day; a strategy started before AI rounds existed starts from today,
+                        // not with a backlog of rounds it could never have run.
+                        DueOn = rounds.Count > 0 ? AiRoundRules.NextDue(rounds[^1].DueOn, parameters)
+                            : AiRoundRules.LastDay(strategy.StartedOn, parameters) < today ? today : strategy.StartedOn,
                     };
                     db.AiRounds.Add(open);
                     await db.SaveChangesAsync(cancellationToken);
@@ -115,7 +118,8 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         // As the daily check counts it: confirmed and waiting signals use their step; skipped and missed ones none.
         var used = signals.Where(s => s.Status is SignalStatus.Confirmed or SignalStatus.Waiting).Sum(s => s.StepAmount ?? 0);
         var ids = stocks.Select(s => s.AssetId).ToList();
-        var priced = await db.Prices.Where(p => ids.Contains(p.AssetId) && p.Date <= session).Select(p => p.AssetId).Distinct().ToListAsync(cancellationToken);
+        var priced = await db.Assets.Where(a => ids.Contains(a.Id) && db.Prices.Any(p => p.AssetId == a.Id && p.Date <= session))
+            .Select(a => a.Id).ToListAsync(cancellationToken);
         var unavailable = ids.Except(priced).Concat(signals.Where(s => s.SignalDate == session).Select(s => s.AssetId)).ToHashSet();
 
         var parameters = AiRoundRules.Params(strategy);
@@ -149,7 +153,8 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         var live = strategy.Mode == StrategyMode.Live;
         var picked = plan.Picks.ToDictionary(p => p.AssetId, p => p.StepNo);
         var stocks = plan.Stocks.ToDictionary(s => s.AssetId);
-        var ranked = plan.Reading.Scores.OrderByDescending(s => s.Overall).Select((s, i) => (s.AssetId, Rank: i + 1)).ToDictionary(x => x.AssetId, x => x.Rank);
+        // A stock tied with the top score is "the top score" too, whichever the tie-break picked first.
+        var ranked = plan.Reading.Scores.ToDictionary(s => s.AssetId, s => 1 + plan.Reading.Scores.Count(other => other.Overall > s.Overall));
         var read = plan.Reading.Scores.ToDictionary(s => s.AssetId);
         var scores = plan.Reading.Scores.Select(s => new AiRoundScore(s.AssetId, stocks[s.AssetId].Symbol, stocks[s.AssetId].Name, s.Overall,
             s.News, s.Mood, s.Figures, s.Reason, picked.TryGetValue(s.AssetId, out var step) ? step : null)).ToList();
@@ -188,15 +193,25 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         }
         db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = nextDue });
 
-        var sharing = share ?? user.AiSharing;
+        // The user's choice as it stands now, with their row locked until this commits: turning sharing off on another device
+        // either waits for this round (and then removes its shared copy) or is seen here.
+        bool sharing;
         if (share is { } choice)
+        {
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AiSharing, choice).SetProperty(x => x.AiSharingChangedAt, now),
                 cancellationToken);
+            sharing = choice;
+        }
+        else
+            sharing = await db.Database.SqlQuery<bool>($"SELECT ai_sharing AS \"Value\" FROM users WHERE id = {user.Id} FOR UPDATE").SingleAsync(cancellationToken);
+        Guid? sharedId = null;
         if (sharing)
         {
             var on = AiPrompt.On(parameters);
+            sharedId = Guid.CreateVersion7();
             db.SharedAiRounds.Add(new SharedAiRound
             {
+                Id = sharedId.Value,
                 // The day only (no exact time to match against the round's), and nothing about the user, the strategy, its budget
                 // or what the user did.
                 RoundOn = UsSession.Today(now),
@@ -220,6 +235,8 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             db.ChangeTracker.Clear();
             return null;
         }
+        if (sharedId is not null)
+            await db.AiRounds.Where(r => r.Id == round.Id).ExecuteUpdateAsync(r => r.SetProperty(x => x.SharedRoundId, sharedId), cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         db.ChangeTracker.Clear();
         return new AiRoundResult(round.Id, [.. signals.Select(s => s.Id)], strategy.Mode);
@@ -340,18 +357,16 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     }
 
     /// <summary>
-    /// Turning sharing off also removes what the user shared. A shared round has no key to its user, so it is found by its text:
-    /// the scrubbed answer of one of the user's own done rounds.
+    /// Turning sharing off also removes what the user shared. A shared round has no key to its user: the user's own round points
+    /// to it (<c>shared_round_id</c>, set to null when the shared copy goes).
     /// </summary>
     public async Task<int> ForgetSharedAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var answers = await (from round in db.AiRounds.AsNoTracking()
-                             join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
-                             where strategy.UserId == userId && round.Status == AiRoundStatus.Done && round.Answer != null
-                             select round.Answer!).ToListAsync(cancellationToken);
-        if (answers.Count == 0) return 0;
-        var shared = answers.Select(AiSharingScrub.Scrub).Distinct().ToList();
-        return await db.SharedAiRounds.Where(s => shared.Contains(s.Answer)).ExecuteDeleteAsync(cancellationToken);
+        var shared = await (from round in db.AiRounds.AsNoTracking()
+                            join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
+                            where strategy.UserId == userId && round.SharedRoundId != null
+                            select round.SharedRoundId!.Value).ToListAsync(cancellationToken);
+        return shared.Count == 0 ? 0 : await db.SharedAiRounds.Where(s => shared.Contains(s.Id)).ExecuteDeleteAsync(cancellationToken);
     }
 
     public static IReadOnlyList<AiRoundScore> Read(JsonDocument? scores) =>

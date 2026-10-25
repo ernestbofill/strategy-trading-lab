@@ -208,6 +208,49 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
     }
 
     [NeonFact]
+    public async Task A_strategy_started_before_ai_rounds_existed_starts_from_today_without_skipped_rounds()
+    {
+        var s = await StartAsync("simulation");
+        try
+        {
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await db.AiRounds.Where(r => r.StrategyId == s.StrategyId).ExecuteDeleteAsync();
+                await db.Strategies.Where(x => x.Id == s.StrategyId).ExecuteUpdateAsync(x => x.SetProperty(y => y.StartedOn, y => y.StartedOn.AddDays(-90)));
+            }
+
+            var round = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-round");
+            Assert.True(round.GetProperty("open").GetBoolean());
+            Assert.Equal(round.GetProperty("today").GetString(), round.GetProperty("dueOn").GetString());
+            var history = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-rounds");
+            Assert.Equal(["due"], history.GetProperty("rounds").EnumerateArray().Select(r => r.GetProperty("status").GetString()));
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_stock_tied_with_the_top_score_is_the_top_score_whichever_is_picked()
+    {
+        var s = await StartAsync("live");
+        try
+        {
+            var result = await (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round", new { answer = Answer(s, alpha: 80, beta: 80), aiModel = "Claude · Opus" }))
+                .Content.ReadFromJsonAsync<JsonElement>();
+            var signalId = Assert.Single(result.GetProperty("signalIds").EnumerateArray()).GetGuid();
+            var signal = await s.Client.GetFromJsonAsync<JsonElement>($"/signals/{signalId}");
+            Assert.EndsWith("the top score of the round", signal.GetProperty("reason").GetString());
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
     public async Task An_ended_strategy_has_no_round_due()
     {
         var s = await StartAsync("simulation");

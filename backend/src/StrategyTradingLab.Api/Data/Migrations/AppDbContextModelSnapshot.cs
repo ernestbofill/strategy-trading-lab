@@ -75,6 +75,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("date")
                         .HasColumnName("session_date");
 
+                    b.Property<Guid?>("SharedRoundId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shared_round_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text")
@@ -92,6 +96,9 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_ai_rounds");
+
+                    b.HasIndex("SharedRoundId")
+                        .HasDatabaseName("ix_ai_rounds_shared_round_id");
 
                     b.HasIndex("StrategyId")
                         .IsUnique()
@@ -1785,6 +1792,12 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.AiRound", b =>
                 {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.SharedAiRound", null)
+                        .WithMany()
+                        .HasForeignKey("SharedRoundId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ai_rounds_shared_ai_rounds_shared_round_id");
+
                     b.HasOne("StrategyTradingLab.Api.Data.Entities.Strategy", null)
                         .WithMany()
                         .HasForeignKey("StrategyId")

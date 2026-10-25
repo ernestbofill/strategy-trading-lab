@@ -331,6 +331,8 @@ class AiRoundConfiguration : IEntityTypeConfiguration<AiRound>
             .HasFilter("status = 'due'");
         entity.HasOne<Strategy>().WithMany()
             .HasForeignKey(round => round.StrategyId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne<SharedAiRound>().WithMany()
+            .HasForeignKey(round => round.SharedRoundId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

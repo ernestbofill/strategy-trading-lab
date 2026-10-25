@@ -58,7 +58,7 @@ public class AiRoundRulesTests
             new HashSet<Guid> { A });
 
         Assert.Empty(picks);
-        Assert.Equal(AiNoStep.AllSteps, missing);
+        Assert.Equal(AiNoStep.Unavailable, missing);
     }
 
     [Fact]
@@ -106,6 +106,13 @@ public class AiRoundRulesTests
         Assert.Contains("Score each stock on how its AI products are doing.", prompt);
         Assert.DoesNotContain("- News: ", prompt);
         Assert.Contains("| Stock | News | Mood | Figures | Overall | Reason |", prompt);
+    }
+
+    [Fact]
+    public void Scores_in_a_row_are_not_taken_for_a_phone_number()
+    {
+        Assert.Equal("Scores: 80 75 90 85 70 65", AiSharingScrub.Scrub("Scores: 80 75 90 85 70 65"));
+        Assert.Equal("Call [number]", AiSharingScrub.Scrub("Call 600 123 456"));
     }
 
     [Fact]

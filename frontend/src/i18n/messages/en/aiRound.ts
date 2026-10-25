@@ -31,6 +31,8 @@ export const aiRound = {
   'aiRound.noStepAllSteps': 'Every scored stock has all its steps: this round gives no step.',
   'aiRound.fewerBudget': 'The budget has no room for more.',
   'aiRound.fewerAllSteps': 'The others have all their steps.',
+  'aiRound.noStepUnavailable': "The top stocks can't get a step yet (no price, or a signal today already): this round gives no step.",
+  'aiRound.fewerUnavailable': "Some can't get a step yet: no price, or a signal today already.",
   'aiRound.readFailed': "We couldn't read it. Try again.",
   'aiRound.saveFailed': "We couldn't save it. Try again.",
   'aiRound.use': 'Use these scores',
@@ -46,7 +48,7 @@ export const aiRound = {
   'aiRound.keep.what':
     "For each shared round: the AI model, the day, the prompt's version and whether you edited it, the sources on, the stocks' symbols, your AI's answer and its scores. Before it is stored, anything that looks like an email address, a phone number or a link's parameters is removed.",
   'aiRound.keep.never':
-    "Never with it: your name, email, account, strategy name, budget, steps, trades, or whether you acted, and only the day, not the time. It has no link to your account; your own copy of the round is the only way to match it, and turning sharing off uses it to remove what you shared.",
+    "Never with it: your name, email, account, strategy name, budget, steps, trades, or whether you acted, and only the day, not the time. Nothing in it points to you: only your own round keeps a note of it, so turning sharing off can remove what you shared.",
   'aiRound.scores.aria': "Your AI's scores",
   'aiRound.scores.outOf': ' out of 100',
   'aiRound.scores.step': '· Step {step}',

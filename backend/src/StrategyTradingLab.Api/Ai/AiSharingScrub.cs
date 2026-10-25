@@ -14,9 +14,11 @@ public static partial class AiSharingScrub
         scrubbed = Link().Replace(scrubbed, match => match.Groups[1].Value);
         return Phone().Replace(scrubbed, match =>
         {
-            // A phone number has 9 to 15 digits; dates and figures ("2026-10-27", "1,234,567") are left alone.
+            // A phone number has 9 to 15 digits; dates, figures ("2026-10-27", "1,234,567") and scores in a row ("80 75 90 85")
+            // are left alone.
             var digits = match.Value.Count(char.IsAsciiDigit);
-            return digits is >= 9 and <= 15 && !IsoDate().IsMatch(match.Value) ? "[number]" : match.Value;
+            var scores = Groups().Matches(match.Value).All(g => g.Value.Length <= 3 && int.Parse(g.Value) <= 100);
+            return digits is >= 9 and <= 15 && !scores && !IsoDate().IsMatch(match.Value) ? "[number]" : match.Value;
         });
     }
 
@@ -32,4 +34,7 @@ public static partial class AiSharingScrub
 
     [GeneratedRegex(@"\d{4}-\d{2}-\d{2}")]
     private static partial Regex IsoDate();
+
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex Groups();
 }

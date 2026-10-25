@@ -252,7 +252,8 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
 /** What the scores give: "Zscaler gets step 2 of 5 (€100)." or why no stock gets one. */
 function stepLine(reading: AiReading, r: AiRoundDetail, t: Translate): string {
   const picks = reading.scores.filter((s) => s.step !== null)
-  if (picks.length === 0) return t(reading.short === 'budget' ? 'aiRound.noStepBudget' : 'aiRound.noStepAllSteps')
+  if (picks.length === 0)
+    return t(reading.short === 'budget' ? 'aiRound.noStepBudget' : reading.short === 'unavailable' ? 'aiRound.noStepUnavailable' : 'aiRound.noStepAllSteps')
   const gets = picks
     .map((p) => t('aiRound.gets', { stock: p.name, step: stepOf(t, p.step ?? 0, reading.maxSteps) }))
     .join(', ')
@@ -261,5 +262,5 @@ function stepLine(reading: AiReading, r: AiRoundDetail, t: Translate): string {
       ? t('aiRound.getsNoAmount', { picks: gets })
       : t('aiRound.getsAmount', { picks: gets, amount: money(reading.stepAmount, r.currency) })
   if (picks.length >= r.topN) return line
-  return `${line} ${t(reading.short === 'budget' ? 'aiRound.fewerBudget' : 'aiRound.fewerAllSteps')}`
+  return `${line} ${t(reading.short === 'budget' ? 'aiRound.fewerBudget' : reading.short === 'unavailable' ? 'aiRound.fewerUnavailable' : 'aiRound.fewerAllSteps')}`
 }

@@ -281,6 +281,8 @@ public class AiRound : IHasUpdatedAt
     public string? Answer { get; set; }
     /// <summary>The scores read from the answer: <c>[{assetId, overall, news, mood, figures, reason, picked}]</c>.</summary>
     public JsonDocument? Scores { get; set; }
+    /// <summary>Its shared copy, when the user shared it: the only link between the two, kept on the user's side, to remove it.</summary>
+    public Guid? SharedRoundId { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }

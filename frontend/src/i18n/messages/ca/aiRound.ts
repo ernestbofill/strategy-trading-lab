@@ -32,6 +32,8 @@ export const aiRound: Record<keyof typeof en, string> = {
   'aiRound.noStepAllSteps': 'Totes les accions puntuades ja tenen tots els passos: aquesta ronda no dona cap pas.',
   'aiRound.fewerBudget': 'El pressupost no en permet més.',
   'aiRound.fewerAllSteps': 'Les altres ja tenen tots els passos.',
+  'aiRound.noStepUnavailable': 'Les primeres accions encara no poden rebre un pas (sense preu, o ja tenen un senyal avui): aquesta ronda no dona cap pas.',
+  'aiRound.fewerUnavailable': 'Algunes encara no poden rebre un pas: sense preu, o ja tenen un senyal avui.',
   'aiRound.readFailed': 'No l’hem pogut llegir. Torna-ho a provar.',
   'aiRound.saveFailed': 'No l’hem pogut desar. Torna-ho a provar.',
   'aiRound.use': 'Fes servir aquestes puntuacions',
@@ -47,7 +49,7 @@ export const aiRound: Record<keyof typeof en, string> = {
   'aiRound.keep.what':
     'De cada ronda compartida: el model d’IA, el dia, la versió del prompt i si l’has editat, les fonts activades, els símbols de les accions, la resposta de la teva IA i les seves puntuacions. Abans de guardar-la, traiem tot el que sembli una adreça de correu, un número de telèfon o els paràmetres d’un enllaç.',
   'aiRound.keep.never':
-    'Mai no hi va: el teu nom, el correu, el compte, el nom de l’estratègia, el pressupost, els passos, les operacions ni si hi has actuat, i només el dia, no l’hora. No té cap enllaç amb el teu compte; només la teva còpia de la ronda permet trobar-la, i si desactives la compartició la fem servir per esborrar el que has compartit.',
+    'Mai no hi va: el teu nom, el correu, el compte, el nom de l’estratègia, el pressupost, els passos, les operacions ni si hi has actuat, i només el dia, no l’hora. Res no hi apunta a tu: només la teva pròpia ronda en guarda una nota, perquè si desactives la compartició puguem esborrar el que has compartit.',
   'aiRound.scores.aria': 'Les puntuacions de la teva IA',
   'aiRound.scores.outOf': ' sobre 100',
   'aiRound.scores.step': '· Pas {step}',

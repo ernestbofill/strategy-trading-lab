@@ -52,6 +52,19 @@ public class TemplateSettingsTests
     }
 
     [Fact]
+    public void Ride_the_long_trend_exposes_its_average_and_signal_band_but_not_the_cooldown()
+    {
+        Assert.Equal(["smaDays", "bandPct"], TemplateCatalog.Trend.Settings.Select(s => s.Key));
+
+        var (stored, errors) = Apply(TemplateCatalog.Trend, new() { ["smaDays"] = 150, ["bandPct"] = 4 });
+
+        Assert.Empty(errors);
+        Assert.Equal(150, stored!.RootElement.GetProperty("smaDays").GetInt32());
+        Assert.Equal(4, stored.RootElement.GetProperty("bandPct").GetDecimal());
+        Assert.Equal(5, stored.RootElement.GetProperty("cooldownDays").GetInt32());
+    }
+
+    [Fact]
     public void No_settings_keep_the_tested_defaults()
     {
         var (stored, errors) = Apply(TemplateCatalog.Dip, null);
@@ -116,5 +129,16 @@ public class TemplateSettingsTests
 
         Assert.Null(stored);
         Assert.Contains("settings.drawdownPct", errors.Keys);
+    }
+
+    [Theory]
+    [InlineData("smaDays", 55)]
+    [InlineData("bandPct", 10.5)]
+    public void Ride_refuses_values_outside_its_settings_steps(string key, double value)
+    {
+        var (stored, errors) = Apply(TemplateCatalog.Trend, new() { [key] = (decimal)value });
+
+        Assert.Null(stored);
+        Assert.Contains($"settings.{key}", errors.Keys);
     }
 }

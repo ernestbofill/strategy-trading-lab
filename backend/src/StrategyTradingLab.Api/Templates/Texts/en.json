@@ -118,6 +118,16 @@
     "tagline": "Take the wins, dodge the losses",
     "idea": "The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down.",
     "rationale": "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal.",
+    "settings": {
+      "smaDays": {
+        "sentence": "The trend line is the average price over {value}.",
+        "value": "{n} days"
+      },
+      "bandPct": {
+        "sentence": "The buy and sell lines are {value} above and below the trend line.",
+        "value": "{n}%"
+      }
+    },
     "rules": [
       {
         "marker": "BUY",

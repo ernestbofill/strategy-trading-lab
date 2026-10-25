@@ -116,7 +116,14 @@ public static class TemplateCatalog
         "trend", "index_trend", InvestsIn.IndexFund, SignalSides.BuysAndSells, new Budget(3000, null, null),
         new DefaultFund(Cspx),
         [new("2000-09", 24, -4, -8), new("2010-19", 121, 186, -11), new("2020-24", 52, 81, -9), new("All", 249, 272, -11)],
-        new TrendParams());
+        new TrendParams())
+    {
+        Settings =
+        [
+            new("smaDays", 10, 50, 300),
+            new("bandPct", 1, 0, 10),
+        ],
+    };
 
     // No backtest: results start on the day the strategy starts. Watches the stocks of Dip in winners and The comeback.
     public static readonly Template Ai = new(

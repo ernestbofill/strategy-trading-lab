@@ -298,7 +298,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2b · Advanced settings (`Advanced`)
 
-**Purpose:** tune each rule as an exact number and see the effect on the backtest. Drawn for *Dip in winners*; every template needs its own set, from its POC parameters (open question). For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
+**Purpose:** tune each rule as an exact number and see the effect on the backtest. Designed for *Dip in winners* and *Ride the long trend*; each exposes selected POC parameters, not every engine parameter. For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
 
 **Copy**
 - Top bar: "← BACK" · "[template name]"
@@ -316,6 +316,15 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | "The recent peak is the highest price of the last [n] days." | 60 days | 5 | 20–60 |
 | "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
 | "The dip must stay above the average over [n] days." | 50 days | 5 | 20–100 |
+
+For *Ride the long trend*:
+
+| Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- |
+| "The trend line is the average price over [n] days." | 200 days | 10 | 50–300 |
+| "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+
+The cooldown is not exposed for either template. The shown settings are available when starting a strategy; changing settings on an already-running strategy is not built yet.
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."

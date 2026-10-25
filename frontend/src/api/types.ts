@@ -208,12 +208,16 @@ export type StockStatus =
   | 'waitingForYou'
   | 'signal'
   | 'holding'
+  | 'done'
   | 'building'
+  | 'outOfTheMarket'
   | 'noBudget'
   | 'watching'
   | 'notCandidate'
   | 'notEnoughData'
   | 'notChecked'
+
+export type TradeSide = 'buy' | 'sell'
 
 /** A stock of a strategy on its page. */
 export interface StockRow {
@@ -231,6 +235,7 @@ export interface StockRow {
   /** The waiting signal (live) or today's (simulation). */
   signalId: string | null
   signalStep: number | null
+  signalSide?: TradeSide | null
   /** What was put in, fees included, and its gain in percent (null with no buys). */
   invested: number
   result: number | null
@@ -240,6 +245,8 @@ export interface StockRow {
 export interface StockStatusWords {
   zone: string
   notCandidate: string
+  watching?: string | null
+  holding?: string | null
 }
 
 /** The strategy page: backend Strategies/StrategyDtos.cs (StrategyDetail). */
@@ -301,11 +308,12 @@ export interface SignalDetail {
   endedOn: string | null
   /** The user's local date. */
   today: string
-  /** The next trading day, its opening price once stored (else null), and the step without the tested fee. */
-  prefill: { date: string; price: number | null; amount: number | null }
+  /** The next trading day, its opening price once stored (else null), the step without the tested fee, and held shares for a sale. */
+  prefill: { date: string; price: number | null; amount: number | null; shares?: number | null }
   /** Reference rates by day: asset currency per one unit of the strategy's. */
   rates: { date: string; rate: number }[]
   answer: SignalAnswer | null
+  side?: TradeSide
 }
 
 /** "I did it". `fxRate` is only read when `fxSource` is 'user'. */

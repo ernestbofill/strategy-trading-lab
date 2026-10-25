@@ -7,11 +7,11 @@ namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>A signal as the alert and the overview describe it.</summary>
 public record SignalLine(Guid StrategyId, Guid SignalId, string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, string AssetCurrency, string StrategyCurrency,
-    DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts)
+    DateOnly Date, decimal ClosePrice, int? StepNo, int? MaxSteps, decimal? StepAmount, JsonElement Facts, TradeSide Side = TradeSide.Buy)
 {
     public static SignalLine From(Signal signal, Strategy strategy, Asset asset) =>
         new(strategy.Id, signal.Id, strategy.Name, strategy.Mode, strategy.TemplateKey, asset.Name, asset.Currency, strategy.Currency, signal.SignalDate,
-            signal.ClosePrice, signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone());
+            signal.ClosePrice, signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone(), signal.Side);
 }
 
 /// <summary>A stock a strategy is watching and how far it is from the rules.</summary>
@@ -42,6 +42,24 @@ public static class EmailTexts
     /// <summary>The rule facts of a signal in a sentence, by template.</summary>
     public static string FactSentence(SignalLine s)
     {
+        if (s.Side == TradeSide.Sell)
+        {
+            var belowSma = Fact(s.Facts, "belowSmaPct");
+            return belowSma is null ? "its rules are met" : $"the market closed {Pct(belowSma.Value)}% below its 200-day average";
+        }
+        if (s.TemplateKey == "trend")
+        {
+            var aboveSma = Fact(s.Facts, "aboveSmaPct");
+            return aboveSma is null ? "its rules are met" : $"the market closed {Pct(aboveSma.Value)}% above its 200-day average";
+        }
+        if (s.TemplateKey == "bear")
+        {
+            var below = Fact(s.Facts, "belowDropPeakPct") ?? Fact(s.Facts, "belowHighPct");
+            var above = Fact(s.Facts, "aboveLowPct");
+            return below is null || above is null
+                ? "its rules are met"
+                : $"down {Pct(below.Value)}% from its 6-month high and {Pct(above.Value)}% above its low";
+        }
         if (s.TemplateKey == "dip")
         {
             var below = Fact(s.Facts, "belowPeakPct");
@@ -49,17 +67,18 @@ public static class EmailTexts
         }
         var milestone = s.Facts.ValueKind == JsonValueKind.Object && s.Facts.TryGetProperty("milestone", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
         if (milestone is not null) return $"a new sign that the recovery is real: {milestone.ToLowerInvariant()}";
-        var above = Fact(s.Facts, "aboveBuyLinePct");
-        return above is null ? "its rules are met" : $"{Pct(Math.Abs(above.Value))}% {(above >= 0 ? "above" : "below")} its buy line, on rising volume";
+        var aboveBuyLine = Fact(s.Facts, "aboveBuyLinePct");
+        return aboveBuyLine is null ? "its rules are met" : $"{Pct(Math.Abs(aboveBuyLine.Value))}% {(aboveBuyLine >= 0 ? "above" : "below")} its buy line, on rising volume";
     }
 
     /// <summary>The signal box's text: "Your rules for X are met for Y: …".</summary>
     public static string SignalText(SignalLine s)
     {
+        var target = s.Side == TradeSide.Sell ? "a sale" : s.StockName;
         var step = s.StepNo is { } no && s.MaxSteps is { } max
             ? $" Under your settings that's step {no} of {max}{(s.StepAmount is { } amount ? $" ({Money(amount, s.StrategyCurrency)})" : "")}."
             : "";
-        return $"Your rules for {s.StrategyName} are met for {s.StockName}: {FactSentence(s)}.{step}\n" +
+        return $"Your rules for {s.StrategyName} are met for {target}: {FactSentence(s)}.{step}\n" +
                $"Close on {Date(s.Date)}: {Money(s.ClosePrice, s.AssetCurrency)}";
     }
 
@@ -84,7 +103,10 @@ public static class EmailTexts
         {
             text.Append("\nWaiting for you\n");
             foreach (var s in waiting)
-                text.Append($"- {s.StockName}, {s.StrategyName}{(s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "")}, close on {Date(s.Date)}. {SignalUrl(s, appUrl)}\n");
+            {
+                var detail = s.Side == TradeSide.Sell ? ": sale" : s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "";
+                text.Append($"- {s.StockName}, {s.StrategyName}{detail}, close on {Date(s.Date)}. {SignalUrl(s, appUrl)}\n");
+            }
         }
         text.Append("\nWhat changed today\n");
         if (changed.Count == 0) text.Append("- No rules were newly met.\n");
@@ -93,7 +115,15 @@ public static class EmailTexts
         {
             text.Append("\nClose to the line\n");
             foreach (var c in close)
-                text.Append($"- ({(c.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {(c.TemplateKey == "dip" ? "above the discount zone" : "below the buy line")}\n");
+            {
+                var line = c.TemplateKey switch
+                {
+                    "dip" => "above the discount zone",
+                    "bear" => "below the bounce line",
+                    _ => "below the buy line",
+                };
+                text.Append($"- ({(c.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}\n");
+            }
         }
         text.Append("\nYour strategies\n");
         foreach (var s in scoreboard)

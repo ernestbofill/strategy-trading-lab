@@ -36,6 +36,7 @@ export function SignalPage() {
 }
 
 function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
+  const sell = s.side === 'sell'
   const header = (
     <div className={styles.header}>
       <div className={styles.eyebrow}>
@@ -50,21 +51,36 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
   const box = (
     <div className={styles.box}>
       <p className={styles.text}>
-        Your rules for <b>{s.strategyName}</b> are met for {s.stockName}: {s.reason}.
-        {s.stepNo !== null && s.maxSteps !== null && (
+        {sell ? (
           <>
-            {' '}
-            Under your settings that's step{' '}
-            <span className={styles.mono}>
-              {s.stepNo} of {s.maxSteps}
-            </span>
-            {s.stepAmount !== null && (
+            Your rules for <b>{s.strategyName}</b> are met for a sale: {s.reason}.
+          </>
+        ) : (
+          <>
+            Your rules for <b>{s.strategyName}</b> are met for {s.stockName}: {s.reason}.
+            {s.stepNo !== null && s.maxSteps !== null ? (
               <>
                 {' '}
-                (<span className={styles.mono}>{money(s.stepAmount, s.strategyCurrency)}</span>)
+                Under your settings that's step{' '}
+                <span className={styles.mono}>
+                  {s.stepNo} of {s.maxSteps}
+                </span>
+                {s.stepAmount !== null && (
+                  <>
+                    {' '}
+                    (<span className={styles.mono}>{money(s.stepAmount, s.strategyCurrency)}</span>)
+                  </>
+                )}
+                .
               </>
+            ) : (
+              s.stepAmount !== null && (
+                <>
+                  {' '}
+                  Under your settings that's <span className={styles.mono}>{money(s.stepAmount, s.strategyCurrency)}</span>.
+                </>
+              )
             )}
-            .
           </>
         )}
       </p>
@@ -117,6 +133,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   const [saving, setSaving] = useState(false)
   const [snoozedUntil, setSnoozedUntil] = useState(s.snoozedUntil)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
+  const sell = s.side === 'sell'
 
   const otherCurrency = s.assetCurrency !== s.strategyCurrency
   const reference = rateOn(s.rates, form.date)
@@ -233,7 +250,11 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
                 type="decimal"
                 value={form.amount}
                 onChange={(amount) => set({ amount })}
-                hint={s.stepAmount !== null ? `What bought shares. Your step of ${money(s.stepAmount, s.strategyCurrency)} includes the fee.` : undefined}
+                hint={
+                  !sell && s.stepAmount !== null
+                    ? `What bought shares. Your ${s.stepNo !== null ? 'step' : 'budget'} of ${money(s.stepAmount, s.strategyCurrency)} includes the fee.`
+                    : undefined
+                }
                 error={errors.amount}
                 aside={<TextAction onClick={() => set({ enteredAs: 'shares' })}>Shares instead</TextAction>}
               />
@@ -304,7 +325,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
               ))}
             </fieldset>
             <p className={styles.plain}>
-              A skip uses no budget. The rules carry on as if the step was bought
+              A skip uses no budget. The rules carry on as if the {sell ? 'sale was made' : 'step was bought'}
               {following ? `, so the next signal for ${s.stockName} is ${following}.` : '.'}
             </p>
           </div>

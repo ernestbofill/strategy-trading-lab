@@ -38,10 +38,30 @@ public class NotificationTests
     }
 
     [Fact]
+    public void Bear_and_trend_alerts_describe_drops_trend_buys_and_trend_sales()
+    {
+        var bear = Dip("""{"belowHighPct":16.5,"aboveLowPct":5.2}""") with { TemplateKey = "bear", StockName = "S&P 500" };
+        var trendBuy = Dip("""{"aboveSmaPct":3.4}""") with { TemplateKey = "trend", StockName = "S&P 500", StepNo = null, MaxSteps = null, StepAmount = 1000 };
+        var trendSell = Dip("""{"belowSmaPct":3.1}""") with { TemplateKey = "trend", StockName = "S&P 500", StepNo = null, MaxSteps = null, StepAmount = null, Side = TradeSide.Sell };
+
+        Assert.Contains("down 16.5% from its 6-month high and 5.2% above its low", EmailTexts.SignalText(bear));
+        Assert.Contains("the market closed 3.4% above its 200-day average", EmailTexts.SignalText(trendBuy));
+        var (_, sellBody) = EmailTexts.SignalAlert(trendSell, "https://app.example");
+        Assert.Contains("Your rules for Zscaler & friends are met for a sale: the market closed 3.1% below its 200-day average.", sellBody);
+        Assert.DoesNotContain("Under your settings", sellBody);
+    }
+
+    [Fact]
     public void The_overview_has_its_sections_describes_and_never_instructs()
     {
         var waiting = new[] { Dip() };
-        var close = new[] { new CloseLine("Zscaler & friends", StrategyMode.Live, "dip", "Palantir", 3.2m), new CloseLine("The comeback", StrategyMode.Simulation, "comeback", "Intel", 4.5m) };
+        var close = new[]
+        {
+            new CloseLine("Zscaler & friends", StrategyMode.Live, "dip", "Palantir", 3.2m),
+            new CloseLine("The comeback", StrategyMode.Simulation, "comeback", "Intel", 4.5m),
+            new CloseLine("The big market drop", StrategyMode.Live, "bear", "S&P 500", 1.8m),
+            new CloseLine("Ride the long trend", StrategyMode.Live, "trend", "S&P 500", 1.2m),
+        };
         var score = new[] { new ScoreLine("Zscaler & friends", StrategyMode.Live, new DateOnly(2026, 10, 1), 1), new ScoreLine("The comeback", StrategyMode.Simulation, new DateOnly(2026, 10, 5), 0) };
 
         var (subject, body) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, [], close, score, "https://app.example");
@@ -51,6 +71,8 @@ public class NotificationTests
         Assert.Contains("- No rules were newly met.", body);
         Assert.Contains("(Live) Palantir, Zscaler & friends: 3.2% above the discount zone", body);
         Assert.Contains("(Simulation) Intel, The comeback: 4.5% below the buy line", body);
+        Assert.Contains("(Live) S&P 500, The big market drop: 1.8% below the bounce line", body);
+        Assert.Contains("(Live) S&P 500, Ride the long trend: 1.2% below the buy line", body);
         Assert.Contains("The comeback (Simulation): since 5 Oct 2026, 0 signals", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
         Assert.DoesNotContain("buy now", body, StringComparison.OrdinalIgnoreCase);

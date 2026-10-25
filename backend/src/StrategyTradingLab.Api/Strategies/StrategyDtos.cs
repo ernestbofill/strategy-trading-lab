@@ -48,16 +48,29 @@ public record BudgetUsed(decimal Amount, decimal Used, decimal? Step, int? MaxSt
 public record SignalCounts(int Did, int Skipped, int Missed);
 
 /// <summary>A stock's pill on the strategy page.</summary>
-public enum StockStatus { WaitingForYou, Signal, Holding, Building, NoBudget, Watching, NotCandidate, NotEnoughData, NotChecked }
+public enum StockStatus
+{
+    WaitingForYou,
+    Signal,
+    Holding,
+    Done,
+    Building,
+    OutOfTheMarket,
+    NoBudget,
+    Watching,
+    NotCandidate,
+    NotEnoughData,
+    NotChecked,
+}
 
 /// <summary>
 /// A stock of a strategy. <c>Steps</c> are the buys the results count (simulation: signal trades; live: the user's
 /// confirmed buys), <c>RulesSteps</c> the rules' own signals (live only). <c>Signal</c> is the waiting signal (live) or
-/// today's (simulation). <c>Invested</c> is the cost of its buys, fees included, as budget used counts it;
-/// <c>Result</c> is the gain in percent of it, null with no buys.
+/// today's (simulation). <c>Invested</c> is the cost of its buys, fees included, minus the cost of shares sold, as budget
+/// used counts it; <c>Result</c> is the gain in percent of it, null with no buys.
 /// </summary>
 public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Status, int Steps, int? RulesSteps, int? MaxSteps,
-    decimal? DistancePct, Guid? SignalId, int? SignalStep, decimal Invested, decimal? Result);
+    decimal? DistancePct, Guid? SignalId, int? SignalStep, decimal Invested, decimal? Result, TradeSide? SignalSide = null);
 
 /// <summary>The strategy page. <c>Words</c> are the template's for a stock that isn't bought; <c>Signals</c> is live only.</summary>
 public record StrategyDetail(

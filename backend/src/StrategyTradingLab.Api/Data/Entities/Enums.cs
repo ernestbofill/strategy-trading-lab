@@ -12,7 +12,7 @@ public enum StrategyStatus { Running, Ended }
 public enum TradeSide { Buy, Sell }
 
 /// <summary>Where a stock stands under a strategy's rules on a day: the engine's RuleStatus, stored.</summary>
-public enum EvaluationStatus { NotEnoughData, NotCandidate, Watching, BuySignal, SignalEnded, Building, Holding }
+public enum EvaluationStatus { NotEnoughData, NotCandidate, Watching, BuySignal, SignalEnded, Building, Holding, SellSignal }
 
 public enum SignalStatus { Waiting, Confirmed, Skipped, Missed }
 

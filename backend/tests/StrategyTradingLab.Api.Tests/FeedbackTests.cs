@@ -133,13 +133,12 @@ public class FeedbackEndpointTests(AccountsApi api) : IClassFixture<AccountsApi>
         var closed = await (await owner.PatchAsJsonAsync($"/feedback/{id}", new { status = "closed" }))
             .Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("closed", closed.GetProperty("status").GetString());
-        var closedAt = closed.GetProperty("closedAt").GetString();
-        Assert.NotNull(closedAt);
+        var closedAt = closed.GetProperty("closedAt").GetDateTimeOffset();
 
         // Closing again keeps the first closing time.
         var closedAgain = await (await owner.PatchAsJsonAsync($"/feedback/{id}", new { status = "closed" }))
             .Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(closedAt, closedAgain.GetProperty("closedAt").GetString());
+        Assert.Equal(closedAt, closedAgain.GetProperty("closedAt").GetDateTimeOffset(), TimeSpan.FromMicroseconds(1));
 
         var openList = (await owner.GetFromJsonAsync<JsonElement>("/feedback?status=open")).EnumerateArray().ToList();
         Assert.DoesNotContain(openList, f => f.GetProperty("id").GetGuid() == id);

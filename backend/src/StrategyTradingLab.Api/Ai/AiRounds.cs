@@ -208,7 +208,8 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         if (sharing)
         {
             var on = AiPrompt.On(parameters);
-            sharedId = Guid.CreateVersion7();
+            // A random id: a version 7 one would carry the exact time the round was done.
+            sharedId = Guid.NewGuid();
             db.SharedAiRounds.Add(new SharedAiRound
             {
                 Id = sharedId.Value,

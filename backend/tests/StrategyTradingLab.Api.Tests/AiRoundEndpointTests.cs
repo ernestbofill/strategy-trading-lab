@@ -133,6 +133,7 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             var shared = await db.SharedAiRounds.AsNoTracking().SingleAsync(x => x.Answer.Contains($"BE{s.Tag}"));
             Assert.DoesNotContain("jane@example.com", shared.Answer);
             Assert.Equal(["news", "figures"], shared.Sources.Deserialize<string[]>()!);
+            Assert.Equal(4, shared.Id.Version); // Random: a version 7 id would carry the time the round was done.
             Assert.True((await db.Users.AsNoTracking().SingleAsync(u => u.Email == s.Email)).AiSharing);
 
             // The daily check: the trade at the first open after the round, once that price is in.

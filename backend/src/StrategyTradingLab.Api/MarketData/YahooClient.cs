@@ -107,10 +107,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         try
         {
             using var document = JsonDocument.Parse(json);
-            var chart = document.RootElement.GetProperty("chart");
-            if (chart.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
-                throw new MarketDataException($"Yahoo has no data for {symbol}: {error.GetProperty("description").GetString()}");
-            currency = Text(chart.GetProperty("result")[0].GetProperty("meta"), "currency");
+            currency = Text(ChartResult(document, symbol).GetProperty("meta"), "currency");
         }
         catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
         {
@@ -148,10 +145,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
     static IReadOnlyList<Candle> ParseChart(string json, string symbol, bool adjusted)
     {
         using var document = JsonDocument.Parse(json);
-        var chart = document.RootElement.GetProperty("chart");
-        if (chart.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
-            throw new MarketDataException($"Yahoo has no data for {symbol}: {error.GetProperty("description").GetString()}");
-        var result = chart.GetProperty("result")[0];
+        var result = ChartResult(document, symbol);
 
         if (!result.TryGetProperty("timestamp", out var timestamps)) return []; // A symbol with no days in the range.
         var meta = result.GetProperty("meta");
@@ -195,6 +189,15 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         }
         // One bar per day, the last one wins (a day in progress can be listed twice around midnight).
         return [.. candles.GroupBy(c => c.Date).Select(g => g.Last()).OrderBy(c => c.Date)];
+    }
+
+    /// <summary>The first result of a chart answer; Yahoo's own error for the symbol becomes a <see cref="MarketDataException"/>.</summary>
+    static JsonElement ChartResult(JsonDocument document, string symbol)
+    {
+        var chart = document.RootElement.GetProperty("chart");
+        if (chart.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+            throw new MarketDataException($"Yahoo has no data for {symbol}: {error.GetProperty("description").GetString()}");
+        return chart.GetProperty("result")[0];
     }
 
     /// <summary>Four decimals, like the price column; eight for rates, which use the rate column's precision.</summary>

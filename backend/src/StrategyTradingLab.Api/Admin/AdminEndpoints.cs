@@ -227,11 +227,7 @@ public static class AdminEndpoints
             ClaimsPrincipal principal, AssetCatalog catalog, AppDbContext db, CancellationToken cancellationToken) =>
         {
             var symbol = request.Symbol?.Trim() ?? "";
-            var invalid = symbol.Length == 0 ? "Type a symbol."
-                : symbol.Length > AssetCatalog.MaxSymbolLength || symbol.Any(c => char.IsWhiteSpace(c) || char.IsControl(c))
-                    ? "Type one symbol, as Yahoo writes it (AAPL, SAP.DE)."
-                    : null;
-            if (invalid is not null) return Invalid("symbol", invalid);
+            if (SymbolProblem(symbol) is { } symbolProblem) return Invalid("symbol", symbolProblem);
             try
             {
                 var added = await catalog.AddAsync(symbol, Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!), cancellationToken);
@@ -297,6 +293,12 @@ public static class AdminEndpoints
 
     static ValidationProblem Invalid(string field, string message) =>
         TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
+
+    static string? SymbolProblem(string symbol) =>
+        symbol.Length == 0 ? "Type a symbol."
+        : symbol.Length > AssetCatalog.MaxSymbolLength || symbol.Any(c => char.IsWhiteSpace(c) || char.IsControl(c))
+            ? "Type one symbol, as Yahoo writes it (AAPL, SAP.DE)."
+        : null;
 
     static string? TextProblem(string text, int max) =>
         text.Length == 0 ? "Type something."

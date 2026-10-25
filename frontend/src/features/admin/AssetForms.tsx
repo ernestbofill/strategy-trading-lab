@@ -12,8 +12,9 @@ function addedText({ asset, created, problem }: AdminAddedAsset): FormMessageSta
   return { tone: 'done', text: `Added ${label}, prices to ${asset.latestPriceDate ?? '–'}.` }
 }
 
-function failure(e: unknown): Record<string, string> | null {
-  if (e instanceof UnauthorizedError) return null
+/** The messages to show, by field (`form` for one that belongs to none); none when the session ended. */
+function failure(e: unknown): Record<string, string> {
+  if (e instanceof UnauthorizedError) return {}
   if (e instanceof InvalidFieldsError) return e.fields
   if (e instanceof InvalidValueError) return { form: e.message }
   return { form: "Couldn't reach the server. Try again." }
@@ -37,7 +38,7 @@ export function AddAssetForm({ onAdded }: { onAdded: () => Promise<void> }) {
       setSymbol('')
       await onAdded()
     } catch (error) {
-      setErrors(failure(error) ?? {})
+      setErrors(failure(error))
     } finally {
       setBusy(false)
     }
@@ -83,7 +84,7 @@ export function EditAssetForm({ asset, onDone }: { asset: AdminAsset; onDone: (s
       await api.updateAdminAsset(asset.id, { name, what })
       await onDone(true)
     } catch (error) {
-      setErrors(failure(error) ?? {})
+      setErrors(failure(error))
       setBusy(false)
     }
   }

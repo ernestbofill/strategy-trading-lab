@@ -101,10 +101,16 @@
       }
     ],
     "backtest": {
-      "scope": "3 big drops, 2000-2024.",
+      "scope": "3 big drops, 2000-2024. Big drops are rare: it may not signal for years.",
       "years": "2000-2024",
       "universe": "The S&P 500 fund",
       "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."
+    },
+    "stockStatus": {
+      "zone": "the bounce line",
+      "notCandidate": "{n}% below its 6-month high",
+      "watching": "In a drop: {n}% above its low",
+      "holding": "This drop's steps are bought"
     }
   },
   "trend": {
@@ -133,6 +139,10 @@
       "years": "2000-2024",
       "universe": "The index fund",
       "testedDefaults": "The whole €3,000 budget, all in, all out."
+    },
+    "stockStatus": {
+      "zone": "the buy line",
+      "notCandidate": "Below its 200-day average"
     }
   },
   "ai": {

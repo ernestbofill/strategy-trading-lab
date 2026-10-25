@@ -7,7 +7,7 @@ namespace StrategyTradingLab.Api.Tests;
 /// <summary>The engine against the POC's own output on real prices (Golden/README.md): same status, step and signals, every day.</summary>
 public class EngineGoldenTests
 {
-    record Golden(string Symbol, string[] Dates, decimal[] Close, long[]? Volume, string[] Status, int[] Step, string?[] Reason, int[] NewBuy);
+    record Golden(string Symbol, string[] Dates, decimal[] Close, long[]? Volume, string[] Status, int[] Step, string?[] Reason, int[] NewBuy, int[]? NewSell = null);
 
     static Golden Load(string name) =>
         JsonSerializer.Deserialize<Golden>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Golden", $"{name}.json")), JsonSerializerOptions.Web)!;
@@ -28,6 +28,8 @@ public class EngineGoldenTests
             Assert.True(g.Reason[i] == days[i].Reason, $"{g.Symbol} {g.Dates[i]}: expected reason '{g.Reason[i]}', got '{days[i].Reason}'");
         }
         Assert.Equal(g.NewBuy, days.Select((d, i) => (d, i)).Where(x => x.d.NewBuy).Select(x => x.i));
+        if (g.NewSell is not null)
+            Assert.Equal(g.NewSell, days.Select((d, i) => (d, i)).Where(x => x.d.NewSell).Select(x => x.i));
     }
 
     [Theory]
@@ -59,6 +61,34 @@ public class EngineGoldenTests
         var bars = Bars(golden);
 
         var days = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5));
+
+        Matches(golden, days);
+    }
+
+    [Theory]
+    [InlineData("bear-SPY-5600")]
+    [InlineData("bear-SPY-3800")]
+    [InlineData("bear-SPY-800")]
+    public void The_big_market_drop_matches_the_POC_day_by_day(string name)
+    {
+        var golden = Load(name);
+        var bars = Bars(golden);
+
+        var days = RulesRunner.Run(new BearRules(bars, new BearParams()), bars, new StepPlan(5));
+
+        Matches(golden, days);
+    }
+
+    [Theory]
+    [InlineData("trend-SPY-5600")]
+    [InlineData("trend-SPY-3600")]
+    [InlineData("trend-SPY-0")]
+    public void Ride_the_long_trend_matches_the_POC_day_by_day(string name)
+    {
+        var golden = Load(name);
+        var bars = Bars(golden);
+
+        var days = RulesRunner.Run(new TrendRules(bars, new TrendParams()), bars, new StepPlan(1));
 
         Matches(golden, days);
     }

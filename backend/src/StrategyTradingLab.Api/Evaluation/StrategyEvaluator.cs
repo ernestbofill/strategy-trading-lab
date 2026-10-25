@@ -109,30 +109,47 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             row.Facts = Facts(latest.Facts);
         }
 
-        // A signal for each step the rules call for.
-        var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id && s.Side == TradeSide.Buy)
-            .ToDictionaryAsync(s => s.SignalDate, cancellationToken);
-        foreach (var day in days.Where(d => d.NewBuy && !signals.ContainsKey(d.Date) && (evaluatedUntil is null || d.Date > evaluatedUntil)))
+        // A signal for each buy or sale the rules call for.
+        var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id)
+            .ToDictionaryAsync(s => (s.SignalDate, s.Side), cancellationToken);
+        var live = strategy.Mode == StrategyMode.Live;
+        var hasSteps = strategy.Budget.Step is not null && strategy.Budget.MaxSteps is not null;
+        foreach (var day in days.Where(d => d.NewBuy && !signals.ContainsKey((d.Date, TradeSide.Buy)) && (evaluatedUntil is null || d.Date > evaluatedUntil)))
         {
             var stepAmount = strategy.Budget.Step ?? 0;
             if (budget.Used + stepAmount > strategy.Budget.Amount) continue; // The budget is used up: no more signals.
             budget.Used += stepAmount;
-            var live = strategy.Mode == StrategyMode.Live;
             var signal = new Signal
             {
-                StrategyId = strategy.Id, AssetId = asset.Id, Side = TradeSide.Buy, StepNo = day.StepNo, MaxSteps = strategy.Budget.MaxSteps,
-                StepAmount = strategy.Budget.Step, SignalDate = day.Date, ClosePrice = bars.First(b => b.Date == day.Date).Close,
+                StrategyId = strategy.Id, AssetId = asset.Id, Side = TradeSide.Buy,
+                StepNo = hasSteps ? day.StepNo : null, MaxSteps = hasSteps ? strategy.Budget.MaxSteps : null,
+                StepAmount = hasSteps ? strategy.Budget.Step : null,
+                SignalDate = day.Date, ClosePrice = bars.First(b => b.Date == day.Date).Close,
                 Facts = Facts(day.Facts), Status = live ? SignalStatus.Waiting : SignalStatus.Confirmed, AnsweredAt = live ? null : now,
             };
             db.Signals.Add(signal);
-            signals[day.Date] = signal;
+            signals[(day.Date, TradeSide.Buy)] = signal;
+            newSignals++;
+        }
+        foreach (var day in days.Where(d => d.NewSell && !signals.ContainsKey((d.Date, TradeSide.Sell)) && (evaluatedUntil is null || d.Date > evaluatedUntil)))
+        {
+            var signal = new Signal
+            {
+                StrategyId = strategy.Id, AssetId = asset.Id, Side = TradeSide.Sell,
+                StepNo = null, MaxSteps = null, StepAmount = null,
+                SignalDate = day.Date, ClosePrice = bars.First(b => b.Date == day.Date).Close,
+                Facts = Facts(day.Facts), Status = live ? SignalStatus.Waiting : SignalStatus.Confirmed, AnsweredAt = live ? null : now,
+            };
+            db.Signals.Add(signal);
+            signals[(day.Date, TradeSide.Sell)] = signal;
             newSignals++;
         }
 
-        // Where a signal's window closed: the first later day the buy conditions no longer hold. A signal still waiting is missed.
+        // Where a signal's window closed: the first later day the buy (or sell) conditions no longer hold. A signal still waiting is missed.
         foreach (var signal in signals.Values.Where(s => s.EndedOn is null))
         {
-            var closed = days.FirstOrDefault(d => d.Date > signal.SignalDate && !d.WindowOpen);
+            var closed = days.FirstOrDefault(d => d.Date > signal.SignalDate
+                && (signal.Side == TradeSide.Sell ? d.WindowOpen : !d.WindowOpen));
             if (closed is null) continue;
             signal.EndedOn = closed.Date;
         }
@@ -144,19 +161,51 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
                     .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken); // Only a waiting signal can be snoozed (the table's check).
 
         // Each signal's own trade, at the next trading day's open, once that day exists.
-        var traded = await db.SignalTrades.Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id).Select(t => t.SignalId).ToHashSetAsync(cancellationToken);
-        foreach (var signal in signals.Values.Where(s => !traded.Contains(s.Id) && s.StepAmount is not null))
+        var existingTrades = await db.SignalTrades.AsNoTracking()
+            .Where(t => t.StrategyId == strategy.Id && t.AssetId == asset.Id)
+            .OrderBy(t => t.TradeDate).ThenBy(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+        var traded = existingTrades.Select(t => t.SignalId).ToHashSet();
+        decimal heldShares = 0, cashToInvest = strategy.Budget.Amount;
+        foreach (var existing in existingTrades)
+        {
+            if (existing.Side == TradeSide.Buy) heldShares += existing.Shares;
+            else { heldShares = Math.Max(0, heldShares - existing.Shares); cashToInvest = Math.Max(0, existing.Amount - existing.Fee); }
+        }
+        foreach (var signal in signals.Values.Where(s => !traded.Contains(s.Id)).OrderBy(s => s.SignalDate).ThenBy(s => s.Side == TradeSide.Buy ? 0 : 1))
         {
             var next = bars.FirstOrDefault(b => b.Date > signal.SignalDate);
             if (next is null || rates.Between(strategy.Currency, asset.Currency, next.Date) is not { } fx) continue;
-            // The step includes its fee: amount plus fee is the step.
-            var (amount, fee) = TemplateCatalog.Fee.Split(signal.StepAmount!.Value);
-            db.SignalTrades.Add(new SignalTrade
+            if (signal.Side == TradeSide.Buy)
             {
-                SignalId = signal.Id, StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = next.Date, Side = TradeSide.Buy, StepNo = signal.StepNo,
-                Price = next.Open, Shares = Math.Round(amount * fx / next.Open, 6), Amount = amount, Fee = fee, FxRate = fx,
-            });
-            newTrades++;
+                // The step (or for all-in, the budget / sale proceeds) includes its fee: amount plus fee is the step.
+                var spend = signal.StepAmount ?? cashToInvest;
+                if (spend <= TemplateCatalog.Fee.Fixed + 0.01m) continue;
+                var (amount, fee) = TemplateCatalog.Fee.Split(spend);
+                var shares = Math.Round(amount * fx / next.Open, 6);
+                if (shares <= 0) continue;
+                db.SignalTrades.Add(new SignalTrade
+                {
+                    SignalId = signal.Id, StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = next.Date, Side = TradeSide.Buy, StepNo = signal.StepNo,
+                    Price = next.Open, Shares = shares, Amount = amount, Fee = fee, FxRate = fx,
+                });
+                heldShares += shares;
+                newTrades++;
+            }
+            else if (heldShares > 0)
+            {
+                var amount = Math.Round(heldShares * next.Open / fx, 2);
+                if (amount <= 0) continue;
+                var fee = Math.Round(amount * (TemplateCatalog.Fee.Percent / 100) + TemplateCatalog.Fee.Fixed, 2);
+                db.SignalTrades.Add(new SignalTrade
+                {
+                    SignalId = signal.Id, StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = next.Date, Side = TradeSide.Sell, StepNo = null,
+                    Price = next.Open, Shares = heldShares, Amount = amount, Fee = fee, FxRate = fx,
+                });
+                cashToInvest = Math.Max(0, amount - fee);
+                heldShares = 0;
+                newTrades++;
+            }
         }
         await db.SaveChangesAsync(cancellationToken);
         db.ChangeTracker.Clear();

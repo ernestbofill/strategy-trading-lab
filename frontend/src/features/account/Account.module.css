@@ -42,3 +42,10 @@
   opacity: 0.4;
   cursor: default;
 }
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}

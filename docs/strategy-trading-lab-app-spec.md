@@ -261,7 +261,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   2. "**The first bounce:** it climbs 5% off its low. That's the first step."
   3. "**Then in steps:** one more step every 2 weeks, until the budget is used."
 - Fund: "[S&P 500 fund name]" / "Tracks the 500 largest US companies" / "Change".
-- Tested: "[N] big drops, [year]-[year]."
+- Tested: "[N] big drops, [year]-[year]. Big drops are rare: it may not signal for years." (Also added on the dashboard card and strategy page while there are no trades yet.)
 - What can go wrong: "the market can keep falling after the first bounce, and stay low for years."
 
 *Ride the long trend* (`ReviewTrend`)
@@ -482,7 +482,8 @@ The same three settings can be changed later from the strategy page (not drawn).
     - "WATCHING" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
     - Until the stock page is built, only a waiting row is a link.
-    - *Ride the long trend* also needs "OUT OF THE MARKET" for the time between a sale and the next buy (not drawn).
+    - *The big market drop* shows "WATCHING" with "[n]% below its 6-month high" in normal markets and "In a drop: [n]% above its low" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought.
+    - *Ride the long trend* shows "OUT OF THE MARKET" ("[n]% from the buy line", or "Below its long trend") when not holding, and "HOLDING" ("In the market") when holding.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
@@ -582,6 +583,7 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 - The Backend and Database boxes don't need the database, so they show even when the settings can't load ("Could not load the settings: the database in use may not answer. Switch above, or try again later."). Only Postgres is switched; object storage stays on the server's own branch.
 - While the API uses the dev database, every screen's top bar shows a **DEV** tag next to the version (from `GET /version`, which says which database is in use).
 - Log-in is the app's own. Sessions live in the database in use, so after switching database the owner logs in again there (the account must exist in both).
+- **Feedback** (in-app, from selected text, and reviewed on `/admin` and `/feedback`): any signed-in user with a confirmed email can select text on any screen to see a floating `💬 Add comment` button (pinned to the bottom of the screen, or below the sticky header when the selection is near the bottom so it never covers the phone's Copy menu; on desktop, right-clicking a selection also opens `💬 Add comment` / `📋 Copy`). Pressing it opens a modal dialog (`Add a comment`) with a kind picker (`🐞 Bug`, `💡 Idea`, `📝 Note`, `✨ Feature`), the page path, the quoted text and a comment box (`POST /feedback`). Only the **owner** can list, edit, close/reopen or delete feedback (`GET /feedback`, `PATCH /feedback/{id}`, `DELETE /feedback/{id}`), in the **Feedback** section on `/admin` and on `/feedback`, with `Open` / `Closed` / `All` filters, a general comment form and `Copy open as Markdown`.
 
 ## 7. Notifications
 
@@ -615,6 +617,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
 - **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
 - **Market data:** daily US prices and volumes, exchange rates.
+- **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed`), comment text, optional page route, DOM selector and selected text quote, timestamps.
 
 ## 9. Not designed yet
 

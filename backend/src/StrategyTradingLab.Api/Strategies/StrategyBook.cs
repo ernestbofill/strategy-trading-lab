@@ -7,7 +7,7 @@ using StrategyTradingLab.Api.Templates;
 namespace StrategyTradingLab.Api.Strategies;
 
 /// <summary>
-/// The buys and prices behind some strategies' results, loaded once for all of them. A simulation's results come from
+/// The trades and prices behind some strategies' results, loaded once for all of them. A simulation's results come from
 /// its signal trades; a live strategy's from the trades the user confirmed, with its signal trades as "the rules alone".
 /// </summary>
 public sealed class StrategyBook
@@ -27,12 +27,12 @@ public sealed class StrategyBook
     {
         var ids = strategies.Select(s => s.Id).ToList();
         var signalTrades = await db.SignalTrades.AsNoTracking()
-            .Where(t => ids.Contains(t.StrategyId) && t.Side == TradeSide.Buy)
-            .Select(t => new { t.StrategyId, Buy = new Buy(t.AssetId, t.TradeDate, t.Shares, t.Amount, t.Fee) })
+            .Where(t => ids.Contains(t.StrategyId))
+            .Select(t => new { t.StrategyId, Buy = new Buy(t.AssetId, t.TradeDate, t.Shares, t.Amount, t.Fee, t.Side) })
             .ToListAsync(cancellationToken);
         var userTrades = await db.UserTrades.AsNoTracking()
-            .Where(t => ids.Contains(t.StrategyId) && t.Side == TradeSide.Buy && t.DeletedAt == null)
-            .Select(t => new { t.StrategyId, Buy = new Buy(t.AssetId, t.TradeDate, t.Shares, t.Amount, t.Fee) })
+            .Where(t => ids.Contains(t.StrategyId) && t.DeletedAt == null)
+            .Select(t => new { t.StrategyId, Buy = new Buy(t.AssetId, t.TradeDate, t.Shares, t.Amount, t.Fee, t.Side) })
             .ToListAsync(cancellationToken);
 
         var buys = signalTrades.Select(t => t.Buy).Concat(userTrades.Select(t => t.Buy)).ToList();
@@ -57,16 +57,19 @@ public sealed class StrategyBook
         return new PriceBook(assets, await ExchangeRates.LoadAsync(db, from, cancellationToken));
     }
 
-    /// <summary>The buys the strategy's own results come from.</summary>
+    /// <summary>The trades the strategy's own results come from.</summary>
     public IReadOnlyList<Buy> You(Strategy strategy) =>
-        [.. (strategy.Mode == StrategyMode.Live ? userBuys : signalBuys)[strategy.Id].OrderBy(b => b.Date)];
+        [.. (strategy.Mode == StrategyMode.Live ? userBuys : signalBuys)[strategy.Id]
+            .OrderBy(b => b.Date).ThenBy(b => b.Side == TradeSide.Buy ? 0 : 1)];
 
     /// <summary>A live strategy's signal trades, "the rules alone"; null for a simulation, whose results are the rules'.</summary>
     public IReadOnlyList<Buy>? Rules(Strategy strategy) =>
-        strategy.Mode == StrategyMode.Live ? [.. signalBuys[strategy.Id].OrderBy(b => b.Date)] : null;
+        strategy.Mode == StrategyMode.Live
+            ? [.. signalBuys[strategy.Id].OrderBy(b => b.Date).ThenBy(b => b.Side == TradeSide.Buy ? 0 : 1)]
+            : null;
 
-    /// <summary>The budget used (DATA-MODEL: strategies): the cost of the buys, fees included, in both modes.</summary>
-    public decimal Used(Strategy strategy) => You(strategy).Sum(b => b.Cost);
+    /// <summary>The budget used (DATA-MODEL: strategies): cost of the buys (amount + fee) minus cost of the shares sold, at average cost.</summary>
+    public decimal Used(Strategy strategy) => Performance.Used(You(strategy));
 
     /// <summary>The strategy's results today: null until it has a buy that can be valued.</summary>
     public StrategyFigures? Figures(Strategy strategy, DateOnly today)
@@ -74,8 +77,8 @@ public sealed class StrategyBook
         var you = You(strategy);
         if (Performance.GainPct(you, Prices, today, strategy.Currency) is not { } gain) return null;
         var rules = Rules(strategy);
-        // The fund gets the same money as the buys "You" counts: not those that can't be valued yet.
-        var valued = you.Where(b => Prices.Value(b.AssetId, b.Shares, today, strategy.Currency) is not null);
+        // The fund gets the same money as the trades "You" counts: not those of assets that can't be valued yet.
+        var valued = you.Where(b => Prices.Value(b.AssetId, 1m, today, strategy.Currency) is not null);
         var index = Performance.IndexBuys(valued, Prices, IndexFundId, strategy.Currency);
         return new StrategyFigures(
             gain,

@@ -14,6 +14,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
+import { FeedbackSection } from '../feedback/FeedbackSection'
 import { PricesBox } from './PricesBox'
 
 type State =
@@ -69,6 +70,7 @@ export function AdminSettings() {
             {group === 'Prices' && <PricesBox key={settings.map((s) => s.value).join('|')} />}
           </section>
         ))}
+      {state.status === 'ready' && <FeedbackSection key={state.databases.active} />}
     </Screen>
   )
 }

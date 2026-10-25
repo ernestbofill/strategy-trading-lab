@@ -37,12 +37,18 @@ public static class SignalRules
         else if (request.Price != Math.Round(request.Price.Value, 4)) Fail("price", "Use up to 4 decimals.");
 
         var enteredAs = request.EnteredAs ?? EnteredAs.Amount;
-        if (enteredAs == EnteredAs.Amount && (request.Amount is not (> 0 and <= MaxAmount) || request.Amount != Math.Round(request.Amount.Value, 2)))
-            Fail("amount", "Enter the amount you spent, without the fee.");
-        if (enteredAs == EnteredAs.Shares && request.Shares is not (> 0 and < 1_000_000_000))
-            Fail("shares", "Enter the number of shares.");
-        else if (enteredAs == EnteredAs.Shares && request.Shares != Math.Round(request.Shares.Value, 6))
-            Fail("shares", "Use up to 6 decimals.");
+        if (enteredAs == EnteredAs.Amount)
+        {
+            if (request.Amount is not (> 0 and <= MaxAmount) || request.Amount != Math.Round(request.Amount.Value, 2))
+                Fail("amount", "Enter the amount you spent, without the fee.");
+        }
+        else if (enteredAs == EnteredAs.Shares)
+        {
+            if (request.Shares is not (> 0 and < 1_000_000_000))
+                Fail("shares", "Enter the number of shares.");
+            else if (request.Shares != Math.Round(request.Shares.Value, 6))
+                Fail("shares", "Use up to 6 decimals.");
+        }
 
         var fee = request.Fee ?? 0;
         if (fee is < 0 or > MaxAmount || fee != Math.Round(fee, 2)) Fail("fee", "Enter the fee, or leave it empty.");

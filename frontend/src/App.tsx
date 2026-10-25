@@ -17,6 +17,7 @@ import { ResetPassword } from './features/account/ResetPassword'
 import { SignUp } from './features/account/SignUp'
 import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
+import { FeedbackPage } from './features/feedback/FeedbackSection'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { Advanced } from './features/new-strategy/Advanced'
 import { SetBudget } from './features/new-strategy/SetBudget'
@@ -80,6 +81,7 @@ export default function App() {
                     </Suspense>
                   }
                 />
+                <Route path="/feedback" element={<FeedbackPage />} />
               </Route>
               <Route path="/strategies/:id" element={<StrategyPage />} />
               <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />

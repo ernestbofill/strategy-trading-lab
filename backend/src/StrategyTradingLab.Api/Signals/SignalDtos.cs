@@ -6,9 +6,10 @@ namespace StrategyTradingLab.Api.Signals;
 
 /// <summary>
 /// What the form starts with: the next trading day after the signal, its opening price once it is stored (else null, and the
-/// screen shows the signal day's close as a reference), and the step minus the tested fee (the step includes its fee).
+/// screen shows the signal day's close as a reference), the step (or budget) minus the tested fee for buys, and the user's
+/// held shares for sells.
 /// </summary>
-public record TradePrefill(DateOnly Date, decimal? Price, decimal? Amount);
+public record TradePrefill(DateOnly Date, decimal? Price, decimal? Amount, decimal? Shares = null);
 
 /// <summary>The reference rate of a day: units of the asset's currency per one unit of the strategy's.</summary>
 public record RateDay(DateOnly Date, decimal Rate);
@@ -40,7 +41,8 @@ public record SignalDetail(
     DateOnly Today,
     TradePrefill Prefill,
     IReadOnlyList<RateDay> Rates,
-    SignalAnswer? Answer);
+    SignalAnswer? Answer,
+    TradeSide Side = TradeSide.Buy);
 
 /// <summary>
 /// "I did it". <c>EnteredAs</c> says which of <c>Amount</c> and <c>Shares</c> the user typed; the other is worked out.

@@ -138,8 +138,8 @@ public static class StrategyEndpoints
         var book = await StrategyBook.LoadAsync(db, [strategy], today, cancellationToken);
         var live = strategy.Mode == StrategyMode.Live;
 
-        var signals = await db.Signals.AsNoTracking().Where(s => s.StrategyId == strategy.Id && s.Side == TradeSide.Buy)
-            .Select(s => new { s.Id, s.AssetId, s.Status, s.StepNo, s.SignalDate, s.CreatedAt }).ToListAsync(cancellationToken);
+        var signals = await db.Signals.AsNoTracking().Where(s => s.StrategyId == strategy.Id)
+            .Select(s => new { s.Id, s.AssetId, s.Side, s.Status, s.StepNo, s.SignalDate, s.CreatedAt }).ToListAsync(cancellationToken);
         // Each stock's latest evaluation: where the rules stand today.
         var latest = await db.DailyEvaluations.AsNoTracking().Where(r => r.StrategyId == strategy.Id)
             .GroupBy(r => r.AssetId).Select(g => g.OrderByDescending(r => r.Date).First())
@@ -155,17 +155,41 @@ public static class StrategyEndpoints
             var evaluation = latest.GetValueOrDefault(asset.Id);
             var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
             var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
-            var buys = you.Where(b => b.AssetId == asset.Id).ToList();
-            var status = StrategyPage.Status(strategy.Mode, evaluation?.Status, waiting is not null, todays is not null, own.Count, maxSteps);
+            var trades = you.Where(b => b.AssetId == asset.Id).ToList();
+            var invested = Performance.Used(trades);
+            var buySignals = own.Count(s => s.Side == TradeSide.Buy);
+            int rulesSteps;
+            if (maxSteps is null)
+            {
+                var lastSignal = own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault();
+                rulesSteps = lastSignal?.Side == TradeSide.Buy ? 1 : 0;
+            }
+            else if (strategy.TemplateKey == "bear"
+                && evaluation?.Facts.RootElement.TryGetProperty("doneSteps", out var ds) == true
+                && ds.ValueKind == JsonValueKind.Number)
+            {
+                rulesSteps = Math.Min(ds.GetInt32(), buySignals);
+            }
+            else
+            {
+                rulesSteps = buySignals;
+            }
+            var userSteps = maxSteps is null ? (invested > 0 ? 1 : 0)
+                : strategy.TemplateKey == "bear" && !live ? rulesSteps
+                : trades.Count(b => b.Side == TradeSide.Buy);
+
+            var status = StrategyPage.Status(strategy.Mode, evaluation?.Status, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey);
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
-            decimal? distance = evaluation?.Facts.RootElement.TryGetProperty("distancePct", out var d) == true && d.ValueKind == JsonValueKind.Number
+            var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
+            decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
                 ? d.GetDecimal() : null;
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
-                Steps: buys.Count,
-                RulesSteps: live ? own.Count : null,
+                Steps: userSteps,
+                RulesSteps: live ? rulesSteps : null,
                 maxSteps, distance, signal?.Id, signal?.StepNo,
-                Invested: buys.Sum(b => b.Cost),
-                Result: Performance.GainPct(buys, book.Prices, today, strategy.Currency));
+                Invested: invested,
+                Result: Performance.GainPct(trades, book.Prices, today, strategy.Currency),
+                SignalSide: signal?.Side);
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
         .ToList();
@@ -178,7 +202,7 @@ public static class StrategyEndpoints
             : null;
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.StartedOn, today,
             strategy.Currency,
-            new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count, steps),
+            new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks);
     }
 }

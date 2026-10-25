@@ -44,7 +44,7 @@ function Body({ s }: { s: StrategySummary }) {
         <span className={styles.figure} data-tone={pctTone(pastResult.worstYear)}>
           {signedPct(pastResult.worstYear)}
         </span>
-        .
+        .{s.templateKey === 'bear' && ' Big drops are rare: it may not signal for years.'}
       </p>
     )
   }

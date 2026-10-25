@@ -30,9 +30,13 @@ const signal = (fields: Partial<SignalDetail> = {}): SignalDetail => ({
 })
 
 describe('signalForm', () => {
-  it('starts from the next day, its open and the step without the fee', () => {
+  it('starts from the next day, its open and the step without the fee, or held shares for a sale', () => {
     expect(initialForm(signal())).toMatchObject({ date: '2026-10-23', price: '190', amount: '98.80', fee: '', ownRate: null })
     expect(initialForm(signal({ prefill: { date: '2026-10-23', price: null, amount: null } }))).toMatchObject({ price: '', amount: '' })
+    expect(initialForm(signal({ side: 'sell', prefill: { date: '2026-10-23', price: 190, amount: null, shares: 5.25 } }))).toMatchObject({
+      enteredAs: 'shares',
+      shares: '5.25',
+    })
   })
 
   it('reads numbers with a dot or a comma', () => {

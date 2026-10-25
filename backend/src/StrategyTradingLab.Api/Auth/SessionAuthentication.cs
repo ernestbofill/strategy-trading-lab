@@ -10,11 +10,12 @@ namespace StrategyTradingLab.Api.Auth;
 /// <summary>
 /// Plugs the log-in session into ASP.NET authorization: the logged-in user becomes a principal with a role claim, so
 /// endpoints use <c>RequireAuthorization()</c> (any user) or a policy such as <see cref="Policies.Owner"/>. 401 without a
-/// session, 403 for the wrong role.
+/// session, 403 for the wrong role or an unconfirmed email.
 /// </summary>
 public static class SessionAuthentication
 {
     public const string Scheme = "Session";
+    public const string VerifiedEmailClaim = "email_verified";
 
     public static void AddSessionAuthorization(this IServiceCollection services)
     {
@@ -25,6 +26,8 @@ public static class SessionAuthentication
             options.DefaultPolicy = new AuthorizationPolicyBuilder(Scheme).RequireAuthenticatedUser().Build();
             options.AddPolicy(Policies.Owner, policy =>
                 policy.AddAuthenticationSchemes(Scheme).RequireRole(nameof(UserRole.Owner)));
+            options.AddPolicy(Policies.VerifiedEmail, policy =>
+                policy.AddAuthenticationSchemes(Scheme).RequireClaim(VerifiedEmailClaim, "true"));
         });
     }
 }
@@ -32,6 +35,7 @@ public static class SessionAuthentication
 public static class Policies
 {
     public const string Owner = "Owner";
+    public const string VerifiedEmail = "VerifiedEmail";
 }
 
 class SessionAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger,
@@ -46,9 +50,9 @@ class SessionAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> 
             return AuthenticateResult.NoResult();
         var sessions = services.GetRequiredService<Sessions>();
         if (await sessions.CurrentAsync(Context.RequestAborted) is not { } user) return AuthenticateResult.NoResult();
-        var identity = new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Role, user.Role.ToString())],
-            Scheme.Name);
+        List<Claim> claims = [new(ClaimTypes.NameIdentifier, user.Id.ToString()), new(ClaimTypes.Role, user.Role.ToString())];
+        if (user.EmailVerifiedAt is not null) claims.Add(new(SessionAuthentication.VerifiedEmailClaim, "true"));
+        var identity = new ClaimsIdentity(claims, Scheme.Name);
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name));
     }
 }

@@ -19,6 +19,11 @@ public class Asset
     public AssetKind Kind { get; set; }
     public required string Currency { get; set; }
     public bool Active { get; set; } = true;
+    /// <summary>A stock's sector and industry, as the price source writes them. Only for added assets; the seeded ones have written lines.</summary>
+    public string? Sector { get; set; }
+    public string? Industry { get; set; }
+    /// <summary>Who added it at run time; null for a seeded asset (or once that account is deleted).</summary>
+    public Guid? AddedBy { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
     public List<AssetText> Texts { get; set; } = [];

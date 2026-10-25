@@ -927,3 +927,282 @@ BEGIN
     END IF;
 END $EF$;
 COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    ALTER TABLE assets ADD added_by uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    ALTER TABLE assets ADD industry text;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    ALTER TABLE assets ADD sector text;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000002';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000003';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000004';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000005';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000006';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000007';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000008';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000009';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000010';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000011';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000012';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000013';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000014';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000015';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000016';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000017';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000018';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000019';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000020';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001002';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001003';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001004';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001005';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001006';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000002001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000002002';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    UPDATE assets SET added_by = NULL, industry = NULL, sector = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000002003';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    CREATE INDEX ix_assets_added_by ON assets (added_by);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    ALTER TABLE assets ADD CONSTRAINT fk_assets_users_added_by FOREIGN KEY (added_by) REFERENCES users (id) ON DELETE SET NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183235_AddAssetSource') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261025183235_AddAssetSource', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

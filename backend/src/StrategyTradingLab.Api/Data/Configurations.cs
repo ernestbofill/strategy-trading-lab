@@ -27,6 +27,7 @@ class AssetConfiguration : IEntityTypeConfiguration<Asset>
         entity.Property(asset => asset.Currency).HasColumnType(Money.Currency);
         entity.Property(asset => asset.Active).HasColumnDefault(true);
         entity.HasIndex(asset => new { asset.Symbol, asset.Exchange }).IsUnique();
+        entity.HasOne<User>().WithMany().HasForeignKey(asset => asset.AddedBy).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

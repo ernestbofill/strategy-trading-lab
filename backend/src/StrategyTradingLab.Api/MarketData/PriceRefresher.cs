@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Strategies;
 
 namespace StrategyTradingLab.Api.MarketData;
 
@@ -13,7 +14,8 @@ public record RefreshResult(string Name, RefreshOutcome Outcome, int Rows, strin
 /// <summary>
 /// Brings the stored daily prices and euro exchange rates up to date, the way the POC does: a daily run fetches the last
 /// month; if that disagrees with what is stored (a split or a dividend re-adjusted the history) or nothing is stored,
-/// the whole history is fetched and replaces it. One failing symbol never stops the others.
+/// the whole history is fetched and replaces it. One failing symbol never stops the others. Only the watched assets are
+/// fetched (<see cref="Watched"/>), with the exchange rates of their currencies and the accounts' ones.
 /// </summary>
 public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<PriceRefresher> logger)
 {
@@ -26,7 +28,7 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     public async Task<IReadOnlyList<RefreshResult>> RunAsync(CancellationToken cancellationToken)
     {
         var results = new List<RefreshResult>();
-        var assets = await db.Assets.Where(a => a.Active).OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
+        var assets = await Watched().OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
             results.Add(await GuardedAsync(asset.Symbol, () => RefreshAssetAsync(asset, cancellationToken), cancellationToken));
@@ -40,6 +42,14 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         }
         return results;
     }
+
+    /// <summary>
+    /// The assets fetched every day: those on some running strategy's list, ticked or not (its trades still need their
+    /// prices), and the index fund results are compared with. An asset nobody watches isn't fetched; once a strategy
+    /// lists it, the next run catches up (after a gap of over a month it fetches the whole history again).
+    /// </summary>
+    public IQueryable<Asset> Watched() => db.Assets.Where(a => a.Active && (a.Id == StrategyBook.IndexFundId
+        || db.StrategyAssets.Any(sa => sa.AssetId == a.Id && db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running))));
 
     async Task<RefreshResult> GuardedAsync(string name, Func<Task<RefreshResult>> refresh, CancellationToken cancellationToken)
     {

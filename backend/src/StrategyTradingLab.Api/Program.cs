@@ -186,7 +186,6 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
 app.MapTemplates();
-app.MapAssets();
 app.MapStrategies();
 app.MapSignals();
 app.MapTrades();

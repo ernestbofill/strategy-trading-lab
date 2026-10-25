@@ -65,6 +65,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("active");
 
+                    b.Property<Guid?>("AddedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("added_by");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamptz")
@@ -81,6 +85,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("exchange");
 
+                    b.Property<string>("Industry")
+                        .HasColumnType("text")
+                        .HasColumnName("industry");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasColumnType("text")
@@ -91,6 +99,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<string>("Sector")
+                        .HasColumnType("text")
+                        .HasColumnName("sector");
+
                     b.Property<string>("Symbol")
                         .IsRequired()
                         .HasColumnType("text")
@@ -98,6 +110,9 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_assets");
+
+                    b.HasIndex("AddedBy")
+                        .HasDatabaseName("ix_assets_added_by");
 
                     b.HasIndex("Symbol", "Exchange")
                         .IsUnique()
@@ -1626,6 +1641,15 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                             t.HasCheckConstraint("ck_user_trades_source_signal", "(source = 'signal') = (signal_id IS NOT NULL)");
                         });
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Asset", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AddedBy")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_assets_users_added_by");
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.AssetText", b =>

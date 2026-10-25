@@ -58,7 +58,7 @@ erDiagram
 
 ### `assets`
 
-Stocks, funds and indexes: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs, plus a few more ([template-assets.md](src/StrategyTradingLab.Api/Templates/template-assets.md)); a test fails if a template points at an asset that isn't seeded.
+Stocks, funds and indexes: names and "what it does" for lists, "+ Add a stock" search and the fund picker. Seeded with every asset a template's starter list or default fund needs, plus a few more ([template-assets.md](src/StrategyTradingLab.Api/Templates/template-assets.md)); a test fails if a template points at an asset that isn't seeded. Any other is added at run time by its Yahoo symbol (`AssetCatalog`, `POST /admin/assets`): a plain row, no migration. Prices are fetched daily only for the assets some running strategy lists, and the index fund (SPY).
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -69,6 +69,9 @@ Stocks, funds and indexes: names and "what it does" for lists, "+ Add a stock" s
 | kind | text, not null | `stock` \| `fund` \| `index` (followed, not bought) |
 | currency | char(3), not null | Trading currency: `USD`, `EUR`, `GBP`, `HKD`… |
 | active | bool, not null, default true | Delisted assets stay for history |
+| sector, industry | text, null | An added stock's, as Yahoo writes them ("Technology", "Software—Infrastructure"); null for the seeded assets and for funds |
+| added_by | uuid FK → users, set null, null | Who added it at run time; null for the seeded assets |
+| created_at | timestamptz, not null | When it was seeded or added |
 
 Unique `(symbol, exchange)`.
 

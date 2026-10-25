@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
+using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +36,15 @@ public record AdminAsset(Guid Id, string Symbol, string Exchange, string Name, s
     string Currency, bool Active, int Strategies, DateOnly? LatestPriceDate);
 
 public record AssetActive(bool Active);
+
+/// <summary>A symbol to add, as Yahoo writes it ("AAPL", "SAP.DE").</summary>
+public record AssetSymbol(string? Symbol);
+
+/// <summary>What adding a symbol did: the row, whether it is new, and why its prices didn't load, if they didn't.</summary>
+public record AdminAddedAsset(AdminAsset Asset, bool Created, string? Problem);
+
+/// <summary>An asset's name and its English "what it does".</summary>
+public record AssetEdit(string? Name, string? What);
 
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
@@ -205,26 +216,58 @@ public static class AdminEndpoints
 
         assets.MapGet("/", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
-            var rows = await db.Assets
-                .AsNoTracking()
-                .Select(asset => new AdminAsset(
-                    asset.Id,
-                    asset.Symbol,
-                    asset.Exchange,
-                    asset.Name,
-                    asset.Texts.Where(t => t.Locale == Templates.TemplateTexts.DefaultLocale).Select(t => t.What).FirstOrDefault() ?? "",
-                    asset.Kind,
-                    asset.Currency,
-                    asset.Active,
-                    db.StrategyAssets.Count(sa => sa.AssetId == asset.Id && sa.Active && sa.RemovedAt == null
-                        && db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running)),
-                    db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date)))
-                .ToListAsync(cancellationToken);
+            var rows = await AdminAssets(db, db.Assets).ToListAsync(cancellationToken);
             return rows.OrderBy(a => a.Name, StringComparer.InvariantCultureIgnoreCase)
                 .ThenBy(a => a.Symbol, StringComparer.InvariantCultureIgnoreCase)
                 .ToList();
         })
         .WithSummary("All assets, with how many running strategies watch each and its newest stored price date.");
+
+        assets.MapPost("/", async Task<Results<Ok<AdminAddedAsset>, ValidationProblem, ProblemHttpResult>> (AssetSymbol request,
+            ClaimsPrincipal principal, AssetCatalog catalog, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var symbol = request.Symbol?.Trim() ?? "";
+            var invalid = symbol.Length == 0 ? "Type a symbol."
+                : symbol.Length > AssetCatalog.MaxSymbolLength || symbol.Any(c => char.IsWhiteSpace(c) || char.IsControl(c))
+                    ? "Type one symbol, as Yahoo writes it (AAPL, SAP.DE)."
+                    : null;
+            if (invalid is not null) return Invalid("symbol", invalid);
+            try
+            {
+                var added = await catalog.AddAsync(symbol, Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!), cancellationToken);
+                var row = await AdminAssets(db, db.Assets.Where(a => a.Id == added.Asset.Id)).SingleAsync(cancellationToken);
+                return TypedResults.Ok(new AdminAddedAsset(row, added.Created, added.Problem));
+            }
+            catch (AssetNotFoundException error)
+            {
+                return Invalid("symbol", error.Message);
+            }
+            catch (MarketDataException error)
+            {
+                return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
+            }
+        })
+        .WithSummary("Adds a stock, fund or index by its Yahoo symbol and fetches its price history; an asset already there is returned as it is.");
+
+        assets.MapPut("/{id:guid}", async Task<Results<NoContent, NotFound, ValidationProblem>> (Guid id, AssetEdit request,
+            AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var name = request.Name?.Trim() ?? "";
+            var what = request.What?.Trim() ?? "";
+            var errors = new Dictionary<string, string[]>();
+            if (TextProblem(name, 100) is { } nameProblem) errors["name"] = [nameProblem];
+            if (TextProblem(what, 200) is { } whatProblem) errors["what"] = [whatProblem];
+            if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
+
+            var asset = await db.Assets.Include(a => a.Texts).SingleOrDefaultAsync(a => a.Id == id, cancellationToken);
+            if (asset is null) return TypedResults.NotFound();
+            asset.Name = name;
+            if (asset.Texts.SingleOrDefault(t => t.Locale == Templates.TemplateTexts.DefaultLocale) is { } text) text.What = what;
+            else asset.Texts.Add(new AssetText { Locale = Templates.TemplateTexts.DefaultLocale, What = what });
+            await db.SaveChangesAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithSummary("Changes an asset's name and its English \"what it does\".");
 
         assets.MapPut("/{id:guid}/active", async Task<Results<NoContent, NotFound>> (Guid id, AssetActive request,
             AppDbContext db, CancellationToken cancellationToken) =>
@@ -235,6 +278,31 @@ public static class AdminEndpoints
         })
         .WithSummary("Hides or restores an asset.");
     }
+
+    /// <summary>The admin page's rows for those assets.</summary>
+    static IQueryable<AdminAsset> AdminAssets(AppDbContext db, IQueryable<Asset> assets) => assets
+        .AsNoTracking()
+        .Select(asset => new AdminAsset(
+            asset.Id,
+            asset.Symbol,
+            asset.Exchange,
+            asset.Name,
+            asset.Texts.Where(t => t.Locale == Templates.TemplateTexts.DefaultLocale).Select(t => t.What).FirstOrDefault() ?? "",
+            asset.Kind,
+            asset.Currency,
+            asset.Active,
+            db.StrategyAssets.Count(sa => sa.AssetId == asset.Id && sa.Active && sa.RemovedAt == null
+                && db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running)),
+            db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date)));
+
+    static ValidationProblem Invalid(string field, string message) =>
+        TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
+
+    static string? TextProblem(string text, int max) =>
+        text.Length == 0 ? "Type something."
+        : text.Length > max ? $"Use at most {max} characters."
+        : text.Any(char.IsControl) ? "Use printable characters only."
+        : null;
 
     static async Task<Results<NoContent, NotFound, ProblemHttpResult>> Switch(string? name, Func<DatabaseName, Task> change)
     {

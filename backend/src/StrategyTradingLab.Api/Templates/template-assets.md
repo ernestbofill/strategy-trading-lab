@@ -22,7 +22,13 @@ No migration is needed, because the asset rows don't change. If the template has
 
 Delete it from the template's list. Keep its entry in `TemplateAssets.cs` and its row in the database, because strategies may still watch it. A delisted stock gets `active = false`; its row is never deleted.
 
-## Add a stock that isn't seeded yet
+## Add a stock without a deploy
+
+On `/admin/assets`, type its Yahoo symbol under *Add an asset*. The app looks it up in Yahoo's search (name, exchange, type, sector and industry) and chart (currency), stores the row, and fetches its whole price history (and its currency's exchange rate, if it is new) at once. A stock's "what it does" is its sector and industry ("Technology · Software infrastructure"), a fund's or an index's its name; *Edit* changes the name or the line. Prices are then fetched daily once a running strategy lists it.
+
+Such an asset can't be in a template's starter list (the list points at a fixed id): seed it, as below, for that.
+
+## Add a stock to the seed
 
 1. In [TemplateAssets.cs](TemplateAssets.cs), add a line with the next unused number, then add it to `All`:
 
@@ -58,7 +64,7 @@ Delete it from the template's list. Keep its entry in `TemplateAssets.cs` and it
 
 ## Change a seeded stock's name or text
 
-Edit its line in `TemplateAssets.cs` and generate a migration as in step 3. EF turns the change into an update of that row.
+Edit its line in `TemplateAssets.cs` and generate a migration as in step 3. EF turns the change into an update of that row. *Edit* on `/admin/assets` changes the row too, without a deploy, but a later migration that changes the same seed line writes over it.
 
 ## Checks
 

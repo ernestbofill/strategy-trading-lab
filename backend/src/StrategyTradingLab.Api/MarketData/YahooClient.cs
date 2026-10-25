@@ -6,8 +6,11 @@ namespace StrategyTradingLab.Api.MarketData;
 /// <summary>One trading day. Prices are in the asset's currency; a stock's are adjusted for splits and dividends.</summary>
 public record Candle(DateOnly Date, decimal Open, decimal High, decimal Low, decimal Close, long Volume);
 
-/// <summary>One quote from Yahoo Finance's search endpoint.</summary>
-public record MarketQuote(string Symbol, string Exchange, string Name, string Currency, string? QuoteType, string? Sector, string? Industry);
+/// <summary>
+/// One answer of the price source's search: the symbol as the source writes it, the name, the source's exchange code
+/// (Yahoo's <c>NMS</c>, not the MIC), its type (<c>EQUITY</c>, <c>ETF</c>, <c>INDEX</c>…), and a stock's sector and industry.
+/// </summary>
+public record SymbolMatch(string Symbol, string Name, string Exchange, string Type, string? Sector, string? Industry);
 
 /// <summary>Where daily candles come from, so the refresh can be tested without the network.</summary>
 public interface IMarketDataSource
@@ -15,8 +18,11 @@ public interface IMarketDataSource
     /// <summary>The last month, or the whole history. Oldest first; days without prices are left out.</summary>
     Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken);
 
-    /// <summary>The best matches for a symbol, company name or keyword from Yahoo Finance's search endpoint.</summary>
-    Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken);
+    /// <summary>The best matches for a symbol or a name, best first.</summary>
+    Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken);
+
+    /// <summary>The listing's trading currency (ISO code), in which its prices come.</summary>
+    Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken);
 }
 
 public class MarketDataException(string message, Exception? inner = null) : Exception(message, inner);
@@ -32,63 +38,95 @@ public class YahooClient(HttpClient http) : IMarketDataSource
     public async Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken)
     {
         var range = fullHistory ? "max" : "1mo";
-        string json;
+        var json = await GetAsync($"v8/finance/chart/{Uri.EscapeDataString(symbol)}?range={range}&interval=1d&events=div%2Csplits", symbol, cancellationToken);
+        return Parse(json, symbol, adjusted);
+    }
+
+    public async Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken)
+    {
+        var json = await GetAsync($"v1/finance/search?q={Uri.EscapeDataString(query)}&quotesCount=10&newsCount=0&listsCount=0", query, cancellationToken);
+        return ParseSearch(json, query);
+    }
+
+    public async Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken)
+    {
+        var json = await GetAsync($"v8/finance/chart/{Uri.EscapeDataString(symbol)}?range=5d&interval=1d", symbol, cancellationToken);
+        return ParseCurrency(json, symbol);
+    }
+
+    async Task<string> GetAsync(string path, string what, CancellationToken cancellationToken)
+    {
         try
         {
-            using var response = await http.GetAsync($"v8/finance/chart/{Uri.EscapeDataString(symbol)}?range={range}&interval=1d&events=div%2Csplits", cancellationToken);
-            if (!response.IsSuccessStatusCode) throw new MarketDataException($"Yahoo answered HTTP {(int)response.StatusCode} for {symbol}.");
-            json = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var response = await http.GetAsync(path, cancellationToken);
+            if (!response.IsSuccessStatusCode) throw new MarketDataException($"Yahoo answered HTTP {(int)response.StatusCode} for {what}.");
+            return await response.Content.ReadAsStringAsync(cancellationToken);
         }
         catch (Exception error) when (error is HttpRequestException || (error is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
             // A timeout is a TaskCanceledException that isn't ours: it's a failure of this symbol, not a shutdown.
-            throw new MarketDataException($"Couldn't reach Yahoo for {symbol}.", error);
+            throw new MarketDataException($"Couldn't reach Yahoo for {what}.", error);
         }
-        return Parse(json, symbol, adjusted);
     }
 
-    public async Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken)
+    /// <summary>
+    /// Reads Yahoo's search answer. Its quotes write the names in lower case (<c>longname</c>, <c>shortname</c>); one
+    /// without a symbol, a name or a type (a news item, a private company) is left out.
+    /// </summary>
+    public static IReadOnlyList<SymbolMatch> ParseSearch(string json, string query)
     {
-        var term = query.Trim();
-        if (term.Length == 0) return [];
-        string json;
-        try
-        {
-            using var response = await http.GetAsync($"v1/finance/search?q={Uri.EscapeDataString(term)}&quotesCount=10&newsCount=0&enableFuzzyQuery=false", cancellationToken);
-            if (!response.IsSuccessStatusCode) throw new MarketDataException($"Yahoo answered HTTP {(int)response.StatusCode} for {term}.");
-            json = await response.Content.ReadAsStringAsync(cancellationToken);
-        }
-        catch (Exception error) when (error is HttpRequestException || (error is TaskCanceledException && !cancellationToken.IsCancellationRequested))
-        {
-            throw new MarketDataException($"Couldn't reach Yahoo for {term}.", error);
-        }
-
         try
         {
             using var document = JsonDocument.Parse(json);
-            var quotes = document.RootElement.TryGetProperty("quotes", out var list) && list.ValueKind == JsonValueKind.Array ? list : default;
-            var matches = new List<MarketQuote>();
-            foreach (var item in quotes.EnumerateArray())
+            if (!document.RootElement.TryGetProperty("quotes", out var quotes) || quotes.ValueKind != JsonValueKind.Array) return [];
+            var matches = new List<SymbolMatch>();
+            foreach (var quote in quotes.EnumerateArray())
             {
-                var symbol = item.TryGetProperty("symbol", out var symbolElement) ? symbolElement.GetString() : null;
-                var exchange = item.TryGetProperty("exchange", out var exchangeElement) ? exchangeElement.GetString() : null;
-                var name = item.TryGetProperty("longName", out var longName) && longName.ValueKind == JsonValueKind.String ? longName.GetString()
-                    : item.TryGetProperty("shortName", out var shortName) && shortName.ValueKind == JsonValueKind.String ? shortName.GetString()
-                    : null;
-                var currency = item.TryGetProperty("currency", out var currencyElement) ? currencyElement.GetString() : null;
-                var quoteType = item.TryGetProperty("quoteType", out var typeElement) ? typeElement.GetString() : null;
-                var sector = item.TryGetProperty("sector", out var sectorElement) ? sectorElement.GetString() : null;
-                var industry = item.TryGetProperty("industry", out var industryElement) ? industryElement.GetString() : null;
-                if (string.IsNullOrWhiteSpace(symbol) || string.IsNullOrWhiteSpace(exchange) || string.IsNullOrWhiteSpace(name)) continue;
-                matches.Add(new MarketQuote(symbol, exchange, name, currency ?? "USD", quoteType, sector, industry));
+                var symbol = Text(quote, "symbol");
+                var name = Text(quote, "longname") ?? Text(quote, "shortname");
+                var exchange = Text(quote, "exchange");
+                var type = Text(quote, "quoteType");
+                if (symbol is null || name is null || exchange is null || type is null) continue;
+                matches.Add(new SymbolMatch(symbol, name, exchange, type, Text(quote, "sector"), Text(quote, "industry")));
             }
             return matches;
         }
-        catch (Exception error) when (error is JsonException or InvalidOperationException)
+        catch (JsonException error)
         {
-            throw new MarketDataException($"Yahoo's search answer for {term} wasn't what we expected.", error);
+            throw new MarketDataException($"Yahoo's search answer for {query} wasn't what we expected.", error);
         }
     }
+
+    /// <summary>
+    /// The currency in a chart answer's meta. London's pence (<c>GBp</c>) are pounds, as <see cref="Parse"/> scales
+    /// them; another minor unit (<c>ZAc</c>, <c>ILA</c>) isn't scaled yet, so it is refused rather than stored as a wrong code.
+    /// </summary>
+    public static string ParseCurrency(string json, string symbol)
+    {
+        string? currency;
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var chart = document.RootElement.GetProperty("chart");
+            if (chart.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+                throw new MarketDataException($"Yahoo has no data for {symbol}: {error.GetProperty("description").GetString()}");
+            currency = Text(chart.GetProperty("result")[0].GetProperty("meta"), "currency");
+        }
+        catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
+        {
+            throw new MarketDataException($"Yahoo's answer for {symbol} wasn't what we expected.", error);
+        }
+        if (currency == "GBp") return "GBP";
+        // Johannesburg's cents and Tel Aviv's agorot (ILA looks like an ISO code, but isn't one).
+        if (currency is null or "ZAc" or "ILA" || currency.Length != 3 || !currency.All(char.IsAsciiLetterUpper))
+            throw new MarketDataException($"Yahoo quotes {symbol} in {currency ?? "no currency"}, which the app can't use yet.");
+        return currency;
+    }
+
+    static string? Text(JsonElement item, string name) =>
+        item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { Length: > 0 } text
+            ? text.Trim()
+            : null;
 
     /// <summary>
     /// Reads Yahoo's chart answer. With <paramref name="adjusted"/> the open, high and low are scaled by adjclose ÷ close,

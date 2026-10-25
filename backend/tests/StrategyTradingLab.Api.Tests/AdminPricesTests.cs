@@ -16,8 +16,10 @@ public class AdminPricesTests
         public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken) =>
             Task.FromResult(days(symbol));
 
-        public Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<MarketQuote>>([]);
+        public Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<SymbolMatch>>([]);
+
+        public Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken) => Task.FromResult("USD");
     }
 
     sealed class Api(IMarketDataSource source) : AccountsApi

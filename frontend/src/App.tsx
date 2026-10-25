@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
+import { I18nProvider, useI18n } from './i18n/I18n'
 import { AccountProvider, useAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
 import { ForgotPassword } from './features/account/ForgotPassword'
@@ -38,39 +39,55 @@ function DraftPerUser({ children }: { children: ReactNode }) {
   return <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
 }
 
+/** Syncs the user's saved account locale to this device when logged in. */
+function LocaleFromAccount() {
+  const { state } = useAccount()
+  const { locale, setLocale } = useI18n()
+  const accountLocale = state.status === 'ready' ? state.account?.locale : null
+  useEffect(() => {
+    if (accountLocale && accountLocale !== locale) {
+      setLocale(accountLocale)
+    }
+  }, [accountLocale, locale, setLocale])
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <AccountProvider>
-        <DraftPerUser>
-          <Routes>
-            <Route path={signUpPath} element={<SignUp />} />
-            <Route path={logInPath} element={<LogIn />} />
-            <Route path={forgotPasswordPath} element={<ForgotPassword />} />
-            <Route path={resetPasswordPath} element={<ResetPassword />} />
-            <Route path={verifyEmailPath} element={<VerifyEmail />} />
-            <Route element={<RequireAccount />}>
-              <Route path={homePath} element={<Dashboard />} />
-              <Route path={pickPath} element={<PickTemplate />} />
-              <Route path="/new/templates/:key" element={<ReviewTemplate />} />
-              <Route path="/new/templates/:key/how-tested" element={<HowTested />} />
-              <Route path="/new/templates/:key/advanced" element={<Advanced />} />
-              <Route path="/new/mode" element={<ChooseMode />} />
-              <Route path={budgetPath} element={<SetBudget />} />
-              <Route path={confirmPath} element={<Confirm />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path={accountPath} element={<AccountPage />} />
-              <Route element={<RequireOwner />}>
-                <Route path="/admin" element={<AdminSettings />} />
+      <I18nProvider>
+        <AccountProvider>
+          <LocaleFromAccount />
+          <DraftPerUser>
+            <Routes>
+              <Route path={signUpPath} element={<SignUp />} />
+              <Route path={logInPath} element={<LogIn />} />
+              <Route path={forgotPasswordPath} element={<ForgotPassword />} />
+              <Route path={resetPasswordPath} element={<ResetPassword />} />
+              <Route path={verifyEmailPath} element={<VerifyEmail />} />
+              <Route element={<RequireAccount />}>
+                <Route path={homePath} element={<Dashboard />} />
+                <Route path={pickPath} element={<PickTemplate />} />
+                <Route path="/new/templates/:key" element={<ReviewTemplate />} />
+                <Route path="/new/templates/:key/how-tested" element={<HowTested />} />
+                <Route path="/new/templates/:key/advanced" element={<Advanced />} />
+                <Route path="/new/mode" element={<ChooseMode />} />
+                <Route path={budgetPath} element={<SetBudget />} />
+                <Route path={confirmPath} element={<Confirm />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path={accountPath} element={<AccountPage />} />
+                <Route element={<RequireOwner />}>
+                  <Route path="/admin" element={<AdminSettings />} />
+                </Route>
+                <Route path="/strategies/:id" element={<StrategyPage />} />
+                <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
+                <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
               </Route>
-              <Route path="/strategies/:id" element={<StrategyPage />} />
-              <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
-              <Route path="/strategies/:id/ai-round" element={<NotBuiltYet title="AI round" back={dashboardPath} />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </DraftPerUser>
-      </AccountProvider>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </DraftPerUser>
+        </AccountProvider>
+      </I18nProvider>
     </BrowserRouter>
   )
 }

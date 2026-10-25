@@ -97,6 +97,34 @@ public class AccountRulesTests
     }
 
     [Fact]
+    public void Locales_supported_are_en_and_ca()
+    {
+        Assert.Equal(["en", "ca"], AccountRules.Locales);
+    }
+
+    [Theory]
+    [InlineData("ca", "ca")]
+    [InlineData("ca-ES", "ca")]
+    [InlineData("ca,es;q=0.9,en;q=0.8", "ca")]
+    [InlineData("en-US,en;q=0.9", "en")]
+    [InlineData("fr-FR", "en")]
+    [InlineData(null, "en")]
+    [InlineData("", "en")]
+    public void Request_locale_parses_header_correctly(string? header, string expected)
+    {
+        var httpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext();
+        if (header is not null) httpContext.Request.Headers["Accept-Language"] = header;
+        Assert.Equal(expected, RequestLocale.From(httpContext.Request));
+    }
+
+    [Fact]
+    public void Password_error_returns_catalan_when_locale_is_ca()
+    {
+        Assert.Equal("Fes servir almenys 10 caràcters.", AccountRules.PasswordError("short", null, "ca"));
+        Assert.Equal("No facis servir el teu correu com a contrasenya.", AccountRules.PasswordError("me@example.com", "me@example.com", "ca"));
+    }
+
+    [Fact]
     public void A_good_log_in_or_a_reset_clears_the_lock()
     {
         var throttle = new LogInThrottle(TimeProvider.System);

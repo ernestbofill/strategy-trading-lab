@@ -26,9 +26,21 @@ public class TemplateTests
     }
 
     [Fact]
+    public void Every_template_has_catalan_texts_with_rules()
+    {
+        foreach (var template in TemplateCatalog.All)
+        {
+            var texts = TemplateTexts.For(template, "ca");
+            Assert.NotEmpty(texts.Name);
+            Assert.Equal(3, texts.Rules.Count);
+            Assert.Equal(template.Backtest is null, texts.Backtest is null);
+        }
+    }
+
+    [Fact]
     public void A_language_without_texts_falls_back_to_english()
     {
-        Assert.Equal("Dip in winners", TemplateTexts.For(TemplateCatalog.Dip, "ca").Name);
+        Assert.Equal("Dip in winners", TemplateTexts.For(TemplateCatalog.Dip, "fr").Name);
     }
 
     [Fact]

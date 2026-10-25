@@ -48,7 +48,7 @@ public static class SignalEndpoints
             // The same currency needs no rate (it is 1): nothing to load.
             var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
             var (trade, errors) = SignalRules.CheckTrade(request, signal.SignalDate, StrategyEndpoints.Today(user, time),
-                day => rates.Between(strategy.Currency, asset.Currency, day));
+                day => rates.Between(strategy.Currency, asset.Currency, day), user.Locale);
             if (trade is null) return TypedResults.ValidationProblem(errors);
 
             var userTrade = new UserTrade
@@ -181,7 +181,7 @@ public static class SignalEndpoints
         }
         else if (signal.Status == SignalStatus.Skipped) answer = new SignalAnswer(signal.Status, signal.SkipReason, null, null, null, null, null);
 
-        var reason = EmailTexts.FactSentence(SignalLine.From(signal, strategy, asset));
+        var reason = EmailTexts.FactSentence(SignalLine.From(signal, strategy, asset), user.Locale);
         return new SignalDetail(signal.Id, strategy.Id, strategy.Name, texts.Name, strategy.Currency, asset.Name, asset.Currency, signal.StepNo,
             signal.MaxSteps, signal.StepAmount, signal.SignalDate, signal.ClosePrice, reason, signal.Status, signal.SnoozedUntil, signal.EndedOn,
             today, prefill, rates, answer);

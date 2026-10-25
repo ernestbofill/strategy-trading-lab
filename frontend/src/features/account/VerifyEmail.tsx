@@ -3,6 +3,7 @@ import { api, ExpiredLinkError } from '../../api'
 import { FormMessage } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { useT } from '../../i18n/I18n'
 import { dashboardPath } from '../new-strategy/paths'
 import { useAccount } from './AccountContext'
 import { EXPIRED_LINK } from './copy'
@@ -32,6 +33,7 @@ function verify(token: string): Promise<Result> {
 
 /** The link in "Confirm your email". It needs no log-in and logs no one in (backend/AUTH.md). */
 export function VerifyEmail() {
+  const t = useT()
   const token = useLinkToken()
   const { state, refresh } = useAccount()
   const [verified, setVerified] = useState<Result>('checking')
@@ -52,22 +54,22 @@ export function VerifyEmail() {
   }, [token, refresh])
 
   const [to, label] = !loggedIn
-    ? [logInPath, 'Log in']
+    ? [logInPath, t('account.verify.logIn')]
     : result === 'expired'
-      ? [accountPath, 'Go to your account']
-      : [dashboardPath, 'Go to the dashboard']
+      ? [accountPath, t('account.verify.goAccount')]
+      : [dashboardPath, t('account.verify.goDashboard')]
   const action = result === 'checking' ? undefined : <PrimaryAction to={to}>{label}</PrimaryAction>
 
   return (
-    <Screen top={<TopBar title="STL // EMAIL" />} action={action}>
-      <PageHeader title={result === 'confirmed' ? 'Your email is confirmed' : 'Confirm your email'} />
-      {result === 'checking' && <ScreenMessage>Checking the link…</ScreenMessage>}
+    <Screen top={<TopBar title={t('account.verify.topBar')} />} action={action}>
+      <PageHeader title={result === 'confirmed' ? t('account.verify.titleConfirmed') : t('account.verify.title')} />
+      {result === 'checking' && <ScreenMessage>{t('account.verify.checking')}</ScreenMessage>}
       {result === 'expired' && (
         <FormMessage tone="error">
-          {EXPIRED_LINK} {loggedIn ? 'Your account page sends it again.' : 'Log in to have it sent again.'}
+          {EXPIRED_LINK} {loggedIn ? t('account.verify.expiredLoggedIn') : t('account.verify.expiredLoggedOut')}
         </FormMessage>
       )}
-      {result === 'failed' && <FormMessage tone="error">Couldn't check the link. Reload to try again.</FormMessage>}
+      {result === 'failed' && <FormMessage tone="error">{t('account.verify.failed')}</FormMessage>}
     </Screen>
   )
 }

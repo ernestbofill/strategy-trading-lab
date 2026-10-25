@@ -66,6 +66,16 @@ public class SignalRulesTests
         Assert.Contains("fxRate", errors.Keys);
     }
 
+    [Fact]
+    public void Errors_can_be_returned_in_catalan()
+    {
+        var (_, errors) = SignalRules.CheckTrade(Trade(price: 0, amount: -5, fee: -1) with { Date = null }, SignalDay, Today, Rate, locale: "ca");
+        Assert.Equal(["Indica l'import que has gastat, sense la comissió."], errors["amount"]);
+        Assert.Equal(["Indica el dia que vas operar."], errors["date"]);
+        Assert.Equal(["Indica la comissió, o deixa-ho buit."], errors["fee"]);
+        Assert.Equal(["Indica el preu per acció."], errors["price"]);
+    }
+
     [Theory]
     [InlineData("2026-10-22", "2026-10-23")] // Thursday → Friday.
     [InlineData("2026-10-23", "2026-10-26")] // Friday → Monday.

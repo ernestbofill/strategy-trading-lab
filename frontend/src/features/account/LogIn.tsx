@@ -5,6 +5,7 @@ import { FormMessage, PasswordField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
+import { useT } from '../../i18n/I18n'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
 import { errorText } from './copy'
@@ -12,6 +13,7 @@ import { forgotPasswordPath, safeNext, signUpPath } from './paths'
 
 /** Log-in (spec: Log-in). Afterwards the screen the user was on, or the dashboard. */
 export function LogIn() {
+  const t = useT()
   const { state, refresh } = useAccount()
   const next = safeNext(useSearchParams()[0].get('next'))
   const [email, setEmail] = useState('')
@@ -37,9 +39,9 @@ export function LogIn() {
     } catch (err) {
       setError(
         err instanceof UnauthorizedError
-          ? "That email and password don't match."
+          ? t('account.logIn.mismatch')
           : err instanceof TooManyTriesError
-            ? 'Too many tries. Wait a few minutes, or reset your password.'
+            ? t('account.logIn.tooManyTries')
             : errorText(err),
       )
       setBusy(false)
@@ -48,22 +50,22 @@ export function LogIn() {
 
   return (
     <Screen
-      top={<TopBar title="STL // LOG IN" />}
+      top={<TopBar title={t('account.logIn.topBar')} />}
       action={
         <PrimaryAction form="log-in" disabled={busy || !email || !password}>
-          {busy ? 'Logging in…' : 'Log in'}
+          {busy ? t('account.logIn.submitting') : t('account.logIn.submit')}
         </PrimaryAction>
       }
     >
-      <PageHeader title="Log in" />
+      <PageHeader title={t('account.logIn.title')} />
       <form id="log-in" className={styles.form} onSubmit={submit} noValidate>
-        <TextField label="Email" type="email" autoComplete="username" value={email} onChange={setEmail} />
-        <PasswordField label="Password" autoComplete="current-password" value={password} onChange={setPassword} />
+        <TextField label={t('account.field.email')} type="email" autoComplete="username" value={email} onChange={setEmail} />
+        <PasswordField label={t('account.field.password')} autoComplete="current-password" value={password} onChange={setPassword} />
         {error && <FormMessage tone="error">{error}</FormMessage>}
       </form>
       <div className={styles.links}>
-        <TextAction to={forgotPasswordPath}>Forgot your password?</TextAction>
-        <TextAction to={signUpPath}>Create an account</TextAction>
+        <TextAction to={forgotPasswordPath}>{t('account.logIn.forgot')}</TextAction>
+        <TextAction to={signUpPath}>{t('account.logIn.create')}</TextAction>
       </div>
     </Screen>
   )

@@ -14,7 +14,7 @@ import { Section } from '../../../components/Section'
 import { Tag } from '../../../components/Tag'
 import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
-import { DISCLAIMER } from '../../../lib/copy'
+import { useT } from '../../../i18n/I18n'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
 import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
 import { settingsSummary } from '../settings'
@@ -28,15 +28,17 @@ const top = <TopBar back={pickPath} step="2 / 5" />
 
 /** 2 · Review a template (wireframes `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI`). */
 export function ReviewTemplate() {
+  const t = useT()
   const { key } = useParams<{ key: TemplateKey }>()
   return (
-    <LoadableScreen state={useTemplate(key)} top={top} what="the template">
+    <LoadableScreen state={useTemplate(key)} top={top} what={t('newStrategy.what.template')}>
       {(template) => <ReviewContent key={template.key} template={template} />}
     </LoadableScreen>
   )
 }
 
 function ReviewContent({ template }: { template: TemplateDetail }) {
+  const t = useT()
   const draft = useNewStrategyDraft()
   const { aiRound, watches } = template
   const stocks = watches.kind === 'stocks' ? watches.starterList : []
@@ -52,41 +54,41 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
   const stockList = (
     <>
       <CheckList
-        label="Stocks to watch"
+        label={t('newStrategy.review.stocksLabel')}
         items={stocks.map((s) => ({ id: s.symbol, title: s.name, detail: s.what }))}
         isChecked={(symbol) => !unticked.includes(symbol)}
         onToggle={toggleStock}
-        footer={<TextAction>+ Add a stock</TextAction>}
+        footer={<TextAction>{t('newStrategy.review.addStock')}</TextAction>}
       />
-      <p className={styles.info}>In our tests, longer lists gave steadier results.</p>
+      <p className={styles.info}>{t('newStrategy.review.longerLists')}</p>
     </>
   )
 
   const main = (
     <>
-      <Section title="The idea">
+      <Section title={t('newStrategy.review.idea')}>
         <p className={styles.plain}>{template.rationale}</p>
       </Section>
-      <Section title="It signals when">
+      <Section title={t('newStrategy.review.signalsWhen')}>
         <RuleList rules={template.rules} />
       </Section>
       {aiRound ? (
         <AiSettings />
       ) : watches.kind === 'stocks' ? (
         <Section
-          title="Choose stocks to watch"
+          title={t('newStrategy.review.chooseStocks')}
           aside={
             <span className={styles.counter}>
-              {tickedCount} of {stocks.length} ticked
+              {t('newStrategy.review.tickedOf', { ticked: tickedCount, total: stocks.length })}
             </span>
           }
         >
           {stockList}
         </Section>
       ) : (
-        <Section title="The fund it watches">
+        <Section title={t('newStrategy.review.fund')}>
           <div className={styles.fund}>
-            <ItemRow title={watches.fund.name} detail={watches.fund.what} trailing={<TextAction>Change</TextAction>} />
+            <ItemRow title={watches.fund.name} detail={watches.fund.what} trailing={<TextAction>{t('newStrategy.review.change')}</TextAction>} />
           </div>
         </Section>
       )}
@@ -100,9 +102,8 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       ) : (
         <>
           <Callout tone="info">
-            <LabelledLine label="What you need:">
-              an AI service that can search the web (most paid plans can). The app doesn't connect to it and never sees
-              your account.
+            <LabelledLine label={t('newStrategy.review.needLabel')}>
+              {t('newStrategy.review.needText')}
             </LabelledLine>
           </Callout>
         </>
@@ -111,7 +112,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
         <AiRows aiRound={aiRound} stockList={stockList} tickedCount={tickedCount} advancedTo={advancedPath(template.key)} />
       ) : (
         <NavRow
-          label="Advanced settings"
+          label={t('newStrategy.review.advanced')}
           meta={
             template.settings.length > 0
               ? // Another template's draft changes belong to that one.
@@ -132,16 +133,16 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
           to={modePath}
           disabled={!canContinue}
         >
-          Use this template
+          {t('newStrategy.review.useTemplate')}
         </PrimaryAction>
       }
-      note={canContinue ? DISCLAIMER : 'Tick at least one stock to watch.'}
+      note={canContinue ? t('common.disclaimer') : t('newStrategy.review.tickOne')}
     >
       <PageHeader
         eyebrow={
           <>
-            Strategy template
-            {aiRound && <Tag tone="ai">AI</Tag>}
+            {t('newStrategy.review.eyebrow')}
+            {aiRound && <Tag tone="ai">{t('newStrategy.review.aiTag')}</Tag>}
           </>
         }
         title={template.name}
@@ -154,18 +155,19 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
 
 /** "What the AI reads" and "The prompt", for templates driven by AI rounds. */
 function AiSettings() {
+  const t = useT()
   const { aiSources, update } = useNewStrategyDraft()
   const toggle = (id: AiSource) => update({ aiSources: { ...aiSources, [id]: !aiSources[id] } })
 
   return (
     <>
-      <Section title="What the AI reads">
+      <Section title={t('newStrategy.review.aiReads')}>
         <ToggleTiles tiles={AI_SOURCES} isOn={(id) => aiSources[id]} onToggle={toggle} keepOne />
-        <p className="caption">At least one stays on. Each one adds a section to the prompt.</p>
+        <p className="caption">{t('newStrategy.review.aiAtLeastOne')}</p>
       </Section>
-      <Section title="The prompt" aside={<TextAction>Edit prompt</TextAction>}>
+      <Section title={t('newStrategy.review.prompt')} aside={<TextAction>{t('newStrategy.review.editPrompt')}</TextAction>}>
         <AiPrompt sources={aiSources} />
-        <p className="caption">It asks for scores against stated criteria, never which stock to buy.</p>
+        <p className="caption">{t('newStrategy.review.promptNote')}</p>
       </Section>
     </>
   )
@@ -180,19 +182,20 @@ interface AiRowsProps {
 
 /** The stock list folds into a row here; "Advanced settings" shows the round settings. */
 function AiRows({ aiRound, stockList, tickedCount, advancedTo }: AiRowsProps) {
+  const t = useT()
   const [showStocks, setShowStocks] = useState(false)
   return (
     <div className={styles.rows}>
       <NavRow
-        label="Choose stocks to watch"
-        meta={`${tickedCount} ticked`}
+        label={t('newStrategy.review.chooseStocks')}
+        meta={t('newStrategy.review.ticked', { n: tickedCount })}
         onClick={() => setShowStocks((v) => !v)}
         expanded={showStocks}
       />
       {showStocks && stockList}
       <NavRow
-        label="Advanced settings"
-        meta={`every ${aiRound.everyWeeks} weeks · top ${aiRound.topN}`}
+        label={t('newStrategy.review.advanced')}
+        meta={t('newStrategy.review.aiMeta', { weeks: aiRound.everyWeeks, top: aiRound.topN })}
         to={advancedTo}
       />
     </div>

@@ -1,4 +1,6 @@
 import type { SignalDetail, SignalTrade, SkipReason } from '../../api'
+import type { MessageKey } from '../../i18n/messages/en'
+import type { MessageParams } from '../../i18n/format'
 
 /** "I did it" as typed: strings, so a field can be empty or half-typed. `ownRate` is null while the reference rate is used. */
 export interface TradeForm {
@@ -11,12 +13,22 @@ export interface TradeForm {
   ownRate: string | null
 }
 
+export const SKIP_REASON_KEYS: Record<SkipReason, MessageKey> = {
+  priceRanAway: 'signal.skip.priceRanAway',
+  didntTrustIt: 'signal.skip.didntTrustIt',
+  noCash: 'signal.skip.noCash',
+  other: 'signal.skip.other',
+}
+
 export const SKIP_REASONS: { id: SkipReason; label: string }[] = [
   { id: 'priceRanAway', label: 'Price ran away' },
   { id: 'didntTrustIt', label: "Didn't trust it" },
   { id: 'noCash', label: 'No cash' },
   { id: 'other', label: 'Other' },
 ]
+
+export const skipReasons = (t?: (key: MessageKey) => string) =>
+  SKIP_REASONS.map((r) => ({ id: r.id, label: t ? t(SKIP_REASON_KEYS[r.id]) : r.label }))
 
 /** The form as the signal prefills it: the next trading day, its open when known, the step without the fee, no fee. */
 export const initialForm = (s: SignalDetail): TradeForm => ({
@@ -55,9 +67,8 @@ export function parseNumber(text: string): number | null {
 }
 
 /** The fields whose text could be read two ways, keyed as the server names them, with what to write instead. */
-export function ambiguousFields(form: TradeForm): Record<string, string> {
+export function ambiguousFields(form: TradeForm, ask = 'Is that 1250 or 1.25? Write it as 1250 or 1.25.'): Record<string, string> {
   const errors: Record<string, string> = {}
-  const ask = 'Is that 1250 or 1.25? Write it as 1250 or 1.25.'
   const check = (field: string, text: string | null) => text !== null && isAmbiguous(text) && (errors[field] = ask)
   check('price', form.price)
   check(form.enteredAs === 'amount' ? 'amount' : 'shares', form.enteredAs === 'amount' ? form.amount : form.shares)
@@ -89,5 +100,7 @@ export function tradeRequest(form: TradeForm): SignalTrade {
 }
 
 /** "step 3 of 5": the next signal's step after a skip, or null once the last step is reached (or the signal has none). */
-export const nextStep = (s: SignalDetail) =>
-  s.stepNo !== null && s.maxSteps !== null && s.stepNo < s.maxSteps ? `step ${s.stepNo + 1} of ${s.maxSteps}` : null
+export const nextStep = (s: SignalDetail, t?: (key: MessageKey, params?: MessageParams) => string) => {
+  if (s.stepNo === null || s.maxSteps === null || s.stepNo >= s.maxSteps) return null
+  return t ? t('signal.nextStep', { n: s.stepNo + 1, max: s.maxSteps }) : `step ${s.stepNo + 1} of ${s.maxSteps}`
+}

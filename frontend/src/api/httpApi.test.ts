@@ -137,9 +137,24 @@ describe('httpApi CSRF header', () => {
     await httpApi.startStrategy({ templateKey: 'dip', name: 'x', mode: 'live', currency: 'EUR', budget: { amount: 3000, step: 100, maxSteps: 5 }, assetIds: [], settings: {} })
     for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'X-Requested-With': 'stl' })
   })
+
+  it('sends Accept-Language on requests', async () => {
+    respond(200, [{ key: 'dip' }])
+    await httpApi.getTemplates()
+    const [, init] = vi.mocked(fetch).mock.calls[0]
+    expect(init?.headers).toMatchObject({ 'Accept-Language': 'en' })
+  })
 })
 
 describe('httpApi accounts', () => {
+  it('sets the account locale with /api/account/locale', async () => {
+    respond(204)
+    await httpApi.setLocale('ca')
+    const [path, init] = vi.mocked(fetch).mock.calls[0]
+    expect(path).toBe('/api/account/locale')
+    expect(init).toMatchObject({ method: 'POST', headers: expect.objectContaining({ 'X-Requested-With': 'stl' }) })
+    expect(JSON.parse(init?.body as string)).toEqual({ locale: 'ca' })
+  })
   it('reads the account, and null without a session', async () => {
     respond(200, { email: 'a@b.c' })
     await expect(httpApi.getAccount()).resolves.toEqual({ email: 'a@b.c' })

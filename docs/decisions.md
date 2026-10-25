@@ -2,6 +2,8 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-10-25 · In-app feedback: any authenticated user with a confirmed email may select text on any screen to submit feedback (bug, idea, note, feature); only the owner reviews, edits, closes/reopens and deletes items on /admin and /feedback, and the Account page links to /admin for the owner. (#48)
+
 - 2026-10-25 · The launch path: Milestone 1 (core loop), Milestone 2 (ready to publish), a quiet launch, then the public beta, as in ROADMAP.md. *Your AI's top picks* comes into the launch if there's time; the rest of the launch scope is still open. (#58)
 - 2026-10-25 · Template pages are public, and sign-up has "Skip for now, look around": a guest goes through the new-strategy flow (draft in the browser) and signs up to start it. (Ernest, #58)
 - 2026-10-25 · The admin pages' data table is built on TanStack Table (headless, small, styled with the design tokens, rows as cards on a phone), not AG Grid. (Ernest, #58)

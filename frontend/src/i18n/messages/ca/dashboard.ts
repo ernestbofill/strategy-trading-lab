@@ -1,0 +1,27 @@
+import type { dashboard as en } from '../en/dashboard'
+
+export const dashboard: Record<keyof typeof en, string> = {
+  'dashboard.what': 'les teves estratègies',
+  'dashboard.title': 'STL // TAULER',
+  'dashboard.account': 'Compte',
+  'dashboard.heading': 'Les teves estratègies',
+  'dashboard.newStrategy': '+ Nova estratègia',
+  'dashboard.waitingTitle': 'T’espera a tu',
+  'dashboard.waitingHidden': ' en espera',
+  'dashboard.dot.aiRound': 'Ronda d’IA pendent',
+  'dashboard.dot.signal': 'Senyal en espera',
+  'dashboard.card.index': 'Fons indexat: {pct}',
+  'dashboard.card.worstYear': 'Pitjor any de la plantilla: {pct}',
+  'dashboard.card.noResultsBudget': 'Els resultats es mostraran quan es publiquin els preus de les teves operacions.',
+  'dashboard.card.noTradesLive': 'Encara no hi ha operacions.',
+  'dashboard.card.noTradesSim': 'Encara no hi ha operacions sobre el paper.',
+  'dashboard.card.pastBefore': 'En el passat, {years}, la plantilla va fer un',
+  'dashboard.card.pastVs': 'enfront del',
+  'dashboard.card.pastAfter': 'd’un fons indexat. El seu pitjor any va ser del',
+  'dashboard.card.bearRare': 'Les grans caigudes són poc freqüents: pot passar anys sense senyal.',
+  'dashboard.card.noResultsAi': 'Encara no hi ha resultats. Comencen després de la teva primera ronda d’IA.',
+  'dashboard.card.budgetUsed': '{used} de {budget} utilitzats',
+  'dashboard.waiting.buy': 'Les teves regles per a {strategy} es compleixen per a {stock}. Hi has actuat?',
+  'dashboard.waiting.sell': 'Les teves regles per a {strategy} es compleixen per a una venda. Hi has actuat?',
+  'dashboard.waiting.aiRound': 'És el moment de la ronda d’IA de {strategy}.',
+}

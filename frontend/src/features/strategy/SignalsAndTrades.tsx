@@ -15,11 +15,12 @@ import { FormMessage, SelectField, TextField, type FormMessageState } from '../.
 import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
+import { useT } from '../../i18n/I18n'
 import { exact, money, shortDate, symbolOf } from '../../lib/format'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { signalPath } from '../dashboard/paths'
-import { ambiguousFields, parseNumber, rateOn, SKIP_REASONS, type TradeForm } from '../signal/signalForm'
+import { ambiguousFields, parseNumber, rateOn, skipReasons, type TradeForm } from '../signal/signalForm'
 import { strategyCacheKey } from './useStrategy'
 import styles from './SignalsAndTrades.module.css'
 
@@ -28,6 +29,7 @@ type TimelineItem =
   | { kind: 'signal'; signal: StrategySignalItem; date: string; createdAt: string }
 
 export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
+  const t = useT()
   const live = s.mode === 'live'
 
   const [formMode, setFormMode] = useState<'add' | null>(null)
@@ -51,7 +53,7 @@ export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
 
   return (
     <Section
-      title="Signals and trades"
+      title={t('trades.title')}
       aside={
         live ? (
           <TextAction
@@ -61,7 +63,7 @@ export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
               setFormMode(formMode === 'add' ? null : 'add')
             }}
           >
-            {formMode === 'add' ? 'Close form' : 'Log a trade by hand'}
+            {formMode === 'add' ? t('trades.closeForm') : t('trades.logByHand')}
           </TextAction>
         ) : undefined
       }
@@ -78,7 +80,7 @@ export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
       )}
 
       {items.length === 0 ? (
-        <p className={styles.empty}>No signals or trades yet.</p>
+        <p className={styles.empty}>{t('trades.empty')}</p>
       ) : (
         <ul className={styles.list}>
           {items.map((item) => {
@@ -152,12 +154,13 @@ function TradeRow({
   onCancelDelete: () => void
   onConfirmDelete: () => Promise<void>
 }) {
+  const t = useT()
   const [busy, setBusy] = useState(false)
 
   if (isDeleting) {
     return (
       <div className={styles.confirmBox}>
-        <p>Delete this trade? This will remove it from your results.</p>
+        <p>{t('trades.deleteAsk')}</p>
         <div className={styles.confirmActions}>
           <button
             type="button"
@@ -172,10 +175,10 @@ function TradeRow({
               }
             }}
           >
-            {busy ? 'Deleting…' : 'Delete'}
+            {busy ? t('trades.deleting') : t('trades.delete')}
           </button>
           <button type="button" className={styles.btnSecondary} disabled={busy} onClick={onCancelDelete}>
-            Cancel
+            {t('trades.cancel')}
           </button>
         </div>
       </div>
@@ -188,27 +191,26 @@ function TradeRow({
         <div className={styles.rowLeft}>
           <span className={styles.rowDate}>{shortDate(trade.tradeDate)}</span>
           <span className={styles.rowTitle}>{trade.stockName}</span>
-          <Tag tone={trade.side === 'buy' ? 'live' : 'sim'}>{trade.side.toUpperCase()}</Tag>
-          {trade.source === 'manual' && <span className={styles.manualBadge}>MANUAL</span>}
+          <Tag tone={trade.side === 'buy' ? 'live' : 'sim'}>{t(trade.side === 'buy' ? 'trades.buyTag' : 'trades.sellTag')}</Tag>
+          {trade.source === 'manual' && <span className={styles.manualBadge}>{t('trades.manual')}</span>}
         </div>
         {live && (
           <div className={styles.rowActions}>
-            <TextAction onClick={onStartEdit}>Edit</TextAction>
-            <TextAction onClick={onStartDelete}>Delete</TextAction>
+            <TextAction onClick={onStartEdit}>{t('trades.edit')}</TextAction>
+            <TextAction onClick={onStartDelete}>{t('trades.delete')}</TextAction>
           </div>
         )}
       </div>
       <div className={styles.rowDetails}>
         <span>
-          <span className={styles.mono}>{trade.shares}</span> shares at{' '}
-          <span className={styles.mono}>{exact(trade.price, trade.assetCurrency)}</span>
+          <span className={styles.mono}>{t('trades.sharesAt', { shares: trade.shares, price: exact(trade.price, trade.assetCurrency) })}</span>
         </span>
         <span>
           {' '}· <span className={styles.mono}>{money(trade.amount, trade.strategyCurrency)}</span>
         </span>
         {trade.fee > 0 && (
           <span>
-            {' '}(fee <span className={styles.mono}>{money(trade.fee, trade.strategyCurrency)}</span>)
+            {' '}<span className={styles.mono}>{t('trades.fee', { fee: money(trade.fee, trade.strategyCurrency) })}</span>
           </span>
         )}
         {trade.assetCurrency !== trade.strategyCurrency && (
@@ -222,6 +224,7 @@ function TradeRow({
 }
 
 function SignalRow({ s, signal, live }: { s: StrategyDetail; signal: StrategySignalItem; live: boolean }) {
+  const t = useT()
   const content = (
     <>
       <div className={styles.rowTop}>
@@ -229,21 +232,21 @@ function SignalRow({ s, signal, live }: { s: StrategyDetail; signal: StrategySig
           <span className={styles.rowDate}>{shortDate(signal.signalDate)}</span>
           <span className={styles.rowTitle}>{signal.stockName}</span>
           <span className={styles.signalType}>
-            {signal.side === 'buy' ? 'Buy signal' : 'Sell signal'}
-            {signal.stepNo !== null && signal.maxSteps !== null ? ` · Step ${signal.stepNo} of ${signal.maxSteps}` : ''}
+            {t(signal.side === 'buy' ? 'trades.buySignal' : 'trades.sellSignal')}
+            {signal.stepNo !== null && signal.maxSteps !== null ? ` · ${t('trades.stepOf', { n: signal.stepNo, max: signal.maxSteps })}` : ''}
           </span>
         </div>
         <SignalPill signal={signal} />
       </div>
       <div className={styles.rowDetails}>
         <span>
-          Close: <span className={styles.mono}>{exact(signal.closePrice, signal.assetCurrency)}</span>
+          <span className={styles.mono}>{t('trades.close', { price: exact(signal.closePrice, signal.assetCurrency) })}</span>
         </span>
         {signal.status === 'skipped' && signal.skipReason && (
-          <span> · {SKIP_REASONS.find((r) => r.id === signal.skipReason)?.label ?? signal.skipReason}</span>
+          <span> · {skipReasons(t).find((r) => r.id === signal.skipReason)?.label ?? signal.skipReason}</span>
         )}
-        {signal.status === 'waiting' && signal.snoozedUntil && <span> · Remind on {shortDate(signal.snoozedUntil)}</span>}
-        {signal.status === 'missed' && signal.endedOn && <span> · Ended {shortDate(signal.endedOn)}</span>}
+        {signal.status === 'waiting' && signal.snoozedUntil && <span> · {t('trades.remindOn', { date: shortDate(signal.snoozedUntil) })}</span>}
+        {signal.status === 'missed' && signal.endedOn && <span> · {t('trades.endedOn', { date: shortDate(signal.endedOn) })}</span>}
         {signal.reason && <span className={styles.signalReason}> · {signal.reason}</span>}
       </div>
     </>
@@ -261,42 +264,44 @@ function SignalRow({ s, signal, live }: { s: StrategyDetail; signal: StrategySig
 }
 
 function SignalPill({ signal }: { signal: StrategySignalItem }) {
+  const t = useT()
   if (signal.status === 'confirmed') {
     return (
       <span className={styles.pill} data-tone="holding">
-        DID
+        {t('trades.pill.did')}
       </span>
     )
   }
   if (signal.status === 'skipped') {
     return (
       <span className={styles.pill} data-tone="watching">
-        SKIPPED
+        {t('trades.pill.skipped')}
       </span>
     )
   }
   if (signal.status === 'missed') {
     return (
       <span className={styles.pill} data-tone="waiting">
-        MISSED
+        {t('trades.pill.missed')}
       </span>
     )
   }
   if (signal.snoozedUntil) {
     return (
       <span className={styles.pill} data-tone="signal">
-        SNOOZED
+        {t('trades.pill.snoozed')}
       </span>
     )
   }
   return (
     <span className={styles.pill} data-tone="waiting">
-      WAITING
+      {t('trades.pill.waiting')}
     </span>
   )
 }
 
 function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: () => void; onCancel: () => void }) {
+  const t = useT()
   const [assetId, setAssetId] = useState(s.stocks[0]?.assetId ?? '')
   const [side, setSide] = useState<TradeSide>('buy')
   const [date, setDate] = useState(s.today)
@@ -335,7 +340,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
       fee,
       ownRate,
     }
-    const unclear = ambiguousFields(form)
+    const unclear = ambiguousFields(form, t('signal.error.ambiguous'))
     if (Object.keys(unclear).length > 0) {
       setErrors(unclear)
       setSaving(false)
@@ -362,7 +367,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
       if (err instanceof InvalidFieldsError) {
         setErrors(err.fields)
       } else {
-        setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : 'Could not save trade.' })
+        setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : t('trades.errorSave') })
       }
       setSaving(false)
     }
@@ -370,10 +375,10 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
 
   return (
     <form className={styles.formCard} onSubmit={(e) => void handleSubmit(e)}>
-      <div className={styles.formTitle}>Log a trade by hand</div>
+      <div className={styles.formTitle}>{t('trades.logByHand')}</div>
 
       <SelectField
-        label="Stock"
+        label={t('trades.stock')}
         value={assetId}
         error={errors.assetId}
         options={s.stocks.map((st) => ({ value: st.assetId, label: `${st.name} (${st.symbol})` }))}
@@ -386,19 +391,19 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
           className={side === 'buy' ? styles.sideActive : styles.sideBtn}
           onClick={() => setSide('buy')}
         >
-          Buy
+          {t('trades.buy')}
         </button>
         <button
           type="button"
           className={side === 'sell' ? styles.sideActive : styles.sideBtn}
           onClick={() => setSide('sell')}
         >
-          Sale
+          {t('trades.sale')}
         </button>
       </div>
 
       <TextField
-        label="Date"
+        label={t('signal.field.date')}
         type="date"
         value={date}
         max={s.today}
@@ -407,7 +412,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
       />
 
       <TextField
-        label={`Price per share (${assetCurrency})`}
+        label={t('signal.field.price', { currency: assetCurrency })}
         value={price}
         placeholder="0.00"
         error={errors.price}
@@ -416,13 +421,13 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
 
       <div className={styles.toggleAction}>
         <TextAction onClick={() => setEnteredAs(enteredAs === 'amount' ? 'shares' : 'amount')}>
-          {enteredAs === 'amount' ? 'Enter shares instead' : 'Enter amount instead'}
+          {enteredAs === 'amount' ? t('trades.enterShares') : t('trades.enterAmount')}
         </TextAction>
       </div>
 
       {enteredAs === 'amount' ? (
         <TextField
-          label={`Amount (${s.currency})`}
+          label={t('signal.field.amount', { currency: s.currency })}
           value={amount}
           placeholder="100.00"
           error={errors.amount}
@@ -430,7 +435,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
         />
       ) : (
         <TextField
-          label="Shares"
+          label={t('signal.field.shares')}
           value={shares}
           placeholder="1.00"
           error={errors.shares}
@@ -439,7 +444,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
       )}
 
       <TextField
-        label={`Fee (${s.currency}, optional)`}
+        label={t('signal.field.fee', { currency: s.currency })}
         value={fee}
         placeholder="0.00"
         error={errors.fee}
@@ -451,19 +456,23 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
           {ownRate === null && refRate ? (
             <>
               <span>
-                At {refRate.rate} {assetCurrency} per {symbolOf(s.currency)}1, the rate of {shortDate(refRate.date)}.
+                {t('signal.rate.at', {
+                  rate: refRate.rate,
+                  unit: t('signal.rate.unit', { asset: assetCurrency, strategy: symbolOf(s.currency) }),
+                  date: shortDate(refRate.date),
+                })}
               </span>
-              <TextAction onClick={() => setOwnRate(String(refRate.rate))}>Change</TextAction>
+              <TextAction onClick={() => setOwnRate(String(refRate.rate))}>{t('signal.rate.change')}</TextAction>
             </>
           ) : (
             <>
               <TextField
-                label={`Exchange rate (${assetCurrency} per ${symbolOf(s.currency)}1)`}
+                label={t('signal.rate.own', { unit: t('signal.rate.unit', { asset: assetCurrency, strategy: symbolOf(s.currency) }) })}
                 value={ownRate ?? ''}
                 error={errors.fxRate}
                 onChange={setOwnRate}
               />
-              {refRate && <TextAction onClick={() => setOwnRate(null)}>Use reference rate</TextAction>}
+              {refRate && <TextAction onClick={() => setOwnRate(null)}>{t('trades.useReference')}</TextAction>}
             </>
           )}
         </div>
@@ -473,10 +482,10 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
 
       <div className={styles.formActions}>
         <button type="submit" className={styles.btnPrimary} disabled={saving}>
-          {saving ? 'Saving…' : 'Save trade'}
+          {saving ? t('trades.saving') : t('trades.saveTrade')}
         </button>
         <button type="button" className={styles.btnSecondary} disabled={saving} onClick={onCancel}>
-          Cancel
+          {t('trades.cancel')}
         </button>
       </div>
     </form>
@@ -494,6 +503,7 @@ function EditTradeForm({
   onDone: () => void
   onCancel: () => void
 }) {
+  const t = useT()
   const [date, setDate] = useState(trade.tradeDate)
   const [price, setPrice] = useState(String(trade.price))
   const [enteredAs, setEnteredAs] = useState<'amount' | 'shares'>(trade.enteredAs)
@@ -530,7 +540,7 @@ function EditTradeForm({
       fee,
       ownRate,
     }
-    const unclear = ambiguousFields(form)
+    const unclear = ambiguousFields(form, t('signal.error.ambiguous'))
     if (Object.keys(unclear).length > 0) {
       setErrors(unclear)
       setSaving(false)
@@ -555,7 +565,7 @@ function EditTradeForm({
       if (err instanceof InvalidFieldsError) {
         setErrors(err.fields)
       } else {
-        setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : 'Could not save trade changes.' })
+        setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : t('trades.errorSaveChanges') })
       }
       setSaving(false)
     }
@@ -564,11 +574,11 @@ function EditTradeForm({
   return (
     <form className={styles.formCard} onSubmit={(e) => void handleSubmit(e)}>
       <div className={styles.formTitle}>
-        Edit trade · {trade.stockName} ({trade.side.toUpperCase()})
+        {t('trades.editTitle', { stock: trade.stockName, side: t(trade.side === 'buy' ? 'trades.buyTag' : 'trades.sellTag') })}
       </div>
 
       <TextField
-        label="Date"
+        label={t('signal.field.date')}
         type="date"
         value={date}
         min={minDate}
@@ -578,7 +588,7 @@ function EditTradeForm({
       />
 
       <TextField
-        label={`Price per share (${trade.assetCurrency})`}
+        label={t('signal.field.price', { currency: trade.assetCurrency })}
         value={price}
         placeholder="0.00"
         error={errors.price}
@@ -587,13 +597,13 @@ function EditTradeForm({
 
       <div className={styles.toggleAction}>
         <TextAction onClick={() => setEnteredAs(enteredAs === 'amount' ? 'shares' : 'amount')}>
-          {enteredAs === 'amount' ? 'Enter shares instead' : 'Enter amount instead'}
+          {enteredAs === 'amount' ? t('trades.enterShares') : t('trades.enterAmount')}
         </TextAction>
       </div>
 
       {enteredAs === 'amount' ? (
         <TextField
-          label={`Amount (${trade.strategyCurrency})`}
+          label={t('signal.field.amount', { currency: trade.strategyCurrency })}
           value={amount}
           placeholder="100.00"
           error={errors.amount}
@@ -601,7 +611,7 @@ function EditTradeForm({
         />
       ) : (
         <TextField
-          label="Shares"
+          label={t('signal.field.shares')}
           value={shares}
           placeholder="1.00"
           error={errors.shares}
@@ -610,7 +620,7 @@ function EditTradeForm({
       )}
 
       <TextField
-        label={`Fee (${trade.strategyCurrency}, optional)`}
+        label={t('signal.field.fee', { currency: trade.strategyCurrency })}
         value={fee}
         placeholder="0.00"
         error={errors.fee}
@@ -622,20 +632,23 @@ function EditTradeForm({
           {ownRate === null && refRate ? (
             <>
               <span>
-                At {refRate.rate} {trade.assetCurrency} per {symbolOf(trade.strategyCurrency)}1, the rate of{' '}
-                {shortDate(refRate.date)}.
+                {t('signal.rate.at', {
+                  rate: refRate.rate,
+                  unit: t('signal.rate.unit', { asset: trade.assetCurrency, strategy: symbolOf(trade.strategyCurrency) }),
+                  date: shortDate(refRate.date),
+                })}
               </span>
-              <TextAction onClick={() => setOwnRate(String(refRate.rate))}>Change</TextAction>
+              <TextAction onClick={() => setOwnRate(String(refRate.rate))}>{t('signal.rate.change')}</TextAction>
             </>
           ) : (
             <>
               <TextField
-                label={`Exchange rate (${trade.assetCurrency} per ${symbolOf(trade.strategyCurrency)}1)`}
+                label={t('signal.rate.own', { unit: t('signal.rate.unit', { asset: trade.assetCurrency, strategy: symbolOf(trade.strategyCurrency) }) })}
                 value={ownRate ?? ''}
                 error={errors.fxRate}
                 onChange={setOwnRate}
               />
-              {refRate && <TextAction onClick={() => setOwnRate(null)}>Use reference rate</TextAction>}
+              {refRate && <TextAction onClick={() => setOwnRate(null)}>{t('trades.useReference')}</TextAction>}
             </>
           )}
         </div>
@@ -645,10 +658,10 @@ function EditTradeForm({
 
       <div className={styles.formActions}>
         <button type="submit" className={styles.btnPrimary} disabled={saving}>
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t('trades.saving') : t('trades.saveChanges')}
         </button>
         <button type="button" className={styles.btnSecondary} disabled={saving} onClick={onCancel}>
-          Cancel
+          {t('trades.cancel')}
         </button>
       </div>
     </form>

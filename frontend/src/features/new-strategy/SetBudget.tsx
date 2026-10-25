@@ -5,12 +5,12 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { StepperCard } from '../../components/StepperCard'
 import { Tag } from '../../components/Tag'
+import { useT } from '../../i18n/I18n'
 import {
   BUDGET_LIMITS,
   MAX_STEPS_LIMITS,
   STEP_LIMITS,
   clamp,
-  plural,
   resolveBudget,
   summarize,
   weeksToUse,
@@ -24,18 +24,20 @@ import { useTemplate } from './useTemplate'
 
 /** 4 · Set your budget (wireframe `Budget`). */
 export function SetBudget() {
+  const t = useT()
   const { templateKey } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const top = <TopBar back={modePath} step="4 / 5" />
 
   return (
-    <LoadableScreen state={template} top={top} what="the template">
-      {(t) => <BudgetForm template={t} top={top} />}
+    <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>
+      {(tDetail) => <BudgetForm template={tDetail} top={top} />}
     </LoadableScreen>
   )
 }
 
 function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
+  const t = useT()
   const draft = useNewStrategyDraft()
   const { mode, update } = draft
   const { currency } = useCurrentAccount()
@@ -53,19 +55,29 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
     update(step > next ? { budget: next, step: next } : { budget: next })
   }
 
-  const steps = plural(totalSteps, 'step', 'steps')
-  const upTo = plural(maxSteps, 'step', 'steps')
+  const steps = t('newStrategy.budget.steps', { n: totalSteps })
+  const upTo = t('newStrategy.budget.steps', { n: maxSteps })
   const sentence = allIn
-    ? `The whole budget of ${amount(budget)} goes in when the rules say so, and comes out when they say so.`
+    ? t('newStrategy.budget.sentenceAllIn', { budget: amount(budget) })
     : isFund
-      ? `Each buy is ${amount(step)}. The fund gets at most ${upTo} (${amount(perStock)}). The budget covers ${steps}.`
-      : `Each buy is ${amount(step)}. A stock gets at most ${upTo} (${amount(perStock)}). The budget covers ${steps}, enough for ${plural(fullStocks, 'stock', 'stocks')} bought in full.`
+      ? t('newStrategy.budget.sentenceFund', { step: amount(step), upTo, perStock: amount(perStock), steps })
+      : t('newStrategy.budget.sentenceStock', {
+          step: amount(step),
+          upTo,
+          perStock: amount(perStock),
+          steps,
+          stocks: t('newStrategy.budget.stocks', { n: fullStocks }),
+        })
 
   return (
     <Screen
       top={top}
-      action={<PrimaryAction to={confirmPath}>Continue</PrimaryAction>}
-      note={currency === 'USD' ? 'Amounts in US dollars.' : `Amounts in ${currencyName(currency)}. Dollar prices convert at the day's rate.`}
+      action={<PrimaryAction to={confirmPath}>{t('newStrategy.budget.continue')}</PrimaryAction>}
+      note={
+        currency === 'USD'
+          ? t('newStrategy.budget.noteUsd')
+          : t('newStrategy.budget.noteOther', { currency: currencyName(currency) })
+      }
     >
       <PageHeader
         eyebrow={
@@ -73,21 +85,17 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
             <Tag tone={isLive ? 'live' : 'sim'}>{isLive ? 'LIVE' : 'SIM'}</Tag> {template.name}
           </>
         }
-        title="Set your budget"
-        lead={
-          isLive
-            ? "The amount you plan to put into this strategy at your broker. The app doesn't move or hold any money."
-            : 'A what-if amount. No real money moves.'
-        }
+        title={t('newStrategy.budget.title')}
+        lead={isLive ? t('newStrategy.budget.leadLive') : t('newStrategy.budget.leadSim')}
       />
 
       <div className={styles.settings}>
         <StepperCard
-          label="Budget"
+          label={t('newStrategy.budget.budget')}
           value={budget}
           display={amount(budget)}
           onChange={setBudget}
-          help="The most this strategy can invest in total."
+          help={t('newStrategy.budget.budgetHelp')}
           onDecrease={() => setBudget(budget - BUDGET_LIMITS.stepBy)}
           onIncrease={() => setBudget(budget + BUDGET_LIMITS.stepBy)}
           canDecrease={budget > BUDGET_LIMITS.min}
@@ -96,22 +104,22 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
         {!allIn && (
           <>
             <StepperCard
-              label="Step size"
+              label={t('newStrategy.budget.stepSize')}
               value={step}
               display={amount(step)}
               onChange={(v) => update({ step: clamp(v, STEP_LIMITS.min, budget) })}
-              help="How much each buy is."
+              help={t('newStrategy.budget.stepSizeHelp')}
               onDecrease={() => update({ step: clamp(step - STEP_LIMITS.stepBy, STEP_LIMITS.min, budget) })}
               onIncrease={() => update({ step: clamp(step + STEP_LIMITS.stepBy, STEP_LIMITS.min, budget) })}
               canDecrease={step > STEP_LIMITS.min}
               canIncrease={step < budget}
             />
             <StepperCard
-              label={isFund ? 'Steps for the fund' : 'Max steps per stock'}
+              label={isFund ? t('newStrategy.budget.maxStepsFund') : t('newStrategy.budget.maxStepsStock')}
               value={maxSteps}
               display={String(maxSteps)}
               onChange={(v) => update({ maxSteps: clamp(v, MAX_STEPS_LIMITS.min, MAX_STEPS_LIMITS.max) })}
-              help={`Buying ${isFund ? 'the fund' : 'a stock'} in steps limits the damage of a bad first buy.`}
+              help={isFund ? t('newStrategy.budget.maxStepsHelpFund') : t('newStrategy.budget.maxStepsHelpStock')}
               onDecrease={() => update({ maxSteps: clamp(maxSteps - 1, MAX_STEPS_LIMITS.min, MAX_STEPS_LIMITS.max) })}
               onIncrease={() => update({ maxSteps: clamp(maxSteps + 1, MAX_STEPS_LIMITS.min, MAX_STEPS_LIMITS.max) })}
               canDecrease={maxSteps > MAX_STEPS_LIMITS.min}
@@ -131,21 +139,23 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
               ))}
             </ul>
             <div className={styles.caption}>
-              {totalSteps > shown ? `First ${shown} of ${totalSteps} steps` : `${steps} in the budget`}
+              {totalSteps > shown
+                ? t('newStrategy.budget.firstSteps', { shown, total: totalSteps })
+                : t('newStrategy.budget.stepsInBudget', { steps })}
             </div>
           </div>
         )}
         {template.aiRound && !allIn && (
           <p className={styles.last}>
-            One step every {plural(template.aiRound.everyWeeks, 'week', 'weeks').replace(/^1 /, '')} uses the budget in
-            about {weeksToUse(totalSteps, template.aiRound.everyWeeks)} weeks.
+            {t('newStrategy.budget.aiPace', {
+              every: template.aiRound.everyWeeks,
+              total: weeksToUse(totalSteps, template.aiRound.everyWeeks),
+            })}
           </p>
         )}
         {!template.aiRound && (
           <p className={styles.last}>
-            {isLive
-              ? "When the budget is used up, the strategy stops signalling buys. Only trades you confirm use the budget; skipped signals don't."
-              : 'When the budget is used up, the strategy stops buying.'}
+            {isLive ? t('newStrategy.budget.lastLive') : t('newStrategy.budget.lastSim')}
           </p>
         )}
       </div>

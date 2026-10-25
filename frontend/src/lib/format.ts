@@ -1,4 +1,5 @@
-import type { Currency } from '../api/types'
+import type { Currency, Locale } from '../api/types'
+import { currentLocale } from '../i18n/locale'
 
 const amountFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
@@ -31,12 +32,15 @@ export const signedPct = (n: number, digits?: number) => {
 export const isoDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-const shortDateFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
+const shortDateEn = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
+const shortDateCa = new Intl.DateTimeFormat('ca-ES', { month: 'short', day: 'numeric' })
 
-/** "Oct 13", from a local date like "2026-10-13". */
-export const shortDate = (iso: string) => {
+/** "Oct 13" (or "13 d’oct." in ca), from a local date like "2026-10-13". */
+export const shortDate = (iso: string, locale?: Locale) => {
   const [y, m, d] = iso.split('-').map(Number)
-  return shortDateFormat.format(new Date(y, m - 1, d))
+  const loc = locale ?? currentLocale()
+  const format = loc === 'ca' ? shortDateCa : shortDateEn
+  return format.format(new Date(y, m - 1, d))
 }
 
 /** `signedPct`, or "–" when the figure isn't known (an index fund without prices). */

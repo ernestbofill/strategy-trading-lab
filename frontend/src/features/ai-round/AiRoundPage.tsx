@@ -7,7 +7,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
-import { DISCLAIMER_FULL } from '../../lib/copy'
+import { useI18n, useT, type Translate } from '../../i18n/I18n'
 import { money, shortDate } from '../../lib/format'
 import { invalidate } from '../../lib/useLoadable'
 import { accountPath, aiPromptPath, aiRoundsPath, signalPath, strategyPath } from '../dashboard/paths'
@@ -25,17 +25,23 @@ import { aiRoundCacheKey, aiRoundsCacheKey, useAiRound } from './useAiRound'
 export function AiRoundPage() {
   const { id = '' } = useParams()
   const round = useAiRound(id)
+  const t = useT()
+  const { locale } = useI18n()
   const top = (r?: AiRoundDetail) => (
-    <TopBar back={strategyPath(id)} aside={r && <span>AI ROUND · {shortDate(r.open ? r.today : r.dueOn).toUpperCase()}</span>} />
+    <TopBar
+      back={strategyPath(id)}
+      aside={r && <span>{t('aiRound.topBar', { date: shortDate(r.open ? r.today : r.dueOn, locale).toUpperCase() })}</span>}
+    />
   )
   return (
-    <LoadableScreen state={round} top={top()} what="this AI round">
+    <LoadableScreen state={round} top={top()} what={t('aiRound.what')}>
       {(r) => <RoundScreen key={r.roundId} r={r} top={top(r)} />}
     </LoadableScreen>
   )
 }
 
 function Header({ r }: { r: AiRoundDetail }) {
+  const t = useT()
   return (
     <div className={styles.header}>
       <div className={styles.eyebrow}>
@@ -44,7 +50,7 @@ function Header({ r }: { r: AiRoundDetail }) {
           {r.strategyName} · <em>{r.templateName}</em>
         </span>
       </div>
-      <h1 className={styles.title}>{r.open ? 'Time for the AI round' : 'Next AI round'}</h1>
+      <h1 className={styles.title}>{t(r.open ? 'aiRound.title' : 'aiRound.nextTitle')}</h1>
     </div>
   )
 }
@@ -56,6 +62,8 @@ function initialModel(last: string | null): { choice: string; other: string } {
 }
 
 function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
+  const t = useT()
+  const { locale } = useI18n()
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [answer, setAnswer] = useState('')
@@ -74,21 +82,18 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
     const timer = setTimeout(() => {
       api.readAiAnswer(r.strategyId, answer).then(
         (result) => count === readCount.current && setReading(result),
-        () => count === readCount.current && setMessage({ tone: 'error', text: "We couldn't read it. Try again." }),
+        () => count === readCount.current && setMessage({ tone: 'error', text: t('aiRound.readFailed') }),
       )
     }, 400)
     return () => clearTimeout(timer)
-  }, [answer, r.strategyId])
+  }, [answer, r.strategyId, t])
 
   if (!r.open) {
     return (
-      <Screen top={top} action={<PrimaryAction to={strategyPath(r.strategyId)}>Back to the strategy</PrimaryAction>}>
+      <Screen top={top} action={<PrimaryAction to={strategyPath(r.strategyId)}>{t('aiRound.backToStrategy')}</PrimaryAction>}>
         <Header r={r} />
-        <p className={styles.plain}>
-          Your next AI round is due on <span className={styles.mono}>{shortDate(r.dueOn)}</span>. You can run it until{' '}
-          <span className={styles.mono}>{shortDate(r.lastDay)}</span>; after that it's skipped, with no signal that round.
-        </p>
-        <TextAction to={aiRoundsPath(r.strategyId)}>See the past rounds</TextAction>
+        <p className={styles.plain}>{t('aiRound.notDue', { due: shortDate(r.dueOn, locale), last: shortDate(r.lastDay, locale) })}</p>
+        <TextAction to={aiRoundsPath(r.strategyId)}>{t('aiRound.pastRounds')}</TextAction>
       </Screen>
     )
   }
@@ -98,7 +103,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
       await navigator.clipboard.writeText(r.prompt)
       setCopied(true)
     } catch {
-      setMessage({ tone: 'error', text: "Your browser didn't let us copy it. Select the prompt and copy it by hand." })
+      setMessage({ tone: 'error', text: t('aiRound.copyFailed') })
     }
   }
 
@@ -122,7 +127,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
         setModelError(error.fields.aiModel ?? null)
         if (error.fields.answer) setMessage({ tone: 'error', text: error.fields.answer })
       } else
-        setMessage({ tone: 'error', text: error instanceof InvalidValueError ? error.message : "We couldn't save it. Try again." })
+        setMessage({ tone: 'error', text: error instanceof InvalidValueError ? error.message : t('aiRound.saveFailed') })
     }
   }
 
@@ -133,27 +138,27 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
       top={top}
       action={
         <PrimaryAction onClick={() => void use()} disabled={!canUse}>
-          {saving ? 'Saving…' : 'Use these scores'}
+          {t(saving ? 'aiRound.saving' : 'aiRound.use')}
         </PrimaryAction>
       }
-      note={DISCLAIMER_FULL}
+      note={t('common.disclaimerFull')}
     >
       <Header r={r} />
-      <p className={styles.plain}>It takes about two minutes. The app doesn't connect to your AI.</p>
+      <p className={styles.plain}>{t('aiRound.intro')}</p>
 
       <section className={styles.step}>
         <h2 className={`ui-strong ${styles.stepTitle}`}>
-          <span className={styles.stepNumber}>01</span> Copy the prompt
+          <span className={styles.stepNumber}>01</span> {t('aiRound.step.copy')}
         </h2>
         <PromptText text={r.prompt} version={r.promptVersion} edited={r.promptEdited} collapsed />
         <div className={styles.row}>
           <button type="button" className={`ui-strong ${styles.copy}`} data-copied={copied || undefined} onClick={() => void copy()}>
-            {copied ? '✓ Copied' : 'Copy prompt'}
+            {t(copied ? 'aiRound.copied' : 'aiRound.copy')}
           </button>
-          <TextAction to={aiPromptPath(r.strategyId)}>Edit prompt</TextAction>
+          <TextAction to={aiPromptPath(r.strategyId)}>{t('aiRound.editPrompt')}</TextAction>
         </div>
         <p className={styles.services}>
-          Open in{' '}
+          {t('aiRound.openIn')}{' '}
           {AI_SERVICES.map((service, i) => (
             <span key={service.name}>
               {i > 0 && ' · '}
@@ -167,10 +172,10 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
 
       <section className={styles.step}>
         <h2 className={`ui-strong ${styles.stepTitle}`}>
-          <span className={styles.stepNumber}>02</span> Paste the answer
+          <span className={styles.stepNumber}>02</span> {t('aiRound.step.paste')}
         </h2>
         <TextAreaField
-          label="Your AI's whole answer"
+          label={t('aiRound.answer')}
           value={answer}
           onChange={(value) => {
             setAnswer(value)
@@ -181,24 +186,24 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
           placeholder="| Stock | … | Overall | Reason |"
         />
         <SelectField
-          label="AI model you used"
+          label={t('aiRound.model')}
           value={model.choice}
           onChange={(choice) => setModel((m) => ({ ...m, choice }))}
-          options={[...AI_MODELS, OTHER_MODEL].map((m) => ({ value: m, label: m }))}
+          options={[...AI_MODELS.map((m) => ({ value: m, label: m })), { value: OTHER_MODEL, label: t('aiRound.modelOther') }]}
           error={model.choice === OTHER_MODEL ? null : modelError}
         />
         {model.choice === OTHER_MODEL && (
-          <TextField label="Which AI model?" value={model.other} onChange={(other) => setModel((m) => ({ ...m, other }))} error={modelError} />
+          <TextField label={t('aiRound.modelName')} value={model.other} onChange={(other) => setModel((m) => ({ ...m, other }))} error={modelError} />
         )}
       </section>
 
       {shown && (
         <section className={styles.step}>
           <h2 className={`ui-strong ${styles.stepTitle}`}>
-            <span className={styles.stepNumber}>03</span> Your AI's scores
+            <span className={styles.stepNumber}>03</span> {t('aiRound.step.scores')}
           </h2>
           {shown.problems.length > 0 && (
-            <Callout tone="warning" title="Ask your AI again">
+            <Callout tone="warning" title={t('aiRound.askAgain')}>
               <ul className={styles.problems}>
                 {shown.problems.map((p) => (
                   <li key={p}>{p}</li>
@@ -209,8 +214,8 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
           {shown.scores.length > 0 && <ScoreList scores={shown.scores} maxSteps={shown.maxSteps} />}
           {shown.ok && (
             <>
-              <p className={styles.check}>✓ Every stock scored, all scores 0-100.</p>
-              <p className={styles.plain}>{stepLine(shown, r)}</p>
+              <p className={styles.check}>{t('aiRound.allScored')}</p>
+              <p className={styles.plain}>{stepLine(shown, r, t)}</p>
             </>
           )}
         </section>
@@ -218,17 +223,14 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
 
       {r.sharingAsked ? (
         <p className={styles.plain}>
-          {r.sharing ? 'Sharing anonymously' : 'Not sharing your AI rounds'} · <Link to={accountPath}>Change</Link>
+          {t(r.sharing ? 'aiRound.sharing' : 'aiRound.notSharing')} · <Link to={accountPath}>{t('aiRound.change')}</Link>
         </p>
       ) : (
         <div className={styles.consent}>
-          <h2 className="ui-strong">Help us learn which AIs score stocks best</h2>
-          <p>
-            Share this round anonymously: the AI model you used and its answer. We never keep your name, email, budget or trades
-            with it. You can stop at any time in Account → Data and privacy.
-          </p>
+          <h2 className="ui-strong">{t('aiRound.consent.title')}</h2>
+          <p>{t('aiRound.consent.text')}</p>
           <Checkbox checked={share} onChange={setShare}>
-            Share my AI rounds anonymously
+            {t('aiRound.consent.check')}
           </Checkbox>
           <AiSharingDetails />
         </div>
@@ -240,15 +242,16 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
 }
 
 /** What the scores give: "Zscaler gets step 2 of 5 (€100)." or why no stock gets one. */
-function stepLine(reading: AiReading, r: AiRoundDetail): string {
+function stepLine(reading: AiReading, r: AiRoundDetail, t: Translate): string {
   const picks = reading.scores.filter((s) => s.step !== null)
-  if (picks.length === 0)
-    return reading.short === 'budget'
-      ? 'No budget left: this round gives no step.'
-      : 'Every scored stock has all its steps: this round gives no step.'
-  const step = reading.stepAmount === null ? '' : ` (${money(reading.stepAmount, r.currency)})`
-  const of = reading.maxSteps === null ? '' : ` of ${reading.maxSteps}`
-  const gets = picks.map((p) => `${p.name} gets step ${p.step}${of}`).join(', ')
-  const fewer = picks.length < r.topN ? (reading.short === 'budget' ? ' The budget has no room for more.' : ' The others have all their steps.') : ''
-  return `${gets}${step}.${fewer}`
+  if (picks.length === 0) return t(reading.short === 'budget' ? 'aiRound.noStepBudget' : 'aiRound.noStepAllSteps')
+  const gets = picks
+    .map((p) => t('aiRound.gets', { stock: p.name, step: reading.maxSteps === null ? String(p.step) : t('signal.stepOf', { n: p.step ?? 0, max: reading.maxSteps }) }))
+    .join(', ')
+  const line =
+    reading.stepAmount === null
+      ? t('aiRound.getsNoAmount', { picks: gets })
+      : t('aiRound.getsAmount', { picks: gets, amount: money(reading.stepAmount, r.currency) })
+  if (picks.length >= r.topN) return line
+  return `${line} ${t(reading.short === 'budget' ? 'aiRound.fewerBudget' : 'aiRound.fewerAllSteps')}`
 }

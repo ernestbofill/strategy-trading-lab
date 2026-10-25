@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using StrategyTradingLab.Api.Auth;
 
 namespace StrategyTradingLab.Api.Ai;
 
@@ -32,14 +33,15 @@ public static partial class AiAnswerReader
 
     record Row(string Stock, string? Overall, string? News, string? Mood, string? Figures, string? Reason);
 
-    public static AiReading Read(string? answer, IReadOnlyList<AiStock> stocks)
+    /// <summary>Reads <paramref name="answer"/>; its problems are in <paramref name="locale"/>.</summary>
+    public static AiReading Read(string? answer, IReadOnlyList<AiStock> stocks, string locale = "en")
     {
-        if (string.IsNullOrWhiteSpace(answer)) return new([], ["Paste your AI's answer."]);
-        if (answer.Length > MaxLength) return new([], ["That answer is too long to read. Ask your AI for the table only."]);
+        if (string.IsNullOrWhiteSpace(answer)) return new([], [Messages.PasteAnswer.In(locale)]);
+        if (answer.Length > MaxLength) return new([], [Messages.AnswerTooLong.In(locale)]);
 
         var rows = TableRows(answer) ?? JsonRows(answer);
         if (rows is null || rows.Count == 0)
-            return new([], ["We couldn't find the scores table. Ask your AI to answer only with the table."]);
+            return new([], [Messages.NoScoresTable.In(locale)]);
 
         var problems = new List<string>();
         var scores = new Dictionary<Guid, AiScore>();
@@ -48,17 +50,17 @@ public static partial class AiAnswerReader
         {
             if (Match(row.Stock, stocks) is not { } stock)
             {
-                problems.Add($"\"{Shorten(Clean(row.Stock), 40)}\" isn't one of your stocks.");
+                problems.Add(Messages.NotYourStock.In(locale, Shorten(Clean(row.Stock), 40)));
                 continue;
             }
             if (scores.ContainsKey(stock.AssetId) || refused.Contains(stock.AssetId))
             {
-                problems.Add($"{stock.Name} is scored more than once.");
+                problems.Add(Messages.ScoredTwice.In(locale, stock.Name));
                 continue;
             }
             if (Score(row.Overall) is not { } overall)
             {
-                problems.Add($"{stock.Name}: the overall score isn't a number from 0 to 100.");
+                problems.Add(Messages.BadScore.In(locale, stock.Name));
                 refused.Add(stock.AssetId);
                 continue;
             }
@@ -67,10 +69,10 @@ public static partial class AiAnswerReader
         }
         // A stock refused above has its own problem already.
         foreach (var stock in stocks.Where(s => !scores.ContainsKey(s.AssetId) && !refused.Contains(s.AssetId)))
-            problems.Add($"{stock.Name} has no score.");
+            problems.Add(Messages.NoScore.In(locale, stock.Name));
 
         var shown = problems.Count > MaxProblems
-            ? [.. problems.Take(MaxProblems - 1), $"And {problems.Count - (MaxProblems - 1)} more."]
+            ? [.. problems.Take(MaxProblems - 1), Messages.MoreProblems.In(locale, problems.Count - (MaxProblems - 1))]
             : problems;
         // In the stocks' order, so the screen lists them as the prompt did.
         return new([.. stocks.Where(s => scores.ContainsKey(s.AssetId)).Select(s => scores[s.AssetId])], shown);
@@ -90,7 +92,7 @@ public static partial class AiAnswerReader
             var stock = header.FindIndex(IsStock);
             var overall = header.FindIndex(IsOverall);
             if (stock < 0 || overall < 0 || stock == overall) continue;
-            int news = header.FindIndex(k => k.Contains("news")), mood = header.FindIndex(IsMood),
+            int news = header.FindIndex(IsNews), mood = header.FindIndex(IsMood),
                 figures = header.FindIndex(IsFigures), reason = header.FindIndex(IsReason);
 
             var rows = new List<Row>();
@@ -159,7 +161,7 @@ public static partial class AiAnswerReader
                     .ToList();
                 string? Field(Func<string, bool> test) => fields.FirstOrDefault(f => test(f.Key)).Value;
                 if (Field(IsStock) is not { } name) continue;
-                rows.Add(new Row(name, Field(IsOverall), Field(k => k.Contains("news")), Field(IsMood), Field(IsFigures), Field(IsReason)));
+                rows.Add(new Row(name, Field(IsOverall), Field(IsNews), Field(IsMood), Field(IsFigures), Field(IsReason)));
             }
             return rows;
         }
@@ -168,16 +170,22 @@ public static partial class AiAnswerReader
     /// <summary>A column's name in lower-case letters only: "Overall score" → "overallscore".</summary>
     static string Key(string name) => new([.. Clean(name).ToLowerInvariant().Where(char.IsAsciiLetterLower)]);
 
+    // English, and Catalan for an answer in it ("Acció", "Global", "Motiu"; accents are dropped by Key).
     static bool IsStock(string key) =>
-        key.Contains("stock") || key.Contains("company") || key.Contains("ticker") || key.Contains("symbol") || key == "name";
+        key.Contains("stock") || key.Contains("company") || key.Contains("ticker") || key.Contains("symbol") || key == "name"
+        || key.StartsWith("acci", StringComparison.Ordinal) || key.Contains("empresa") || key.StartsWith("smbol", StringComparison.Ordinal);
 
-    static bool IsOverall(string key) => key.Contains("overall") || key is "total" or "score" or "totalscore";
+    static bool IsOverall(string key) => key.Contains("overall") || key is "total" or "score" or "totalscore" or "global" or "puntuaci";
 
-    static bool IsMood(string key) => key.Contains("mood") || key.Contains("sentiment");
+    static bool IsMood(string key) => key.Contains("mood") || key.Contains("sentiment") || key.Contains("nim");
 
-    static bool IsFigures(string key) => key.Contains("figure") || key.Contains("financial") || key.Contains("fundamental");
+    static bool IsFigures(string key) =>
+        key.Contains("figure") || key.Contains("financial") || key.Contains("fundamental") || key.Contains("xifres");
 
-    static bool IsReason(string key) => key.Contains("reason") || key.Contains("why") || key.Contains("rationale") || key.Contains("comment");
+    static bool IsReason(string key) =>
+        key.Contains("reason") || key.Contains("why") || key.Contains("rationale") || key.Contains("comment") || key.Contains("motiu");
+
+    static bool IsNews(string key) => key.Contains("news") || key.StartsWith("not", StringComparison.Ordinal);
 
     /// <summary>A score from 0 to 100 at the start of a cell: "83", "83/100", "**83**", "82.5". Null for anything else.</summary>
     static decimal? Score(string? cell)

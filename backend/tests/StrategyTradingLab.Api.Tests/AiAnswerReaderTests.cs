@@ -168,4 +168,22 @@ public class AiAnswerReaderTests
 
         Assert.Equal(["That answer is too long to read. Ask your AI for the table only."], reading.Problems);
     }
+
+    [Fact]
+    public void Reads_a_table_in_catalan_and_words_its_problems_in_catalan()
+    {
+        var answer = """
+            | Acció | Notícies | Global | Motiu |
+            |---|---|---|---|
+            | ZS | 82 | 83 | Bon trimestre |
+            | VRT | 70 | 71 | Comandes |
+            """;
+
+        var reading = AiAnswerReader.Read(answer, Stocks, "ca");
+
+        Assert.Equal(83m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).Overall);
+        Assert.Equal(82m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).News);
+        Assert.Equal(["Schneider Electric no té puntuació."], reading.Problems);
+    }
 }
+

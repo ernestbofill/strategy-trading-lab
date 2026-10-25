@@ -5,9 +5,9 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { ToggleTiles } from '../../components/ToggleTiles'
-import { DISCLAIMER } from '../../lib/copy'
+import { useT } from '../../i18n/I18n'
 import type { AiSource } from '../new-strategy/draftState'
-import { AI_SOURCES } from '../new-strategy/review/aiSources'
+import { aiSources } from '../new-strategy/review/aiSources'
 import styles from './AiRound.module.css'
 import { PromptText } from './PromptText'
 import { useAiPromptPreview } from './useAiPromptPreview'
@@ -30,6 +30,7 @@ interface PromptEditorProps {
  * "Reset to suggested". The date line, the answer table and the stocks stay the app's, so it can read the answer.
  */
 export function PromptEditor({ top, initial, everyWeeks, assetIds, onSave }: PromptEditorProps) {
+  const t = useT()
   const [sources, setSources] = useState<Record<AiSource, boolean>>({ news: initial.news, mood: initial.mood, figures: initial.figures })
   // Null while the instructions follow the suggested ones (they change with the sources).
   const [text, setText] = useState<string | null>(initial.instructions)
@@ -45,7 +46,7 @@ export function PromptEditor({ top, initial, everyWeeks, assetIds, onSave }: Pro
     try {
       await onSave({ ...sources, instructions: edited ? text : null })
     } catch (error) {
-      setMessage({ tone: 'error', text: error instanceof Error ? error.message : "We couldn't save it. Try again." })
+      setMessage({ tone: 'error', text: error instanceof Error ? error.message : t('aiRound.saveFailed') })
       setSaving(false)
     }
   }
@@ -55,46 +56,43 @@ export function PromptEditor({ top, initial, everyWeeks, assetIds, onSave }: Pro
       top={top}
       action={
         <PrimaryAction onClick={() => void save()} disabled={saving || !preview}>
-          {saving ? 'Saving…' : 'Save prompt'}
+          {t(saving ? 'aiRound.saving' : 'aiRound.editor.save')}
         </PrimaryAction>
       }
-      note={DISCLAIMER}
+      note={t('common.disclaimer')}
     >
-      <PageHeader title="Edit prompt" />
-      <p className={styles.plain}>
-        Say what your AI should look at, in your words. The app adds today's date before them, and the answer table and your
-        stocks after them, so it can read the answer.
-      </p>
-      <Section title="What the AI reads">
+      <PageHeader title={t('aiRound.editor.title')} />
+      <p className={styles.plain}>{t('aiRound.editor.intro')}</p>
+      <Section title={t('newStrategy.review.aiReads')}>
         <ToggleTiles
-          tiles={AI_SOURCES}
+          tiles={aiSources(t)}
           isOn={(id) => sources[id]}
           onToggle={(id) => setSources((s) => ({ ...s, [id]: !s[id] }))}
           keepOne
         />
-        <p className="caption">At least one stays on. Each one adds a column to the answer table.</p>
+        <p className="caption">{t('aiRound.editor.sourcesNote')}</p>
       </Section>
-      <Section title="Your instructions">
+      <Section title={t('aiRound.editor.instructions')}>
         <div className={styles.editor}>
           <TextAreaField
-            label="Instructions"
+            label={t('aiRound.editor.instructionsLabel')}
             value={text ?? suggested}
             onChange={setText}
             rows={10}
             maxLength={MAX_INSTRUCTIONS}
-            hint="Ask for scores against criteria, never which stock to buy."
+            hint={t('aiRound.editor.hint')}
             hideLabel
           />
           <button type="button" className={`ui-strong ${styles.secondary}`} onClick={() => setText(null)} disabled={!edited}>
-            ⟳ Reset to suggested
+            {t('aiRound.editor.reset')}
           </button>
         </div>
       </Section>
-      <Section title="The whole prompt">
+      <Section title={t('aiRound.editor.whole')}>
         {preview ? (
           <PromptText text={preview.text} version={preview.version} edited={edited} />
         ) : (
-          <p className={styles.plain}>{failed ? "We couldn't load the prompt. Try again later." : 'Loading the prompt…'}</p>
+          <p className={styles.plain}>{t(failed ? 'aiRound.prompt.loadError' : 'aiRound.prompt.loading')}</p>
         )}
       </Section>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}

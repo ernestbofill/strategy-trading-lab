@@ -20,15 +20,15 @@ public static class TradeEndpoints
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.Include(s => s.Assets).FirstOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
-            if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict("Trades can only be logged for live strategies.");
+            if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict(Messages.LiveOnlyLog.In(user.Locale));
 
             var activeAsset = strategy.Assets.FirstOrDefault(a => a.AssetId == request.AssetId && a.Active && a.RemovedAt == null);
             if (activeAsset is null)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = ["Pick one of the strategy's stocks."] });
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = [Messages.PickStrategyStock.In(user.Locale)] });
 
             var asset = await db.Assets.FindAsync([request.AssetId], cancellationToken);
             if (asset is null)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = ["Pick one of the strategy's stocks."] });
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = [Messages.PickStrategyStock.In(user.Locale)] });
 
             var tradeDate = request.Date;
             var minRatesDate = tradeDate.HasValue && tradeDate.Value < strategy.StartedOn ? tradeDate.Value : strategy.StartedOn;
@@ -36,7 +36,7 @@ public static class TradeEndpoints
             var signalRequest = new SignalTradeRequest(request.Date, request.Price, request.EnteredAs, request.Amount, request.Shares, request.Fee,
                 request.FxSource, request.FxRate);
             var (trade, errors) = SignalRules.CheckTrade(signalRequest, minDate: null, StrategyEndpoints.Today(user, time),
-                day => rates.Between(strategy.Currency, asset.Currency, day));
+                day => rates.Between(strategy.Currency, asset.Currency, day), locale: user.Locale);
             if (trade is null) return TypedResults.ValidationProblem(errors);
 
             var userTrade = new UserTrade
@@ -78,23 +78,23 @@ public static class TradeEndpoints
 
             var strategy = await db.Strategies.FirstOrDefaultAsync(s => s.Id == trade.StrategyId && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
-            if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict("Only live trades can be edited.");
+            if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict(Messages.LiveOnlyEdit.In(user.Locale));
 
             var asset = await db.Assets.FindAsync([trade.AssetId], cancellationToken);
             if (asset is null) return TypedResults.NotFound();
 
             DateOnly? minDate;
-            string minDateMessage;
+            string? minDateMessage;
             if (trade.Source == TradeSource.Signal && trade.SignalId is { } signalId)
             {
                 var signal = await db.Signals.FindAsync([signalId], cancellationToken);
                 minDate = signal?.SignalDate;
-                minDateMessage = "Use a day on or after the signal.";
+                minDateMessage = null; // CheckTrade words it: a day on or after the signal.
             }
             else
             {
                 minDate = null;
-                minDateMessage = "";
+                minDateMessage = null;
             }
 
             var tradeDate = request.Date;
@@ -103,7 +103,7 @@ public static class TradeEndpoints
             var signalRequest = new SignalTradeRequest(request.Date, request.Price, request.EnteredAs, request.Amount, request.Shares, request.Fee,
                 request.FxSource, request.FxRate);
             var (checkedTrade, errors) = SignalRules.CheckTrade(signalRequest, minDate, StrategyEndpoints.Today(user, time),
-                day => rates.Between(strategy.Currency, asset.Currency, day), minDateMessage: minDateMessage);
+                day => rates.Between(strategy.Currency, asset.Currency, day), minDateMessage: minDateMessage, locale: user.Locale);
             if (checkedTrade is null) return TypedResults.ValidationProblem(errors);
 
             trade.TradeDate = checkedTrade.Date;
@@ -131,7 +131,7 @@ public static class TradeEndpoints
 
             var strategy = await db.Strategies.FirstOrDefaultAsync(s => s.Id == trade.StrategyId && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
-            if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict("Only live trades can be deleted.");
+            if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict(Messages.LiveOnlyDelete.In(user.Locale));
 
             trade.DeletedAt = time.GetUtcNow();
             await db.SaveChangesAsync(cancellationToken);

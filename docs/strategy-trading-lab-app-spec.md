@@ -183,7 +183,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### Account (first version, not drawn)
 
-- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch), "Currency" (a select and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (language, Data and privacy) stays in *Not designed yet*.
+- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch), "Currency" (a select and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Language" (a select between English and Catalan and "Save language"; "Saved."), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (time zone, Data and privacy) stays in *Not designed yet*.
 
 ### 1 · Pick a strategy template (`Main`)
 
@@ -290,6 +290,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   - The comment above it reads "// suggested prompt · v1" or "// your prompt · v1".
   - Caption: "It asks for scores against stated criteria, never which stock to buy."
   - The prompt never includes anything about the user (no budget, goals or holdings). The date window follows the round frequency.
+  - The prompt is in English for every user, whatever the app's language, so rounds compare across users and AIs (assumed). The screens around it are translated.
 - **Edit prompt** (built, not drawn): "What the AI reads" (the same tiles), "Your instructions" (a text box with the instructions, at most 4,000 characters, hint "Ask for scores against criteria, never which stock to buy."), "⟳ Reset to suggested", and "The whole prompt" as it will be copied. "Save prompt" keeps it in the draft (new strategy) or on the strategy (from the AI round's "Edit prompt", from the next round on). Instructions equal to the suggested ones count as not edited. Intro: "Say what your AI should look at, in your words. The app adds today's date before them, and the answer table and your stocks after them, so it can read the answer."
 - Info box: "**What you need:** an AI service that can search the web (most paid plans can). The app doesn't connect to it and never sees your account."
 - "**Not tested:** there's no backtest. Results start on the day the strategy starts, and depend on which AI you run it in."
@@ -659,7 +660,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 
 ## 9. Not designed yet
 
-- The rest of the account page: language, time zone, and the rest of Data and privacy (export, delete account). Built: "Data and privacy" with "Share my AI rounds anonymously, to learn which AIs score stocks best." and "What we keep". Sign-up, log-in, forgot password and the account's first version are designed above; how they work is in [backend/AUTH.md](../backend/AUTH.md).
+- The rest of the account page: time zone, and the rest of Data and privacy (export, delete account). Language and overview email are designed above; how they work is in [backend/AUTH.md](../backend/AUTH.md). Built: "Data and privacy" with "Share my AI rounds anonymously, to learn which AIs score stocks best." and "What we keep".
 - Simulation variants of Set your budget, Confirm and the strategy page. (The AI round's Live variant is built: it opens Confirm a signal for the first pick.)
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Ride the long trend* and *The big market drop*.

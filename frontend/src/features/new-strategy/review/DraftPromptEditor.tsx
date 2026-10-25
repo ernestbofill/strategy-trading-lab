@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { TemplateKey } from '../../../api'
 import { LoadableScreen } from '../../../components/LoadableScreen'
 import { TopBar } from '../../../components/Screen'
+import { useT } from '../../../i18n/I18n'
 import { PromptEditor } from '../../ai-round/PromptEditor'
 import { useNewStrategyDraft } from '../NewStrategyDraft'
 import { reviewPath } from '../paths'
@@ -12,10 +13,11 @@ import { useTemplate } from '../useTemplate'
 export function DraftPromptEditor() {
   const { key } = useParams<{ key: TemplateKey }>()
   const draft = useNewStrategyDraft()
+  const t = useT()
   const navigate = useNavigate()
-  const top = <TopBar back={reviewPath(key ?? '')} aside={<span>PROMPT</span>} />
+  const top = <TopBar back={reviewPath(key ?? '')} aside={<span>{t('aiRound.editor.topBar')}</span>} />
   return (
-    <LoadableScreen state={useTemplate(key)} top={top} what="the template">
+    <LoadableScreen state={useTemplate(key)} top={top} what={t('newStrategy.what.template')}>
       {(template) => {
         const mine = draft.templateKey === template.key
         const stocks = template.watches.kind === 'stocks' ? template.watches.starterList : []

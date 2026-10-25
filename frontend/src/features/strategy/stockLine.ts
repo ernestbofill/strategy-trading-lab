@@ -1,4 +1,6 @@
 import type { Currency, StockRow, StockStatusWords, StrategyMode } from '../../api'
+import { tNow, type Translate } from '../../i18n/I18n'
+import type { MessageKey } from '../../i18n/messages/en'
 import { money, signedPct } from '../../lib/format'
 
 export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching'
@@ -12,77 +14,98 @@ export interface StockLine {
   note: string
 }
 
-const steps = (n: number, max: number | null) => (max === null ? `${n} steps` : `${n} of ${max} steps`)
+const steps = (n: number, max: number | null, t: Translate) =>
+  max === null ? t('strategy.stock.steps', { n }) : t('strategy.stock.stepsOf', { n, max })
 const pct = (d: number) => (d === 0 ? '0' : d < 1 ? '<1' : String(Math.round(d)))
 const fillN = (text: string, d: number | null) =>
   d !== null && text.includes('{n}') ? text.replace('{n}', pct(d)) : text.replace('{n}% ', '')
 
-function detailOf(row: StockRow, words: StockStatusWords | null): string {
-  const of = row.maxSteps === null ? '' : ` of ${row.maxSteps}`
+function detailOf(row: StockRow, words: StockStatusWords | null, t: Translate): string {
+  const stepOf = (n: number) => (row.maxSteps === null ? String(n) : t('signal.stepOf', { n, max: row.maxSteps }))
+  const fromZone = (d: number, zone: string) => t('strategy.stock.fromZone', { dist: pct(d), zone })
   switch (row.status) {
     case 'waitingForYou':
-      if (row.signalSide === 'sell') return 'Sell signal waiting'
-      return row.signalStep === null ? 'Signal waiting' : `Signal: step ${row.signalStep}${of}`
+      if (row.signalSide === 'sell') return t('strategy.stock.sellWaiting')
+      return row.signalStep === null
+        ? t('strategy.stock.signalWaiting')
+        : t('strategy.stock.signalStep', { step: stepOf(row.signalStep) })
     case 'signal':
-      if (row.signalSide === 'sell') return 'Sold at the next open'
-      return row.signalStep === null ? 'Bought at the next open' : `Step ${row.signalStep}${of}, bought at the next open`
+      if (row.signalSide === 'sell') return t('strategy.stock.soldNextOpen')
+      return row.signalStep === null
+        ? t('strategy.stock.boughtNextOpen')
+        : t('strategy.stock.stepBoughtNextOpen', { step: stepOf(row.signalStep) })
     case 'done':
-      return words?.holding ?? "This drop's steps are bought"
+      return words?.holding ?? t('strategy.stock.dropBought')
     case 'holding':
-    case 'building':
+    case 'building': {
+      const mismatch = row.rulesSteps !== null && row.rulesSteps !== row.steps
       if (row.maxSteps === null) {
-        return row.rulesSteps !== null && row.rulesSteps !== row.steps
-          ? `Rules: ${row.rulesSteps > 0 ? 'in the market' : 'out of the market'} · You: ${row.steps > 0 ? 'in the market' : 'out of the market'}`
-          : (words?.holding ?? 'In the market')
+        const place = (n: number) => t(n > 0 ? 'strategy.stock.inMarket' : 'strategy.stock.outMarket')
+        return mismatch
+          ? t('strategy.stock.rulesAndYou', { rules: place(row.rulesSteps ?? 0), you: place(row.steps) })
+          : (words?.holding ?? t('strategy.stock.inMarket'))
       }
       // Live, when the user's steps differ from the rules': both.
-      return row.rulesSteps !== null && row.rulesSteps !== row.steps
-        ? `Rules: ${row.rulesSteps}${of} · You: ${row.steps}${of}`
-        : steps(row.steps, row.maxSteps)
+      return mismatch
+        ? t('strategy.stock.rulesAndYou', { rules: stepOf(row.rulesSteps ?? 0), you: stepOf(row.steps) })
+        : steps(row.steps, row.maxSteps, t)
+    }
     case 'noBudget':
-      return row.maxSteps === null ? 'No budget left' : 'No budget left for its steps'
+      return t(row.maxSteps === null ? 'strategy.stock.noBudgetShort' : 'strategy.stock.noBudget')
     case 'outOfTheMarket':
       return row.distancePct !== null && row.distancePct > 0 && words
-        ? `${pct(row.distancePct)}% from ${words.zone}`
-        : (words?.notCandidate ?? 'Rules not met today')
+        ? fromZone(row.distancePct, words.zone)
+        : (words?.notCandidate ?? t('strategy.stock.rulesNotMet'))
     case 'watching':
-      if (row.aiScore !== undefined && row.aiScore !== null) return `Last score: ${row.aiScore}`
-      if (words?.watching) return row.distancePct !== null ? fillN(words.watching, row.distancePct) : 'Rules not met today'
+      if (row.aiScore !== undefined && row.aiScore !== null) return t('strategy.stock.lastScore', { score: row.aiScore })
+      if (words?.watching) {
+        return row.distancePct !== null ? fillN(words.watching, row.distancePct) : t('strategy.stock.rulesNotMet')
+      }
       // 0 means it is there or past it: the rules aren't met for another reason.
       return row.distancePct !== null && row.distancePct > 0 && words
-        ? `${pct(row.distancePct)}% from ${words.zone}`
-        : 'Rules not met today'
+        ? fromZone(row.distancePct, words.zone)
+        : t('strategy.stock.rulesNotMet')
     case 'notCandidate':
-      return words?.notCandidate ? fillN(words.notCandidate, row.distancePct) : 'Not a candidate yet'
+      return words?.notCandidate ? fillN(words.notCandidate, row.distancePct) : t('strategy.stock.notCandidate')
     case 'notEnoughData':
-      return 'Not enough price history yet'
+      return t('strategy.stock.notEnoughData')
     case 'notChecked':
-      return 'Not checked yet'
+      return t('strategy.stock.notChecked')
   }
 }
 
-const PILLS: Record<StockRow['status'], [string, PillTone]> = {
-  waitingForYou: ['WAITING FOR YOU', 'waiting'],
-  signal: ['SIGNAL', 'signal'],
-  holding: ['HOLDING', 'holding'],
-  done: ['DONE', 'holding'],
-  building: ['BUILDING', 'building'],
-  outOfTheMarket: ['OUT OF THE MARKET', 'watching'],
-  noBudget: ['WATCHING', 'watching'],
-  watching: ['WATCHING', 'watching'],
-  notCandidate: ['WATCHING', 'watching'],
-  notEnoughData: ['WATCHING', 'watching'],
-  notChecked: ['WATCHING', 'watching'],
+const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
+  waitingForYou: ['strategy.pill.waitingForYou', 'waiting'],
+  signal: ['strategy.pill.signal', 'signal'],
+  holding: ['strategy.pill.holding', 'holding'],
+  done: ['strategy.pill.done', 'holding'],
+  building: ['strategy.pill.building', 'building'],
+  outOfTheMarket: ['strategy.pill.outOfMarket', 'watching'],
+  noBudget: ['strategy.pill.watching', 'watching'],
+  watching: ['strategy.pill.watching', 'watching'],
+  notCandidate: ['strategy.pill.watching', 'watching'],
+  notEnoughData: ['strategy.pill.watching', 'watching'],
+  notChecked: ['strategy.pill.watching', 'watching'],
 }
 
 /** The words of a stock's row on the strategy page (spec: Strategy page, one row per stock). */
-export function stockLine(row: StockRow, mode: StrategyMode, currency: Currency, words: StockStatusWords | null): StockLine {
-  const [pill, tone] = PILLS[row.status]
+export function stockLine(
+  row: StockRow,
+  mode: StrategyMode,
+  currency: Currency,
+  words: StockStatusWords | null,
+  t: Translate = tNow,
+): StockLine {
+  const [key, tone] = PILL_KEYS[row.status]
+  const amount = money(row.invested, currency)
   return {
-    pill,
+    pill: t(key),
     tone,
-    detail: detailOf(row, words),
+    detail: detailOf(row, words, t),
     result: row.result === null ? '–' : signedPct(row.result, 1),
-    note: row.result === null ? 'No buys yet' : `${mode === 'live' ? 'You ' : ''}${money(row.invested, currency)} in`,
+    note:
+      row.result === null
+        ? t('strategy.stock.noBuys')
+        : t(mode === 'live' ? 'strategy.stock.investedLive' : 'strategy.stock.investedSim', { amount }),
   }
 }

@@ -1,4 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
+import { useT } from '../i18n/I18n'
 import styles from './Field.module.css'
 
 interface FieldShellProps {
@@ -126,6 +127,7 @@ interface PasswordFieldProps {
 
 /** A password with a show/hide toggle. */
 export function PasswordField({ label, value, onChange, autoComplete, hint, error }: PasswordFieldProps) {
+  const t = useT()
   const id = useId()
   const [shown, setShown] = useState(false)
   return (
@@ -142,8 +144,8 @@ export function PasswordField({ label, value, onChange, autoComplete, hint, erro
           aria-controls={id}
           onClick={() => setShown(!shown)}
         >
-          {shown ? 'Hide' : 'Show'}
-          <span className="visually-hidden"> password</span>
+          {shown ? t('common.hide') : t('common.show')}
+          <span className="visually-hidden">{t('common.passwordSuffix')}</span>
         </button>
       }
     >

@@ -15,7 +15,10 @@ public record ResetPasswordRequest(string? Token, string? Password);
 public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
+public record LocaleRequest(string? Locale);
 public record OverviewEmailRequest(bool? Enabled);
+
+public record ResetRecipient(string Email, string Locale);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
 public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role, bool AiSharing = false);
@@ -29,8 +32,6 @@ public static class AccountEndpoints
     public const string SignUpLimit = "account-sign-up", LogInLimit = "account-log-in", EmailLimit = "account-email",
         PasswordLimit = "account-password";
     static readonly TimeSpan VerifyFor = TimeSpan.FromHours(24), ResetFor = TimeSpan.FromHours(1);
-    const string WrongLogIn = "That email and password don't match.";
-    const string ExpiredLink = "This link has expired. Ask for a new one.";
 
     /// <summary>Checked when the email has no account, so a wrong email takes as long as a wrong password.</summary>
     static readonly string DummyHash = new PasswordHasher<User>().HashPassword(null!, "not a real password");
@@ -41,27 +42,28 @@ public static class AccountEndpoints
 
         group.MapPost("/sign-up", async Task<Results<Accepted<AccountMessage>, ValidationProblem>> (SignUpRequest request,
             AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, AccountEmails emails, TimeProvider time,
-            CancellationToken cancellationToken) =>
+            HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
             var errors = new Dictionary<string, string[]>();
             var email = AccountRules.NormalizeEmail(request.Email);
-            if (email is null) errors["email"] = ["Use an email address, e.g. you@gmail.com."];
-            if (AccountRules.PasswordError(request.Password, email) is { } passwordError) errors["password"] = [passwordError];
+            if (email is null) errors["email"] = [Messages.UseAnEmail.In(reqLocale)];
+            if (AccountRules.PasswordError(request.Password, email, reqLocale) is { } passwordError) errors["password"] = [passwordError];
             var locale = request.Locale ?? "en";
-            if (!AccountRules.Locales.Contains(locale)) errors["locale"] = ["Pick English or Catalan."];
+            if (!AccountRules.Locales.Contains(locale)) errors["locale"] = [Messages.PickLanguage.In(reqLocale)];
             var currency = request.Currency ?? AccountRules.Currencies[0];
-            if (!AccountRules.Currencies.Contains(currency)) errors["currency"] = ["Pick a currency from the list."];
-            if (!AccountRules.IsTimeZone(request.TimeZone)) errors["timeZone"] = ["Pick your time zone."];
-            if (!request.DisclaimerAccepted) errors["disclaimerAccepted"] = ["Tick the box to go on."];
+            if (!AccountRules.Currencies.Contains(currency)) errors["currency"] = [Messages.PickCurrency.In(reqLocale)];
+            if (!AccountRules.IsTimeZone(request.TimeZone)) errors["timeZone"] = [Messages.PickTimeZone.In(reqLocale)];
+            if (!request.DisclaimerAccepted) errors["disclaimerAccepted"] = [Messages.TickTheBox.In(reqLocale)];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
             // The same answer whether or not the email has an account (spec: Sign-up). The emails go out after it.
-            var answer = TypedResults.Accepted((string?)null, new AccountMessage("Check your email."));
+            var answer = TypedResults.Accepted((string?)null, new AccountMessage(Messages.CheckYourEmail.In(reqLocale)));
             // Emails compare without case (citext); the warning goes to the address on file.
-            if (await db.Users.Where(u => u.Email == email).Select(u => u.Email).SingleOrDefaultAsync(cancellationToken) is { } registered)
+            if (await db.Users.Where(u => u.Email == email).Select(u => new { u.Email, u.Locale }).SingleOrDefaultAsync(cancellationToken) is { } registered)
             {
                 hasher.HashPassword(null!, request.Password!); // The same slow step as a new account, so timing tells less.
-                emails.AlreadyRegistered(registered);
+                emails.AlreadyRegistered(registered.Email, registered.Locale);
                 return answer;
             }
 
@@ -79,10 +81,11 @@ public static class AccountEndpoints
             }
             catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
             {
-                emails.AlreadyRegistered(email!); // Signed up twice at the same moment.
+                var existingUser = await db.Users.Where(u => u.Email == email).Select(u => u.Locale).FirstOrDefaultAsync(cancellationToken);
+                emails.AlreadyRegistered(email!, existingUser ?? locale); // Signed up twice at the same moment.
                 return answer;
             }
-            emails.Verify(email!, await NewToken(db, user, EmailTokenPurpose.VerifyEmail, now + VerifyFor, cancellationToken));
+            emails.Verify(email!, await NewToken(db, user, EmailTokenPurpose.VerifyEmail, now + VerifyFor, cancellationToken), locale);
             await sessions.StartAsync(user, cancellationToken);
             return answer;
         })
@@ -90,12 +93,13 @@ public static class AccountEndpoints
         .WithSummary("Creates an account and logs it in. Answers the same when the email already has one (that account gets an email).");
 
         group.MapPost("/log-in", async Task<Results<NoContent, ProblemHttpResult>> (LogInRequest request, AppDbContext db,
-            IPasswordHasher<User> hasher, Sessions sessions, LogInThrottle throttle, CancellationToken cancellationToken) =>
+            IPasswordHasher<User> hasher, Sessions sessions, LogInThrottle throttle, HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
             var email = AccountRules.NormalizeEmail(request.Email) ?? (request.Email ?? "").Trim();
             // Counted before the password is checked, so tries sent at once can't all get past the lock.
             if (!throttle.TryAttempt(email))
-                return TypedResults.Problem("Too many tries. Wait a few minutes, or reset your password.", statusCode: StatusCodes.Status429TooManyRequests);
+                return TypedResults.Problem(Messages.TooManyTries.In(reqLocale), statusCode: StatusCodes.Status429TooManyRequests);
 
             // A password longer than any account can have is refused before it is hashed (it costs the same time).
             var tooLong = (request.Password?.Length ?? 0) > AccountRules.PasswordMax;
@@ -104,7 +108,7 @@ public static class AccountEndpoints
                 ? hasher.VerifyHashedPassword(user, hash, request.Password ?? "")
                 : Failed(hasher, tooLong ? "" : request.Password);
             if (user is null || result == PasswordVerificationResult.Failed)
-                return TypedResults.Problem(WrongLogIn, statusCode: StatusCodes.Status401Unauthorized);
+                return TypedResults.Problem(Messages.WrongLogIn.In(reqLocale), statusCode: StatusCodes.Status401Unauthorized);
             if (result == PasswordVerificationResult.SuccessRehashNeeded)
             {
                 // Only over the hash just checked, so it can't undo a reset that finished meanwhile.
@@ -136,10 +140,11 @@ public static class AccountEndpoints
         .WithSummary("The logged-in user, or 401: the app's start-up check.");
 
         group.MapPost("/currency", async Task<Results<NoContent, ValidationProblem>> (CurrencyRequest request, AppDbContext db,
-            Sessions sessions, CancellationToken cancellationToken) =>
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
             if (request.Currency is not { } currency || !AccountRules.Currencies.Contains(currency))
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currency"] = ["Pick a currency from the list."] });
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currency"] = [Messages.PickCurrency.In(reqLocale)] });
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             // Strategies already started keep the currency they began with; only new ones use this.
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Currency, currency), cancellationToken);
@@ -148,10 +153,25 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("Sets the currency of the user's new strategies. Running ones keep theirs.");
 
-        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (OverviewEmailRequest request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        group.MapPost("/locale", async Task<Results<NoContent, ValidationProblem>> (LocaleRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
+            if (request.Locale is not { } locale || !AccountRules.Locales.Contains(locale))
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["locale"] = [Messages.PickLanguage.In(reqLocale)] });
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Locale, locale), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Sets the language of the user's account and emails.");
+
+        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (OverviewEmailRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
             if (request.Enabled is not { } enabled)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = ["Say true or false."] });
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewEmail, enabled), cancellationToken);
             return TypedResults.NoContent();
@@ -162,11 +182,12 @@ public static class AccountEndpoints
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.
         group.MapPost("/verify-email", async Task<Results<NoContent, ProblemHttpResult>> (TokenRequest request, AppDbContext db,
-            TimeProvider time, CancellationToken cancellationToken) =>
+            TimeProvider time, HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
             if (await FindToken(db, request.Token, EmailTokenPurpose.VerifyEmail, time, cancellationToken) is not { } token
                 || !await Claim(db, token, time, cancellationToken))
-                return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
+                return TypedResults.Problem(Messages.ExpiredLink.In(reqLocale), statusCode: StatusCodes.Status400BadRequest);
             var now = time.GetUtcNow();
             await db.Users.Where(u => u.Id == token.UserId && u.EmailVerifiedAt == null)
                 .ExecuteUpdateAsync(u => u.SetProperty(x => x.EmailVerifiedAt, now), cancellationToken);
@@ -180,7 +201,7 @@ public static class AccountEndpoints
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             if (user.EmailVerifiedAt is null)
-                emails.Verify(user.Email, await NewToken(db, user, EmailTokenPurpose.VerifyEmail, time.GetUtcNow() + VerifyFor, cancellationToken));
+                emails.Verify(user.Email, await NewToken(db, user, EmailTokenPurpose.VerifyEmail, time.GetUtcNow() + VerifyFor, cancellationToken), user.Locale);
             return TypedResults.NoContent();
         })
         .RequireUser()
@@ -188,35 +209,37 @@ public static class AccountEndpoints
         .WithSummary("Sends the verification link again.");
 
         group.MapPost("/forgot-password", async (EmailRequest request, AppDbContext db, AccountEmails emails, TimeProvider time,
-            CancellationToken cancellationToken) =>
+            HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
             // One statement finds the user and stores the link, so a known email takes as many round trips as an unknown one.
             if (AccountRules.NormalizeEmail(request.Email) is { } email)
             {
                 var (token, hash) = SecretTokens.New();
                 var expiresAt = time.GetUtcNow() + ResetFor;
-                var registered = await db.Database.SqlQuery<string>($"""
-                    WITH u AS (SELECT id, email FROM users WHERE email = {email}::citext),
+                var registered = await db.Database.SqlQuery<ResetRecipient>($"""
+                    WITH u AS (SELECT id, email, locale FROM users WHERE email = {email}::citext),
                          t AS (INSERT INTO email_tokens (id, user_id, purpose, token_hash, expires_at)
                                SELECT {Guid.CreateVersion7()}, id, 'reset_password', {hash}, {expiresAt} FROM u)
-                    SELECT email::text FROM u
-                    """).ToListAsync(cancellationToken); // Not composed: Postgres allows an INSERT in WITH only at the top level.
-                if (registered is [var to]) emails.Reset(to, token);
+                    SELECT email::text AS "Email", locale AS "Locale" FROM u
+                    """).ToListAsync(cancellationToken);
+                if (registered is [var to]) emails.Reset(to.Email, token, to.Locale);
             }
-            return TypedResults.Accepted((string?)null, new AccountMessage("If that email has an account, we sent a link. It works for 1 hour."));
+            return TypedResults.Accepted((string?)null, new AccountMessage(Messages.ResetLinkSent.In(reqLocale)));
         })
         .RequireRateLimiting(EmailLimit)
         .WithSummary("Emails a reset link if the email has an account. Always the same answer.");
 
         group.MapPost("/reset-password", async Task<Results<NoContent, ProblemHttpResult, ValidationProblem>> (
             ResetPasswordRequest request, AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, LogInThrottle throttle,
-            TimeProvider time, CancellationToken cancellationToken) =>
+            TimeProvider time, HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
             var token = await FindToken(db, request.Token, EmailTokenPurpose.ResetPassword, time, cancellationToken);
-            if (token is null) return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
+            if (token is null) return TypedResults.Problem(Messages.ExpiredLink.In(reqLocale), statusCode: StatusCodes.Status400BadRequest);
             var user = await db.Users.SingleAsync(u => u.Id == token.UserId, cancellationToken);
             // The password is checked before the link is used, so a refused password doesn't use it up.
-            if (AccountRules.PasswordError(request.Password, user.Email) is { } error)
+            if (AccountRules.PasswordError(request.Password, user.Email, reqLocale) is { } error)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [error] });
             var newHash = hasher.HashPassword(user, request.Password!); // Before the transaction, so the lock isn't held over it.
 
@@ -224,7 +247,7 @@ public static class AccountEndpoints
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             await LockPasswordAsync(db, user.Id, cancellationToken);
             if (!await Claim(db, token, time, cancellationToken))
-                return TypedResults.Problem(ExpiredLink, statusCode: StatusCodes.Status400BadRequest);
+                return TypedResults.Problem(Messages.ExpiredLink.In(reqLocale), statusCode: StatusCodes.Status400BadRequest);
             var now = time.GetUtcNow();
             user.PasswordHash = newHash;
             user.EmailVerifiedAt ??= now; // The link reached the inbox.
@@ -240,14 +263,15 @@ public static class AccountEndpoints
         .WithSummary("Sets a new password from the link in the email: ends every session, then logs this device in.");
 
         group.MapPost("/change-password", async Task<Results<NoContent, ValidationProblem>> (ChangePasswordRequest request,
-            AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, TimeProvider time, HttpContext context, CancellationToken cancellationToken) =>
         {
+            var reqLocale = RequestLocale.From(context.Request);
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            var wrongCurrent = TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currentPassword"] = ["That isn't your current password."] });
+            var wrongCurrent = TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currentPassword"] = [Messages.WrongCurrentPassword.In(reqLocale)] });
             if (user.PasswordHash is not { } checkedHash
                 || hasher.VerifyHashedPassword(user, checkedHash, request.CurrentPassword ?? "") == PasswordVerificationResult.Failed)
                 return wrongCurrent;
-            if (AccountRules.PasswordError(request.NewPassword, user.Email) is { } error)
+            if (AccountRules.PasswordError(request.NewPassword, user.Email, reqLocale) is { } error)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["newPassword"] = [error] });
             var newHash = hasher.HashPassword(user, request.NewPassword!);
 

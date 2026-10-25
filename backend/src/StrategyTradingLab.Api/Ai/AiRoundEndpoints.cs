@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -16,20 +15,19 @@ namespace StrategyTradingLab.Api.Ai;
 /// </summary>
 public static class AiRoundEndpoints
 {
-    const string NotDue = "This AI round isn't due yet.";
-
     public static void MapAiRounds(this IEndpointRouteBuilder app)
     {
         app.MapPost("/templates/ai/prompt", async Task<Results<Ok<AiPromptPreview>, ValidationProblem>> (AiPromptRequest request, AppDbContext db,
-            TimeProvider time, CancellationToken cancellationToken) =>
+            HttpContext http, TimeProvider time, CancellationToken cancellationToken) =>
         {
+            var locale = RequestLocale.From(http.Request);
             var errors = new Dictionary<string, string[]>();
             var setup = new AiSetup(request.News, request.Mood, request.Figures, request.Instructions);
             var weeks = request.EveryWeeks ?? new AiParams().EveryWeeks;
-            if (weeks is < 1 or > 8) errors["everyWeeks"] = ["Use 1 to 8 weeks."];
+            if (weeks is < 1 or > 8) errors["everyWeeks"] = [Messages.SettingRange.In(locale, 1, 8, 1)];
             var ids = request.AssetIds ?? [];
             if (ids.Count > 100) errors["assetIds"] = ["Too many stocks."];
-            if (Apply(TemplateCatalog.Ai.ParamsJson(), setup, (field, message) => errors[field] = [message]) is not { } json || errors.Count > 0)
+            if (Apply(TemplateCatalog.Ai.ParamsJson(), setup, (field, message) => errors[field] = [message], locale) is not { } json || errors.Count > 0)
                 return TypedResults.ValidationProblem(errors);
 
             var parameters = json.Deserialize<AiParams>(JsonSerializerOptions.Web)! with { EveryWeeks = weeks };
@@ -71,7 +69,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
-            var plan = await rounds.PlanAsync(strategy, request.Answer, cancellationToken);
+            var plan = await rounds.PlanAsync(strategy, request.Answer, user.Locale, cancellationToken);
             return TypedResults.Ok(ReadingOf(plan));
         })
         .WithName("ReadAiAnswer")
@@ -84,18 +82,18 @@ public static class AiRoundEndpoints
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
             var today = StrategyEndpoints.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
-            if (round.DueOn > today) return TypedResults.Conflict(NotDue);
+            if (round.DueOn > today) return TypedResults.Conflict(Messages.RoundNotDue.In(user.Locale));
 
             var errors = new Dictionary<string, string[]>();
             var model = request.AiModel?.Trim() ?? "";
-            if (model.Length is 0 or > AiRounds.MaxModel || model.Any(char.IsControl)) errors["aiModel"] = ["Pick the AI model you used, or name it."];
-            var plan = await rounds.PlanAsync(strategy, request.Answer, cancellationToken);
+            if (model.Length is 0 or > AiRounds.MaxModel || model.Any(char.IsControl)) errors["aiModel"] = [Messages.PickAiModel.In(user.Locale)];
+            var plan = await rounds.PlanAsync(strategy, request.Answer, user.Locale, cancellationToken);
             if (!plan.Reading.Ok) errors["answer"] = [.. plan.Reading.Problems];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
             var prompt = AiPrompt.Build(AiRoundRules.Params(strategy), today, plan.Stocks);
             var result = await rounds.SubmitAsync(strategy, user, round, plan, prompt, model, request.Share, cancellationToken);
-            return result is null ? TypedResults.Conflict("This AI round is already done.") : TypedResults.Ok(result);
+            return result is null ? TypedResults.Conflict(Messages.RoundDone.In(user.Locale)) : TypedResults.Ok(result);
         })
         .WithName("UseAiScores")
         .WithSummary("\"Use these scores\": the round is done and its top scores get their steps.");
@@ -121,7 +119,7 @@ public static class AiRoundEndpoints
                 && s.TemplateKey == TemplateCatalog.Ai.Key, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var errors = new Dictionary<string, string[]>();
-            if (Apply(strategy.Params, request, (field, message) => errors[field] = [message]) is not { } json) return TypedResults.ValidationProblem(errors);
+            if (Apply(strategy.Params, request, (field, message) => errors[field] = [message], user.Locale) is not { } json) return TypedResults.ValidationProblem(errors);
             strategy.Params = json;
             await db.SaveChangesAsync(cancellationToken);
             return TypedResults.NoContent();
@@ -132,8 +130,9 @@ public static class AiRoundEndpoints
         app.MapPost("/account/ai-sharing", async Task<Results<NoContent, ValidationProblem>> (AiSharingRequest request, AppDbContext db,
             Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            if (request.Enabled is not { } enabled) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = ["Say on or off."] });
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            if (request.Enabled is not { } enabled)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(user.Locale)] });
             var now = time.GetUtcNow();
             await db.Users.Where(u => u.Id == user.Id)
                 .ExecuteUpdateAsync(u => u.SetProperty(x => x.AiSharing, enabled).SetProperty(x => x.AiSharingChangedAt, now), cancellationToken);
@@ -157,26 +156,27 @@ public static class AiRoundEndpoints
 
     /// <summary>
     /// <paramref name="current"/> params with what the prompt asks for. Instructions are trimmed; empty ones, or the suggested ones
-    /// word for word, count as not edited. Null, with the reasons in <paramref name="fail"/>, when refused.
+    /// word for word, count as not edited. Null, with the reasons in <paramref name="locale"/> in <paramref name="fail"/>, when refused.
     /// </summary>
-    public static JsonDocument? Apply(JsonDocument current, AiSetup? setup, Action<string, string> fail)
+    public static JsonDocument? Apply(JsonDocument current, AiSetup? setup, Action<string, string> fail, string locale = "en")
     {
-        var parameters = current.Deserialize<AiParams>(JsonSerializerOptions.Web) ?? new AiParams();
         if (setup is null) return current;
+        var parameters = current.Deserialize<AiParams>(JsonSerializerOptions.Web) ?? new AiParams();
         var instructions = setup.Instructions?.Replace("\r\n", "\n").Trim();
         var merged = parameters with { News = setup.News, Mood = setup.Mood, Figures = setup.Figures };
         if (string.IsNullOrEmpty(instructions) || instructions == AiPrompt.SuggestedInstructions(AiPrompt.On(merged))) instructions = null;
-        merged = merged with { Instructions = instructions };
 
-        var results = new List<ValidationResult>();
-        if (!Validator.TryValidateObject(merged, new ValidationContext(merged), results, validateAllProperties: true))
+        var ok = true;
+        if (!merged.News && !merged.Mood && !merged.Figures)
         {
-            foreach (var result in results)
-                fail(result.MemberNames.Contains(nameof(AiParams.Instructions)) ? "instructions" : "sources",
-                    result.MemberNames.Contains(nameof(AiParams.Instructions)) && instructions?.Length > AiParams.MaxInstructions
-                        ? $"Keep it under {AiParams.MaxInstructions} characters." : result.ErrorMessage ?? "Check this.");
-            return null;
+            fail("sources", Messages.OneSourceOn.In(locale));
+            ok = false;
         }
-        return JsonSerializer.SerializeToDocument(merged, JsonSerializerOptions.Web);
+        if (instructions?.Length > AiParams.MaxInstructions)
+        {
+            fail("instructions", Messages.InstructionsLength.In(locale, AiParams.MaxInstructions));
+            ok = false;
+        }
+        return ok ? JsonSerializer.SerializeToDocument(merged with { Instructions = instructions }, JsonSerializerOptions.Web) : null;
     }
 }

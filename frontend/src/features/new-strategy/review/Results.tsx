@@ -1,4 +1,5 @@
 import type { PeriodResult } from '../../../api'
+import { useT } from '../../../i18n/I18n'
 import { signedPct } from '../../../lib/format'
 import styles from './Results.module.css'
 
@@ -13,10 +14,11 @@ function Pct({ value, plain }: { value: number; plain?: boolean }) {
 
 /** The three figures of the Tested box: this template, the index fund, the worst year. */
 export function ResultFigures({ result }: { result: PeriodResult }) {
+  const t = useT()
   const figures = [
-    { label: 'This template', value: result.template },
-    { label: 'Index fund', value: result.index, plain: true },
-    { label: 'Worst year', value: result.worstYear },
+    { label: t('newStrategy.results.thisTemplate'), value: result.template },
+    { label: t('newStrategy.results.indexFund'), value: result.index, plain: true },
+    { label: t('newStrategy.results.worstYear'), value: result.worstYear },
   ]
   return (
     <dl className={styles.figures}>
@@ -34,14 +36,15 @@ export function ResultFigures({ result }: { result: PeriodResult }) {
 
 /** "By period" table on How we tested. */
 export function PeriodTable({ periods }: { periods: PeriodResult[] }) {
+  const t = useT()
   return (
     <table className={`well ${styles.periods}`}>
       <thead>
         <tr>
-          <th scope="col">Period</th>
-          <th scope="col">Template</th>
-          <th scope="col">Index</th>
-          <th scope="col">Worst yr</th>
+          <th scope="col">{t('newStrategy.results.period')}</th>
+          <th scope="col">{t('newStrategy.results.template')}</th>
+          <th scope="col">{t('newStrategy.results.index')}</th>
+          <th scope="col">{t('newStrategy.results.worstYr')}</th>
         </tr>
       </thead>
       <tbody>

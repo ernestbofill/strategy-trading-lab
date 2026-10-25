@@ -5,7 +5,7 @@ import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
-import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
+import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { aiRoundPath, aiRoundsPath, signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
@@ -28,6 +28,7 @@ function Figure({ label, value, highlight }: { label: string; value: number | nu
 
 /** The summary box: results, chart, budget used and (live) how the signals were answered. */
 function Summary({ s }: { s: StrategyDetail }) {
+  const t = useT()
   const live = s.mode === 'live'
   const { results, pastResult, budget, signals } = s
   return (
@@ -35,32 +36,33 @@ function Summary({ s }: { s: StrategyDetail }) {
       {results ? (
         <>
           <div className={styles.figures} data-count={live ? 3 : 2}>
-            <Figure label={live ? 'You' : 'Since start'} value={results.you} highlight />
-            {live && <Figure label="The rules alone" value={results.rules} />}
-            <Figure label="Index fund" value={results.index} />
+            <Figure label={live ? t('strategy.figure.you') : t('strategy.figure.sinceStart')} value={results.you} highlight />
+            {live && <Figure label={t('strategy.figure.rules')} value={results.rules} />}
+            <Figure label={t('strategy.figure.index')} value={results.index} />
           </div>
           <ResultsChart history={results.history} live={live} />
           {pastResult && (
             // The strategy has no worst year of its own until it has run a year: the template's stands in.
             <p className={styles.worst}>
-              The template's worst year, {pastResult.years}: <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>
+              {t('strategy.worstYear', { years: pastResult.years, pct: signedPct(pastResult.worstYear) })}
             </p>
           )}
         </>
       ) : (
         <p className={styles.text}>
           {budget.used > 0
-            ? 'Results show once the prices of your trades are in.'
+            ? t('strategy.noResults.budget')
             : s.aiRounds?.done === 0
-              ? 'No results yet. They start after your first AI round.'
+              ? t('strategy.noResults.ai')
               : live
-                ? 'No trades yet.'
-                : 'No paper trades yet.'}
+                ? t('strategy.noResults.live')
+                : t('strategy.noResults.sim')}
           {pastResult && (
             <>
               {' '}
-              In the past, {pastResult.years}, the template did <span className={styles.mono}>{signedPct(pastResult.template)}</span> vs{' '}
-              <span className={styles.mono}>{signedPct(pastResult.index)}</span> for an index fund. Its worst year was{' '}
+              {t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.template)}</span> {t('strategy.pastSummary.vs')}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.index)}</span> {t('strategy.pastSummary.after')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>.
               {s.templateKey === 'bear' && ' Big drops are rare: it may not signal for years.'}
             </>
@@ -69,18 +71,18 @@ function Summary({ s }: { s: StrategyDetail }) {
       )}
       <dl className={styles.facts}>
         <div>
-          <dt>Budget used</dt>
+          <dt>{t('strategy.budgetUsed')}</dt>
           <dd>
-            {money(budget.used, s.currency)} of {money(budget.amount, s.currency)}
-            {budget.totalSteps !== null && ` · ${budget.steps} of ${budget.totalSteps} steps`}
+            {t('strategy.budgetRatio', { used: money(budget.used, s.currency), amount: money(budget.amount, s.currency) })}
+            {budget.totalSteps !== null && ` · ${t('strategy.budgetSteps', { steps: budget.steps ?? 0, total: budget.totalSteps })}`}
           </dd>
         </div>
         {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
         {signals && (
           <div>
-            <dt>Signals</dt>
+            <dt>{t('strategy.signals')}</dt>
             <dd>
-              {signals.did} did · {signals.skipped} skipped · {signals.missed} missed
+              {t('strategy.signalsCount', { did: signals.did, skipped: signals.skipped, missed: signals.missed })}
             </dd>
           </div>
         )}
@@ -91,26 +93,29 @@ function Summary({ s }: { s: StrategyDetail }) {
 
 /** AI strategies: when the next round is due, and how the picks did against the rest. */
 function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummary }) {
+  const t = useT()
+  const { locale } = useI18n()
   return (
     <>
       <div>
-        <dt>AI round</dt>
+        <dt>{t('strategy.ai.round')}</dt>
         <dd>
           {rounds.due ? (
-            <Link to={aiRoundPath(s.id)}>Due now ›</Link>
+            <Link to={aiRoundPath(s.id)}>{t('strategy.ai.dueNow')}</Link>
           ) : rounds.nextDueOn ? (
-            `Next on ${shortDate(rounds.nextDueOn)}`
+            t('strategy.ai.nextOn', { date: shortDate(rounds.nextDueOn, locale) })
           ) : (
             '–'
           )}
-          {` · ${rounds.done} done${rounds.skipped > 0 ? ` · ${rounds.skipped} skipped` : ''}`}
+          {` · ${t('strategy.ai.done', { n: rounds.done })}`}
+          {rounds.skipped > 0 && ` · ${t('strategy.ai.skipped', { n: rounds.skipped })}`}
         </dd>
       </div>
       {rounds.picksVsRest && (
         <div>
-          <dt>Picks vs the rest</dt>
+          <dt>{t('strategy.ai.picksVsRest')}</dt>
           <dd>
-            <span className={styles.mono}>{signedPct(rounds.picksVsRest.picks, 1)}</span> vs{' '}
+            <span className={styles.mono}>{signedPct(rounds.picksVsRest.picks, 1)}</span> {t('strategy.ai.vs')}{' '}
             <span className={styles.mono}>{signedPct(rounds.picksVsRest.rest, 1)}</span>
           </dd>
         </div>
@@ -120,15 +125,16 @@ function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummar
 }
 
 function Stocks({ s }: { s: StrategyDetail }) {
+  const t = useT()
   return (
     <Section
-      title={`Stocks · ${s.stocks.length}`}
+      title={t('strategy.stocks', { count: s.stocks.length })}
       // The stock list editor isn't built yet.
-      aside={<TextAction>Edit list</TextAction>}
+      aside={<TextAction>{t('strategy.editList')}</TextAction>}
     >
       <ul className={styles.stocks}>
         {s.stocks.map((row) => {
-          const line = stockLine(row, s.mode, s.currency, s.words)
+          const line = stockLine(row, s.mode, s.currency, s.words, t)
           const content = (
             <>
               <div className={styles.stockMain}>
@@ -162,15 +168,16 @@ function Stocks({ s }: { s: StrategyDetail }) {
           )
         })}
       </ul>
-      <p className={styles.caption}>Removing a stock stops its signals. Your trades in it stay in the results.</p>
+      <p className={styles.caption}>{t('strategy.caption')}</p>
     </Section>
   )
 }
 
 /** A tile for a screen that isn't built yet: shown, but not usable. */
 function SoonTile({ title, sub }: { title: string; sub: string }) {
+  const t = useT()
   return (
-    <div className={styles.tile} aria-disabled="true" title="Not available yet">
+    <div className={styles.tile} aria-disabled="true" title={t('strategy.notAvailable')}>
       <span className={`ui-strong ${styles.tileTitle}`}>{title}</span>
       <span className={styles.detail}>{sub}</span>
     </div>
@@ -179,21 +186,20 @@ function SoonTile({ title, sub }: { title: string; sub: string }) {
 
 /** Strategy page (wireframe `StrategyDetail`), for both modes. */
 export function StrategyPage() {
+  const t = useT()
   const { id = '' } = useParams()
   const strategy = useStrategy(id)
   // Renaming isn't built yet.
-  const top = <TopBar back={dashboardPath} aside={<TextAction>Rename</TextAction>} />
+  const top = <TopBar back={dashboardPath} aside={<TextAction>{t('strategy.rename')}</TextAction>} />
 
   return (
-    <LoadableScreen state={strategy} top={top} what="this strategy">
+    <LoadableScreen state={strategy} top={top} what={t('strategy.what')}>
       {(s) => {
         const live = s.mode === 'live'
-        const since = s.startedOn === s.today ? 'started today' : `since ${shortDate(s.startedOn)}`
-        const source = live
-          ? 'Your results come from the trades you confirmed, at your prices.'
-          : "Results come from paper trades at the next day's opening price."
+        const since = s.startedOn === s.today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
+        const source = live ? t('strategy.source.live') : t('strategy.source.sim')
         return (
-          <Screen top={top} note={`${source} ${DISCLAIMER} ${PAST_RESULTS_CAPTION}`}>
+          <Screen top={top} note={`${source} ${t('common.disclaimer')} ${t('common.pastResults')}`}>
             <div className={styles.header}>
               <h1 className={styles.title}>{s.name}</h1>
               <div className={styles.sub}>
@@ -208,16 +214,16 @@ export function StrategyPage() {
             <SignalsAndTrades s={s} />
             <div className={styles.tiles}>
               <Link to={strategySettingsPath(s.id)} className={styles.tileLink}>
-                <span className={`ui-strong ${styles.tileTitle}`}>Tune the settings</span>
-                <span className={styles.detail}>Change its rules</span>
+                <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
+                <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
               </Link>
               {s.aiRounds ? (
                 <Link to={aiRoundsPath(s.id)} className={styles.tileLink}>
-                  <span className={`ui-strong ${styles.tileTitle}`}>AI rounds</span>
-                  <span className={styles.detail}>Every round and its scores</span>
+                  <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.aiRoundsTitle')}</span>
+                  <span className={styles.detail}>{t('strategy.tile.aiRoundsSub')}</span>
                 </Link>
               ) : (
-                <SoonTile title="Backtest" sub="How the template did" />
+                <SoonTile title={t('strategy.tile.backtestTitle')} sub={t('strategy.tile.backtestSub')} />
               )}
             </div>
           </Screen>

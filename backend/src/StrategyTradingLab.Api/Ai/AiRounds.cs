@@ -109,10 +109,10 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     /// Reads an answer and works out the steps it would give now: the rules' steps so far, the budget the strategy's signals
     /// use, and which stocks can't get a signal on the last finished session (no price yet, or one already that day).
     /// </summary>
-    public async Task<AiPlan> PlanAsync(Strategy strategy, string? answer, CancellationToken cancellationToken)
+    public async Task<AiPlan> PlanAsync(Strategy strategy, string? answer, string locale, CancellationToken cancellationToken)
     {
         var stocks = await StocksAsync(strategy, cancellationToken);
-        var reading = AiAnswerReader.Read(answer, stocks);
+        var reading = AiAnswerReader.Read(answer, stocks, locale);
         if (!reading.Ok) return new AiPlan(answer ?? "", reading, stocks, [], null, strategy.Budget);
 
         var session = UsSession.LastComplete(time.GetUtcNow());

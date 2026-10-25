@@ -1,4 +1,5 @@
 import type { FeedbackKind } from '../../api'
+import { useT } from '../../i18n/I18n'
 import { FEEDBACK_KINDS } from './feedback'
 import styles from './Feedback.module.css'
 
@@ -9,8 +10,9 @@ export function KindPicker({
   value: FeedbackKind
   onChange: (kind: FeedbackKind) => void
 }) {
+  const t = useT()
   return (
-    <div className={styles.kindGroup} role="radiogroup" aria-label="Type">
+    <div className={styles.kindGroup} role="radiogroup" aria-label={t('feedback.kind.type')}>
       {FEEDBACK_KINDS.map((k) => (
         <button
           key={k.value}
@@ -20,7 +22,7 @@ export function KindPicker({
           className={styles.kindOption}
           onClick={() => onChange(k.value)}
         >
-          <span aria-hidden="true">{k.emoji}</span> {k.label}
+          <span aria-hidden="true">{k.emoji}</span> {t(`feedback.kind.${k.value}`)}
         </button>
       ))}
     </div>

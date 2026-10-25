@@ -735,6 +735,8 @@ export interface Api {
   changePassword(currentPassword: string, newPassword: string): Promise<void>
   /** Sets the currency of the user's new strategies. Rejects with `InvalidFieldsError`. */
   setCurrency(currency: Currency): Promise<void>
+  /** Sets the language of the user's account and emails. Rejects with `InvalidFieldsError`. */
+  setLocale(locale: Locale): Promise<void>
   /** Turns the daily overview email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>

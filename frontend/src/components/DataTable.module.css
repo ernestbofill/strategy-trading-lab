@@ -21,7 +21,6 @@
 .filterSelect {
   height: 48px;
   min-width: 0;
-  padding: 0 12px;
   background: var(--surface-input);
   border: 1px solid var(--primary);
   border-radius: var(--radius-sm);
@@ -31,6 +30,7 @@
 
 .searchInput {
   flex: 1;
+  padding: 0 12px;
 }
 
 .searchInput:focus-visible,

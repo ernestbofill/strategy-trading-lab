@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../api'
@@ -59,7 +59,7 @@ describe('TopBar', () => {
   })
 
   it('does not show FE version when user is not an owner', async () => {
-    vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
+    const getAccountSpy = vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
 
     render(
       <MemoryRouter>
@@ -69,8 +69,7 @@ describe('TopBar', () => {
       </MemoryRouter>,
     )
 
-    // Wait for account check to resolve
-    await screen.findByText('STL // DASHBOARD')
+    await waitFor(() => expect(getAccountSpy).toHaveBeenCalled())
     expect(screen.queryByText(new RegExp(`v${__APP_VERSION__}`))).toBeNull()
   })
 })

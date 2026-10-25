@@ -4,18 +4,15 @@ import type { Setting, TemplateDetail, TemplateKey } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
-import { Section } from '../../components/Section'
-import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
+import { DISCLAIMER } from '../../lib/copy'
+import { AdvancedSettingsBody } from './AdvancedSettingsBody'
 import styles from './Advanced.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { reviewPath } from './paths'
-import { PeriodTable } from './review/Results'
 import {
   changedSettings,
   formatSetting,
-  settingBounds,
   settingValues,
-  testedValues,
   type SettingValues,
 } from './settings'
 import { useTemplate } from './useTemplate'
@@ -49,13 +46,9 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
     )
   }
 
-  const tested = testedValues(template)
-  const changed = changedSettings(template, values)
-  const anyChanged = Object.keys(changed).length > 0
-
   const save = () => {
     if (!ownDraft) draft.switchTemplate(template.key)
-    draft.update({ settings: changed })
+    draft.update({ settings: changedSettings(template, values) })
     if (hasHistory) navigate(-1)
     else navigate(reviewPath(template.key))
   }
@@ -63,36 +56,7 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   return (
     <Screen top={top} action={<PrimaryAction onClick={save}>Save settings</PrimaryAction>} note={DISCLAIMER}>
       <PageHeader title="Advanced settings" lead="Every rule as an exact number, next to the tested default." />
-      <div className={styles.rows}>
-        {template.settings.map((setting) => (
-          <SettingRow
-            key={setting.key}
-            setting={setting}
-            value={values[setting.key]}
-            tested={tested[setting.key]}
-            bounds={settingBounds(setting, template.settings, values)}
-            onChange={(value) => setValues((v) => ({ ...v, [setting.key]: value }))}
-          />
-        ))}
-        <button type="button" className={`ui-strong ${styles.reset}`} onClick={() => setValues(tested)} disabled={!anyChanged}>
-          ⟳ Reset to tested
-        </button>
-      </div>
-      {template.backtest && (
-        <Section title="Backtest">
-          {anyChanged ? (
-            <>
-              <PeriodTable periods={template.backtest.periods} />
-              <p className="caption">
-                These are the tested defaults' results. Re-running the test with your settings comes later.{' '}
-                {PAST_RESULTS_CAPTION}
-              </p>
-            </>
-          ) : (
-            <p className={`well ${styles.message}`}>You're on the tested defaults. Change a setting to compare.</p>
-          )}
-        </Section>
-      )}
+      <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
     </Screen>
   )
 }

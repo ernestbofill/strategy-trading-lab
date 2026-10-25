@@ -4,20 +4,11 @@ import { api, type StrategyDetail, type TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
-import { Section } from '../../components/Section'
 import { strategyPath } from '../dashboard/paths'
-import { SettingRow } from '../new-strategy/Advanced'
-import styles from '../new-strategy/Advanced.module.css'
-import { PeriodTable } from '../new-strategy/review/Results'
-import {
-  changedSettings,
-  settingBounds,
-  settingValues,
-  testedValues,
-  type SettingValues,
-} from '../new-strategy/settings'
+import { AdvancedSettingsBody } from '../new-strategy/AdvancedSettingsBody'
+import { changedSettings, settingValues, type SettingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
-import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
+import { DISCLAIMER } from '../../lib/copy'
 import { invalidateAll } from '../../lib/useLoadable'
 import { useStrategy } from './useStrategy'
 
@@ -58,16 +49,12 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
     )
   }
 
-  const tested = testedValues(template)
-  const changed = changedSettings(template, values)
-  const anyChanged = Object.keys(changed).length > 0
-
   const save = async () => {
     if (saving) return
     setSaving(true)
     setError(null)
     try {
-      await api.updateStrategySettings(strategy.id, changed)
+      await api.updateStrategySettings(strategy.id, changedSettings(template, values))
       invalidateAll()
       navigate(strategyPath(strategy.id))
     } catch {
@@ -88,41 +75,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
     >
       <PageHeader title="Advanced settings" lead="Every rule as an exact number, next to the tested default." />
       {error && <ScreenMessage>{error}</ScreenMessage>}
-      <div className={styles.rows}>
-        {template.settings.map((setting) => (
-          <SettingRow
-            key={setting.key}
-            setting={setting}
-            value={values[setting.key]}
-            tested={tested[setting.key]}
-            bounds={settingBounds(setting, template.settings, values)}
-            onChange={(value) => setValues((v) => ({ ...v, [setting.key]: value }))}
-          />
-        ))}
-        <button
-          type="button"
-          className={`ui-strong ${styles.reset}`}
-          onClick={() => setValues(tested)}
-          disabled={!anyChanged}
-        >
-          ⟳ Reset to tested
-        </button>
-      </div>
-      {template.backtest && (
-        <Section title="Backtest">
-          {anyChanged ? (
-            <>
-              <PeriodTable periods={template.backtest.periods} />
-              <p className="caption">
-                These are the tested defaults' results. Re-running the test with your settings comes later.{' '}
-                {PAST_RESULTS_CAPTION}
-              </p>
-            </>
-          ) : (
-            <p className={`well ${styles.message}`}>You're on the tested defaults. Change a setting to compare.</p>
-          )}
-        </Section>
-      )}
+      <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
     </Screen>
   )
 }

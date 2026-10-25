@@ -104,7 +104,7 @@ public static class StrategyEndpoints
             Guid id, UpdateStrategySettings request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
-            var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
+            var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
 
             if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
@@ -220,9 +220,13 @@ public static class StrategyEndpoints
             ? new SignalCounts(signals.Count(s => s.Status == SignalStatus.Confirmed), signals.Count(s => s.Status == SignalStatus.Skipped),
                 signals.Count(s => s.Status == SignalStatus.Missed))
             : null;
-        var settings = template.Settings
-            .Where(s => strategy.Params.RootElement.TryGetProperty(s.Key, out _))
-            .ToDictionary(s => s.Key, s => strategy.Params.RootElement.GetProperty(s.Key).GetDecimal());
+        var root = strategy.Params.RootElement;
+        var settings = new Dictionary<string, decimal>();
+        foreach (var s in template.Settings)
+        {
+            if (root.TryGetProperty(s.Key, out var prop))
+                settings[s.Key] = prop.GetDecimal();
+        }
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.StartedOn, today,
             strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),

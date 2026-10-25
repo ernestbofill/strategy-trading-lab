@@ -5,7 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type StrategyDetail, type TemplateDetail } from '../../api'
 import { StrategySettings } from './StrategySettings'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 const template = {
   key: 'dip',

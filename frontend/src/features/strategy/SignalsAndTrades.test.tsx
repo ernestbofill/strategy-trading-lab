@@ -133,6 +133,42 @@ describe('SignalsAndTrades', () => {
     expect(dates[3]).toBe('Oct 22')
   })
 
+  it('allows logging a manual trade on a past date before startedOn and enforces max today', async () => {
+    const logSpy = vi.spyOn(api, 'logManualTrade').mockResolvedValue(
+      mockTrade({ id: 't-past', tradeDate: '2026-06-10', source: 'manual', price: 168.95, amount: 110 }),
+    )
+
+    const s = mockStrategy({ mode: 'live', startedOn: '2026-10-23', today: '2026-10-25' })
+    render(
+      <MemoryRouter>
+        <SignalsAndTrades s={s} />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByText('Log a trade by hand'))
+
+    const dateInput = screen.getByLabelText('Date') as HTMLInputElement
+    expect(dateInput.getAttribute('min')).toBeNull()
+    expect(dateInput.getAttribute('max')).toBe('2026-10-25')
+
+    fireEvent.change(dateInput, { target: { value: '2026-06-10' } })
+    fireEvent.change(screen.getByLabelText(/Price per share/i), { target: { value: '168.95' } })
+    fireEvent.change(screen.getByLabelText(/Amount/i), { target: { value: '110' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save trade' }))
+
+    await waitFor(() => {
+      expect(logSpy).toHaveBeenCalledWith(
+        'strat-1',
+        expect.objectContaining({
+          date: '2026-06-10',
+          price: 168.95,
+          amount: 110,
+        }),
+      )
+    })
+  })
+
   it('allows logging a manual trade in live mode', async () => {
     const logSpy = vi.spyOn(api, 'logManualTrade').mockResolvedValue(
       mockTrade({ id: 't-new', source: 'manual', price: 185, amount: 98.80 }),

@@ -126,18 +126,37 @@ public class TradeEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi
             var problem = await wrongAssetRes.Content.ReadFromJsonAsync<JsonElement>();
             Assert.True(problem.GetProperty("errors").TryGetProperty("assetId", out _));
 
-            // Date before strategy started refused
-            var earlyRes = await client.PostAsJsonAsync($"/strategies/{strategyId}/trades", new
+            // Date in the future is refused
+            var futureRes = await client.PostAsJsonAsync($"/strategies/{strategyId}/trades", new
             {
                 assetId,
                 side = "buy",
-                date = StrategyStartedOn.AddDays(-1),
+                date = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(2),
                 price = 180m,
                 enteredAs = "amount",
                 amount = 98.80m,
                 fee = 1.20m,
             });
-            Assert.Equal(HttpStatusCode.BadRequest, earlyRes.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, futureRes.StatusCode);
+            var futureProblem = await futureRes.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.True(futureProblem.GetProperty("errors").TryGetProperty("date", out _));
+
+            // Past date before strategy started succeeds
+            var pastDate = StrategyStartedOn.AddMonths(-3);
+            var pastRes = await client.PostAsJsonAsync($"/strategies/{strategyId}/trades", new
+            {
+                assetId,
+                side = "buy",
+                date = pastDate,
+                price = 150m,
+                enteredAs = "amount",
+                amount = 98.80m,
+                fee = 1.20m,
+            });
+            Assert.Equal(HttpStatusCode.Created, pastRes.StatusCode);
+            var pastItem = await pastRes.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal("manual", pastItem.GetProperty("source").GetString());
+            Assert.Equal(pastDate.ToString("yyyy-MM-dd"), pastItem.GetProperty("tradeDate").GetString());
 
             // Valid manual trade succeeds
             var goodRes = await client.PostAsJsonAsync($"/strategies/{strategyId}/trades", new
@@ -156,14 +175,17 @@ public class TradeEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi
             Assert.Equal("buy", item.GetProperty("side").GetString());
             Assert.Equal(185m, item.GetProperty("price").GetDecimal());
 
-            // Check database has manual trade with signal_id == null
+            // Check database has manual trades with signal_id == null
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var trade = await db.UserTrades.SingleAsync(t => t.StrategyId == strategyId && t.Source == TradeSource.Manual);
-            Assert.Null(trade.SignalId);
-            Assert.Equal(TradeSource.Manual, trade.Source);
-            Assert.Equal(185m, trade.Price);
-            Assert.Null(trade.DeletedAt);
+            var trades = await db.UserTrades.Where(t => t.StrategyId == strategyId && t.Source == TradeSource.Manual).ToListAsync();
+            Assert.Equal(2, trades.Count);
+            Assert.All(trades, t =>
+            {
+                Assert.Null(t.SignalId);
+                Assert.Equal(TradeSource.Manual, t.Source);
+                Assert.Null(t.DeletedAt);
+            });
         }
         finally
         {

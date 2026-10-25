@@ -499,7 +499,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - **Signals and trades** (`SignalsAndTrades`):
   - A chronological timeline of every signal and trade recorded for this strategy, ordered newest first.
   - Heading: "Signals and trades" with the item count ("· [n]").
-  - Live mode action: "+ Log a trade by hand" button that toggles an inline form to record manual buy or sale trades on any of the strategy's active stocks (Stock, Action BUY/SELL, Date, Price, Amount or Shares toggle, Fee, and Exchange rate). Manual trades are marked with a `MANUAL` badge.
+  - Live mode action: "+ Log a trade by hand" button that toggles an inline form to record manual buy or sale trades on any of the strategy's active stocks (Stock, Action BUY/SELL, Date, Price, Amount or Shares toggle, Fee, and Exchange rate). Manual trades are marked with a `MANUAL` badge. Manual trades can be dated on any past day up to today (including before the strategy started), but not in the future.
   - In Live mode, each trade row has an "Edit" button to modify its fields (Date, Price, Amount or Shares, Fee, Exchange rate) or "Delete" with inline confirmation to soft-delete the trade (`deleted_at`).
   - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
   - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.

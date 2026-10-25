@@ -23,14 +23,14 @@ public static class SignalRules
     /// The date is from <paramref name="minDate"/> to today. A reference rate comes from <paramref name="referenceRate"/> (the date's),
     /// a user rate from the request. Errors by field, empty when the trade is valid.
     /// </summary>
-    public static (CheckedTrade? Trade, Dictionary<string, string[]> Errors) CheckTrade(SignalTradeRequest request, DateOnly minDate,
+    public static (CheckedTrade? Trade, Dictionary<string, string[]> Errors) CheckTrade(SignalTradeRequest request, DateOnly? minDate,
         DateOnly today, Func<DateOnly, decimal?> referenceRate, string minDateMessage = "Use a day on or after the signal.")
     {
         var errors = new Dictionary<string, string[]>();
         void Fail(string field, string message) => errors[field] = [message];
 
         if (request.Date is not { } date) Fail("date", "Enter the day you traded.");
-        else if (date < minDate) Fail("date", minDateMessage);
+        else if (minDate is { } min && date < min) Fail("date", minDateMessage);
         else if (date > today) Fail("date", "Use a day up to today.");
 
         if (request.Price is not (>= 0.0001m and < 1_000_000)) Fail("price", "Enter the price per share.");

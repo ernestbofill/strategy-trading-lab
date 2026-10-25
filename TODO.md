@@ -31,7 +31,7 @@
 - [ ] Choose and buy the app's domain (needed for items 21 and 22). (#58)
 - [ ] When item 21 comes up: open a Brevo account; Claude will say which DNS records and settings to add. (#58)
 
-- [ ] *Your AI's top picks* (#PR): try the suggested prompt once in the AI you use (copy it on the AI round screen), paste the answer back, and tell Claude if the reader complains or the scores look off. Then confirm or change Claude's assumptions in ROADMAP → Open decisions (anonymous sharing, the round rules, prompt v1). No secret or setting is needed. (#PR)
+- [ ] *Your AI's top picks* (#70): try the suggested prompt once in the AI you use (copy it on the AI round screen), paste the answer back, and tell Claude if the reader complains or the scores look off. Then confirm or change Claude's assumptions in ROADMAP → Open decisions (anonymous sharing, the round rules, prompt v1). No secret or setting is needed. (#70)
 
 - [ ] After #46 deploys: on `/admin`, check *Notifications → EMAILS_ENABLED* is true and the mail password is set (*Send a test email*). The first overview arrives the next morning at 07:00 your time if you have a running strategy and a verified email. (#46)
 

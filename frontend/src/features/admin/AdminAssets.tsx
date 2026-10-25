@@ -3,7 +3,7 @@ import { api, UnauthorizedError, type AdminAsset, type AssetKind } from '../../a
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminAssets.module.css'
-import { DataTable, type DataTableColumn, type DataTableFilter } from './DataTable'
+import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; assets: AdminAsset[] }
 

@@ -9,7 +9,7 @@ import { useT } from '../../i18n/I18n'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
-import { EXPIRED_LINK, errorText } from './copy'
+import { errorText } from './copy'
 import { forgotPasswordPath } from './paths'
 import { useLinkToken } from './useLinkToken'
 
@@ -48,7 +48,7 @@ export function ResetPassword() {
     return (
       <Screen top={top}>
         <PageHeader title={t('account.reset.title')} />
-        <FormMessage tone="error">{EXPIRED_LINK}</FormMessage>
+        <FormMessage tone="error">{t('account.expiredLink')}</FormMessage>
         <div className={styles.links}>
           <TextAction to={forgotPasswordPath}>{t('account.reset.forgot')}</TextAction>
         </div>

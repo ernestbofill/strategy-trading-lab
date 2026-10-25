@@ -70,7 +70,7 @@ public static class StrategyEndpoints
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
             var errors = NewStrategyValidation.Validate(request, template, assets, user.Locale);
-            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             var strategy = new Strategy
@@ -113,7 +113,7 @@ public static class StrategyEndpoints
             if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
 
             var errors = new Dictionary<string, string[]>();
-            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             strategy.Params = parameters;

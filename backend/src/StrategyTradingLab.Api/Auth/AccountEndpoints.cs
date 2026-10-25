@@ -221,7 +221,7 @@ public static class AccountEndpoints
                     WITH u AS (SELECT id, email, locale FROM users WHERE email = {email}::citext),
                          t AS (INSERT INTO email_tokens (id, user_id, purpose, token_hash, expires_at)
                                SELECT {Guid.CreateVersion7()}, id, 'reset_password', {hash}, {expiresAt} FROM u)
-                    SELECT email AS "Email", locale AS "Locale" FROM u
+                    SELECT email::text AS "Email", locale AS "Locale" FROM u
                     """).ToListAsync(cancellationToken);
                 if (registered is [var to]) emails.Reset(to.Email, token, to.Locale);
             }

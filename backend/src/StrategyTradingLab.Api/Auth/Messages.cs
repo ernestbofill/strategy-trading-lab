@@ -84,7 +84,6 @@ public static class Messages
 
     // Advanced settings
     public static readonly Message NoSuchSetting = new("This template has no such setting.", "Aquesta plantilla no té aquest ajust.");
-    public static readonly Message SettingRange = new("Use {0:0.##} to {1:0.##}, in steps of {2:0.##}.", "Fes servir de {0:0.##} a {1:0.##}, de {2:0.##} en {2:0.##}.");
+    public static readonly Message SettingRange = new("Use {0:0.##} to {1:0.##}, in steps of {2:0.##}.", "Fes servir de {0:0.##} a {1:0.##}, en passos de {2:0.##}.");
     public static readonly Message SettingBelow = new("Keep it at least {0:0.##} under the setting after it.", "Mantén-ho com a mínim {0:0.##} per sota de l'ajust següent.");
-    public static readonly Message ZoneOrder = new("The discount zone must start before it ends.", "La zona de descompte ha de començar abans d'acabar.");
 }

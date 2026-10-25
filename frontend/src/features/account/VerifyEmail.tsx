@@ -6,7 +6,6 @@ import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/S
 import { useT } from '../../i18n/I18n'
 import { dashboardPath } from '../new-strategy/paths'
 import { useAccount } from './AccountContext'
-import { EXPIRED_LINK } from './copy'
 import { accountPath, logInPath } from './paths'
 import { useLinkToken } from './useLinkToken'
 
@@ -66,7 +65,7 @@ export function VerifyEmail() {
       {result === 'checking' && <ScreenMessage>{t('account.verify.checking')}</ScreenMessage>}
       {result === 'expired' && (
         <FormMessage tone="error">
-          {EXPIRED_LINK} {loggedIn ? t('account.verify.expiredLoggedIn') : t('account.verify.expiredLoggedOut')}
+          {t('account.expiredLink')} {loggedIn ? t('account.verify.expiredLoggedIn') : t('account.verify.expiredLoggedOut')}
         </FormMessage>
       )}
       {result === 'failed' && <FormMessage tone="error">{t('account.verify.failed')}</FormMessage>}

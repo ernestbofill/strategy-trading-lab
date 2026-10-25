@@ -20,15 +20,8 @@ export const SKIP_REASON_KEYS: Record<SkipReason, MessageKey> = {
   other: 'signal.skip.other',
 }
 
-export const SKIP_REASONS: { id: SkipReason; label: string }[] = [
-  { id: 'priceRanAway', label: 'Price ran away' },
-  { id: 'didntTrustIt', label: "Didn't trust it" },
-  { id: 'noCash', label: 'No cash' },
-  { id: 'other', label: 'Other' },
-]
-
-export const skipReasons = (t?: (key: MessageKey) => string) =>
-  SKIP_REASONS.map((r) => ({ id: r.id, label: t ? t(SKIP_REASON_KEYS[r.id]) : r.label }))
+export const skipReasons = (t: (key: MessageKey) => string) =>
+  (Object.keys(SKIP_REASON_KEYS) as SkipReason[]).map((id) => ({ id, label: t(SKIP_REASON_KEYS[id]) }))
 
 /** The form as the signal prefills it: the next trading day, its open when known, the step without the fee (or held shares for a sale), no fee. */
 export const initialForm = (s: SignalDetail): TradeForm => {
@@ -70,7 +63,7 @@ export function parseNumber(text: string): number | null {
 }
 
 /** The fields whose text could be read two ways, keyed as the server names them, with what to write instead. */
-export function ambiguousFields(form: TradeForm, ask = 'Is that 1250 or 1.25? Write it as 1250 or 1.25.'): Record<string, string> {
+export function ambiguousFields(form: TradeForm, ask: string): Record<string, string> {
   const errors: Record<string, string> = {}
   const check = (field: string, text: string | null) => text !== null && isAmbiguous(text) && (errors[field] = ask)
   check('price', form.price)
@@ -103,7 +96,7 @@ export function tradeRequest(form: TradeForm): SignalTrade {
 }
 
 /** "step 3 of 5": the next signal's step after a skip, or null once the last step is reached (or the signal has none). */
-export const nextStep = (s: SignalDetail, t?: (key: MessageKey, params?: MessageParams) => string) => {
+export const nextStep = (s: SignalDetail, t: (key: MessageKey, params?: MessageParams) => string) => {
   if (s.stepNo === null || s.maxSteps === null || s.stepNo >= s.maxSteps) return null
-  return t ? t('signal.nextStep', { n: s.stepNo + 1, max: s.maxSteps }) : `step ${s.stepNo + 1} of ${s.maxSteps}`
+  return t('signal.nextStep', { n: s.stepNo + 1, max: s.maxSteps })
 }

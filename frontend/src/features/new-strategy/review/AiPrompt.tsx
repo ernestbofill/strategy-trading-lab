@@ -1,6 +1,6 @@
 import { useT } from '../../../i18n/I18n'
 import type { AiSource } from '../NewStrategyDraft'
-import { AI_SOURCES } from './aiSources'
+import { aiSources as aiSourcesOf } from './aiSources'
 import styles from './AiPrompt.module.css'
 
 /**
@@ -9,7 +9,7 @@ import styles from './AiPrompt.module.css'
  */
 export function AiPrompt({ sources }: { sources: Record<AiSource, boolean> }) {
   const t = useT()
-  const on = AI_SOURCES.filter((s) => sources[s.id])
+  const on = aiSourcesOf(t).filter((s) => sources[s.id])
   const n = (text: string) => <span className={styles.promptNumber}>{text}</span>
   return (
     <div className={`well ${styles.prompt}`} aria-label={t('newStrategy.prompt.aria')}>

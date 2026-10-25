@@ -44,16 +44,17 @@ function DraftPerUser({ children }: { children: ReactNode }) {
   return <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
 }
 
-/** Syncs the user's saved account locale to this device when logged in. */
+/**
+ * Takes the user's saved account language onto this device when the account loads or its language changes. It does not
+ * pull the device back to the account while the user is switching (the account page saves, then reloads the account).
+ */
 function LocaleFromAccount() {
   const { state } = useAccount()
-  const { locale, setLocale } = useI18n()
+  const { setLocale } = useI18n()
   const accountLocale = state.status === 'ready' ? state.account?.locale : null
   useEffect(() => {
-    if (accountLocale && accountLocale !== locale) {
-      setLocale(accountLocale)
-    }
-  }, [accountLocale, locale, setLocale])
+    if (accountLocale) setLocale(accountLocale)
+  }, [accountLocale, setLocale])
   return null
 }
 

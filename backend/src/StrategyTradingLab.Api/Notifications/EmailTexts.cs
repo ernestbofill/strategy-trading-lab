@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Notifications;
@@ -49,6 +50,16 @@ public static class EmailTexts
     static decimal? Fact(JsonElement facts, string name) =>
         facts.ValueKind == JsonValueKind.Object && facts.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDecimal() : null;
 
+    /// <summary>A recovery milestone (named in English by the engine) in Catalan.</summary>
+    static string MilestoneCa(string term) => term switch
+    {
+        "Reclaims the SMA 200" => "Recupera la SMA 200",
+        "Golden cross (SMA 50 above SMA 200)" => "Creu daurada (SMA 50 per sobre de la SMA 200)",
+        _ when Regex.Match(term, @"^Within ([\d.]+)% of the 52-week high$") is { Success: true } near => $"A menys d'un {near.Groups[1].Value}% del màxim de 52 setmanes",
+        _ when Regex.Match(term, @"^Higher high after pulling back ([\d.]+)% \(breakout\)$") is { Success: true } up => $"Nou màxim després d'una correcció del {up.Groups[1].Value}% (ruptura)",
+        _ => term,
+    };
+
     /// <summary>The rule facts of a signal in a sentence, by template.</summary>
     public static string FactSentence(SignalLine s, string locale = "en")
     {
@@ -85,7 +96,7 @@ public static class EmailTexts
         }
         var milestone = s.Facts.ValueKind == JsonValueKind.Object && s.Facts.TryGetProperty("milestone", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
         if (milestone is not null)
-            return ca ? $"un nou senyal que la recuperació és real: {milestone.ToLowerInvariant()}" : $"a new sign that the recovery is real: {milestone.ToLowerInvariant()}";
+            return ca ? $"un nou senyal que la recuperació és real: {MilestoneCa(milestone).ToLowerInvariant()}" : $"a new sign that the recovery is real: {milestone.ToLowerInvariant()}";
         var aboveBuyLine = Fact(s.Facts, "aboveBuyLinePct");
         return aboveBuyLine is null ? met
             : ca ? $"{Pct(Math.Abs(aboveBuyLine.Value))}% {(aboveBuyLine >= 0 ? "per sobre" : "per sota")} de la línia de compra, amb volum creixent"

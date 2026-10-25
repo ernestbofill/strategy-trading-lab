@@ -1,3 +1,4 @@
+using StrategyTradingLab.Api.Auth;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -18,7 +19,7 @@ public static class TemplateSettings
     /// The template's params with <paramref name="settings"/> (setting key → value) over the tested defaults, as
     /// strategies.params stores them. Null, with the reasons in <paramref name="fail"/>, when a value is refused.
     /// </summary>
-    public static JsonDocument? Apply(Template template, IReadOnlyDictionary<string, decimal>? settings, Action<string, string> fail)
+    public static JsonDocument? Apply(Template template, IReadOnlyDictionary<string, decimal>? settings, Action<string, string> fail, string locale = "en")
     {
         if (settings is null || settings.Count == 0) return template.ParamsJson();
 
@@ -29,12 +30,12 @@ public static class TemplateSettings
             var field = $"settings.{key}";
             if (template.Settings.FirstOrDefault(s => s.Key == key) is not { } setting)
             {
-                fail(field, "This template has no such setting.");
+                fail(field, Messages.NoSuchSetting.In(locale));
                 ok = false;
             }
             else if (value < setting.Min || value > setting.Max || (value - setting.Min) % setting.Step != 0)
             {
-                fail(field, $"Use {setting.Min:0.##} to {setting.Max:0.##}, in steps of {setting.Step:0.##}.");
+                fail(field, Messages.SettingRange.In(locale, setting.Min, setting.Max, setting.Step));
                 ok = false;
             }
             else
@@ -50,7 +51,7 @@ public static class TemplateSettings
         {
             if (json[setting.Key]!.GetValue<decimal>() + setting.Step > json[setting.Below!]!.GetValue<decimal>())
             {
-                fail($"settings.{setting.Key}", $"Keep it at least {setting.Step:0.##} under the setting after it.");
+                fail($"settings.{setting.Key}", Messages.SettingBelow.In(locale, setting.Step));
                 return null;
             }
         }

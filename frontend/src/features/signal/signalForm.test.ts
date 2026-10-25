@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SignalDetail } from '../../api'
+import { tNow } from '../../i18n/I18n'
 import { ambiguousFields, initialForm, isAmbiguous, nextStep, parseNumber, rateOn, tradeRequest } from './signalForm'
 
 const signal = (fields: Partial<SignalDetail> = {}): SignalDetail => ({
@@ -48,7 +49,7 @@ describe('signalForm', () => {
 
   it('asks rather than guess at a number that reads two ways', () => {
     expect([parseNumber('1,250'), isAmbiguous('1,250'), isAmbiguous('0,125'), isAmbiguous('1,25'), isAmbiguous('1.250')]).toEqual([null, true, false, false, true])
-    expect(Object.keys(ambiguousFields({ ...initialForm(signal()), price: '1,250', fee: '1,20' }))).toEqual(['price'])
+    expect(Object.keys(ambiguousFields({ ...initialForm(signal()), price: '1,250', fee: '1,20' }, 'unclear'))).toEqual(['price'])
   })
 
   it('uses the latest rate on or before the day', () => {
@@ -71,7 +72,7 @@ describe('signalForm', () => {
   })
 
   it('names the next step after a skip until the last one', () => {
-    expect(nextStep(signal())).toBe('step 3 of 5')
-    expect(nextStep(signal({ stepNo: 5 }))).toBeNull()
+    expect(nextStep(signal(), tNow)).toBe('step 3 of 5')
+    expect(nextStep(signal({ stepNo: 5 }), tNow)).toBeNull()
   })
 })

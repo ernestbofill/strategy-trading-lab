@@ -20,7 +20,7 @@ import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
 import { rulesWithSettings, settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
 import { AiPrompt } from './AiPrompt'
-import { AI_SOURCES } from './aiSources'
+import { aiSources as aiSourcesOf } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
 
@@ -162,7 +162,7 @@ function AiSettings() {
   return (
     <>
       <Section title={t('newStrategy.review.aiReads')}>
-        <ToggleTiles tiles={AI_SOURCES} isOn={(id) => aiSources[id]} onToggle={toggle} keepOne />
+        <ToggleTiles tiles={aiSourcesOf(t)} isOn={(id) => aiSources[id]} onToggle={toggle} keepOne />
         <p className="caption">{t('newStrategy.review.aiAtLeastOne')}</p>
       </Section>
       <Section title={t('newStrategy.review.prompt')} aside={<TextAction>{t('newStrategy.review.editPrompt')}</TextAction>}>

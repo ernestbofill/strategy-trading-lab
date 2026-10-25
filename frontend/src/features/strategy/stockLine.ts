@@ -21,7 +21,7 @@ const fillN = (text: string, d: number | null) =>
   d !== null && text.includes('{n}') ? text.replace('{n}', pct(d)) : text.replace('{n}% ', '')
 
 function detailOf(row: StockRow, words: StockStatusWords | null, t: Translate): string {
-  const stepOf = (n: number) => t('signal.stepOf', { n, max: row.maxSteps ?? '' })
+  const stepOf = (n: number) => (row.maxSteps === null ? String(n) : t('signal.stepOf', { n, max: row.maxSteps }))
   const fromZone = (d: number, zone: string) => t('strategy.stock.fromZone', { dist: pct(d), zone })
   switch (row.status) {
     case 'waitingForYou':

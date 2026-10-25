@@ -340,7 +340,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
       fee,
       ownRate,
     }
-    const unclear = ambiguousFields(form)
+    const unclear = ambiguousFields(form, t('signal.error.ambiguous'))
     if (Object.keys(unclear).length > 0) {
       setErrors(unclear)
       setSaving(false)
@@ -540,7 +540,7 @@ function EditTradeForm({
       fee,
       ownRate,
     }
-    const unclear = ambiguousFields(form)
+    const unclear = ambiguousFields(form, t('signal.error.ambiguous'))
     if (Object.keys(unclear).length > 0) {
       setErrors(unclear)
       setSaving(false)

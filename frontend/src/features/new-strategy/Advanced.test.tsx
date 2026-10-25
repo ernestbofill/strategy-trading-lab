@@ -20,18 +20,29 @@ const dip = {
   ],
 } as unknown as TemplateDetail
 
+const trend = {
+  key: 'trend',
+  name: 'Ride the long trend',
+  backtest: { periods: [{ period: 'All', template: 249, index: 272, worstYear: -11 }] },
+  defaults: { version: 1, budget: { amount: 3000, step: null, maxSteps: null }, params: { smaDays: 200, bandPct: 3 } },
+  settings: [
+    { key: 'smaDays', sentence: 'The trend line is the average price over {value}.', value: '{n} days', step: 10, min: 50, max: 300 },
+    { key: 'bandPct', sentence: 'The buy and sell lines are {value} above and below the trend line.', value: '{n}%', step: 1, min: 0, max: 10 },
+  ],
+} as unknown as TemplateDetail
+
 /** The screen it returns to: shows what the draft kept. */
 function Review() {
   const { settings } = useNewStrategyDraft()
   return <p>Saved {JSON.stringify(settings)}</p>
 }
 
-function open() {
+function open(template: TemplateDetail = dip) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
-  vi.spyOn(api, 'getTemplate').mockResolvedValue(dip)
+  vi.spyOn(api, 'getTemplate').mockResolvedValue(template)
   render(
     <NewStrategyDraftProvider owner="a@example.com">
-      <MemoryRouter initialEntries={['/new/templates/dip', '/new/templates/dip/advanced']} initialIndex={1}>
+      <MemoryRouter initialEntries={[`/new/templates/${template.key}`, `/new/templates/${template.key}/advanced`]} initialIndex={1}>
         <Routes>
           <Route path="/new/templates/:key" element={<Review />} />
           <Route path="/new/templates/:key/advanced" element={<Advanced />} />
@@ -74,5 +85,20 @@ describe('Advanced', () => {
 
     expect(within(peak).getByText('60 days')).toBeTruthy()
     expect(within(peak).queryByText('CHANGED')).toBeNull()
+  })
+
+  it('shows Ride the long trend settings and saves their changes', async () => {
+    open(trend)
+
+    const average = await screen.findByRole('group', { name: /The trend line is/ })
+    expect(within(average).getByText('200 days')).toBeTruthy()
+    fireEvent.click(within(average).getByRole('button', { name: 'Decrease' }))
+
+    const band = row(/The buy and sell lines/)
+    expect(within(band).getByText('Tested: 3%')).toBeTruthy()
+    fireEvent.click(within(band).getByRole('button', { name: 'Increase' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+    expect(await screen.findByText('Saved {"smaDays":190,"bandPct":4}')).toBeTruthy()
   })
 })

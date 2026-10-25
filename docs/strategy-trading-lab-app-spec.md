@@ -298,7 +298,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2b · Advanced settings (`Advanced`)
 
-**Purpose:** tune each rule as an exact number and see the effect on the backtest. Drawn for *Dip in winners*; every template needs its own set, from its POC parameters (open question). For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
+**Purpose:** tune each rule as an exact number and see the effect on the backtest. Designed for *Dip in winners* and *Ride the long trend*; each exposes selected POC parameters, not every engine parameter. For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
 
 **Copy**
 - Top bar: "← BACK" · "[template name]"
@@ -317,6 +317,15 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
 | "The dip must stay above the average over [n] days." | 50 days | 5 | 20–100 |
 
+For *Ride the long trend*:
+
+| Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- |
+| "The trend line is the average price over [n] days." | 200 days | 10 | 50–300 |
+| "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+
+The cooldown is not exposed for either template. The shown settings are available when starting a strategy; changing settings on an already-running strategy is not built yet.
+
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
 - As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide. Past results don't promise future ones."
@@ -327,6 +336,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - "Reset to tested" puts every value back.
 - "Save settings" stores the values and returns to the screen that opened it. Leaving with unsaved changes asks first (not drawn, not built yet).
 - Each changed row's stepper stops at its range; the zone's start stays at least a step under its end, and the end a step over the start.
+- On Review, rules that use settings show the tested defaults or the user's chosen values.
 - During the new-strategy flow the values live in the draft; Review's row reads "Advanced settings · tested defaults" or "· [n] changed", and so does Confirm's Settings row. Templates without settings yet show "This template's settings come in a later step." and Confirm leaves out the Settings row.
 - Values belong to the user's strategy; the template's defaults never change.
 

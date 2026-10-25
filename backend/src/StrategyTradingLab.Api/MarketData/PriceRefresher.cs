@@ -74,16 +74,20 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
 
     public async Task<RefreshResult> RefreshAssetAsync(Asset asset, CancellationToken cancellationToken)
     {
-        var recent = await source.DailyAsync(asset.Symbol, fullHistory: false, adjusted: true, cancellationToken);
-        if (recent.Count == 0) throw new MarketDataException($"Yahoo returned no days for {asset.Symbol}.");
-
-        var from = recent[0].Date;
-        // Projected in the database, so the stored rows aren't tracked (they would clash with the rows added below).
-        var stored = (await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
-            .Select(p => new { p.Date, p.Close }).ToListAsync(cancellationToken)).ToDictionary(p => p.Date, p => p.Close);
-
-        var full = NeedsFullHistory(recent, stored);
-        var days = recent;
+        // Nothing stored (a new asset): straight to the whole history, without asking for the last month first.
+        var full = !await db.Prices.AnyAsync(p => p.AssetId == asset.Id, cancellationToken);
+        IReadOnlyList<Candle> days = [];
+        var from = DateOnly.MinValue;
+        if (!full)
+        {
+            days = await source.DailyAsync(asset.Symbol, fullHistory: false, adjusted: true, cancellationToken);
+            if (days.Count == 0) throw new MarketDataException($"Yahoo returned no days for {asset.Symbol}.");
+            from = days[0].Date;
+            // Projected in the database, so the stored rows aren't tracked (they would clash with the rows added below).
+            var stored = (await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
+                .Select(p => new { p.Date, p.Close }).ToListAsync(cancellationToken)).ToDictionary(p => p.Date, p => p.Close);
+            full = NeedsFullHistory(days, stored);
+        }
         if (full)
         {
             days = await source.DailyAsync(asset.Symbol, fullHistory: true, adjusted: true, cancellationToken);

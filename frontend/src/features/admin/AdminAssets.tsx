@@ -75,7 +75,14 @@ export function AdminAssets() {
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<AdminAsset | null>(null)
 
-  const reload = async () => setState({ status: 'ready', assets: await api.getAdminAssets() })
+  // After a change that worked: a failed reload is said on its own, not as if the change had failed.
+  const reload = async () => {
+    try {
+      setState({ status: 'ready', assets: await api.getAdminAssets() })
+    } catch (e) {
+      if (!(e instanceof UnauthorizedError)) setError("Couldn't reload the assets. Reload the page.")
+    }
+  }
 
   useEffect(() => {
     let live = true

@@ -38,7 +38,7 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
                 .FirstOrDefault(m => string.Equals(m.Symbol, wanted, StringComparison.OrdinalIgnoreCase))
                 ?? throw new AssetNotFoundException($"Yahoo has no stock, fund or index with the symbol {wanted}.");
             var kind = KindOf(match.Type)
-                ?? throw new AssetNotFoundException($"{match.Symbol} is a {match.Type.ToLowerInvariant()}: only stocks, funds and indexes can be added.");
+                ?? throw new AssetNotFoundException($"Yahoo lists {match.Symbol} as {match.Type.ToLowerInvariant()}: only stocks, funds and indexes can be added.");
             var currency = await source.CurrencyAsync(match.Symbol, cancellationToken);
 
             asset = new Asset

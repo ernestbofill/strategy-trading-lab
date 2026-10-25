@@ -138,7 +138,7 @@ public class AssetCatalogTests
 
         var error = await Assert.ThrowsAsync<AssetNotFoundException>(() => catalog.Assets.AddAsync(symbol, null, default));
 
-        Assert.Equal($"{symbol} is a cryptocurrency: only stocks, funds and indexes can be added.", error.Message);
+        Assert.Equal($"Yahoo lists {symbol} as cryptocurrency: only stocks, funds and indexes can be added.", error.Message);
     }
 
     [NeonFact]

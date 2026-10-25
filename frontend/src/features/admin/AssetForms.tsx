@@ -8,7 +8,7 @@ import styles from './AdminAssets.module.css'
 function addedText({ asset, created, problem }: AdminAddedAsset): FormMessageState {
   const label = `${asset.name} (${asset.symbol})`
   if (problem) return { tone: 'error', text: `${created ? `Added ${label}` : `${label} is already here`}, but its prices didn't load: ${problem} Add it again to retry.` }
-  if (!created) return { tone: 'done', text: `${label} is already here.` }
+  if (!created) return { tone: 'done', text: asset.active ? `${label} is already here.` : `${label} is already here, hidden: Show it to use it.` }
   return { tone: 'done', text: `Added ${label}, prices to ${asset.latestPriceDate ?? '–'}.` }
 }
 

@@ -98,6 +98,19 @@ describe('AdminAssets', () => {
     expect(await screen.findByText("Added Eaton (ETN), but its prices didn't load: Yahoo answered HTTP 429 for ETN. Add it again to retry.")).toBeTruthy()
   })
 
+  it('says when an asset already there is hidden, and a failed reload apart from the add', async () => {
+    vi.spyOn(api, 'getAdminAssets').mockResolvedValueOnce(assets).mockRejectedValueOnce(new Error('down'))
+    vi.spyOn(api, 'addAdminAsset').mockResolvedValue({ asset: assets[1], created: false, problem: null })
+    renderPage()
+
+    fireEvent.change(await screen.findByLabelText('Yahoo symbol'), { target: { value: 'SPY' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+    expect(await screen.findByText('SPDR S&P 500 ETF (SPY) is already here, hidden: Show it to use it.')).toBeTruthy()
+    expect(await screen.findByText("Couldn't reload the assets. Reload the page.")).toBeTruthy()
+    expect(screen.queryByText("Couldn't reach the server. Try again.")).toBeNull()
+  })
+
   it('edits the name and description of an asset', async () => {
     vi.spyOn(api, 'getAdminAssets')
       .mockResolvedValueOnce(assets)

@@ -51,7 +51,7 @@ These apply to every screen, email and alert.
 - **A disclaimer everywhere results or signals appear, in two lengths.** The user sees it over and over, so screens seen again and again (Review, How we tested, the strategy page, Confirm a signal, the footer) use the short one: "Not financial advice. Signals follow your rules." Where the user commits (accepted once at sign-up, above the button on Name, preview and confirm, and the legal page) use the full one: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." The wireframes still show the full one everywhere; this rule wins.
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
-- **Mostly US markets, euro results.** v1 covers the POC's stocks and funds: mostly US-listed, a few listed in Europe and Hong Kong. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
+- **Mostly US markets, euro results.** v1 covers the POC's stocks and funds (mostly US-listed, a few listed in Europe and Hong Kong), plus any stock or fund a user adds from the same exchanges. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
 - **English and Catalan.** v1 ships in both. The user picks the language (nothing is guessed from the browser) and can change it in the account. Emails and notifications follow it. Quoted copy in this spec is the English; the Catalan copy is still to be written.
 - **Mode always labelled.** Every strategy shows *Simulation* or *Live*; results of different modes are never mixed.
 - **Free for now.** No paywall, plans or pricing.
@@ -132,6 +132,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 - All rules are checked **once a day, after the US market close**, as in the POC.
 - **A day is a US market day** (New York trading calendar): start dates, signal dates, snoozes and "the next day" all follow it. The user's time zone only sets when emails arrive.
+- **A first check looks at the latest day only.** The first time the daily check runs a strategy's stock, it treats the stock as just added: it evaluates the latest finished day, and signals start from there, with no backlog of past signals (as for a stock added to a running strategy). It matters for strategies that existed before their template's engine ran.
 - **Signals follow the rules, not the user's trades.** Each strategy keeps the rules' own position (its signal trades), and signals come from it, in both modes. After a skip, the rules carry on as if the step had been bought (the next signal for that stock is the next step), and a *Ride the long trend* sell signal arrives even if the user never bought.
 - **Simulation:** the app records every trade the rules call for, at the next trading day's opening price, with the tested fee per trade, about 0.2% of the amount plus 1 in the strategy's currency (€1, $1 or £1; rounded, not converted). The fee is inside the step: amount plus fee is the step (the backtest charged it on top, which changes its results by a fraction of a point). Results come from those signal trades.
 - **Live:** the app sends each signal and the user confirms it. Results come only from confirmed trades at the prices the user entered; the rules' own position is shown next to them.
@@ -155,6 +156,16 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - **On success** the user is logged in at once and goes straight to Pick a strategy template. A "Check your email" notice is shown at the top of the dashboard and new-strategy flow until the email is confirmed ("We sent a link to [email] to confirm it." and "Send it again"); the link itself is only in the email. Until the email is verified the user can use the app, but cannot go live yet (assumed; nothing gates it until live strategies send alerts). Verifying needs no log-in, and the link logs no one in (so it can't be used to log someone into another account): it says "Your email is confirmed" and goes to the dashboard if logged in, else to Log-in. An expired or used link says "This link has expired. Ask for a new one." and goes to the account (which sends it again) if logged in, else to Log-in.
 - **Errors** (under the field): the email is not valid; the password is too short; the disclaimer is not ticked. "That email is already registered" is never shown: the answer to every sign-up looks the same ("Check your email"), and an existing account gets an email saying someone tried to sign up with its address and a link to log in. This way nobody can find out who has an account.
 - Too many attempts: "Too many tries. Wait a few minutes and try again."
+- **Who can sign up** (assumed copy): a setting on the admin page, *open*, *invite only* or *closed*. It stays open while the app is built; from the quiet launch it is invite only, and nobody signs up without an invite until sign-ups open for the public beta (decided). With the gate on, sign-up works only from an invite link; without one, or with a used-up link, the form is replaced by "Sign-ups are by invitation for now." (closed: "Sign-ups are closed for now."). Ernest's own links give the *vip* role. Each vip has their own invite link on the account page ("Invite a friend · [n] invites left"), with 3 uses by default (a setting on the admin page); the people a vip invites get the *user* role and can't invite. The account records who invited it. No rewards for inviting.
+- **"Skip for now, look around"**, under the button: opens Pick a strategy template as a guest (below).
+
+### Looking around without an account (not drawn)
+
+- The start page on a device that has never logged in is Sign-up, with a short intro above the form: what the app is, the two modes, and that it never trades for you or connects to your broker.
+- A guest sees every template's review, How we tested and Advanced settings, and can go through the whole new-strategy flow. The draft lives in the browser only.
+- On Name, preview and confirm, the button reads "Create an account to start it" and opens Sign-up. After sign-up (logged in at once) the user is back on Confirm with the draft, and starts it from there.
+- A guest has no dashboard, account or emails. The top bar shows "LOG IN" instead of "ACCOUNT", and the first screen's eyebrow stays "Welcome to Strategy Trading Lab".
+- The template endpoints are public already; nothing about a guest is stored on the server.
 
 ### Log-in (not drawn)
 
@@ -215,12 +226,13 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 **Stock list** (stock templates)
 - Heading "Choose stocks to watch", counter on the right: "[n] of [total] ticked".
 - Each row: a checkbox, the stock's name, one line on what the company does. All ticked by default, alphabetical. Tapping a row ticks or unticks it; unticked names are dimmed.
-- Last row: "+ Add a stock" (search US-listed stocks by name; not drawn).
+- Last row: "+ Add a stock" (not drawn): search by name or symbol. Each result shows the name, symbol, exchange and type; only stocks, from the exchanges the app supports (to start, those of the seeded assets; a setting on the admin page). Picking one adds it to the list, ticked, at the end. Its line under the name is its sector and industry from the price source ("Technology · Software infrastructure"); the seeded stocks keep their written lines. Until its price history is in, its row on the strategy page says "Not enough price history yet". No result: "Nothing found. Try the company's name or its symbol." A strategy watches at most 60 stocks: at 60, the row reads "60 stocks, the most for now".
+- Adding a stock never needs a deploy: the app looks it up, stores it and fetches its prices on its own (ROADMAP item 13).
 - Under the list: "ⓘ In our tests, longer lists gave steadier results."
 - The starter lists come from the POC. Zscaler ("Cloud security software") is the only real example in the wireframes.
 
 **Fund block** (fund templates)
-- Heading "The fund it watches". One row: the fund's name, a one-line description, and a "Change" link (fund picker, not drawn).
+- Heading "The fund it watches". One row: the fund's name, a one-line description, and a "Change" link (fund picker, not drawn: the same search as "+ Add a stock", showing funds only; the picked fund replaces the default, and its line is its name).
 
 **Per-template content**
 
@@ -444,7 +456,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an index fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
 - A running strategy's own figures are since its start, so they have no worst year yet: until it has a year of its own, the card adds "Template's worst year: [−X%]" under the index fund (product rule: results next to the worst year). The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
 - AI strategy with no results: "No results yet. They start after your first AI round."
-- Below the cards: a dashed button "+ New strategy" → Pick a template.
+- Below the cards: a dashed button "+ New strategy" → Pick a template. A user runs at most 10 strategies at once: at 10, the button is off and reads "You run 10 strategies, the most for now. End one to start another." (assumed copy)
 
 ### Strategy page (`StrategyDetail`, drawn in its Live variant)
 
@@ -464,7 +476,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - The name, a status pill and a detail line:
     - "WAITING FOR YOU" (live; "Signal: step [n] of [max]") → Confirm a signal
     - "SIGNAL" (simulation, a signal on the latest checked day; "Step [n] of [max], bought at the next open")
-    - "HOLDING" ("[n] of [max] steps"; also when the rules hold the stock with steps left, as *The comeback* does once its milestones are used)
+    - "HOLDING" ("[n] of [max] steps"; also when the rules hold the stock with steps left, as *The comeback* does once its milestones are used, as in the POC: then "[n] of [max] steps · its milestones are used")
     - "BUILDING" ("[n] of [max] steps"; live when it differs: "Rules: [n] of [max] · You: [n] of [max]")
     - "WATCHING" ("[n]% from [the template's zone]", "Rules not met today" when it is there or past it, or, when it isn't a candidate, the template's words: "Below its long trend" for *Dip in winners*, "Not beaten down" for *The comeback*; "Not enough price history yet" and "Not checked yet" before the daily check has a verdict). The zone is "the discount zone" for *Dip in winners* and "the buy line" for *The comeback*.
     - "WATCHING" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
@@ -588,7 +600,8 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 
 - **User:** email, password hash, verified flag, failed log-in count and lock time, sessions and email links (verify, reset), time zone, language (English or Catalan), overview email on/off, disclaimer accepted at, push subscriptions. AI data sharing on/off and when changed, with the AI feature.
 - **Template:** static, in the code, not the database: key, copy (per language), tested defaults with a version number, starter list or fund.
-- **Asset:** a stock or fund: symbol, exchange, name, what it does, currency.
+- **Asset:** a stock or fund: symbol, exchange, name, what it does, currency; for added ones, sector and industry from the price source, who added it and when, and whether it is hidden. Seeded or added, it is a plain row: adding one needs no migration or deploy. Prices are fetched for the assets some running strategy watches.
+- **Invites:** the link's code, who made it, uses left; each account records who invited it.
 - **Strategy:** user, template key, the tested-defaults version it started from, name, mode, start date, status (running or ended; no pause), notifications on/off, currency, budget (budget, step size, max steps per stock; editable), parameter values, and for a live copy the simulation it came from. AI settings (sources, prompt) belong in the parameters once the AI feature is defined.
 - **Strategy stocks:** per strategy, each stock or the fund: active (ticked) or not, added, removed.
 - **Signal trades:** per strategy and stock, the trades the rules made, one per signal (date, side, price, shares, amount, fee, exchange rate, step). Drives signals in both modes and the results in simulation.
@@ -620,6 +633,18 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Daily overview email and its settings.
 - Empty, loading and error states.
 
+Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP.md) → *The launch product*; each gets its section here when it is built):
+
+- "Coming soon" cards on Pick a template for templates the engine can't run yet.
+- Live mode gated on a confirmed email, with email-only alerts until web push exists.
+- Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.
+- Ended strategies (where they go is an open decision).
+- The legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest), linked from a footer.
+- Account: download my data, delete my account, "Invite a friend".
+- Unsubscribe links in emails.
+- Admin: a data table for the management pages, health and failure alerts, users (block, delete), invites and test invites, assets, an audit log of owner actions, and feedback.
+- Owner access for Claude: an owner account of its own on dev and production, for testing and validation.
+
 ## 10. Open questions
 
 - **Regulation.** See `regulation-spain-eu.md`. For the legal review: the taglines "Find the next Nvidia" (brand name, hints at exceptional returns) and "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists, and the AI comparison page.
@@ -631,5 +656,4 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Advanced settings per template:** which POC parameters each template exposes; whether *Dip in winners* should expose its 10-day cooldown.
 - **Price data:** which provider supplies daily US prices and the euro-dollar rate, with terms that allow commercial use, and its cost at many free users. The POC uses eToro and Yahoo.
 - **Web push on iPhone:** is a home-screen prompt enough, or do iPhone users rely on email?
-- **Catalan copy:** who writes and reviews it, including template copy, emails and notifications.
 - **Card copy for *Your AI's top picks*** on the pick screen: "the top score should get a position" is final as drawn, but "position" is the one trading word there without an explanation.

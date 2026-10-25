@@ -25,6 +25,12 @@
 - [x] Database switch (#30): copy `deploy/backend/production.env.example` to `deploy/backend/production.env` (gitignored) and fill it in: the production branch's variables (as in today's `api.env`), `DATABASE_URL_DEV` (the dev branch's pooled URL) and `ADMIN_PASSWORD` (a long one of your own). Then run *Terminal → Run Task → Deploy backend environment to Oracle* (or `deploy/backend/deploy-env.sh` on the Mac, `deploy-env.ps1` on Windows). Until `ADMIN_PASSWORD` is there the page can't switch the database on the server. Optional, locally: `DATABASE_URL_PRODUCTION` in `.env.local` lets your local API switch to production.
 - [ ] Set `OWNER_EMAIL` to your account's email in `deploy/backend/production.env` and run *Deploy backend environment to Oracle*; `ADMIN_PASSWORD` is no longer used and can go. Your account (verified email) becomes the owner the next time it is used, and only the owner opens `/admin`. Locally, put `OWNER_EMAIL` in `.env.local`. After the first deploy, the database box's switch logs you out (sessions live in the database in use): log in again there. (#39)
 
+- [x] Review the launch plan in ROADMAP.md. Answered on 2026-10-25; recorded in `docs/decisions.md`. (#58)
+- [ ] Still to decide, in ROADMAP → Open decisions: the rest of the launch scope, ended strategies, who the legal notice names, and pre-registered accounts (before the security pass, item 27). (#58)
+- [ ] When item 4 comes up: pick a plus address of your own inbox for Claude's owner account (on dev and production), confirm it once from the email, and add its password to `.env.local` on each machine and to the cloud environment's secrets; Claude will name the variable. (#58)
+- [ ] Choose and buy the app's domain (needed for items 21 and 22). (#58)
+- [ ] When item 21 comes up: open a Brevo account; Claude will say which DNS records and settings to add. (#58)
+
 - [ ] After #46 deploys: on `/admin`, check *Notifications → EMAILS_ENABLED* is true and the mail password is set (*Send a test email*). The first overview arrives the next morning at 07:00 your time if you have a running strategy and a verified email. (#46)
 
 ## General

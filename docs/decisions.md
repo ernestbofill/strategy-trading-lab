@@ -2,6 +2,20 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-10-25 · The launch path: Milestone 1 (core loop), Milestone 2 (ready to publish), a quiet launch, then the public beta, as in ROADMAP.md. *Your AI's top picks* comes into the launch if there's time; the rest of the launch scope is still open. (#58)
+- 2026-10-25 · Template pages are public, and sign-up has "Skip for now, look around": a guest goes through the new-strategy flow (draft in the browser) and signs up to start it. (Ernest, #58)
+- 2026-10-25 · The admin pages' data table is built on TanStack Table (headless, small, styled with the design tokens, rows as cards on a phone), not AG Grid. (Ernest, #58)
+- 2026-10-25 · Edit list on a running strategy is in the launch; anything else not built has its controls hidden until it is. (Ernest, #58)
+- 2026-10-25 · Claude has an owner account of its own, on dev and production, to test and check every feature; once the invite gate is on, it gets past it with owner invite links, never a bypass in the code. Owner actions go to an audit log, and the *Production* rules in `CLAUDE.md` still apply. (Ernest, #58)
+- 2026-10-25 · From the quiet launch, no sign-up without an invite, until Ernest decides to open sign-ups for the public beta. Until the quiet launch the gate stays off: sign-up is open while the app is built. (Ernest, #58)
+- 2026-10-25 · The quiet launch is invite only. Ernest's invite links give the vip role; each vip can invite a few people (3 by default) with their own link; those people are users and can't invite. (Ernest, #58)
+- 2026-10-25 · Limits: at most 10 running strategies per user and 60 stocks per strategy. (Ernest, #58)
+- 2026-10-25 · Emails go through Brevo from the app's own domain before strangers use the app; the domain is still to choose. (Ernest, #58)
+- 2026-10-25 · Adding a stock or fund must be automatic and never need a deploy: an asset is a database row, looked up in the price source's search, with its prices fetched at once. An added stock's one-line description is its sector and industry from the source, not AI-written text. (Ernest's requirement, design proposed in #58)
+- 2026-10-25 · *The comeback* keeps the POC's behaviour once its milestones are used (no more steps); the Holding row says so. (Ernest, #58)
+- 2026-10-25 · A strategy's first daily check treats each stock as just added: it evaluates the latest finished day, with no backlog of past signals. (Ernest took the recommendation, #58)
+- 2026-10-25 · Catalan: Claude translates, Ernest (fluent in both) reviews and corrects; no other reviewer. (Ernest, #58)
+
 - 2026-10-24 · Advanced settings are data: each template lists the params the user may tune, with the screen's range and step (`Template.Settings`), and their words live in the template texts. The API refuses any other key or a value off the screen's steps, then checks the merged params as before; a strategy stores its full params. The params' own ranges stay wider, as what the engine accepts. The zone may start at up to 39% (the spec's "end − 1"), so `DipParams.ZoneStartPct` now accepts up to 39. (#55)
 
 - 2026-10-24 · `CLAUDE.md` is the single source of the instructions for every AI tool (Claude Code is the default). `frontend/CLAUDE.md` and `backend/CLAUDE.md` hold the area rules; Copilot (`.github/copilot-instructions.md`, `.github/instructions/`), Codex and Antigravity (both `AGENTS.md`) are short pointers plus their own specifics, so a rule is changed in one place. (Ernest: "Claude is the default")

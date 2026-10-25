@@ -10,6 +10,8 @@ interface TopBarProps {
   title?: string
   /** Where clicking the title goes (e.g. "/" for home). */
   titleLink?: string
+  /** Accessible label for the title link. Defaults to `${title}, home`. */
+  titleLinkAriaLabel?: string
   /** Where "← BACK" goes when the screen was opened directly. Otherwise it goes one step back in the history. */
   back?: string
   step?: string
@@ -17,7 +19,7 @@ interface TopBarProps {
   aside?: ReactNode
 }
 
-export function TopBar({ title, titleLink, back, step, aside }: TopBarProps) {
+export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside }: TopBarProps) {
   const navigate = useNavigate()
   // The first entry of the history has the key 'default': there is nothing to go back to.
   const hasHistory = useLocation().key !== 'default'
@@ -38,7 +40,11 @@ export function TopBar({ title, titleLink, back, step, aside }: TopBarProps) {
           ← BACK
         </Link>
       ) : titleLink ? (
-        <Link to={titleLink} className={styles.titleLink}>
+        <Link
+          to={titleLink}
+          className={styles.titleLink}
+          aria-label={titleLinkAriaLabel ?? (title ? `${title}, home` : undefined)}
+        >
           {title}
         </Link>
       ) : (

@@ -224,7 +224,7 @@ public static class StrategyEndpoints
         var settings = new Dictionary<string, decimal>();
         foreach (var s in template.Settings)
         {
-            if (root.TryGetProperty(s.Key, out var prop))
+            if (root.TryGetProperty(s.Key, out var prop) && prop.ValueKind == JsonValueKind.Number)
                 settings[s.Key] = prop.GetDecimal();
         }
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.StartedOn, today,

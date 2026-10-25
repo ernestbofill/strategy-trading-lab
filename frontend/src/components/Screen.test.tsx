@@ -29,7 +29,7 @@ describe('TopBar', () => {
       </MemoryRouter>,
     )
 
-    const link = screen.getByRole('link', { name: 'STL // ADMIN' })
+    const link = screen.getByRole('link', { name: 'STL // ADMIN, home' })
     expect(link.getAttribute('href')).toBe('/')
   })
 

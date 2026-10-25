@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, type StrategyDetail, type TemplateDetail } from '../../api'
+import { api, InvalidFieldsError, type StrategyDetail, type TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -42,7 +42,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
 
   if (template.settings.length === 0) {
     return (
-      <Screen top={top}>
+      <Screen top={top} note={DISCLAIMER}>
         <PageHeader title="Advanced settings" />
         <ScreenMessage>This template's settings come in a later step.</ScreenMessage>
       </Screen>
@@ -57,8 +57,12 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
       await api.updateStrategySettings(strategy.id, changedSettings(template, values))
       invalidateAll()
       navigate(strategyPath(strategy.id))
-    } catch {
-      setError('Could not save settings. Please try again.')
+    } catch (err) {
+      if (err instanceof InvalidFieldsError) {
+        setError(Object.values(err.fields)[0] || 'Please check your settings.')
+      } else {
+        setError('Could not save settings. Please try again.')
+      }
       setSaving(false)
     }
   }
@@ -74,7 +78,11 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
       note={DISCLAIMER}
     >
       <PageHeader title="Advanced settings" lead="Every rule as an exact number, next to the tested default." />
-      {error && <ScreenMessage>{error}</ScreenMessage>}
+      {error && (
+        <ScreenMessage>
+          <span role="alert">{error}</span>
+        </ScreenMessage>
+      )}
       <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
     </Screen>
   )

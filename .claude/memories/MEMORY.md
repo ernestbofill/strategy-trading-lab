@@ -5,3 +5,4 @@ Loaded into every Claude Code session through `CLAUDE.md`. One line per memory, 
 - [Ernest's quoted replies](ernest-quoted-replies.md) — he answers a review point by point, quoting each point with his decision
 - [Neon over HTTPS in cloud sessions](neon-over-https-in-cloud.md) — `psql` hangs there (port 5432 blocked); query the dev database through the HTTPS SQL endpoint
 - [.NET on the Mac](dotnet-on-the-mac.md) — installed in `~/.dotnet` without sudo; set PATH per command, `[NeonFact]` tests skip locally
+- [Backend tests in cloud sessions](backend-tests-in-cloud.md) — install .NET in `~/.dotnet` and run the `[NeonFact]` tests against a local PostgreSQL 16, as CI does

@@ -97,7 +97,7 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   )
 }
 
-interface SettingRowProps {
+export interface SettingRowProps {
   setting: Setting
   value: number
   tested: number
@@ -106,7 +106,7 @@ interface SettingRowProps {
 }
 
 /** The setting as a sentence with its value highlighted, a − / + stepper and the tested value. */
-function SettingRow({ setting, value, tested, bounds, onChange }: SettingRowProps) {
+export function SettingRow({ setting, value, tested, bounds, onChange }: SettingRowProps) {
   const id = useId()
   const [before, after] = setting.sentence.split('{value}')
   const isChanged = value !== tested

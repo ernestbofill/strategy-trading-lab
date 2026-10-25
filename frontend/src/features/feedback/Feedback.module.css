@@ -258,6 +258,15 @@
   color: var(--ink);
 }
 
+.sectionTitleLink {
+  color: inherit;
+  text-decoration: none;
+}
+.sectionTitleLink:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
 .block {
   display: flex;
   flex-direction: column;

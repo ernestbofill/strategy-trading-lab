@@ -45,9 +45,31 @@
   gap: var(--space-2);
 }
 
-.filterSelect {
+.filterSelectWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
   flex: 1;
   min-width: 140px;
+}
+
+.filterSelect {
+  width: 100%;
+  padding: 0 40px 0 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+
+.filterSelectArrow {
+  position: absolute;
+  right: 14px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
 }
 
 .tableWrapper {

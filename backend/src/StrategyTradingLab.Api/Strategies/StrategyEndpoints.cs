@@ -99,6 +99,26 @@ public static class StrategyEndpoints
         })
         .WithName("StartStrategy")
         .WithSummary("Starts a strategy from a template, in simulation or live, with the user's budget and stocks.");
+
+        group.MapPut("/{id:guid}/settings", async Task<Results<NoContent, NotFound, ValidationProblem>> (
+            Guid id, UpdateStrategySettings request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = await CurrentUser(sessions, cancellationToken);
+            var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
+            if (strategy is null) return TypedResults.NotFound();
+
+            if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
+
+            var errors = new Dictionary<string, string[]>();
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
+
+            strategy.Params = parameters;
+            await db.SaveChangesAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithName("UpdateStrategySettings")
+        .WithSummary("Updates the settings (rules) of a running strategy.");
     }
 
     /// <summary>The logged-in user: the endpoints require one (RequireUser), so it is there.</summary>
@@ -200,9 +220,12 @@ public static class StrategyEndpoints
             ? new SignalCounts(signals.Count(s => s.Status == SignalStatus.Confirmed), signals.Count(s => s.Status == SignalStatus.Skipped),
                 signals.Count(s => s.Status == SignalStatus.Missed))
             : null;
+        var settings = template.Settings
+            .Where(s => strategy.Params.RootElement.TryGetProperty(s.Key, out _))
+            .ToDictionary(s => s.Key, s => strategy.Params.RootElement.GetProperty(s.Key).GetDecimal());
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.StartedOn, today,
             strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks);
+            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks, settings);
     }
 }

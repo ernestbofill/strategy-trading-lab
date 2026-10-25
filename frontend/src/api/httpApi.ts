@@ -42,6 +42,20 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T
 }
 
+async function put(path: string, body: unknown): Promise<void> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...APP_HEADER },
+    body: JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+  }
+  if (!response.ok) throw new Error(`PUT ${path} failed: HTTP ${response.status}`)
+}
+
 /** POSTs an answer to a signal. A 400 with field errors is `InvalidFieldsError`; a 409 (already answered) is `InvalidValueError`. */
 async function signalPost(path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}/signals${path}`, {
@@ -156,6 +170,7 @@ export const httpApi: Api = {
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
+  updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),
   getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),
   confirmSignal: async (id, trade) => void (await signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
   skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),

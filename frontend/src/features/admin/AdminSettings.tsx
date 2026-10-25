@@ -38,11 +38,12 @@ export function AdminSettings() {
   }, [])
 
   return (
-    <Screen top={<TopBar title="STL // ADMIN" />}>
+    <Screen top={<TopBar title="STL // ADMIN" titleLink="/" />}>
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
       <section className={styles.group}>
         <h2 className={styles.groupTitle}>Management</h2>
         <NavRow label="Assets" meta="stocks, funds and indexes" to="/admin/assets" />
+        <NavRow label="Feedback" meta="open issues, ideas and notes" to="/feedback" />
       </section>
       {state.status === 'loading' && <ScreenMessage>Loading the settings…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the settings. Try again later.</ScreenMessage>}
@@ -70,7 +71,7 @@ export function AdminSettings() {
             {group === 'Prices' && <PricesBox key={settings.map((s) => s.value).join('|')} />}
           </section>
         ))}
-      {state.status === 'ready' && <FeedbackSection key={state.databases.active} />}
+      {state.status === 'ready' && <FeedbackSection key={state.databases.active} titleLink="/feedback" />}
     </Screen>
   )
 }

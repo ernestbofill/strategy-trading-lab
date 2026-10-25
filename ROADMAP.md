@@ -23,7 +23,7 @@ What it leaves out, so it ships sooner (still an open decision, at the bottom; *
 | The starter lists, "+ Add a stock", the fund picker, Edit list on a running strategy | Advanced settings for the templates that have none yet |
 | Alerts by email | Web push |
 | Tested results of the defaults, honestly labelled | Re-running the backtest with your settings, the Backtest page (its tile hidden until then) |
-| Rename, end, go live, alerts switch, trades you can fix | Change the budget, Tune the settings on a running strategy (its tile hidden until then), the stock page |
+| Rename, end, go live, alerts switch, trades you can fix, Tune the settings on a running strategy | Change the budget, the stock page |
 
 The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu.md](docs/regulation-spain-eu.md)): **Milestone 1** finishes the core loop, **Milestone 2** makes it publishable, then a **quiet launch** (invite only from then on; sign-up stays open while the app is built), then **Milestone 3**, the **public beta**.
 

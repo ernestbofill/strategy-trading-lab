@@ -20,6 +20,7 @@ const baseAccount: Account = {
 vi.mock('./AccountContext', () => ({
   useCurrentAccount: () => ({ ...baseAccount, role: currentRole }),
   useAccount: () => ({ clear: vi.fn(), refresh: vi.fn() }),
+  useIsOwner: () => currentRole === 'owner',
 }))
 
 afterEach(() => {

@@ -265,6 +265,23 @@ a.stock:hover {
   cursor: not-allowed;
 }
 
+.tileLink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 10px 12px;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+  text-decoration: none;
+  color: inherit;
+}
+.tileLink:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary);
+}
+
 .tileTitle {
   color: var(--primary);
 }

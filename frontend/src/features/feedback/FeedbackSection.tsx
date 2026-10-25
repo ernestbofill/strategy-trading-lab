@@ -21,7 +21,11 @@ type Filter = 'open' | 'closed' | 'all'
  * confirmed users, filters by open/closed/all, exports open items as a Markdown table, and lets the
  * owner add, edit, close/reopen, or delete items.
  */
-export function FeedbackSection() {
+interface FeedbackSectionProps {
+  titleLink?: string
+}
+
+export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
   const [items, setItems] = useState<FeedbackItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -164,7 +168,15 @@ export function FeedbackSection() {
   return (
     <section className={styles.section} aria-label="Feedback">
       <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>Feedback</h2>
+        <h2 className={styles.sectionTitle}>
+          {titleLink ? (
+            <Link to={titleLink} className={styles.sectionTitleLink}>
+              Feedback
+            </Link>
+          ) : (
+            'Feedback'
+          )}
+        </h2>
         <button
           type="button"
           className={styles.button}

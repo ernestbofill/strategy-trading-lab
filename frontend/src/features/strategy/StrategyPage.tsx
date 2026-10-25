@@ -7,7 +7,7 @@ import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { DISCLAIMER, PAST_RESULTS_CAPTION } from '../../lib/copy'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { signalPath } from '../dashboard/paths'
+import { signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
@@ -168,7 +168,10 @@ export function StrategyPage() {
             <Summary s={s} />
             <Stocks s={s} />
             <div className={styles.tiles}>
-              <SoonTile title="Tune the settings" sub="Change its rules" />
+              <Link to={strategySettingsPath(s.id)} className={styles.tileLink}>
+                <span className={`ui-strong ${styles.tileTitle}`}>Tune the settings</span>
+                <span className={styles.detail}>Change its rules</span>
+              </Link>
               <SoonTile title="Backtest" sub="How the template did" />
             </div>
           </Screen>

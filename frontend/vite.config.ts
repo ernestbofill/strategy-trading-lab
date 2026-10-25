@@ -17,8 +17,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Opening the API in a tab must reach the server, not the app shell.
-      workbox: { navigateFallbackDenylist: [/^\/api\//] },
+      // Opening the API in a tab must reach the server, not the app shell; admin chunks load only on /admin.
+      workbox: { navigateFallbackDenylist: [/^\/api\//], globIgnores: ['**/Admin*'] },
       manifest: {
         name: 'Strategy Trading Lab',
         short_name: 'STL',

@@ -439,6 +439,24 @@ export interface YahooCheck {
   milliseconds: number
 }
 
+export type AssetKind = 'stock' | 'fund' | 'index'
+
+/** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
+export interface AdminAsset {
+  id: string
+  symbol: string
+  exchange: string
+  name: string
+  what: string
+  kind: AssetKind
+  currency: string
+  active: boolean
+  /** Running strategies currently watching this asset. */
+  strategies: number
+  /** Newest stored price day ("2026-10-22"), or null if none is stored yet. */
+  latestPriceDate: string | null
+}
+
 export interface Api {
   /** The logged-in user, or null without a session: the app's start-up check. */
   getAccount(): Promise<Account | null>
@@ -496,4 +514,8 @@ export interface Api {
   getAdminDatabases(): Promise<AdminDatabases>
   /** Rejects with `InvalidValueError` saying why when refused (no URL on the server, a database that doesn't answer). */
   switchAdminDatabase(name: DatabaseName): Promise<void>
+  /** All assets, for the admin assets page. */
+  getAdminAssets(): Promise<AdminAsset[]>
+  /** Hides or restores an asset. */
+  setAdminAssetActive(id: string, active: boolean): Promise<void>
 }

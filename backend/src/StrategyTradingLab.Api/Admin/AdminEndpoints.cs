@@ -29,6 +29,12 @@ public record AdminPrices(bool Running, DateTimeOffset? NextRun, DateTimeOffset?
 /// <summary>One symbol asked of Yahoo by "Test Yahoo": its newest day and close, or why it didn't answer.</summary>
 public record YahooCheck(string Symbol, bool Ok, DateOnly? Day, decimal? Close, string? Problem, int Milliseconds);
 
+/// <summary>An asset on the admin page: its details, whether it is active, how many running strategies watch it, and its newest stored price date.</summary>
+public record AdminAsset(Guid Id, string Symbol, string Exchange, string Name, string What, AssetKind Kind,
+    string Currency, bool Active, int Strategies, DateOnly? LatestPriceDate);
+
+public record AssetActive(bool Active);
+
 /// <summary>A value to save. For a secret, <c>Expected</c> holds the values the page showed for the settings it is bound to.</summary>
 public record SettingValue(string Value, IReadOnlyDictionary<string, string?>? Expected = null);
 
@@ -62,6 +68,7 @@ public static class AdminEndpoints
         var settings = group.MapGroup("/settings");
         MapDatabase(group);
         MapPrices(group);
+        MapAssets(group);
 
         // Only ever to the account itself, so the page can't be used to send mail from it to anyone.
         group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email,
@@ -190,6 +197,43 @@ public static class AdminEndpoints
         database.MapPost("/active", (DatabaseChoice request, DatabaseSwitch databases, CancellationToken cancellationToken) =>
             Switch(request.Name, name => databases.SwitchAsync(name, cancellationToken)))
         .WithSummary("Switches the API to the dev or production database, once it answers and has every migration.");
+    }
+
+    static void MapAssets(RouteGroupBuilder group)
+    {
+        var assets = group.MapGroup("/assets");
+
+        assets.MapGet("/", async (AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var rows = await db.Assets
+                .AsNoTracking()
+                .Select(asset => new AdminAsset(
+                    asset.Id,
+                    asset.Symbol,
+                    asset.Exchange,
+                    asset.Name,
+                    asset.Texts.Where(t => t.Locale == Templates.TemplateTexts.DefaultLocale).Select(t => t.What).FirstOrDefault() ?? "",
+                    asset.Kind,
+                    asset.Currency,
+                    asset.Active,
+                    db.StrategyAssets.Count(sa => sa.AssetId == asset.Id && sa.Active && sa.RemovedAt == null
+                        && db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running)),
+                    db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date)))
+                .ToListAsync(cancellationToken);
+            return rows.OrderBy(a => a.Name, StringComparer.InvariantCultureIgnoreCase)
+                .ThenBy(a => a.Symbol, StringComparer.InvariantCultureIgnoreCase)
+                .ToList();
+        })
+        .WithSummary("All assets, with how many running strategies watch each and its newest stored price date.");
+
+        assets.MapPut("/{id:guid}/active", async Task<Results<NoContent, NotFound>> (Guid id, AssetActive request,
+            AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var updated = await db.Assets.Where(a => a.Id == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.Active, request.Active), cancellationToken);
+            return updated == 0 ? TypedResults.NotFound() : TypedResults.NoContent();
+        })
+        .WithSummary("Hides or restores an asset.");
     }
 
     static async Task<Results<NoContent, NotFound, ProblemHttpResult>> Switch(string? name, Func<DatabaseName, Task> change)

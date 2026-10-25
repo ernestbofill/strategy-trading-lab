@@ -152,4 +152,6 @@ export const httpApi: Api = {
   testAdminYahoo: async () => (await admin('POST', '/prices/test')).json(),
   getAdminDatabases: async () => (await admin('GET', '/database')).json(),
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
+  getAdminAssets: async () => (await admin('GET', '/assets')).json(),
+  setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
 }

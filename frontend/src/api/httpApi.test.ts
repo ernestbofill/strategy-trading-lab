@@ -105,6 +105,16 @@ describe('httpApi admin', () => {
     expect(calls[1]).toEqual(['/api/admin/settings/SMTP_HOST', expect.objectContaining({ method: 'DELETE' })])
     expect(calls[2][0]).toBe('/api/admin/settings/SMTP_PASSWORD?clear=true')
   })
+
+  it('reads and updates admin assets', async () => {
+    respond(200, [{ id: 'a1', symbol: 'ZS' }])
+    await expect(httpApi.getAdminAssets()).resolves.toEqual([{ id: 'a1', symbol: 'ZS' }])
+    expect(fetch).toHaveBeenCalledWith('/api/admin/assets', expect.anything())
+
+    respond(204)
+    await httpApi.setAdminAssetActive('a1', false)
+    expect(fetch).toHaveBeenCalledWith('/api/admin/assets/a1/active', expect.objectContaining({ method: 'PUT', body: '{"active":false}' }))
+  })
 })
 
 describe('httpApi admin test email', () => {

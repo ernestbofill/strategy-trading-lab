@@ -1,5 +1,5 @@
+import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import type { ReactNode } from 'react'
 import { AccountProvider, useAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
 import { ForgotPassword } from './features/account/ForgotPassword'
@@ -17,7 +17,6 @@ import { ResetPassword } from './features/account/ResetPassword'
 import { SignUp } from './features/account/SignUp'
 import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
-import { AdminSettings } from './features/admin/AdminSettings'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { Advanced } from './features/new-strategy/Advanced'
 import { SetBudget } from './features/new-strategy/SetBudget'
@@ -31,6 +30,10 @@ import { SignalPage } from './features/signal/SignalPage'
 import { StrategyPage } from './features/strategy/StrategyPage'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
+
+// Loaded only when an owner opens /admin, so users never download the admin pages or TanStack Table.
+const AdminSettings = lazy(() => import('./features/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })))
+const AdminAssets = lazy(() => import('./features/admin/AdminAssets').then((m) => ({ default: m.AdminAssets })))
 
 /** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
@@ -61,7 +64,22 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path={accountPath} element={<AccountPage />} />
               <Route element={<RequireOwner />}>
-                <Route path="/admin" element={<AdminSettings />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <Suspense fallback={null}>
+                      <AdminSettings />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/admin/assets"
+                  element={
+                    <Suspense fallback={null}>
+                      <AdminAssets />
+                    </Suspense>
+                  }
+                />
               </Route>
               <Route path="/strategies/:id" element={<StrategyPage />} />
               <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />

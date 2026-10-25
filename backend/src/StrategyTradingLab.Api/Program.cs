@@ -186,6 +186,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 app.MapTemplates();
 app.MapStrategies();
 app.MapSignals();
+app.MapTrades();
 app.MapAdmin();
 app.MapAccount();
 app.MapFeedback();

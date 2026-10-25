@@ -19,18 +19,18 @@ public static class SignalRules
     }
 
     /// <summary>
-    /// Checks "I did it" and works out the value the user didn't type (<c>shares = amount × fx ÷ price</c>). The date is from
-    /// the signal day to today. A reference rate comes from <paramref name="referenceRate"/> (the date's), a user rate from the
-    /// request. Errors by field, empty when the trade is valid.
+    /// Checks a trade (signal or manual) and works out the value the user didn't type (<c>shares = amount × fx ÷ price</c>).
+    /// The date is from <paramref name="minDate"/> to today. A reference rate comes from <paramref name="referenceRate"/> (the date's),
+    /// a user rate from the request. Errors by field, empty when the trade is valid.
     /// </summary>
-    public static (CheckedTrade? Trade, Dictionary<string, string[]> Errors) CheckTrade(SignalTradeRequest request, DateOnly signalDate,
-        DateOnly today, Func<DateOnly, decimal?> referenceRate)
+    public static (CheckedTrade? Trade, Dictionary<string, string[]> Errors) CheckTrade(SignalTradeRequest request, DateOnly minDate,
+        DateOnly today, Func<DateOnly, decimal?> referenceRate, string minDateMessage = "Use a day on or after the signal.")
     {
         var errors = new Dictionary<string, string[]>();
         void Fail(string field, string message) => errors[field] = [message];
 
         if (request.Date is not { } date) Fail("date", "Enter the day you traded.");
-        else if (date < signalDate) Fail("date", "Use a day on or after the signal.");
+        else if (date < minDate) Fail("date", minDateMessage);
         else if (date > today) Fail("date", "Use a day up to today.");
 
         if (request.Price is not (>= 0.0001m and < 1_000_000)) Fail("price", "Enter the price per share.");

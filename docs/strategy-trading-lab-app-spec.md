@@ -486,6 +486,14 @@ The same three settings can be changed later from the strategy page (not drawn).
     - *Ride the long trend* shows "OUT OF THE MARKET" ("[n]% from the buy line", or "Below its long trend") when not holding, and "HOLDING" ("In the market") when holding.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
+- **Signals and trades** (`SignalsAndTrades`):
+  - A chronological timeline of every signal and trade recorded for this strategy, ordered newest first.
+  - Heading: "Signals and trades" with the item count ("· [n]").
+  - Live mode action: "+ Log a trade by hand" button that toggles an inline form to record manual buy or sale trades on any of the strategy's active stocks (Stock, Action BUY/SELL, Date, Price, Amount or Shares toggle, Fee, and Exchange rate). Manual trades are marked with a `MANUAL` badge.
+  - In Live mode, each trade row has an "Edit" button to modify its fields (Date, Price, Amount or Shares, Fee, Exchange rate) or "Delete" with inline confirmation to soft-delete the trade (`deleted_at`).
+  - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
+  - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
+  - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For simulations, a third link: "Go live with these settings" (not drawn).
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
@@ -630,7 +638,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Stock list editor from the strategy page, stock search ("+ Add a stock"), fund picker ("Change").
 - Prompt editor ("Edit prompt", "Reset to suggested").
 - Sell signals for *Ride the long trend*, and its "Out of the market" status.
-- Manual trade form; editing and deleting trades.
+- ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - AI round history, error state when the answer can't be read, and the AI comparison page (later: results by AI model, never a ranking of stocks).
 - Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
 - Go live with these settings; renaming; changing the budget; the notifications switch; ending a strategy.
@@ -642,7 +650,7 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 
 - "Coming soon" cards on Pick a template for templates the engine can't run yet.
 - Live mode gated on a confirmed email, with email-only alerts until web push exists.
-- Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.
+- ~~Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.~~ (both built: #60, #61)
 - Ended strategies (where they go is an open decision).
 - The legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest), linked from a footer.
 - Account: download my data, delete my account, "Invite a friend".

@@ -11,6 +11,7 @@ import { signalPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
+import { SignalsAndTrades } from './SignalsAndTrades'
 import { stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
 
@@ -167,6 +168,7 @@ export function StrategyPage() {
             </div>
             <Summary s={s} />
             <Stocks s={s} />
+            <SignalsAndTrades s={s} />
             <div className={styles.tiles}>
               <SoonTile title="Tune the settings" sub="Change its rules" />
               <SoonTile title="Backtest" sub="How the template did" />

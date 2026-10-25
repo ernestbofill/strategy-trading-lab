@@ -502,7 +502,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Signal box: "Your rules for **[strategy name]** are met for [stock]: [8]% below its recent peak, still above its 50-day average. Under your settings that's step [2] of [5] ([€100])." Then "Close on [date]: $[XXX.XX]". The fact list depends on the template's rules.
 - Sell signal for *Ride the long trend* (not drawn): "Your rules for **[strategy name]** are met for a sale: the market closed [3.2]% below its 200-day average."
 - **"Did you act on it?"** with two choices side by side: "✓ I did it" and "× I skipped it". "I did it" is preselected in the wireframe.
-- A third, quieter action: **Snooze** (not drawn), "Remind me tomorrow" (draft). It doesn't answer the signal.
+- A third, quieter action: **Snooze**, "Remind me next trading day", under the form while the signal waits. It doesn't answer the signal; once snoozed it reads "We'll remind you on [date]." 
 
 **I did it**: four fields, each with a visible label, and an exchange-rate line:
 
@@ -510,16 +510,20 @@ The same three settings can be changed later from the strategy page (not drawn).
 | --- | --- |
 | Date | The next trading day |
 | Price per share | The next trading day's opening price, once the market has opened. Before that, the field is empty and the signal day's close is shown as a reference. |
-| Amount | The step size minus the tested fee (what buys shares; the step includes its fee). "Enter shares instead" switches the field to shares (not drawn); sells, all out, are usually entered as shares |
+| Amount | The step size minus the tested fee (what buys shares; the step includes its fee). "Shares instead" switches the field to shares ("Amount instead" goes back); sells, all out, are usually entered as shares |
 | Fee (optional) | Empty, placeholder "€0.00" |
 
-Exchange-rate line (not drawn, draft): "At $[1.0850] per €1, the rate of [date]. Change". "Change" opens a field for the rate the broker used. The rate follows the date if the date is changed, unless the user entered their own.
+Exchange-rate line, only when the stock's currency differs from the strategy's: "At $[1.0850] per €1, the rate of [date]. Change". Without a reference rate for the day: "No reference rate for that day yet: enter your broker's." "Change" opens a field for the rate the broker used. The rate follows the date if the date is changed, unless the user entered their own.
 
-Help line: "Price is prefilled with [date]'s opening price. Change anything that differs from your broker." Button: "Save the trade".
+Help line under the price: "Prefilled with [date]'s opening price. Change anything that differs from your broker." Before that price is stored: "The next opening price isn't in yet. The close on [date] was $[XXX.XX]." Under the amount: "What bought shares. Your step of €[100] includes the fee." The fields show their currency in the label ("Price per share (USD)", "Amount (EUR)"). Button: "Save the trade".
+
+The date is from the signal day to today; a field the server refuses shows why under it ("Enter the price per share.").
+
+**Answered or missed** (not drawn): an answered signal shows the box and "You did it: [n] shares at $[XXX.XX] on [date] (€[amount], fee €[fee])." or "You skipped it: [reason].", with "Back to the strategy" instead of the form. A missed signal keeps the form, under "This signal ended on [date] without an answer. You can still record what you did." Its trade counts in budget used like any other, even when later signals used that budget meanwhile, so budget used can read over 100% (open decision, ROADMAP).
 
 **I skipped it**: "Why? (optional)" with single-choice chips "Price ran away", "Didn't trust it", "No cash", "Other". Text: "A skip uses no budget. The rules carry on as if the step was bought, so the next signal for [stock] is step [n+1] of [max]." Button: "Save the skip".
 
-**Snooze** (not drawn): the signal stays in Waiting for you, and the user is notified again the next trading day, once per channel. It can be snoozed again until the signal ends.
+**Snooze**: the signal stays in Waiting for you, and the user is reminded the next US market weekday (New York's date; holidays aren't known yet) from 07:00 in their time zone, that day or the next (not later) (email "Reminder: [stock], your rules for [strategy]"), once per channel. It can be snoozed again until the signal ends. A missed or answered signal can't be snoozed, nor one whose reminder couldn't be sent (strategy ended or its notifications off, email not confirmed).
 
 **Behaviour**
 - Saving records the trade or the skip and returns to the strategy page. A trade updates budget used, steps and results.

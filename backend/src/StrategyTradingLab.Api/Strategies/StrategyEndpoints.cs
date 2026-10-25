@@ -102,11 +102,11 @@ public static class StrategyEndpoints
     }
 
     /// <summary>The logged-in user: the endpoints require one (RequireUser), so it is there.</summary>
-    static async Task<User> CurrentUser(Sessions sessions, CancellationToken cancellationToken) =>
+    internal static async Task<User> CurrentUser(Sessions sessions, CancellationToken cancellationToken) =>
         (await sessions.CurrentAsync(cancellationToken))!;
 
     /// <summary>The user's local date; UTC if their time zone isn't known to the server.</summary>
-    static DateOnly Today(User user, TimeProvider time)
+    internal static DateOnly Today(User user, TimeProvider time)
     {
         TimeZoneInfo zone;
         try { zone = TimeZoneInfo.FindSystemTimeZoneById(user.TimeZone); }

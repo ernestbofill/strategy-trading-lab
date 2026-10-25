@@ -42,6 +42,23 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return (await response.json()) as T
 }
 
+/** POSTs an answer to a signal. A 400 with field errors is `InvalidFieldsError`; a 409 (already answered) is `InvalidValueError`. */
+async function signalPost(path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}/signals${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'This signal is already answered.')
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+  }
+  if (!response.ok) throw new Error(`POST /signals${path} failed: HTTP ${response.status}`)
+  return response
+}
+
 /** Sends a request to the admin API and maps its refusals to errors the page can show. */
 async function admin(method: string, path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}/admin${path}`, {
@@ -120,6 +137,10 @@ export const httpApi: Api = {
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
+  getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),
+  confirmSignal: async (id, trade) => void (await signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
+  skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
+  snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),

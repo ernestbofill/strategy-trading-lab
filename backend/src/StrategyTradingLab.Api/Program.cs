@@ -21,6 +21,7 @@ using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Neon;
 using StrategyTradingLab.Api.Strategies;
+using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -182,6 +183,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 
 app.MapTemplates();
 app.MapStrategies();
+app.MapSignals();
 app.MapAdmin();
 app.MapAccount();
 

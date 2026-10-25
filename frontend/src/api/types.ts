@@ -264,6 +264,62 @@ export interface StrategyDetail {
   stocks: StockRow[]
 }
 
+export type SignalStatus = 'waiting' | 'confirmed' | 'skipped' | 'missed'
+
+export type SkipReason = 'priceRanAway' | 'didntTrustIt' | 'noCash' | 'other'
+
+/** How the user answered a signal: the trade they saved, or the skip. */
+export interface SignalAnswer {
+  status: SignalStatus
+  skipReason: SkipReason | null
+  date: string | null
+  price: number | null
+  amount: number | null
+  shares: number | null
+  fee: number | null
+}
+
+/** Confirm a signal: backend Signals/SignalDtos.cs (SignalDetail). Prices are in the asset's currency, amounts in the strategy's. */
+export interface SignalDetail {
+  id: string
+  strategyId: string
+  strategyName: string
+  templateName: string
+  strategyCurrency: Currency
+  stockName: string
+  /** ISO code; may be one the user can't pick ("JPY"). */
+  assetCurrency: string
+  stepNo: number | null
+  maxSteps: number | null
+  stepAmount: number | null
+  signalDate: string
+  closePrice: number
+  /** What the rules found: "8.2% below its recent peak, still above its 50-day average". */
+  reason: string
+  status: SignalStatus
+  snoozedUntil: string | null
+  endedOn: string | null
+  /** The user's local date. */
+  today: string
+  /** The next trading day, its opening price once stored (else null), and the step without the tested fee. */
+  prefill: { date: string; price: number | null; amount: number | null }
+  /** Reference rates by day: asset currency per one unit of the strategy's. */
+  rates: { date: string; rate: number }[]
+  answer: SignalAnswer | null
+}
+
+/** "I did it". `fxRate` is only read when `fxSource` is 'user'. */
+export interface SignalTrade {
+  date: string | null
+  price: number
+  enteredAs: 'amount' | 'shares'
+  amount: number | null
+  shares: number | null
+  fee: number | null
+  fxSource: 'reference' | 'user'
+  fxRate: number | null
+}
+
 /** What the Confirm screen sends to start a strategy: the choices of the five steps. Its other settings start at the template's tested defaults. */
 export interface NewStrategy {
   templateKey: TemplateKey
@@ -410,6 +466,13 @@ export interface Api {
   getDashboard(): Promise<Dashboard>
   /** The strategy page; undefined when the user has no such strategy. */
   getStrategy(id: string): Promise<StrategyDetail | undefined>
+  /** A live signal for Confirm a signal; undefined when the user has no such signal. */
+  getSignal(id: string): Promise<SignalDetail | undefined>
+  /** Rejects with `InvalidFieldsError` (by field) or `InvalidValueError` (already answered). */
+  confirmSignal(id: string, trade: SignalTrade): Promise<void>
+  skipSignal(id: string, reason: SkipReason | null): Promise<void>
+  /** Resolves with the day the user is reminded. */
+  snoozeSignal(id: string): Promise<string>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */

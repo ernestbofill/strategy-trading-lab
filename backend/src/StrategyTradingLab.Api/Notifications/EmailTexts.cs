@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Notifications;
@@ -21,12 +22,14 @@ public record CloseLine(string StrategyName, StrategyMode Mode, string TemplateK
 public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals);
 
 /// <summary>
-/// The words of the notification emails (spec: Notifications), in English until the Catalan texts exist. They describe
+/// The words of the notification emails (spec: Notifications), in English and Catalan. They describe
 /// what the rules found and never tell the user what to do ("describe, don't instruct"). Pure: data in, text out.
 /// </summary>
 public static class EmailTexts
 {
-    public const string Disclaimer = "Not financial advice. Signals follow your rules.";
+    public const string DisclaimerEn = "Not financial advice. Signals follow your rules.";
+    public const string DisclaimerCa = "No és assessorament financer. Els senyals segueixen les teves regles.";
+    public const string Disclaimer = DisclaimerEn;
 
     static string Money(decimal amount, string currency) =>
         (currency switch { "EUR" => "€", "USD" => "$", "GBP" => "£", _ => currency + " " }) + amount.ToString("#,0.##", CultureInfo.InvariantCulture);
@@ -34,51 +37,86 @@ public static class EmailTexts
     /// <summary>A number with a dot, whatever the server's culture (the texts are English).</summary>
     static string Pct(decimal value) => value.ToString("0.#", CultureInfo.InvariantCulture);
 
-    static string Date(DateOnly date) => date.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
+    static string Date(DateOnly date, string locale = "en")
+    {
+        if (locale == "ca")
+        {
+            var months = new[] { "", "gen.", "febr.", "març", "abr.", "maig", "juny", "jul.", "ag.", "set.", "oct.", "nov.", "des." };
+            return $"{date.Day} {months[date.Month]} {date.Year}";
+        }
+        return date.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
+    }
 
     static decimal? Fact(JsonElement facts, string name) =>
         facts.ValueKind == JsonValueKind.Object && facts.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDecimal() : null;
 
-    /// <summary>The rule facts of a signal in a sentence, by template.</summary>
-    public static string FactSentence(SignalLine s)
+    /// <summary>A recovery milestone (named in English by the engine) in Catalan.</summary>
+    static string MilestoneCa(string term) => term switch
     {
+        "Reclaims the SMA 200" => "Recupera la SMA 200",
+        "Golden cross (SMA 50 above SMA 200)" => "Creu daurada (SMA 50 per sobre de la SMA 200)",
+        _ when Regex.Match(term, @"^Within ([\d.]+)% of the 52-week high$") is { Success: true } near => $"A menys d'un {near.Groups[1].Value}% del màxim de 52 setmanes",
+        _ when Regex.Match(term, @"^Higher high after pulling back ([\d.]+)% \(breakout\)$") is { Success: true } up => $"Nou màxim després d'una correcció del {up.Groups[1].Value}% (ruptura)",
+        _ => term,
+    };
+
+    /// <summary>The rule facts of a signal in a sentence, by template.</summary>
+    public static string FactSentence(SignalLine s, string locale = "en")
+    {
+        var ca = locale == "ca";
+        var met = ca ? "es compleixen les seves regles" : "its rules are met";
         if (s.Side == TradeSide.Sell)
         {
             var belowSma = Fact(s.Facts, "belowSmaPct");
-            return belowSma is null ? "its rules are met" : $"the market closed {Pct(belowSma.Value)}% below its 200-day average";
+            return belowSma is null ? met
+                : ca ? $"el mercat ha tancat un {Pct(belowSma.Value)}% per sota de la seva mitjana de 200 dies"
+                : $"the market closed {Pct(belowSma.Value)}% below its 200-day average";
         }
         if (s.TemplateKey == "trend")
         {
             var aboveSma = Fact(s.Facts, "aboveSmaPct");
-            return aboveSma is null ? "its rules are met" : $"the market closed {Pct(aboveSma.Value)}% above its 200-day average";
+            return aboveSma is null ? met
+                : ca ? $"el mercat ha tancat un {Pct(aboveSma.Value)}% per sobre de la seva mitjana de 200 dies"
+                : $"the market closed {Pct(aboveSma.Value)}% above its 200-day average";
         }
         if (s.TemplateKey == "bear")
         {
             var below = Fact(s.Facts, "belowDropPeakPct") ?? Fact(s.Facts, "belowHighPct");
             var above = Fact(s.Facts, "aboveLowPct");
-            return below is null || above is null
-                ? "its rules are met"
+            return below is null || above is null ? met
+                : ca ? $"un {Pct(below.Value)}% per sota del seu màxim de 6 mesos i un {Pct(above.Value)}% per sobre del seu mínim"
                 : $"down {Pct(below.Value)}% from its 6-month high and {Pct(above.Value)}% above its low";
         }
         if (s.TemplateKey == "dip")
         {
             var below = Fact(s.Facts, "belowPeakPct");
-            return below is null ? "its rules are met" : $"{Pct(below.Value)}% below its recent peak, still above its 50-day average";
+            return below is null ? met
+                : ca ? $"{Pct(below.Value)}% per sota del seu màxim recent, encara per sobre de la mitjana de 50 dies"
+                : $"{Pct(below.Value)}% below its recent peak, still above its 50-day average";
         }
         var milestone = s.Facts.ValueKind == JsonValueKind.Object && s.Facts.TryGetProperty("milestone", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
-        if (milestone is not null) return $"a new sign that the recovery is real: {milestone.ToLowerInvariant()}";
+        if (milestone is not null)
+            return ca ? $"un nou senyal que la recuperació és real: {MilestoneCa(milestone).ToLowerInvariant()}" : $"a new sign that the recovery is real: {milestone.ToLowerInvariant()}";
         var aboveBuyLine = Fact(s.Facts, "aboveBuyLinePct");
-        return aboveBuyLine is null ? "its rules are met" : $"{Pct(Math.Abs(aboveBuyLine.Value))}% {(aboveBuyLine >= 0 ? "above" : "below")} its buy line, on rising volume";
+        return aboveBuyLine is null ? met
+            : ca ? $"{Pct(Math.Abs(aboveBuyLine.Value))}% {(aboveBuyLine >= 0 ? "per sobre" : "per sota")} de la línia de compra, amb volum creixent"
+            : $"{Pct(Math.Abs(aboveBuyLine.Value))}% {(aboveBuyLine >= 0 ? "above" : "below")} its buy line, on rising volume";
     }
 
     /// <summary>The signal box's text: "Your rules for X are met for Y: …".</summary>
-    public static string SignalText(SignalLine s)
+    public static string SignalText(SignalLine s, string locale = "en")
     {
-        var target = s.Side == TradeSide.Sell ? "a sale" : s.StockName;
-        var step = s.StepNo is { } no && s.MaxSteps is { } max
-            ? $" Under your settings that's step {no} of {max}{(s.StepAmount is { } amount ? $" ({Money(amount, s.StrategyCurrency)})" : "")}."
-            : "";
-        return $"Your rules for {s.StrategyName} are met for {target}: {FactSentence(s)}.{step}\n" +
+        var ca = locale == "ca";
+        var sale = s.Side == TradeSide.Sell;
+        var amount = s.StepAmount is { } a ? $" ({Money(a, s.StrategyCurrency)})" : "";
+        if (ca)
+        {
+            var step = s.StepNo is { } no && s.MaxSteps is { } max ? $" Segons la teva configuració, és el pas {no} de {max}{amount}." : "";
+            return $"Les teves regles per a {s.StrategyName} es compleixen per a {(sale ? "una venda" : s.StockName)}: {FactSentence(s, locale)}.{step}\n" +
+                   $"Tancament del {Date(s.Date, locale)}: {Money(s.ClosePrice, s.AssetCurrency)}";
+        }
+        var stepEn = s.StepNo is { } noEn && s.MaxSteps is { } maxEn ? $" Under your settings that's step {noEn} of {maxEn}{amount}." : "";
+        return $"Your rules for {s.StrategyName} are met for {(sale ? "a sale" : s.StockName)}: {FactSentence(s)}.{stepEn}\n" +
                $"Close on {Date(s.Date)}: {Money(s.ClosePrice, s.AssetCurrency)}";
     }
 
@@ -86,34 +124,82 @@ public static class EmailTexts
     public static string SignalUrl(SignalLine s, string appUrl) => $"{appUrl}/strategies/{s.StrategyId}/signals/{s.SignalId}";
 
     /// <summary>The reminder the day after a snooze: the same text as the alert.</summary>
-    public static (string Subject, string Body) SnoozeReminder(SignalLine s, string appUrl) =>
-        ($"Reminder: {s.StockName}, your rules for {s.StrategyName}",
-         $"You asked to be reminded of this signal.\n\n{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{Disclaimer}");
+    public static (string Subject, string Body) SnoozeReminder(SignalLine s, string appUrl, string locale = "en")
+    {
+        if (locale == "ca")
+            return ($"Recordatori: {s.StockName}, les teves regles per a {s.StrategyName}",
+                $"Has demanat que et recordem aquest senyal.\n\n{SignalText(s, locale)}\n\nConsulta'l i indica si hi has actuat:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerCa}");
 
-    public static (string Subject, string Body) SignalAlert(SignalLine s, string appUrl) =>
-        ($"{s.StockName}: your rules for {s.StrategyName} are met",
-         $"{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{Disclaimer}");
+        return ($"Reminder: {s.StockName}, your rules for {s.StrategyName}",
+            $"You asked to be reminded of this signal.\n\n{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerEn}");
+    }
+
+    public static (string Subject, string Body) SignalAlert(SignalLine s, string appUrl, string locale = "en")
+    {
+        if (locale == "ca")
+            return ($"{s.StockName}: es compleixen les teves regles per a {s.StrategyName}",
+                $"{SignalText(s, locale)}\n\nConsulta'l i indica si hi has actuat:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerCa}");
+
+        return ($"{s.StockName}: your rules for {s.StrategyName} are met",
+            $"{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerEn}");
+    }
 
     /// <summary>The daily overview: what waits, what changed, what is close, and one line per strategy.</summary>
     public static (string Subject, string Body) Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
-        IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl)
+        IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en")
     {
-        var text = new StringBuilder($"Your daily overview, {Date(day)}.\n");
+        if (locale == "ca")
+        {
+            var text = new StringBuilder($"El teu resum diari, {Date(day, locale)}.\n");
+            if (waiting.Count > 0)
+            {
+                text.Append("\nT’espera a tu\n");
+                foreach (var s in waiting)
+                {
+                    var detail = s.Side == TradeSide.Sell ? ": venda" : s.StepNo is { } no && s.MaxSteps is { } max ? $": pas {no} de {max}" : "";
+                    text.Append($"- {s.StockName}, {s.StrategyName}{detail}, tancament del {Date(s.Date, locale)}. {SignalUrl(s, appUrl)}\n");
+                }
+            }
+            text.Append("\nQuè ha canviat avui\n");
+            if (changed.Count == 0) text.Append("- No s'ha complert cap regla nova.\n");
+            foreach (var s in changed) text.Append($"- ({(s.Mode == StrategyMode.Live ? "En directe" : "Simulació")}) {SignalText(s, locale).Replace("\n", " ")}\n");
+            if (close.Count > 0)
+            {
+                text.Append("\nA prop de la línia\n");
+                foreach (var c in close)
+                {
+                    var line = c.TemplateKey switch
+                    {
+                        "dip" => "per sobre de la zona de descompte",
+                        "bear" => "per sota de la línia de rebot",
+                        _ => "per sota de la línia de compra",
+                    };
+                    text.Append($"- ({(c.Mode == StrategyMode.Live ? "En directe" : "Simulació")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}\n");
+                }
+            }
+            text.Append("\nLes teves estratègies\n");
+            foreach (var s in scoreboard)
+                text.Append($"- {s.Name} ({(s.Mode == StrategyMode.Live ? "En directe" : "Simulació")}): des del {Date(s.StartedOn, locale)}, {s.Signals} {(s.Signals == 1 ? "senyal" : "senyals")}\n");
+            text.Append($"\nObre l'aplicació: {appUrl}/\n\n{DisclaimerCa}");
+            return ($"El teu resum diari, {Date(day, locale)}", text.ToString());
+        }
+
+        var textEn = new StringBuilder($"Your daily overview, {Date(day)}.\n");
         if (waiting.Count > 0)
         {
-            text.Append("\nWaiting for you\n");
+            textEn.Append("\nWaiting for you\n");
             foreach (var s in waiting)
             {
                 var detail = s.Side == TradeSide.Sell ? ": sale" : s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "";
-                text.Append($"- {s.StockName}, {s.StrategyName}{detail}, close on {Date(s.Date)}. {SignalUrl(s, appUrl)}\n");
+                textEn.Append($"- {s.StockName}, {s.StrategyName}{detail}, close on {Date(s.Date)}. {SignalUrl(s, appUrl)}\n");
             }
         }
-        text.Append("\nWhat changed today\n");
-        if (changed.Count == 0) text.Append("- No rules were newly met.\n");
-        foreach (var s in changed) text.Append($"- ({(s.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {SignalText(s).Replace("\n", " ")}\n");
+        textEn.Append("\nWhat changed today\n");
+        if (changed.Count == 0) textEn.Append("- No rules were newly met.\n");
+        foreach (var s in changed) textEn.Append($"- ({(s.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {SignalText(s).Replace("\n", " ")}\n");
         if (close.Count > 0)
         {
-            text.Append("\nClose to the line\n");
+            textEn.Append("\nClose to the line\n");
             foreach (var c in close)
             {
                 var line = c.TemplateKey switch
@@ -122,13 +208,13 @@ public static class EmailTexts
                     "bear" => "below the bounce line",
                     _ => "below the buy line",
                 };
-                text.Append($"- ({(c.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}\n");
+                textEn.Append($"- ({(c.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}\n");
             }
         }
-        text.Append("\nYour strategies\n");
+        textEn.Append("\nYour strategies\n");
         foreach (var s in scoreboard)
-            text.Append($"- {s.Name} ({(s.Mode == StrategyMode.Live ? "Live" : "Simulation")}): since {Date(s.StartedOn)}, {s.Signals} {(s.Signals == 1 ? "signal" : "signals")}\n");
-        text.Append($"\nOpen the app: {appUrl}/\n\n{Disclaimer}");
-        return ($"Your daily overview, {Date(day)}", text.ToString());
+            textEn.Append($"- {s.Name} ({(s.Mode == StrategyMode.Live ? "Live" : "Simulation")}): since {Date(s.StartedOn)}, {s.Signals} {(s.Signals == 1 ? "signal" : "signals")}\n");
+        textEn.Append($"\nOpen the app: {appUrl}/\n\n{DisclaimerEn}");
+        return ($"Your daily overview, {Date(day)}", textEn.ToString());
     }
 }

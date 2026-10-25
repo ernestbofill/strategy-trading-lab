@@ -1,4 +1,5 @@
 import type { Rule, Setting, TemplateDetail } from '../../api'
+import { tNow } from '../../i18n/I18n'
 
 export type SettingValues = Record<string, number>
 
@@ -48,5 +49,5 @@ export const formatSetting = (setting: Setting, n: number) => setting.value.repl
 /** The Confirm and Review line: "Tested defaults" or "2 changed". */
 export function settingsSummary(changed: SettingValues): string {
   const n = Object.keys(changed).length
-  return n === 0 ? 'Tested defaults' : `${n} changed`
+  return n === 0 ? tNow('newStrategy.settings.tested') : tNow('newStrategy.settings.changed', { n })
 }

@@ -66,13 +66,13 @@ public static class StrategyEndpoints
         {
             if (TemplateCatalog.Find(request.TemplateKey ?? "") is not { } template) return TypedResults.NotFound();
 
+            var user = await CurrentUser(sessions, cancellationToken);
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
-            var errors = NewStrategyValidation.Validate(request, template, assets);
-            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            var errors = NewStrategyValidation.Validate(request, template, assets, user.Locale);
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
-            var user = await CurrentUser(sessions, cancellationToken);
             var strategy = new Strategy
             {
                 UserId = user.Id,
@@ -96,7 +96,7 @@ public static class StrategyEndpoints
             // The running name index refuses a taken name, also when two requests race.
             catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RunningNameIndex })
             {
-                return TypedResults.Conflict("You already have a running strategy with that name.");
+                return TypedResults.Conflict(Messages.NameTaken.In(user.Locale));
             }
             return TypedResults.Created($"/strategies/{strategy.Id}", Summary(strategy, user.Locale));
         })
@@ -113,7 +113,7 @@ public static class StrategyEndpoints
             if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
 
             var errors = new Dictionary<string, string[]>();
-            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message]);
+            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             strategy.Params = parameters;

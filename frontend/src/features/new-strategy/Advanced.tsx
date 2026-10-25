@@ -4,7 +4,7 @@ import type { Setting, TemplateDetail, TemplateKey } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
-import { DISCLAIMER } from '../../lib/copy'
+import { useT } from '../../i18n/I18n'
 import { AdvancedSettingsBody } from './AdvancedSettingsBody'
 import styles from './Advanced.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
@@ -19,16 +19,18 @@ import { useTemplate } from './useTemplate'
 
 /** 2b · Advanced settings (wireframe `Advanced`). Opened from Review and from Confirm's Settings row. */
 export function Advanced() {
+  const t = useT()
   const { key } = useParams<{ key: TemplateKey }>()
   const back = key ? reviewPath(key) : '/'
   return (
-    <LoadableScreen state={useTemplate(key)} top={<TopBar back={back} />} what="the template">
+    <LoadableScreen state={useTemplate(key)} top={<TopBar back={back} />} what={t('newStrategy.what.template')}>
       {(template) => <AdvancedContent key={template.key} template={template} />}
     </LoadableScreen>
   )
 }
 
 function AdvancedContent({ template }: { template: TemplateDetail }) {
+  const t = useT()
   const draft = useNewStrategyDraft()
   const navigate = useNavigate()
   const hasHistory = useLocation().key !== 'default'
@@ -40,8 +42,8 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   if (template.settings.length === 0) {
     return (
       <Screen top={top}>
-        <PageHeader title="Advanced settings" />
-        <ScreenMessage>This template's settings come in a later step.</ScreenMessage>
+        <PageHeader title={t('newStrategy.advanced.title')} />
+        <ScreenMessage>{t('newStrategy.advanced.later')}</ScreenMessage>
       </Screen>
     )
   }
@@ -54,8 +56,8 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   }
 
   return (
-    <Screen top={top} action={<PrimaryAction onClick={save}>Save settings</PrimaryAction>} note={DISCLAIMER}>
-      <PageHeader title="Advanced settings" lead="Every rule as an exact number, next to the tested default." />
+    <Screen top={top} action={<PrimaryAction onClick={save}>{t('newStrategy.advanced.save')}</PrimaryAction>} note={t('common.disclaimer')}>
+      <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
       <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
     </Screen>
   )
@@ -71,6 +73,7 @@ export interface SettingRowProps {
 
 /** The setting as a sentence with its value highlighted, a − / + stepper and the tested value. */
 export function SettingRow({ setting, value, tested, bounds, onChange }: SettingRowProps) {
+  const t = useT()
   const id = useId()
   const [before, after] = setting.sentence.split('{value}')
   const isChanged = value !== tested
@@ -85,14 +88,14 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
           {after}
         </div>
         <div className={styles.tested}>
-          <span>Tested: {formatSetting(setting, tested)}</span>
-          {isChanged && <span className={styles.changed}>CHANGED</span>}
+          <span>{t('newStrategy.advanced.tested', { value: formatSetting(setting, tested) })}</span>
+          {isChanged && <span className={styles.changed}>{t('newStrategy.advanced.changed')}</span>}
         </div>
       </div>
       <div className={styles.stepper}>
         <button
           type="button"
-          aria-label="Decrease"
+          aria-label={t('newStrategy.advanced.decrease')}
           disabled={value - setting.step < bounds.min}
           onClick={() => onChange(value - setting.step)}
         >
@@ -100,7 +103,7 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
         </button>
         <button
           type="button"
-          aria-label="Increase"
+          aria-label={t('newStrategy.advanced.increase')}
           disabled={value + setting.step > bounds.max}
           onClick={() => onChange(value + setting.step)}
         >

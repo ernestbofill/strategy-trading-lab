@@ -20,12 +20,12 @@ public static class AccountRules
             : null;
     }
 
-    public static string? PasswordError(string? password, string? email)
+    public static string? PasswordError(string? password, string? email, string locale = "en")
     {
-        if (password is null || password.Length < PasswordMin) return $"Use at least {PasswordMin} characters.";
-        if (password.Length > PasswordMax) return $"Use at most {PasswordMax} characters.";
+        if (password is null || password.Length < PasswordMin) return Messages.PasswordTooShort.In(locale, PasswordMin);
+        if (password.Length > PasswordMax) return Messages.PasswordTooLong.In(locale, PasswordMax);
         if (email is not null && string.Equals(password.Trim(), email, StringComparison.OrdinalIgnoreCase))
-            return "Don't use your email as the password.";
+            return Messages.PasswordIsEmail.In(locale);
         return null;
     }
 

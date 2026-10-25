@@ -5,15 +5,17 @@ import { FormMessage, PasswordField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
+import { useT } from '../../i18n/I18n'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
-import { EXPIRED_LINK, errorText } from './copy'
+import { errorText } from './copy'
 import { forgotPasswordPath } from './paths'
 import { useLinkToken } from './useLinkToken'
 
 /** Choose a new password, from the link in the email. Ends every session, then logs this device in. */
 export function ResetPassword() {
+  const t = useT()
   const token = useLinkToken()
   const { refresh } = useAccount()
   const [password, setPassword] = useState('')
@@ -41,14 +43,14 @@ export function ResetPassword() {
     }
   }
 
-  const top = <TopBar title="STL // PASSWORD" />
+  const top = <TopBar title={t('account.reset.topBar')} />
   if (!token || linkExpired)
     return (
       <Screen top={top}>
-        <PageHeader title="Choose a new password" />
-        <FormMessage tone="error">{EXPIRED_LINK}</FormMessage>
+        <PageHeader title={t('account.reset.title')} />
+        <FormMessage tone="error">{t('account.expiredLink')}</FormMessage>
         <div className={styles.links}>
-          <TextAction to={forgotPasswordPath}>Forgot your password?</TextAction>
+          <TextAction to={forgotPasswordPath}>{t('account.reset.forgot')}</TextAction>
         </div>
       </Screen>
     )
@@ -58,18 +60,18 @@ export function ResetPassword() {
       top={top}
       action={
         <PrimaryAction form="reset-password" disabled={busy || !password}>
-          {busy ? 'Saving…' : 'Save password'}
+          {busy ? t('account.saving') : t('account.reset.submit')}
         </PrimaryAction>
       }
     >
-      <PageHeader title="Choose a new password" lead="You'll be logged out everywhere else." />
+      <PageHeader title={t('account.reset.title')} lead={t('account.reset.lead')} />
       <form id="reset-password" className={styles.form} onSubmit={submit} noValidate>
         <PasswordField
-          label="New password"
+          label={t('account.field.newPassword')}
           autoComplete="new-password"
           value={password}
           onChange={setPassword}
-          hint="At least 10 characters."
+          hint={t('account.passwordHint')}
           error={error}
         />
       </form>

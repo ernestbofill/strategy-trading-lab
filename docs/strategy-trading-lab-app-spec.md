@@ -181,7 +181,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### Account (first version, not drawn)
 
-- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch), "Currency" (a select and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (language, Data and privacy) stays in *Not designed yet*.
+- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch), "Currency" (a select and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Language" (a select between English and Catalan and "Save language"; "Saved."), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (time zone, Data and privacy) stays in *Not designed yet*.
 
 ### 1 · Pick a strategy template (`Main`)
 
@@ -639,7 +639,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 
 ## 9. Not designed yet
 
-- The rest of the account page: language, overview email, time zone, and Data and privacy (AI sharing on/off, What we keep, export, delete account). Sign-up, log-in, forgot password and the account's first version are designed above; how they work is in [backend/AUTH.md](../backend/AUTH.md).
+- The rest of the account page: time zone, and Data and privacy (AI sharing on/off, What we keep, export, delete account). Language and overview email are designed above; how they work is in [backend/AUTH.md](../backend/AUTH.md).
 - Simulation variants of Set your budget, Confirm and the strategy page; the Live variant of the AI round result.
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Ride the long trend* and *The big market drop*.

@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useT } from '../i18n/I18n'
 import styles from './StepperCard.module.css'
 
 interface StepperCardProps {
@@ -17,6 +18,7 @@ interface StepperCardProps {
 
 /** A setting with a big value and − / + buttons, each at least 44 × 44px. */
 export function StepperCard({ label, value, display, onChange, help, onDecrease, onIncrease, canDecrease, canIncrease }: StepperCardProps) {
+  const t = useT()
   const id = useId()
   // While typing, the raw text is kept; it is committed on blur or Enter.
   const [text, setText] = useState<string | null>(null)
@@ -48,10 +50,10 @@ export function StepperCard({ label, value, display, onChange, help, onDecrease,
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
         />
         <div className={styles.buttons}>
-          <button type="button" onClick={onDecrease} disabled={!canDecrease} aria-label={`Decrease ${label.toLowerCase()}`}>
+          <button type="button" onClick={onDecrease} disabled={!canDecrease} aria-label={t('common.decrease', { label: label.toLowerCase() })}>
             −
           </button>
-          <button type="button" onClick={onIncrease} disabled={!canIncrease} aria-label={`Increase ${label.toLowerCase()}`}>
+          <button type="button" onClick={onIncrease} disabled={!canIncrease} aria-label={t('common.increase', { label: label.toLowerCase() })}>
             +
           </button>
         </div>

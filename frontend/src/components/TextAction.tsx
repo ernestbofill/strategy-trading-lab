@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../i18n/I18n'
 import styles from './TextAction.module.css'
 
 interface TextActionProps {
@@ -15,6 +16,7 @@ interface TextActionProps {
  * Without `to` or `onClick` it's shown but not usable: its screen isn't built yet.
  */
 export function TextAction({ children, to, onClick, disabled }: TextActionProps) {
+  const t = useT()
   const className = `ui-strong ${styles.action}`
   if (to)
     return (
@@ -29,7 +31,7 @@ export function TextAction({ children, to, onClick, disabled }: TextActionProps)
       </button>
     )
   return (
-    <span className={className} aria-disabled="true" title="Not available yet">
+    <span className={className} aria-disabled="true" title={t('common.notAvailable')}>
       {children}
     </span>
   )

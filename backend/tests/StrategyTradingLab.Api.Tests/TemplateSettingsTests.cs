@@ -141,4 +141,21 @@ public class TemplateSettingsTests
         Assert.Null(stored);
         Assert.Contains($"settings.{key}", errors.Keys);
     }
+
+    [Fact]
+    public void A_refused_setting_is_worded_in_the_users_language()
+    {
+        var template = TemplateCatalog.All.First(t => t.Settings.Count > 0);
+        var setting = template.Settings[0];
+        var bad = new Dictionary<string, decimal> { [setting.Key] = setting.Max + setting.Step };
+        string? Refused(string locale)
+        {
+            var errors = new Dictionary<string, string>();
+            TemplateSettings.Apply(template, bad, (field, message) => errors[field] = message, locale);
+            return errors[$"settings.{setting.Key}"];
+        }
+
+        Assert.StartsWith("Use ", Refused("en"));
+        Assert.StartsWith("Fes servir ", Refused("ca"));
+    }
 }

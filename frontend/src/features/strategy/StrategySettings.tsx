@@ -8,32 +8,35 @@ import { strategyPath } from '../dashboard/paths'
 import { AdvancedSettingsBody } from '../new-strategy/AdvancedSettingsBody'
 import { changedSettings, settingValues, type SettingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
-import { DISCLAIMER } from '../../lib/copy'
+import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
 import { useStrategy } from './useStrategy'
 
 /** Tune the settings for a running strategy (/strategies/:id/settings). */
 export function StrategySettings() {
+  const t = useT()
   const { id = '' } = useParams<{ id: string }>()
   const strategy = useStrategy(id)
   return (
-    <LoadableScreen state={strategy} top={<TopBar back={strategyPath(id)} />} what="this strategy">
+    <LoadableScreen state={strategy} top={<TopBar back={strategyPath(id)} />} what={t('strategy.what')}>
       {(loadedStrategy) => <StrategySettingsWithTemplate strategy={loadedStrategy} />}
     </LoadableScreen>
   )
 }
 
 function StrategySettingsWithTemplate({ strategy }: { strategy: StrategyDetail }) {
+  const t = useT()
   const template = useTemplate(strategy.templateKey)
   const top = <TopBar back={strategyPath(strategy.id)} step={strategy.name} />
   return (
-    <LoadableScreen state={template} top={top} what="the template">
+    <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>
       {(loadedTemplate) => <StrategySettingsContent strategy={strategy} template={loadedTemplate} />}
     </LoadableScreen>
   )
 }
 
 function StrategySettingsContent({ strategy, template }: { strategy: StrategyDetail; template: TemplateDetail }) {
+  const t = useT()
   const navigate = useNavigate()
   const [values, setValues] = useState<SettingValues>(() => settingValues(template, strategy.settings ?? {}))
   const [saving, setSaving] = useState(false)
@@ -42,9 +45,9 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
 
   if (template.settings.length === 0) {
     return (
-      <Screen top={top} note={DISCLAIMER}>
-        <PageHeader title="Advanced settings" />
-        <ScreenMessage>This template's settings come in a later step.</ScreenMessage>
+      <Screen top={top} note={t('common.disclaimer')}>
+        <PageHeader title={t('newStrategy.advanced.title')} />
+        <ScreenMessage>{t('newStrategy.advanced.later')}</ScreenMessage>
       </Screen>
     )
   }
@@ -59,9 +62,9 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
       navigate(strategyPath(strategy.id))
     } catch (err) {
       if (err instanceof InvalidFieldsError) {
-        setError(Object.values(err.fields)[0] || 'Please check your settings.')
+        setError(Object.values(err.fields)[0] || t('strategy.settings.checkSettings'))
       } else {
-        setError('Could not save settings. Please try again.')
+        setError(t('strategy.settings.saveFailed'))
       }
       setSaving(false)
     }
@@ -72,12 +75,12 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
       top={top}
       action={
         <PrimaryAction onClick={() => void save()} disabled={saving}>
-          {saving ? 'Saving…' : 'Save settings'}
+          {saving ? t('strategy.settings.saving') : t('newStrategy.advanced.save')}
         </PrimaryAction>
       }
-      note={DISCLAIMER}
+      note={t('common.disclaimer')}
     >
-      <PageHeader title="Advanced settings" lead="Every rule as an exact number, next to the tested default." />
+      <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
       {error && (
         <ScreenMessage>
           <span role="alert">{error}</span>

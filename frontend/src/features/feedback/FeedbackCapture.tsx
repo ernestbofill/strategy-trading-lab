@@ -8,6 +8,7 @@ import {
   UnauthorizedError,
   type FeedbackKind,
 } from '../../api'
+import { useT } from '../../i18n/I18n'
 import { useCurrentAccount } from '../account/AccountContext'
 import { buttonSide, elementPath, topOffset, type ButtonSide, type SelectionPosition } from './feedback'
 import styles from './Feedback.module.css'
@@ -71,6 +72,7 @@ export const FEEDBACK_SUBMITTED_EVENT = 'stl:feedback-submitted'
  * confirmed email selects text on any screen.
  */
 export function FeedbackCapture() {
+  const t = useT()
   const { emailVerified } = useCurrentAccount()
   const location = useLocation()
   const route = `${location.pathname}${location.search}`
@@ -240,12 +242,12 @@ export function FeedbackCapture() {
       if (err instanceof UnauthorizedError) return
       setError(
         err instanceof ForbiddenError
-          ? 'Confirm your email address first to send feedback.'
+          ? t('feedback.errorForbidden')
           : err instanceof TooManyTriesError
-            ? 'Too many comments sent recently. Try again later.'
+            ? t('feedback.errorTooMany')
             : err instanceof InvalidValueError
               ? err.message
-              : 'Could not save comment. Try again.',
+              : t('feedback.errorSave'),
       )
     } finally {
       setSaving(false)
@@ -267,20 +269,20 @@ export function FeedbackCapture() {
           onMouseDown={(e) => e.preventDefault()}
           onClick={openModal}
         >
-          💬 Add comment
+          💬 {t('feedback.addComment')}
         </button>
       )}
 
       {contextMenu && selection && !open && (
         <div
           role="menu"
-          aria-label="Selection actions"
+          aria-label={t('feedback.selectionActions')}
           className={styles.contextMenu}
           style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <button type="button" role="menuitem" className={styles.contextMenuItem} onClick={openModal}>
-            <span aria-hidden="true">💬</span> Add comment
+            <span aria-hidden="true">💬</span> {t('feedback.addComment')}
           </button>
           <button
             type="button"
@@ -288,7 +290,7 @@ export function FeedbackCapture() {
             className={styles.contextMenuItem}
             onClick={() => void copySelectedText()}
           >
-            <span aria-hidden="true">📋</span> Copy
+            <span aria-hidden="true">📋</span> {t('feedback.copy')}
           </button>
         </div>
       )}
@@ -308,16 +310,16 @@ export function FeedbackCapture() {
         >
           <form className={styles.dialogBody} onSubmit={(e) => void submit(e)}>
             <h2 id={titleId} className={styles.dialogTitle}>
-              Add a comment
+              {t('feedback.dialogTitle')}
             </h2>
             <KindPicker value={kind} onChange={setKind} />
             <p className={styles.metaLine}>
-              Page: <code className={styles.code}>{route}</code>
+              {t('feedback.page')} <code className={styles.code}>{route}</code>
             </p>
             <blockquote className={styles.quote}>“{selection.text}”</blockquote>
             <div className={styles.field}>
               <label htmlFor={commentId} className={styles.label}>
-                Your comment
+                {t('feedback.yourComment')}
               </label>
               <textarea
                 id={commentId}
@@ -327,7 +329,7 @@ export function FeedbackCapture() {
                 maxLength={4000}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="What looks wrong, unclear, or worth changing here?"
+                placeholder={t('feedback.placeholder')}
                 required
               />
             </div>
@@ -343,14 +345,14 @@ export function FeedbackCapture() {
                 disabled={saving}
                 onClick={closeModal}
               >
-                Cancel
+                {t('feedback.cancel')}
               </button>
               <button
                 type="submit"
                 className={`${styles.button} ${styles.primaryButton}`}
                 disabled={saving || !text.trim()}
               >
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? t('feedback.saving') : t('feedback.save')}
               </button>
             </div>
           </form>
@@ -359,7 +361,7 @@ export function FeedbackCapture() {
 
       {savedToast && (
         <div role="status" className={styles.toast}>
-          Comment saved ✓
+          {t('feedback.saved')}
         </div>
       )}
     </div>

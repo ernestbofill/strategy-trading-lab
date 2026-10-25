@@ -1,3 +1,4 @@
+import { currentLocale } from '../i18n/locale'
 import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { sessionEnded } from './session'
 import type { Account, Api, FeedbackItem, StrategySummary, StrategyTradeItem } from './types'
@@ -8,6 +9,8 @@ const BASE_URL = '/api'
 /** Every state-changing request carries it; the API refuses those without it (CSRF, backend/AUTH.md). */
 const APP_HEADER = { 'X-Requested-With': 'stl' }
 
+const langHeader = () => ({ 'Accept-Language': currentLocale() })
+
 /** A 401 on a screen's data means the session has ended: the app goes to Log-in. */
 function endedSession(): never {
   sessionEnded()
@@ -16,7 +19,7 @@ function endedSession(): never {
 
 /** GETs `path` as JSON; a 404 is `undefined` (not found), any other failure throws. */
 async function get<T>(path: string): Promise<T | undefined> {
-  const response = await fetch(`${BASE_URL}${path}`, { headers: { Accept: 'application/json' } })
+  const response = await fetch(`${BASE_URL}${path}`, { headers: { Accept: 'application/json', ...langHeader() } })
   if (response.status === 404) return undefined
   if (response.status === 401) endedSession()
   if (!response.ok) throw new Error(`GET ${path} failed: HTTP ${response.status}`)
@@ -33,7 +36,7 @@ async function getRequired<T>(path: string): Promise<T> {
 async function post<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...APP_HEADER },
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...APP_HEADER, ...langHeader() },
     body: JSON.stringify(body),
   })
   if (response.status === 409) throw new NameTakenError()
@@ -79,7 +82,7 @@ async function tradesRequest(method: string, path: string, body?: unknown): Prom
 async function signalPost(path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}/signals${path}`, {
     method: 'POST',
-    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (response.status === 401) endedSession()
@@ -96,7 +99,7 @@ async function signalPost(path: string, body?: unknown): Promise<Response> {
 async function admin(method: string, path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}/admin${path}`, {
     method,
-    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (response.status === 401) endedSession()
@@ -127,7 +130,7 @@ interface AccountCall {
 async function account(path: string, body?: unknown, { link, session }: AccountCall = {}): Promise<Response> {
   const response = await fetch(`${BASE_URL}/account${path}`, {
     method: 'POST',
-    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (response.status === 400) {
@@ -145,7 +148,7 @@ async function account(path: string, body?: unknown, { link, session }: AccountC
 }
 
 async function getAccount(): Promise<Account | null> {
-  const response = await fetch(`${BASE_URL}/account/me`, { headers: { Accept: 'application/json' } })
+  const response = await fetch(`${BASE_URL}/account/me`, { headers: { Accept: 'application/json', ...langHeader() } })
   if (response.status === 401) return null
   if (!response.ok) throw new Error(`GET /account/me failed: HTTP ${response.status}`)
   return (await response.json()) as Account
@@ -184,6 +187,7 @@ export const httpApi: Api = {
   changePassword: async (currentPassword, newPassword) =>
     void (await account('/change-password', { currentPassword, newPassword }, { session: true })),
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
+  setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),

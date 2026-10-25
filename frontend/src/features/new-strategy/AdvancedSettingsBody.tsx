@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { TemplateDetail } from '../../api'
 import { Section } from '../../components/Section'
-import { PAST_RESULTS_CAPTION } from '../../lib/copy'
+import { useT } from '../../i18n/I18n'
 import { SettingRow } from './Advanced'
 import styles from './Advanced.module.css'
 import { PeriodTable } from './review/Results'
@@ -20,6 +20,7 @@ interface AdvancedSettingsBodyProps {
 
 /** The setting rows with steppers, a reset to tested button, and the backtest comparison section. */
 export function AdvancedSettingsBody({ template, values, onChange }: AdvancedSettingsBodyProps) {
+  const t = useT()
   const tested = testedValues(template)
   const changed = changedSettings(template, values)
   const anyChanged = Object.keys(changed).length > 0
@@ -43,21 +44,21 @@ export function AdvancedSettingsBody({ template, values, onChange }: AdvancedSet
           onClick={() => onChange(tested)}
           disabled={!anyChanged}
         >
-          ⟳ Reset to tested
+          {t('newStrategy.advanced.reset')}
         </button>
       </div>
       {template.backtest && (
-        <Section title="Backtest">
+        <Section title={t('newStrategy.advanced.backtest')}>
           {anyChanged ? (
             <>
               <PeriodTable periods={template.backtest.periods} />
               <p className="caption">
-                These are the tested defaults' results. Re-running the test with your settings comes later.{' '}
-                {PAST_RESULTS_CAPTION}
+                {t('newStrategy.advanced.defaultsResults')}{' '}
+                {t('common.pastResults')}
               </p>
             </>
           ) : (
-            <p className={`well ${styles.message}`}>You're on the tested defaults. Change a setting to compare.</p>
+            <p className={`well ${styles.message}`}>{t('newStrategy.advanced.onDefaults')}</p>
           )}
         </Section>
       )}

@@ -171,10 +171,13 @@ export const httpApi: Api = {
   testAdminYahoo: async () => (await admin('POST', '/prices/test')).json(),
   getAdminDatabases: async () => (await admin('GET', '/database')).json(),
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
+  getAdminAssets: async () => (await admin('GET', '/assets')).json(),
+  setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
   submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
   getFeedback: async (status) =>
     (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],
   updateFeedback: async (id, patch) =>
     (await (await feedback('PATCH', `/${encodeURIComponent(id)}`, patch)).json()) as FeedbackItem,
   deleteFeedback: async (id) => void (await feedback('DELETE', `/${encodeURIComponent(id)}`)),
+
 }

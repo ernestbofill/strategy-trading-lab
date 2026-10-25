@@ -9,6 +9,7 @@ import {
   type AdminSetting,
   type BackendVersion,
 } from '../../api'
+import { NavRow } from '../../components/NavRow'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminSettings.module.css'
@@ -39,6 +40,10 @@ export function AdminSettings() {
   return (
     <Screen top={<TopBar title="STL // ADMIN" />}>
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
+      <section className={styles.group}>
+        <h2 className={styles.groupTitle}>Management</h2>
+        <NavRow label="Assets" meta="stocks, funds and indexes" to="/admin/assets" />
+      </section>
       {state.status === 'loading' && <ScreenMessage>Loading the settings…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the settings. Try again later.</ScreenMessage>}
       {state.status === 'ready' && state.version && <BackendBox version={state.version} />}

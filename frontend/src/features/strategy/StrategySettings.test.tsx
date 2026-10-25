@@ -48,6 +48,9 @@ const strategyDetail: StrategyDetail = {
   signals: null,
   words: null,
   stocks: [],
+  trades: [],
+  signalHistory: [],
+  rates: [],
   settings: { peakDays: 80 },
 }
 

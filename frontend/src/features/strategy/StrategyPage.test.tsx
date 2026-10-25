@@ -22,6 +22,9 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   signals: { did: 9, skipped: 2, missed: 1 },
   words: { zone: 'the discount zone', notCandidate: 'Below its long trend' },
   stocks: [],
+  trades: [],
+  signalHistory: [],
+  rates: [],
   ...fields,
 })
 

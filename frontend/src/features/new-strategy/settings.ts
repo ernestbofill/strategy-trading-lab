@@ -1,4 +1,4 @@
-import type { Setting, TemplateDetail } from '../../api'
+import type { Rule, Setting, TemplateDetail } from '../../api'
 
 export type SettingValues = Record<string, number>
 
@@ -10,6 +10,17 @@ export function testedValues(template: TemplateDetail): SettingValues {
 /** The tested values with the user's changes over them. */
 export function settingValues(template: TemplateDetail, changed: SettingValues): SettingValues {
   return { ...testedValues(template), ...changed }
+}
+
+/** Template rules with their placeholders filled from the tested defaults and the user's settings. */
+export function rulesWithSettings(template: TemplateDetail, changed: SettingValues): Rule[] {
+  const params = { ...template.defaults.params, ...settingValues(template, changed) }
+  return template.rules.map((rule) => ({
+    ...rule,
+    text: rule.text.replace(/\{(\w+)\}/g, (placeholder, key: string) =>
+      Object.hasOwn(params, key) ? String(params[key]) : placeholder,
+    ),
+  }))
 }
 
 /** Only the values that differ from the tested ones: what the draft keeps and the API gets. */

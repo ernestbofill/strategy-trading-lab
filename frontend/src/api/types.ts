@@ -269,7 +269,88 @@ export interface StrategyDetail {
   /** Null for templates the engine doesn't run yet. */
   words: StockStatusWords | null
   stocks: StockRow[]
+  trades: StrategyTradeItem[]
+  signalHistory: StrategySignalItem[]
+  rates: CurrencyRates[]
   settings?: Record<string, number> | null
+}
+
+export type EnteredAs = 'amount' | 'shares'
+export type FxSource = 'reference' | 'user'
+export type TradeSource = 'signal' | 'manual'
+
+export interface RateDay {
+  date: string
+  rate: number
+}
+
+export interface CurrencyRates {
+  currency: string
+  rates: RateDay[]
+}
+
+export interface StrategyTradeItem {
+  id: string
+  assetId: string
+  symbol: string
+  stockName: string
+  tradeDate: string
+  side: TradeSide
+  price: number
+  assetCurrency: string
+  enteredAs: EnteredAs
+  amount: number
+  shares: number
+  fee: number
+  strategyCurrency: Currency
+  fxRate: number
+  fxSource: FxSource
+  source: TradeSource
+  signalId: string | null
+}
+
+export interface StrategySignalItem {
+  id: string
+  assetId: string
+  symbol: string
+  stockName: string
+  signalDate: string
+  side: TradeSide
+  stepNo: number | null
+  maxSteps: number | null
+  stepAmount: number | null
+  closePrice: number
+  assetCurrency: string
+  reason: string
+  status: SignalStatus
+  skipReason: SkipReason | null
+  snoozedUntil: string | null
+  endedOn: string | null
+  createdAt: string
+}
+
+export interface ManualTradeRequest {
+  assetId: string
+  side: TradeSide
+  date: string | null
+  price: number | null
+  enteredAs: EnteredAs | null
+  amount: number | null
+  shares: number | null
+  fee: number | null
+  fxSource: FxSource | null
+  fxRate: number | null
+}
+
+export interface UpdateTradeRequest {
+  date: string | null
+  price: number | null
+  enteredAs: EnteredAs | null
+  amount: number | null
+  shares: number | null
+  fee: number | null
+  fxSource: FxSource | null
+  fxRate: number | null
 }
 
 export type SignalStatus = 'waiting' | 'confirmed' | 'skipped' | 'missed'
@@ -532,6 +613,12 @@ export interface Api {
   getSignal(id: string): Promise<SignalDetail | undefined>
   /** Rejects with `InvalidFieldsError` (by field) or `InvalidValueError` (already answered). */
   confirmSignal(id: string, trade: SignalTrade): Promise<void>
+  /** Log a trade by hand on one of the strategy's stocks (marked Manual). Rejects with `InvalidFieldsError`, `InvalidValueError`. */
+  logManualTrade(strategyId: string, trade: ManualTradeRequest): Promise<StrategyTradeItem>
+  /** Edit a trade's date, price, amount/shares, fee, or rate. Rejects with `InvalidFieldsError`, `InvalidValueError`. */
+  updateTrade(tradeId: string, trade: UpdateTradeRequest): Promise<void>
+  /** Soft-deletes a live trade. */
+  deleteTrade(tradeId: string): Promise<void>
   skipSignal(id: string, reason: SkipReason | null): Promise<void>
   /** Resolves with the day the user is reminded. */
   snoozeSignal(id: string): Promise<string>

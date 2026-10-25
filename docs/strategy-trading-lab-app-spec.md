@@ -298,7 +298,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2b · Advanced settings (`Advanced`)
 
-**Purpose:** tune each rule as an exact number and see the effect on the backtest. Drawn for *Dip in winners*; every template needs its own set, from its POC parameters (open question). For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
+**Purpose:** tune each rule as an exact number and see the effect on the backtest. Designed for *Dip in winners* and *Ride the long trend*; each exposes selected POC parameters, not every engine parameter. For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
 
 **Copy**
 - Top bar: "← BACK" · "[template name]"
@@ -317,6 +317,15 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
 | "The dip must stay above the average over [n] days." | 50 days | 5 | 20–100 |
 
+For *Ride the long trend*:
+
+| Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- |
+| "The trend line is the average price over [n] days." | 200 days | 10 | 50–300 |
+| "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+
+The cooldown is not exposed for either template. The shown settings are available when starting a strategy; changing settings on an already-running strategy is not built yet.
+
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
 - As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide. Past results don't promise future ones."
@@ -327,6 +336,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - "Reset to tested" puts every value back.
 - "Save settings" stores the values and returns to the screen that opened it. Leaving with unsaved changes asks first (not drawn, not built yet).
 - Each changed row's stepper stops at its range; the zone's start stays at least a step under its end, and the end a step over the start.
+- On Review, rules that use settings show the tested defaults or the user's chosen values.
 - During the new-strategy flow the values live in the draft; Review's row reads "Advanced settings · tested defaults" or "· [n] changed", and so does Confirm's Settings row. Templates without settings yet show "This template's settings come in a later step." and Confirm leaves out the Settings row.
 - Values belong to the user's strategy; the template's defaults never change.
 
@@ -486,6 +496,14 @@ The same three settings can be changed later from the strategy page (not drawn).
     - *Ride the long trend* shows "OUT OF THE MARKET" ("[n]% from the buy line", or "Below its long trend") when not holding, and "HOLDING" ("In the market") when holding.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
+- **Signals and trades** (`SignalsAndTrades`):
+  - A chronological timeline of every signal and trade recorded for this strategy, ordered newest first.
+  - Heading: "Signals and trades" with the item count ("· [n]").
+  - Live mode action: "+ Log a trade by hand" button that toggles an inline form to record manual buy or sale trades on any of the strategy's active stocks (Stock, Action BUY/SELL, Date, Price, Amount or Shares toggle, Fee, and Exchange rate). Manual trades are marked with a `MANUAL` badge. Manual trades can be dated on any past day up to today (including before the strategy started), but not in the future.
+  - In Live mode, each trade row has an "Edit" button to modify its fields (Date, Price, Amount or Shares, Fee, Exchange rate) or "Delete" with inline confirmation to soft-delete the trade (`deleted_at`).
+  - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
+  - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
+  - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For simulations, a third link: "Go live with these settings" (not drawn).
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
@@ -630,7 +648,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Stock list editor from the strategy page, stock search ("+ Add a stock"), fund picker ("Change").
 - Prompt editor ("Edit prompt", "Reset to suggested").
 - Sell signals for *Ride the long trend*, and its "Out of the market" status.
-- Manual trade form; editing and deleting trades.
+- ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - AI round history, error state when the answer can't be read, and the AI comparison page (later: results by AI model, never a ranking of stocks).
 - Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
 - Go live with these settings; renaming; changing the budget; the notifications switch; ending a strategy.
@@ -642,7 +660,7 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 
 - "Coming soon" cards on Pick a template for templates the engine can't run yet.
 - Live mode gated on a confirmed email, with email-only alerts until web push exists.
-- Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.
+- ~~Statuses for *The big market drop*; the "Signals and trades" list on the strategy page.~~ (both built: #60, #61)
 - Ended strategies (where they go is an open decision).
 - The legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest), linked from a footer.
 - Account: download my data, delete my account, "Invite a friend".

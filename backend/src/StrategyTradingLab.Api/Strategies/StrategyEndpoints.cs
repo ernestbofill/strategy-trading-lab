@@ -5,6 +5,9 @@ using Npgsql;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.Notifications;
+using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Strategies;
@@ -158,20 +161,29 @@ public static class StrategyEndpoints
         var book = await StrategyBook.LoadAsync(db, [strategy], today, cancellationToken);
         var live = strategy.Mode == StrategyMode.Live;
 
-        var signals = await db.Signals.AsNoTracking().Where(s => s.StrategyId == strategy.Id)
-            .Select(s => new { s.Id, s.AssetId, s.Side, s.Status, s.StepNo, s.SignalDate, s.CreatedAt }).ToListAsync(cancellationToken);
+        var signalEntities = await db.Signals.AsNoTracking().Where(s => s.StrategyId == strategy.Id)
+            .OrderByDescending(s => s.SignalDate).ThenByDescending(s => s.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var shown = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
+
+        // Assets referenced by the strategy, its signals, or its trades.
+        var allAssetIds = shown.Concat(signalEntities.Select(s => s.AssetId)).Distinct().ToList();
+        var assetsById = await db.Assets.AsNoTracking().Where(a => allAssetIds.Contains(a.Id))
+            .ToDictionaryAsync(a => a.Id, cancellationToken);
+
         // Each stock's latest evaluation: where the rules stand today.
         var latest = await db.DailyEvaluations.AsNoTracking().Where(r => r.StrategyId == strategy.Id)
             .GroupBy(r => r.AssetId).Select(g => g.OrderByDescending(r => r.Date).First())
             .ToDictionaryAsync(r => r.AssetId, cancellationToken);
-        var shown = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
-        var assets = await db.Assets.AsNoTracking().Where(a => shown.Contains(a.Id)).ToListAsync(cancellationToken);
+
+        var assets = shown.Where(assetsById.ContainsKey).Select(id => assetsById[id]).ToList();
 
         var you = book.You(strategy);
         var maxSteps = strategy.Budget.MaxSteps;
         var stocks = assets.Select(asset =>
         {
-            var own = signals.Where(s => s.AssetId == asset.Id).ToList();
+            var own = signalEntities.Where(s => s.AssetId == asset.Id).ToList();
             var evaluation = latest.GetValueOrDefault(asset.Id);
             var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
             var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
@@ -217,9 +229,88 @@ public static class StrategyEndpoints
         var budget = strategy.Budget;
         var steps = budget.Step is { } step and > 0 ? (int?)(int)Math.Floor(budget.Amount / step) : null;
         var counts = live
-            ? new SignalCounts(signals.Count(s => s.Status == SignalStatus.Confirmed), signals.Count(s => s.Status == SignalStatus.Skipped),
-                signals.Count(s => s.Status == SignalStatus.Missed))
+            ? new SignalCounts(signalEntities.Count(s => s.Status == SignalStatus.Confirmed), signalEntities.Count(s => s.Status == SignalStatus.Skipped),
+                signalEntities.Count(s => s.Status == SignalStatus.Missed))
             : null;
+        var signalHistory = signalEntities.Select(s =>
+        {
+            var asset = assetsById.GetValueOrDefault(s.AssetId);
+            var reason = asset is null ? "" : EmailTexts.FactSentence(SignalLine.From(s, strategy, asset));
+            return new StrategySignalItem(s.Id, s.AssetId, asset?.Symbol ?? "", asset?.Name ?? "", s.SignalDate, s.Side,
+                s.StepNo, s.MaxSteps, s.StepAmount, s.ClosePrice, asset?.Currency ?? strategy.Currency, reason, s.Status,
+                s.SkipReason, s.SnoozedUntil, s.EndedOn, s.CreatedAt);
+        }).ToList();
+
+        List<StrategyTradeItem> tradeItems;
+        if (live)
+        {
+            var userTrades = await db.UserTrades.AsNoTracking()
+                .Where(t => t.StrategyId == strategy.Id && t.DeletedAt == null)
+                .OrderByDescending(t => t.TradeDate).ThenByDescending(t => t.CreatedAt)
+                .ToListAsync(cancellationToken);
+
+            // In case userTrades have assets not already in assetsById
+            var missingAssetIds = userTrades.Select(t => t.AssetId).Where(id => !assetsById.ContainsKey(id)).Distinct().ToList();
+            if (missingAssetIds.Count > 0)
+            {
+                var extra = await db.Assets.AsNoTracking().Where(a => missingAssetIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
+                foreach (var (k, v) in extra) assetsById[k] = v;
+            }
+
+            tradeItems = userTrades.Select(t =>
+            {
+                var asset = assetsById.GetValueOrDefault(t.AssetId);
+                return new StrategyTradeItem(t.Id, t.AssetId, asset?.Symbol ?? "", asset?.Name ?? "", t.TradeDate, t.Side,
+                    t.Price, asset?.Currency ?? strategy.Currency, t.EnteredAs, t.Amount, t.Shares, t.Fee, strategy.Currency,
+                    t.FxRate, t.FxSource, t.Source, t.SignalId);
+            }).ToList();
+        }
+        else
+        {
+            var simTrades = await db.SignalTrades.AsNoTracking()
+                .Where(t => t.StrategyId == strategy.Id)
+                .OrderByDescending(t => t.TradeDate).ThenByDescending(t => t.CreatedAt)
+                .ToListAsync(cancellationToken);
+
+            var missingAssetIds = simTrades.Select(t => t.AssetId).Where(id => !assetsById.ContainsKey(id)).Distinct().ToList();
+            if (missingAssetIds.Count > 0)
+            {
+                var extra = await db.Assets.AsNoTracking().Where(a => missingAssetIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
+                foreach (var (k, v) in extra) assetsById[k] = v;
+            }
+
+            tradeItems = simTrades.Select(t =>
+            {
+                var asset = assetsById.GetValueOrDefault(t.AssetId);
+                return new StrategyTradeItem(t.Id, t.AssetId, asset?.Symbol ?? "", asset?.Name ?? "", t.TradeDate, t.Side,
+                    t.Price, asset?.Currency ?? strategy.Currency, EnteredAs.Amount, t.Amount, t.Shares, t.Fee, strategy.Currency,
+                    t.FxRate, FxSource.Reference, TradeSource.Signal, t.SignalId);
+            }).ToList();
+        }
+
+        var foreignCurrencies = assetsById.Values.Select(a => a.Currency).Where(c => c != strategy.Currency).Distinct().ToList();
+        var ratesList = new List<CurrencyRates>();
+        if (foreignCurrencies.Count > 0)
+        {
+            var earliestTrade = tradeItems.Count > 0 ? tradeItems.Min(t => t.TradeDate) : strategy.StartedOn;
+            var fromDate = earliestTrade < strategy.StartedOn ? earliestTrade : strategy.StartedOn;
+            var exchange = await ExchangeRates.LoadAsync(db, fromDate, cancellationToken);
+            foreach (var curr in foreignCurrencies)
+            {
+                var days = new List<RateDay>();
+                for (var day = fromDate.AddDays(-ExchangeRates.LookBackDays); day <= today; day = day.AddDays(1))
+                {
+                    if (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(curr, day)
+                        && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)
+                        && exchange.Between(strategy.Currency, curr, day) is { } rate)
+                    {
+                        days.Add(new RateDay(day, rate));
+                    }
+                }
+                ratesList.Add(new CurrencyRates(curr, days));
+            }
+        }
+
         var root = strategy.Params.RootElement;
         var settings = new Dictionary<string, decimal>();
         foreach (var s in template.Settings)
@@ -227,9 +318,10 @@ public static class StrategyEndpoints
             if (root.TryGetProperty(s.Key, out var prop) && prop.ValueKind == JsonValueKind.Number)
                 settings[s.Key] = prop.GetDecimal();
         }
+
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.StartedOn, today,
             strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks, settings);
+            book.Figures(strategy, today), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings);
     }
 }

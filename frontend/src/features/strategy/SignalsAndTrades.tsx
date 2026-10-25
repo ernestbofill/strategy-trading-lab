@@ -1,0 +1,656 @@
+import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  api,
+  InvalidFieldsError,
+  InvalidValueError,
+  type ManualTradeRequest,
+  type StrategyDetail,
+  type StrategySignalItem,
+  type StrategyTradeItem,
+  type TradeSide,
+  type UpdateTradeRequest,
+} from '../../api'
+import { FormMessage, SelectField, TextField, type FormMessageState } from '../../components/Field'
+import { Section } from '../../components/Section'
+import { Tag } from '../../components/Tag'
+import { TextAction } from '../../components/TextAction'
+import { exact, money, shortDate, symbolOf } from '../../lib/format'
+import { invalidate } from '../../lib/useLoadable'
+import { dashboardCacheKey } from '../dashboard/useDashboard'
+import { signalPath } from '../dashboard/paths'
+import { ambiguousFields, parseNumber, rateOn, SKIP_REASONS, type TradeForm } from '../signal/signalForm'
+import { strategyCacheKey } from './useStrategy'
+import styles from './SignalsAndTrades.module.css'
+
+type TimelineItem =
+  | { kind: 'trade'; trade: StrategyTradeItem; date: string; createdAt: string }
+  | { kind: 'signal'; signal: StrategySignalItem; date: string; createdAt: string }
+
+export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
+  const live = s.mode === 'live'
+
+  const [formMode, setFormMode] = useState<'add' | null>(null)
+  const [editingTrade, setEditingTrade] = useState<StrategyTradeItem | null>(null)
+  const [deletingTradeId, setDeletingTradeId] = useState<string | null>(null)
+
+  // Timeline combining trades and signals, newest date first
+  const items: TimelineItem[] = [
+    ...(s.trades ?? []).map((t) => ({ kind: 'trade' as const, trade: t, date: t.tradeDate, createdAt: t.tradeDate })),
+    ...(s.signalHistory ?? []).map((sig) => ({ kind: 'signal' as const, signal: sig, date: sig.signalDate, createdAt: sig.createdAt })),
+  ].sort((a, b) => {
+    const cmp = b.date.localeCompare(a.date)
+    if (cmp !== 0) return cmp
+    return b.createdAt.localeCompare(a.createdAt)
+  })
+
+  const refresh = () => {
+    invalidate(strategyCacheKey(s.id))
+    invalidate(dashboardCacheKey)
+  }
+
+  return (
+    <Section
+      title="Signals and trades"
+      aside={
+        live ? (
+          <TextAction
+            onClick={() => {
+              setEditingTrade(null)
+              setDeletingTradeId(null)
+              setFormMode(formMode === 'add' ? null : 'add')
+            }}
+          >
+            {formMode === 'add' ? 'Close form' : 'Log a trade by hand'}
+          </TextAction>
+        ) : undefined
+      }
+    >
+      {formMode === 'add' && (
+        <ManualTradeForm
+          s={s}
+          onDone={() => {
+            setFormMode(null)
+            refresh()
+          }}
+          onCancel={() => setFormMode(null)}
+        />
+      )}
+
+      {items.length === 0 ? (
+        <p className={styles.empty}>No signals or trades yet.</p>
+      ) : (
+        <ul className={styles.list}>
+          {items.map((item) => {
+            if (item.kind === 'trade') {
+              const { trade } = item
+              if (editingTrade?.id === trade.id) {
+                return (
+                  <li key={`edit-${trade.id}`}>
+                    <EditTradeForm
+                      s={s}
+                      trade={trade}
+                      onDone={() => {
+                        setEditingTrade(null)
+                        refresh()
+                      }}
+                      onCancel={() => setEditingTrade(null)}
+                    />
+                  </li>
+                )
+              }
+              return (
+                <li key={`trade-${trade.id}`}>
+                  <TradeRow
+                    trade={trade}
+                    live={live}
+                    isDeleting={deletingTradeId === trade.id}
+                    onStartEdit={() => {
+                      setFormMode(null)
+                      setDeletingTradeId(null)
+                      setEditingTrade(trade)
+                    }}
+                    onStartDelete={() => setDeletingTradeId(trade.id)}
+                    onCancelDelete={() => setDeletingTradeId(null)}
+                    onConfirmDelete={async () => {
+                      await api.deleteTrade(trade.id)
+                      setDeletingTradeId(null)
+                      refresh()
+                    }}
+                  />
+                </li>
+              )
+            }
+
+            const { signal } = item
+            return (
+              <li key={`sig-${signal.id}`}>
+                <SignalRow s={s} signal={signal} live={live} />
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </Section>
+  )
+}
+
+function TradeRow({
+  trade,
+  live,
+  isDeleting,
+  onStartEdit,
+  onStartDelete,
+  onCancelDelete,
+  onConfirmDelete,
+}: {
+  trade: StrategyTradeItem
+  live: boolean
+  isDeleting: boolean
+  onStartEdit: () => void
+  onStartDelete: () => void
+  onCancelDelete: () => void
+  onConfirmDelete: () => Promise<void>
+}) {
+  const [busy, setBusy] = useState(false)
+
+  if (isDeleting) {
+    return (
+      <div className={styles.confirmBox}>
+        <p>Delete this trade? This will remove it from your results.</p>
+        <div className={styles.confirmActions}>
+          <button
+            type="button"
+            className={styles.btnDanger}
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                await onConfirmDelete()
+              } finally {
+                setBusy(false)
+              }
+            }}
+          >
+            {busy ? 'Deleting…' : 'Delete'}
+          </button>
+          <button type="button" className={styles.btnSecondary} disabled={busy} onClick={onCancelDelete}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.row}>
+      <div className={styles.rowTop}>
+        <div className={styles.rowLeft}>
+          <span className={styles.rowDate}>{shortDate(trade.tradeDate)}</span>
+          <span className={styles.rowTitle}>{trade.stockName}</span>
+          <Tag tone={trade.side === 'buy' ? 'live' : 'sim'}>{trade.side.toUpperCase()}</Tag>
+          {trade.source === 'manual' && <span className={styles.manualBadge}>MANUAL</span>}
+        </div>
+        {live && (
+          <div className={styles.rowActions}>
+            <TextAction onClick={onStartEdit}>Edit</TextAction>
+            <TextAction onClick={onStartDelete}>Delete</TextAction>
+          </div>
+        )}
+      </div>
+      <div className={styles.rowDetails}>
+        <span>
+          <span className={styles.mono}>{trade.shares}</span> shares at{' '}
+          <span className={styles.mono}>{exact(trade.price, trade.assetCurrency)}</span>
+        </span>
+        <span>
+          {' '}· <span className={styles.mono}>{money(trade.amount, trade.strategyCurrency)}</span>
+        </span>
+        {trade.fee > 0 && (
+          <span>
+            {' '}(fee <span className={styles.mono}>{money(trade.fee, trade.strategyCurrency)}</span>)
+          </span>
+        )}
+        {trade.assetCurrency !== trade.strategyCurrency && (
+          <span>
+            {' '}· <span className={styles.mono}>{trade.fxRate} {trade.assetCurrency}/{trade.strategyCurrency}</span>
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SignalRow({ s, signal, live }: { s: StrategyDetail; signal: StrategySignalItem; live: boolean }) {
+  const content = (
+    <>
+      <div className={styles.rowTop}>
+        <div className={styles.rowLeft}>
+          <span className={styles.rowDate}>{shortDate(signal.signalDate)}</span>
+          <span className={styles.rowTitle}>{signal.stockName}</span>
+          <span className={styles.signalType}>
+            {signal.side === 'buy' ? 'Buy signal' : 'Sell signal'}
+            {signal.stepNo !== null && signal.maxSteps !== null ? ` · Step ${signal.stepNo} of ${signal.maxSteps}` : ''}
+          </span>
+        </div>
+        <SignalPill signal={signal} />
+      </div>
+      <div className={styles.rowDetails}>
+        <span>
+          Close: <span className={styles.mono}>{exact(signal.closePrice, signal.assetCurrency)}</span>
+        </span>
+        {signal.status === 'skipped' && signal.skipReason && (
+          <span> · {SKIP_REASONS.find((r) => r.id === signal.skipReason)?.label ?? signal.skipReason}</span>
+        )}
+        {signal.status === 'waiting' && signal.snoozedUntil && <span> · Remind on {shortDate(signal.snoozedUntil)}</span>}
+        {signal.status === 'missed' && signal.endedOn && <span> · Ended {shortDate(signal.endedOn)}</span>}
+        {signal.reason && <span className={styles.signalReason}> · {signal.reason}</span>}
+      </div>
+    </>
+  )
+
+  if (live) {
+    return (
+      <Link to={signalPath(s.id, signal.id)} className={styles.row}>
+        {content}
+      </Link>
+    )
+  }
+
+  return <div className={styles.row}>{content}</div>
+}
+
+function SignalPill({ signal }: { signal: StrategySignalItem }) {
+  if (signal.status === 'confirmed') {
+    return (
+      <span className={styles.pill} data-tone="holding">
+        DID
+      </span>
+    )
+  }
+  if (signal.status === 'skipped') {
+    return (
+      <span className={styles.pill} data-tone="watching">
+        SKIPPED
+      </span>
+    )
+  }
+  if (signal.status === 'missed') {
+    return (
+      <span className={styles.pill} data-tone="waiting">
+        MISSED
+      </span>
+    )
+  }
+  if (signal.snoozedUntil) {
+    return (
+      <span className={styles.pill} data-tone="signal">
+        SNOOZED
+      </span>
+    )
+  }
+  return (
+    <span className={styles.pill} data-tone="waiting">
+      WAITING
+    </span>
+  )
+}
+
+function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: () => void; onCancel: () => void }) {
+  const [assetId, setAssetId] = useState(s.stocks[0]?.assetId ?? '')
+  const [side, setSide] = useState<TradeSide>('buy')
+  const [date, setDate] = useState(s.today)
+  const [price, setPrice] = useState('')
+  const [enteredAs, setEnteredAs] = useState<'amount' | 'shares'>('amount')
+  const [amount, setAmount] = useState('')
+  const [shares, setShares] = useState('')
+  const [fee, setFee] = useState('')
+  const [ownRate, setOwnRate] = useState<string | null>(null)
+
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState<FormMessageState>(null)
+
+  const assetCurrency = (s.trades?.find((t) => t.assetId === assetId)?.assetCurrency
+    ?? s.signalHistory?.find((sig) => sig.assetId === assetId)?.assetCurrency
+    ?? s.currency)
+
+  const otherCurrency = assetCurrency !== s.currency
+  const currencyRates = s.rates?.find((r) => r.currency === assetCurrency)?.rates ?? []
+  const refRate = rateOn(currencyRates, date)
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (saving) return
+    setSaving(true)
+    setErrors({})
+    setMessage(null)
+
+    const form: TradeForm = {
+      date,
+      price,
+      enteredAs,
+      amount,
+      shares,
+      fee,
+      ownRate,
+    }
+    const unclear = ambiguousFields(form)
+    if (Object.keys(unclear).length > 0) {
+      setErrors(unclear)
+      setSaving(false)
+      return
+    }
+
+    try {
+      const byAmount = enteredAs === 'amount'
+      const req: ManualTradeRequest = {
+        assetId,
+        side,
+        date: date || null,
+        price: parseNumber(price) ?? 0,
+        enteredAs,
+        amount: byAmount ? parseNumber(amount) : null,
+        shares: byAmount ? null : parseNumber(shares),
+        fee: parseNumber(fee),
+        fxSource: ownRate === null ? 'reference' : 'user',
+        fxRate: ownRate === null ? null : parseNumber(ownRate),
+      }
+      await api.logManualTrade(s.id, req)
+      onDone()
+    } catch (err) {
+      if (err instanceof InvalidFieldsError) {
+        setErrors(err.fields)
+      } else {
+        setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : 'Could not save trade.' })
+      }
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form className={styles.formCard} onSubmit={(e) => void handleSubmit(e)}>
+      <div className={styles.formTitle}>Log a trade by hand</div>
+
+      <SelectField
+        label="Stock"
+        value={assetId}
+        error={errors.assetId}
+        options={s.stocks.map((st) => ({ value: st.assetId, label: `${st.name} (${st.symbol})` }))}
+        onChange={setAssetId}
+      />
+
+      <div className={styles.sideToggle}>
+        <button
+          type="button"
+          className={side === 'buy' ? styles.sideActive : styles.sideBtn}
+          onClick={() => setSide('buy')}
+        >
+          Buy
+        </button>
+        <button
+          type="button"
+          className={side === 'sell' ? styles.sideActive : styles.sideBtn}
+          onClick={() => setSide('sell')}
+        >
+          Sale
+        </button>
+      </div>
+
+      <TextField
+        label="Date"
+        type="date"
+        value={date}
+        max={s.today}
+        error={errors.date}
+        onChange={setDate}
+      />
+
+      <TextField
+        label={`Price per share (${assetCurrency})`}
+        value={price}
+        placeholder="0.00"
+        error={errors.price}
+        onChange={setPrice}
+      />
+
+      <div className={styles.toggleAction}>
+        <TextAction onClick={() => setEnteredAs(enteredAs === 'amount' ? 'shares' : 'amount')}>
+          {enteredAs === 'amount' ? 'Enter shares instead' : 'Enter amount instead'}
+        </TextAction>
+      </div>
+
+      {enteredAs === 'amount' ? (
+        <TextField
+          label={`Amount (${s.currency})`}
+          value={amount}
+          placeholder="100.00"
+          error={errors.amount}
+          onChange={setAmount}
+        />
+      ) : (
+        <TextField
+          label="Shares"
+          value={shares}
+          placeholder="1.00"
+          error={errors.shares}
+          onChange={setShares}
+        />
+      )}
+
+      <TextField
+        label={`Fee (${s.currency}, optional)`}
+        value={fee}
+        placeholder="0.00"
+        error={errors.fee}
+        onChange={setFee}
+      />
+
+      {otherCurrency && (
+        <div className={styles.rateLine}>
+          {ownRate === null && refRate ? (
+            <>
+              <span>
+                At {refRate.rate} {assetCurrency} per {symbolOf(s.currency)}1, the rate of {shortDate(refRate.date)}.
+              </span>
+              <TextAction onClick={() => setOwnRate(String(refRate.rate))}>Change</TextAction>
+            </>
+          ) : (
+            <>
+              <TextField
+                label={`Exchange rate (${assetCurrency} per ${symbolOf(s.currency)}1)`}
+                value={ownRate ?? ''}
+                error={errors.fxRate}
+                onChange={setOwnRate}
+              />
+              {refRate && <TextAction onClick={() => setOwnRate(null)}>Use reference rate</TextAction>}
+            </>
+          )}
+        </div>
+      )}
+
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+
+      <div className={styles.formActions}>
+        <button type="submit" className={styles.btnPrimary} disabled={saving}>
+          {saving ? 'Saving…' : 'Save trade'}
+        </button>
+        <button type="button" className={styles.btnSecondary} disabled={saving} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function EditTradeForm({
+  s,
+  trade,
+  onDone,
+  onCancel,
+}: {
+  s: StrategyDetail
+  trade: StrategyTradeItem
+  onDone: () => void
+  onCancel: () => void
+}) {
+  const [date, setDate] = useState(trade.tradeDate)
+  const [price, setPrice] = useState(String(trade.price))
+  const [enteredAs, setEnteredAs] = useState<'amount' | 'shares'>(trade.enteredAs)
+  const [amount, setAmount] = useState(String(trade.amount))
+  const [shares, setShares] = useState(String(trade.shares))
+  const [fee, setFee] = useState(trade.fee > 0 ? String(trade.fee) : '')
+  const [ownRate, setOwnRate] = useState<string | null>(trade.fxSource === 'user' ? String(trade.fxRate) : null)
+
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState<FormMessageState>(null)
+
+  const otherCurrency = trade.assetCurrency !== trade.strategyCurrency
+  const currencyRates = s.rates?.find((r) => r.currency === trade.assetCurrency)?.rates ?? []
+  const refRate = rateOn(currencyRates, date)
+
+  const minDate = trade.source === 'signal' && trade.signalId
+    ? (s.signalHistory?.find((sig) => sig.id === trade.signalId)?.signalDate ?? undefined)
+    : undefined
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (saving) return
+    setSaving(true)
+    setErrors({})
+    setMessage(null)
+
+    const form: TradeForm = {
+      date,
+      price,
+      enteredAs,
+      amount,
+      shares,
+      fee,
+      ownRate,
+    }
+    const unclear = ambiguousFields(form)
+    if (Object.keys(unclear).length > 0) {
+      setErrors(unclear)
+      setSaving(false)
+      return
+    }
+
+    try {
+      const byAmount = enteredAs === 'amount'
+      const req: UpdateTradeRequest = {
+        date: date || null,
+        price: parseNumber(price) ?? 0,
+        enteredAs,
+        amount: byAmount ? parseNumber(amount) : null,
+        shares: byAmount ? null : parseNumber(shares),
+        fee: parseNumber(fee),
+        fxSource: ownRate === null ? 'reference' : 'user',
+        fxRate: ownRate === null ? null : parseNumber(ownRate),
+      }
+      await api.updateTrade(trade.id, req)
+      onDone()
+    } catch (err) {
+      if (err instanceof InvalidFieldsError) {
+        setErrors(err.fields)
+      } else {
+        setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : 'Could not save trade changes.' })
+      }
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form className={styles.formCard} onSubmit={(e) => void handleSubmit(e)}>
+      <div className={styles.formTitle}>
+        Edit trade · {trade.stockName} ({trade.side.toUpperCase()})
+      </div>
+
+      <TextField
+        label="Date"
+        type="date"
+        value={date}
+        min={minDate}
+        max={s.today}
+        error={errors.date}
+        onChange={setDate}
+      />
+
+      <TextField
+        label={`Price per share (${trade.assetCurrency})`}
+        value={price}
+        placeholder="0.00"
+        error={errors.price}
+        onChange={setPrice}
+      />
+
+      <div className={styles.toggleAction}>
+        <TextAction onClick={() => setEnteredAs(enteredAs === 'amount' ? 'shares' : 'amount')}>
+          {enteredAs === 'amount' ? 'Enter shares instead' : 'Enter amount instead'}
+        </TextAction>
+      </div>
+
+      {enteredAs === 'amount' ? (
+        <TextField
+          label={`Amount (${trade.strategyCurrency})`}
+          value={amount}
+          placeholder="100.00"
+          error={errors.amount}
+          onChange={setAmount}
+        />
+      ) : (
+        <TextField
+          label="Shares"
+          value={shares}
+          placeholder="1.00"
+          error={errors.shares}
+          onChange={setShares}
+        />
+      )}
+
+      <TextField
+        label={`Fee (${trade.strategyCurrency}, optional)`}
+        value={fee}
+        placeholder="0.00"
+        error={errors.fee}
+        onChange={setFee}
+      />
+
+      {otherCurrency && (
+        <div className={styles.rateLine}>
+          {ownRate === null && refRate ? (
+            <>
+              <span>
+                At {refRate.rate} {trade.assetCurrency} per {symbolOf(trade.strategyCurrency)}1, the rate of{' '}
+                {shortDate(refRate.date)}.
+              </span>
+              <TextAction onClick={() => setOwnRate(String(refRate.rate))}>Change</TextAction>
+            </>
+          ) : (
+            <>
+              <TextField
+                label={`Exchange rate (${trade.assetCurrency} per ${symbolOf(trade.strategyCurrency)}1)`}
+                value={ownRate ?? ''}
+                error={errors.fxRate}
+                onChange={setOwnRate}
+              />
+              {refRate && <TextAction onClick={() => setOwnRate(null)}>Use reference rate</TextAction>}
+            </>
+          )}
+        </div>
+      )}
+
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+
+      <div className={styles.formActions}>
+        <button type="submit" className={styles.btnPrimary} disabled={saving}>
+          {saving ? 'Saving…' : 'Save changes'}
+        </button>
+        <button type="button" className={styles.btnSecondary} disabled={saving} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}

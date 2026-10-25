@@ -11,6 +11,7 @@ import { signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
+import { SignalsAndTrades } from './SignalsAndTrades'
 import { stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
 
@@ -167,6 +168,7 @@ export function StrategyPage() {
             </div>
             <Summary s={s} />
             <Stocks s={s} />
+            <SignalsAndTrades s={s} />
             <div className={styles.tiles}>
               <Link to={strategySettingsPath(s.id)} className={styles.tileLink}>
                 <span className={`ui-strong ${styles.tileTitle}`}>Tune the settings</span>

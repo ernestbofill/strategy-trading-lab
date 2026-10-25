@@ -1,4 +1,5 @@
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Strategies;
@@ -75,6 +76,73 @@ public enum StockStatus
 public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Status, int Steps, int? RulesSteps, int? MaxSteps,
     decimal? DistancePct, Guid? SignalId, int? SignalStep, decimal Invested, decimal? Result, TradeSide? SignalSide = null);
 
+/// <summary>A trade in the strategy's trades list.</summary>
+public record StrategyTradeItem(
+    Guid Id,
+    Guid AssetId,
+    string Symbol,
+    string StockName,
+    DateOnly TradeDate,
+    TradeSide Side,
+    decimal Price,
+    string AssetCurrency,
+    EnteredAs EnteredAs,
+    decimal Amount,
+    decimal Shares,
+    decimal Fee,
+    string StrategyCurrency,
+    decimal FxRate,
+    FxSource FxSource,
+    TradeSource Source,
+    Guid? SignalId);
+
+/// <summary>A signal in the strategy's signal history.</summary>
+public record StrategySignalItem(
+    Guid Id,
+    Guid AssetId,
+    string Symbol,
+    string StockName,
+    DateOnly SignalDate,
+    TradeSide Side,
+    int? StepNo,
+    int? MaxSteps,
+    decimal? StepAmount,
+    decimal ClosePrice,
+    string AssetCurrency,
+    string Reason,
+    SignalStatus Status,
+    SkipReason? SkipReason,
+    DateOnly? SnoozedUntil,
+    DateOnly? EndedOn,
+    DateTimeOffset CreatedAt);
+
+/// <summary>Stored reference rates for an asset's currency against the strategy's currency.</summary>
+public record CurrencyRates(string Currency, IReadOnlyList<RateDay> Rates);
+
+/// <summary>"Log a trade by hand" on a live strategy.</summary>
+public record ManualTradeRequest(
+    Guid AssetId,
+    TradeSide Side,
+    DateOnly? Date,
+    decimal? Price,
+    EnteredAs? EnteredAs,
+    decimal? Amount,
+    decimal? Shares,
+    decimal? Fee,
+    FxSource? FxSource,
+    decimal? FxRate);
+
+/// <summary>Edit an existing trade on a live strategy.</summary>
+public record UpdateTradeRequest(
+    DateOnly? Date,
+    decimal? Price,
+    EnteredAs? EnteredAs,
+    decimal? Amount,
+    decimal? Shares,
+    decimal? Fee,
+    FxSource? FxSource,
+    decimal? FxRate);
+
 /// <summary>The strategy page. <c>Words</c> are the template's for a stock that isn't bought; <c>Signals</c> is live only.</summary>
 public record StrategyDetail(
     Guid Id,
@@ -91,4 +159,7 @@ public record StrategyDetail(
     SignalCounts? Signals,
     StockStatusTexts? Words,
     IReadOnlyList<StockRow> Stocks,
+    IReadOnlyList<StrategyTradeItem> Trades,
+    IReadOnlyList<StrategySignalItem> SignalHistory,
+    IReadOnlyList<CurrencyRates> Rates,
     IReadOnlyDictionary<string, decimal>? Settings = null);

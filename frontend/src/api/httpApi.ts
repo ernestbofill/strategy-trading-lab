@@ -1,6 +1,6 @@
 import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { sessionEnded } from './session'
-import type { Account, Api, FeedbackItem, StrategySummary } from './types'
+import type { Account, Api, FeedbackItem, StrategySummary, StrategyTradeItem } from './types'
 
 // The .NET API. nginx serves it at /api on the app's own host; in development Vite proxies /api to it.
 const BASE_URL = '/api'
@@ -54,6 +54,25 @@ async function put(path: string, body: unknown): Promise<void> {
     if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
   }
   if (!response.ok) throw new Error(`PUT ${path} failed: HTTP ${response.status}`)
+}
+
+async function tradesRequest(method: string, path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 409) {
+    const message = (await response.json().catch(() => null)) as string | null
+    throw new InvalidValueError(message ?? 'Could not perform trade action.')
+  }
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+  }
+  if (!response.ok) throw new Error(`${method} ${path} failed: HTTP ${response.status}`)
+  return response
 }
 
 /** POSTs an answer to a signal. A 400 with field errors is `InvalidFieldsError`; a 409 (already answered) is `InvalidValueError`. */
@@ -173,6 +192,12 @@ export const httpApi: Api = {
   updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),
   getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),
   confirmSignal: async (id, trade) => void (await signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
+  logManualTrade: async (strategyId, trade) =>
+    (await (await tradesRequest('POST', `/strategies/${encodeURIComponent(strategyId)}/trades`, trade)).json()) as StrategyTradeItem,
+  updateTrade: async (tradeId, trade) =>
+    void (await tradesRequest('PUT', `/trades/${encodeURIComponent(tradeId)}`, trade)),
+  deleteTrade: async (tradeId) =>
+    void (await tradesRequest('DELETE', `/trades/${encodeURIComponent(tradeId)}`)),
   skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
   snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),

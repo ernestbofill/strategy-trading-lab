@@ -15,6 +15,9 @@ public class AdminPricesTests
     {
         public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken) =>
             Task.FromResult(days(symbol));
+
+        public Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<MarketQuote>>([]);
     }
 
     sealed class Api(IMarketDataSource source) : AccountsApi

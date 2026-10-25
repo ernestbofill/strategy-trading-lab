@@ -24,6 +24,9 @@ public class PriceRefresherTests
             IReadOnlyList<Candle> days = [.. Enumerable.Range(fullHistory ? 0 : 20, fullHistory ? 30 : 10).Select(d => Day(d, close(d)))];
             return Task.FromResult(days);
         }
+
+        public Task<IReadOnlyList<MarketQuote>> SearchAsync(string query, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<MarketQuote>>([]);
     }
 
     static IReadOnlyList<Candle> Recent(params (int Day, decimal Close)[] days) => [.. days.Select(d => Day(d.Day, d.Close))];

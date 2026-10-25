@@ -22,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PriceDaily> Prices => Set<PriceDaily>();
     public DbSet<FxRate> FxRates => Set<FxRate>();
     public DbSet<DailyEvaluation> DailyEvaluations => Set<DailyEvaluation>();
+    public DbSet<FeedbackItem> FeedbackItems => Set<FeedbackItem>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

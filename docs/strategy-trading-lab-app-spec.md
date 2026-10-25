@@ -580,6 +580,7 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 - The Backend and Database boxes don't need the database, so they show even when the settings can't load ("Could not load the settings: the database in use may not answer. Switch above, or try again later."). Only Postgres is switched; object storage stays on the server's own branch.
 - While the API uses the dev database, every screen's top bar shows a **DEV** tag next to the version (from `GET /version`, which says which database is in use).
 - Log-in is the app's own. Sessions live in the database in use, so after switching database the owner logs in again there (the account must exist in both).
+- **Feedback** (in-app, from selected text, and reviewed on `/admin` and `/feedback`): any signed-in user with a confirmed email can select text on any screen to see a floating `💬 Add comment` button (pinned to the bottom of the screen, or below the sticky header when the selection is near the bottom so it never covers the phone's Copy menu; on desktop, right-clicking a selection also opens `💬 Add comment` / `📋 Copy`). Pressing it opens a modal dialog (`Add a comment`) with a kind picker (`🐞 Bug`, `💡 Idea`, `📝 Note`, `✨ Feature`), the page path, the quoted text and a comment box (`POST /feedback`). Only the **owner** can list, edit, close/reopen or delete feedback (`GET /feedback`, `PATCH /feedback/{id}`, `DELETE /feedback/{id}`), in the **Feedback** section on `/admin` and on `/feedback`, with `Open` / `Closed` / `All` filters, a general comment form and `Copy open as Markdown`.
 
 ## 7. Notifications
 
@@ -613,6 +614,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
 - **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
 - **Market data:** daily US prices and volumes, exchange rates.
+- **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed`), comment text, optional page route, DOM selector and selected text quote, timestamps.
 
 ## 9. Not designed yet
 

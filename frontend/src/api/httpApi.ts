@@ -1,6 +1,6 @@
 import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { sessionEnded } from './session'
-import type { Account, Api, StrategySummary } from './types'
+import type { Account, Api, FeedbackItem, StrategySummary } from './types'
 
 // The .NET API. nginx serves it at /api on the app's own host; in development Vite proxies /api to it.
 const BASE_URL = '/api'
@@ -120,6 +120,25 @@ async function getAccount(): Promise<Account | null> {
 
 const settingPath = (key: string) => `/settings/${encodeURIComponent(key)}`
 
+/** Sends a request to the feedback API and maps its refusals to errors the UI can show. */
+async function feedback(method: string, path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}/feedback${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 403) throw new ForbiddenError()
+  if (response.status === 429) throw new TooManyTriesError()
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+    throw new InvalidValueError(problem?.detail ?? 'That comment was refused.')
+  }
+  if (!response.ok) throw new Error(`${method} /feedback${path} failed: HTTP ${response.status}`)
+  return response
+}
+
 export const httpApi: Api = {
   getAccount,
   signUp: async (signUp) => void (await account('/sign-up', signUp)),
@@ -152,4 +171,10 @@ export const httpApi: Api = {
   testAdminYahoo: async () => (await admin('POST', '/prices/test')).json(),
   getAdminDatabases: async () => (await admin('GET', '/database')).json(),
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
+  submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
+  getFeedback: async (status) =>
+    (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],
+  updateFeedback: async (id, patch) =>
+    (await (await feedback('PATCH', `/${encodeURIComponent(id)}`, patch)).json()) as FeedbackItem,
+  deleteFeedback: async (id) => void (await feedback('DELETE', `/${encodeURIComponent(id)}`)),
 }

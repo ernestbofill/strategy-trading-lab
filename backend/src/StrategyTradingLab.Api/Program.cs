@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,6 +18,7 @@ using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.Feedback;
 using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Neon;
 using StrategyTradingLab.Api.Strategies;
@@ -96,6 +97,7 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.LogInLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
+    PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
 });
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -186,6 +188,7 @@ app.MapStrategies();
 app.MapSignals();
 app.MapAdmin();
 app.MapAccount();
+app.MapFeedback();
 
 // For the client to show which API it talks to, and a DEV tag while it uses the dev database.
 app.MapGet("/version", (DatabaseSwitch databases) => TypedResults.Ok(VersionResponse.Current with { Database = databases.Active }))

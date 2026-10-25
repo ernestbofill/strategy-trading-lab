@@ -42,6 +42,7 @@ erDiagram
     users ||--o{ strategies : runs
     users ||--o{ push_subscriptions : has
     users ||--o{ notifications : receives
+    users ||--o{ feedback_items : submits
     strategies |o--o{ strategies : "live copies of"
     strategies ||--o{ strategy_assets : watches
     assets ||--o{ strategy_assets : ""
@@ -305,6 +306,25 @@ The admin page's settings (`Admin/SettingDefinitions.cs` lists which). One row p
 | key | text PK | `SMTP_USER`, `SMTP_PASSWORD`… |
 | value | text, null | Plain text, except secrets: encrypted with ASP.NET Core Data Protection (keys in the service's systemd `StateDirectory`, not in the database). Null: cleared, which hides the server's value too |
 | created_at, updated_at | timestamptz | |
+
+### `feedback_items`
+
+In-app feedback notes (`bug` | `idea` | `note` | `feature`). Any logged-in user with a verified email (`email_verified_at IS NOT NULL`) can submit one (from selected text on any screen, or as a general comment); only the owner lists, edits, closes/reopens or deletes them on `/admin` and `/feedback`. Cascades from `users`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| user_id | uuid FK → users, cascade, not null | Author |
+| kind | text, not null | `bug` \| `idea` \| `note` \| `feature` (`CHECK`) |
+| status | text, not null, default `open` | `open` \| `closed` (`CHECK`) |
+| text | text, not null | The user's comment (up to 4,000 chars) |
+| route | text, null | In-app path (`/dashboard`, `/strategies/…`) |
+| element | text, null | Short DOM selector (`main > section.card > p:nth-of-type(2)`) |
+| selected_text | text, null | Quoted text selected on the page |
+| closed_at | timestamptz, null | `CHECK ((status = 'closed') = (closed_at IS NOT NULL))` |
+| created_at, updated_at | timestamptz | |
+
+Index `(status, created_at)` and `(user_id)`.
 
 ### `prices_daily`
 

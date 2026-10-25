@@ -41,7 +41,8 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Emails: live signal alerts and the daily overview, `EMAILS_ENABLED` on the admin page and the overview switch on the account page (#46).
 - Confirm a signal: *I did it* (a user trade, as an amount or shares, with the reference rate or the broker's), *I skipped it* (with a reason), and *Remind me next trading day* (a reminder email at 07:00); a missed signal can still be answered, and email links open the signal (#57). Not yet: logging, editing and deleting trades by hand (item 10), sell signals (item 9), web push for the reminder.
 - Strategy page and dashboard results, both modes: results from the trades next to the index fund and the template's worst year, live signals in *Waiting for you* (#49).
-- Admin page: email settings and test email (#26, #27), switch between the dev and production databases (#30), the backend's build.
+- Admin page: email settings and test email (#26, #27), switch between the dev and production databases (#30), the backend's build, and the owner feedback review section (`#48`).
+- In-app feedback from selected text: any user with a confirmed email can select text on any screen to submit a bug, idea, note or feature comment (`POST /feedback`), and the owner reviews, edits, closes/reopens, deletes and exports open items as Markdown on `/admin` and `/feedback` (`#48`).
 - Backend: data model (#14), .NET skeleton on Neon (#15), the five templates with the POC's defaults (#16), deploy to Oracle on merge (#17); the dev database migrates itself (#24).
 - CI on PRs, frontend deploy, app version in the top bar, reload on a new version (#4–#9, #11). CI runs every backend test against a throwaway database (#32).
 - Agentic workflow and instructions (#20, #41, #47). Two disclaimers: short and full (#21). The launch plan in this file (#58).

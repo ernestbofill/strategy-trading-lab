@@ -296,3 +296,17 @@ class DailyEvaluationConfiguration : IEntityTypeConfiguration<DailyEvaluation>
             .HasForeignKey(row => row.AssetId).OnDelete(DeleteBehavior.NoAction);
     }
 }
+
+class FeedbackItemConfiguration : IEntityTypeConfiguration<FeedbackItem>
+{
+    public void Configure(EntityTypeBuilder<FeedbackItem> entity)
+    {
+        entity.ToTable("feedback_items", table =>
+            table.HasCheckConstraint("ck_feedback_items_closed_at", "(status = 'closed') = (closed_at IS NOT NULL)"));
+        entity.Property(item => item.Status).HasColumnDefault(FeedbackStatus.Open);
+        entity.HasIndex(item => new { item.Status, item.CreatedAt });
+        entity.HasIndex(item => item.UserId);
+        entity.HasOne<User>().WithMany()
+            .HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}

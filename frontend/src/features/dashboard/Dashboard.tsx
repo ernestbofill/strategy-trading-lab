@@ -6,6 +6,7 @@ import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { pickPath } from '../new-strategy/paths'
 import { useTemplates } from '../new-strategy/useTemplate'
+import { useCurrentAccount } from '../account/AccountContext'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
 import { accountPath } from './paths'
@@ -18,6 +19,7 @@ import { WaitingList } from './WaitingList'
 export function Dashboard() {
   const t = useT()
   const dashboard = useDashboard()
+  const { emailVerified } = useCurrentAccount()
   // Loads the template list in the background, so Pick a template opens at once.
   useTemplates()
   const top = <TopBar title={t('dashboard.title')} aside={<TextAction to={accountPath}>{t('dashboard.account')}</TextAction>} />
@@ -37,9 +39,11 @@ export function Dashboard() {
               {t('dashboard.newStrategy')}
             </Link>
           </div>
-          <p className={styles.feedback}>
-            <TextAction to={`${accountPath}${SEND_FEEDBACK_HASH}`}>{t('feedback.send.title')}</TextAction>
-          </p>
+          {emailVerified && (
+            <p className={styles.feedback}>
+              <TextAction to={`${accountPath}${SEND_FEEDBACK_HASH}`}>{t('feedback.send.title')}</TextAction>
+            </p>
+          )}
         </Screen>
       )}
     </LoadableScreen>

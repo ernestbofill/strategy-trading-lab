@@ -70,7 +70,7 @@ public class FeedbackValidationTests
 
         Assert.Equal("owner@example.com", email.To);
         Assert.Equal("ana@example.com", email.ReplyTo);
-        Assert.Equal("Feedback (bug) from ana@example.com", email.Subject);
+        Assert.Equal("New feedback (bug)", email.Subject);
         Assert.Contains("ana@example.com sent feedback (bug) on /new/templates/ai.", email.Body);
         Assert.Contains("About: \"ADD A STOCK\"", email.Body);
         Assert.Contains("The button does nothing", email.Body);
@@ -208,7 +208,7 @@ public class FeedbackEndpointTests(AccountsApi api) : IClassFixture<AccountsApi>
         var response = await user.PostAsJsonAsync("/feedback", new { kind = "feature", text = "Let me change the budget" });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var email = await api.Emails.WaitForAsync("owner-inbox@example.test", $"Feedback (feature) from {userEmail}");
+        var email = await api.Emails.WaitForAsync("owner-inbox@example.test", "New feedback (feature)");
         Assert.NotNull(email);
         Assert.Equal(userEmail, email.ReplyTo);
         Assert.Contains("Let me change the budget", email.Body);

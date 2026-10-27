@@ -20,9 +20,13 @@ export const symbolOf = (currency: string) => CURRENCIES.find((c) => c.code === 
 export const money = (n: number, currency: Currency) => `${symbolOf(currency)}${amountFormat.format(n)}`
 
 const sharesFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
+const fewSharesFormat = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 3 })
 
-/** 2.609 / 12 / 1,250.5: a number of shares, to at most 3 decimals (the stored value keeps its precision). */
-export const formatShares = (n: number) => sharesFormat.format(n)
+/**
+ * 2.609 / 12 / 1,250.5: a number of shares, to at most 3 decimals; under one share, to 3 significant digits, so a
+ * tiny holding never reads 0 (0.00143). The stored value keeps its precision.
+ */
+export const formatShares = (n: number) => (Math.abs(n) < 1 ? fewSharesFormat : sharesFormat).format(n)
 
 /** €3,000: for what was tested in euro (a template's backtest). */
 export const eur = (n: number) => money(n, 'EUR')

@@ -138,7 +138,8 @@ public static partial class FeedbackEndpoints
         body.Append(item.Text).Append("\n\n");
         body.Append("Reply to this email to answer them.");
         if (configuration["PublicUrl"]?.TrimEnd('/') is { Length: > 0 } appUrl) body.Append($"\nAll feedback: {appUrl}/feedback");
-        return new(owner, $"Feedback ({kind}) from {senderEmail}", body.ToString(), ReplyTo: senderEmail);
+        // The subject holds no address: failed sends log it.
+        return new(owner, $"New feedback ({kind})", body.ToString(), ReplyTo: senderEmail);
     }
 
     public static Dictionary<string, string[]> ValidateCreate(CreateFeedbackRequest request, out string text, out string? route,

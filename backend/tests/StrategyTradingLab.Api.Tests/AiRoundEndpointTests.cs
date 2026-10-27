@@ -91,7 +91,7 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         new(scope.ServiceProvider.GetRequiredService<AppDbContext>(), new Clock(now), NullLogger<AiRounds>.Instance);
 
     [NeonFact]
-    public async Task A_simulation_round_gives_the_top_score_a_step_and_its_trade_follows_at_the_next_open()
+    public async Task A_simulation_round_gives_the_top_score_a_step_and_buys_it_at_once_at_the_latest_price()
     {
         var s = await StartAsync("simulation");
         try
@@ -136,15 +136,19 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             Assert.Equal(4, shared.Id.Version); // Random: a version 7 id would carry the time the round was done.
             Assert.True((await db.Users.AsNoTracking().SingleAsync(u => u.Email == s.Email)).AiSharing);
 
-            // The daily check: the trade at the first open after the round, once that price is in.
-            var tradeDay = AiRoundRules.TradeAfter(DateTimeOffset.UtcNow).AddDays(1);
-            db.Prices.Add(new PriceDaily { AssetId = s.Alpha, Date = tradeDay, Open = 98.80m, High = 120, Low = 98, Close = 120, Volume = 1 });
+            // Bought at once, at the latest price stored (the test stocks aren't on Yahoo, so the refresh leaves the stored ones).
+            var session = UsSession.LastComplete(DateTimeOffset.UtcNow);
+            var trade = await db.SignalTrades.AsNoTracking().SingleAsync(t => t.SignalId == signalId);
+            Assert.Equal((session, 98.80m, 1.20m, 100m, 0.988m), (trade.TradeDate, trade.Amount, trade.Fee, trade.Price, trade.Shares));
+
+            // The daily check doesn't buy it again.
+            var tradeDay = session.AddDays(1);
+            db.Prices.Add(new PriceDaily { AssetId = s.Alpha, Date = tradeDay, Open = 110, High = 120, Low = 98, Close = 120, Volume = 1 });
             db.Prices.Add(new PriceDaily { AssetId = s.Beta, Date = tradeDay, Open = 50, High = 50, Low = 50, Close = 50, Volume = 1 });
             await db.SaveChangesAsync();
             var daily = await Rounds(scope, DateTimeOffset.UtcNow).RunDailyAsync(default);
-            Assert.Equal(0, daily.Failed);
-            var trade = await db.SignalTrades.AsNoTracking().SingleAsync(t => t.SignalId == signalId);
-            Assert.Equal((tradeDay, 98.80m, 1.20m, 98.80m, 1m), (trade.TradeDate, trade.Amount, trade.Fee, trade.Price, trade.Shares));
+            Assert.Equal((0, 0), (daily.Failed, daily.NewTrades));
+            Assert.Single(await db.SignalTrades.AsNoTracking().Where(t => t.StrategyId == s.StrategyId).ToListAsync());
 
             var page = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}");
             var ai = page.GetProperty("aiRounds");
@@ -333,6 +337,82 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
     }
 
     [NeonFact]
+    public Task A_due_simulation_round_can_be_skipped_and_the_next_one_comes_when_scheduled() => SkipsAsync("simulation");
+
+    [NeonFact]
+    public Task A_due_live_round_can_be_skipped_and_the_next_one_comes_when_scheduled() => SkipsAsync("live");
+
+    async Task SkipsAsync(string mode)
+    {
+        var s = await StartAsync(mode);
+        try
+        {
+            var round = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-round");
+            var roundId = round.GetProperty("roundId").GetGuid();
+            var dueOn = DateOnly.Parse(round.GetProperty("dueOn").GetString()!);
+            // A stale screen can't skip another round.
+            Assert.Equal(HttpStatusCode.Conflict,
+                (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round/skip", new { roundId = Guid.NewGuid() })).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent,
+                (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round/skip", new { roundId })).StatusCode);
+            // The next isn't due yet: a second tap skips nothing.
+            Assert.Equal(HttpStatusCode.Conflict,
+                (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round/skip", new { roundId })).StatusCode);
+
+            var next = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-round");
+            Assert.False(next.GetProperty("open").GetBoolean());
+            Assert.Equal(dueOn.AddDays(14), DateOnly.Parse(next.GetProperty("dueOn").GetString()!));
+            var history = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-rounds");
+            Assert.Equal(["due", "skipped"], history.GetProperty("rounds").EnumerateArray().Select(r => r.GetProperty("status").GetString()));
+            using var scope = factory.Services.CreateScope();
+            Assert.False(await scope.ServiceProvider.GetRequiredService<AppDbContext>().Signals.AnyAsync(x => x.StrategyId == s.StrategyId));
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
+    public async Task An_extra_round_can_be_run_before_the_next_is_due_once_a_day_without_moving_the_schedule()
+    {
+        var s = await StartAsync("simulation");
+        try
+        {
+            Assert.Equal(HttpStatusCode.NoContent, (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round/skip", new { })).StatusCode);
+            var scheduled = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-round");
+            Assert.False(scheduled.GetProperty("open").GetBoolean());
+
+            // Not on purpose (a second tap after a round): refused.
+            Assert.Equal(HttpStatusCode.Conflict,
+                (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round", new { answer = Answer(s), aiModel = "Claude · Opus" })).StatusCode);
+            var used = await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round", new { answer = Answer(s), aiModel = "Claude · Opus", extra = true });
+            Assert.Equal(HttpStatusCode.OK, used.StatusCode);
+            var signalId = Assert.Single((await used.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("signalIds").EnumerateArray()).GetGuid();
+            Assert.Equal(HttpStatusCode.Conflict,
+                (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round", new { answer = Answer(s), aiModel = "Claude · Opus", extra = true })).StatusCode);
+
+            var after = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-round");
+            Assert.Equal((scheduled.GetProperty("roundId").GetGuid(), scheduled.GetProperty("dueOn").GetString()),
+                (after.GetProperty("roundId").GetGuid(), after.GetProperty("dueOn").GetString()));
+            var history = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-rounds");
+            var extra = Assert.Single(history.GetProperty("rounds").EnumerateArray(), r => r.GetProperty("extra").GetBoolean());
+            Assert.Equal(("done", after.GetProperty("today").GetString()), (extra.GetProperty("status").GetString(), extra.GetProperty("dueOn").GetString()));
+
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var signal = await db.Signals.AsNoTracking().SingleAsync(x => x.Id == signalId);
+            // Its time is up when the scheduled round is due.
+            Assert.Equal(after.GetProperty("dueOn").GetString(), signal.Facts.RootElement.GetProperty("endsOn").GetString());
+            Assert.True(await db.SignalTrades.AnyAsync(t => t.SignalId == signalId));
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
     public async Task An_unreadable_answer_or_no_model_is_refused_and_saves_nothing()
     {
         var s = await StartAsync("simulation");
@@ -363,11 +443,12 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         try
         {
             Assert.Equal(HttpStatusCode.NoContent,
-                (await s.Client.PutAsJsonAsync($"/strategies/{s.StrategyId}/settings", new { settings = new { everyWeeks = 3, topN = 2 } })).StatusCode);
+                (await s.Client.PutAsJsonAsync($"/strategies/{s.StrategyId}/settings", new { settings = new { everyDays = 10, topN = 2 } })).StatusCode);
             var round = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}/ai-round");
             Assert.True(round.GetProperty("promptEdited").GetBoolean());
             Assert.Contains("Score each stock on its AI products.", round.GetProperty("prompt").GetString());
-            Assert.Contains("last 3 weeks", round.GetProperty("prompt").GetString());
+            Assert.Contains("last 10 days", round.GetProperty("prompt").GetString());
+            Assert.Equal(10, round.GetProperty("everyDays").GetInt32());
             Assert.Equal(2, round.GetProperty("topN").GetInt32());
 
             Assert.Equal(HttpStatusCode.BadRequest, (await s.Client.PutAsJsonAsync($"/strategies/{s.StrategyId}/ai-prompt",

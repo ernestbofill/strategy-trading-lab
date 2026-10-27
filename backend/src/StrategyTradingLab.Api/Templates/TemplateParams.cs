@@ -117,8 +117,8 @@ public record AiParams : IValidatableObject
     /// <summary>The longest instructions an edited prompt may have.</summary>
     public const int MaxInstructions = 4000;
 
-    /// <summary>An AI round every this many weeks.</summary>
-    [Range(1, 8)] public int EveryWeeks { get; init; } = 2;
+    /// <summary>An AI round every this many days.</summary>
+    [Range(1, 60)] public int EveryDays { get; init; } = 14;
 
     /// <summary>How many top-scored stocks get a step per round.</summary>
     [Range(1, 5)] public int TopN { get; init; } = 1;

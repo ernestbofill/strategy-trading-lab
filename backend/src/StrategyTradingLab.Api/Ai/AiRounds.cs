@@ -32,8 +32,8 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
     public static bool IsAi(Strategy strategy) => strategy.TemplateKey == TemplateCatalog.Ai.Key;
 
     /// <summary>
-    /// Makes sure each running AI strategy has its round due: the first on its start day, then one every <c>EveryWeeks</c>
-    /// after the last one's due date. A round not run by its last day is skipped. Idempotent, and safe when two run at
+    /// Makes sure each running AI strategy has its round due: the first on its start day, then one every <c>EveryDays</c>
+    /// after the last scheduled one's due date (extra rounds don't move the schedule). A round not run by its last day is skipped. Idempotent, and safe when two run at
     /// once: the database keeps one round per due date and one due round per strategy.
     /// </summary>
     public async Task SweepAsync(IEnumerable<AiStrategyDay> strategies, CancellationToken cancellationToken)
@@ -44,7 +44,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             var parameters = AiRoundRules.Params(strategy);
             try
             {
-                var rounds = await db.AiRounds.Where(r => r.StrategyId == strategy.Id).OrderBy(r => r.DueOn).ToListAsync(cancellationToken);
+                var rounds = await db.AiRounds.Where(r => r.StrategyId == strategy.Id && !r.Extra).OrderBy(r => r.DueOn).ToListAsync(cancellationToken);
                 var open = rounds.FirstOrDefault(r => r.Status == AiRoundStatus.Due);
                 if (open is null)
                 {
@@ -141,17 +141,20 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
 
     /// <summary>
     /// "Use these scores": the round is done, with what the user copied and pasted and the scores read; each pick gets a buy
-    /// signal (simulation: confirmed, its trade at the next open; live: waiting for the user); the next round is due
-    /// <c>EveryWeeks</c> after this one's due date; and, when the user shares, an anonymous copy is kept apart. One
-    /// transaction; null when the round was done meanwhile (a second tap, another device).
+    /// signal (simulation: confirmed and bought at once at the latest stored price; live: waiting for the user); the next round
+    /// is due <c>EveryDays</c> after this one's due date; and, when the user shares, an anonymous copy is kept apart. An
+    /// <paramref name="extra"/> round is a new done round dated <paramref name="today"/>, and <paramref name="round"/> (the
+    /// scheduled one, not due yet) stays as it is. One transaction; null when the round was done meanwhile (a second tap,
+    /// another device).
     /// </summary>
-    public async Task<AiRoundResult?> SubmitAsync(Strategy strategy, User user, AiRound round, AiPlan plan, string prompt, string model, bool? share,
-        CancellationToken cancellationToken)
+    public async Task<AiRoundResult?> SubmitAsync(Strategy strategy, User user, AiRound round, bool extra, DateOnly today, AiPlan plan, string prompt,
+        string model, bool? share, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
         var session = UsSession.LastComplete(now);
         var parameters = AiRoundRules.Params(strategy);
-        var nextDue = AiRoundRules.NextDue(round.DueOn, parameters);
+        // A signal's time is up when the next scheduled round is due: after an extra round, the one already scheduled.
+        var nextDue = extra ? round.DueOn : AiRoundRules.NextDue(round.DueOn, parameters);
         var live = strategy.Mode == StrategyMode.Live;
         var picked = plan.Picks.ToDictionary(p => p.AssetId, p => p.StepNo);
         var stocks = plan.Stocks.ToDictionary(s => s.AssetId);
@@ -163,13 +166,36 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
 
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var done = await db.AiRounds.Where(r => r.Id == round.Id && r.Status == AiRoundStatus.Due)
-            .ExecuteUpdateAsync(r => r.SetProperty(x => x.Status, AiRoundStatus.Done).SetProperty(x => x.DoneAt, now)
-                .SetProperty(x => x.SessionDate, session).SetProperty(x => x.PromptVersion, AiPrompt.Version)
-                .SetProperty(x => x.PromptEdited, parameters.Instructions != null).SetProperty(x => x.PromptText, prompt)
-                .SetProperty(x => x.AiModel, model).SetProperty(x => x.Answer, plan.Answer)
-                .SetProperty(x => x.Scores, JsonSerializer.SerializeToDocument(scores, JsonSerializerOptions.Web)), cancellationToken);
-        if (done == 0) return null;
+        var scoresJson = JsonSerializer.SerializeToDocument(scores, JsonSerializerOptions.Web);
+        var roundId = round.Id;
+        if (extra)
+        {
+            // Added with the rest: a second extra round that day breaks the unique index and is refused below.
+            var added = new AiRound
+            {
+                StrategyId = strategy.Id, DueOn = today, Extra = true, Status = AiRoundStatus.Done, DoneAt = now, SessionDate = session,
+                PromptVersion = AiPrompt.Version, PromptEdited = parameters.Instructions != null, PromptText = prompt, AiModel = model,
+                Answer = plan.Answer, Scores = scoresJson,
+            };
+            db.AiRounds.Add(added);
+            roundId = added.Id;
+        }
+        else
+        {
+            var done = await db.AiRounds.Where(r => r.Id == round.Id && r.Status == AiRoundStatus.Due)
+                .ExecuteUpdateAsync(r => r.SetProperty(x => x.Status, AiRoundStatus.Done).SetProperty(x => x.DoneAt, now)
+                    .SetProperty(x => x.SessionDate, session).SetProperty(x => x.PromptVersion, AiPrompt.Version)
+                    .SetProperty(x => x.PromptEdited, parameters.Instructions != null).SetProperty(x => x.PromptText, prompt)
+                    .SetProperty(x => x.AiModel, model).SetProperty(x => x.Answer, plan.Answer)
+                    .SetProperty(x => x.Scores, scoresJson), cancellationToken);
+            if (done == 0) return null;
+        }
+
+        // A simulation buys at once, at the latest price stored (the endpoint refreshes the picks' prices first).
+        var ids = picked.Keys.ToList();
+        var assets = live ? new Dictionary<Guid, Asset>()
+            : await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
+        var rates = live ? null : await ExchangeRates.LoadAsync(db, session, cancellationToken);
 
         var signals = new List<Signal>();
         foreach (var pick in plan.Picks)
@@ -179,7 +205,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             var score = read[pick.AssetId];
             var facts = new JsonObject
             {
-                ["score"] = score.Overall, ["rank"] = ranked[pick.AssetId], ["roundId"] = round.Id.ToString(),
+                ["score"] = score.Overall, ["rank"] = ranked[pick.AssetId], ["roundId"] = roundId.ToString(),
                 ["tradeAfter"] = AiRoundRules.TradeAfter(now).ToString("O"), ["endsOn"] = nextDue.ToString("O"),
             };
             var signal = new Signal
@@ -190,10 +216,12 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             };
             db.Signals.Add(signal);
             signals.Add(signal);
+            if (rates is not null && await LatestTradeAsync(signal, strategy, assets[pick.AssetId], session, rates, cancellationToken) is { } trade)
+                db.SignalTrades.Add(trade);
             // The strategy page shows the pick today, as the daily check's own signals.
             await SaveEvaluationAsync(strategy.Id, pick.AssetId, session, EvaluationStatus.BuySignal, pick.StepNo, ScoreFacts(score.Overall), cancellationToken);
         }
-        db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = nextDue });
+        if (!extra) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = nextDue });
 
         // The user's choice as it stands now, with their row locked until this commits: turning sharing off on another device
         // either waits for this round (and then removes its shared copy) or is seen here.
@@ -241,10 +269,52 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             return null;
         }
         if (sharedId is not null)
-            await db.AiRounds.Where(r => r.Id == round.Id).ExecuteUpdateAsync(r => r.SetProperty(x => x.SharedRoundId, sharedId), cancellationToken);
+            await db.AiRounds.Where(r => r.Id == roundId).ExecuteUpdateAsync(r => r.SetProperty(x => x.SharedRoundId, sharedId), cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         db.ChangeTracker.Clear();
-        return new AiRoundResult(round.Id, [.. signals.Select(s => s.Id)], strategy.Mode);
+        return new AiRoundResult(roundId, [.. signals.Select(s => s.Id)], strategy.Mode);
+    }
+
+    /// <summary>
+    /// A simulation's buy for a new signal at the latest stored price (today's bar while the market is open), dated that bar's day,
+    /// or the signal's session when the bar is older (a holiday). Null without the rate or anything to buy with: the daily check
+    /// then buys it at the next open, as before.
+    /// </summary>
+    async Task<SignalTrade?> LatestTradeAsync(Signal signal, Strategy strategy, Asset asset, DateOnly session, ExchangeRates rates,
+        CancellationToken cancellationToken)
+    {
+        var latest = await db.Prices.AsNoTracking().Where(p => p.AssetId == signal.AssetId).OrderByDescending(p => p.Date)
+            .Select(p => new { p.Date, p.Close }).FirstAsync(cancellationToken);
+        var date = latest.Date > session ? latest.Date : session;
+        return rates.Between(strategy.Currency, asset.Currency, date) is { } fx
+            ? StrategyEvaluator.BuyTrade(signal, strategy, date, latest.Close, fx, signal.StepAmount ?? 0)
+            : null;
+    }
+
+    /// <summary>
+    /// Skips the round that is due, in either mode: no signal, and the next round is due <c>EveryDays</c> after this one's due
+    /// date, as when its week runs out. False when the round was done or skipped meanwhile.
+    /// </summary>
+    public async Task<bool> SkipAsync(Strategy strategy, AiRound round, CancellationToken cancellationToken)
+    {
+        db.ChangeTracker.Clear();
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var skipped = await db.AiRounds.Where(r => r.Id == round.Id && r.Status == AiRoundStatus.Due)
+            .ExecuteUpdateAsync(r => r.SetProperty(x => x.Status, AiRoundStatus.Skipped), cancellationToken);
+        if (skipped == 0) return false;
+        db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = AiRoundRules.NextDue(round.DueOn, AiRoundRules.Params(strategy)) });
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            db.ChangeTracker.Clear();
+            return false;
+        }
+        await transaction.CommitAsync(cancellationToken);
+        db.ChangeTracker.Clear();
+        return true;
     }
 
     /// <summary>Stores a stock's status for a session, replacing the daily check's row for that day if there is one.</summary>
@@ -393,7 +463,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
         {
             var scores = Read(r.Scores);
             var (picks, rest) = changes.GetValueOrDefault(r.Id);
-            return new AiRoundItem(r.Id, r.DueOn, r.Status, r.DoneAt, r.SessionDate, r.AiModel, r.PromptVersion, r.PromptEdited, r.PromptText, r.Answer,
+            return new AiRoundItem(r.Id, r.DueOn, r.Extra, r.Status, r.DoneAt, r.SessionDate, r.AiModel, r.PromptVersion, r.PromptEdited, r.PromptText, r.Answer,
                 [.. scores.Select(s => new AiScoreDto(s.AssetId, s.Symbol, s.Name, s.Overall, s.News, s.Mood, s.Figures, s.Reason, s.Step))], picks, rest);
         }).ToList();
         return (items, Total(changes.Values));

@@ -31,12 +31,12 @@ public static class AiRoundRules
     public static AiParams Params(Strategy strategy) =>
         strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) ?? new AiParams();
 
-    /// <summary>The round after one due on <paramref name="dueOn"/>: <c>EveryWeeks</c> after its due date, whenever it was run.</summary>
-    public static DateOnly NextDue(DateOnly dueOn, AiParams parameters) => dueOn.AddDays(7 * parameters.EveryWeeks);
+    /// <summary>The round after one due on <paramref name="dueOn"/>: <c>EveryDays</c> after its due date, whenever it was run.</summary>
+    public static DateOnly NextDue(DateOnly dueOn, AiParams parameters) => dueOn.AddDays(parameters.EveryDays);
 
     /// <summary>The last day a round due on <paramref name="dueOn"/> can be run: a week, or less when the next is due sooner.</summary>
     public static DateOnly LastDay(DateOnly dueOn, AiParams parameters) =>
-        dueOn.AddDays(Math.Min(OpenDays, 7 * parameters.EveryWeeks) - 1);
+        dueOn.AddDays(Math.Min(OpenDays, parameters.EveryDays) - 1);
 
     /// <summary>
     /// The stocks a round gives a step: from the top overall score down, each stock with steps left gets its next one, until

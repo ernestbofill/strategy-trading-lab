@@ -325,7 +325,9 @@ class AiRoundConfiguration : IEntityTypeConfiguration<AiRound>
         });
         entity.Property(round => round.Scores).HasColumnType("jsonb");
         entity.Property(round => round.PromptEdited).HasColumnDefault(false);
-        entity.HasIndex(round => new { round.StrategyId, round.DueOn }).IsUnique();
+        entity.Property(round => round.Extra).HasColumnDefault(false);
+        // One scheduled round per due date, and one extra round a day.
+        entity.HasIndex(round => new { round.StrategyId, round.DueOn, round.Extra }).IsUnique();
         // One round open at a time per strategy, also when two requests race.
         entity.HasIndex(round => round.StrategyId).IsUnique()
             .HasDatabaseName("ux_ai_rounds_strategy_id_due")

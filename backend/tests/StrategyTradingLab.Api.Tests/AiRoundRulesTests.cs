@@ -62,15 +62,39 @@ public class AiRoundRulesTests
     }
 
     [Fact]
-    public void A_round_is_due_every_two_weeks_and_open_for_a_week()
+    public void A_round_is_due_every_14_days_by_default_and_open_for_a_week()
     {
         var parameters = new AiParams();
         var due = new DateOnly(2026, 10, 26);
 
         Assert.Equal(new DateOnly(2026, 11, 9), AiRoundRules.NextDue(due, parameters));
         Assert.Equal(new DateOnly(2026, 11, 1), AiRoundRules.LastDay(due, parameters));
-        // Weekly rounds (the engine allows them) close the day before the next is due.
-        Assert.Equal(new DateOnly(2026, 11, 1), AiRoundRules.LastDay(due, parameters with { EveryWeeks = 1 }));
+        // Weekly rounds close the day before the next is due.
+        Assert.Equal(new DateOnly(2026, 11, 1), AiRoundRules.LastDay(due, parameters with { EveryDays = 7 }));
+    }
+
+    [Theory]
+    [InlineData(1, "2026-10-27", "2026-10-26")] // Daily: open on its due day only.
+    [InlineData(3, "2026-10-29", "2026-10-28")]
+    [InlineData(60, "2026-12-25", "2026-11-01")]
+    public void Rounds_come_every_n_days_and_close_before_the_next_is_due(int days, string next, string last)
+    {
+        var parameters = new AiParams { EveryDays = days };
+        var due = new DateOnly(2026, 10, 26);
+
+        Assert.Equal(DateOnly.Parse(next), AiRoundRules.NextDue(due, parameters));
+        Assert.Equal(DateOnly.Parse(last), AiRoundRules.LastDay(due, parameters));
+    }
+
+    [Theory]
+    [InlineData(1, "day")]
+    [InlineData(5, "5 days")]
+    [InlineData(7, "week")]
+    [InlineData(14, "2 weeks")]
+    [InlineData(20, "20 days")]
+    public void The_prompt_asks_for_the_news_since_the_last_round(int days, string period)
+    {
+        Assert.Equal(period, AiPrompt.Period(days));
     }
 
     [Theory]

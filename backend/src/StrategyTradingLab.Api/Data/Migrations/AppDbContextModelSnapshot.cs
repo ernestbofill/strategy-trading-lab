@@ -54,6 +54,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("date")
                         .HasColumnName("due_on");
 
+                    b.Property<bool>("Extra")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("extra");
+
                     b.Property<bool>("PromptEdited")
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
@@ -105,9 +110,9 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasDatabaseName("ux_ai_rounds_strategy_id_due")
                         .HasFilter("status = 'due'");
 
-                    b.HasIndex("StrategyId", "DueOn")
+                    b.HasIndex("StrategyId", "DueOn", "Extra")
                         .IsUnique()
-                        .HasDatabaseName("ix_ai_rounds_strategy_id_due_on");
+                        .HasDatabaseName("ix_ai_rounds_strategy_id_due_on_extra");
 
                     b.ToTable("ai_rounds", null, t =>
                         {

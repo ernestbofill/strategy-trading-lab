@@ -308,9 +308,9 @@
     "idea": "Cada 2 setmanes la IA puntua cada acció de 0 a 100, i la puntuació més alta hauria de rebre una posició. Fes servir la teva pròpia IA.",
     "rationale": "Ningú no pot llegir totes les notícies i tots els informes financers de totes les empreses, però una IA sí. Executes el nostre prompt a la IA que ja fas servir; ella puntua cada acció, i l'estratègia assenyala la primera. Veuràs si tanta lectura es converteix en millors tries.",
     "settings": {
-      "everyWeeks": {
+      "everyDays": {
         "sentence": "Hi ha una ronda d'IA cada {value}.",
-        "value": "{n} setmanes"
+        "value": "{n} dies"
       },
       "topN": {
         "sentence": "A cada ronda, cada acció del top {value} per puntuació global rep un pas.",
@@ -320,7 +320,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "Cada `{everyWeeks} setmanes` fas la ronda d'IA: copia el prompt, enganxa'l a la teva IA i enganxa-hi la resposta."
+        "text": "Cada `{everyDays} dies` fas la ronda d'IA: copia el prompt, enganxa'l a la teva IA i enganxa-hi la resposta."
       },
       {
         "marker": "02",

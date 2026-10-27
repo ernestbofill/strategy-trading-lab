@@ -17,7 +17,7 @@ public record TemplateSummary(
     AiRoundDto? AiRound);
 
 /// <summary>Set when signals come from the user's AI rounds instead of price rules.</summary>
-public record AiRoundDto(int EveryWeeks, int TopN);
+public record AiRoundDto(int EveryDays, int TopN);
 
 /// <summary>
 /// Everything the review screen (2 / 5) and How we tested (2c) show, plus the tested defaults.

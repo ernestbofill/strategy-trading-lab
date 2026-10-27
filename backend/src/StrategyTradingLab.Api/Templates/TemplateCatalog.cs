@@ -162,10 +162,10 @@ public static class TemplateCatalog
         null,
         new AiParams())
     {
-        // Every 2 weeks or more, so a round's week to run it never overlaps the next round.
+        // A round can be run until the next is due, at most a week (AiRoundRules.LastDay).
         Settings =
         [
-            new("everyWeeks", 1, 2, 6),
+            new("everyDays", 1, 1, 60),
             new("topN", 1, 1, 3),
         ],
     };

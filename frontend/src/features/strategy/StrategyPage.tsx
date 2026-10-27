@@ -1,13 +1,13 @@
 import { Link, useParams } from 'react-router-dom'
-import type { StrategyDetail } from '../../api'
+import type { AiRoundsSummary, StrategyDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
-import { useT } from '../../i18n/I18n'
+import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { signalPath, strategySettingsPath } from '../dashboard/paths'
+import { aiRoundPath, aiRoundsPath, signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
@@ -52,9 +52,11 @@ function Summary({ s }: { s: StrategyDetail }) {
         <p className={styles.text}>
           {budget.used > 0
             ? t('strategy.noResults.budget')
-            : live
-            ? t('strategy.noResults.live')
-            : t('strategy.noResults.sim')}
+            : s.aiRounds?.done === 0
+              ? t('strategy.noResults.ai')
+              : live
+                ? t('strategy.noResults.live')
+                : t('strategy.noResults.sim')}
           {pastResult && (
             <>
               {' '}
@@ -75,6 +77,7 @@ function Summary({ s }: { s: StrategyDetail }) {
             {budget.totalSteps !== null && ` · ${t('strategy.budgetSteps', { steps: budget.steps ?? 0, total: budget.totalSteps })}`}
           </dd>
         </div>
+        {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
         {signals && (
           <div>
             <dt>{t('strategy.signals')}</dt>
@@ -85,6 +88,39 @@ function Summary({ s }: { s: StrategyDetail }) {
         )}
       </dl>
     </div>
+  )
+}
+
+/** AI strategies: when the next round is due, and how the picks did against the rest. */
+function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummary }) {
+  const t = useT()
+  const { locale } = useI18n()
+  return (
+    <>
+      <div>
+        <dt>{t('strategy.ai.round')}</dt>
+        <dd>
+          {rounds.due ? (
+            <Link to={aiRoundPath(s.id)}>{t('strategy.ai.dueNow')}</Link>
+          ) : rounds.nextDueOn ? (
+            t('strategy.ai.nextOn', { date: shortDate(rounds.nextDueOn, locale) })
+          ) : (
+            '–'
+          )}
+          {` · ${t('strategy.ai.done', { n: rounds.done })}`}
+          {rounds.skipped > 0 && ` · ${t('strategy.ai.skipped', { n: rounds.skipped })}`}
+        </dd>
+      </div>
+      {rounds.picksVsRest && (
+        <div>
+          <dt>{t('strategy.ai.picksVsRest')}</dt>
+          <dd>
+            <span className={styles.mono}>{signedPct(rounds.picksVsRest.picks, 1)}</span> {t('strategy.ai.vs')}{' '}
+            <span className={styles.mono}>{signedPct(rounds.picksVsRest.rest, 1)}</span>
+          </dd>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -181,7 +217,14 @@ export function StrategyPage() {
                 <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
                 <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
               </Link>
-              <SoonTile title={t('strategy.tile.backtestTitle')} sub={t('strategy.tile.backtestSub')} />
+              {s.aiRounds ? (
+                <Link to={aiRoundsPath(s.id)} className={styles.tileLink}>
+                  <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.aiRoundsTitle')}</span>
+                  <span className={styles.detail}>{t('strategy.tile.aiRoundsSub')}</span>
+                </Link>
+              ) : (
+                <SoonTile title={t('strategy.tile.backtestTitle')} sub={t('strategy.tile.backtestSub')} />
+              )}
             </div>
           </Screen>
         )

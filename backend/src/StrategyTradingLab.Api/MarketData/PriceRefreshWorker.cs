@@ -153,6 +153,10 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             evaluation = await evaluator.RunAsync(stoppingToken);
             logger.LogInformation("Strategies evaluated: {Strategies}, {Signals} new signals, {Trades} new trades, {Missed} missed, {Failed} failed.",
                 evaluation.Strategies, evaluation.NewSignals, evaluation.NewTrades, evaluation.Missed, evaluation.Failed);
+            // AI strategies' signals come from their rounds; the daily check makes their trades and moves their rounds on.
+            var ai = await scope.ServiceProvider.GetRequiredService<Ai.AiRounds>().RunDailyAsync(stoppingToken);
+            logger.LogInformation("AI strategies checked: {Strategies}, {Trades} new trades, {Missed} missed, {Failed} failed.",
+                ai.Strategies, ai.NewTrades, ai.Missed, ai.Failed);
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

@@ -15,6 +15,7 @@ import { errorText } from './copy'
 import { logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
+import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 
 /** Account, first version (spec: Account): the email, change password, log out. */
 export function AccountPage() {
@@ -81,6 +82,10 @@ export function AccountPage() {
 
       <Section title={t('account.page.emails')}>
         <OverviewEmail current={account.overviewEmail} onSaved={refresh} />
+      </Section>
+
+      <Section title={t('account.page.dataPrivacy')}>
+        <AiSharing current={account.aiSharing} onSaved={refresh} />
       </Section>
 
       <Section title={t('account.page.changePassword')}>
@@ -212,6 +217,36 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: () => 
         {busy ? t('account.saving') : t('account.page.currencySave')}
       </button>
     </form>
+  )
+}
+
+/** Sharing AI rounds anonymously (spec: AI round, AI data sharing): off by default, asked at the first round. */
+function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Promise<unknown> }) {
+  const t = useT()
+  const [message, setMessage] = useState<FormMessageState>(null)
+  const [busy, setBusy] = useState(false)
+
+  const change = async (enabled: boolean) => {
+    if (busy) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      await api.setAiSharing(enabled)
+      await onSaved()
+    } catch (err) {
+      setMessage({ tone: 'error', text: errorText(err) })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className={styles.form}>
+      <Checkbox checked={current} onChange={(enabled) => void change(enabled)}>
+        {t('account.aiSharing')}
+      </Checkbox>
+      <AiSharingDetails />
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+    </div>
   )
 }
 

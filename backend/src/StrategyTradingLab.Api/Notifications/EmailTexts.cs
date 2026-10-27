@@ -72,6 +72,15 @@ public static class EmailTexts
                 : ca ? $"el mercat ha tancat un {Pct(belowSma.Value)}% per sota de la seva mitjana de 200 dies"
                 : $"the market closed {Pct(belowSma.Value)}% below its 200-day average";
         }
+        if (s.TemplateKey == "ai")
+        {
+            var score = Fact(s.Facts, "score");
+            var rank = Fact(s.Facts, "rank");
+            if (score is null) return ca ? "la teva IA l'ha puntuat entre els primers" : "your AI scored it among the top";
+            return ca
+                ? $"la teva IA l'ha puntuat amb {Pct(score.Value)} sobre 100, {(rank is null or 1 ? "la puntuació més alta de la ronda" : $"el número {rank:0} de la ronda")}"
+                : $"your AI scored it {Pct(score.Value)} out of 100, {(rank is null or 1 ? "the top score of the round" : $"number {rank:0} in the round")}";
+        }
         if (s.TemplateKey == "trend")
         {
             var aboveSma = Fact(s.Facts, "aboveSmaPct");
@@ -144,16 +153,39 @@ public static class EmailTexts
             $"{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerEn}");
     }
 
+    /// <summary>The AI round screen of a strategy.</summary>
+    public static string AiRoundUrl(Guid strategyId, string appUrl) => $"{appUrl}/strategies/{strategyId}/ai-round";
+
+    /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
+    public static (string Subject, string Body) AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en")
+    {
+        var ca = locale == "ca";
+        var names = strategies.Count == 1 ? strategies[0].Name
+            : string.Join(", ", strategies.Take(strategies.Count - 1).Select(s => s.Name)) + (ca ? " i " : " and ") + strategies[^1].Name;
+        var many = strategies.Count > 1;
+        var text = new StringBuilder(ca
+            ? $"És l'hora de la ronda d'IA {(many ? "de les estratègies" : "de")} {names}. Són uns dos minuts.\n\n"
+            : $"Time for the AI round{(many ? "s" : "")} of {names}. It takes about two minutes.\n\n");
+        foreach (var (id, name) in strategies) text.Append($"{name}: {AiRoundUrl(id, appUrl)}\n");
+        text.Append(ca
+            ? $"\nL'aplicació no es connecta a la teva IA. Si omets una ronda, aquella ronda no té senyal.\n\n{DisclaimerCa}"
+            : $"\nThe app doesn't connect to your AI. If you skip a round, there's no signal that round.\n\n{DisclaimerEn}");
+        return (ca ? $"És l'hora de la ronda d'IA de {names}" : $"Time for the AI round of {names}", text.ToString());
+    }
+
     /// <summary>The daily overview: what waits, what changed, what is close, and one line per strategy.</summary>
     public static (string Subject, string Body) Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
-        IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en")
+        IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en",
+        IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null)
     {
+        aiRoundsDue ??= [];
         if (locale == "ca")
         {
             var text = new StringBuilder($"El teu resum diari, {Date(day, locale)}.\n");
-            if (waiting.Count > 0)
+            if (waiting.Count > 0 || aiRoundsDue.Count > 0)
             {
                 text.Append("\nT’espera a tu\n");
+                foreach (var (id, name) in aiRoundsDue) text.Append($"- És l'hora de la ronda d'IA de {name}. {AiRoundUrl(id, appUrl)}\n");
                 foreach (var s in waiting)
                 {
                     var detail = s.Side == TradeSide.Sell ? ": venda" : s.StepNo is { } no && s.MaxSteps is { } max ? $": pas {no} de {max}" : "";
@@ -185,9 +217,10 @@ public static class EmailTexts
         }
 
         var textEn = new StringBuilder($"Your daily overview, {Date(day)}.\n");
-        if (waiting.Count > 0)
+        if (waiting.Count > 0 || aiRoundsDue.Count > 0)
         {
             textEn.Append("\nWaiting for you\n");
+            foreach (var (id, name) in aiRoundsDue) textEn.Append($"- Time for the AI round of {name}. {AiRoundUrl(id, appUrl)}\n");
             foreach (var s in waiting)
             {
                 var detail = s.Side == TradeSide.Sell ? ": sale" : s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "";

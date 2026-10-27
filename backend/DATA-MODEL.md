@@ -17,7 +17,7 @@ Source: [app spec §8](../docs/strategy-trading-lab-app-spec.md#8-data-the-app-n
 - **Live signals are answered Confirm, Skip or Snooze.** There is no automatic reminder; Snooze notifies again the next day.
 - **Translation-ready.** The database stores codes and facts, never display sentences: statuses, reasons and signal facts are rendered in the reader's `locale` when shown or sent. v1 ships in English and Catalan; template copy is one file per language. The only translatable database text, what an asset does, is in `asset_texts`, one row per language.
 - **Accounts**: sign-up, log-in and sessions ([AUTH.md](AUTH.md)). There is no seeded user.
-- **AI specifics are deferred** (the feature isn't defined yet): no AI round tables or AI columns. The AI template's settings (sources, prompt, round frequency) will live in `params` like any other.
+- **AI rounds** (*Your AI's top picks*): `ai_rounds` per strategy, `shared_ai_rounds` apart from account data, and `users.ai_sharing`. The AI template's settings (round frequency, top N, sources, the user's instructions) live in `params` like any other: `{"everyWeeks":2,"topN":1,"news":true,"mood":true,"figures":true,"instructions":null}`.
 - **This migration has the user-facing tables only.** Market data, FX rates, daily evaluations and backtest results come with the engine (see the end).
 
 ## Conventions
@@ -100,7 +100,8 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | created_at, updated_at | timestamptz | |
 
-AI data-sharing consent is added with the AI feature.
+| ai_sharing | bool, not null, default false | Shares AI rounds (asked at the first round, changed in the account; off removes what was shared) |
+| ai_sharing_changed_at | timestamptz, null | When the user last answered; null until then (the round screen shows the consent box) |
 
 ### `sessions` and `email_tokens`
 
@@ -109,6 +110,48 @@ How they are used: [AUTH.md](AUTH.md). Both cascade from `users`.
 `sessions`: one row per logged-in device. `token_hash bytea` unique (the SHA-256 of the cookie's token), `created_at`, `last_used_at` (written at most once a minute), `expires_at` (30 days after last use, at most 90 after creation), `user_agent text null`. No IP address.
 
 `email_tokens`: the single-use links. `purpose` (`verify_email` | `reset_password`, CHECK), `token_hash bytea` unique, `created_at`, `expires_at` (24 hours or 1 hour), `used_at null`.
+
+### `ai_rounds`
+
+One AI round of a *Your AI's top picks* strategy. The first is due on the strategy's start day; each next one `everyWeeks` after the previous due date, whether it was done or skipped. A due round can be run from its due date for 7 days, then it is skipped (made by `AiRounds.SweepAsync`, run on reads and in the daily check).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| strategy_id | uuid FK → strategies, cascade | |
+| due_on | date, not null | Unique with strategy_id |
+| status | text, not null | `due` \| `done` \| `skipped` |
+| done_at | timestamptz, null | `CHECK ((status = 'done') = (done_at IS NOT NULL))` |
+| session_date | date, null | The last finished US session when done: its signals' `signal_date`, and where *Picks vs the rest* starts |
+| prompt_version | int, null | `AiPrompt.Version` |
+| prompt_edited | bool, not null, default false | The user's own instructions |
+| prompt_text | text, null | The prompt as the round showed it |
+| ai_model | text, null | "Claude · Opus", or the user's own name for it (60 characters at most) |
+| answer | text, null | The whole pasted answer (50,000 characters at most) |
+| scores | jsonb, null | `[{assetId, symbol, name, overall, news, mood, figures, reason, step}]`, `step` null for a stock that got none |
+| shared_round_id | uuid FK → shared_ai_rounds, set null, null | Its shared copy, when shared: the only link between the two, kept on the user's side |
+| created_at, updated_at | timestamptz | |
+
+A done round has its answer, scores, model and session (`CHECK`). One due round per strategy: partial unique index on `strategy_id WHERE status = 'due'`.
+
+An AI round's signals are ordinary `signals` rows (side `buy`, the next step for the stock). Their `facts` are `{"score":83,"rank":1,"roundId":"…","tradeAfter":"2026-10-27","endsOn":"2026-11-08"}`: the signal trade is at the first open after `tradeAfter` (the round's New York date, or the day before when it ran before the open), and a live one still waiting on `endsOn` (the next round's due date) is missed.
+
+### `shared_ai_rounds`
+
+What a user who shares AI rounds gives, apart from account data: no user, strategy or signal id, nothing about budget, steps or trades, and only the day (`created_at` is that day's midnight UTC, not the moment). The user's round points to it (`ai_rounds.shared_round_id`); nothing here points back. Turning sharing off deletes the shared rows the user's rounds point to (`AiRounds.ForgetSharedAsync`). Deleting an account must call it before the rounds go. Saving a round locks the user's row while it reads the sharing choice, so turning sharing off at the same time either is seen or removes that round's copy too.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| round_on | date, not null | New York's date |
+| ai_model | text, not null | |
+| prompt_version | int, not null | |
+| prompt_edited | bool, not null | |
+| sources | jsonb, not null | `["news","mood","figures"]`, those on |
+| stocks | jsonb, not null | The stocks' symbols |
+| answer | text, not null | Without what looks like an email address, a phone number or a link's parameters |
+| scores | jsonb, not null | `[{symbol, overall, news, mood, figures}]` |
+| created_at | timestamptz | |
 
 ### `push_subscriptions`
 
@@ -281,7 +324,7 @@ Every notification the app sends, one row per channel. A notification goes out *
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade | |
 | signal_id | uuid FK → signals, cascade, null | What the notification is about, for `signal` and `snoozed`. Null for kinds about nothing in particular (`overview`, later) |
-| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the daily overview, no signal). Later: `ai_round_due` |
+| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the daily overview, no signal) \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) |
 | channel | text, not null | `push` \| `email` |
 | for_date | date, not null | The day it is for: the signal day, or the `snoozed_until` day |
 | sent_at | timestamptz, null | Null while queued |

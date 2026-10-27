@@ -239,6 +239,8 @@ export interface StockRow {
   /** What was put in, fees included, and its gain in percent (null with no buys). */
   invested: number
   result: number | null
+  /** AI strategies: its overall score in the last AI round that scored it. */
+  aiScore?: number | null
 }
 
 /** The template's words for a stock that isn't bought: "the discount zone", "Below its long trend". */
@@ -273,6 +275,136 @@ export interface StrategyDetail {
   signalHistory: StrategySignalItem[]
   rates: CurrencyRates[]
   settings?: Record<string, number> | null
+  /** AI strategies only: the next round and how the picks did. */
+  aiRounds?: AiRoundsSummary | null
+}
+
+/** What the AI prompt asks for: the sources on, and the user's own instructions (null for the suggested ones). */
+export interface AiSetup {
+  news: boolean
+  mood: boolean
+  figures: boolean
+  instructions: string | null
+}
+
+/** The prompt for the review and the editor, before a strategy exists. */
+export interface AiPromptRequest extends AiSetup {
+  everyWeeks: number
+  /** The ticked stocks. */
+  assetIds: string[]
+}
+
+export interface AiPromptPreview {
+  version: number
+  text: string
+  /** The suggested instructions for these sources: what "Reset to suggested" puts back. */
+  suggested: string
+}
+
+export interface AiStock {
+  assetId: string
+  symbol: string
+  name: string
+}
+
+/** The AI round screen: backend Ai/AiRoundDtos.cs (AiRoundDetail). */
+export interface AiRoundDetail {
+  strategyId: string
+  strategyName: string
+  templateName: string
+  mode: StrategyMode
+  /** The strategy's own currency. */
+  currency: Currency
+  roundId: string
+  dueOn: string
+  /** The last day it can be run; after it the round is skipped. */
+  lastDay: string
+  /** Whether it can be run today. */
+  open: boolean
+  today: string
+  promptVersion: number
+  promptEdited: boolean
+  prompt: string
+  setup: AiSetup
+  suggested: string
+  stocks: AiStock[]
+  everyWeeks: number
+  topN: number
+  lastModel: string | null
+  sharing: boolean
+  /** Whether the user has answered the sharing question (the consent box shows until then). */
+  sharingAsked: boolean
+}
+
+/** A stock's scores as read from the answer, with the step it gets (or got). */
+export interface AiScore {
+  assetId: string
+  symbol: string
+  name: string
+  overall: number
+  news: number | null
+  mood: number | null
+  figures: number | null
+  reason: string
+  step: number | null
+}
+
+/** What was read from a pasted answer. `short`: why fewer stocks than the top N get a step. */
+export interface AiReading {
+  scores: AiScore[]
+  problems: string[]
+  ok: boolean
+  maxSteps: number | null
+  stepAmount: number | null
+  short: 'budget' | 'allSteps' | 'unavailable' | null
+}
+
+export interface AiRoundResult {
+  roundId: string
+  signalIds: string[]
+  mode: StrategyMode
+}
+
+/** The picks' and the rest's average price change since their rounds, in percent. */
+export interface PicksVsRest {
+  picks: number
+  rest: number
+  rounds: number
+}
+
+export interface AiRoundItem {
+  id: string
+  dueOn: string
+  status: 'due' | 'done' | 'skipped'
+  doneAt: string | null
+  sessionDate: string | null
+  aiModel: string | null
+  promptVersion: number | null
+  promptEdited: boolean
+  prompt: string | null
+  answer: string | null
+  scores: AiScore[]
+  picks: number | null
+  rest: number | null
+}
+
+export interface AiRoundHistory {
+  strategyId: string
+  strategyName: string
+  mode: StrategyMode
+  /** The user's local date. */
+  today: string
+  rounds: AiRoundItem[]
+  picksVsRest: PicksVsRest | null
+}
+
+/** On the strategy page: the next round (due now or later) and the picks against the rest. */
+export interface AiRoundsSummary {
+  nextDueOn: string | null
+  due: boolean
+  done: number
+  skipped: number
+  picksVsRest: PicksVsRest | null
 }
 
 export type EnteredAs = 'amount' | 'shares'
@@ -422,6 +554,8 @@ export interface NewStrategy {
   assetIds: string[]
   /** The Advanced settings the user changed (setting key → value); the rest keep the tested defaults. */
   settings: Record<string, number>
+  /** Templates driven by AI rounds: what the prompt asks for. */
+  ai?: AiSetup
 }
 
 /** A setting on the admin page. A secret's `value` is never sent: only whether it is set. */
@@ -488,6 +622,8 @@ export interface Account {
   /** Of the user's new strategies; running ones keep theirs. */
   currency: Currency
   role: Role
+  /** Shares AI rounds anonymously. */
+  aiSharing: boolean
 }
 
 /** What Sign-up sends. */
@@ -657,5 +793,21 @@ export interface Api {
   getFeedback(status?: FeedbackStatus): Promise<FeedbackItem[]>
   updateFeedback(id: string, patch: FeedbackPatch): Promise<FeedbackItem>
   deleteFeedback(id: string): Promise<void>
+  /** Public: the AI template's prompt for these sources, instructions and stocks. Rejects with `InvalidFieldsError`. */
+  previewAiPrompt(request: AiPromptRequest): Promise<AiPromptPreview>
+  /** The strategy's AI round that is due (or the next one); undefined for anything else. */
+  getAiRound(strategyId: string): Promise<AiRoundDetail | undefined>
+  /** Reads a pasted answer; saves nothing. */
+  readAiAnswer(strategyId: string, answer: string): Promise<AiReading>
+  /**
+   * "Use these scores", with the prompt as the screen showed it. Rejects with `InvalidFieldsError` (`answer`, `aiModel`) or
+   * `InvalidValueError` (not due, done already, or the prompt changed since).
+   */
+  useAiScores(strategyId: string, answer: string, aiModel: string, share: boolean | null, prompt: string): Promise<AiRoundResult>
+  getAiRounds(strategyId: string): Promise<AiRoundHistory | undefined>
+  /** A running AI strategy's prompt. Rejects with `InvalidFieldsError` (`sources`, `instructions`). */
+  updateAiPrompt(strategyId: string, setup: AiSetup): Promise<void>
+  /** Turns sharing AI rounds anonymously on or off. */
+  setAiSharing(enabled: boolean): Promise<void>
 
 }

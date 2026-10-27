@@ -108,6 +108,8 @@ export const account: Record<keyof typeof en, string> = {
   'account.page.adminLine': 'Configuració, base de dades, preus i revisió de comentaris.',
   'account.page.adminLink': 'Configuració d\'administració →',
   'account.page.changePassword': 'Canvia la contrasenya',
+  'account.page.dataPrivacy': 'Dades i privacitat',
+  'account.aiSharing': 'Comparteix les meves rondes d’IA, per saber quines IA puntuen millor les accions. Si ho desactivo, s’esborra el que he compartit.',
   'account.page.currentPassword': 'Contrasenya actual',
   'account.page.passwordChanged': 'Contrasenya canviada. S’ha tancat la sessió als teus altres dispositius.',
   'account.page.logOut': 'Tanca la sessió',

@@ -19,6 +19,8 @@ export function newStrategyFrom(draft: DraftState, template: TemplateDetail, nam
         ? [watches.fund.id]
         : watches.starterList.filter((s) => !draft.unticked.includes(s.symbol)).map((s) => s.id),
     settings: draft.settings,
+    // What the prompt asks for, for templates driven by AI rounds.
+    ...(template.aiRound ? { ai: { ...draft.aiSources, instructions: draft.aiInstructions } } : {}),
   }
 }
 

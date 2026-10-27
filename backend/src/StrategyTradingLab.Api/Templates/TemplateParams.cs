@@ -111,12 +111,31 @@ public record TrendParams
     [Range(0, 120)] public int CooldownDays { get; init; } = 5;
 }
 
-/// <summary>Your AI's top picks (new, no POC rules).</summary>
-public record AiParams
+/// <summary>Your AI's top picks (new, no POC rules): the round's pace and what the prompt asks for.</summary>
+public record AiParams : IValidatableObject
 {
+    /// <summary>The longest instructions an edited prompt may have.</summary>
+    public const int MaxInstructions = 4000;
+
     /// <summary>An AI round every this many weeks.</summary>
     [Range(1, 8)] public int EveryWeeks { get; init; } = 2;
 
     /// <summary>How many top-scored stocks get a step per round.</summary>
     [Range(1, 5)] public int TopN { get; init; } = 1;
+
+    /// <summary>What the AI reads (spec: "What the AI reads"): each source on adds a section and a column to the prompt.</summary>
+    public bool News { get; init; } = true;
+    public bool Mood { get; init; } = true;
+    public bool Figures { get; init; } = true;
+
+    /// <summary>The user's own instructions (Edit prompt); null for the suggested ones.</summary>
+    [MaxLength(MaxInstructions)] public string? Instructions { get; init; }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (!News && !Mood && !Figures)
+            yield return new ValidationResult("At least one source stays on.", [nameof(News), nameof(Mood), nameof(Figures)]);
+        if (Instructions is not null && string.IsNullOrWhiteSpace(Instructions))
+            yield return new ValidationResult("Write the instructions, or reset to the suggested ones.", [nameof(Instructions)]);
+    }
 }

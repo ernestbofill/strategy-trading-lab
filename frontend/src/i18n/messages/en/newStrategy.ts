@@ -52,21 +52,6 @@ export const newStrategy = {
   'newStrategy.aiSource.figures.title': 'Figures',
   'newStrategy.aiSource.figures.detail': 'Quarterly numbers',
 
-  // The suggested prompt (read-only). {placeholders} are filled with highlighted values.
-  'newStrategy.prompt.aria': 'Suggested prompt',
-  'newStrategy.prompt.comment': '// suggested prompt · v1',
-  'newStrategy.prompt.intro':
-    "Today is {date}. Search the web for news and data from the last {period}, plus each company's latest quarterly figures.",
-  'newStrategy.prompt.date': '[date]',
-  'newStrategy.prompt.period': '2 weeks',
-  'newStrategy.prompt.score': 'Score each stock below from {min} to {max} on:',
-  'newStrategy.prompt.criteria': '[criteria]',
-  'newStrategy.prompt.overall': 'and overall. Give a one-line reason and your main sources, with dates.',
-  'newStrategy.prompt.answer': 'Answer only in this table:',
-  'newStrategy.prompt.table': '| Stock | {sources} | Overall | Reason |',
-  'newStrategy.prompt.stocks': 'Stocks:',
-  'newStrategy.prompt.yourStocks': '[your stocks to watch]',
-
   // Tested box and How we tested
   'newStrategy.tested.title': 'Tested',
   'newStrategy.tested.howLink': 'How we tested ›',
@@ -200,6 +185,7 @@ export const newStrategy = {
   'newStrategy.confirm.overview': 'By email, after the US market close',
   'newStrategy.confirm.alerts': 'App and email',
   'newStrategy.confirm.prompt': 'Suggested',
+  'newStrategy.confirm.promptEdited': 'Edited',
   'newStrategy.confirm.next': 'What happens next',
   'newStrategy.confirm.next.noPast': 'There are no past results for this template.',
   'newStrategy.confirm.next.firstAi': 'Your first AI round is due now.',

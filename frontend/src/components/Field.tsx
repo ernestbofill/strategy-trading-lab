@@ -81,6 +81,40 @@ export function TextField({ label, value, onChange, type = 'text', autoComplete,
   )
 }
 
+interface TextAreaFieldProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  rows?: number
+  maxLength?: number
+  placeholder?: string
+  hint?: ReactNode
+  error?: string | null
+  hideLabel?: boolean
+}
+
+/** Several lines of text: a pasted answer, a prompt's instructions. */
+export function TextAreaField({ label, value, onChange, rows = 8, maxLength, placeholder, hint, error, hideLabel }: TextAreaFieldProps) {
+  const id = useId()
+  return (
+    <FieldShell id={id} label={label} hint={hint} error={error} hideLabel={hideLabel}>
+      <textarea
+        id={id}
+        className={`${styles.input} ${styles.textarea}`}
+        rows={rows}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        autoCapitalize="off"
+        spellCheck={false}
+        value={value}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(id, hint, error)}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </FieldShell>
+  )
+}
+
 interface PasswordFieldProps {
   label: string
   value: string

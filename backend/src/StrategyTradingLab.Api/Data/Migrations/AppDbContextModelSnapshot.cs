@@ -25,6 +25,100 @@ namespace StrategyTradingLab.Api.Data.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.AiRound", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AiModel")
+                        .HasColumnType("text")
+                        .HasColumnName("ai_model");
+
+                    b.Property<string>("Answer")
+                        .HasColumnType("text")
+                        .HasColumnName("answer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DoneAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("done_at");
+
+                    b.Property<DateOnly>("DueOn")
+                        .HasColumnType("date")
+                        .HasColumnName("due_on");
+
+                    b.Property<bool>("PromptEdited")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("prompt_edited");
+
+                    b.Property<string>("PromptText")
+                        .HasColumnType("text")
+                        .HasColumnName("prompt_text");
+
+                    b.Property<int?>("PromptVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("prompt_version");
+
+                    b.Property<JsonDocument>("Scores")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("scores");
+
+                    b.Property<DateOnly?>("SessionDate")
+                        .HasColumnType("date")
+                        .HasColumnName("session_date");
+
+                    b.Property<Guid?>("SharedRoundId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shared_round_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("StrategyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("strategy_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ai_rounds");
+
+                    b.HasIndex("SharedRoundId")
+                        .HasDatabaseName("ix_ai_rounds_shared_round_id");
+
+                    b.HasIndex("StrategyId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_ai_rounds_strategy_id_due")
+                        .HasFilter("status = 'due'");
+
+                    b.HasIndex("StrategyId", "DueOn")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ai_rounds_strategy_id_due_on");
+
+                    b.ToTable("ai_rounds", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_rounds_done", "(status = 'done') = (done_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_ai_rounds_done_answer", "status <> 'done' OR (answer IS NOT NULL AND scores IS NOT NULL AND ai_model IS NOT NULL AND session_date IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_ai_rounds_status", "status IN ('due', 'done', 'skipped')");
+                        });
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.AppSetting", b =>
                 {
                     b.Property<string>("Key")
@@ -925,7 +1019,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_notifications_channel", "channel IN ('push', 'email')");
 
-                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview')");
+                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview', 'ai_round')");
 
                             t.HasCheckConstraint("ck_notifications_signal_id", "(kind IN ('signal', 'snoozed')) = (signal_id IS NOT NULL)");
                         });
@@ -1024,6 +1118,65 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasDatabaseName("ix_push_subscriptions_user_id");
 
                     b.ToTable("push_subscriptions", (string)null);
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.SharedAiRound", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AiModel")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ai_model");
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("answer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<bool>("PromptEdited")
+                        .HasColumnType("boolean")
+                        .HasColumnName("prompt_edited");
+
+                    b.Property<int>("PromptVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("prompt_version");
+
+                    b.Property<DateOnly>("RoundOn")
+                        .HasColumnType("date")
+                        .HasColumnName("round_on");
+
+                    b.Property<JsonDocument>("Scores")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("scores");
+
+                    b.Property<JsonDocument>("Sources")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("sources");
+
+                    b.Property<JsonDocument>("Stocks")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("stocks");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shared_ai_rounds");
+
+                    b.HasIndex("RoundOn")
+                        .HasDatabaseName("ix_shared_ai_rounds_round_on");
+
+                    b.ToTable("shared_ai_rounds", (string)null);
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Signal", b =>
@@ -1394,6 +1547,15 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("AiSharing")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("ai_sharing");
+
+                    b.Property<DateTimeOffset?>("AiSharingChangedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("ai_sharing_changed_at");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamptz")
@@ -1626,6 +1788,22 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                             t.HasCheckConstraint("ck_user_trades_source_signal", "(source = 'signal') = (signal_id IS NOT NULL)");
                         });
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.AiRound", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.SharedAiRound", null)
+                        .WithMany()
+                        .HasForeignKey("SharedRoundId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ai_rounds_shared_ai_rounds_shared_round_id");
+
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Strategy", null)
+                        .WithMany()
+                        .HasForeignKey("StrategyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ai_rounds_strategies_strategy_id");
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.AssetText", b =>

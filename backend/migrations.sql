@@ -927,3 +927,142 @@ BEGIN
     END IF;
 END $EF$;
 COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    ALTER TABLE notifications DROP CONSTRAINT ck_notifications_kind;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    ALTER TABLE users ADD ai_sharing boolean NOT NULL DEFAULT FALSE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    ALTER TABLE users ADD ai_sharing_changed_at timestamptz;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    CREATE TABLE ai_rounds (
+        id uuid NOT NULL,
+        strategy_id uuid NOT NULL,
+        due_on date NOT NULL,
+        status text NOT NULL,
+        done_at timestamptz,
+        session_date date,
+        prompt_version integer,
+        prompt_edited boolean NOT NULL DEFAULT FALSE,
+        prompt_text text,
+        ai_model text,
+        answer text,
+        scores jsonb,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        updated_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_ai_rounds PRIMARY KEY (id),
+        CONSTRAINT ck_ai_rounds_done CHECK ((status = 'done') = (done_at IS NOT NULL)),
+        CONSTRAINT ck_ai_rounds_done_answer CHECK (status <> 'done' OR (answer IS NOT NULL AND scores IS NOT NULL AND ai_model IS NOT NULL AND session_date IS NOT NULL)),
+        CONSTRAINT ck_ai_rounds_status CHECK (status IN ('due', 'done', 'skipped')),
+        CONSTRAINT fk_ai_rounds_strategies_strategy_id FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    CREATE TABLE shared_ai_rounds (
+        id uuid NOT NULL,
+        round_on date NOT NULL,
+        ai_model text NOT NULL,
+        prompt_version integer NOT NULL,
+        prompt_edited boolean NOT NULL,
+        sources jsonb NOT NULL,
+        stocks jsonb NOT NULL,
+        answer text NOT NULL,
+        scores jsonb NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_shared_ai_rounds PRIMARY KEY (id)
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    ALTER TABLE notifications ADD CONSTRAINT ck_notifications_kind CHECK (kind IN ('signal', 'snoozed', 'overview', 'ai_round'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    CREATE UNIQUE INDEX ix_ai_rounds_strategy_id_due_on ON ai_rounds (strategy_id, due_on);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    CREATE UNIQUE INDEX ux_ai_rounds_strategy_id_due ON ai_rounds (strategy_id) WHERE status = 'due';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    CREATE INDEX ix_shared_ai_rounds_round_on ON shared_ai_rounds (round_on);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025183508_AddAiRounds') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261025183508_AddAiRounds', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    ALTER TABLE ai_rounds ADD shared_round_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    CREATE INDEX ix_ai_rounds_shared_round_id ON ai_rounds (shared_round_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    ALTER TABLE ai_rounds ADD CONSTRAINT fk_ai_rounds_shared_ai_rounds_shared_round_id FOREIGN KEY (shared_round_id) REFERENCES shared_ai_rounds (id) ON DELETE SET NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261025223640_LinkSharedAiRounds') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261025223640_LinkSharedAiRounds', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

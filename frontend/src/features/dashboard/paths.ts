@@ -5,3 +5,7 @@ export const strategySettingsPath = (id: string) => `/strategies/${id}/settings`
 export const signalPath = (strategyId: string, signalId: string) => `/strategies/${strategyId}/signals/${signalId}`
 export const aiRoundPath = (id: string) => `/strategies/${id}/ai-round`
 export const accountPath = '/account'
+/** A strategy's AI round history. */
+export const aiRoundsPath = (id: string) => `/strategies/${id}/ai-rounds`
+/** The prompt editor of a running AI strategy. */
+export const aiPromptPath = (id: string) => `/strategies/${id}/prompt`

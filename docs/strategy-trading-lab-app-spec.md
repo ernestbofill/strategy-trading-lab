@@ -510,6 +510,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - For simulations, a third link: "Go live with these settings" (not drawn).
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - A notifications switch for this strategy, and "End the strategy" (not drawn). There is no pause: with notifications off the strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
+- "Delete the strategy" (built, not drawn), at the bottom: a confirm step in place, "Delete [name]? Its signals, trades and results go with it. This can't be undone." with "Delete" and "Keep it". It deletes the strategy for good, with its stocks, signals, trades, results and AI rounds, and the rounds it shared (nothing would point to them any more, so turning sharing off couldn't remove them). Then the dashboard, in place of the strategy page in the history. The name is free again.
 - Bottom, Live: "Your results come from the trades you confirmed, at your prices. Not financial advice. Signals follow your rules." Simulation (draft): "Results come from paper trades at the next day's opening price. Not financial advice. Signals follow your rules."
 
 **Metrics**
@@ -652,7 +653,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Notifications:** each one sent, per channel (push, email): kind, the signal it is for, the day, sent or failed. Each goes out once per channel.
 - **User trades (live):** strategy, stock, date, side, price, amount and shares (and which one was entered), fee, exchange rate (and whether the user changed it), source (signal or manual), linked signal; manual trades can be deleted.
 - **AI rounds:** strategy, due date, status (due, done, skipped), date run, the session its signals are dated, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons, and the step each stock got (`ai_rounds`).
-- **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round).
+- **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round); deleting the strategy removes them too.
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
 - **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
 - **Market data:** daily US prices and volumes, exchange rates.

@@ -137,6 +137,22 @@ public static class StrategyEndpoints
         })
         .WithName("UpdateStrategySettings")
         .WithSummary("Updates the settings (rules) of a running strategy.");
+
+        group.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound>> (
+            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, CancellationToken cancellationToken) =>
+        {
+            var user = await CurrentUser(sessions, cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            // Its shared AI rounds first: once the strategy is gone, nothing points to them (spec: AI data sharing).
+            await rounds.ForgetSharedAsync(user.Id, cancellationToken, id);
+            // Its stocks, signals, trades, evaluations and AI rounds go with it (ON DELETE CASCADE).
+            var deleted = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
+            if (deleted == 0) return TypedResults.NotFound();
+            await transaction.CommitAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithName("DeleteStrategy")
+        .WithSummary("Deletes a strategy for good, with its signals, trades, results and AI rounds.");
     }
 
     /// <summary>The logged-in user: the endpoints require one (RequireUser), so it is there.</summary>

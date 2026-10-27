@@ -1,0 +1,21 @@
+/* The same confirm step as deleting a trade. */
+.confirmBox {
+  composes: confirmBox from './SignalsAndTrades.module.css';
+}
+
+.confirmActions {
+  composes: confirmActions from './SignalsAndTrades.module.css';
+}
+
+.btnDanger {
+  composes: btnDanger from './SignalsAndTrades.module.css';
+}
+
+.btnSecondary {
+  composes: btnSecondary from './SignalsAndTrades.module.css';
+}
+
+.start {
+  display: flex;
+  justify-content: center;
+}

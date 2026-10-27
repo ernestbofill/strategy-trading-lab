@@ -227,6 +227,7 @@ export const httpApi: Api = {
   skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
   snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
+  deleteStrategy: async (id) => void (await tradesRequest('DELETE', `/strategies/${encodeURIComponent(id)}`)),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
   sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,

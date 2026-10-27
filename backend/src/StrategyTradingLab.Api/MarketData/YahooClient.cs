@@ -27,6 +27,9 @@ public interface IMarketDataSource
 
 public class MarketDataException(string message, Exception? inner = null) : Exception(message, inner);
 
+/// <summary>Yahoo answered, but the asset is quoted in something the app can't use yet (a minor unit it doesn't scale, no currency).</summary>
+public class UnsupportedCurrencyException(string message) : MarketDataException(message);
+
 /// <summary>
 /// Daily candles from Yahoo's chart endpoint, the POC's source (yfinance reads the same one). It is unofficial, so a
 /// failure is an expected thing: the refresh logs it and keeps what it has (ROADMAP → Open decisions: price provider).
@@ -97,6 +100,12 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         }
     }
 
+    /// <summary>Minor units Yahoo quotes in, with the ISO code of the asset's currency and the scale of its prices: London's pence.</summary>
+    static readonly Dictionary<string, (string Iso, decimal Scale)> MinorUnits = new() { ["GBp"] = ("GBP", 0.01m) };
+
+    /// <summary>Minor units that aren't scaled yet, so they are refused: Johannesburg's cents and Tel Aviv's agorot (ILA looks like an ISO code, but isn't one).</summary>
+    static readonly HashSet<string> UnscaledMinorUnits = ["ZAc", "ILA"];
+
     /// <summary>
     /// The currency in a chart answer's meta. London's pence (<c>GBp</c>) are pounds, as <see cref="Parse"/> scales
     /// them; another minor unit (<c>ZAc</c>, <c>ILA</c>) isn't scaled yet, so it is refused rather than stored as a wrong code.
@@ -113,10 +122,9 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         {
             throw new MarketDataException($"Yahoo's answer for {symbol} wasn't what we expected.", error);
         }
-        if (currency == "GBp") return "GBP";
-        // Johannesburg's cents and Tel Aviv's agorot (ILA looks like an ISO code, but isn't one).
-        if (currency is null or "ZAc" or "ILA" || currency.Length != 3 || !currency.All(char.IsAsciiLetterUpper))
-            throw new MarketDataException($"Yahoo quotes {symbol} in {currency ?? "no currency"}, which the app can't use yet.");
+        if (currency is not null && MinorUnits.TryGetValue(currency, out var minor)) return minor.Iso;
+        if (currency is null || UnscaledMinorUnits.Contains(currency) || currency.Length != 3 || !currency.All(char.IsAsciiLetterUpper))
+            throw new UnsupportedCurrencyException($"Yahoo quotes {symbol} in {currency ?? "no currency"}, which the app can't use yet.");
         return currency;
     }
 
@@ -155,7 +163,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         var zone = meta.TryGetProperty("exchangeTimezoneName", out var zoneName) && zoneName.GetString() is { } id
             && TimeZoneInfo.TryFindSystemTimeZoneById(id, out var found) ? found : null;
         // London stocks are quoted in pence (GBp) while the asset's currency is pounds.
-        var scale = meta.TryGetProperty("currency", out var currency) && currency.GetString() == "GBp" ? 0.01m : 1m;
+        var scale = meta.TryGetProperty("currency", out var currency) && currency.GetString() is { } code && MinorUnits.TryGetValue(code, out var minor) ? minor.Scale : 1m;
         var indicators = result.GetProperty("indicators");
         var quote = indicators.GetProperty("quote")[0];
         // Adjusted only when the series has adjclose (indexes and rates don't); then a day without it is left out, so raw

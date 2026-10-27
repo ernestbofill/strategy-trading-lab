@@ -1,11 +1,9 @@
 # Running the backend's database tests in a cloud session
 
-A cloud container may lack .NET but has PostgreSQL 16 (`/usr/lib/postgresql/16`) and `psql`, so the `[NeonFact]` tests can run against a local throwaway database, the way CI does:
+A cloud container has PostgreSQL 16 (`/usr/lib/postgresql/16`) and `psql`, so the `[NeonFact]` tests can run against a local throwaway database, the way CI does:
 
 ```bash
-# .NET 10, in the home folder (no sudo):
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0 --install-dir "$HOME/.dotnet"
-export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH" DOTNET_ROOT="$HOME/.dotnet"
+# .NET 10 must already be there (if not, that is a setup step for Ernest in the cloud environment's settings: put it in TODO.md).
 # PostgreSQL, with its data outside the scratchpad (the scratchpad's permissions get reset and kill the server):
 D=/var/lib/postgresql/stl; mkdir -p $D && chown postgres $D
 su postgres -c "/usr/lib/postgresql/16/bin/initdb -D $D/data -U postgres -A trust"

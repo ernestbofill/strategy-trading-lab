@@ -241,6 +241,10 @@ public static class AdminEndpoints
             {
                 return Invalid("symbol", error.Message);
             }
+            catch (UnsupportedCurrencyException error)
+            {
+                return Invalid("symbol", error.Message);
+            }
             catch (MarketDataException error)
             {
                 return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
@@ -254,8 +258,8 @@ public static class AdminEndpoints
             var name = request.Name?.Trim() ?? "";
             var what = request.What?.Trim() ?? "";
             var errors = new Dictionary<string, string[]>();
-            if (TextProblem(name, 100) is { } nameProblem) errors["name"] = [nameProblem];
-            if (TextProblem(what, 200) is { } whatProblem) errors["what"] = [whatProblem];
+            if (TextProblem(name, AssetCatalog.MaxNameLength) is { } nameProblem) errors["name"] = [nameProblem];
+            if (TextProblem(what, AssetCatalog.MaxWhatLength) is { } whatProblem) errors["what"] = [whatProblem];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
             var asset = await db.Assets.Include(a => a.Texts).SingleOrDefaultAsync(a => a.Id == id, cancellationToken);

@@ -111,7 +111,7 @@ export function AdminAssets() {
 
   return (
     <Screen top={<TopBar back="/admin" step="ADMIN" />}>
-      <PageHeader title="Assets" lead="Stocks, funds and indexes. Prices are fetched daily for those a running strategy watches." />
+      <PageHeader title="Assets" lead="Stocks, funds and indexes. Prices are fetched daily for those a running strategy watches, and for the index fund (SPY) always." />
       {state.status === 'loading' && <ScreenMessage>Loading the assets…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the assets. Try again later.</ScreenMessage>}
       {error && (

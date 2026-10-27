@@ -76,6 +76,21 @@ public class AssetCatalogTests
     }
 
     [NeonFact]
+    public async Task A_name_longer_than_the_edit_limit_is_cut_so_the_asset_can_still_be_edited()
+    {
+        await using var catalog = new Catalog();
+        var symbol = NewSymbol();
+        catalog.Source.Matches.Add(new(symbol, new string('N', 150), "NMS", "ETF", null, null));
+
+        var added = await catalog.Assets.AddAsync(symbol, null, default);
+
+        Assert.True(added.Created);
+        var asset = await catalog.Db.Assets.AsNoTracking().Include(a => a.Texts).SingleAsync(a => a.Id == added.Asset.Id);
+        Assert.True(asset.Name.Length <= AssetCatalog.MaxNameLength);
+        Assert.True(asset.Texts.Single().What.Length <= AssetCatalog.MaxWhatLength);
+    }
+
+    [NeonFact]
     public async Task A_new_stock_is_stored_with_its_details_history_and_exchange_rate()
     {
         await using var catalog = new Catalog();

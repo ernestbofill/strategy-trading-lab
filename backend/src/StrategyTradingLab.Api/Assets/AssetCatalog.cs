@@ -24,6 +24,10 @@ public class AssetNotFoundException(string message) : Exception(message);
 public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, PriceRefresher refresher)
 {
     public const int MaxSymbolLength = 20;
+    public const int MaxNameLength = 100;
+    public const int MaxWhatLength = 200;
+
+    static string Truncate(string text, int max) => text.Length <= max ? text : text[..(max - 1)].TrimEnd() + "…";
 
     public async Task<AddedAsset> AddAsync(string symbol, Guid? addedBy, CancellationToken cancellationToken)
     {
@@ -45,14 +49,15 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
             {
                 Symbol = match.Symbol.ToUpperInvariant(),
                 Exchange = Mic(match.Exchange),
-                Name = match.Name,
+                // Within the limits the Edit endpoint enforces, so an added asset can always be edited.
+                Name = Truncate(match.Name, MaxNameLength),
                 Kind = kind,
                 Currency = currency,
                 Sector = kind == AssetKind.Stock ? match.Sector : null,
                 Industry = kind == AssetKind.Stock ? match.Industry : null,
                 AddedBy = addedBy,
             };
-            asset.Texts.Add(new AssetText { Locale = TemplateTexts.DefaultLocale, What = What(asset) });
+            asset.Texts.Add(new AssetText { Locale = TemplateTexts.DefaultLocale, What = Truncate(What(asset), MaxWhatLength) });
             db.Assets.Add(asset);
             try
             {
@@ -91,6 +96,11 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
         try
         {
             await load();
+        }
+        // The same prices loaded meanwhile (a second add, the daily refresh): they are in.
+        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            db.ChangeTracker.Clear();
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

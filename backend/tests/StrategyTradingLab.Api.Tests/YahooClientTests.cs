@@ -167,7 +167,7 @@ public class YahooClientTests
     [InlineData("ILA")]
     [InlineData("usd")]
     public void A_currency_the_prices_are_not_scaled_for_is_refused(string yahoo) =>
-        Assert.Throws<MarketDataException>(() => YahooClient.ParseCurrency(Chart(yahoo), "X"));
+        Assert.Throws<UnsupportedCurrencyException>(() => YahooClient.ParseCurrency(Chart(yahoo), "X"));
 
     [Fact]
     public void A_chart_error_is_a_market_data_error() =>

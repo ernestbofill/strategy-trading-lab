@@ -227,6 +227,15 @@ export const httpApi: Api = {
   skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
   snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
+  deleteStrategy: async (id) => {
+    const response = await fetch(`${BASE_URL}/strategies/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader() },
+    })
+    if (response.status === 401) endedSession()
+    // Already gone (another tab, or a retry after a request that went through) is what the user asked for.
+    if (!response.ok && response.status !== 404) throw new Error(`DELETE /strategies/${id} failed: HTTP ${response.status}`)
+  },
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
   sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,

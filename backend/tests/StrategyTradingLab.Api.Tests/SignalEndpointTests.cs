@@ -84,6 +84,28 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
+    public async Task A_live_strategy_with_confirmed_trades_can_be_deleted_with_them()
+    {
+        var (client, strategyId, assetId, first, _) = await SeedAsync();
+        try
+        {
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync($"/signals/{first}/trade", Trade())).StatusCode);
+
+            // user_trades.signal_id is NO ACTION: the cascade from the strategy removes the trade and its signal in one statement.
+            Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/strategies/{strategyId}")).StatusCode);
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.UserTrades.AnyAsync(t => t.StrategyId == strategyId));
+            Assert.False(await db.Signals.AnyAsync(s => s.StrategyId == strategyId));
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/signals/{first}")).StatusCode);
+        }
+        finally
+        {
+            await CleanAsync(assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task I_did_it_records_the_trade_once_and_the_strategy_counts_it()
     {
         var (client, strategyId, assetId, first, _) = await SeedAsync();

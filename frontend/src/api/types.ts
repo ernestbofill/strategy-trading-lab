@@ -784,6 +784,8 @@ export interface Api {
   snoozeSignal(id: string): Promise<string>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
+  /** Deletes a strategy for good, with its signals, trades, results and AI rounds. One already gone counts as deleted. */
+  deleteStrategy(id: string): Promise<void>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */
   getAdminSettings(): Promise<AdminSetting[]>
   /**

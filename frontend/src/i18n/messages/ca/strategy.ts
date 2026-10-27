@@ -74,4 +74,10 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.stock.noBuys': 'Encara sense compres',
   'strategy.stock.investedLive': 'Has invertit {amount}',
   'strategy.stock.investedSim': '{amount} invertits',
+  'strategy.delete': 'Esborra l’estratègia',
+  'strategy.deleteAsk': 'Vols esborrar {name}? També se n’esborren els senyals, les operacions i els resultats. No es pot desfer.',
+  'strategy.deleteConfirm': 'Esborra',
+  'strategy.deleting': 'Esborrant…',
+  'strategy.deleteKeep': 'Mantén-la',
+  'strategy.deleteFailed': 'No s’ha pogut esborrar. Torna-ho a provar.',
 }

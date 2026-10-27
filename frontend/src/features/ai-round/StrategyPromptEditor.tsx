@@ -21,7 +21,7 @@ export function StrategyPromptEditor() {
         <PromptEditor
           top={top}
           initial={r.setup}
-          everyWeeks={r.everyWeeks}
+          everyDays={r.everyDays}
           assetIds={r.stocks.map((s) => s.assetId)}
           onSave={async (setup) => {
             try {

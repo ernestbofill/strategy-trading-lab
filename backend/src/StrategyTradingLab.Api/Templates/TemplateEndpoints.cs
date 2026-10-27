@@ -52,7 +52,7 @@ public static class TemplateEndpoints
 
     static TemplateSummary Summary(Template template, TemplateTexts texts) => new(
         template.Key, template.EngineKey, texts.Name, texts.Tagline, texts.Idea, template.InvestsIn, template.Signals,
-        template.Params is AiParams ai ? new AiRoundDto(ai.EveryWeeks, ai.TopN) : null);
+        template.Params is AiParams ai ? new AiRoundDto(ai.EveryDays, ai.TopN) : null);
 
     static TemplateDetail Detail(Template template, TemplateTexts texts, List<SecurityDto> securities) =>
         new(Summary(template, texts))

@@ -1344,3 +1344,44 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261027195630_AiRoundsInDaysAndExtra') THEN
+    DROP INDEX ix_ai_rounds_strategy_id_due_on;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261027195630_AiRoundsInDaysAndExtra') THEN
+    ALTER TABLE ai_rounds ADD extra boolean NOT NULL DEFAULT FALSE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261027195630_AiRoundsInDaysAndExtra') THEN
+    CREATE UNIQUE INDEX ix_ai_rounds_strategy_id_due_on_extra ON ai_rounds (strategy_id, due_on, extra);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261027195630_AiRoundsInDaysAndExtra') THEN
+    UPDATE strategies
+    SET params = (params - 'everyWeeks') || jsonb_build_object('everyDays', (params->>'everyWeeks')::int * 7)
+    WHERE template_key = 'ai' AND params ? 'everyWeeks';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261027195630_AiRoundsInDaysAndExtra') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261027195630_AiRoundsInDaysAndExtra', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

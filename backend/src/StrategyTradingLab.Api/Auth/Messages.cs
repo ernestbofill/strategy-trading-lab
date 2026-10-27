@@ -101,6 +101,8 @@ public static class Messages
     public static readonly Message PickAiModel = new("Pick the AI model you used, or name it.", "Tria el model d'IA que has fet servir, o escriu-ne el nom.");
     public static readonly Message RoundNotDue = new("This AI round isn't due yet.", "Encara no és l'hora d'aquesta ronda d'IA.");
     public static readonly Message RoundDone = new("This AI round is already done.", "Aquesta ronda d'IA ja està feta.");
+    public static readonly Message RoundChanged = new("This AI round changed meanwhile. Reload to see where it stands.",
+        "Aquesta ronda d'IA ha canviat mentrestant. Torna a carregar per veure com està.");
     public static readonly Message OneSourceOn = new("At least one source stays on.", "Almenys una font queda activada.");
     public static readonly Message InstructionsLength = new("Keep it under {0} characters.", "Que no passi de {0} caràcters.");
     public static readonly Message InstructionsEmpty = new("Write the instructions, or reset to the suggested ones.",

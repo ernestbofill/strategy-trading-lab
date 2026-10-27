@@ -21,7 +21,7 @@ export interface StrategyTemplate {
 }
 
 export interface AiRound {
-  everyWeeks: number
+  everyDays: number
   /** How many top-scored stocks get a step per round. */
   topN: number
 }
@@ -302,7 +302,7 @@ export interface AiSetup {
 
 /** The prompt for the review and the editor, before a strategy exists. */
 export interface AiPromptRequest extends AiSetup {
-  everyWeeks: number
+  everyDays: number
   /** The ticked stocks. */
   assetIds: string[]
 }
@@ -332,7 +332,9 @@ export interface AiRoundDetail {
   dueOn: string
   /** The last day it can be run; after it the round is skipped. */
   lastDay: string
-  /** Whether it can be run today. */
+  /** When the round after it is due, once it is run or skipped. */
+  nextDueOn: string
+  /** Whether it can be run today. Before that, an extra round can be (the schedule stays). */
   open: boolean
   today: string
   promptVersion: number
@@ -341,7 +343,7 @@ export interface AiRoundDetail {
   setup: AiSetup
   suggested: string
   stocks: AiStock[]
-  everyWeeks: number
+  everyDays: number
   topN: number
   lastModel: string | null
   sharing: boolean
@@ -388,6 +390,8 @@ export interface PicksVsRest {
 export interface AiRoundItem {
   id: string
   dueOn: string
+  /** Run before the scheduled round was due: dated the day it was run. */
+  extra: boolean
   status: 'due' | 'done' | 'skipped'
   doneAt: string | null
   sessionDate: string | null
@@ -831,7 +835,9 @@ export interface Api {
    * "Use these scores", with the prompt as the screen showed it. Rejects with `InvalidFieldsError` (`answer`, `aiModel`) or
    * `InvalidValueError` (not due, done already, or the prompt changed since).
    */
-  useAiScores(strategyId: string, answer: string, aiModel: string, share: boolean | null, prompt: string): Promise<AiRoundResult>
+  useAiScores(strategyId: string, answer: string, aiModel: string, share: boolean | null, prompt: string, extra: boolean): Promise<AiRoundResult>
+  /** Skips the round that is due. Rejects with `InvalidValueError` when it isn't due or changed meanwhile. */
+  skipAiRound(strategyId: string, roundId: string): Promise<void>
   getAiRounds(strategyId: string): Promise<AiRoundHistory | undefined>
   /** A running AI strategy's prompt. Rejects with `InvalidFieldsError` (`sources`, `instructions`). */
   updateAiPrompt(strategyId: string, setup: AiSetup): Promise<void>

@@ -22,7 +22,7 @@ const ai = {
   watches: { kind: 'stocks', starterList: [{ id: 'id-ZS', symbol: 'ZS', name: 'Zscaler', what: '' }] },
   defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: {} },
   settings: [],
-  aiRound: { everyWeeks: 2, topN: 1 },
+  aiRound: { everyDays: 14, topN: 1 },
 } as unknown as TemplateDetail
 
 /** Sets the draft to the AI template, as the earlier screens do. */

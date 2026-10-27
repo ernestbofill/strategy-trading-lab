@@ -275,6 +275,11 @@ public class AiRound : IHasUpdatedAt
     public Guid Id { get; set; }
     public Guid StrategyId { get; set; }
     public DateOnly DueOn { get; set; }
+    /// <summary>
+    /// A round the user ran before the scheduled one was due: done on the day it was run (<c>DueOn</c>), leaving the schedule as
+    /// it was. At most one a day.
+    /// </summary>
+    public bool Extra { get; set; }
     public AiRoundStatus Status { get; set; }
     public DateTimeOffset? DoneAt { get; set; }
     /// <summary>The last finished US session when it was done: its signals' date, and where "picks vs the rest" starts.</summary>

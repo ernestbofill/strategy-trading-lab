@@ -28,21 +28,17 @@ export function AiRoundPage() {
   const round = useAiRound(id)
   const t = useT()
   const { locale } = useI18n()
-  const top = (r?: AiRoundDetail) => (
-    <TopBar
-      back={strategyPath(id)}
-      aside={r && <span>{t('aiRound.topBar', { date: shortDate(r.open ? r.today : r.dueOn, locale).toUpperCase() })}</span>}
-    />
+  const top = (date?: string) => (
+    <TopBar back={strategyPath(id)} aside={date && <span>{t('aiRound.topBar', { date: shortDate(date, locale).toUpperCase() })}</span>} />
   )
   return (
     <LoadableScreen state={round} top={top()} what={t('aiRound.what')}>
-      {(r) => <RoundScreen key={r.roundId} r={r} top={top(r)} />}
+      {(r) => <RoundScreen key={r.roundId} r={r} top={top} />}
     </LoadableScreen>
   )
 }
 
-function Header({ r }: { r: AiRoundDetail }) {
-  const t = useT()
+function Header({ r, title }: { r: AiRoundDetail; title: string }) {
   return (
     <div className={styles.header}>
       <div className={styles.eyebrow}>
@@ -51,7 +47,7 @@ function Header({ r }: { r: AiRoundDetail }) {
           {r.strategyName} · <em>{r.templateName}</em>
         </span>
       </div>
-      <h1 className={styles.title}>{t(r.open ? 'aiRound.title' : 'aiRound.nextTitle')}</h1>
+      <h1 className={styles.title}>{title}</h1>
     </div>
   )
 }
@@ -70,7 +66,7 @@ function initialModel(last: string | null): { choice: string; other: string } {
   return AI_MODELS.includes(last) ? { choice: last, other: '' } : { choice: OTHER_MODEL, other: last }
 }
 
-function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
+function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string) => ReactNode }) {
   const t = useT()
   const { locale } = useI18n()
   const navigate = useNavigate()
@@ -82,6 +78,8 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<FormMessageState>(null)
   const [modelError, setModelError] = useState<string | null>(null)
+  // A round run before the scheduled one is due: an extra one, on purpose.
+  const [extra, setExtra] = useState(false)
   const readCount = useRef(0)
 
   // Read the answer a moment after the user stops typing or pastes; only the latest reading counts.
@@ -101,14 +99,33 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
     return () => clearTimeout(timer)
   }, [answer, r.strategyId, t])
 
-  if (!r.open) {
+  if (!r.open && !extra) {
     return (
-      <Screen top={top} action={<PrimaryAction to={strategyPath(r.strategyId)}>{t('aiRound.backToStrategy')}</PrimaryAction>}>
-        <Header r={r} />
+      <Screen top={topFor(r.dueOn)} action={<PrimaryAction onClick={() => setExtra(true)}>{t('aiRound.runNow')}</PrimaryAction>}>
+        <Header r={r} title={t('aiRound.nextTitle')} />
         <p className={styles.plain}>{t('aiRound.notDue', { due: shortDate(r.dueOn, locale), last: shortDate(r.lastDay, locale) })}</p>
         <TextAction to={aiRoundsPath(r.strategyId)}>{t('aiRound.pastRounds')}</TextAction>
+        <TextAction to={strategyPath(r.strategyId)}>{t('aiRound.backToStrategy')}</TextAction>
       </Screen>
     )
+  }
+
+  const done = () => {
+    for (const key of [dashboardCacheKey, strategyCacheKey(r.strategyId), aiRoundCacheKey(r.strategyId), aiRoundsCacheKey(r.strategyId)])
+      invalidate(key)
+  }
+
+  const skip = async () => {
+    setSaving(true)
+    setMessage(null)
+    try {
+      await api.skipAiRound(r.strategyId, r.roundId)
+      done()
+      navigate(strategyPath(r.strategyId))
+    } catch (error) {
+      setSaving(false)
+      setMessage({ tone: 'error', text: error instanceof InvalidValueError ? error.message : t('aiRound.skipFailed') })
+    }
   }
 
   const copy = async () => {
@@ -129,9 +146,8 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
     setMessage(null)
     setModelError(null)
     try {
-      const result = await api.useAiScores(r.strategyId, answer, modelName, r.sharingAsked ? null : share, r.prompt)
-      for (const key of [dashboardCacheKey, strategyCacheKey(r.strategyId), aiRoundCacheKey(r.strategyId), aiRoundsCacheKey(r.strategyId)])
-        invalidate(key)
+      const result = await api.useAiScores(r.strategyId, answer, modelName, r.sharingAsked ? null : share, r.prompt, !r.open)
+      done()
       const first = result.signalIds[0]
       navigate(result.mode === 'live' && first ? signalPath(r.strategyId, first) : dashboardPath)
     } catch (error) {
@@ -148,7 +164,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
 
   return (
     <Screen
-      top={top}
+      top={topFor(r.today)}
       action={
         <PrimaryAction onClick={() => void use()} disabled={!canUse}>
           {t(saving ? 'aiRound.saving' : 'aiRound.use')}
@@ -156,7 +172,8 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
       }
       note={t('common.disclaimerFull')}
     >
-      <Header r={r} />
+      <Header r={r} title={t(r.open ? 'aiRound.title' : 'aiRound.extraTitle')} />
+      {!r.open && <p className={styles.plain}>{t('aiRound.extraIntro', { due: shortDate(r.dueOn, locale) })}</p>}
       <p className={styles.plain}>{t('aiRound.intro')}</p>
 
       <section className={styles.step}>
@@ -224,6 +241,7 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
             <>
               <p className={styles.check}>{t('aiRound.allScored')}</p>
               <p className={styles.plain}>{stepLine(shown, r, t)}</p>
+              {r.mode === 'simulation' && shown.scores.some((s) => s.step !== null) && <p className={styles.plain}>{t('aiRound.boughtNow')}</p>}
             </>
           )}
         </section>
@@ -245,6 +263,15 @@ function RoundScreen({ r, top }: { r: AiRoundDetail; top: ReactNode }) {
       )}
 
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+
+      {r.open && (
+        <div className={styles.skip}>
+          <TextAction onClick={() => void skip()} disabled={saving}>
+            {t('aiRound.skip')}
+          </TextAction>
+          <p className="caption">{t('aiRound.skipNote', { next: shortDate(r.nextDueOn, locale) })}</p>
+        </div>
+      )}
     </Screen>
   )
 }

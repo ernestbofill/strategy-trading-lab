@@ -35,7 +35,7 @@ There is no broker sync in either mode. The app never places orders and never re
 | **Signal** | The moment a strategy's rules are met for a stock: a buy step, or, for *Index trend*, a sale. In simulation the app acts on it by itself; in live it asks the user. |
 | **Step** | One buy of the step size, fee included: a €100 step is about €98.80 of shares and a €1.20 fee. A stock gets at most the max steps per stock. |
 | **Discount zone** | For *Winners at a discount*: the range 5-15% below a stock's recent peak, where its rules signal. |
-| **AI round** | For strategies from *Your AI's top picks*: every 2 weeks the user runs our prompt in their own AI service and pastes the answer back. |
+| **AI round** | For strategies from *Your AI's top picks*: every 14 days by default the user runs our prompt in their own AI service and pastes the answer back. |
 | **Backtest** | How a template did in the past with given settings. It belongs to the template and settings, not to a running strategy. |
 
 The words *ticker* and *tranche* never appear in the app: use *stock* (or *fund*) and *step*.
@@ -121,10 +121,13 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - No stop-loss: the sell line is the stop.
 
 **Your AI's top picks (new)** (built)
-- Every 2 weeks (default; 2 to 6 on Advanced settings), the user runs the AI round (section 6, AI round). The app runs no AI itself. The first round is due the day the strategy starts.
+- Every 14 days (default; 1 to 60 days on Advanced settings), the user runs the AI round (section 6, AI round). The app runs no AI itself. The first round is due the day the strategy starts.
+- The user can also run an **extra round** at any time before the scheduled one is due (at most one a day). It is dated the day it was run and leaves the schedule as it was; its live signals end when the scheduled round is due.
 - After each round, the top-scored stock gets a signal for one step (default top 1; 1 to 3 on Advanced settings), within max steps per stock and the budget. A stock that already has all its steps passes its turn to the next score down (assumed). A tie goes to the stock with fewer steps, then by name. A stock with no stored price yet can't get a signal, and passes its turn too.
-- If the user doesn't run a round within a week of its due date (the due day and the 6 days after), it is marked *Skipped*: no signal. The next round comes 2 weeks after the due date, whether the round was run or skipped.
-- The signal's date is the last finished US session (its close is the one shown); its signal trade is at the **first open after the round was run** (a round run while the market is open trades at the next day's open, so the rules never buy at an open that had already passed).
+- A due round can be run from its due date for a week, or until the day before the next is due when rounds come more often (a daily round only on its due day). Not run by then, it is marked *Skipped*: no signal. The user can also skip a due round themselves, in either mode. The next round comes the set number of days after the due date, whether the round was run or skipped.
+- The signal's date is the last finished US session (its close is the one shown).
+  - **Simulation:** the signal trade is recorded at once, at the **latest available price**: "Use these scores" first fetches the picks' prices (today's bar while the market is open), and falls back to the latest stored close if the price source fails or takes over 10 seconds. The trade is dated that bar's day (or the signal's session, if the bar is older). Without an exchange rate it waits for the next open, as live does. (Changed in #76; it used to wait for the next open.)
+  - **Live:** the rules' own trade (*The rules alone*) is at the **first open after the round was run** (a round run while the market is open trades at the next day's open, so the rules never buy at an open that had already passed).
 - A live AI signal waits until the next round is due; still unanswered then, it is *Missed*.
 - No backtest: results start on the day the strategy starts.
 
@@ -279,12 +282,12 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 *Your AI's top picks* (`ReviewAI`). Differs from the shared layout: an "AI" label next to the eyebrow, no Tested box, no How we tested link, and the stock list is a row linking to the list.
 - The idea: "Nobody can read every news story and financial report about every company, but an AI can. You run our prompt in the AI you already use; it scores each stock, and the strategy signals the top one. You see whether all that reading turns into better picks."
 - It signals when:
-  1. "Every 2 weeks you run the AI round: copy the prompt, paste it into your AI, paste its answer back."
+  1. "Every [14] days you run the AI round: copy the prompt, paste it into your AI, paste its answer back."
   2. "The stock with the top score gets a signal for one step, until the budget is used."
   3. "If you skip a round, there's no signal that round."
 - **"What the AI reads"**: three toggle tiles, all on by default: "News" / "Recent stories", "Mood" / "How people talk about it", "Figures" / "Quarterly numbers". On shows "✓" and a highlight, off shows "+". At least one stays on: the last one on can't be turned off. Use `aria-pressed`. Caption: "At least one stays on. Each one adds a section to the prompt."
 - **"The prompt"**, with an "Edit prompt" link. Read-only, shown as code, its first lines with "Show the whole prompt". The API writes it (`POST /templates/ai/prompt`), so the review, the editor and the round always show the same words. It has three parts; only the middle one can be edited:
-  1. The date line: "Today is [October 27, 2026]. Search the web for news and data from the last [2 weeks], plus each company's latest quarterly figures. Use what you find, not what you remember."
+  1. The date line: "Today is [October 27, 2026]. Search the web for news and data from the last [2 weeks] (the round's frequency: "day", "[5] days", "week", "[2] weeks"), plus each company's latest quarterly figures. Use what you find, not what you remember."
   2. The instructions (suggested, v1): "Score each stock below from 0 to 100 on:", one line per source on ("- News: what recent news says about the business: results, products, contracts, lawsuits, management. 50 is neutral.", "- Mood: how investors, analysts and the press talk about it lately, and whether that tone is getting better or worse. 50 is neutral.", "- Figures: the latest quarterly figures against the quarters and the year before: revenue growth, margins, cash flow and debt."), "and overall, from what you found.", "In the reason, give one line and your main sources, with their dates.", "Score each stock on its own facts. Don't say which stocks to buy or sell."
   3. The answer format and the stocks: "Answer only with this table, one row per stock below, scores as whole numbers from 0 to 100. In the Stock column, write the stock's symbol as listed below.", "| Stock | [sources on] | Overall | Reason |", then "Stocks:" and one line per ticked stock ("- ZS: Zscaler").
   - The comment above it reads "// suggested prompt · v1" or "// your prompt · v1".
@@ -295,12 +298,12 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Info box: "**What you need:** an AI service that can search the web (most paid plans can). The app doesn't connect to it and never sees your account."
 - "**Not tested:** there's no backtest. Results start on the day the strategy starts, and depend on which AI you run it in."
 - "**What can go wrong:** your AI can misread the news, or make things up, and a top-scored stock can still fall."
-- Rows: "Choose stocks to watch · [n] ticked ›" (opens the stock list) and "Advanced settings · every 2 weeks · top 1 ›".
-- Advanced settings for it (built): "An AI round comes every [n] weeks." (2 to 6, default 2) and "Each round, one step goes to each of the top [n] by overall score." (1 to 3, default 1), with no backtest section. Rule 02 reads "Each round, one step goes to each of the top `[n]` by overall score, until the budget is used. A stock with all its steps passes its turn to the next."
+- Rows: "Choose stocks to watch · [n] ticked ›" (opens the stock list) and "Advanced settings · every 14 days · top 1 ›".
+- Advanced settings for it (built): "An AI round comes every [n] days." (1 to 60, default 14) and "Each round, one step goes to each of the top [n] by overall score." (1 to 3, default 1), with no backtest section. Rule 02 reads "Each round, one step goes to each of the top `[n]` by overall score, until the budget is used. A stock with all its steps passes its turn to the next."
 
 ### 2b · Advanced settings (`Advanced`)
 
-**Purpose:** tune each rule as an exact number, understand what it does, and see the effect on the backtest. The one screen that may be technical: terms like `SMA` are fine here. Each template exposes the POC's numeric rules (the yes/no ones, such as *The comeback*'s "below its SMA 200" and *Bear markets*'s second legs, have no control yet), plus *Winners at a discount*' two averages, which the POC fixes at 200 and 50 days. For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
+**Purpose:** tune each rule as an exact number, understand what it does, and see the effect on the backtest. The one screen that may be technical: terms like `SMA` are fine here. Each template exposes the POC's numeric rules (the yes/no ones, such as *The comeback*'s "below its SMA 200" and *Bear markets*'s second legs, have no control yet), plus *Winners at a discount*' two averages, which the POC fixes at 200 and 50 days. For *Your AI's top picks* it holds the round frequency (default every 14 days) and how many top-scored stocks get a step per round (default 1), with no backtest.
 
 **Copy**
 - Top bar: "← BACK" · "[template name]"
@@ -447,7 +450,7 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 **Variants (not drawn)**
 - *Index trend*: budget only (all in, all out).
 - *Bear markets*: one fund, so "Max steps per stock" is the number of steps for the fund (default 5).
-- *Your AI's top picks*: add "One step every 2 weeks uses the budget in about [n] weeks."
+- *Your AI's top picks*: add "One step every [14] days uses the budget in about [n] days."
 
 The same three settings can be changed later from the strategy page (not drawn).
 
@@ -608,7 +611,9 @@ The date is from the signal day to today; a field the server refuses shows why u
 - **Consent box**, until the user has answered once (here or in the account), before the button: title "Help us learn which AIs score stocks best", text "Share this round: the AI model you used and its answer, kept apart from your account. We never keep your name, email, budget or trades with it. You can stop at any time in Account → Data and privacy, which also removes what you shared.", checkbox "Share my AI rounds" (off by default), and "What we keep" (opens in place: what a shared round holds, and what it never holds). Using the scores records the answer, ticked or not. Afterwards, one line instead: "Sharing your AI rounds · Change" or "Not sharing your AI rounds · Change" (to the account).
 - Under the scores, the steps they give: "[Zscaler] gets step [2] of [5] ([€100])." (one per pick), or "No budget left: this round gives no step." / "Every scored stock has all its steps: this round gives no step." A round that gives no step can still be used: it is done, with its scores kept.
 - **Error state** (built, not drawn): a warning box "Ask your AI again" listing each problem: "[Stock] has no score.", "\"[text]\" isn't one of your stocks.", "[Stock] is scored more than once.", "[Stock]: the overall score isn't a number from 0 to 100.", or "We couldn't find the scores table. Ask your AI to answer only with the table."; "Use these scores" stays off.
-- **Before it is due** (built): H1 "Next AI round", "Your next AI round is due on [date]. You can run it until [date]; after that it's skipped, with no signal that round.", a link to the past rounds, and "Back to the strategy".
+- **Before it is due** (built): H1 "Next AI round", "Your next AI round is due on [date]. You can run it until [date]; after that it's skipped. You can also run an extra round now.", links to the past rounds and back to the strategy, and the button "Run a round now". It opens the same round screen with H1 "An extra AI round" and "Outside the schedule: your next round is still due on [date]."; using its scores makes an extra round (see the template's rules).
+- **Skip** (built, a due round only, both modes): under the form, "Skip this round" with "No signal this round. The next one is due on [date]." It marks the round *Skipped* and returns to the strategy page.
+- Simulation, once the scores give a step: "The simulation buys at once, at the latest price."
 - Button: "Use these scores". The full disclaimer with it.
 
 **Behaviour**
@@ -616,7 +621,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 - **How forgiving the reader is** (assumed): the first Markdown table whose header has a stock column ("Stock", "Company", "Ticker", "Symbol", "Name") and an overall column ("Overall", "Score", "Total"), or JSON (an array of objects, or an object holding one, in a code fence or bare). A stock is found by its symbol ("ZS", "SU.PA", or "SU" without its exchange), the symbol in brackets or before a colon ("Zscaler (ZS)", "ZS: Zscaler"), or its name ("Zscaler, Inc."); a name two stocks share matches neither. Bold, links and other marks are ignored. A score is a number from 0 to 100 at the start of its cell ("83", "83/100", "82.5"). Reasons are cut at 200 characters. The answer is read on the server (the screen shows its reading as the user pastes) and kept whole, up to 50,000 characters.
 - **AI model list** (assumed): "ChatGPT · GPT-5", "Claude · Opus", "Gemini · 2.5 Pro" and "Other…" (a name of the user's own, at most 60 characters), in `frontend/src/features/ai-round/aiModels.ts`. Agents keep it current.
 - "Use these scores":
-  - Simulation: records the signal-trade buy of the top-scored stock at the next day's open, within max steps and the budget, and returns to the dashboard.
+  - Simulation: records the signal-trade buy of the top-scored stock at once, at the latest available price, within max steps and the budget, and returns to the dashboard.
   - Live: creates a signal for the top-scored stock and opens Confirm a signal for it, with the box reading "Your AI scored [stock] highest in [strategy name]. Under your settings that's step [n] of [max] ([€100])." (draft).
 - Every round is kept in the strategy's history: date, prompt used (and whether edited), AI model, full answer, scores, reasons, and the step each stock got.
 - **AI data sharing**, when on, keeps per round: AI model, date, prompt version and whether edited, stock list (symbols), sources on, full answer, parsed scores. Never with it: name, email, account ID, strategy name, budget, step size, trades, or whether the user acted. Before storing, remove anything that looks like an email address, phone number or URL parameters (a link keeps its address without its query string). Store it apart from account data (`shared_ai_rounds`, with no key to the user). It keeps the day only, never the time, so it can't be matched to the user's round by when it was made. It has **no key to the user**; the link is kept on the user's side: their own round notes its shared copy (`ai_rounds.shared_round_id`). It isn't anonymous in the strict sense (its text is the same as the answer the user keeps), so **turning sharing off removes what the user shared**, through those notes. Deleting the account (ROADMAP item 20) must do the same, before it deletes the rounds. A round being saved while the user turns sharing off either sees the new choice or is removed with the rest. "What we keep" says so. (Changed after the code review, #70; the first version claimed it couldn't be traced, which wasn't true.)
@@ -626,7 +631,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 - Reached from the strategy page's "AI rounds" tile (it replaces "Backtest" for AI strategies) and the AI round screen.
 - Top bar "← BACK" · "AI ROUNDS"; H1 "AI rounds"; the strategy's name.
 - **"Picks vs the rest"** (once a done round has later prices): "Since each round, the stocks that got a step moved [+x.x%] on average, the others [+y.y%] ([n] rounds)." Caption: "Price changes in each stock's own currency, without fees. It shows whether the scores picked well, not your results." This is the spec's *Picks vs the rest* metric: each done round compares the average change of its picks' closes and of the others' from the round's session to the latest close; the line averages the rounds.
-- One card per round, newest first, with its due date and status (DUE, DONE, SKIPPED): a due one links to the round once it can be run ("Run it now") or reads "The next round."; a skipped one "Not run within its week: no signal that round."; a done one its AI model and day, "your prompt" when edited, its picks vs the rest, the scores (top first, the picks marked "STEP [n]"), and "The prompt" and "Your AI's answer" opening in place.
+- One card per round, newest first, with its due date and status (DUE, DONE, SKIPPED; an extra round "DONE · EXTRA"): a due one links to the round once it can be run ("Run it now") or reads "The next round."; a skipped one "Skipped: no signal that round."; a done one its AI model and day, "your prompt" when edited, its picks vs the rest, the scores (top first, the picks marked "STEP [n]"), and "The prompt" and "Your AI's answer" opening in place.
 - Bottom: the short disclaimer and "Past results don't promise future ones."
 
 ### Strategy page, AI strategies (built)

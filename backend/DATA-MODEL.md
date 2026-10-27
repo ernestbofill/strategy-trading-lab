@@ -17,7 +17,7 @@ Source: [app spec §8](../docs/strategy-trading-lab-app-spec.md#8-data-the-app-n
 - **Live signals are answered Confirm, Skip or Snooze.** There is no automatic reminder; Snooze notifies again the next day.
 - **Translation-ready.** The database stores codes and facts, never display sentences: statuses, reasons and signal facts are rendered in the reader's `locale` when shown or sent. v1 ships in English and Catalan; template copy is one file per language. The only translatable database text, what an asset does, is in `asset_texts`, one row per language.
 - **Accounts**: sign-up, log-in and sessions ([AUTH.md](AUTH.md)). There is no seeded user.
-- **AI rounds** (*Your AI's top picks*): `ai_rounds` per strategy, `shared_ai_rounds` apart from account data, and `users.ai_sharing`. The AI template's settings (round frequency, top N, sources, the user's instructions) live in `params` like any other: `{"everyWeeks":2,"topN":1,"news":true,"mood":true,"figures":true,"instructions":null}`.
+- **AI rounds** (*Your AI's top picks*): `ai_rounds` per strategy, `shared_ai_rounds` apart from account data, and `users.ai_sharing`. The AI template's settings (round frequency, top N, sources, the user's instructions) live in `params` like any other: `{"everyDays":14,"topN":1,"news":true,"mood":true,"figures":true,"instructions":null}`.
 - **This migration has the user-facing tables only.** Market data, FX rates, daily evaluations and backtest results come with the engine (see the end).
 
 ## Conventions
@@ -116,13 +116,14 @@ How they are used: [AUTH.md](AUTH.md). Both cascade from `users`.
 
 ### `ai_rounds`
 
-One AI round of a *Your AI's top picks* strategy. The first is due on the strategy's start day; each next one `everyWeeks` after the previous due date, whether it was done or skipped. A due round can be run from its due date for 7 days, then it is skipped (made by `AiRounds.SweepAsync`, run on reads and in the daily check).
+One AI round of a *Your AI's top picks* strategy. The first is due on the strategy's start day; each next one `everyDays` after the previous scheduled due date, whether it was done or skipped. A due round can be run from its due date for 7 days (fewer when the next is due sooner), then it is skipped (made by `AiRounds.SweepAsync`, run on reads and in the daily check); the user can skip it too (`AiRounds.SkipAsync`). An **extra** round, run before the scheduled one is due, is a done row dated the day it was run (`extra`), outside the schedule.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid PK | |
 | strategy_id | uuid FK → strategies, cascade | |
-| due_on | date, not null | Unique with strategy_id |
+| due_on | date, not null | Unique with strategy_id and extra: one scheduled round per date, one extra round a day |
+| extra | boolean, not null, default false | Run before the scheduled round was due; doesn't move the schedule |
 | status | text, not null | `due` \| `done` \| `skipped` |
 | done_at | timestamptz, null | `CHECK ((status = 'done') = (done_at IS NOT NULL))` |
 | session_date | date, null | The last finished US session when done: its signals' `signal_date`, and where *Picks vs the rest* starts |

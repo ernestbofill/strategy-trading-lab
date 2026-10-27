@@ -8,14 +8,15 @@ namespace StrategyTradingLab.Api.Ai;
 public record AiSetup(bool News, bool Mood, bool Figures, string? Instructions);
 
 /// <summary>The prompt for the review and the prompt editor, before a strategy exists. <c>AssetIds</c>: the ticked stocks.</summary>
-public record AiPromptRequest(bool News, bool Mood, bool Figures, string? Instructions, int? EveryWeeks, IReadOnlyList<Guid>? AssetIds);
+public record AiPromptRequest(bool News, bool Mood, bool Figures, string? Instructions, int? EveryDays, IReadOnlyList<Guid>? AssetIds);
 
 /// <summary>The whole prompt, and the suggested instructions for these sources (what "Reset to suggested" puts back).</summary>
 public record AiPromptPreview(int Version, string Text, string Suggested);
 
 /// <summary>
 /// The AI round screen: the strategy's round that is due (or the next one), the prompt filled in for today, and what the screen
-/// remembers from the last round. <c>Open</c> is whether it can be run today; <c>LastDay</c> the last day it can.
+/// remembers from the last round. <c>Open</c> is whether it can be run today (before that, an extra round can); <c>LastDay</c> the
+/// last day it can; <c>NextDueOn</c> when the round after it is due (once it is run or skipped).
 /// <c>SharingAsked</c> is whether the user has answered the sharing question (the consent box shows until then).
 /// </summary>
 public record AiRoundDetail(
@@ -27,6 +28,7 @@ public record AiRoundDetail(
     Guid RoundId,
     DateOnly DueOn,
     DateOnly LastDay,
+    DateOnly NextDueOn,
     bool Open,
     DateOnly Today,
     int PromptVersion,
@@ -35,7 +37,7 @@ public record AiRoundDetail(
     AiSetup Setup,
     string Suggested,
     IReadOnlyList<AiStockDto> Stocks,
-    int EveryWeeks,
+    int EveryDays,
     int TopN,
     string? LastModel,
     bool Sharing,
@@ -48,9 +50,13 @@ public record AiAnswerRequest(string? Answer);
 
 /// <summary>
 /// "Use these scores": the answer, the AI model, the sharing choice (null keeps the user's current one), and the prompt as the
-/// screen showed it, so the round keeps the words the AI was given (refused if the prompt changed since).
+/// screen showed it, so the round keeps the words the AI was given (refused if the prompt changed since). <c>Extra</c>: run a
+/// round now although the scheduled one isn't due yet (refused otherwise, so a second tap can't add one).
 /// </summary>
-public record AiRoundSubmit(string? Answer, string? AiModel, bool? Share, string? Prompt = null);
+public record AiRoundSubmit(string? Answer, string? AiModel, bool? Share, string? Prompt = null, bool Extra = false);
+
+/// <summary>Skips the round that is due: the round the screen showed, so a stale screen can't skip the next one.</summary>
+public record AiSkipRequest(Guid? RoundId);
 
 /// <summary>A stock's scores as read, with the step it would get (or got).</summary>
 public record AiScoreDto(Guid AssetId, string Symbol, string Name, decimal Overall, decimal? News, decimal? Mood, decimal? Figures,
@@ -63,7 +69,7 @@ public record AiScoreDto(Guid AssetId, string Symbol, string Name, decimal Overa
 public record AiReadingDto(IReadOnlyList<AiScoreDto> Scores, IReadOnlyList<string> Problems, bool Ok, int? MaxSteps, decimal? StepAmount,
     AiNoStep? Short);
 
-/// <summary>The round is done: its signals, the first of which live opens on Confirm a signal.</summary>
+/// <summary>The round is done: its signals (simulation: already bought), the first of which live opens on Confirm a signal.</summary>
 public record AiRoundResult(Guid RoundId, IReadOnlyList<Guid> SignalIds, StrategyMode Mode);
 
 /// <summary>A strategy's AI rounds, newest first, and how the picks did against the rest since each round.</summary>
@@ -76,6 +82,7 @@ public record AiRoundHistory(Guid StrategyId, string StrategyName, StrategyMode 
 public record AiRoundItem(
     Guid Id,
     DateOnly DueOn,
+    bool Extra,
     AiRoundStatus Status,
     DateTimeOffset? DoneAt,
     DateOnly? SessionDate,

@@ -33,9 +33,12 @@ public sealed class CapturedEmails : IEmailSender
     public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
-    public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken)
+    public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken) =>
+        SendAsync(to, subject, body, null, cancellationToken);
+
+    public Task SendAsync(string to, string subject, string body, string? replyTo, CancellationToken cancellationToken)
     {
-        sent.Enqueue(new(to, subject, body));
+        sent.Enqueue(new(to, subject, body, replyTo));
         return Task.CompletedTask;
     }
 

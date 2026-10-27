@@ -1,4 +1,5 @@
-import type { FeedbackItem, FeedbackKind } from '../../api'
+import { ForbiddenError, InvalidValueError, TooManyTriesError, type FeedbackItem, type FeedbackKind } from '../../api'
+import type { Translate } from '../../i18n/I18n'
 
 export const FEEDBACK_KINDS: { value: FeedbackKind; label: string; emoji: string }[] = [
   { value: 'bug', label: 'Bug', emoji: '🐞' },
@@ -6,6 +7,14 @@ export const FEEDBACK_KINDS: { value: FeedbackKind; label: string; emoji: string
   { value: 'note', label: 'Note', emoji: '📝' },
   { value: 'feature', label: 'Feature', emoji: '✨' },
 ]
+
+/** Why a comment wasn't saved, in the user's words. */
+export function feedbackErrorText(err: unknown, t: Translate): string {
+  if (err instanceof ForbiddenError) return t('feedback.errorForbidden')
+  if (err instanceof TooManyTriesError) return t('feedback.errorTooMany')
+  if (err instanceof InvalidValueError) return err.message
+  return t('feedback.errorSave')
+}
 
 export function kindMeta(kind: FeedbackKind) {
   return FEEDBACK_KINDS.find((k) => k.value === kind) ?? FEEDBACK_KINDS[2]

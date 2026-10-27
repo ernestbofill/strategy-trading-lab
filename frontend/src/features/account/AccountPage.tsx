@@ -16,6 +16,7 @@ import { logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
+import { SendFeedback } from '../feedback/SendFeedback'
 
 /** Account, first version (spec: Account): the email, change password, log out. */
 export function AccountPage() {
@@ -86,6 +87,10 @@ export function AccountPage() {
 
       <Section title={t('account.page.dataPrivacy')}>
         <AiSharing current={account.aiSharing} onSaved={refresh} />
+      </Section>
+
+      <Section title={t('feedback.send.title')}>
+        <SendFeedback />
       </Section>
 
       <Section title={t('account.page.changePassword')}>

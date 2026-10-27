@@ -18,6 +18,10 @@ public interface IEmailSender
 
     /// <summary>Sends a plain-text email to one address. Throws <see cref="EmailException"/>.</summary>
     Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken);
+
+    /// <summary>The same, with answers going to <paramref name="replyTo"/> (a user's confirmed address) when it is set.</summary>
+    Task SendAsync(string to, string subject, string body, string? replyTo, CancellationToken cancellationToken) =>
+        SendAsync(to, subject, body, cancellationToken);
 }
 
 /// <summary>
@@ -29,23 +33,26 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
     static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
     public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken) =>
-        SendFromSettingsAsync(null, subject, body, cancellationToken);
+        SendFromSettingsAsync(null, subject, body, null, cancellationToken);
 
     public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken) =>
-        SendFromSettingsAsync(to, subject, body, cancellationToken);
+        SendFromSettingsAsync(to, subject, body, null, cancellationToken);
+
+    public Task SendAsync(string to, string subject, string body, string? replyTo, CancellationToken cancellationToken) =>
+        SendFromSettingsAsync(to, subject, body, replyTo, cancellationToken);
 
     /// <summary>Sends to <paramref name="to"/>, or to the account itself when it is null, and returns the account.</summary>
-    async Task<string> SendFromSettingsAsync(string? to, string subject, string body, CancellationToken cancellationToken)
+    async Task<string> SendFromSettingsAsync(string? to, string subject, string body, string? replyTo, CancellationToken cancellationToken)
     {
         var values = await settings.ValuesAsync(cancellationToken);
         if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
             throw new EmailNotSetUpException();
-        await SendAsync(values, user, password, host, to ?? user, subject, body, cancellationToken);
+        await SendAsync(values, user, password, host, to ?? user, subject, body, replyTo, cancellationToken);
         return user;
     }
 
     async Task SendAsync(IReadOnlyDictionary<string, string?> values, string user, string password, string host, string to,
-        string subject, string body, CancellationToken cancellationToken)
+        string subject, string body, string? replyTo, CancellationToken cancellationToken)
     {
         var port = int.TryParse(values["SMTP_PORT"], out var p) ? p : 587;
         MailMessage message;
@@ -54,6 +61,7 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
         {
             // MailAddress takes exactly one address, so a value like "a@x.com,b@y.com" can never add a recipient.
             message = new MailMessage(new MailAddress(values["SMTP_FROM"] ?? user), new MailAddress(to)) { Subject = subject, Body = body };
+            if (replyTo is not null) message.ReplyToList.Add(new MailAddress(replyTo));
             client = new SmtpClient(host, port)
             {
                 EnableSsl = true,

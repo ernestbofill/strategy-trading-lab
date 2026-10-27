@@ -23,3 +23,8 @@
 .add:hover {
   background: var(--surface-hover);
 }
+
+.feedback {
+  margin: 0;
+  text-align: center;
+}

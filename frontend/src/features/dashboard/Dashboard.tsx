@@ -7,6 +7,7 @@ import { useT } from '../../i18n/I18n'
 import { pickPath } from '../new-strategy/paths'
 import { useTemplates } from '../new-strategy/useTemplate'
 import { VerifyNotice } from '../account/VerifyNotice'
+import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
 import { accountPath } from './paths'
 import styles from './Dashboard.module.css'
 import { StrategyCard } from './StrategyCard'
@@ -36,6 +37,9 @@ export function Dashboard() {
               {t('dashboard.newStrategy')}
             </Link>
           </div>
+          <p className={styles.feedback}>
+            <TextAction to={`${accountPath}${SEND_FEEDBACK_HASH}`}>{t('feedback.send.title')}</TextAction>
+          </p>
         </Screen>
       )}
     </LoadableScreen>

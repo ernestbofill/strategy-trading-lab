@@ -1,16 +1,9 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
-import {
-  api,
-  ForbiddenError,
-  InvalidValueError,
-  TooManyTriesError,
-  UnauthorizedError,
-  type FeedbackKind,
-} from '../../api'
+import { api, UnauthorizedError, type FeedbackKind } from '../../api'
 import { useT } from '../../i18n/I18n'
 import { useCurrentAccount } from '../account/AccountContext'
-import { buttonSide, elementPath, topOffset, type ButtonSide, type SelectionPosition } from './feedback'
+import { buttonSide, elementPath, feedbackErrorText, topOffset, type ButtonSide, type SelectionPosition } from './feedback'
 import styles from './Feedback.module.css'
 import { KindPicker } from './KindPicker'
 
@@ -240,15 +233,7 @@ export function FeedbackCapture() {
       setSavedToast(true)
     } catch (err) {
       if (err instanceof UnauthorizedError) return
-      setError(
-        err instanceof ForbiddenError
-          ? t('feedback.errorForbidden')
-          : err instanceof TooManyTriesError
-            ? t('feedback.errorTooMany')
-            : err instanceof InvalidValueError
-              ? err.message
-              : t('feedback.errorSave'),
-      )
+      setError(feedbackErrorText(err, t))
     } finally {
       setSaving(false)
     }

@@ -160,7 +160,7 @@ const settingPath = (key: string) => `/settings/${encodeURIComponent(key)}`
 async function aiRequest(method: string, path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method,
-    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (response.status === 401) endedSession()

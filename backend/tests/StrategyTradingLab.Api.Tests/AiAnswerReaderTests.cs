@@ -187,6 +187,40 @@ public class AiAnswerReaderTests
     }
 
     [Fact]
+    public void Reads_bare_json_with_bracketed_citations_around_it()
+    {
+        var answer = """
+            Here are the scores [1]:
+            [{"stock": "ZS", "overall": 83}, {"stock": "VRT", "overall": 71}, {"stock": "SU.PA", "overall": 62}]
+            Sources: [2] Reuters
+            """;
+
+        var reading = AiAnswerReader.Read(answer, Stocks);
+
+        Assert.True(reading.Ok, string.Join(" ", reading.Problems));
+        Assert.Equal(3, reading.Scores.Count);
+    }
+
+    [Fact]
+    public void Reads_a_catalan_table_with_puntuacio_global_and_a_nota_column()
+    {
+        var answer = """
+            | Acció | Notícies | Nota | Puntuació global | Motiu |
+            |---|---|---|---|---|
+            | ZS | 82 | 7 | 83 | ok |
+            | VRT | 70 | 7 | 71 | ok |
+            | SU.PA | 60 | 7 | 62 | ok |
+            """;
+
+        var reading = AiAnswerReader.Read(answer, Stocks);
+
+        Assert.True(reading.Ok, string.Join(" ", reading.Problems));
+        var zs = reading.Scores.Single(s => s.AssetId == Zscaler.AssetId);
+        Assert.Equal(83m, zs.Overall);
+        Assert.Equal(82m, zs.News);
+    }
+
+    [Fact]
     public void Finds_the_table_after_the_prompts_own_header_quoted_back()
     {
         var answer = """

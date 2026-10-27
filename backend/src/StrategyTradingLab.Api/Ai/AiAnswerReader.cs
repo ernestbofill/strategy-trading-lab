@@ -129,43 +129,57 @@ public static partial class AiAnswerReader
     static List<Row>? JsonRows(string answer)
     {
         var fenced = JsonFence().Match(answer);
-        var text = fenced.Success ? fenced.Groups[1].Value : answer;
-        var start = text.IndexOfAny(['[', '{']);
-        var end = text.LastIndexOfAny([']', '}']);
-        if (start < 0 || end <= start) return null;
+        var bytes = System.Text.Encoding.UTF8.GetBytes(fenced.Success ? fenced.Groups[1].Value : answer);
+        // Prose around the JSON can hold brackets of its own ("[1]"): try each opening bracket until one gives rows.
+        var offset = 0;
+        for (var attempt = 0; attempt < MaxJsonStarts; attempt++)
+        {
+            var next = bytes.AsSpan(offset).IndexOfAny((byte)'[', (byte)'{');
+            if (next < 0) return null;
+            var start = offset + next;
+            offset = start + 1;
 
-        JsonDocument document;
-        try
-        {
-            document = JsonDocument.Parse(text[start..(end + 1)], new JsonDocumentOptions { MaxDepth = 8, AllowTrailingCommas = true });
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-        using (document)
-        {
-            var root = document.RootElement;
-            var items = root.ValueKind == JsonValueKind.Array ? root
-                : root.ValueKind == JsonValueKind.Object
-                    ? root.EnumerateObject().Select(p => p.Value).FirstOrDefault(v => v.ValueKind == JsonValueKind.Array)
-                    : default;
-            if (items.ValueKind != JsonValueKind.Array) return null;
-
-            var rows = new List<Row>();
-            foreach (var item in items.EnumerateArray())
+            JsonDocument document;
+            try
             {
-                if (item.ValueKind != JsonValueKind.Object) continue;
-                var fields = item.EnumerateObject()
-                    .Where(p => p.Value.ValueKind is JsonValueKind.String or JsonValueKind.Number)
-                    .Select(p => (Key: Key(p.Name), Value: p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString()! : p.Value.GetRawText()))
-                    .ToList();
-                string? Field(Func<string, bool> test) => fields.FirstOrDefault(f => test(f.Key)).Value;
-                if (Field(IsStock) is not { } name) continue;
-                rows.Add(new Row(name, Field(IsOverall), Field(IsNews), Field(IsMood), Field(IsFigures), Field(IsReason)));
+                var reader = new Utf8JsonReader(bytes.AsSpan(start), new JsonReaderOptions { MaxDepth = 8, AllowTrailingCommas = true });
+                if (!JsonDocument.TryParseValue(ref reader, out document!)) continue;
             }
-            return rows;
+            catch (JsonException)
+            {
+                continue;
+            }
+            using (document)
+            {
+                var rows = JsonObjects(document.RootElement);
+                if (rows.Count > 0) return rows;
+            }
         }
+        return null;
+    }
+
+    const int MaxJsonStarts = 50;
+
+    static List<Row> JsonObjects(JsonElement root)
+    {
+        var items = root.ValueKind == JsonValueKind.Array ? root
+            : root.ValueKind == JsonValueKind.Object
+                ? root.EnumerateObject().Select(p => p.Value).FirstOrDefault(v => v.ValueKind == JsonValueKind.Array)
+                : default;
+        var rows = new List<Row>();
+        if (items.ValueKind != JsonValueKind.Array) return rows;
+        foreach (var item in items.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object) continue;
+            var fields = item.EnumerateObject()
+                .Where(p => p.Value.ValueKind is JsonValueKind.String or JsonValueKind.Number)
+                .Select(p => (Key: Key(p.Name), Value: p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString()! : p.Value.GetRawText()))
+                .ToList();
+            string? Field(Func<string, bool> test) => fields.FirstOrDefault(f => test(f.Key)).Value;
+            if (Field(IsStock) is not { } name) continue;
+            rows.Add(new Row(name, Field(IsOverall), Field(IsNews), Field(IsMood), Field(IsFigures), Field(IsReason)));
+        }
+        return rows;
     }
 
     /// <summary>A column's name in lower-case letters only: "Overall score" → "overallscore".</summary>
@@ -176,7 +190,7 @@ public static partial class AiAnswerReader
         key.Contains("stock") || key.Contains("company") || key.Contains("ticker") || key.Contains("symbol") || key == "name"
         || key.StartsWith("acci", StringComparison.Ordinal) || key.Contains("empresa") || key.StartsWith("smbol", StringComparison.Ordinal);
 
-    static bool IsOverall(string key) => key.Contains("overall") || key is "total" or "score" or "totalscore" or "global" or "puntuaci";
+    static bool IsOverall(string key) => key.Contains("overall") || key is "total" or "score" or "totalscore" || key.Contains("global") || key.Contains("puntuaci");
 
     static bool IsMood(string key) => key.Contains("mood") || key.Contains("sentiment") || key.Contains("nim");
 
@@ -186,7 +200,7 @@ public static partial class AiAnswerReader
     static bool IsReason(string key) =>
         key.Contains("reason") || key.Contains("why") || key.Contains("rationale") || key.Contains("comment") || key.Contains("motiu");
 
-    static bool IsNews(string key) => key.Contains("news") || key.StartsWith("not", StringComparison.Ordinal);
+    static bool IsNews(string key) => key.Contains("news") || key.Contains("notcies") || key.Contains("noticies");
 
     /// <summary>
     /// A score from 0 to 100 at the start of a cell: "83", "83/100", "**83**", "82.5". Null for anything else, a score on another

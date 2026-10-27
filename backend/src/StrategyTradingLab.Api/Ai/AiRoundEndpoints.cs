@@ -35,8 +35,8 @@ public static class AiRoundEndpoints
                 return TypedResults.ValidationProblem(errors);
 
             var parameters = json.Deserialize<AiParams>(JsonSerializerOptions.Web)! with { EveryWeeks = weeks };
-            var stocks = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).Select(a => new AiStock(a.Id, a.Symbol, a.Name)).ToListAsync(cancellationToken);
-            stocks = [.. stocks.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)];
+            var stocks = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id) && a.Active).Select(a => new AiStock(a.Id, a.Symbol, a.Name)).ToListAsync(cancellationToken);
+            stocks = [.. stocks.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Symbol, StringComparer.Ordinal)];
             return TypedResults.Ok(new AiPromptPreview(AiPrompt.Version, AiPrompt.Build(parameters, DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime), stocks),
                 AiPrompt.SuggestedInstructions(AiPrompt.On(parameters))));
         })

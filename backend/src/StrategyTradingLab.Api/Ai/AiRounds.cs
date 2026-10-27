@@ -62,8 +62,10 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
                 while (AiRoundRules.LastDay(open.DueOn, parameters) < today)
                 {
                     // One write each, so the one-due-round index never sees two at once.
-                    open.Status = AiRoundStatus.Skipped;
-                    await db.SaveChangesAsync(cancellationToken);
+                    // Only while it is still due: a round just done by the user must stay done.
+                    var skipped = await db.AiRounds.Where(r => r.Id == open.Id && r.Status == AiRoundStatus.Due)
+                        .ExecuteUpdateAsync(r => r.SetProperty(x => x.Status, AiRoundStatus.Skipped), cancellationToken);
+                    if (skipped == 0) break;
                     open = new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = AiRoundRules.NextDue(open.DueOn, parameters) };
                     db.AiRounds.Add(open);
                     await db.SaveChangesAsync(cancellationToken);
@@ -201,6 +203,8 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AiSharing, choice).SetProperty(x => x.AiSharingChangedAt, now),
                 cancellationToken);
             sharing = choice;
+            // Turning sharing off removes what was shared before, whichever screen or device it comes from.
+            if (!choice) await ForgetSharedAsync(user.Id, cancellationToken);
         }
         else
             sharing = await db.Database.SqlQuery<bool>($"SELECT ai_sharing AS \"Value\" FROM users WHERE id = {user.Id} FOR UPDATE").SingleAsync(cancellationToken);

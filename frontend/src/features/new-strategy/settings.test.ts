@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Setting, TemplateDetail } from '../../api'
-import { changedSettings, formatSetting, rulesWithSettings, settingBounds, settingValues, settingsSummary } from './settings'
+import { changedSettings, formatSetting, rulesWithSettings, settingBounds, settingValues, settingsSummary, stepSetting } from './settings'
 
 const start: Setting = { key: 'zoneStartPct', sentence: '', value: '{n}%', step: 1, min: 1, max: 39, below: 'zoneEndPct' }
 const end: Setting = { key: 'zoneEndPct', sentence: '', value: '{n}%', step: 1, min: 2, max: 40 }
@@ -55,5 +55,12 @@ describe('settings', () => {
       { marker: 'BUY', text: 'Above 3% and SMA 200 over 200 days.' },
       { marker: 'SELL', text: 'Below 3%.' },
     ])
+  })
+
+  it('steps a decimal setting without float drift', () => {
+    const ratio: Setting = { key: 'volumeRatio', sentence: '', value: '{n}×', step: 0.1, min: 1, max: 3 }
+    expect(stepSetting(ratio, 1.2, 1)).toBe(1.3)
+    expect(stepSetting(ratio, 1.3, -1)).toBe(1.2)
+    expect(stepSetting(peak, 60, -1)).toBe(55)
   })
 })

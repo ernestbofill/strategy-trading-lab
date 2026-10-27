@@ -13,6 +13,7 @@ import {
   changedSettings,
   formatSetting,
   settingValues,
+  stepSetting,
   type SettingValues,
 } from './settings'
 import { useTemplate } from './useTemplate'
@@ -77,6 +78,8 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
   const id = useId()
   const [before, after] = setting.sentence.split('{value}')
   const isChanged = value !== tested
+  const down = stepSetting(setting, value, -1)
+  const up = stepSetting(setting, value, 1)
   return (
     <div className={styles.row} role="group" aria-labelledby={id} data-changed={isChanged || undefined}>
       <div className={styles.text}>
@@ -87,6 +90,7 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
           </span>
           {after}
         </div>
+        {setting.help && <div className={styles.help}>{setting.help}</div>}
         <div className={styles.tested}>
           <span>{t('newStrategy.advanced.tested', { value: formatSetting(setting, tested) })}</span>
           {isChanged && <span className={styles.changed}>{t('newStrategy.advanced.changed')}</span>}
@@ -96,16 +100,16 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
         <button
           type="button"
           aria-label={t('newStrategy.advanced.decrease')}
-          disabled={value - setting.step < bounds.min}
-          onClick={() => onChange(value - setting.step)}
+          disabled={down < bounds.min}
+          onClick={() => onChange(down)}
         >
           −
         </button>
         <button
           type="button"
           aria-label={t('newStrategy.advanced.increase')}
-          disabled={value + setting.step > bounds.max}
-          onClick={() => onChange(value + setting.step)}
+          disabled={up > bounds.max}
+          onClick={() => onChange(up)}
         >
           +
         </button>

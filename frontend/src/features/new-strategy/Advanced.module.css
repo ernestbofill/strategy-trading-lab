@@ -29,6 +29,32 @@
   font: 14px/20px var(--font-ui);
 }
 
+.help {
+  font: 13px/18px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.group + .group,
+.row + .group {
+  margin-top: var(--space-3);
+}
+
+.groupTitle {
+  margin: 0;
+  font: 600 16px/24px var(--font-ui);
+  color: var(--primary);
+}
+
+.groupLead {
+  margin: 0;
+  font: 14px/22px var(--font-ui);
+}
+
 .value {
   font: 600 14px/20px var(--font-mono);
   color: var(--syntax-number);

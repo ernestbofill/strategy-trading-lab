@@ -73,7 +73,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidata: quines accions vigila",
-        "lead": "Una acció és candidata, una guanyadora provada, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, `SMA 50` > `SMA 150` > `SMA 200` (la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
+        "lead": "Una acció és candidata, una guanyadora provada, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
       },
       "signal": {
         "title": "2 · Senyal de compra: quan una candidata dona senyal",
@@ -239,7 +239,7 @@
       },
       "pace": {
         "title": "3 · Ritme: els passos següents",
-        "lead": "Després del primer pas, arriba un pas més a ritme fix fins que es compren els passos del teu pressupost. Un nou màxim acaba el cicle."
+        "lead": "Després del primer pas, arriba un pas més a ritme fix fins que es compren els passos del teu pressupost. Llavors el cicle s'acaba quan el preu torna al màxim antic, o, quan la caiguda és més antiga que el període del màxim recent, quan comença una nova caiguda."
       }
     }
   },
@@ -260,9 +260,9 @@
         "help": "Més ampla: menys operacions i menys senyals falsos, però compra i ven més tard. 0: opera a cada creuament."
       },
       "cooldownDays": {
-        "sentence": "Després d'un senyal, espera {value} abans del següent.",
+        "sentence": "Després d'una venda, espera {value} abans del següent senyal de compra.",
         "value": "{n} dies naturals",
-        "help": "Compta des de l'operació del senyal. Més llarg: menys entrades i sortides ràpides quan el mercat va amunt i avall."
+        "help": "Compta des de la venda. Un senyal de venda no s'endarrereix mai. Més llarg: menys vendes seguides d'una recompra quan el mercat va amunt i avall."
       }
     },
     "rules": [

@@ -93,11 +93,12 @@ public static class TemplateCatalog
         [
             new("minGainPct", 5, 20, 200, Group: "candidate"),
             new("gainDays", 21, 63, 252, Group: "candidate"),
-            new("trendDays", 10, 100, 300, Group: "candidate"),
+            // The floor and long averages never overlap, so the middle one (150 days, kept between them) always has room.
+            new("trendDays", 10, 120, 300, Group: "candidate"),
             new("peakDays", 5, 20, 60, Group: "signal"),
             new("zoneStartPct", 1, 1, 39, Below: "zoneEndPct", Group: "signal"),
             new("zoneEndPct", 1, 2, 40, Group: "signal"),
-            new("floorDays", 5, 20, 100, Group: "signal"),
+            new("floorDays", 5, 20, 80, Group: "signal"),
             new("cooldownDays", 5, 0, 60, Group: "pace"),
         ],
     };

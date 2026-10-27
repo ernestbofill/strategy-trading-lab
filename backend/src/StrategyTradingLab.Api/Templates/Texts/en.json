@@ -73,7 +73,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidate: which stocks it watches",
-        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its averages are stacked, `SMA 50` > `SMA 150` > `SMA 200` (the middle one stays between the other two); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
+        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its averages are stacked, the floor average above a middle one above the long average (`SMA 50` > `SMA 150` > `SMA 200` when tested; the middle one stays between the other two); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
       },
       "signal": {
         "title": "2 · Buy signal: when a candidate signals",
@@ -239,7 +239,7 @@
       },
       "pace": {
         "title": "3 · Pace: the next steps",
-        "lead": "After the first step, one more step comes at a fixed pace until your budget's steps are bought. A new high ends the cycle."
+        "lead": "After the first step, one more step comes at a fixed pace until your budget's steps are bought. Then the cycle ends when the price gets back to its old high, or, once the drop is older than the recent-high period, when a new drop starts."
       }
     }
   },
@@ -260,9 +260,9 @@
         "help": "Wider: fewer trades and fewer false signals, but buys later and sells later. 0: trades every crossing."
       },
       "cooldownDays": {
-        "sentence": "After a signal, wait {value} before the next one.",
+        "sentence": "After a sale, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
-        "help": "Counted from the signal's trade. Longer: fewer quick in-and-out trades when the market is choppy."
+        "help": "Counted from the sale. A sell signal is never delayed. Longer: fewer sell-then-buy-back trades when the market is choppy."
       }
     },
     "rules": [

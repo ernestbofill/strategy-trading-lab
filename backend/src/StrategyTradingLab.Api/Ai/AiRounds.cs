@@ -363,14 +363,13 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
 
     /// <summary>
     /// Turning sharing off also removes what the user shared. A shared round has no key to its user: the user's own round points
-    /// to it (<c>shared_round_id</c>, set to null when the shared copy goes). Deleting a strategy removes what it shared
-    /// (<paramref name="strategyId"/>), since nothing would point to it any more.
+    /// to it (<c>shared_round_id</c>, set to null when the shared copy goes).
     /// </summary>
-    public async Task<int> ForgetSharedAsync(Guid userId, CancellationToken cancellationToken, Guid? strategyId = null)
+    public async Task<int> ForgetSharedAsync(Guid userId, CancellationToken cancellationToken)
     {
         var shared = await (from round in db.AiRounds.AsNoTracking()
                             join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
-                            where strategy.UserId == userId && round.SharedRoundId != null && (strategyId == null || strategy.Id == strategyId)
+                            where strategy.UserId == userId && round.SharedRoundId != null
                             select round.SharedRoundId!.Value).ToListAsync(cancellationToken);
         return shared.Count == 0 ? 0 : await db.SharedAiRounds.Where(s => shared.Contains(s.Id)).ExecuteDeleteAsync(cancellationToken);
     }

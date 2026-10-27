@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../../api'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
-import { invalidate } from '../../lib/useLoadable'
-import { dashboardCacheKey } from '../dashboard/useDashboard'
+import { invalidateAll } from '../../lib/useLoadable'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './DeleteStrategy.module.css'
 
@@ -33,7 +32,8 @@ export function DeleteStrategy({ id, name }: { id: string; name: string }) {
       setBusy(false)
       return
     }
-    invalidate(dashboardCacheKey)
+    // Its page, rounds and signals may be cached, and the dashboard still lists it.
+    invalidateAll()
     // The strategy page is gone: going back must not open it.
     navigate(dashboardPath, { replace: true })
   }
@@ -46,7 +46,8 @@ export function DeleteStrategy({ id, name }: { id: string; name: string }) {
         <button type="button" className={styles.btnDanger} disabled={busy} onClick={remove}>
           {busy ? t('strategy.deleting') : t('strategy.deleteConfirm')}
         </button>
-        <button type="button" className={styles.btnSecondary} disabled={busy} onClick={() => setAsking(false)}>
+        {/* Focus on the safe choice, so the keyboard lands in the confirm step. */}
+        <button type="button" className={styles.btnSecondary} disabled={busy} onClick={() => setAsking(false)} autoFocus>
           {t('strategy.deleteKeep')}
         </button>
       </div>

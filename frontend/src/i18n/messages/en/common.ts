@@ -9,7 +9,6 @@ export const common = {
   'common.back': '\u2190 BACK',
   /** Tooltip of the DEV tag in the top bar. */
   'common.devDatabase': 'The API uses the dev database',
-  /** Tooltip of an action whose screen isn't built yet. */
   /** The password toggle: the visible word, then the part only a screen reader hears ("Show password"). */
   'common.show': 'Show',
   'common.hide': 'Hide',

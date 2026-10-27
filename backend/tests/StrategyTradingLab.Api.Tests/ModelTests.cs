@@ -19,6 +19,14 @@ public class ModelTests
 
     static readonly IModel Model = CreateContext().GetService<IDesignTimeModel>().Model;
 
+    // Fails when an entity or convention changed without a migration (`dotnet ef migrations add`).
+    [Fact]
+    public void Has_no_model_changes_without_a_migration()
+    {
+        using var context = CreateContext();
+        Assert.False(context.Database.HasPendingModelChanges());
+    }
+
     [Fact]
     public void Has_exactly_the_data_model_tables()
     {

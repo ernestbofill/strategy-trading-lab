@@ -40,21 +40,33 @@ public class TemplateSettingsTests
                 Assert.True(setting.Min >= Convert.ToDecimal(range.Minimum) && setting.Max <= Convert.ToDecimal(range.Maximum), label);
 
                 if (setting.Below is { } above) Assert.Contains(template.Settings, s => s.Key == above);
+                if (setting.Group is { } group) Assert.True(texts.SettingGroups?.ContainsKey(group), $"{label} group {group}");
             }
         }
     }
 
     [Fact]
-    public void Dip_in_winners_exposes_the_specs_five_settings_but_not_the_cooldown()
+    public void Dip_in_winners_exposes_the_POCs_rules_grouped_by_candidate_signal_and_pace()
     {
-        Assert.Equal(["zoneStartPct", "zoneEndPct", "peakDays", "trendDays", "floorDays"],
+        Assert.Equal(["minGainPct", "gainDays", "trendDays", "peakDays", "zoneStartPct", "zoneEndPct", "floorDays", "cooldownDays"],
             TemplateCatalog.Dip.Settings.Select(s => s.Key));
+        Assert.Equal(["candidate", "candidate", "candidate", "signal", "signal", "signal", "signal", "pace"],
+            TemplateCatalog.Dip.Settings.Select(s => s.Group));
+
+        var (stored, errors) = Apply(TemplateCatalog.Dip, new() { ["minGainPct"] = 80, ["gainDays"] = 126, ["cooldownDays"] = 20 });
+        Assert.Empty(errors);
+        var dip = stored!.Deserialize<DipParams>(JsonSerializerOptions.Web)!;
+        Assert.Equal((80m, 126, 20), (dip.MinGainPct, dip.GainDays, dip.CooldownDays));
+
+        // The low period moves in steps of 21 trading days (about a month).
+        (_, errors) = Apply(TemplateCatalog.Dip, new() { ["gainDays"] = 130 });
+        Assert.True(errors.ContainsKey("settings.gainDays"));
     }
 
     [Fact]
-    public void Ride_the_long_trend_exposes_its_average_and_signal_band_but_not_the_cooldown()
+    public void Ride_the_long_trend_exposes_its_average_signal_band_and_cooldown()
     {
-        Assert.Equal(["smaDays", "bandPct"], TemplateCatalog.Trend.Settings.Select(s => s.Key));
+        Assert.Equal(["smaDays", "bandPct", "cooldownDays"], TemplateCatalog.Trend.Settings.Select(s => s.Key));
 
         var (stored, errors) = Apply(TemplateCatalog.Trend, new() { ["smaDays"] = 150, ["bandPct"] = 4 });
 
@@ -87,7 +99,7 @@ public class TemplateSettingsTests
     }
 
     [Theory]
-    [InlineData("cooldownDays", 5)]  // a param, but not exposed
+    [InlineData("cooldownDays", 7)]  // off the 5-day steps
     [InlineData("nope", 5)]
     [InlineData("peakDays", 15)]     // under the minimum
     [InlineData("peakDays", 65)]     // over the maximum
@@ -123,12 +135,28 @@ public class TemplateSettingsTests
     }
 
     [Fact]
-    public void A_template_without_settings_refuses_any()
+    public void A_param_that_is_not_a_setting_is_refused()
     {
-        var (stored, errors) = Apply(TemplateCatalog.Comeback, new() { ["drawdownPct"] = 40 });
+        // The comeback's "below its SMA 200" is a yes/no the screen has no control for.
+        var (stored, errors) = Apply(TemplateCatalog.Comeback, new() { ["belowSma200"] = 0 });
 
         Assert.Null(stored);
-        Assert.Contains("settings.drawdownPct", errors.Keys);
+        Assert.Contains("settings.belowSma200", errors.Keys);
+    }
+
+    [Fact]
+    public void The_comeback_and_the_big_market_drop_expose_the_POCs_numeric_rules()
+    {
+        Assert.Equal(["drawdownPct", "candidateDays", "aboveSma50Pct", "volumeRatio", "maxChasePct", "nearHighPct", "breakoutPullbackPct", "cooldownDays"],
+            TemplateCatalog.Comeback.Settings.Select(s => s.Key));
+        Assert.Equal(["drawdownPct", "highDays", "reboundPct", "stepEveryDays"], TemplateCatalog.Bear.Settings.Select(s => s.Key));
+
+        // A decimal step: the volume ratio moves by 0.1.
+        var (stored, errors) = Apply(TemplateCatalog.Comeback, new() { ["volumeRatio"] = 1.5m });
+        Assert.Empty(errors);
+        Assert.Equal(1.5m, stored!.Deserialize<ComebackParams>(JsonSerializerOptions.Web)!.VolumeRatio);
+        (_, errors) = Apply(TemplateCatalog.Comeback, new() { ["volumeRatio"] = 1.25m });
+        Assert.True(errors.ContainsKey("settings.volumeRatio"));
     }
 
     [Theory]

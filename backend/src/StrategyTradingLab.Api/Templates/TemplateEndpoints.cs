@@ -70,7 +70,14 @@ public static class TemplateEndpoints
                 // A language without a setting's words shows the English ones.
                 var words = texts.Settings?.GetValueOrDefault(setting.Key)
                     ?? TemplateTexts.For(template, TemplateTexts.DefaultLocale).Settings![setting.Key];
-                return new SettingDto(setting.Key, words.Sentence, words.Value, setting.Step, setting.Min, setting.Max, setting.Below);
+                return new SettingDto(setting.Key, words.Sentence, words.Value, setting.Step, setting.Min, setting.Max, setting.Below,
+                    words.Help, setting.Group);
+            })],
+            SettingGroups = [.. template.Settings.Select(setting => setting.Group).OfType<string>().Distinct().Select(group =>
+            {
+                var words = texts.SettingGroups?.GetValueOrDefault(group)
+                    ?? TemplateTexts.For(template, TemplateTexts.DefaultLocale).SettingGroups![group];
+                return new SettingGroupDto(group, words.Title, words.Lead);
             })],
         };
 }

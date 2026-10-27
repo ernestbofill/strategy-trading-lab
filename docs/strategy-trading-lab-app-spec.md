@@ -71,13 +71,13 @@ These apply to every screen, email and alert.
 | 2c · How we tested | `HowTested` | "How we tested ›" on a review (not on the AI review) | Back to that review |
 | 3 · Choose the mode | `Mode` | Review "Use this template"; "Go live with these settings" (not drawn) | Set your budget |
 | 4 · Set your budget | `Budget` | Choose the mode; Confirm | Confirm |
-| 5 · Name, preview and confirm | `Confirm` | Set your budget | Dashboard, or the first AI round |
+| 5 · Name, preview and confirm | `Confirm` | Set your budget | Dashboard |
 | Dashboard (home) | `Home` | Confirm; app start for returning users | Strategy page, Confirm a signal, AI round, Pick a template |
 | Strategy page | `StrategyDetail` | A strategy card on the dashboard | Stock page (not drawn), stock list editor, Advanced settings, Backtest (not drawn), Confirm a signal |
 | Confirm a signal (live) | `Signal` | Waiting for you on the dashboard; a stock row; a signal alert or the daily overview | Strategy page |
-| AI round | `AIRound` | Waiting for you on the dashboard; the AI-round notification; Confirm for a new AI strategy | Dashboard (simulation); Confirm a signal (live) |
+| AI round | `AIRound` | Waiting for you on the dashboard; the AI-round notification | Dashboard (simulation); Confirm a signal (live) |
 
-**New user:** sign-up → pick → review → (advanced settings, how we tested) → mode → budget → confirm → dashboard (or the first AI round).
+**New user:** sign-up → pick → review → (advanced settings, how we tested) → mode → budget → confirm → dashboard.
 
 **Adding a strategy:** dashboard "+ New strategy" → the same screens. All templates are shown, with "You run [n] from this template" on templates already in use (not drawn).
 
@@ -477,7 +477,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - *Your AI's top picks* (not drawn): "There are no past results for this template." / "Your first AI round is due now." / then the mode's line.
 - Above the button: the disclaimer.
 - Button, Live: "Start following it live". Simulation (not drawn): "Start the simulation".
-- The button creates the strategy and opens the dashboard; for *Your AI's top picks*, its first AI round.
+- The button creates the strategy and opens the dashboard, in place of Confirm in the history, so going back never shows Confirm again. For *Your AI's top picks*, the first AI round waits there under *Waiting for you*.
 - While it saves, the button reads "Starting…" and can't be pressed twice. If it fails, the user stays on this screen and sees, under the name: "You already run a strategy with this name. Pick another." when another running strategy took the name, else "We couldn't start it. Try again." (assumed copy)
 
 ### Dashboard (`Home`)

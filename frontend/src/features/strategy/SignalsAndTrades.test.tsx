@@ -58,7 +58,7 @@ const mockStrategy = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   id: 'strat-1',
   name: 'Tech Dip',
   templateKey: 'dip',
-  templateName: 'Dip in winners',
+  templateName: 'Winners at a discount',
   mode: 'live',
   startedOn: '2026-10-01',
   today: '2026-10-25',

@@ -155,7 +155,7 @@ public static class TemplateCatalog
         ],
     };
 
-    // No backtest: results start on the day the strategy starts. Watches the stocks of Dip in winners and The comeback.
+    // No backtest: results start on the day the strategy starts. Watches the stocks of Winners at a discount and The comeback.
     public static readonly Template Ai = new(
         "ai", null, InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList([.. Dip.Watches.Assets.Union(Comeback.Watches.Assets)]),

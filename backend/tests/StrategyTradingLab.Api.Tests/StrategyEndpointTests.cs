@@ -40,7 +40,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             var created = await response.Content.ReadFromJsonAsync<JsonElement>();
             Assert.Equal(name, created.GetProperty("name").GetString());
             Assert.Equal("live", created.GetProperty("mode").GetString());
-            Assert.Equal("Dip in winners", created.GetProperty("templateName").GetString());
+            Assert.Equal("Winners at a discount", created.GetProperty("templateName").GetString());
             Assert.Equal(3000, created.GetProperty("budget").GetDecimal());
             Assert.Equal(0, created.GetProperty("used").GetDecimal());
             Assert.Equal(JsonValueKind.Null, created.GetProperty("results").ValueKind);

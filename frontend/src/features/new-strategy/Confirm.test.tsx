@@ -68,7 +68,7 @@ describe('Confirm', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Dashboard back' }))
 
-    // Confirm would show the reset draft (Dip in winners), one tap from a second strategy.
+    // Confirm would show the reset draft (Winners at a discount), one tap from a second strategy.
     expect(await screen.findByText('Set your budget')).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Ready to start' })).toBeNull()
     expect(start).toHaveBeenCalledTimes(1)

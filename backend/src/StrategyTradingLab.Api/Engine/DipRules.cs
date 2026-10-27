@@ -3,7 +3,7 @@ using StrategyTradingLab.Api.Templates;
 namespace StrategyTradingLab.Api.Engine;
 
 /// <summary>
-/// Dip in winners (POC Leader pullback, <c>stage2_pullback</c>). A candidate is a proven leader: it rose at least
+/// Winners at a discount (POC Leader pullback, <c>stage2_pullback</c>). A candidate is a proven leader: it rose at least
 /// <c>MinGainPct</c> from its low and its averages are stacked (SMA 50 &gt; SMA 150 &gt; SMA 200) with the SMA 200 rising.
 /// The buy window is the discount zone, <c>ZoneStartPct</c>–<c>ZoneEndPct</c> below the recent peak and above the SMA 50.
 /// </summary>

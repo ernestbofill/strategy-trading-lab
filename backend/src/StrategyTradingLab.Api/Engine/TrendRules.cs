@@ -4,7 +4,7 @@ using StrategyTradingLab.Api.Templates;
 namespace StrategyTradingLab.Api.Engine;
 
 /// <summary>
-/// Ride the long trend (POC Index trend, <c>index_trend</c>). All in above the <c>SmaDays</c> average plus <c>BandPct</c>,
+/// Index trend (POC <c>index_trend</c>). All in above the <c>SmaDays</c> average plus <c>BandPct</c>,
 /// all out below the average minus <c>BandPct</c>; inside the band the trend stays what it was. Keeps state between days
 /// (whether the trend is up and when it last broke down): one instance per run.
 /// </summary>

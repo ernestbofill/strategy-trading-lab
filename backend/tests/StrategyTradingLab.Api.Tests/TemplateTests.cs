@@ -40,7 +40,7 @@ public class TemplateTests
     [Fact]
     public void A_language_without_texts_falls_back_to_english()
     {
-        Assert.Equal("Dip in winners", TemplateTexts.For(TemplateCatalog.Dip, "fr").Name);
+        Assert.Equal("Winners at a discount", TemplateTexts.For(TemplateCatalog.Dip, "fr").Name);
     }
 
     [Fact]

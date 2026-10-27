@@ -49,10 +49,10 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 
 | Template | Tagline | Invests in | Trades |
 |---|---|---|---|
-| Dip in winners | Find the next Nvidia ❓ legal review | Individual stocks | Buys in the discount zone |
+| Winners at a discount | Buy the dip ❓ legal review | Individual stocks | Buys in the discount zone |
 | The comeback | Stocks on the rise | Individual stocks | Buys |
-| The big market drop | When the market is on sale | Broad S&P 500 fund | Buys |
-| Ride the long trend | Ride the wave | Broad index fund | Buys and sells (all in, all out) |
+| Bear markets | When the market is on sale | Broad S&P 500 fund | Buys |
+| Index trend | Ride the wave | Broad index fund | Buys and sells (all in, all out) |
 | Your AI's top picks | Let your AI do the reading | Individual stocks | Buys after each AI round; no backtest |
 
 ---
@@ -147,7 +147,7 @@ All sent after the US market close.
 - Public top navigation; app navigation (Dashboard · New strategy · Account)
 - Disclaimer line wherever results or signals appear, and in the footer: "Not financial advice. Signals follow your rules." The legal page and the places where the user commits use the full one (spec, section 3).
 - Mode label (Simulation / Live) on every strategy
-- Strategy name with template, mode and start date, e.g. "Zscaler & friends · *Dip in winners* · Live · since Oct 13"
+- Strategy name with template, mode and start date, e.g. "Zscaler & friends · *Winners at a discount* · Live · since Oct 13"
 - Template card (name, tagline, idea, Learn more)
 - Result block: result vs index fund, worst year, "Past results don't promise future ones"
 - Stock status pill: Watching · Signal · Building · Holding · Waiting for you
@@ -173,7 +173,7 @@ See "Wording rules" in the user journey. In short:
 
 - Broker connections, order placement, reading the user's broker account
 - Switching a strategy's mode in place (going live starts a new strategy)
-- Selling logic, except *Ride the long trend*
+- Selling logic, except *Index trend*
 - Running AI in the app (users bring their own AI)
 - Telegram alerts
 - Non-US markets
@@ -186,6 +186,6 @@ See "Wording rules" in the user journey. In short:
 1. Is the template catalogue public, or visible only after sign-up?
 2. Languages at launch: English only, or also Spanish / Catalan?
 3. Public blog or changelog, or leave until after launch?
-4. "Find the next Nvidia" tagline: pending legal review.
+4. "Buy the dip" tagline: pending legal review.
 5. Design for pausing and ending a strategy.
 6. Web push on iPhone: is a home-screen prompt enough?

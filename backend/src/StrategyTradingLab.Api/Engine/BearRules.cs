@@ -4,7 +4,7 @@ using StrategyTradingLab.Api.Templates;
 namespace StrategyTradingLab.Api.Engine;
 
 /// <summary>
-/// The big market drop (POC Bear-market accumulation, <c>bear_accumulation</c>). Tracks its own cycle through four phases:
+/// Bear markets (POC Bear-market accumulation, <c>bear_accumulation</c>). Tracks its own cycle through four phases:
 /// <c>normal</c> → <c>drawdown</c> (at least <c>DrawdownPct</c> below the recent <c>HighDays</c> high) → <c>accumulating</c>
 /// (the first step once the close rebounds <c>ReboundPct</c> off the drop's low, then a step every <c>StepEveryDays</c>
 /// trading days) → <c>done</c> once all steps are bought. Resets to <c>normal</c> when the price recovers the pre-drop high,

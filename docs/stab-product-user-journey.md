@@ -199,9 +199,9 @@ It also says what happens next:
 
 - **Simulation:** the user sees right away how the template did in the past; from today the strategy runs on real prices and records its own signal trades; the first daily overview arrives tomorrow. Button: **Start the simulation**.
 - **Live:** the user sees right away how the template did in the past; from today the app watches the stocks and alerts the user as soon as their rules are met; the user confirms each signal, and the app tracks the results of what they did. Button: **Start following it live**.
-- **AI template (either mode):** no past results; the first AI round is due now, so the next screen is the AI round (step 9).
+- **AI template (either mode):** no past results; the first AI round is due now and waits on the dashboard under *Waiting for you* (step 9).
 
-The full disclaimer ("Not financial advice. Signals follow your rules; you decide and trade at your own broker.") sits just above the button. The button ends onboarding and opens the dashboard (or, for the AI template, its first AI round).
+The full disclaimer ("Not financial advice. Signals follow your rules; you decide and trade at your own broker.") sits just above the button. The button ends onboarding and opens the dashboard.
 
 ## 7. Get your daily overview
 

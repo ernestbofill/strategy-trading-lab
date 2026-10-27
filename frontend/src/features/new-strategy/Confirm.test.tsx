@@ -32,7 +32,7 @@ function ChooseAi() {
   return null
 }
 
-function Dashboard() {
+function DashboardStub() {
   const navigate = useNavigate()
   return <button onClick={() => navigate(-1)}>Dashboard back</button>
 }
@@ -52,7 +52,7 @@ function open() {
           <Routes>
             <Route path="/new/budget" element={<p>Set your budget</p>} />
             <Route path="/new/confirm" element={<Confirm />} />
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<DashboardStub />} />
           </Routes>
         </MemoryRouter>
       </NewStrategyDraftProvider>

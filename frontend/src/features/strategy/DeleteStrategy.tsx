@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../../api'
+import { api, UnauthorizedError } from '../../api'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
@@ -27,15 +27,18 @@ export function DeleteStrategy({ id, name }: { id: string; name: string }) {
     setFailed(false)
     try {
       await api.deleteStrategy(id)
-    } catch {
+    } catch (e) {
+      // An ended session goes to Log-in: nothing to say here.
+      if (e instanceof UnauthorizedError) return
       setFailed(true)
       setBusy(false)
       return
     }
-    // Its page, rounds and signals may be cached, and the dashboard still lists it.
-    invalidateAll()
     // The strategy page is gone: going back must not open it.
     navigate(dashboardPath, { replace: true })
+    // Its page, rounds and signals may be cached, and the dashboard still lists it. After leaving the page, so it doesn't
+    // load the strategy again.
+    invalidateAll()
   }
 
   return (

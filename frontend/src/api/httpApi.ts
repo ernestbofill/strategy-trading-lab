@@ -228,7 +228,10 @@ export const httpApi: Api = {
   snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
   deleteStrategy: async (id) => {
-    const response = await fetch(`${BASE_URL}/strategies/${encodeURIComponent(id)}`, { method: 'DELETE', headers: APP_HEADER })
+    const response = await fetch(`${BASE_URL}/strategies/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader() },
+    })
     if (response.status === 401) endedSession()
     // Already gone (another tab, or a retry after a request that went through) is what the user asked for.
     if (!response.ok && response.status !== 404) throw new Error(`DELETE /strategies/${id} failed: HTTP ${response.status}`)

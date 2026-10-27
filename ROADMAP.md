@@ -47,7 +47,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Assets without a deploy: added at run time by their Yahoo symbol, with their price history at once; prices are fetched daily only for the assets a running strategy lists (#68).
 - In-app feedback from selected text: any user with a confirmed email can select text on any screen to submit a bug, idea, note or feature comment (`POST /feedback`), and the owner reviews, edits, closes/reopens, deletes and exports open items as Markdown on `/admin` and `/feedback` (`#48`).
 - Backend: data model (#14), .NET skeleton on Neon (#15), the five templates with the POC's defaults (#16), deploy to Oracle on merge (#17); the dev database migrates itself (#24).
-- CI on PRs, frontend deploy, app version in the top bar, reload on a new version (#4–#9, #11). CI runs every backend test against a throwaway database (#32).
+- CI on PRs, frontend deploy, app version in the top bar, reload on a new version (#4–#9, #11). CI runs every backend test against a throwaway database (#32). CI split into a frontend and a backend workflow, the EF model check moved into a test, and the deploy no longer re-runs the tests (#71).
 - Agentic workflow and instructions (#20, #41, #47). Two disclaimers: short and full (#21). The launch plan in this file (#58).
 - Catalan: English and Catalan catalogs in the frontend with language selection on sign-up and the account page (per-device storage, synced via `POST /account/locale`), embedded template texts (`Texts/ca.json`), localized backend error and validation messages, account emails, and signal alerts. Standard terminology in `docs/glossary-ca.md`.
 
@@ -127,6 +127,7 @@ Roughly in the order they become useful:
 - Stop the overview for users who haven't opened the app in 90 days, with one email saying so: fewer emails nobody reads, fewer spam reports.
 - A "What's new" note after a release.
 - A donation link to cover the server, once there are users (allowed by the regulation note).
+- Faster frontend tests: vitest with `isolate: false` runs in a third of the time (jsdom setup per file is half of it), once `FeedbackCapture.test.tsx` and `I18n.test.tsx` stop leaking state between files (#71).
 
 ## Open decisions (Ernest)
 

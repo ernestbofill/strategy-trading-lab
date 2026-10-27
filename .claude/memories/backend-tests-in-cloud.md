@@ -11,7 +11,7 @@ su postgres -c "/usr/lib/postgresql/16/bin/pg_ctl -D $D/data -l $D/log -o '-k /t
 psql -h localhost -U postgres -c "create user stl password 'stl' superuser"
 psql -h localhost -U postgres -c "create database stl_test owner stl"
 psql "postgresql://stl:stl@localhost:5432/stl_test" -q -f backend/migrations.sql
-# Then, with CI's variables (see .github/workflows/ci.yml: ConnectionStrings__Default, DATABASE_URL, AWS_*), from backend/:
+# Then, with CI's variables (see .github/workflows/ci-backend.yml: ConnectionStrings__Default, DATABASE_URL, AWS_*), from backend/:
 dotnet test
 ```
 

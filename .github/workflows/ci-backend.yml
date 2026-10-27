@@ -1,63 +1,20 @@
-name: CI
+name: CI backend
 
 on:
   pull_request:
     paths:
-      - 'frontend/**'
       - 'backend/**'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/ci-backend.yml'
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-backend-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      backend: ${{ steps.filter.outputs.backend }}
-    steps:
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            frontend:
-              - 'frontend/**'
-              - '.github/workflows/ci.yml'
-            backend:
-              - 'backend/**'
-              - '.github/workflows/ci.yml'
-
-  frontend:
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-      # Typechecks (tsc -b) and builds.
-      - run: npm run build
-
   backend:
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -121,14 +78,12 @@ jobs:
 
       - run: dotnet restore
       - run: dotnet build --no-restore --configuration Release
-      # Fails when an entity or convention changed without a migration.
-      - run: dotnet tool restore
-      - run: dotnet ef migrations has-pending-model-changes --project src/StrategyTradingLab.Api --no-build --configuration Release
       # The schema from migrations.sql, as the deploy applies it, and the bucket neon.ts declares.
       - name: Prepare the test database and bucket
         run: |
           psql "postgresql://stl:stl@localhost:5432/stl_test" -v ON_ERROR_STOP=1 -q -f migrations.sql
           for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:9000 && break; sleep 2; done
           aws --endpoint-url "$AWS_ENDPOINT_URL_S3" s3 mb s3://assets
-      # Every test runs, the [NeonFact] ones included, against the services above.
+      # Every test runs, the [NeonFact] ones included, against the services above. ModelTests also fails on a model
+      # change without a migration.
       - run: dotnet test --no-build --configuration Release

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isoDate, money, shortDate, signedPct } from './format'
+import { formatShares, isoDate, money, shortDate, signedPct } from './format'
 
 describe('signedPct', () => {
   it('writes a true minus sign and a plus sign', () => {
@@ -27,5 +27,17 @@ describe('dates', () => {
   })
   it('round-trips through isoDate', () => {
     expect(isoDate(new Date(2026, 0, 5))).toBe('2026-01-05')
+  })
+})
+
+describe('formatShares', () => {
+  it('rounds to at most 3 decimals, and a holding under one share to 3 significant digits', () => {
+    expect(formatShares(2.609108)).toBe('2.609')
+    expect(formatShares(0.0005)).toBe('0.0005')
+    expect(formatShares(0.00142857)).toBe('0.00143')
+    expect(formatShares(0.5)).toBe('0.5')
+    expect(formatShares(0)).toBe('0')
+    expect(formatShares(12)).toBe('12')
+    expect(formatShares(1250.5)).toBe('1,250.5')
   })
 })

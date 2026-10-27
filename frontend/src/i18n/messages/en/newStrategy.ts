@@ -3,7 +3,6 @@ export const newStrategy = {
   // Shared by the screens that load a template: what is loading, for "Loading the template…".
   'newStrategy.what.template': 'the template',
   'newStrategy.what.test': 'the test',
-  'newStrategy.notBuiltYet': 'This screen comes in a later step.',
 
   // 1 / 5 Pick a template
   'newStrategy.pick.topBar': 'STL // NEW STRATEGY',
@@ -26,12 +25,10 @@ export const newStrategy = {
   'newStrategy.review.signalsWhen': 'It signals when',
   'newStrategy.review.chooseStocks': 'Choose stocks to watch',
   'newStrategy.review.stocksLabel': 'Stocks to watch',
-  'newStrategy.review.addStock': '+ Add a stock',
   'newStrategy.review.longerLists': 'In our tests, longer lists gave steadier results.',
   'newStrategy.review.tickedOf': '{ticked} of {total} ticked',
   'newStrategy.review.ticked': '{n} ticked',
   'newStrategy.review.fund': 'The fund it watches',
-  'newStrategy.review.change': 'Change',
   'newStrategy.review.needLabel': 'What you need:',
   'newStrategy.review.needText':
     "an AI service that can search the web (most paid plans can). The app doesn't connect to it and never sees your account.",

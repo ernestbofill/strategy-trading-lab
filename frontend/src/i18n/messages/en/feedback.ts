@@ -19,4 +19,11 @@ export const feedback = {
   'feedback.kind.idea': 'Idea',
   'feedback.kind.note': 'Note',
   'feedback.kind.feature': 'Feature',
+  'feedback.send.title': 'Send feedback',
+  'feedback.send.intro': 'A bug, an idea, something unclear? Tell us. You can also select any text on a screen to comment on it.',
+  'feedback.send.placeholder': 'What would you change?',
+  'feedback.send.action': 'Send feedback',
+  'feedback.send.sending': 'Sending…',
+  'feedback.send.sent': 'Thanks, it’s sent. We may answer by email.',
+  'feedback.send.confirmFirst': 'Confirm your email to send feedback.',
 } as const

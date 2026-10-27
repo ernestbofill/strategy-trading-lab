@@ -11,7 +11,6 @@ export const account: Record<keyof typeof en, string> = {
   'account.error.tooManyTries': 'Massa intents. Espera uns minuts i torna-ho a provar.',
   'account.error.generic': 'Alguna cosa ha fallat. Torna-ho a provar.',
   'account.overviewEmail': 'Envia-m un resum diari per correu, ben d’hora al matí.',
-  'account.currencyOption': '{code} · {name}',
   'account.currencyName.EUR': 'Euro',
   'account.currencyName.USD': 'Dòlar dels EUA',
   'account.currencyName.GBP': 'Lliura esterlina',

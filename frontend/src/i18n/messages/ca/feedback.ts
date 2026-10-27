@@ -20,4 +20,11 @@ export const feedback: Record<keyof typeof en, string> = {
   'feedback.kind.idea': 'Idea',
   'feedback.kind.note': 'Nota',
   'feedback.kind.feature': 'Funcionalitat',
+  'feedback.send.title': 'Envia comentaris',
+  'feedback.send.intro': 'Un error, una idea, alguna cosa poc clara? Explica-ho. També pots seleccionar qualsevol text d’una pantalla per comentar-lo.',
+  'feedback.send.placeholder': 'Què canviaries?',
+  'feedback.send.action': 'Envia comentaris',
+  'feedback.send.sending': 'S’està enviant…',
+  'feedback.send.sent': 'Gràcies, enviat. Potser et responem per correu.',
+  'feedback.send.confirmFirst': 'Confirma el teu correu per enviar comentaris.',
 }

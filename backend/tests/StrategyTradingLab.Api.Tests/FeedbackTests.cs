@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Feedback;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 
 namespace StrategyTradingLab.Api.Tests;
 
@@ -49,6 +51,46 @@ public class FeedbackValidationTests
         Assert.Null(route);
         Assert.Null(element);
         Assert.Null(selectedText);
+    }
+
+    static IConfiguration Config(string? owner) => new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?> { ["OWNER_EMAIL"] = owner, ["PublicUrl"] = "https://stl.example/" })
+        .Build();
+
+    static FeedbackItem Item(string? route = null, string? selectedText = null) => new()
+    {
+        Id = Guid.NewGuid(), Kind = FeedbackKind.Bug, Status = FeedbackStatus.Open, Text = "The button does nothing",
+        Route = route, SelectedText = selectedText,
+    };
+
+    [Fact]
+    public void The_owner_gets_an_email_that_answers_the_sender()
+    {
+        var email = FeedbackEndpoints.OwnerEmail(Item("/new/templates/ai", "ADD A STOCK"), "ana@example.com", Config(" owner@example.com ")) ?? throw new Xunit.Sdk.XunitException("No email.");
+
+        Assert.Equal("owner@example.com", email.To);
+        Assert.Equal("ana@example.com", email.ReplyTo);
+        Assert.Equal("New feedback (bug)", email.Subject);
+        Assert.Contains("ana@example.com sent feedback (bug) on /new/templates/ai.", email.Body);
+        Assert.Contains("About: \"ADD A STOCK\"", email.Body);
+        Assert.Contains("The button does nothing", email.Body);
+        Assert.Contains("https://stl.example/feedback", email.Body);
+    }
+
+    [Fact]
+    public void Feedback_from_the_account_page_has_no_page_or_quote()
+    {
+        var email = FeedbackEndpoints.OwnerEmail(Item(), "ana@example.com", Config("owner@example.com"))!;
+
+        Assert.StartsWith("ana@example.com sent feedback (bug).\n\nThe button does nothing", email.Body);
+        Assert.DoesNotContain("About:", email.Body);
+    }
+
+    [Fact]
+    public void No_email_without_an_owner_address_or_for_the_owners_own_feedback()
+    {
+        Assert.Null(FeedbackEndpoints.OwnerEmail(Item(), "ana@example.com", Config(null)));
+        Assert.Null(FeedbackEndpoints.OwnerEmail(Item(), "Owner@Example.com", Config("owner@example.com")));
     }
 
     [Fact]
@@ -155,5 +197,20 @@ public class FeedbackEndpointTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.NoContent, (await owner.DeleteAsync($"/feedback/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await owner.DeleteAsync($"/feedback/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await owner.PatchAsJsonAsync($"/feedback/{id}", new { status = "closed" })).StatusCode);
+    }
+
+    [NeonFact]
+    public async Task New_feedback_is_emailed_to_the_owner_with_answers_going_to_the_sender()
+    {
+        using var withOwner = api.WithWebHostBuilder(b => b.UseSetting("OWNER_EMAIL", "owner-inbox@example.test"));
+        var (user, userEmail) = await api.VerifiedAsync(UserRole.User, withOwner);
+
+        var response = await user.PostAsJsonAsync("/feedback", new { kind = "feature", text = "Let me change the budget" });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var email = await api.Emails.WaitForAsync("owner-inbox@example.test", "New feedback (feature)");
+        Assert.NotNull(email);
+        Assert.Equal(userEmail, email.ReplyTo);
+        Assert.Contains("Let me change the budget", email.Body);
     }
 }

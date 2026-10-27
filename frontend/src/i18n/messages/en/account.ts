@@ -10,7 +10,6 @@ export const account = {
   'account.error.tooManyTries': 'Too many tries. Wait a few minutes and try again.',
   'account.error.generic': 'Something went wrong. Try again.',
   'account.overviewEmail': 'Email me a daily overview, early in the morning.',
-  'account.currencyOption': '{code} · {name}',
   'account.currencyName.EUR': 'Euro',
   'account.currencyName.USD': 'US dollar',
   'account.currencyName.GBP': 'British pound',

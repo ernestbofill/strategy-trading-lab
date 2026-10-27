@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Feedback;
 
@@ -34,7 +35,8 @@ public static partial class FeedbackEndpoints
         var group = app.MapGroup("/feedback").WithTags("Feedback");
 
         group.MapPost("/", async Task<Results<Created<FeedbackDto>, ValidationProblem>> (CreateFeedbackRequest request,
-            AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            AppDbContext db, Sessions sessions, TimeProvider time, EmailQueue emails, IConfiguration configuration,
+            CancellationToken cancellationToken) =>
         {
             var errors = ValidateCreate(request, out var text, out var route, out var element, out var selectedText);
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
@@ -56,6 +58,7 @@ public static partial class FeedbackEndpoints
             };
             db.FeedbackItems.Add(item);
             await db.SaveChangesAsync(cancellationToken);
+            if (OwnerEmail(item, user.Email, configuration) is { } email) emails.Enqueue(email);
             return TypedResults.Created($"/feedback/{item.Id}", ToDto(item, user.Email));
         })
         .RequireAuthorization(Policies.VerifiedEmail)
@@ -117,6 +120,26 @@ public static partial class FeedbackEndpoints
         })
         .RequireAuthorization(Policies.Owner)
         .WithSummary("Deletes a feedback comment. Owner only.");
+    }
+
+    /// <summary>
+    /// The email that tells the owner (<c>OWNER_EMAIL</c>) about new feedback, with answers going to the sender. None for the
+    /// owner's own feedback, or without an owner address.
+    /// </summary>
+    public static OutgoingEmail? OwnerEmail(FeedbackItem item, string senderEmail, IConfiguration configuration)
+    {
+        if (configuration["OWNER_EMAIL"]?.Trim() is not { Length: > 0 } owner
+            || string.Equals(owner, senderEmail, StringComparison.OrdinalIgnoreCase)) return null;
+
+        var kind = item.Kind.ToString().ToLowerInvariant();
+        var body = new System.Text.StringBuilder($"{senderEmail} sent feedback ({kind})");
+        body.Append(item.Route is null ? ".\n\n" : $" on {item.Route}.\n\n");
+        if (item.SelectedText is not null) body.Append($"About: \"{item.SelectedText}\"\n\n");
+        body.Append(item.Text).Append("\n\n");
+        body.Append("Reply to this email to answer them.");
+        if (configuration["PublicUrl"]?.TrimEnd('/') is { Length: > 0 } appUrl) body.Append($"\nAll feedback: {appUrl}/feedback");
+        // The subject holds no address: failed sends log it.
+        return new(owner, $"New feedback ({kind})", body.ToString(), ReplyTo: senderEmail);
     }
 
     public static Dictionary<string, string[]> ValidateCreate(CreateFeedbackRequest request, out string text, out string? route,

@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Identity;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
@@ -63,6 +64,7 @@ builder.Services.AddHttpClient<IMarketDataSource, YahooClient>(client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; StrategyTradingLab)");
 });
 builder.Services.AddScoped<PriceRefresher>();
+builder.Services.AddScoped<AssetCatalog>();
 builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>();
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();

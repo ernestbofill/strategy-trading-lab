@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.MarketData;
+using StrategyTradingLab.Api.Strategies;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
@@ -24,6 +26,11 @@ public class PriceRefresherTests
             IReadOnlyList<Candle> days = [.. Enumerable.Range(fullHistory ? 0 : 20, fullHistory ? 30 : 10).Select(d => Day(d, close(d)))];
             return Task.FromResult(days);
         }
+
+        public Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<SymbolMatch>>([]);
+
+        public Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken) => Task.FromResult("USD");
     }
 
     static IReadOnlyList<Candle> Recent(params (int Day, decimal Close)[] days) => [.. days.Select(d => Day(d.Day, d.Close))];
@@ -157,6 +164,43 @@ public class PriceRefresherTests
         finally
         {
             await db.FxRates.Where(r => r.Quote == "TST").ExecuteDeleteAsync();
+        }
+    }
+
+    [NeonFact]
+    public async Task Only_assets_a_running_strategy_lists_and_the_index_fund_are_refreshed_daily()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var tag = Guid.NewGuid().ToString("N")[..9];
+        Asset New(string prefix) => new() { Symbol = $"{prefix}{tag}", Exchange = "TEST", Name = "Test asset", Currency = "USD" };
+        var (unticked, ended, unlisted) = (New("U"), New("E"), New("N"));
+        var user = new User { Email = $"watch-{tag}@example.com", TimeZone = "UTC", Locale = "en" };
+        db.AddRange(unticked, ended, unlisted, user);
+        await db.SaveChangesAsync();
+        Strategy Listing(Asset asset, StrategyStatus status) => new()
+        {
+            UserId = user.Id, TemplateKey = "dip", Name = $"Watch {asset.Symbol}", Mode = StrategyMode.Simulation, Status = status,
+            StartedOn = new DateOnly(2026, 10, 1), EndedAt = status == StrategyStatus.Ended ? DateTimeOffset.UtcNow : null, Currency = "USD", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+            Assets = [new StrategyAsset { AssetId = asset.Id, Active = false, AddedAt = DateTimeOffset.UtcNow }],
+        };
+        db.Strategies.AddRange(Listing(unticked, StrategyStatus.Running), Listing(ended, StrategyStatus.Ended));
+        await db.SaveChangesAsync();
+        try
+        {
+            var watched = await new PriceRefresher(db, new FakeSource(d => 100), NullLogger<PriceRefresher>.Instance).Watched()
+                .Select(a => a.Id).ToListAsync();
+
+            Assert.Contains(unticked.Id, watched); // Unticked, but still on a running strategy's list.
+            Assert.Contains(StrategyBook.IndexFundId, watched);
+            Assert.DoesNotContain(ended.Id, watched);
+            Assert.DoesNotContain(unlisted.Id, watched);
+        }
+        finally
+        {
+            await db.Users.Where(u => u.Id == user.Id).ExecuteDeleteAsync();
+            await db.Assets.Where(a => a.Symbol.EndsWith(tag)).ExecuteDeleteAsync();
         }
     }
 }

@@ -108,6 +108,9 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
   if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
   if (response.status === 400 || response.status === 502) {
     const problem = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; detail?: string } | null
+    // A setting's one field is `value`; a form's (an asset's symbol, name and description) go by name.
+    if (problem?.errors && Object.keys(problem.errors).some((k) => k !== 'value'))
+      throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
     const reason = problem?.errors?.value?.[0] ?? problem?.detail
     // A 502 without the API's reason is nginx: the API itself is down, not a refused value.
     if (reason) throw new InvalidValueError(reason)
@@ -236,6 +239,8 @@ export const httpApi: Api = {
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
   getAdminAssets: async () => (await admin('GET', '/assets')).json(),
   setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
+  addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
+  updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),
   submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
   getFeedback: async (status) =>
     (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],

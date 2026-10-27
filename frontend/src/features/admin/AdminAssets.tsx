@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminAssets.module.css'
 import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
+import { AddAssetForm, EditAssetForm } from './AssetForms'
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; assets: AdminAsset[] }
 
@@ -67,11 +68,21 @@ const filters: DataTableFilter[] = [
   },
 ]
 
-/** Admin assets page (/admin/assets): all stocks, funds and indexes in the database, with search, filters and hide/show. */
+/** Admin assets page (/admin/assets): all stocks, funds and indexes in the database, with search, filters, hide/show, adding by symbol and editing. */
 export function AdminAssets() {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState<AdminAsset | null>(null)
+
+  // After a change that worked: a failed reload is said on its own, not as if the change had failed.
+  const reload = async () => {
+    try {
+      setState({ status: 'ready', assets: await api.getAdminAssets() })
+    } catch (e) {
+      if (!(e instanceof UnauthorizedError)) setError("Couldn't reload the assets. Reload the page.")
+    }
+  }
 
   useEffect(() => {
     let live = true
@@ -89,7 +100,7 @@ export function AdminAssets() {
     setError(null)
     try {
       await api.setAdminAssetActive(asset.id, !asset.active)
-      setState({ status: 'ready', assets: await api.getAdminAssets() })
+      await reload()
     } catch (e) {
       if (e instanceof UnauthorizedError) return
       setError("Couldn't update the asset. Try again.")
@@ -100,13 +111,24 @@ export function AdminAssets() {
 
   return (
     <Screen top={<TopBar back="/admin" step="ADMIN" />}>
-      <PageHeader title="Assets" lead="Stocks, funds and indexes the templates and strategies watch." />
+      <PageHeader title="Assets" lead="Stocks, funds and indexes. Prices are fetched daily for those a running strategy watches, and for the index fund (SPY) always." />
       {state.status === 'loading' && <ScreenMessage>Loading the assets…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the assets. Try again later.</ScreenMessage>}
       {error && (
         <p role="alert" className={styles.error}>
           {error}
         </p>
+      )}
+      {state.status === 'ready' && !editing && <AddAssetForm onAdded={reload} />}
+      {editing && (
+        <EditAssetForm
+          key={editing.id}
+          asset={editing}
+          onDone={async (saved) => {
+            if (saved) await reload()
+            setEditing(null)
+          }}
+        />
       )}
       {state.status === 'ready' && (
         <DataTable
@@ -118,16 +140,23 @@ export function AdminAssets() {
           filters={filters}
           searchPlaceholder="Search by name, symbol or exchange…"
           initialSort={{ id: 'name' }}
+          actionHeader="Actions"
           rowAction={(a) => (
-            <button
-              type="button"
-              className={`ui-strong ${styles.actionButton}`}
-              disabled={busyId === a.id}
-              onClick={() => void toggleActive(a)}
-            >
-              {a.active ? 'Hide' : 'Show'}
-              <span className="visually-hidden"> {a.name}</span>
-            </button>
+            <div className={styles.buttons}>
+              <button type="button" className={`ui-strong ${styles.actionButton}`} onClick={() => setEditing(a)}>
+                Edit
+                <span className="visually-hidden"> {a.name}</span>
+              </button>
+              <button
+                type="button"
+                className={`ui-strong ${styles.actionButton}`}
+                disabled={busyId === a.id}
+                onClick={() => void toggleActive(a)}
+              >
+                {a.active ? 'Hide' : 'Show'}
+                <span className="visually-hidden"> {a.name}</span>
+              </button>
+            </div>
           )}
         />
       )}

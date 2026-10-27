@@ -710,10 +710,19 @@ export interface AdminAsset {
   kind: AssetKind
   currency: string
   active: boolean
-  /** Running strategies currently watching this asset. */
+  /** Running strategies that list this asset, ticked or not: its prices are fetched daily. */
   strategies: number
   /** Newest stored price day ("2026-10-22"), or null if none is stored yet. */
   latestPriceDate: string | null
+}
+
+/** What adding a symbol did: backend Admin/AdminEndpoints.cs (AdminAddedAsset). */
+export interface AdminAddedAsset {
+  asset: AdminAsset
+  /** False when the asset was already there. */
+  created: boolean
+  /** Why its prices or exchange rate didn't load; adding it again tries again. */
+  problem: string | null
 }
 
 export interface Api {
@@ -787,6 +796,10 @@ export interface Api {
   getAdminAssets(): Promise<AdminAsset[]>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
+  /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */
+  addAdminAsset(symbol: string): Promise<AdminAddedAsset>
+  /** Changes an asset's name and English description. Rejects with `InvalidFieldsError` (`name`, `what`). */
+  updateAdminAsset(id: string, edit: { name: string; what: string }): Promise<void>
 /** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidValueError` or `TooManyTriesError`. */
   submitFeedback(feedback: NewFeedback): Promise<FeedbackItem>
   /** Owner only: lists, edits, closes/reopens or deletes feedback comments. */

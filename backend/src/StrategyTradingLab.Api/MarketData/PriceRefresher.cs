@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Strategies;
 
 namespace StrategyTradingLab.Api.MarketData;
 
@@ -13,7 +14,8 @@ public record RefreshResult(string Name, RefreshOutcome Outcome, int Rows, strin
 /// <summary>
 /// Brings the stored daily prices and euro exchange rates up to date, the way the POC does: a daily run fetches the last
 /// month; if that disagrees with what is stored (a split or a dividend re-adjusted the history) or nothing is stored,
-/// the whole history is fetched and replaces it. One failing symbol never stops the others.
+/// the whole history is fetched and replaces it. One failing symbol never stops the others. Only the watched assets are
+/// fetched (<see cref="Watched"/>), with the exchange rates of their currencies and the accounts' ones.
 /// </summary>
 public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<PriceRefresher> logger)
 {
@@ -26,7 +28,7 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     public async Task<IReadOnlyList<RefreshResult>> RunAsync(CancellationToken cancellationToken)
     {
         var results = new List<RefreshResult>();
-        var assets = await db.Assets.Where(a => a.Active).OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
+        var assets = await Watched().OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
             results.Add(await GuardedAsync(asset.Symbol, () => RefreshAssetAsync(asset, cancellationToken), cancellationToken));
@@ -40,6 +42,21 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         }
         return results;
     }
+
+    /// <summary>
+    /// The assets fetched every day: those on some running strategy's list, ticked or not (its trades still need their
+    /// prices), and the index fund results are compared with. An asset nobody watches isn't fetched; once a strategy
+    /// lists it, the next run catches up (after a gap of over a month it fetches the whole history again).
+    /// </summary>
+    public IQueryable<Asset> Watched()
+    {
+        var listed = Listings(db);
+        return db.Assets.Where(a => a.Active && (a.Id == StrategyBook.IndexFundId || listed.Any(sa => sa.AssetId == a.Id)));
+    }
+
+    /// <summary>The running strategies' list entries, ticked or not: what makes an asset watched (one per strategy and asset).</summary>
+    public static IQueryable<StrategyAsset> Listings(AppDbContext db) =>
+        db.StrategyAssets.Where(sa => db.Strategies.Any(s => s.Id == sa.StrategyId && s.Status == StrategyStatus.Running));
 
     async Task<RefreshResult> GuardedAsync(string name, Func<Task<RefreshResult>> refresh, CancellationToken cancellationToken)
     {
@@ -57,16 +74,20 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
 
     public async Task<RefreshResult> RefreshAssetAsync(Asset asset, CancellationToken cancellationToken)
     {
-        var recent = await source.DailyAsync(asset.Symbol, fullHistory: false, adjusted: true, cancellationToken);
-        if (recent.Count == 0) throw new MarketDataException($"Yahoo returned no days for {asset.Symbol}.");
-
-        var from = recent[0].Date;
-        // Projected in the database, so the stored rows aren't tracked (they would clash with the rows added below).
-        var stored = (await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
-            .Select(p => new { p.Date, p.Close }).ToListAsync(cancellationToken)).ToDictionary(p => p.Date, p => p.Close);
-
-        var full = NeedsFullHistory(recent, stored);
-        var days = recent;
+        // Nothing stored (a new asset): straight to the whole history, without asking for the last month first.
+        var full = !await db.Prices.AnyAsync(p => p.AssetId == asset.Id, cancellationToken);
+        IReadOnlyList<Candle> days = [];
+        var from = DateOnly.MinValue;
+        if (!full)
+        {
+            days = await source.DailyAsync(asset.Symbol, fullHistory: false, adjusted: true, cancellationToken);
+            if (days.Count == 0) throw new MarketDataException($"Yahoo returned no days for {asset.Symbol}.");
+            from = days[0].Date;
+            // Projected in the database, so the stored rows aren't tracked (they would clash with the rows added below).
+            var stored = (await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
+                .Select(p => new { p.Date, p.Close }).ToListAsync(cancellationToken)).ToDictionary(p => p.Date, p => p.Close);
+            full = NeedsFullHistory(days, stored);
+        }
         if (full)
         {
             days = await source.DailyAsync(asset.Symbol, fullHistory: true, adjusted: true, cancellationToken);

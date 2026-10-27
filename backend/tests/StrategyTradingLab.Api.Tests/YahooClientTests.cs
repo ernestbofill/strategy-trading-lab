@@ -122,4 +122,55 @@ public class YahooClientTests
         Assert.False(state.WaitForRequestAsync(default).IsCompleted);
         Assert.True(state.Request());
     }
+
+    // Yahoo's search answer for "MSFT", recorded and cut down: the names are in lower case, and the second quote is a
+    // news-like item with no type.
+    const string Search = """
+        {"explains":[],"count":3,"quotes":[
+          {"exchange":"NMS","shortname":"Microsoft Corporation","quoteType":"EQUITY","symbol":"MSFT","index":"quotes","score":5.0951E7,
+           "typeDisp":"Equity","longname":"Microsoft Corporation","exchDisp":"NASDAQ","sector":"Technology","industry":"Software—Infrastructure"},
+          {"exchange":"NMS","shortname":"Something","symbol":"MSFX"},
+          {"exchange":"NGM","shortname":"Direxion Daily MSFT Bull 2X ETF","quoteType":"ETF","symbol":"MSFU","typeDisp":"ETF"}],
+         "news":[]}
+        """;
+
+    [Fact]
+    public void A_search_answer_gives_each_listing_with_its_name_exchange_type_sector_and_industry()
+    {
+        var matches = YahooClient.ParseSearch(Search, "MSFT");
+
+        Assert.Equal(2, matches.Count);
+        Assert.Equal(new SymbolMatch("MSFT", "Microsoft Corporation", "NMS", "EQUITY", "Technology", "Software—Infrastructure"), matches[0]);
+        Assert.Equal(new SymbolMatch("MSFU", "Direxion Daily MSFT Bull 2X ETF", "NGM", "ETF", null, null), matches[1]); // shortname without a longname.
+    }
+
+    [Theory]
+    [InlineData("""{"quotes":[]}""")]
+    [InlineData("""{"count":0}""")]
+    public void A_search_with_no_quotes_finds_nothing(string json) => Assert.Empty(YahooClient.ParseSearch(json, "X"));
+
+    [Fact]
+    public void A_search_answer_that_is_not_json_is_a_market_data_error() =>
+        Assert.Throws<MarketDataException>(() => YahooClient.ParseSearch("<html>", "X"));
+
+    static string Chart(string currency) => $$$"""{"chart":{"result":[{"meta":{"currency":"{{{currency}}}","symbol":"X"}}],"error":null}}""";
+
+    [Theory]
+    [InlineData("USD", "USD")]
+    [InlineData("GBp", "GBP")]
+    [InlineData("DKK", "DKK")]
+    public void The_currency_comes_from_the_chart_and_pence_are_pounds(string yahoo, string currency) =>
+        Assert.Equal(currency, YahooClient.ParseCurrency(Chart(yahoo), "X"));
+
+    [Theory]
+    [InlineData("ZAc")]
+    [InlineData("ILA")]
+    [InlineData("usd")]
+    public void A_currency_the_prices_are_not_scaled_for_is_refused(string yahoo) =>
+        Assert.Throws<UnsupportedCurrencyException>(() => YahooClient.ParseCurrency(Chart(yahoo), "X"));
+
+    [Fact]
+    public void A_chart_error_is_a_market_data_error() =>
+        Assert.Throws<MarketDataException>(() => YahooClient.ParseCurrency(
+            """{"chart":{"result":null,"error":{"code":"Not Found","description":"No data found, symbol may be delisted"}}}""", "X"));
 }

@@ -24,7 +24,7 @@ export function newStrategyFrom(draft: DraftState, template: TemplateDetail, nam
   }
 }
 
-/** The template's name, numbered ("Dip in winners 2") while a running strategy already has the name. Case is ignored. */
+/** The template's name, numbered ("Winners at a discount 2") while a running strategy already has the name. Case is ignored. */
 export function defaultName(templateName: string, taken: string[]): string {
   const used = new Set(taken.map((name) => name.trim().toLowerCase()))
   let name = templateName

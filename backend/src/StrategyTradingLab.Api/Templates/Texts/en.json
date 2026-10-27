@@ -1,7 +1,7 @@
 {
   "dip": {
-    "name": "Dip in winners",
-    "tagline": "Find the next Nvidia",
+    "name": "Winners at a discount",
+    "tagline": "Buy the dip",
     "idea": "A stock on a strong run takes a small step back. The strategy signals that dip.",
     "rationale": "Pick winning stocks: companies whose price has climbed steadily for months because the market believes in them. Then wait for a short pullback, when the price dips a few percent.",
     "rules": [
@@ -82,7 +82,7 @@
     }
   },
   "bear": {
-    "name": "The big market drop",
+    "name": "Bear markets",
     "tagline": "When the market is on sale",
     "idea": "When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers.",
     "rationale": "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small steps while prices are still low.",
@@ -114,7 +114,7 @@
     }
   },
   "trend": {
-    "name": "Ride the long trend",
+    "name": "Index trend",
     "tagline": "Take the wins, dodge the losses",
     "idea": "The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down.",
     "rationale": "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal.",

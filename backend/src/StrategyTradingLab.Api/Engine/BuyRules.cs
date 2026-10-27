@@ -21,7 +21,7 @@ public readonly record struct DayContext(DateOnly Day, RuleStatus? Previous, int
 /// A day's verdict. <c>Facts</c> are the numbers (and words) behind it, for the signal's text, e.g. <c>belowPeakPct</c>.
 /// <c>WindowOpen</c> is whether a buy could be made at today's close: the buy conditions hold. It is what keeps a signal's
 /// window open, whatever the rules' own position does. <c>StepNo</c> overrides the runner's step count when the rules track
-/// their own cycle steps (as <i>The big market drop</i> does).
+/// their own cycle steps (as <i>Bear markets</i> does).
 /// </summary>
 public record RuleDecision(RuleStatus Status, string? Reason, IReadOnlyDictionary<string, object> Facts, bool WindowOpen = false, int? StepNo = null);
 

@@ -12,7 +12,7 @@ afterEach(() => {
 
 const template = {
   key: 'dip',
-  name: 'Dip in winners',
+  name: 'Winners at a discount',
   tagline: 'Buy dips in winning stocks',
   defaultsVersion: 1,
   defaults: {
@@ -37,7 +37,7 @@ const strategyDetail: StrategyDetail = {
   id: 's1',
   name: 'Dip Strategy',
   templateKey: 'dip',
-  templateName: 'Dip in winners',
+  templateName: 'Winners at a discount',
   mode: 'live',
   startedOn: '2026-10-13',
   today: '2026-10-24',

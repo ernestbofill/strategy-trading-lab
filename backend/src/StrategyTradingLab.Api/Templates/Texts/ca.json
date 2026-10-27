@@ -1,7 +1,7 @@
 {
   "dip": {
-    "name": "Retrocés en guanyadores",
-    "tagline": "Troba el pròxim Nvidia",
+    "name": "Guanyadores amb descompte",
+    "tagline": "Compra la baixada",
     "idea": "Una acció en plena ratxa fa un petit pas enrere. L'estratègia assenyala aquest retrocés.",
     "rationale": "Tria accions guanyadores: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera un retrocés curt, quan el preu cau uns quants punts percentuals.",
     "rules": [
@@ -82,7 +82,7 @@
     }
   },
   "bear": {
-    "name": "La gran caiguda del mercat",
+    "name": "Mercats baixistes",
     "tagline": "Quan el mercat està de rebaixes",
     "idea": "Quan tot el mercat cau un 20%, l'estratègia assenyala compres d'un fons ampli de l'S&P 500 en petits passos mentre es recupera.",
     "rationale": "Les grans caigudes del mercat són rares i fan por, i la majoria de gent ven. En lloc d'endevinar el fons, l'estratègia espera el primer rebot i llavors assenyala compres en petits passos mentre els preus encara són baixos.",
@@ -114,7 +114,7 @@
     }
   },
   "trend": {
-    "name": "Segueix la tendència llarga",
+    "name": "Tendència de l'índex",
     "tagline": "Queda't amb els guanys, esquiva les pèrdues",
     "idea": "L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa.",
     "rationale": "Els mercats es mouen en ones llargues. L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa, per esquivar la caiguda. Després de la caiguda busca un nou senyal de compra.",

@@ -7,7 +7,7 @@ const signal = (fields: Partial<SignalDetail> = {}): SignalDetail => ({
   id: 's',
   strategyId: 'st',
   strategyName: 'Zscaler & friends',
-  templateName: 'Dip in winners',
+  templateName: 'Winners at a discount',
   strategyCurrency: 'EUR',
   stockName: 'Zscaler',
   assetCurrency: 'USD',

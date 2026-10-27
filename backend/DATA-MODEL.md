@@ -185,14 +185,14 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |
 | budget_max_steps | int, null | Max steps per stock, 1–20. Null for all in, all out. `CHECK ((budget_step IS NULL) = (budget_max_steps IS NULL))` |
-| params | jsonb, not null | Every template setting, validated per template in C#. Dip in winners: `{"minGainPct":50,"gainDays":168,"peakDays":60,"zoneStartPct":5,"zoneEndPct":15,"trendDays":200,"floorDays":50,"cooldownDays":10}` (records in `Templates/TemplateParams.cs`) |
+| params | jsonb, not null | Every template setting, validated per template in C#. Winners at a discount: `{"minGainPct":50,"gainDays":168,"peakDays":60,"zoneStartPct":5,"zoneEndPct":15,"trendDays":200,"floorDays":50,"cooldownDays":10}` (records in `Templates/TemplateParams.cs`) |
 | source_strategy_id | uuid FK → strategies, null, set null | The simulation a live strategy was copied from. A simulation can have several live copies |
 | created_at, updated_at | timestamptz | |
 
 The three `budget_*` columns map to a `Budget` value object in C#. Budget and settings can be changed while running; each change overwrites the current values.
 
 - "[n] changed" is computed in C# from `params` vs the defaults of `defaults_version`, not stored.
-- **Budget used** = cost of the buys (`amount + fee`) − cost of the shares sold, at average cost. Simulation: from `signal_trades`. Live: from non-deleted `user_trades`. A sale frees budget again. For *Ride the long trend* the next buy reinvests what the sale returned, so budget used can go over the budget after a gain.
+- **Budget used** = cost of the buys (`amount + fee`) − cost of the shares sold, at average cost. Simulation: from `signal_trades`. Live: from non-deleted `user_trades`. A sale frees budget again. For *Index trend* the next buy reinvests what the sale returned, so budget used can go over the budget after a gain.
 - **Lowering the budget** below what is used is allowed: the strategy stops signalling buys, nothing is sold, and "Budget used" can read over 100%.
 - **Lowering max steps** below a stock's current step is allowed: that stock gets no more buys; its steps so far stay.
 

@@ -11,7 +11,7 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   id: fields.id ?? 's1',
   name: 'Zscaler & friends',
   templateKey: 'dip',
-  templateName: 'Dip in winners',
+  templateName: 'Winners at a discount',
   mode: 'live',
   startedOn: '2026-10-13',
   today: '2026-10-24',

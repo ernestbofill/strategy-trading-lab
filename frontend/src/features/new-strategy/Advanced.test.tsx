@@ -10,7 +10,7 @@ afterEach(cleanup)
 
 const dip = {
   key: 'dip',
-  name: 'Dip in winners',
+  name: 'Winners at a discount',
   backtest: { periods: [{ period: 'All', template: 212, index: 248, worstYear: -21 }] },
   defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: { zoneStartPct: 5, zoneEndPct: 6, peakDays: 60 } },
   settings: [
@@ -22,7 +22,7 @@ const dip = {
 
 const trend = {
   key: 'trend',
-  name: 'Ride the long trend',
+  name: 'Index trend',
   backtest: { periods: [{ period: 'All', template: 249, index: 272, worstYear: -11 }] },
   defaults: { version: 1, budget: { amount: 3000, step: null, maxSteps: null }, params: { smaDays: 200, bandPct: 3 } },
   settings: [
@@ -87,7 +87,7 @@ describe('Advanced', () => {
     expect(within(peak).queryByText('CHANGED')).toBeNull()
   })
 
-  it('shows Ride the long trend settings and saves their changes', async () => {
+  it('shows Index trend settings and saves their changes', async () => {
     open(trend)
 
     const average = await screen.findByRole('group', { name: /The trend line is/ })

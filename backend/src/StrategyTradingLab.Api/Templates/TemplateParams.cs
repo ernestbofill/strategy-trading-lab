@@ -8,7 +8,7 @@ namespace StrategyTradingLab.Api.Templates;
 // user can choose is narrower, the template's Settings (Advanced settings). Left out on purpose: the stop-loss and trailing stop (not in the product),
 // the "getting close" alert threshold and the backtest's baseline. Day counts are trading days unless they say otherwise.
 
-/// <summary>Dip in winners (POC Leader pullback, <c>stage2_pullback</c>).</summary>
+/// <summary>Winners at a discount (POC Leader pullback, <c>stage2_pullback</c>).</summary>
 public record DipParams : IValidatableObject
 {
     /// <summary>Proven growth: rose at least this % from its low.</summary>
@@ -76,7 +76,7 @@ public record ComebackParams
     [Range(0, 120)] public int CooldownDays { get; init; } = 5;
 }
 
-/// <summary>The big market drop (POC Bear-market accumulation, <c>bear_accumulation</c>).</summary>
+/// <summary>Bear markets (POC Bear-market accumulation, <c>bear_accumulation</c>).</summary>
 public record BearParams
 {
     /// <summary>A bear market: this % below the recent high.</summary>
@@ -98,7 +98,7 @@ public record BearParams
     public bool Rearm { get; init; } = true;
 }
 
-/// <summary>Ride the long trend (POC Index trend, <c>index_trend</c>). All in, all out.</summary>
+/// <summary>Index trend (POC <c>index_trend</c>). All in, all out.</summary>
 public record TrendParams
 {
     /// <summary>The trend line: SMA of this many days.</summary>

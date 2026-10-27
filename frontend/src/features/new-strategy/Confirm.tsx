@@ -18,7 +18,6 @@ import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, newStrategyFrom } from './newStrategy'
 import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
-import { aiRoundPath } from '../dashboard/paths'
 import { useTemplate } from './useTemplate'
 
 const NAME_MAX_LENGTH = 60
@@ -75,9 +74,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const start = async () => {
     setStarting(true)
     setError(null)
-    let created
     try {
-      created = await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
+      await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
     } catch (e) {
       setError(
         e instanceof NameTakenError
@@ -89,8 +87,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     }
     // The dashboard loaded before; make it ask again so it lists the new strategy.
     invalidate(dashboardCacheKey)
-    // Its first AI round is due now.
-    navigate(template.aiRound ? aiRoundPath(created.id) : dashboardPath)
+    // Replace this screen in the history: going back must not reopen Confirm with the reset draft, which would
+    // start a second strategy from the default template. An AI strategy's first round waits on the dashboard.
+    navigate(dashboardPath, { replace: true })
     reset()
   }
 

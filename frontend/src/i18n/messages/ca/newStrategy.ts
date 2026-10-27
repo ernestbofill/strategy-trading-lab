@@ -3,7 +3,6 @@ import type { newStrategy as en } from '../en/newStrategy'
 export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.what.template': 'la plantilla',
   'newStrategy.what.test': 'la prova',
-  'newStrategy.notBuiltYet': 'Aquesta pantalla arribarà en un pas posterior.',
 
   'newStrategy.pick.topBar': 'STL // NOVA ESTRATÈGIA',
   'newStrategy.pick.continue': 'Continua',
@@ -24,12 +23,10 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.review.signalsWhen': 'Dona un senyal quan',
   'newStrategy.review.chooseStocks': 'Tria les accions a vigilar',
   'newStrategy.review.stocksLabel': 'Accions a vigilar',
-  'newStrategy.review.addStock': '+ Afegeix una acció',
   'newStrategy.review.longerLists': 'En les nostres proves, les llistes més llargues van donar resultats més estables.',
   'newStrategy.review.tickedOf': '{ticked} de {total} marcades',
   'newStrategy.review.ticked': '{n} marcades',
   'newStrategy.review.fund': 'El fons que vigila',
-  'newStrategy.review.change': 'Canvia',
   'newStrategy.review.needLabel': 'Què necessites:',
   'newStrategy.review.needText':
     "un servei d'IA que pugui cercar al web (la majoria de plans de pagament ho permeten). L'app no s'hi connecta i mai no veu el teu compte.",

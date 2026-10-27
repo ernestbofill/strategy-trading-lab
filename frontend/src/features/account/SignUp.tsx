@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { api, InvalidFieldsError, type Currency, type Locale } from '../../api'
-import { Checkbox, FormMessage, PasswordField, SelectField, TextField, type FormMessageState } from '../../components/Field'
+import { Checkbox, FormMessage, PasswordField, SegmentedField, SelectField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
@@ -84,14 +84,14 @@ export function SignUp() {
           hint={t('account.passwordHint')}
           error={errors.password}
         />
-        <SelectField
+        <SegmentedField
           label={t('account.signUp.language')}
           value={locale}
           onChange={onLocaleChange}
           options={LOCALES}
           error={errors.locale}
         />
-        <SelectField
+        <SegmentedField
           label={t('account.signUp.currency')}
           value={currency}
           onChange={(v) => setCurrency(v as Currency)}

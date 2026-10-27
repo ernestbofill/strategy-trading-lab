@@ -59,7 +59,6 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
         items={stocks.map((s) => ({ id: s.symbol, title: s.name, detail: s.what }))}
         isChecked={(symbol) => !unticked.includes(symbol)}
         onToggle={toggleStock}
-        footer={<TextAction>{t('newStrategy.review.addStock')}</TextAction>}
       />
       <p className={styles.info}>{t('newStrategy.review.longerLists')}</p>
     </>
@@ -89,7 +88,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       ) : (
         <Section title={t('newStrategy.review.fund')}>
           <div className={styles.fund}>
-            <ItemRow title={watches.fund.name} detail={watches.fund.what} trailing={<TextAction>{t('newStrategy.review.change')}</TextAction>} />
+            <ItemRow title={watches.fund.name} detail={watches.fund.what} />
           </div>
         </Section>
       )}

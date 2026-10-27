@@ -16,7 +16,7 @@ import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
-import { exact, money, shortDate, symbolOf } from '../../lib/format'
+import { exact, formatShares, money, shortDate, symbolOf } from '../../lib/format'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { signalPath } from '../dashboard/paths'
@@ -203,7 +203,7 @@ function TradeRow({
       </div>
       <div className={styles.rowDetails}>
         <span>
-          <span className={styles.mono}>{t('trades.sharesAt', { shares: trade.shares, price: exact(trade.price, trade.assetCurrency) })}</span>
+          <span className={styles.mono}>{t('trades.sharesAt', { shares: formatShares(trade.shares), price: exact(trade.price, trade.assetCurrency) })}</span>
         </span>
         <span>
           {' '}· <span className={styles.mono}>{money(trade.amount, trade.strategyCurrency)}</span>

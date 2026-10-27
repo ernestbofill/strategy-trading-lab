@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, UnauthorizedError, type Currency, type Locale } from '../../api'
-import { Checkbox, FormMessage, PasswordField, SelectField, type FormMessageState } from '../../components/Field'
+import { Checkbox, FormMessage, PasswordField, SegmentedField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
@@ -125,7 +125,7 @@ function LanguageForm({ current, onSaved }: { current: Locale; onSaved: () => Pr
 
   return (
     <form className={styles.form} onSubmit={submit} noValidate>
-      <SelectField label={t('account.page.language')} hideLabel value={locale} onChange={(v) => setLocale(v as Locale)} options={LOCALES} />
+      <SegmentedField label={t('account.page.language')} hideLabel value={locale} onChange={(v) => setLocale(v as Locale)} options={LOCALES} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || locale === current}>
         {busy ? t('account.saving') : t('account.page.languageSave')}
@@ -211,7 +211,7 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: () => 
 
   return (
     <form className={styles.form} onSubmit={submit} noValidate>
-      <SelectField label={t('account.page.currency')} hideLabel value={currency} onChange={(v) => setCurrency(v as Currency)} options={options} />
+      <SegmentedField label={t('account.page.currency')} hideLabel value={currency} onChange={(v) => setCurrency(v as Currency)} options={options} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || currency === current}>
         {busy ? t('account.saving') : t('account.page.currencySave')}

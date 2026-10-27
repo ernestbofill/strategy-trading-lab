@@ -77,6 +77,61 @@
   color: var(--primary);
 }
 
+.segmentedField {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+}
+
+.segments {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.segment {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px var(--space-2);
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  text-align: center;
+  cursor: pointer;
+}
+.segment:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.segment:has(:checked) {
+  background: var(--surface-input);
+  border-color: var(--primary);
+  color: var(--success);
+}
+.segment:has(:focus-visible) {
+  outline: 1px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.segmentLabel {
+  font: 600 14px/20px var(--font-mono);
+}
+
+.segmentDetail {
+  font: 12px/16px var(--font-ui);
+}
+
 .toggle {
   flex: none;
   min-height: 48px;

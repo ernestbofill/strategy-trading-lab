@@ -4,7 +4,6 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
-import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { aiRoundPath, aiRoundsPath, signalPath, strategySettingsPath } from '../dashboard/paths'
@@ -128,11 +127,7 @@ function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummar
 function Stocks({ s }: { s: StrategyDetail }) {
   const t = useT()
   return (
-    <Section
-      title={t('strategy.stocks', { count: s.stocks.length })}
-      // The stock list editor isn't built yet.
-      aside={<TextAction>{t('strategy.editList')}</TextAction>}
-    >
+    <Section title={t('strategy.stocks', { count: s.stocks.length })}>
       <ul className={styles.stocks}>
         {s.stocks.map((row) => {
           const line = stockLine(row, s.mode, s.currency, s.words, t)
@@ -174,24 +169,12 @@ function Stocks({ s }: { s: StrategyDetail }) {
   )
 }
 
-/** A tile for a screen that isn't built yet: shown, but not usable. */
-function SoonTile({ title, sub }: { title: string; sub: string }) {
-  const t = useT()
-  return (
-    <div className={styles.tile} aria-disabled="true" title={t('strategy.notAvailable')}>
-      <span className={`ui-strong ${styles.tileTitle}`}>{title}</span>
-      <span className={styles.detail}>{sub}</span>
-    </div>
-  )
-}
-
 /** Strategy page (wireframe `StrategyDetail`), for both modes. */
 export function StrategyPage() {
   const t = useT()
   const { id = '' } = useParams()
   const strategy = useStrategy(id)
-  // Renaming isn't built yet.
-  const top = <TopBar back={dashboardPath} aside={<TextAction>{t('strategy.rename')}</TextAction>} />
+  const top = <TopBar back={dashboardPath} />
 
   return (
     <LoadableScreen state={strategy} top={top} what={t('strategy.what')}>
@@ -218,13 +201,11 @@ export function StrategyPage() {
                 <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
                 <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
               </Link>
-              {s.aiRounds ? (
+              {s.aiRounds && (
                 <Link to={aiRoundsPath(s.id)} className={styles.tileLink}>
                   <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.aiRoundsTitle')}</span>
                   <span className={styles.detail}>{t('strategy.tile.aiRoundsSub')}</span>
                 </Link>
-              ) : (
-                <SoonTile title={t('strategy.tile.backtestTitle')} sub={t('strategy.tile.backtestSub')} />
               )}
             </div>
             <DeleteStrategy id={s.id} name={s.name} />

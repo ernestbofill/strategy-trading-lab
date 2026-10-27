@@ -19,6 +19,11 @@ export const symbolOf = (currency: string) => CURRENCIES.find((c) => c.code === 
 /** €3,000 / $3,000 / £3,000: an amount in a strategy's or an account's currency. */
 export const money = (n: number, currency: Currency) => `${symbolOf(currency)}${amountFormat.format(n)}`
 
+const sharesFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
+
+/** 2.609 / 12 / 1,250.5: a number of shares, to at most 3 decimals (the stored value keeps its precision). */
+export const formatShares = (n: number) => sharesFormat.format(n)
+
 /** €3,000: for what was tested in euro (a template's backtest). */
 export const eur = (n: number) => money(n, 'EUR')
 

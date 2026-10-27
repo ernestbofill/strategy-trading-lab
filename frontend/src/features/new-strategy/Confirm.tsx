@@ -25,7 +25,7 @@ const NAME_MAX_LENGTH = 60
 interface SummaryRow {
   label: string
   value: string
-  /** Where "Edit" goes; without it the link is shown but not usable (screen not built yet). */
+  /** Where "Edit" goes; without it there is no "Edit" (its screen isn't built yet). */
   to?: string
 }
 
@@ -198,9 +198,11 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
               <span className={styles.term}>{r.label}</span>
               <p className={styles.value}>{r.value}</p>
             </div>
-            <TextAction to={r.to}>
-              {t('newStrategy.confirm.edit')}<span className="visually-hidden"> {r.label.toLowerCase()}</span>
-            </TextAction>
+            {r.to && (
+              <TextAction to={r.to}>
+                {t('newStrategy.confirm.edit')}<span className="visually-hidden"> {r.label.toLowerCase()}</span>
+              </TextAction>
+            )}
           </li>
         ))}
       </ul>

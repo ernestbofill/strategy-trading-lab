@@ -7,7 +7,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
-import { exact, money, shortDate, symbolOf } from '../../lib/format'
+import { exact, formatShares, money, shortDate, symbolOf } from '../../lib/format'
 import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { useT } from '../../i18n/I18n'
 import { strategyPath } from '../dashboard/paths'
@@ -107,7 +107,7 @@ function AnswerLine({ s }: { s: SignalDetail }) {
   return (
     <p className={styles.plain}>
       {t('signal.didFull', {
-        shares: a.shares,
+        shares: formatShares(a.shares),
         price: exact(a.price ?? 0, s.assetCurrency),
         date: a.date ? shortDate(a.date) : '–',
         amount: exact(a.amount ?? 0, s.strategyCurrency),

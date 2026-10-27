@@ -6,7 +6,6 @@ export const common: Record<keyof typeof en, string> = {
   'common.pastResults': 'Els resultats passats no garanteixen els futurs.',
   'common.back': '\u2190 ENRERE',
   'common.devDatabase': "L'API fa servir la base de dades de desenvolupament",
-  'common.notAvailable': 'Encara no està disponible',
   'common.show': 'Mostra',
   'common.hide': 'Amaga',
   'common.passwordSuffix': ' la contrasenya',

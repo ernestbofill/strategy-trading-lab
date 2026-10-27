@@ -204,6 +204,50 @@ export function SelectField({ label, value, onChange, options, error, hideLabel 
   )
 }
 
+interface SegmentedFieldProps {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  /** Two to four short choices; `detail` is a smaller line under the label ("Euro"). */
+  options: { value: string; label: string; detail?: string }[]
+  error?: string | null
+  hideLabel?: boolean
+}
+
+/**
+ * A row of radio buttons for a few short choices (currency, language): one tap, and it looks the same on every
+ * device, unlike a select's menu. A long list (time zones) stays a `SelectField`.
+ */
+export function SegmentedField({ label, value, onChange, options, error, hideLabel }: SegmentedFieldProps) {
+  const id = useId()
+  return (
+    <fieldset className={styles.segmentedField} aria-describedby={error ? `${id}-error` : undefined}>
+      <legend className={hideLabel ? 'visually-hidden' : `ui-strong ${styles.legend}`}>{label}</legend>
+      <div className={styles.segments}>
+        {options.map((o) => (
+          <label key={o.value} className={styles.segment}>
+            <input
+              type="radio"
+              className="visually-hidden"
+              name={id}
+              value={o.value}
+              checked={o.value === value}
+              onChange={() => onChange(o.value)}
+            />
+            <span className={styles.segmentLabel}>{o.label}</span>
+            {o.detail && <span className={styles.segmentDetail}>{o.detail}</span>}
+          </label>
+        ))}
+      </div>
+      {error && (
+        <p id={`${id}-error`} role="alert" className={styles.error}>
+          {error}
+        </p>
+      )}
+    </fieldset>
+  )
+}
+
 interface CheckboxProps {
   checked: boolean
   onChange: (checked: boolean) => void

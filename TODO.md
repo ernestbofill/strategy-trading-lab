@@ -34,7 +34,7 @@
 - [ ] *Your AI's top picks* (#70): try the suggested prompt once in the AI you use (copy it on the AI round screen), paste the answer back, and tell Claude if the reader complains or the scores look off. Then confirm or change Claude's assumptions in ROADMAP → Open decisions (anonymous sharing, the round rules, prompt v1). No secret or setting is needed. (#70)
 
 - [ ] After #46 deploys: on `/admin`, check *Notifications → EMAILS_ENABLED* is true and the mail password is set (*Send a test email*). The first overview arrives the next morning at 07:00 your time if you have a running strategy and a verified email. (#46)
-- [ ] If branch protection on `main` requires CI checks: require `frontend` and `backend` only where they run, or drop `changes`. CI is now two workflows, so a backend-only PR reports no `frontend` check at all (before, it reported a skipped one). (#71)
+- [x] ~~If branch protection on `main` requires CI checks: require `frontend` and `backend` only where they run.~~ Not needed: `main` has no branch protection. (#71)
 
 ## General
 - [ ] Split FE and BE repos?

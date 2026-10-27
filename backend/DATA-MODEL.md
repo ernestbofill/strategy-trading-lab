@@ -31,7 +31,7 @@ Source: [app spec §8](../docs/strategy-trading-lab-app-spec.md#8-data-the-app-n
 - Dates are `date` (US market date, see above). Moments are `timestamptz` (UTC).
 - Status and kind fields are `text` with a `CHECK` constraint, not Postgres enums (easier to extend). C# maps them to enums through one snake_case converter (`PriceRanAway` ↔ `price_ran_away`).
 - Every table has `created_at timestamptz not null default now()`; mutable tables also have `updated_at`, set by a SaveChanges interceptor.
-- Deletes: strategies are never hard-deleted (they end), except when the user deletes their account: everything a user owns cascades from `users`. Manual trades are soft-deleted (`deleted_at`).
+- Deletes: a user can delete a strategy for good (`DELETE /strategies/{id}`, #73): its stocks, signals, trades, evaluations and AI rounds cascade from `strategies`, and its shared AI rounds are deleted first through the rounds' `shared_round_id` (a shared round has no key to the strategy). Ending a strategy (item 11) will keep it. Deleting the account cascades everything a user owns from `users`. Manual trades are soft-deleted (`deleted_at`).
 - `jsonb` columns (`params`, `facts`) map to `JsonDocument` in EF and are deserialized to the template's record by `template_key` (EF can't map a different record per template).
 - Extensions: `citext` (`HasPostgresExtension("citext")`).
 

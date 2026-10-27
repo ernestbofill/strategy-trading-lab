@@ -7,15 +7,15 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**The long trend is up:** the stock is above its `SMA 200` (average price over the last 200 days)."
+        "text": "**It's a proven winner:** it rose at least `{minGainPct}%` from its low, and its averages are stacked and rising (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
       },
       {
         "marker": "02",
-        "text": "**Wait for a discount:** it drops into the discount zone, `5-15%` below its recent peak."
+        "text": "**Wait for a discount:** it drops into the discount zone, `{zoneStartPct}-{zoneEndPct}%` below its recent peak."
       },
       {
         "marker": "03",
-        "text": "**The dip is not a collapse:** it is still above its `SMA 50` (average price over the last 50 days)."
+        "text": "**The dip is not a collapse:** it is still above its `SMA {floorDays}` (average price over the last {floorDays} days)."
       }
     ],
     "backtest": {
@@ -29,25 +29,59 @@
       "notCandidate": "Below its long trend"
     },
     "settings": {
+      "minGainPct": {
+        "sentence": "Proven growth: the recent peak is at least {value} above the low.",
+        "value": "{n}%",
+        "help": "Higher: only the strongest runs count, so fewer candidates. Lower: more stocks qualify, with weaker trends."
+      },
+      "gainDays": {
+        "sentence": "The low is the lowest close of the last {value}.",
+        "value": "{n} trading days",
+        "help": "21 trading days is about a month (168 ≈ 8 months). Longer: an older low counts, so a slower climb can qualify. Shorter: the rise must be recent."
+      },
+      "trendDays": {
+        "sentence": "The long average is the SMA over {value}.",
+        "value": "{n} days",
+        "help": "The bottom of the stack, and it must be rising. Longer: steadier, slower to turn, so a trend counts later and stays a candidate longer."
+      },
+      "peakDays": {
+        "sentence": "The recent peak is the highest close of the last {value}.",
+        "value": "{n} days",
+        "help": "What the dip is measured from. Longer: an older, often higher peak, so the same price reads as a deeper dip."
+      },
       "zoneStartPct": {
         "sentence": "The discount zone starts {value} below the recent peak.",
-        "value": "{n}%"
+        "value": "{n}%",
+        "help": "The smallest dip that counts. Lower: signals sooner, on shallow dips. Higher: waits for a bigger discount, so fewer signals."
       },
       "zoneEndPct": {
         "sentence": "It ends {value} below the recent peak.",
-        "value": "{n}%"
-      },
-      "peakDays": {
-        "sentence": "The recent peak is the highest price of the last {value}.",
-        "value": "{n} days"
-      },
-      "trendDays": {
-        "sentence": "The long trend is the average price over {value}.",
-        "value": "{n} days"
+        "value": "{n}%",
+        "help": "The deepest dip that counts. Higher: also buys deeper falls, as long as they stay above the floor average."
       },
       "floorDays": {
-        "sentence": "The dip must stay above the average over {value}.",
-        "value": "{n} days"
+        "sentence": "The floor average is the SMA over {value}.",
+        "value": "{n} days",
+        "help": "The top of the candidate's stack and the zone's floor: a close below it is a collapse, not a dip. Shorter: the floor follows the price closely, so deep dips fall through it."
+      },
+      "cooldownDays": {
+        "sentence": "After a step, wait {value} before the next buy signal.",
+        "value": "{n} calendar days",
+        "help": "Counted from the step's buy. Shorter: steps come closer together. Longer: a stock's steps spread out over more dips."
+      }
+    },
+    "settingGroups": {
+      "candidate": {
+        "title": "1 · Candidate: which stocks it watches",
+        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its averages are stacked, the floor average above a middle one above the long average (`SMA 50` > `SMA 150` > `SMA 200` when tested; the middle one stays between the other two); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
+      },
+      "signal": {
+        "title": "2 · Buy signal: when a candidate signals",
+        "lead": "A candidate signals a buy when its close is in the discount zone: between the zone's start and end below its recent peak, and still above the floor average. The signal ends when the price leaves the zone, back up toward the peak or down through the floor."
+      },
+      "pace": {
+        "title": "3 · Pace: how often it buys",
+        "lead": "Each signal buys one step. A stock gets at most one step per stay in the zone, and up to your budget's steps in all."
       }
     }
   },
@@ -59,11 +93,11 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**It was beaten down:** the stock fell at least `30%` from its high of the last year."
+        "text": "**It was beaten down:** the stock fell at least `{drawdownPct}%` from its high of the last year."
       },
       {
         "marker": "02",
-        "text": "**It turned around:** it climbs `15%` above its `SMA 50` (average price over the last 50 days)."
+        "text": "**It turned around:** it climbs `{aboveSma50Pct}%` above its `SMA 50` (average price over the last 50 days)."
       },
       {
         "marker": "03",
@@ -79,6 +113,66 @@
     "stockStatus": {
       "zone": "the buy line",
       "notCandidate": "Not beaten down"
+    },
+    "settings": {
+      "drawdownPct": {
+        "sentence": "Beaten down: at least {value} below its 52-week high.",
+        "value": "{n}%",
+        "help": "Higher: only deep falls count, so fewer candidates. Lower: milder dips count too."
+      },
+      "candidateDays": {
+        "sentence": "It stays a candidate for {value} after it was last beaten down.",
+        "value": "{n} trading days",
+        "help": "Longer: a slower recovery can still signal. 0: it must turn while still beaten down."
+      },
+      "aboveSma50Pct": {
+        "sentence": "The buy line is {value} above the SMA 50.",
+        "value": "{n}%",
+        "help": "Higher: waits for a stronger move, skipping more dead-cat bounces, but buys later and higher."
+      },
+      "volumeRatio": {
+        "sentence": "The 5-day average volume is at least {value} the 50-day.",
+        "value": "{n}×",
+        "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
+      },
+      "maxChasePct": {
+        "sentence": "Chase limit: buy only up to {value} above the buy line or a milestone's level.",
+        "value": "{n}%",
+        "help": "Higher: still buys a turn that jumped well past its line. Lower: skips turns that move too fast."
+      },
+      "nearHighPct": {
+        "sentence": "Milestone near the old high: within {value} of the 52-week high.",
+        "value": "{n}%",
+        "help": "Higher: this milestone comes earlier in the recovery."
+      },
+      "breakoutPullbackPct": {
+        "sentence": "Milestone breakout: a pullback of at least {value}, then a close above the high before it.",
+        "value": "{n}%",
+        "help": "Higher: needs a deeper pullback first, so the breakout comes less often."
+      },
+      "cooldownDays": {
+        "sentence": "After a step, wait {value} before the next buy signal.",
+        "value": "{n} calendar days",
+        "help": "Counted from the step's buy. Longer: steps spread out, even when milestones come close together."
+      }
+    },
+    "settingGroups": {
+      "candidate": {
+        "title": "1 · Candidate: which stocks it watches",
+        "lead": "A stock is a candidate, beaten down, when its close is at least the drop below its 52-week high and below its `SMA 200`. It stays a candidate for a while after that, so it can still signal once it recovers. A stock that isn't a candidate gets no signal."
+      },
+      "signal": {
+        "title": "2 · Buy signal: the first step",
+        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its `SMA 50` (the buy line), on rising volume, and not too far above the line. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
+      },
+      "milestones": {
+        "title": "3 · Milestones: the next steps",
+        "lead": "Once bought, each new sign that the turn is real earns one more step: back above the `SMA 200`, a golden cross (`SMA 50` above `SMA 200`), near the old high, or a breakout after a pullback. Each is bought only up to the chase limit above its level."
+      },
+      "pace": {
+        "title": "4 · Pace: how often it buys",
+        "lead": "A step is one buy, up to your budget's steps per stock."
+      }
     }
   },
   "bear": {
@@ -89,15 +183,15 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**The market fell hard:** the S&P 500 is `20%` or more below its high."
+        "text": "**The market fell hard:** the S&P 500 is `{drawdownPct}%` or more below its high."
       },
       {
         "marker": "02",
-        "text": "**The first bounce:** it climbs `5%` off its low. That's the first step."
+        "text": "**The first bounce:** it climbs `{reboundPct}%` off its low. That's the first step."
       },
       {
         "marker": "03",
-        "text": "**Then in steps:** one more step every `2 weeks`, until the budget is used."
+        "text": "**Then in steps:** one more step every `{stepEveryDays}` trading days, until the budget is used."
       }
     ],
     "backtest": {
@@ -111,6 +205,42 @@
       "notCandidate": "{n}% below its 6-month high",
       "watching": "In a drop: {n}% above its low",
       "holding": "This drop's steps are bought"
+    },
+    "settings": {
+      "drawdownPct": {
+        "sentence": "A drop is at least {value} below the recent high.",
+        "value": "{n}%",
+        "help": "Higher: only real crashes count, so signals come rarely (years apart). Lower: smaller corrections count too."
+      },
+      "highDays": {
+        "sentence": "The recent high is the highest close of the last {value}.",
+        "value": "{n} trading days",
+        "help": "21 trading days is about a month (126 ≈ 6 months). Longer: the fall is measured from an older, often higher peak."
+      },
+      "reboundPct": {
+        "sentence": "The first step comes {value} above the drop's lowest close.",
+        "value": "{n}%",
+        "help": "Lower: buys sooner, nearer the bottom, but may catch a fall that isn't over. Higher: waits for a clearer recovery."
+      },
+      "stepEveryDays": {
+        "sentence": "Then one step every {value}.",
+        "value": "{n} trading days",
+        "help": "10 trading days is about 2 weeks. Shorter: the budget goes in faster. Longer: spreads the buys over more of the recovery."
+      }
+    },
+    "settingGroups": {
+      "candidate": {
+        "title": "1 · The drop: when it starts watching",
+        "lead": "The fund is in a drop when its close is at least the drop below its recent high. From then on it tracks the lowest close. Without a drop, nothing signals."
+      },
+      "signal": {
+        "title": "2 · Buy signal: the first step",
+        "lead": "The first step comes when the close bounces the rebound above the drop's lowest close."
+      },
+      "pace": {
+        "title": "3 · Pace: the next steps",
+        "lead": "After the first step, one more step comes at a fixed pace until your budget's steps are bought. Then the cycle ends when the price gets back to its old high, or, once the drop is older than the recent-high period, when a new drop starts."
+      }
     }
   },
   "trend": {
@@ -120,12 +250,19 @@
     "rationale": "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal.",
     "settings": {
       "smaDays": {
-        "sentence": "The trend line is the average price over {value}.",
-        "value": "{n} days"
+        "sentence": "The trend line is the SMA over {value}.",
+        "value": "{n} days",
+        "help": "Longer: steadier, fewer signals, but later into and out of a trend. Shorter: reacts sooner, with more false turns."
       },
       "bandPct": {
         "sentence": "The buy and sell lines are {value} above and below the trend line.",
-        "value": "{n}%"
+        "value": "{n}%",
+        "help": "Wider: fewer trades and fewer false signals, but buys later and sells later. 0: trades every crossing."
+      },
+      "cooldownDays": {
+        "sentence": "After a sale, wait {value} before the next buy signal.",
+        "value": "{n} calendar days",
+        "help": "Counted from the sale. A sell signal is never delayed. Longer: fewer sell-then-buy-back trades when the market is choppy."
       }
     },
     "rules": [
@@ -153,6 +290,16 @@
     "stockStatus": {
       "zone": "the buy line",
       "notCandidate": "Below its 200-day average"
+    },
+    "settingGroups": {
+      "signal": {
+        "title": "1 · Buy and sell signals",
+        "lead": "The trend line is an average of the close. A buy signal comes when the close is more than the band above it, a sell signal when it's more than the band below. In between, nothing changes: the band stops a market that hovers around the line from flipping in and out."
+      },
+      "pace": {
+        "title": "2 · Pace: how often it trades",
+        "lead": "All in, all out: each signal covers the whole budget."
+      }
     }
   },
   "ai": {

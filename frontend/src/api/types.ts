@@ -95,6 +95,8 @@ export interface TemplateDetail extends StrategyTemplate {
   defaults: TemplateDefaults
   /** The rules Advanced settings can tune, in screen order; empty when the template has none yet. */
   settings: Setting[]
+  /** The groups the settings are shown in, in screen order; empty when they are one plain list. */
+  settingGroups: SettingGroup[]
 }
 
 /**
@@ -110,6 +112,17 @@ export interface Setting {
   min: number
   max: number
   below?: string
+  /** What changing it does. */
+  help?: string
+  /** The key of its `SettingGroup`. */
+  group?: string
+}
+
+/** A titled group on Advanced settings: the part of the rules its settings tune. `lead` may hold `term` markup. */
+export interface SettingGroup {
+  key: string
+  title: string
+  lead: string
 }
 
 export type StrategyMode = 'simulation' | 'live'
@@ -771,6 +784,8 @@ export interface Api {
   snoozeSignal(id: string): Promise<string>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
+  /** Deletes a strategy for good, with its signals, trades, results and AI rounds. One already gone counts as deleted. */
+  deleteStrategy(id: string): Promise<void>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */
   getAdminSettings(): Promise<AdminSetting[]>
   /**

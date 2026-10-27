@@ -71,13 +71,13 @@ These apply to every screen, email and alert.
 | 2c · How we tested | `HowTested` | "How we tested ›" on a review (not on the AI review) | Back to that review |
 | 3 · Choose the mode | `Mode` | Review "Use this template"; "Go live with these settings" (not drawn) | Set your budget |
 | 4 · Set your budget | `Budget` | Choose the mode; Confirm | Confirm |
-| 5 · Name, preview and confirm | `Confirm` | Set your budget | Dashboard, or the first AI round |
+| 5 · Name, preview and confirm | `Confirm` | Set your budget | Dashboard |
 | Dashboard (home) | `Home` | Confirm; app start for returning users | Strategy page, Confirm a signal, AI round, Pick a template |
 | Strategy page | `StrategyDetail` | A strategy card on the dashboard | Stock page (not drawn), stock list editor, Advanced settings, Backtest (not drawn), Confirm a signal |
 | Confirm a signal (live) | `Signal` | Waiting for you on the dashboard; a stock row; a signal alert or the daily overview | Strategy page |
-| AI round | `AIRound` | Waiting for you on the dashboard; the AI-round notification; Confirm for a new AI strategy | Dashboard (simulation); Confirm a signal (live) |
+| AI round | `AIRound` | Waiting for you on the dashboard; the AI-round notification | Dashboard (simulation); Confirm a signal (live) |
 
-**New user:** sign-up → pick → review → (advanced settings, how we tested) → mode → budget → confirm → dashboard (or the first AI round).
+**New user:** sign-up → pick → review → (advanced settings, how we tested) → mode → budget → confirm → dashboard.
 
 **Adding a strategy:** dashboard "+ New strategy" → the same screens. All templates are shown, with "You run [n] from this template" on templates already in use (not drawn).
 
@@ -100,10 +100,10 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Engine defaults per template
 
 **Winners at a discount (Leader pullback)**
-- Candidate (trending): gained at least 50% at some point in the last 4–8 months; price > SMA 50 > SMA 150 > SMA 200; the SMA 200 is rising.
+- Candidate (trending): the recent peak is at least 50% above the lowest close of the last 168 trading days (~8 months); SMA 50 > SMA 150 > SMA 200; the SMA 200 is higher than 20 trading days ago. (The price itself isn't checked against the SMA 50 here; the SMA 50 is the zone's floor.)
 - Signal: price in the discount zone, 5–15% below the recent peak (highest price of the last 20–60 days; the screen exposes one number, default 60, the POC's), while still above the SMA 50.
 - Signal ends: the price leaves the zone (back up to the old high, or below the SMA 50).
-- Later steps: one per signal window, at least 10 days (cooldown) after the last one. The cooldown is not exposed in Advanced settings.
+- Later steps: one per signal window, at least 10 calendar days (cooldown) after the last one. The POC's default cooldown is 20; 10 is Ernest's setting there.
 
 **The comeback (Confirmed turnaround)**
 - Candidate (beaten down): at least 30% below its 52-week high, and below the SMA 200.
@@ -300,7 +300,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2b · Advanced settings (`Advanced`)
 
-**Purpose:** tune each rule as an exact number and see the effect on the backtest. Designed for *Winners at a discount* and *Index trend*; each exposes selected POC parameters, not every engine parameter. For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
+**Purpose:** tune each rule as an exact number, understand what it does, and see the effect on the backtest. The one screen that may be technical: terms like `SMA` are fine here. Each template exposes the POC's numeric rules (the yes/no ones, such as *The comeback*'s "below its SMA 200" and *Bear markets*'s second legs, have no control yet), plus *Winners at a discount*' two averages, which the POC fixes at 200 and 50 days. For *Your AI's top picks* it holds the round frequency (default every 2 weeks) and how many top-scored stocks get a step per round (default 1), with no backtest.
 
 **Copy**
 - Top bar: "← BACK" · "[template name]"
@@ -309,24 +309,54 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Secondary button: "⟳ Reset to tested"
 - Button: "Save settings"
 
-**Setting rows**: the setting as a sentence with the value highlighted, a − / + stepper on the right, and "Tested: [default]" under it. A changed row is outlined and shows a "CHANGED" label.
+**Groups.** The settings are grouped by what they decide, numbered in the order a stock goes through them, each with a title and a short paragraph that explains that part of the rules: **Candidate** (which stocks it watches; a stock that isn't a candidate gets no signal), **Buy signal** (when a candidate signals), *The comeback*'s **Milestones** (its later steps), and **Pace** (cooldown, or the bear's step interval). *Your AI's top picks* has no groups (one plain list). The texts are in the template's texts (`settingGroups`, and each setting's `help`).
 
-| Sentence | Default | Step | Min–max |
-| --- | --- | --- | --- |
-| "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |
-| "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
-| "The recent peak is the highest price of the last [n] days." | 60 days | 5 | 20–60 |
-| "The long trend is the average price over [n] days." | 200 days | 10 | 100–300 |
-| "The dip must stay above the average over [n] days." | 50 days | 5 | 20–100 |
+**Setting rows**: the setting as a sentence with the value highlighted, one line on what raising or lowering it does, a − / + stepper on the right, and "Tested: [default]" under it. A changed row is outlined and shows a "CHANGED" label.
 
-For *Index trend*:
+*Winners at a discount*:
 
-| Sentence | Default | Step | Min–max |
-| --- | --- | --- | --- |
-| "The trend line is the average price over [n] days." | 200 days | 10 | 50–300 |
-| "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+| Group | Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- | --- |
+| Candidate | "Proven growth: the recent peak is at least [n]% above the low." | 50% | 5 | 20–200 |
+| Candidate | "The low is the lowest close of the last [n] trading days." | 168 | 21 | 63–252 |
+| Candidate | "The long average is the SMA over [n] days." | 200 | 10 | 160–300 |
+| Buy signal | "The recent peak is the highest close of the last [n] days." | 60 | 5 | 20–60 |
+| Buy signal | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |
+| Buy signal | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
+| Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (with the long average at 160 or more, the middle one is always 150 days) |
+| Pace | "After a step, wait [n] calendar days before the next buy signal." | 10 | 5 | 0–60 |
 
-The cooldown is not exposed for either template. The shown settings are available when starting a strategy; changing settings on an already-running strategy is not built yet.
+*The comeback*:
+
+| Group | Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- | --- |
+| Candidate | "Beaten down: at least [n]% below its 52-week high." | 30% | 5 | 10–60 |
+| Candidate | "It stays a candidate for [n] trading days after it was last beaten down." | 60 | 10 | 0–120 |
+| Buy signal | "The buy line is [n]% above the SMA 50." | 15% | 1 | 5–30 |
+| Buy signal | "The 5-day average volume is at least [n]× the 50-day." | 1.2× | 0.1 | 1–3 |
+| Buy signal | "Chase limit: buy only up to [n]% above the buy line or a milestone's level." | 8% | 1 | 2–20 |
+| Milestones | "Milestone near the old high: within [n]% of the 52-week high." | 15% | 1 | 5–30 |
+| Milestones | "Milestone breakout: a pullback of at least [n]%, then a close above the high before it." | 8% | 1 | 3–20 |
+| Pace | "After a step, wait [n] calendar days before the next buy signal." | 5 | 1 | 0–30 |
+
+*Bear markets*:
+
+| Group | Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- | --- |
+| Candidate (the drop) | "A drop is at least [n]% below the recent high." | 20% | 5 | 10–40 |
+| Candidate (the drop) | "The recent high is the highest close of the last [n] trading days." | 126 | 21 | 63–252 |
+| Buy signal | "The first step comes [n]% above the drop's lowest close." | 5% | 1 | 1–15 |
+| Pace | "Then one step every [n] trading days." | 10 | 5 | 5–30 |
+
+*Index trend*:
+
+| Group | Sentence | Default | Step | Min–max |
+| --- | --- | --- | --- | --- |
+| Buy and sell signals | "The trend line is the SMA over [n] days." | 200 | 10 | 50–300 |
+| Buy and sell signals | "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+| Pace | "After a sale, wait [n] calendar days before the next buy signal." (a sell is never delayed) | 5 | 1 | 0–30 |
+
+The settings are available when starting a strategy and on a running one (Tune the settings).
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
@@ -447,7 +477,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - *Your AI's top picks* (not drawn): "There are no past results for this template." / "Your first AI round is due now." / then the mode's line.
 - Above the button: the disclaimer.
 - Button, Live: "Start following it live". Simulation (not drawn): "Start the simulation".
-- The button creates the strategy and opens the dashboard; for *Your AI's top picks*, its first AI round.
+- The button creates the strategy and opens the dashboard, in place of Confirm in the history, so going back never shows Confirm again. For *Your AI's top picks*, the first AI round waits there under *Waiting for you*.
 - While it saves, the button reads "Starting…" and can't be pressed twice. If it fails, the user stays on this screen and sees, under the name: "You already run a strategy with this name. Pick another." when another running strategy took the name, else "We couldn't start it. Try again." (assumed copy)
 
 ### Dashboard (`Home`)
@@ -510,6 +540,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - For simulations, a third link: "Go live with these settings" (not drawn).
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - A notifications switch for this strategy, and "End the strategy" (not drawn). There is no pause: with notifications off the strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
+- "Delete the strategy" (built, not drawn), at the bottom: a confirm step in place, "Delete [name]? Its signals, trades and results go with it. This can't be undone." with "Delete" and "Keep it". It deletes the strategy for good, with its stocks, signals, trades, results and AI rounds, and the rounds it shared (nothing would point to them any more, so turning sharing off couldn't remove them). Then the dashboard, in place of the strategy page in the history. The name is free again.
 - Bottom, Live: "Your results come from the trades you confirmed, at your prices. Not financial advice. Signals follow your rules." Simulation (draft): "Results come from paper trades at the next day's opening price. Not financial advice. Signals follow your rules."
 
 **Metrics**
@@ -652,7 +683,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Notifications:** each one sent, per channel (push, email): kind, the signal it is for, the day, sent or failed. Each goes out once per channel.
 - **User trades (live):** strategy, stock, date, side, price, amount and shares (and which one was entered), fee, exchange rate (and whether the user changed it), source (signal or manual), linked signal; manual trades can be deleted.
 - **AI rounds:** strategy, due date, status (due, done, skipped), date run, the session its signals are dated, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons, and the step each stock got (`ai_rounds`).
-- **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round).
+- **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round); deleting the strategy removes them too.
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
 - **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
 - **Market data:** daily US prices and volumes, exchange rates.
@@ -664,7 +695,6 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Simulation variants of Set your budget, Confirm and the strategy page. (The AI round's Live variant is built: it opens Confirm a signal for the first pick.)
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Index trend* and *Bear markets*.
-- Advanced settings for the other four templates.
 - Stock page: chart with the discount zone shaded, status history, trades (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
 - Stock list editor from the strategy page, stock search ("+ Add a stock"), fund picker ("Change").
 - Sell signals for *Index trend*, and its "Out of the market" status.
@@ -696,7 +726,6 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 - **The suggested prompt:** v1 written by Claude (`backend/.../Ai/AiPrompt.cs`, versioned by `AiPrompt.Version`); still to test by hand in ChatGPT, Claude and Gemini, and for the legal review.
 - **Reading the answer:** settled as above (AI round, "How forgiving the reader is").
 - **AI model list:** settled as above; agents keep it current.
-- **Advanced settings per template:** which POC parameters each template exposes; whether *Winners at a discount* should expose its 10-day cooldown.
 - **Price data:** which provider supplies daily US prices and the euro-dollar rate, with terms that allow commercial use, and its cost at many free users. The POC uses eToro and Yahoo.
 - **Web push on iPhone:** is a home-screen prompt enough, or do iPhone users rely on email?
 - **Card copy for *Your AI's top picks*** on the pick screen: "the top score should get a position" is final as drawn, but "position" is the one trading word there without an explanation.

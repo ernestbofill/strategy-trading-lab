@@ -69,7 +69,7 @@ Entered from sign-up (first run), from **+ New strategy** on the dashboard, and 
 ├── 4. /app/new/mode               Choose the mode: Simulation (default) or Live
 ├── 5. /app/new/budget             Set your budget: budget, step size, max steps per stock
 └── 6. /app/new/confirm            Name, preview and confirm
-        → Dashboard, or [AI] the first AI round
+        → Dashboard ([AI] the first AI round waits there)
 ```
 
 | Step | Notes |

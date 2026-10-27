@@ -34,12 +34,15 @@ public record TemplateDetail : TemplateSummary
     public required TemplateDefaults Defaults { get; init; }
     /// <summary>The rules Advanced settings can tune, in screen order; empty when the template has none yet.</summary>
     public required IReadOnlyList<SettingDto> Settings { get; init; }
+    /// <summary>The groups the settings are shown in, in screen order; empty when the settings are one plain list.</summary>
+    public required IReadOnlyList<SettingGroupDto> SettingGroups { get; init; }
 }
 
 /// <summary>
 /// A setting on Advanced settings (2b). <c>Key</c> is its name in <c>Defaults.Params</c>, which holds the tested value.
 /// <c>Sentence</c> has <c>{value}</c> where the value goes; <c>Value</c> reads a number, with <c>{n}</c> for it.
-/// <c>Below</c> names the setting this one stays at least a step under.
+/// <c>Below</c> names the setting this one stays at least a step under. <c>Help</c> says what changing it does, and
+/// <c>Group</c> is the key of its <see cref="SettingGroupDto"/>.
 /// </summary>
 public record SettingDto(
     string Key,
@@ -48,7 +51,12 @@ public record SettingDto(
     decimal Step,
     decimal Min,
     decimal Max,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Below);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Below,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Help = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Group = null);
+
+/// <summary>A titled group of settings: the part of the rules they tune ("Which stocks it watches").</summary>
+public record SettingGroupDto(string Key, string Title, string Lead);
 
 /// <summary>One line of "It signals when". <c>Marker</c> is "01", "BUY", "SELL"…</summary>
 public record RuleDto(

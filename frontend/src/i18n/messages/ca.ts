@@ -1,4 +1,5 @@
 import { common } from './ca/common'
+import { aiRound } from './ca/aiRound'
 import { account } from './ca/account'
 import { admin } from './ca/admin'
 import { dashboard } from './ca/dashboard'
@@ -12,6 +13,7 @@ import type { MessageKey } from './en'
 
 export const ca: Record<MessageKey, string> = {
   ...common,
+  ...aiRound,
   ...account,
   ...admin,
   ...dashboard,

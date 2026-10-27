@@ -159,6 +159,25 @@ async function getAccount(): Promise<Account | null> {
 
 const settingPath = (key: string) => `/settings/${encodeURIComponent(key)}`
 
+/** A request about AI rounds. A 400 with field errors is `InvalidFieldsError`, a 409 (not due, done already) `InvalidValueError`. */
+async function aiRequest(method: string, path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'This AI round is already done.')
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v.join(' ')])))
+  }
+  if (!response.ok) throw new Error(`${method} ${path} failed: HTTP ${response.status}`)
+  return response
+}
+
+const aiPath = (strategyId: string, rest: string) => `/strategies/${encodeURIComponent(strategyId)}${rest}`
+
 /** Sends a request to the feedback API and maps its refusals to errors the UI can show. */
 async function feedback(method: string, path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}/feedback${path}`, {
@@ -228,5 +247,13 @@ export const httpApi: Api = {
   updateFeedback: async (id, patch) =>
     (await (await feedback('PATCH', `/${encodeURIComponent(id)}`, patch)).json()) as FeedbackItem,
   deleteFeedback: async (id) => void (await feedback('DELETE', `/${encodeURIComponent(id)}`)),
+  previewAiPrompt: async (request) => (await aiRequest('POST', '/templates/ai/prompt', request)).json(),
+  getAiRound: (strategyId) => get(aiPath(strategyId, '/ai-round')),
+  readAiAnswer: async (strategyId, answer) => (await aiRequest('POST', aiPath(strategyId, '/ai-round/read'), { answer })).json(),
+  useAiScores: async (strategyId, answer, aiModel, share, prompt) =>
+    (await aiRequest('POST', aiPath(strategyId, '/ai-round'), { answer, aiModel, share, prompt })).json(),
+  getAiRounds: (strategyId) => get(aiPath(strategyId, '/ai-rounds')),
+  updateAiPrompt: async (strategyId, setup) => void (await aiRequest('PUT', aiPath(strategyId, '/ai-prompt'), setup)),
+  setAiSharing: async (enabled) => void (await account('/ai-sharing', { enabled }, { session: true })),
 
 }

@@ -15,6 +15,7 @@ const baseAccount: Account = {
   overviewEmail: true,
   currency: 'EUR',
   role: 'user',
+  aiSharing: false,
 }
 
 vi.mock('./AccountContext', () => ({

@@ -3,7 +3,8 @@ namespace StrategyTradingLab.Api.Evaluation;
 /// <summary>The US market's day: rules are checked once a day after its close (spec: How the two modes run).</summary>
 public static class UsSession
 {
-    static readonly TimeZoneInfo NewYork = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+    /// <summary>The market's time zone.</summary>
+    public static readonly TimeZoneInfo NewYork = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
     /// <summary>The close is 16:00 in New York; the bar is final a little later.</summary>
     static readonly TimeOnly FinalAt = new(16, 30);
 

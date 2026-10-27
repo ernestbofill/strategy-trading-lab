@@ -28,6 +28,12 @@
 .input[aria-invalid="true"] {
   border-color: var(--danger);
 }
+.textarea {
+  height: auto;
+  padding: 12px;
+  font: 13px/20px var(--font-mono);
+  resize: vertical;
+}
 
 .selectWrap {
   position: relative;

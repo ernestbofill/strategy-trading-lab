@@ -79,4 +79,10 @@ describe('stockLine', () => {
     const none = stockLine(row({}), 'simulation', 'EUR', words)
     expect([none.result, none.note]).toEqual(['–', 'No buys yet'])
   })
+
+  it("words an AI strategy's stock by its last score, or not scored yet", () => {
+    const ai = { zone: 'the top score', notCandidate: 'Not scored yet' }
+    expect(stockLine(row({ status: 'watching', aiScore: 72 }), 'simulation', 'EUR', ai).detail).toBe('Last score: 72')
+    expect(stockLine(row({ status: 'notCandidate' }), 'simulation', 'EUR', ai).detail).toBe('Not scored yet')
+  })
 })

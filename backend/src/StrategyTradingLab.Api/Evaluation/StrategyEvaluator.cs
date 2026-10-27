@@ -179,17 +179,9 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             if (signal.Side == TradeSide.Buy)
             {
                 // The step (or for all-in, the budget / sale proceeds) includes its fee: amount plus fee is the step.
-                var spend = signal.StepAmount ?? cashToInvest;
-                if (spend <= TemplateCatalog.Fee.Fixed + 0.01m) continue;
-                var (amount, fee) = TemplateCatalog.Fee.Split(spend);
-                var shares = Math.Round(amount * fx / next.Open, 6);
-                if (shares <= 0) continue;
-                db.SignalTrades.Add(new SignalTrade
-                {
-                    SignalId = signal.Id, StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = next.Date, Side = TradeSide.Buy, StepNo = signal.StepNo,
-                    Price = next.Open, Shares = shares, Amount = amount, Fee = fee, FxRate = fx,
-                });
-                heldShares += shares;
+                if (BuyTrade(signal, strategy, next.Date, next.Open, fx, signal.StepAmount ?? cashToInvest) is not { } trade) continue;
+                db.SignalTrades.Add(trade);
+                heldShares += trade.Shares;
                 newTrades++;
             }
             else if (heldShares > 0)
@@ -210,6 +202,23 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         await db.SaveChangesAsync(cancellationToken);
         db.ChangeTracker.Clear();
         return new Changes(newSignals, newTrades, missed);
+    }
+
+    /// <summary>
+    /// A signal's buy trade at an opening price: <paramref name="spend"/> (the step, or what an all-in buy reinvests) includes its
+    /// fee, so amount plus fee is the step. Null when it leaves nothing to buy with.
+    /// </summary>
+    public static SignalTrade? BuyTrade(Signal signal, Strategy strategy, DateOnly date, decimal open, decimal fx, decimal spend)
+    {
+        if (spend <= TemplateCatalog.Fee.Fixed + 0.01m) return null;
+        var (amount, fee) = TemplateCatalog.Fee.Split(spend);
+        var shares = Math.Round(amount * fx / open, 6);
+        if (shares <= 0) return null;
+        return new SignalTrade
+        {
+            SignalId = signal.Id, StrategyId = strategy.Id, AssetId = signal.AssetId, TradeDate = date, Side = TradeSide.Buy, StepNo = signal.StepNo,
+            Price = open, Shares = shares, Amount = amount, Fee = fee, FxRate = fx,
+        };
     }
 
     static JsonDocument Facts(IReadOnlyDictionary<string, object> facts) => JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);

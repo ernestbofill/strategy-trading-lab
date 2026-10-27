@@ -1,0 +1,264 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-sidebar);
+}
+
+.title {
+  margin: 0;
+  font: 600 28px/36px var(--font-mono);
+  color: var(--primary);
+}
+
+.plain {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.stepTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.stepNumber {
+  font: 600 13px var(--font-mono);
+  color: var(--accent);
+}
+
+/* The prompt, shown as code. */
+.prompt {
+  padding: 12px var(--space-3);
+  font: 12px/20px var(--font-mono);
+  color: var(--primary);
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.prompt p {
+  margin: 0;
+}
+.promptComment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+.promptTable {
+  color: var(--syntax-function);
+}
+.promptList {
+  color: var(--syntax-keyword);
+}
+
+.more {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: var(--space-1);
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.copy {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  background: var(--surface-console);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+  cursor: pointer;
+}
+.copy[data-copied] {
+  background: var(--primary);
+  color: var(--on-action);
+}
+
+.services {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-sidebar);
+}
+.services a {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  color: var(--link);
+}
+
+.scores {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border-hairline);
+}
+
+.score {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  padding: 12px var(--space-3);
+  border-top: 1px solid var(--border-hairline);
+}
+.score:first-child {
+  border-top: 0;
+}
+.score[data-picked] {
+  background: var(--surface-console);
+}
+
+.overall {
+  grid-row: span 2;
+  font: 600 22px/28px var(--font-mono);
+  color: var(--syntax-number);
+}
+.score[data-picked] .overall {
+  color: var(--primary);
+}
+
+.scoreName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.reason {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-sidebar);
+  overflow-wrap: anywhere;
+}
+
+.check {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--success);
+}
+
+.problems {
+  margin: 0;
+  padding-left: var(--space-3);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.consent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--ink-sidebar);
+}
+.consent p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--link);
+  cursor: pointer;
+}
+.details p {
+  margin: 0 0 var(--space-2);
+}
+
+.answer {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px var(--space-3);
+  font: 12px/20px var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rounds {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.round {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-deep);
+  border: 1px solid var(--border-hairline);
+}
+
+.roundHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font: 600 15px var(--font-mono);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.secondary {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  background: none;
+  border: 1px solid var(--ink-sidebar);
+  border-radius: var(--radius-sm);
+  color: var(--ink-sidebar);
+  cursor: pointer;
+}
+.secondary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

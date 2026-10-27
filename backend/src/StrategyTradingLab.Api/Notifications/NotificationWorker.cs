@@ -28,6 +28,8 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     if (sent > 0) logger.LogInformation("Sent {Count} daily overviews.", sent);
                     var reminders = await service.SendSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken);
                     if (reminders > 0) logger.LogInformation("Sent {Count} snooze reminders.", reminders);
+                    var rounds = await service.SendAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
+                    if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
                 }
             }
             catch (Exception error) when (error is not OperationCanceledException)

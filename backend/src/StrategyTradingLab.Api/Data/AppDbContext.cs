@@ -23,6 +23,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<FxRate> FxRates => Set<FxRate>();
     public DbSet<DailyEvaluation> DailyEvaluations => Set<DailyEvaluation>();
     public DbSet<FeedbackItem> FeedbackItems => Set<FeedbackItem>();
+    public DbSet<AiRound> AiRounds => Set<AiRound>();
+    public DbSet<SharedAiRound> SharedAiRounds => Set<SharedAiRound>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

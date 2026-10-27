@@ -86,6 +86,40 @@ public class NotificationTests
         Assert.DoesNotContain("Waiting for you", body);
     }
 
+    [Fact]
+    public void The_ai_round_email_names_every_round_due_that_day()
+    {
+        var (subject, body) = EmailTexts.AiRoundDue(
+            [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks"), (Guid.Parse("33333333-3333-3333-3333-333333333333"), "Tech scores")],
+            "https://app.example");
+
+        Assert.Equal("Time for the AI round of My AI picks and Tech scores", subject);
+        Assert.StartsWith("Time for the AI rounds of My AI picks and Tech scores. It takes about two minutes.", body);
+        Assert.Contains("My AI picks: https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
+        Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
+    }
+
+    [Fact]
+    public void The_ai_round_email_and_signal_are_in_catalan_for_a_catalan_user()
+    {
+        var (subject, body) = EmailTexts.AiRoundDue([(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Les meves IA")], "https://app.example", "ca");
+        var signal = Dip("""{"score":91,"rank":1}""") with { TemplateKey = "ai" };
+
+        Assert.Equal("És l'hora de la ronda d'IA de Les meves IA", subject);
+        Assert.EndsWith(EmailTexts.DisclaimerCa, body);
+        Assert.Equal("la teva IA l'ha puntuat amb 91 sobre 100, la puntuació més alta de la ronda", EmailTexts.FactSentence(signal, "ca"));
+        Assert.Equal("your AI scored it 91 out of 100, the top score of the round", EmailTexts.FactSentence(signal));
+    }
+
+    [Fact]
+    public void The_overview_lists_ai_rounds_due_with_the_signals_waiting()
+    {
+        var (_, body) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "en",
+            [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks")]);
+
+        Assert.Contains("Waiting for you\n- Time for the AI round of My AI picks. https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
+    }
+
     sealed class Captured : IEmailSender
     {
         public List<(string To, string Subject, string Body)> Sent { get; } = [];

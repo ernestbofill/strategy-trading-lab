@@ -57,6 +57,7 @@ function detailOf(row: StockRow, words: StockStatusWords | null, t: Translate): 
         ? fromZone(row.distancePct, words.zone)
         : (words?.notCandidate ?? t('strategy.stock.rulesNotMet'))
     case 'watching':
+      if (row.aiScore !== undefined && row.aiScore !== null) return t('strategy.stock.lastScore', { score: row.aiScore })
       if (words?.watching) {
         return row.distancePct !== null ? fillN(words.watching, row.distancePct) : t('strategy.stock.rulesNotMet')
       }

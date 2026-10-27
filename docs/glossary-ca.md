@@ -38,6 +38,9 @@ Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sente
 | snooze | ajorna |
 | skip | omet |
 | bought / sold | comprat / venut |
+| prompt (for the AI) | prompt (m.) |
+| AI round | ronda d'IA |
+| score | puntuació |
 
 Fixed sentences (word for word):
 

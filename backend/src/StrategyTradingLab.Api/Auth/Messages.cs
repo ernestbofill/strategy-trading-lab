@@ -86,4 +86,26 @@ public static class Messages
     public static readonly Message NoSuchSetting = new("This template has no such setting.", "Aquesta plantilla no té aquest ajust.");
     public static readonly Message SettingRange = new("Use {0:0.##} to {1:0.##}, in steps of {2:0.##}.", "Fes servir de {0:0.##} a {1:0.##}, en passos de {2:0.##}.");
     public static readonly Message SettingBelow = new("Keep it at least {0:0.##} under the setting after it.", "Mantén-ho com a mínim {0:0.##} per sota de l'ajust següent.");
+
+    // AI rounds (Your AI's top picks)
+    public static readonly Message PasteAnswer = new("Paste your AI's answer.", "Enganxa la resposta de la teva IA.");
+    public static readonly Message AnswerTooLong = new("That answer is too long to read. Ask your AI for the table only.",
+        "Aquesta resposta és massa llarga per llegir-la. Demana a la teva IA només la taula.");
+    public static readonly Message NoScoresTable = new("We couldn't find the scores table. Ask your AI to answer only with the table.",
+        "No hem trobat la taula de puntuacions. Demana a la teva IA que respongui només amb la taula.");
+    public static readonly Message NotYourStock = new("\"{0}\" isn't one of your stocks.", "«{0}» no és cap de les teves accions.");
+    public static readonly Message ScoredTwice = new("{0} is scored more than once.", "{0} està puntuada més d'una vegada.");
+    public static readonly Message BadScore = new("{0}: the overall score isn't a number from 0 to 100.", "{0}: la puntuació global no és un número entre 0 i 100.");
+    public static readonly Message NoScore = new("{0} has no score.", "{0} no té puntuació.");
+    public static readonly Message MoreProblems = new("And {0} more.", "I {0} més.");
+    public static readonly Message PickAiModel = new("Pick the AI model you used, or name it.", "Tria el model d'IA que has fet servir, o escriu-ne el nom.");
+    public static readonly Message RoundNotDue = new("This AI round isn't due yet.", "Encara no és l'hora d'aquesta ronda d'IA.");
+    public static readonly Message RoundDone = new("This AI round is already done.", "Aquesta ronda d'IA ja està feta.");
+    public static readonly Message OneSourceOn = new("At least one source stays on.", "Almenys una font queda activada.");
+    public static readonly Message InstructionsLength = new("Keep it under {0} characters.", "Que no passi de {0} caràcters.");
+    public static readonly Message InstructionsEmpty = new("Write the instructions, or reset to the suggested ones.",
+        "Escriu les instruccions, o torna a les suggerides.");
+    public static readonly Message TooManyStocks = new("Use at most {0} stocks.", "Fes servir com a màxim {0} accions.");
+    public static readonly Message PromptChanged = new("The prompt changed since you copied it. Copy it again and ask your AI again.",
+        "El prompt ha canviat des que l'has copiat. Torna'l a copiar i torna-ho a demanar a la teva IA.");
 }

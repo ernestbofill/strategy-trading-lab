@@ -49,6 +49,9 @@ public class User : IHasUpdatedAt
     public UserRole Role { get; set; } = UserRole.User;
     public bool OverviewEmail { get; set; } = true;
     public DateTimeOffset? DisclaimerAcceptedAt { get; set; }
+    /// <summary>Share AI rounds anonymously (off by default), and when that last changed.</summary>
+    public bool AiSharing { get; set; }
+    public DateTimeOffset? AiSharingChangedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
@@ -261,4 +264,52 @@ public class FeedbackItem : IHasUpdatedAt
     public DateTimeOffset? ClosedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// One AI round of a <i>Your AI's top picks</i> strategy (spec: AI round): due on a day, then done (the user pasted their AI's
+/// answer) or skipped (a week went by). A done round keeps what the user copied and pasted, and the scores read from it.
+/// </summary>
+public class AiRound : IHasUpdatedAt
+{
+    public Guid Id { get; set; }
+    public Guid StrategyId { get; set; }
+    public DateOnly DueOn { get; set; }
+    public AiRoundStatus Status { get; set; }
+    public DateTimeOffset? DoneAt { get; set; }
+    /// <summary>The last finished US session when it was done: its signals' date, and where "picks vs the rest" starts.</summary>
+    public DateOnly? SessionDate { get; set; }
+    public int? PromptVersion { get; set; }
+    public bool PromptEdited { get; set; }
+    public string? PromptText { get; set; }
+    public string? AiModel { get; set; }
+    public string? Answer { get; set; }
+    /// <summary>The scores read from the answer: <c>[{assetId, overall, news, mood, figures, reason, picked}]</c>.</summary>
+    public JsonDocument? Scores { get; set; }
+    /// <summary>Its shared copy, when the user shared it: the only link between the two, kept on the user's side, to remove it.</summary>
+    public Guid? SharedRoundId { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// An AI round a user chose to share (spec: AI data sharing). Kept apart from account data, with nothing that points back to
+/// the user, the strategy or its budget: once stored it can't be traced or withdrawn, only future sharing stopped.
+/// </summary>
+public class SharedAiRound
+{
+    public Guid Id { get; set; }
+    public DateOnly RoundOn { get; set; }
+    public required string AiModel { get; set; }
+    public int PromptVersion { get; set; }
+    public bool PromptEdited { get; set; }
+    /// <summary>The sources on: <c>["news","mood","figures"]</c>.</summary>
+    public required JsonDocument Sources { get; set; }
+    /// <summary>The stocks' symbols, in the prompt's order.</summary>
+    public required JsonDocument Stocks { get; set; }
+    /// <summary>The answer, with what looks like an email, a phone number or a link's parameters removed.</summary>
+    public required string Answer { get; set; }
+    /// <summary><c>[{symbol, overall, news, mood, figures}]</c>.</summary>
+    public required JsonDocument Scores { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }

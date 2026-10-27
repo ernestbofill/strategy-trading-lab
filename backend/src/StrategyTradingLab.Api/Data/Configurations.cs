@@ -52,6 +52,7 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Currency).HasColumnType(Money.Currency).HasColumnDefault("EUR");
         entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
+        entity.Property(user => user.AiSharing).HasColumnDefault(false);
     }
 }
 
@@ -309,5 +310,41 @@ class FeedbackItemConfiguration : IEntityTypeConfiguration<FeedbackItem>
         entity.HasIndex(item => item.UserId);
         entity.HasOne<User>().WithMany()
             .HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+class AiRoundConfiguration : IEntityTypeConfiguration<AiRound>
+{
+    public void Configure(EntityTypeBuilder<AiRound> entity)
+    {
+        entity.ToTable("ai_rounds", table =>
+        {
+            table.HasCheckConstraint("ck_ai_rounds_done", "(status = 'done') = (done_at IS NOT NULL)");
+            table.HasCheckConstraint("ck_ai_rounds_done_answer",
+                "status <> 'done' OR (answer IS NOT NULL AND scores IS NOT NULL AND ai_model IS NOT NULL AND session_date IS NOT NULL)");
+        });
+        entity.Property(round => round.Scores).HasColumnType("jsonb");
+        entity.Property(round => round.PromptEdited).HasColumnDefault(false);
+        entity.HasIndex(round => new { round.StrategyId, round.DueOn }).IsUnique();
+        // One round open at a time per strategy, also when two requests race.
+        entity.HasIndex(round => round.StrategyId).IsUnique()
+            .HasDatabaseName("ux_ai_rounds_strategy_id_due")
+            .HasFilter("status = 'due'");
+        entity.HasOne<Strategy>().WithMany()
+            .HasForeignKey(round => round.StrategyId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne<SharedAiRound>().WithMany()
+            .HasForeignKey(round => round.SharedRoundId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+class SharedAiRoundConfiguration : IEntityTypeConfiguration<SharedAiRound>
+{
+    public void Configure(EntityTypeBuilder<SharedAiRound> entity)
+    {
+        entity.ToTable("shared_ai_rounds");
+        entity.Property(round => round.Sources).HasColumnType("jsonb");
+        entity.Property(round => round.Stocks).HasColumnType("jsonb");
+        entity.Property(round => round.Scores).HasColumnType("jsonb");
+        entity.HasIndex(round => round.RoundOn);
     }
 }

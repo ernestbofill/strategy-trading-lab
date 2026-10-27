@@ -8,3 +8,5 @@ export const modePath = '/new/mode'
 export const budgetPath = '/new/budget'
 export const confirmPath = '/new/confirm'
 export const dashboardPath = homePath
+/** The prompt editor ("Edit prompt") during the new-strategy flow. */
+export const promptPath = (key: string) => `/new/templates/${key}/prompt`

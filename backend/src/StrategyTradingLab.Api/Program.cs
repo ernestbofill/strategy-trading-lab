@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Identity;
 using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Assets;
+using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
@@ -68,6 +69,7 @@ builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>(
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();
 builder.Services.AddScoped<StrategyTradingLab.Api.Notifications.NotificationService>();
+builder.Services.AddScoped<AiRounds>();
 builder.Services.AddHostedService<StrategyTradingLab.Api.Notifications.NotificationWorker>();
 
 // Accounts (backend/AUTH.md).
@@ -188,6 +190,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 app.MapTemplates();
 app.MapStrategies();
 app.MapSignals();
+app.MapAiRounds();
 app.MapTrades();
 app.MapAdmin();
 app.MapAccount();

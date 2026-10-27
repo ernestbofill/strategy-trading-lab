@@ -1,4 +1,5 @@
 import { common } from './en/common'
+import { aiRound } from './en/aiRound'
 import { account } from './en/account'
 import { admin } from './en/admin'
 import { dashboard } from './en/dashboard'
@@ -11,6 +12,7 @@ import { trades } from './en/trades'
 /** Every English message. The other languages must have the same keys (the types check it). */
 export const en = {
   ...common,
+  ...aiRound,
   ...account,
   ...admin,
   ...dashboard,

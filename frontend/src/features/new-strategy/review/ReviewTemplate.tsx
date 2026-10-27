@@ -16,11 +16,12 @@ import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { useT } from '../../../i18n/I18n'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
-import { advancedPath, howTestedPath, modePath, pickPath } from '../paths'
+import { advancedPath, howTestedPath, modePath, pickPath, promptPath } from '../paths'
 import { rulesWithSettings, settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
-import { AiPrompt } from './AiPrompt'
-import { aiSources as aiSourcesOf } from './aiSources'
+import { PromptText } from '../../ai-round/PromptText'
+import { useAiPromptPreview } from '../../ai-round/useAiPromptPreview'
+import { aiPromptScope, aiSources as aiSourcesOf } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
 
@@ -73,7 +74,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
         <RuleList rules={rulesWithSettings(template, draft.templateKey === template.key ? draft.settings : {})} />
       </Section>
       {aiRound ? (
-        <AiSettings />
+        <AiSettings template={template} />
       ) : watches.kind === 'stocks' ? (
         <Section
           title={t('newStrategy.review.chooseStocks')}
@@ -154,10 +155,11 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
 }
 
 /** "What the AI reads" and "The prompt", for templates driven by AI rounds. */
-function AiSettings() {
+function AiSettings({ template }: { template: TemplateDetail }) {
   const t = useT()
-  const { aiSources, update } = useNewStrategyDraft()
+  const { aiSources, aiInstructions, settings, unticked, update } = useNewStrategyDraft()
   const toggle = (id: AiSource) => update({ aiSources: { ...aiSources, [id]: !aiSources[id] } })
+  const { preview, failed } = useAiPromptPreview({ ...aiSources, instructions: aiInstructions, ...aiPromptScope(template, settings, unticked) })
 
   return (
     <>
@@ -165,8 +167,12 @@ function AiSettings() {
         <ToggleTiles tiles={aiSourcesOf(t)} isOn={(id) => aiSources[id]} onToggle={toggle} keepOne />
         <p className="caption">{t('newStrategy.review.aiAtLeastOne')}</p>
       </Section>
-      <Section title={t('newStrategy.review.prompt')} aside={<TextAction>{t('newStrategy.review.editPrompt')}</TextAction>}>
-        <AiPrompt sources={aiSources} />
+      <Section title={t('newStrategy.review.prompt')} aside={<TextAction to={promptPath(template.key)}>{t('newStrategy.review.editPrompt')}</TextAction>}>
+        {preview ? (
+          <PromptText text={preview.text} version={preview.version} edited={aiInstructions !== null} collapsed />
+        ) : (
+          <p className={styles.plain}>{t(failed ? 'aiRound.prompt.loadError' : 'aiRound.prompt.loading')}</p>
+        )}
         <p className="caption">{t('newStrategy.review.promptNote')}</p>
       </Section>
     </>

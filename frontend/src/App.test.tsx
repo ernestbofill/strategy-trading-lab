@@ -15,6 +15,7 @@ const account: Account = {
   overviewEmail: true,
   currency: 'EUR',
   role: 'user',
+  aiSharing: false,
 }
 
 function open(path: string) {

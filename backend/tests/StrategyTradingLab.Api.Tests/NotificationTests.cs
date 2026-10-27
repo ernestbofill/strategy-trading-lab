@@ -59,8 +59,8 @@ public class NotificationTests
         {
             new CloseLine("Zscaler & friends", StrategyMode.Live, "dip", "Palantir", 3.2m),
             new CloseLine("The comeback", StrategyMode.Simulation, "comeback", "Intel", 4.5m),
-            new CloseLine("The big market drop", StrategyMode.Live, "bear", "S&P 500", 1.8m),
-            new CloseLine("Ride the long trend", StrategyMode.Live, "trend", "S&P 500", 1.2m),
+            new CloseLine("Bear markets", StrategyMode.Live, "bear", "S&P 500", 1.8m),
+            new CloseLine("Index trend", StrategyMode.Live, "trend", "S&P 500", 1.2m),
         };
         var score = new[] { new ScoreLine("Zscaler & friends", StrategyMode.Live, new DateOnly(2026, 10, 1), 1), new ScoreLine("The comeback", StrategyMode.Simulation, new DateOnly(2026, 10, 5), 0) };
 
@@ -71,8 +71,8 @@ public class NotificationTests
         Assert.Contains("- No rules were newly met.", body);
         Assert.Contains("(Live) Palantir, Zscaler & friends: 3.2% above the discount zone", body);
         Assert.Contains("(Simulation) Intel, The comeback: 4.5% below the buy line", body);
-        Assert.Contains("(Live) S&P 500, The big market drop: 1.8% below the bounce line", body);
-        Assert.Contains("(Live) S&P 500, Ride the long trend: 1.2% below the buy line", body);
+        Assert.Contains("(Live) S&P 500, Bear markets: 1.8% below the bounce line", body);
+        Assert.Contains("(Live) S&P 500, Index trend: 1.2% below the buy line", body);
         Assert.Contains("The comeback (Simulation): since 5 Oct 2026, 0 signals", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
         Assert.DoesNotContain("buy now", body, StringComparison.OrdinalIgnoreCase);

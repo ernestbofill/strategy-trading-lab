@@ -23,7 +23,7 @@ How the app fits today:
 | Paid broker referral links | Not allowed as is | Per-client referral fees count as client acquisition, which is reserved for licensed firms and their tied agents. |
 | A paid subscription for the tool | Low | The CNMV says selling investment software to retail users needs no authorisation, as long as the company doesn't set it up from the client's information. |
 
-"Buy the next Nvidia" → "Find the next Nvidia" helps, but the tagline doesn't decide the licensing question. The structure of live signals does. Section 4 has the wording changes.
+"Buy the next Nvidia" → "Find the next Nvidia" helped, but the tagline doesn't decide the licensing question. The structure of live signals does. Section 4 has the wording changes.
 
 ## 1. When does a signal become investment advice?
 
@@ -182,3 +182,5 @@ These keep live mode on the information-and-tools side of the line, and they cos
 - [Ley 6/2023](https://boe.es/buscar/act.php?id=BOE-A-2023-7053), and [Art. 312 on sanctions](https://www.iberley.es/legislacion/articulo-312-mercados-valores-servicios-inversion)
 - [European Commission call for advice on the Retail Investment Strategy (2026)](https://www.esma.europa.eu/sites/default/files/2026-08/Call_for_advice_on_RIS_to_ESMA.pdf): timeline.
 - [EU AI Act, Annex III](https://ai-act-service-desk.ec.europa.eu/en/ai-act/annex-3)
+
+> Update 2026-10-27: Ernest chose the tagline "Buy the dip" for *Winners at a discount* (no brand name, but "Buy" is an instruction). It stays an open point for the legal review (ROADMAP item 30).

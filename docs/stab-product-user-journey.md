@@ -17,22 +17,22 @@ The user *picks a strategy template*, sets it up, names it, and *runs* it as a s
 
 | Word | Means | Where the user meets it |
 | --- | --- | --- |
-| **Strategy template** | An idea and its rules, as offered in the catalogue, with our tested defaults: "Dip in winners", "Ride the long trend". It is picked, reviewed, backtested and tuned. Templates never change because of what a user does. | Steps 2-3: the template cards, the review pages, advanced settings |
+| **Strategy template** | An idea and its rules, as offered in the catalogue, with our tested defaults: "Winners at a discount", "Index trend". It is picked, reviewed, backtested and tuned. Templates never change because of what a user does. | Steps 2-3: the template cards, the review pages, advanced settings |
 | **Strategy** | The user's own copy of a template, with their name for it, their stocks, settings and budget, running in one mode from the day they start it. It keeps its own trades and results. The user can make any number of strategies from the same template. | From step 4 on: the dashboard, the strategy page, signals, the overview |
 | **Mode** | How a strategy runs: **Simulation** (the app makes every trade the rules call for, on paper, at an assumed price) or **Live** (the user trades at their broker and confirms each signal). A strategy's mode is fixed; going live means starting a new strategy. | Step 4, and as a label on every strategy |
-| **Signal** | The moment a strategy's rules are met for a stock: a buy step, or, for *Ride the long trend*, a sale. In simulation the app acts on it by itself; in live it asks the user. | Live alerts, the daily overview, the stock rows |
-| **Discount zone** | For *Dip in winners*: the range 5-15% below a stock's recent peak, where its rules signal. | Rules, charts, signals, the overview |
+| **Signal** | The moment a strategy's rules are met for a stock: a buy step, or, for *Index trend*, a sale. In simulation the app acts on it by itself; in live it asks the user. | Live alerts, the daily overview, the stock rows |
+| **Discount zone** | For *Winners at a discount*: the range 5-15% below a stock's recent peak, where its rules signal. | Rules, charts, signals, the overview |
 | **AI round** | For strategies made from the AI template only: every 2 weeks, the user runs our suggested prompt in their own AI service and pastes the answer back. | Step 9 |
 | **AI data sharing** | The user's opt-in to let us keep their AI rounds, anonymised (the AI model and the full answer), to improve the product and compare how AI models score. | Step 9, and Account → Data and privacy |
 | **Backtest** | How a template did in the past, with given settings. It belongs to the template and settings, not to a running strategy. | Steps 2-3, *How we tested*, and the strategy page |
 
-**Naming.** On the confirm screen the user names the strategy or keeps the default: the template's name, with a number if they already have one by that name ("Dip in winners 2"). The template's name stays visible under the user's name, with the mode and start date, e.g. "Zscaler & friends · *Dip in winners* · Live · since Oct 13", so the user always knows which idea is running and whether it is real.
+**Naming.** On the confirm screen the user names the strategy or keeps the default: the template's name, with a number if they already have one by that name ("Winners at a discount 2"). The template's name stays visible under the user's name, with the mode and start date, e.g. "Zscaler & friends · *Winners at a discount* · Live · since Oct 13", so the user always knows which idea is running and whether it is real.
 
 ## Wording rules
 
 These keep the app on the "information and tools" side of the line between information and investment advice (see the regulation note). They apply to every screen, email and alert.
 
-- **Describe, don't instruct.** Template names describe the situation the rules look for, not an action for the user: *Dip in winners*, *The comeback*, *The big market drop*, *Your AI's top picks*. *Ride the long trend* keeps its name: "ride" is a metaphor, not a buy or sell. Inside a template's page, the strategy is the subject ("It signals when…"), never the user ("Buy when…"). Template copy says the strategy *signals* a buy or a sale rather than that it *buys*.
+- **Describe, don't instruct.** Template names describe the situation the rules look for, not an action for the user: *Winners at a discount*, *The comeback*, *Bear markets*, *Your AI's top picks*. *Index trend* names the index and the idea, not an action ("Ride an index" would read as an order). Inside a template's page, the strategy is the subject ("It signals when…"), never the user ("Buy when…"). Template copy says the strategy *signals* a buy or a sale rather than that it *buys*.
 - **Signals report rules, not opinions.** Every signal says which rule was met, the facts that met it and, for live, what that means under the user's own settings. Never "buy now", no urgency, no price targets or return forecasts.
 - **The user owns the setup.** Lists, settings and budgets are presented as the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
 - **No promises.** No claims that markets or stocks will recover or rise. Results are always shown with the comparison to an index fund and the worst year.
@@ -40,14 +40,14 @@ These keep the app on the "information and tools" side of the line between infor
 
 | Where | Before | Now |
 | --- | --- | --- |
-| Template name | Buy the dip in winners | **Dip in winners** |
+| Template name | Buy the dip in winners · Dip in winners | **Winners at a discount** |
 | Template name | Buy the comeback | **The comeback** |
-| Template name | Buy the big market drop | **The big market drop** |
-| Template name | Ride the long trend | Ride the long trend (kept) |
+| Template name | Buy the big market drop · The big market drop | **Bear markets** |
+| Template name | Ride the long trend | **Index trend** |
 | Template name | Follow the AI's top picks | **Your AI's top picks** |
-| Tagline, Dip in winners | Buy the next Nvidia | **Find the next Nvidia** (open point for the legal review: brand name, hints at exceptional returns) |
+| Tagline, Winners at a discount | Buy the next Nvidia · Find the next Nvidia | **Buy the dip** (Ernest's choice: it is a permissive, well-known phrase; open point for the legal review: "Buy" is an instruction) |
 | Tagline, The comeback | On the rise / Stocks on the rise | **Stocks on the rise** |
-| Tagline, Ride the long trend | Ride the wave | **Take the wins, dodge the losses** (open point for the legal review: could read as a promise to avoid losses) |
+| Tagline, Index trend | Ride the wave | **Take the wins, dodge the losses** (open point for the legal review: could read as a promise to avoid losses) |
 | Taglines, others | When the market is on sale · Let the AI do the reading | Kept; AI one becomes **Let your AI do the reading** |
 | Rules heading | It buys when | **It signals when** |
 | Template copy | "the strategy buys…" | **"the strategy signals…"** (a buy, or a sale) |
@@ -71,7 +71,7 @@ v1 is for learning, testing and following simple strategies. It never tells anyo
 - **Signals follow the rules, not the user's trades.** A live strategy's signals come from its rules' own position (its signal trades), the same for anyone running the same rules on the same stocks. The user's confirmed trades only feed their results. (This keeps signals generic, which matters legally; see the regulation note.)
 - **Bring your own AI.** The app runs no AI to rate stocks. The AI template gives the user a ready-made prompt to run in their own AI service (ChatGPT, Claude, Gemini or similar); the scores that come back are the user's, and the app applies the strategy's rule to them.
 - **AI data only with consent.** We keep AI rounds for product research (the AI model and the full answer) only if the user opts in, separately from the terms of use, and they can withdraw at any time. Nothing that identifies the user is kept with that data.
-- **Mostly buy-only.** Strategies define when they would buy. The one exception is *Ride the long trend*, which also signals a sale when the market's trend turns down (all in, all out).
+- **Mostly buy-only.** Strategies define when they would buy. The one exception is *Index trend*, which also signals a sale when the market's trend turns down (all in, all out).
 - **One at a time.** Onboarding sets up a single strategy. More are added from the dashboard, each through the same steps, from any template, including ones already in use.
 - **Daily, after the close.** All rules are checked once a day after the US market close, as in the POC. Every user gets a short daily overview by email; live strategies also send an alert (web push and email) as soon as there is a signal, to act on the next trading day.
 - **Plain language.** Real trading terms stay, each with a one-line explanation, e.g. "SMA 200 (average price over the last 200 days)". The words *ticker* and *tranche* never appear in the app: it says *stock* (or *fund*) and *step*.
@@ -100,7 +100,7 @@ After sign-up the user lands directly on template selection (step 2), with no em
 
 ## 2. Pick a strategy template
 
-The user sees one card per template and picks one (single choice; *Dip in winners* is selected by default). Each card shows the template's name, its tagline, its idea in one or two sentences, and a *Learn more* link. Under the button: "Pick one to start. You can add more strategies later, from any template."
+The user sees one card per template and picks one (single choice; *Winners at a discount* is selected by default). Each card shows the template's name, its tagline, its idea in one or two sentences, and a *Learn more* link. Under the button: "Pick one to start. You can add more strategies later, from any template."
 
 When adding a strategy later from the dashboard, the same screen shows all templates, with "You run 2 from this template" on templates already in use. Nothing is hidden.
 
@@ -108,10 +108,10 @@ The four POC strategies map to four templates; the fifth, the AI template, is ne
 
 | Template | POC strategy | Plain-language idea | Invests in | When it signals | Tagline |
 | --- | --- | --- | --- | --- | --- |
-| Dip in winners | Leader pullback | A stock on a strong run takes a small step back; the strategy signals that dip. | Individual stocks | A buy in the discount zone, 5-15% below the recent peak, while the longer trend is still up | Find the next Nvidia |
+| Winners at a discount | Leader pullback | A stock on a strong run takes a small step back; the strategy signals that dip. | Individual stocks | A buy in the discount zone, 5-15% below the recent peak, while the longer trend is still up | Buy the dip |
 | The comeback | Confirmed turnaround | A stock that fell a lot starts to recover; the strategy looks for a confirmed turnaround. | Individual stocks | A buy when a beaten-down stock climbs 15% above its 50-day average on rising volume | Stocks on the rise |
-| The big market drop | Bear-market accumulation | When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers. | A broad S&P 500 fund | A buy after a 20% fall, once the market bounces 5% off its low; then one step every 2 weeks | When the market is on sale |
-| Ride the long trend | Index trend | The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. | A broad index fund | A buy when the market closes more than 3% above its 200-day average; a sale when it closes more than 3% below | Take the wins, dodge the losses |
+| Bear markets | Bear-market accumulation | When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers. | A broad S&P 500 fund | A buy after a 20% fall, once the market bounces 5% off its low; then one step every 2 weeks | When the market is on sale |
+| Index trend | Index trend | The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. | A broad index fund | A buy when the market closes more than 3% above its 200-day average; a sale when it closes more than 3% below | Take the wins, dodge the losses |
 | Your AI's top picks | new | Every 2 weeks, you run our prompt in your own AI. It reads the news, the mood around each stock and its financial figures, and scores every stock from 0 to 100. The top-scored stock gets a signal for one step. | Individual stocks | After each AI round, one step for the top-scored stock, until the budget is used | Let your AI do the reading |
 
 The effort and risk lines once planned for the cards were dropped to keep them minimal; the risk is covered on the review page.
@@ -122,8 +122,8 @@ The picked template opens its review page, already filled in with its defaults, 
 
 **What the page shows, in order:**
 
-1. **The idea**: the rationale in plain words, with no numbers and no promises. For example: "Pick winning stocks: companies whose price has climbed steadily for months because the market believes in them. Then wait for a short pullback, when the price dips a few percent." For *The big market drop*: "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small steps while prices are still low."
-2. **The rules**, under "It signals when", each as a plain label and its detail, with every term explained in brackets. Example: "Wait for a discount: it drops into the discount zone, 5-15% below its recent peak." *Ride the long trend* lists a Buy rule and a Sell rule instead.
+1. **The idea**: the rationale in plain words, with no numbers and no promises. For example: "Pick winning stocks: companies whose price has climbed steadily for months because the market believes in them. Then wait for a short pullback, when the price dips a few percent." For *Bear markets*: "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small steps while prices are still low."
+2. **The rules**, under "It signals when", each as a plain label and its detail, with every term explained in brackets. Example: "Wait for a discount: it drops into the discount zone, 5-15% below its recent peak." *Index trend* lists a Buy rule and a Sell rule instead.
 3. **Choose stocks to watch.** For stock templates, a starter list, each stock with its name and one line on what the company does, all ticked by default and ordered alphabetically; the user can untick any and add their own (US-listed). Under the list: "In our tests, longer lists gave steadier results." For fund templates, the one fund ("The fund it watches"), which the user can change.
 4. **Tested.** How the template did in the backtest: the period, how many stocks, the result against simply buying an index fund, and the worst year. Results are shown honestly, including the bad years, with "Past results don't promise future ones." A *How we tested* link opens a page with the data used, how a test runs (daily checks, next day's open, the tested defaults, euro at the day's rate, fees), results by period, and what a backtest can't show (the starter list only holds companies still around today, which flatters past results; real prices can differ from the open).
 5. **What can go wrong**, in plain words ("a stock it buys can keep falling").
@@ -187,7 +187,7 @@ A live summary turns them into a sentence, e.g. "Each buy is €100. A stock get
 | Steps the budget covers | 30 |
 | Stocks it can buy in full | 6 |
 
-We suggest the initial defaults, the same for everyone; after that, every amount is the user's to change. Each strategy keeps its own budget. *Ride the long trend* buys the whole budget at once, so for it only the budget applies. For the AI template with these defaults, one step every 2 weeks uses the budget in about 60 weeks.
+We suggest the initial defaults, the same for everyone; after that, every amount is the user's to change. Each strategy keeps its own budget. *Index trend* buys the whole budget at once, so for it only the budget applies. For the AI template with these defaults, one step every 2 weeks uses the budget in about 60 weeks.
 
 Amounts are in euro. Buys of dollar stocks are converted at the day's exchange rate, and the strategy's results include the effect of the euro-dollar rate, as a euro investor's real results would.
 
@@ -199,9 +199,9 @@ It also says what happens next:
 
 - **Simulation:** the user sees right away how the template did in the past; from today the strategy runs on real prices and records its own signal trades; the first daily overview arrives tomorrow. Button: **Start the simulation**.
 - **Live:** the user sees right away how the template did in the past; from today the app watches the stocks and alerts the user as soon as their rules are met; the user confirms each signal, and the app tracks the results of what they did. Button: **Start following it live**.
-- **AI template (either mode):** no past results; the first AI round is due now, so the next screen is the AI round (step 9).
+- **AI template (either mode):** no past results; the first AI round is due now and waits on the dashboard under *Waiting for you* (step 9).
 
-The full disclaimer ("Not financial advice. Signals follow your rules; you decide and trade at your own broker.") sits just above the button. The button ends onboarding and opens the dashboard (or, for the AI template, its first AI round).
+The full disclaimer ("Not financial advice. Signals follow your rules; you decide and trade at your own broker.") sits just above the button. The button ends onboarding and opens the dashboard.
 
 ## 7. Get your daily overview
 
@@ -220,7 +220,7 @@ The overview never uses buy or sell as an instruction. It states what the rules 
 
 This step exists only for live strategies. It is the core loop of live mode.
 
-1. **The signal arrives** as a web push notification and an email, right after the daily check that found it (after the US market close), or right after an AI round for AI strategies. It says which rule was met and why, under the user's settings: "Your rules for *Zscaler & friends* are met for Zscaler: 8% below its recent peak, still above its 50-day average. Under your settings that's step 2 of 5 (€100)." For *Ride the long trend*, sell signals arrive the same way: "Your rules for *[name]* are met for a sale: the market closed 3.2% below its 200-day average."
+1. **The signal arrives** as a web push notification and an email, right after the daily check that found it (after the US market close), or right after an AI round for AI strategies. It says which rule was met and why, under the user's settings: "Your rules for *Zscaler & friends* are met for Zscaler: 8% below its recent peak, still above its 50-day average. Under your settings that's step 2 of 5 (€100)." For *Index trend*, sell signals arrive the same way: "Your rules for *[name]* are met for a sale: the market closed 3.2% below its 200-day average."
 2. **The user decides at their broker**, the next trading day. The app doesn't link to a broker or prefill an order.
 3. **The user confirms in the app**, from the alert, the *Waiting for you* list or the stock row, with one of two answers:
    - **I did it.** A short form: date, price, amount (or number of shares) and an optional fee. The price is prefilled with the **next trading day's opening price** once the market has opened (before that, the field is empty with the signal day's close shown as a reference). The amount is prefilled with the step size. The user corrects what differs and saves. The app records the trade and updates the budget used, the steps and the results.
@@ -228,9 +228,9 @@ This step exists only for live strategies. It is the core loop of live mode.
 4. **Unanswered signals** stay in *Waiting for you* on the dashboard and in the overview, and get one reminder. A signal can still be answered later (the user enters the real date); after the signal ends, it is marked *Missed*.
 5. **The user can also log a trade by hand** on a stock (e.g. they bought before the alert came, or sold for their own reasons), and edit or delete a trade they entered wrongly. Manual trades are marked as such, since they weren't a strategy signal.
 
-**Signals follow the rules, not the user's trades.** After a skip, the rules carry on as if the step had been bought (their signal trades), so the next signal for that stock is step 3 of 5, and a *Ride the long trend* sell signal arrives even if the user never bought. The strategy page shows both: what the rules hold and what the user holds.
+**Signals follow the rules, not the user's trades.** After a skip, the rules carry on as if the step had been bought (their signal trades), so the next signal for that stock is step 3 of 5, and a *Index trend* sell signal arrives even if the user never bought. The strategy page shows both: what the rules hold and what the user holds.
 
-Only *Ride the long trend* has sell signals. In the buy-only templates, if the user sells at their broker, they log the sale by hand so the live results stay right.
+Only *Index trend* has sell signals. In the buy-only templates, if the user sells at their broker, they log the sale by hand so the live results stay right.
 
 ## 9. AI template: run the AI round
 
@@ -298,7 +298,7 @@ Still to design:
 - **Stock page:** the chart with the discount zone shaded, the status history and the trades for that stock (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
 - **Stock list editor** from the strategy page, stock search, fund picker, and the prompt editor.
 - **Manual trade form**, and editing or deleting trades.
-- **Sell signals** and the "out of the market" status for *Ride the long trend*.
+- **Sell signals** and the "out of the market" status for *Index trend*.
 - **AI round history** and the error state when an answer can't be read.
 - **AI comparison page** (later): results by AI model.
 - **Account**, including **Data and privacy**: AI data sharing on or off, *What we keep*, export and delete account.
@@ -322,12 +322,12 @@ Still to design:
 - **Comparing AIs:** yes. With the user's opt-in consent, we keep their AI rounds anonymised (the AI model and the full answer) to improve the product and, later, to show users how AI models compare. Comparisons are by AI model, never a ranking of stocks.
 - **Markets:** the POC's stocks and funds in v1: mostly US-listed, a few in Europe and Hong Kong (see `backend/src/StrategyTradingLab.Api/Templates/TemplateAssets.cs`).
 - **Currency:** budgets, steps and results in euro at the day's rate; stock prices in dollars.
-- **Wording:** see "Wording rules": template names describe rather than instruct (*Dip in winners*, *The comeback*, *The big market drop*, *Your AI's top picks*; *Ride the long trend* kept); taglines "Find the next Nvidia" and "Stocks on the rise"; "discount zone" instead of "buy zone"; "Choose stocks to watch"; status "Signal"; signals phrased as "Your rules for … are met"; the market-recovery claim removed; one short disclaimer everywhere.
+- **Wording:** see "Wording rules": template names describe rather than instruct (*Winners at a discount*, *The comeback*, *Bear markets*, *Your AI's top picks*; *Index trend*); taglines "Buy the dip" and "Stocks on the rise"; "discount zone" instead of "buy zone"; "Choose stocks to watch"; status "Signal"; signals phrased as "Your rules for … are met"; the market-recovery claim removed; one short disclaimer everywhere.
 
 ## Decided (Oct 14, from the wireframe review)
 
 - **Signals wording:** rules sit under "It signals when", and template copy says the strategy *signals* a buy or a sale.
-- **Ride the long trend tagline:** "Take the wins, dodge the losses".
+- **Index trend tagline:** "Take the wins, dodge the losses".
 - **How we tested:** every backtest links to a page explaining the test.
 - **Longer lists:** stock templates note "In our tests, longer lists gave steadier results."
 - **Dashboard:** *Waiting for you* stays at the top; cards show a dot instead of repeating the item.
@@ -343,6 +343,6 @@ Still to design:
 - [ ] **The suggested prompt.** Who writes and maintains it, how is it versioned (users who edited theirs keep their own), and how do we test it across ChatGPT, Claude and Gemini so the answer format is reliable? The POC's 0-10 news sentiment scoring is a starting point for the criteria. The shared rounds will show which models follow the format.
 - [ ] **Reading the answer.** How forgiving is the parser (table vs JSON, extra text around it, a stock name instead of its symbol)? Pasted text is treated as data only: the app reads numbers and short reasons from the scores block and never acts on anything else in it.
 - [ ] **AI model list.** Which services and models are in the picker, and who keeps it current as new models ship?
-- [ ] **Advanced settings for each template.** Only *Dip in winners* is drawn. Which POC parameters does each template expose, and how? (The POC's recent peak is a 20-60 day window; the screen shows one number, default 60.)
+- [ ] **Advanced settings for each template.** Only *Winners at a discount* is drawn. Which POC parameters does each template expose, and how? (The POC's recent peak is a 20-60 day window; the screen shows one number, default 60.)
 - [ ] **Price data.** Which provider supplies daily US prices and the euro-dollar rate, with terms that allow commercial use, and what does it cost at many users, given the app is free? The POC uses eToro and Yahoo.
 - [ ] **Web push on iPhone.** It only works once the app is added to the home screen. Is a home-screen prompt enough, or do iPhone users rely on email alerts?

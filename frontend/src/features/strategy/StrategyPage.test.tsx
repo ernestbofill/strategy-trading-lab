@@ -1,17 +1,20 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type StrategyDetail } from '../../api'
 import { StrategyPage } from './StrategyPage'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   id: fields.id ?? 's1',
   name: 'Zscaler & friends',
   templateKey: 'dip',
-  templateName: 'Dip in winners',
+  templateName: 'Winners at a discount',
   mode: 'live',
   startedOn: '2026-10-13',
   today: '2026-10-24',
@@ -35,6 +38,7 @@ function open(strategy: StrategyDetail) {
     <MemoryRouter initialEntries={[`/strategies/${strategy.id}`]}>
       <Routes>
         <Route path="/strategies/:id" element={<StrategyPage />} />
+        <Route path="/" element={<p>Dashboard</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -80,5 +84,30 @@ describe('StrategyPage', () => {
     expect(screen.getByText('−21%')).toBeTruthy()
     expect(screen.queryByText('Signals')).toBeNull()
     expect(screen.getByText(/Results come from paper trades/)).toBeTruthy()
+  })
+
+  it('deletes the strategy after a confirm step and opens the dashboard', async () => {
+    open(detail({ id: 'gone' }))
+    const remove = vi.spyOn(api, 'deleteStrategy').mockResolvedValue()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete the strategy' }))
+    expect(screen.getByText(/Delete Zscaler & friends\? Its signals, trades and results go with it/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }))
+    expect(remove).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete the strategy' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(await screen.findByText('Dashboard')).toBeTruthy()
+    expect(remove).toHaveBeenCalledWith('gone')
+  })
+
+  it('stays on the page and says so when the delete fails', async () => {
+    open(detail({ id: 'kept' }))
+    vi.spyOn(api, 'deleteStrategy').mockRejectedValue(new Error('HTTP 500'))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete the strategy' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect((await screen.findByRole('alert')).textContent).toBe("Couldn't delete it. Try again.")
+    expect(screen.getByRole('heading', { name: 'Zscaler & friends' })).toBeTruthy()
   })
 })

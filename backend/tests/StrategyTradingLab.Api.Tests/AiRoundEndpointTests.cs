@@ -213,6 +213,30 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
     }
 
     [NeonFact]
+    public async Task Deleting_an_ai_strategy_removes_its_rounds_and_what_it_shared()
+    {
+        var s = await StartAsync("simulation");
+        try
+        {
+            Assert.Equal(HttpStatusCode.OK, (await s.Client.PostAsJsonAsync($"/strategies/{s.StrategyId}/ai-round",
+                new { answer = Answer(s), aiModel = "Claude · Opus", share = true })).StatusCode);
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.True(await db.SharedAiRounds.AnyAsync(x => x.Answer.Contains($"BE{s.Tag}")));
+
+            Assert.Equal(HttpStatusCode.NoContent, (await s.Client.DeleteAsync($"/strategies/{s.StrategyId}")).StatusCode);
+            Assert.False(await db.Strategies.AnyAsync(x => x.Id == s.StrategyId));
+            Assert.False(await db.AiRounds.AnyAsync(x => x.StrategyId == s.StrategyId));
+            Assert.False(await db.Signals.AnyAsync(x => x.StrategyId == s.StrategyId));
+            Assert.False(await db.SharedAiRounds.AnyAsync(x => x.Answer.Contains($"BE{s.Tag}")));
+        }
+        finally
+        {
+            await CleanAsync(s);
+        }
+    }
+
+    [NeonFact]
     public async Task A_strategy_started_before_ai_rounds_existed_starts_from_today_without_skipped_rounds()
     {
         var s = await StartAsync("simulation");

@@ -19,9 +19,9 @@ const trend = {
 
 describe('newStrategyFrom', () => {
   it('starts from the tested defaults when the user changed nothing', () => {
-    expect(newStrategyFrom(initialDraft, dip, 'Dip in winners', 'EUR')).toEqual({
+    expect(newStrategyFrom(initialDraft, dip, 'Winners at a discount', 'EUR')).toEqual({
       templateKey: 'dip',
-      name: 'Dip in winners',
+      name: 'Winners at a discount',
       mode: 'simulation',
       currency: 'EUR',
       budget: { amount: 3000, step: 100, maxSteps: 5 },
@@ -62,13 +62,13 @@ describe('newStrategyFrom', () => {
 
 describe('defaultName', () => {
   it('is the template name while it is free', () => {
-    expect(defaultName('Dip in winners', [])).toBe('Dip in winners')
-    expect(defaultName('Dip in winners', ['Bear'])).toBe('Dip in winners')
+    expect(defaultName('Winners at a discount', [])).toBe('Winners at a discount')
+    expect(defaultName('Winners at a discount', ['Bear'])).toBe('Winners at a discount')
   })
 
   it('numbers it from 2, taking the first free number and ignoring case', () => {
-    expect(defaultName('Dip in winners', ['dip in winners'])).toBe('Dip in winners 2')
-    expect(defaultName('Dip in winners', ['Dip in winners', 'Dip in winners 2'])).toBe('Dip in winners 3')
-    expect(defaultName('Dip in winners', ['Dip in winners', 'Dip in winners 3'])).toBe('Dip in winners 2')
+    expect(defaultName('Winners at a discount', ['winners at a discount'])).toBe('Winners at a discount 2')
+    expect(defaultName('Winners at a discount', ['Winners at a discount', 'Winners at a discount 2'])).toBe('Winners at a discount 3')
+    expect(defaultName('Winners at a discount', ['Winners at a discount', 'Winners at a discount 3'])).toBe('Winners at a discount 2')
   })
 })

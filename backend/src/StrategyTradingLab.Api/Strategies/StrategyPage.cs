@@ -7,7 +7,7 @@ public static class StrategyPage
 {
     /// <summary>
     /// A live signal waiting for an answer comes first; then a simulation's signal of the latest evaluated day. A stock
-    /// with every step bought, or that the rules hold, is <i>Holding</i> (<i>Done</i> for <i>The big market drop</i>),
+    /// with every step bought, or that the rules hold, is <i>Holding</i> (<i>Done</i> for <i>Bear markets</i>),
     /// one with some is <i>Building</i>, and an all-in strategy outside the market is <i>OutOfTheMarket</i>. The others
     /// say where the rules stand: met with no budget left for the step, watching it, not a candidate, not enough history,
     /// or not checked yet.

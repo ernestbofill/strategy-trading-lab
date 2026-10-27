@@ -27,7 +27,7 @@ export interface DraftState {
 export type DraftPatch = Partial<Omit<DraftState, 'templateKey'>>
 
 export const initialDraft: DraftState = {
-  // Dip in winners is selected by default, so "Continue" is always enabled.
+  // Winners at a discount is selected by default, so "Continue" is always enabled.
   templateKey: 'dip',
   unticked: [],
   aiSources: { news: true, mood: true, figures: true },

@@ -137,6 +137,30 @@ public static class StrategyEndpoints
         })
         .WithName("UpdateStrategySettings")
         .WithSummary("Updates the settings (rules) of a running strategy.");
+
+        group.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound>> (
+            Guid id, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = await CurrentUser(sessions, cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            // Its AI rounds first, keeping the ids of their shared copies: once the rounds are gone nothing points to those
+            // (spec: AI data sharing). Deleting the rows waits for a round being used right now, and then sees its shared copy.
+            var shared = await db.Database.SqlQuery<Guid>($"""
+                WITH gone AS (
+                    DELETE FROM ai_rounds r USING strategies s
+                    WHERE r.strategy_id = s.id AND s.id = {id} AND s.user_id = {user.Id}
+                    RETURNING r.shared_round_id)
+                SELECT shared_round_id AS "Value" FROM gone WHERE shared_round_id IS NOT NULL
+                """).ToListAsync(cancellationToken);
+            if (shared.Count > 0) await db.SharedAiRounds.Where(s => shared.Contains(s.Id)).ExecuteDeleteAsync(cancellationToken);
+            // Its stocks, signals, trades and evaluations go with it (ON DELETE CASCADE).
+            var deleted = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
+            if (deleted == 0) return TypedResults.NotFound();
+            await transaction.CommitAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithName("DeleteStrategy")
+        .WithSummary("Deletes a strategy for good, with its signals, trades, results and AI rounds.");
     }
 
     /// <summary>The logged-in user: the endpoints require one (RequireUser), so it is there.</summary>

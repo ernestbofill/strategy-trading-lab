@@ -9,6 +9,7 @@ import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { aiRoundPath, aiRoundsPath, signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
+import { DeleteStrategy } from './DeleteStrategy'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
@@ -226,6 +227,7 @@ export function StrategyPage() {
                 <SoonTile title={t('strategy.tile.backtestTitle')} sub={t('strategy.tile.backtestSub')} />
               )}
             </div>
+            <DeleteStrategy id={s.id} name={s.name} />
           </Screen>
         )
       }}

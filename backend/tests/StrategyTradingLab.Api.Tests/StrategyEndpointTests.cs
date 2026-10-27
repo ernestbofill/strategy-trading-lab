@@ -40,7 +40,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             var created = await response.Content.ReadFromJsonAsync<JsonElement>();
             Assert.Equal(name, created.GetProperty("name").GetString());
             Assert.Equal("live", created.GetProperty("mode").GetString());
-            Assert.Equal("Dip in winners", created.GetProperty("templateName").GetString());
+            Assert.Equal("Winners at a discount", created.GetProperty("templateName").GetString());
             Assert.Equal(3000, created.GetProperty("budget").GetDecimal());
             Assert.Equal(0, created.GetProperty("used").GetDecimal());
             Assert.Equal(JsonValueKind.Null, created.GetProperty("results").ValueKind);
@@ -63,6 +63,34 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", dashboard.GetProperty("today").GetString());
             Assert.Contains(dashboard.GetProperty("strategies").EnumerateArray(), s => s.GetProperty("name").GetString() == name);
             Assert.Equal(JsonValueKind.Array, dashboard.GetProperty("waiting").ValueKind);
+        }
+        finally
+        {
+            await Remove(name);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_strategy_can_be_deleted_by_its_owner_only_and_frees_its_name()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.SignedUpAsync();
+        var (other, _) = await factory.SignedUpAsync();
+        try
+        {
+            var created = await (await client.PostAsJsonAsync("/strategies", Request("dip", name))).Content.ReadFromJsonAsync<JsonElement>();
+            var id = created.GetProperty("id").GetGuid();
+
+            Assert.Equal(HttpStatusCode.NotFound, (await other.DeleteAsync($"/strategies/{id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/strategies/{id}")).StatusCode);
+
+            Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/strategies/{id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/strategies/{id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/strategies/{id}")).StatusCode);
+            var dashboard = await client.GetFromJsonAsync<JsonElement>("/dashboard");
+            Assert.DoesNotContain(dashboard.GetProperty("strategies").EnumerateArray(), s => s.GetProperty("id").GetGuid() == id);
+
+            Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/strategies", Request("dip", name))).StatusCode);
         }
         finally
         {

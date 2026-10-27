@@ -72,4 +72,10 @@ export const strategy = {
   'strategy.stock.noBuys': 'No buys yet',
   'strategy.stock.investedLive': 'You {amount} in',
   'strategy.stock.investedSim': '{amount} in',
+  'strategy.delete': 'Delete the strategy',
+  'strategy.deleteAsk': "Delete {name}? Its signals, trades and results go with it. This can't be undone.",
+  'strategy.deleteConfirm': 'Delete',
+  'strategy.deleting': 'Deleting…',
+  'strategy.deleteKeep': 'Keep it',
+  'strategy.deleteFailed': "Couldn't delete it. Try again.",
 } as const

@@ -67,17 +67,19 @@ public static class TemplateEndpoints
             Defaults = new TemplateDefaults(template.DefaultsVersion, template.Budget, template.Params),
             Settings = [.. template.Settings.Select(setting =>
             {
-                // A language without a setting's words shows the English ones.
-                var words = texts.Settings?.GetValueOrDefault(setting.Key)
-                    ?? TemplateTexts.For(template, TemplateTexts.DefaultLocale).Settings![setting.Key];
+                var words = Words(template, texts.Settings, setting.Key, english => english.Settings);
                 return new SettingDto(setting.Key, words.Sentence, words.Value, setting.Step, setting.Min, setting.Max, setting.Below,
                     words.Help, setting.Group);
             })],
             SettingGroups = [.. template.Settings.Select(setting => setting.Group).OfType<string>().Distinct().Select(group =>
             {
-                var words = texts.SettingGroups?.GetValueOrDefault(group)
-                    ?? TemplateTexts.For(template, TemplateTexts.DefaultLocale).SettingGroups![group];
+                var words = Words(template, texts.SettingGroups, group, english => english.SettingGroups);
                 return new SettingGroupDto(group, words.Title, words.Lead);
             })],
         };
+
+    // A language without a setting's or group's words shows the English ones.
+    static T Words<T>(Template template, IReadOnlyDictionary<string, T>? own, string key,
+        Func<TemplateTexts, IReadOnlyDictionary<string, T>?> english) where T : class =>
+        own?.GetValueOrDefault(key) ?? english(TemplateTexts.For(template, TemplateTexts.DefaultLocale))![key];
 }

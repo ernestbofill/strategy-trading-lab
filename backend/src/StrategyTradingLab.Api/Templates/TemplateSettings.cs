@@ -8,9 +8,11 @@ namespace StrategyTradingLab.Api.Templates;
 /// <summary>
 /// A rule the user can tune on Advanced settings (2b): a number of the template's params, by its camelCase JSON name.
 /// The screen offers <c>Min</c> to <c>Max</c> in steps of <c>Step</c>. <c>Below</c> names another setting this one must stay
-/// at least a step under (the discount zone starts before it ends). Its words are in the template's texts.
+/// at least a step under (the discount zone starts before it ends). <c>Group</c> names the part of the rules it tunes
+/// (a key of the texts' <c>SettingGroups</c>); the screen shows the groups in the order their first setting comes. Its words
+/// are in the template's texts.
 /// </summary>
-public record Setting(string Key, decimal Step, decimal Min, decimal Max, string? Below = null);
+public record Setting(string Key, decimal Step, decimal Min, decimal Max, string? Below = null, string? Group = null);
 
 /// <summary>How the user's settings become a strategy's params.</summary>
 public static class TemplateSettings

@@ -43,6 +43,12 @@ export function settingBounds(setting: Setting, settings: Setting[], values: Set
   return { min, max }
 }
 
+/** The value one step up (+1) or down (−1), rounded to the step's decimals so 1.2 + 0.1 is 1.3. */
+export function stepSetting(setting: Setting, value: number, direction: 1 | -1): number {
+  const decimals = String(setting.step).split('.')[1]?.length ?? 0
+  return Number((value + direction * setting.step).toFixed(decimals))
+}
+
 /** "5%", "60 days". */
 export const formatSetting = (setting: Setting, n: number) => setting.value.replace('{n}', String(n))
 

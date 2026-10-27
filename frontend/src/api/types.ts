@@ -95,6 +95,8 @@ export interface TemplateDetail extends StrategyTemplate {
   defaults: TemplateDefaults
   /** The rules Advanced settings can tune, in screen order; empty when the template has none yet. */
   settings: Setting[]
+  /** The groups the settings are shown in, in screen order; empty when they are one plain list. */
+  settingGroups: SettingGroup[]
 }
 
 /**
@@ -110,6 +112,17 @@ export interface Setting {
   min: number
   max: number
   below?: string
+  /** What changing it does. */
+  help?: string
+  /** The key of its `SettingGroup`. */
+  group?: string
+}
+
+/** A titled group on Advanced settings: the part of the rules its settings tune. `lead` may hold `term` markup. */
+export interface SettingGroup {
+  key: string
+  title: string
+  lead: string
 }
 
 export type StrategyMode = 'simulation' | 'live'

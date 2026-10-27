@@ -319,11 +319,11 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- | --- |
 | Candidate | "Proven growth: the recent peak is at least [n]% above the low." | 50% | 5 | 20–200 |
 | Candidate | "The low is the lowest close of the last [n] trading days." | 168 | 21 | 63–252 |
-| Candidate | "The long average is the SMA over [n] days." | 200 | 10 | 120–300 |
+| Candidate | "The long average is the SMA over [n] days." | 200 | 10 | 160–300 |
 | Buy signal | "The recent peak is the highest close of the last [n] days." | 60 | 5 | 20–60 |
 | Buy signal | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |
 | Buy signal | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
-| Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (never meets the long average, so the middle 150-day one always fits between) |
+| Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (with the long average at 160 or more, the middle one is always 150 days) |
 | Pace | "After a step, wait [n] calendar days before the next buy signal." | 10 | 5 | 0–60 |
 
 *The comeback*:

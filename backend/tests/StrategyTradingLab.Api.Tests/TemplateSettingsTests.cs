@@ -58,10 +58,10 @@ public class TemplateSettingsTests
         var dip = stored!.Deserialize<DipParams>(JsonSerializerOptions.Web)!;
         Assert.Equal((80m, 126, 20), (dip.MinGainPct, dip.GainDays, dip.CooldownDays));
 
-        // The floor average never reaches the long one, so the middle average always fits between them and a stack can hold.
+        // The middle average is always the POC's 150 days (rule 01 says so): the floor stays under it and the long one over it.
         var floor = TemplateCatalog.Dip.Settings.Single(s => s.Key == "floorDays");
         var trend = TemplateCatalog.Dip.Settings.Single(s => s.Key == "trendDays");
-        Assert.True(floor.Max + 1 < trend.Min);
+        Assert.True(floor.Max < 150 && trend.Min > 150);
 
         // The low period moves in steps of 21 trading days (about a month).
         (_, errors) = Apply(TemplateCatalog.Dip, new() { ["gainDays"] = 130 });

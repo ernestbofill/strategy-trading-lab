@@ -262,3 +262,11 @@
   opacity: 0.5;
   cursor: default;
 }
+
+.skip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}

@@ -119,7 +119,7 @@ public class NeonBranchTests(WebApplicationFactory<Program> factory) : IClassFix
         Assert.Equal(TemplateCatalog.Keys,
             templates.EnumerateArray().Select(t => t.GetProperty("key").GetString()));
         Assert.Equal("buysAndSells", templates[3].GetProperty("signals").GetString());
-        Assert.Equal(2, templates[4].GetProperty("aiRound").GetProperty("everyWeeks").GetInt32());
+        Assert.Equal(14, templates[4].GetProperty("aiRound").GetProperty("everyDays").GetInt32());
     }
 
     [NeonFact]

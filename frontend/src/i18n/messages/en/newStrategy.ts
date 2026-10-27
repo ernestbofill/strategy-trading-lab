@@ -34,7 +34,7 @@ export const newStrategy = {
     "an AI service that can search the web (most paid plans can). The app doesn't connect to it and never sees your account.",
   'newStrategy.review.advanced': 'Advanced settings',
   'newStrategy.review.aiMeta':
-    '{weeks, plural, one {every week} other {every # weeks}} · top {top}',
+    '{days, plural, one {every day} other {every # days}} · top {top}',
   'newStrategy.review.useTemplate': 'Use this template',
   'newStrategy.review.tickOne': 'Tick at least one stock to watch.',
   'newStrategy.review.aiReads': 'What the AI reads',
@@ -150,7 +150,7 @@ export const newStrategy = {
   'newStrategy.budget.firstSteps': 'First {shown} of {total} steps',
   'newStrategy.budget.stepsInBudget': '{steps} in the budget',
   'newStrategy.budget.aiPace':
-    'One step every {every, plural, one {week} other {# weeks}} uses the budget in about {total} weeks.',
+    'One step every {every, plural, one {day} other {# days}} uses the budget in about {total} days.',
   'newStrategy.budget.lastLive':
     "When the budget is used up, the strategy stops signalling buys. Only trades you confirm use the budget; skipped signals don't.",
   'newStrategy.budget.lastSim': 'When the budget is used up, the strategy stops buying.',

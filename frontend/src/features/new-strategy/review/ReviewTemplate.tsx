@@ -200,7 +200,7 @@ function AiRows({ aiRound, stockList, tickedCount, advancedTo }: AiRowsProps) {
       {showStocks && stockList}
       <NavRow
         label={t('newStrategy.review.advanced')}
-        meta={t('newStrategy.review.aiMeta', { weeks: aiRound.everyWeeks, top: aiRound.topN })}
+        meta={t('newStrategy.review.aiMeta', { days: aiRound.everyDays, top: aiRound.topN })}
         to={advancedTo}
       />
     </div>

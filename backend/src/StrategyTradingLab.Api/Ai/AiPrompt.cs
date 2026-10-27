@@ -51,9 +51,9 @@ public static class AiPrompt
     public static string Build(AiParams parameters, DateOnly today, IReadOnlyList<AiStock> stocks)
     {
         var sources = On(parameters);
-        var weeks = parameters.EveryWeeks == 1 ? "week" : $"{parameters.EveryWeeks} weeks";
+        var period = Period(parameters.EveryDays);
         var text = new StringBuilder();
-        text.Append($"Today is {today.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}. Search the web for news and data from the last {weeks}, ");
+        text.Append($"Today is {today.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}. Search the web for news and data from the last {period}, ");
         text.Append("plus each company's latest quarterly figures. Use what you find, not what you remember.\n\n");
         text.Append((parameters.Instructions ?? SuggestedInstructions(sources)).Trim());
         text.Append("\n\nAnswer only with this table, one row per stock below, scores as whole numbers from 0 to 100. ");
@@ -63,6 +63,15 @@ public static class AiPrompt
         foreach (var stock in stocks) text.Append($"- {stock.Symbol}: {stock.Name}\n");
         return text.ToString().TrimEnd();
     }
+
+    /// <summary>"day", "5 days", "week", "2 weeks": whole weeks in weeks, so the default prompt reads as it did with a weekly setting.</summary>
+    public static string Period(int days) => days switch
+    {
+        1 => "day",
+        7 => "week",
+        _ when days % 7 == 0 => $"{days / 7} weeks",
+        _ => $"{days} days",
+    };
 
     /// <summary>"| Stock | News | Mood | Figures | Overall | Reason |".</summary>
     public static string TableHeader(IReadOnlyList<AiSource> sources) =>

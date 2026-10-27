@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 
@@ -26,15 +27,15 @@ public static class AiRoundEndpoints
             var locale = RequestLocale.From(http.Request);
             var errors = new Dictionary<string, string[]>();
             var setup = new AiSetup(request.News, request.Mood, request.Figures, request.Instructions);
-            var weeks = request.EveryWeeks ?? new AiParams().EveryWeeks;
-            var range = TemplateCatalog.Ai.Settings.Single(s => s.Key == "everyWeeks");
-            if (weeks < range.Min || weeks > range.Max) errors["everyWeeks"] = [Messages.SettingRange.In(locale, range.Min, range.Max, range.Step)];
+            var days = request.EveryDays ?? new AiParams().EveryDays;
+            var range = TemplateCatalog.Ai.Settings.Single(s => s.Key == "everyDays");
+            if (days < range.Min || days > range.Max) errors["everyDays"] = [Messages.SettingRange.In(locale, range.Min, range.Max, range.Step)];
             var ids = request.AssetIds ?? [];
             if (ids.Count > MaxPreviewStocks) errors["assetIds"] = [Messages.TooManyStocks.In(locale, MaxPreviewStocks)];
             if (Apply(TemplateCatalog.Ai.ParamsJson(), setup, (field, message) => errors[field] = [message], locale) is not { } json || errors.Count > 0)
                 return TypedResults.ValidationProblem(errors);
 
-            var parameters = json.Deserialize<AiParams>(JsonSerializerOptions.Web)! with { EveryWeeks = weeks };
+            var parameters = json.Deserialize<AiParams>(JsonSerializerOptions.Web)! with { EveryDays = days };
             var stocks = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id) && a.Active).Select(a => new AiStock(a.Id, a.Symbol, a.Name)).ToListAsync(cancellationToken);
             stocks = [.. stocks.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ThenBy(s => s.Symbol, StringComparer.Ordinal)];
             return TypedResults.Ok(new AiPromptPreview(AiPrompt.Version, AiPrompt.Build(parameters, DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime), stocks),
@@ -60,9 +61,9 @@ public static class AiRoundEndpoints
                 .OrderByDescending(r => r.DoneAt).Select(r => r.AiModel).FirstOrDefaultAsync(cancellationToken);
             var texts = TemplateTexts.For(TemplateCatalog.Ai, user.Locale);
             return TypedResults.Ok(new AiRoundDetail(strategy.Id, strategy.Name, texts.Name, strategy.Mode, strategy.Currency, round.Id, round.DueOn,
-                AiRoundRules.LastDay(round.DueOn, parameters), round.DueOn <= today, today, AiPrompt.Version, parameters.Instructions is not null,
+                AiRoundRules.LastDay(round.DueOn, parameters), AiRoundRules.NextDue(round.DueOn, parameters), round.DueOn <= today, today, AiPrompt.Version, parameters.Instructions is not null,
                 AiPrompt.Build(parameters, today, stocks), SetupOf(parameters), AiPrompt.SuggestedInstructions(AiPrompt.On(parameters)),
-                [.. stocks.Select(s => new AiStockDto(s.AssetId, s.Symbol, s.Name))], parameters.EveryWeeks, parameters.TopN, lastModel, user.AiSharing,
+                [.. stocks.Select(s => new AiStockDto(s.AssetId, s.Symbol, s.Name))], parameters.EveryDays, parameters.TopN, lastModel, user.AiSharing,
                 user.AiSharingChangedAt is not null));
         })
         .WithName("GetAiRound")
@@ -80,13 +81,15 @@ public static class AiRoundEndpoints
         .WithSummary("Reads the pasted answer: the scores, what stops them from being used, and the steps they would give. Saves nothing.");
 
         group.MapPost("/ai-round", async Task<Results<Ok<AiRoundResult>, ValidationProblem, NotFound, Conflict<string>>> (Guid id, AiRoundSubmit request,
-            AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
+            AppDbContext db, Sessions sessions, AiRounds rounds, PriceRefresher prices, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
             var today = StrategyEndpoints.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
-            if (round.DueOn > today) return TypedResults.Conflict(Messages.RoundNotDue.In(user.Locale));
+            // Before the scheduled round is due, only an extra round on purpose: a second tap after a round never adds one.
+            var extra = round.DueOn > today;
+            if (extra && !request.Extra) return TypedResults.Conflict(Messages.RoundNotDue.In(user.Locale));
 
             var errors = new Dictionary<string, string[]>();
             var model = request.AiModel?.Trim() ?? "";
@@ -103,11 +106,26 @@ public static class AiRoundEndpoints
                 if (shown != AiPrompt.Build(parameters, today.AddDays(-1), plan.Stocks)) return TypedResults.Conflict(Messages.PromptChanged.In(user.Locale));
                 prompt = shown;
             }
-            var result = await rounds.SubmitAsync(strategy, user, round, plan, prompt, model, request.Share, cancellationToken);
+            if (strategy.Mode == StrategyMode.Simulation) await RefreshAsync(prices, db, plan.Picks, cancellationToken);
+            var result = await rounds.SubmitAsync(strategy, user, round, extra, today, plan, prompt, model, request.Share, cancellationToken);
             return result is null ? TypedResults.Conflict(Messages.RoundDone.In(user.Locale)) : TypedResults.Ok(result);
         })
         .WithName("UseAiScores")
-        .WithSummary("\"Use these scores\": the round is done and its top scores get their steps.");
+        .WithSummary("\"Use these scores\": the round is done and its top scores get their steps (a simulation buys them at once).");
+
+        group.MapPost("/ai-round/skip", async Task<Results<NoContent, NotFound, Conflict<string>>> (Guid id, AiSkipRequest request, AppDbContext db,
+            Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
+            var today = StrategyEndpoints.Today(user, time);
+            if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
+            if (round.DueOn > today) return TypedResults.Conflict(Messages.RoundNotDue.In(user.Locale));
+            if (request.RoundId is { } shown && shown != round.Id) return TypedResults.Conflict(Messages.RoundChanged.In(user.Locale));
+            return await rounds.SkipAsync(strategy, round, cancellationToken) ? TypedResults.NoContent() : TypedResults.Conflict(Messages.RoundChanged.In(user.Locale));
+        })
+        .WithName("SkipAiRound")
+        .WithSummary("Skips the round that is due: no signal, and the next round comes when scheduled.");
 
         group.MapGet("/ai-rounds", async Task<Results<Ok<AiRoundHistory>, NotFound>> (Guid id, AppDbContext db, Sessions sessions, AiRounds rounds,
             TimeProvider time, CancellationToken cancellationToken) =>
@@ -161,6 +179,33 @@ public static class AiRoundEndpoints
     static Task<Strategy?> FindAsync(AppDbContext db, Guid id, Guid userId, CancellationToken cancellationToken, bool running = true) =>
         db.Strategies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id && s.UserId == userId && s.TemplateKey == TemplateCatalog.Ai.Key
             && (!running || s.Status == StrategyStatus.Running), cancellationToken);
+
+    /// <summary>How long a simulation waits for the picks' fresh prices before it buys at the ones stored.</summary>
+    static readonly TimeSpan RefreshTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Fetches the picks' latest prices (today's bar while the market is open), so a simulation buys at the latest price. Best
+    /// effort: a failure or a slow source leaves the stored prices.
+    /// </summary>
+    static async Task RefreshAsync(PriceRefresher prices, AppDbContext db, IReadOnlyList<AiPick> picks, CancellationToken cancellationToken)
+    {
+        if (picks.Count == 0) return;
+        var ids = picks.Select(p => p.AssetId).ToList();
+        var assets = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(RefreshTimeout);
+        foreach (var asset in assets)
+        {
+            try
+            {
+                await prices.RefreshAssetAsync(asset, timeout.Token);
+            }
+            catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            {
+                db.ChangeTracker.Clear();
+            }
+        }
+    }
 
     public static AiReadingDto ReadingOf(AiPlan plan) =>
         new(AiRounds.ScoresOf(plan), plan.Reading.Problems, plan.Reading.Ok, plan.Budget.MaxSteps, plan.Budget.Step, plan.Reading.Ok ? plan.Short : null);

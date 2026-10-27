@@ -46,7 +46,10 @@ export function AiRoundsPage() {
               <li key={round.id} className={styles.round}>
                 <div className={styles.roundHead}>
                   <span>{shortDate(round.dueOn, locale)}</span>
-                  <span className="ui-strong">{t(`aiRound.history.status.${round.status}`)}</span>
+                  <span className="ui-strong">
+                    {t(`aiRound.history.status.${round.status}`)}
+                    {round.extra && ` · ${t('aiRound.history.extra')}`}
+                  </span>
                 </div>
                 <RoundBody strategyId={h.strategyId} round={round} today={h.today} />
               </li>

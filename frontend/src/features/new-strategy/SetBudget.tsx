@@ -13,7 +13,7 @@ import {
   clamp,
   resolveBudget,
   summarize,
-  weeksToUse,
+  daysToUse,
 } from '../../lib/budget'
 import { currencyName, money } from '../../lib/format'
 import { useCurrentAccount } from '../account/AccountContext'
@@ -148,8 +148,8 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
         {template.aiRound && !allIn && (
           <p className={styles.last}>
             {t('newStrategy.budget.aiPace', {
-              every: template.aiRound.everyWeeks,
-              total: weeksToUse(totalSteps, template.aiRound.everyWeeks),
+              every: template.aiRound.everyDays,
+              total: daysToUse(totalSteps, template.aiRound.everyDays),
             })}
           </p>
         )}

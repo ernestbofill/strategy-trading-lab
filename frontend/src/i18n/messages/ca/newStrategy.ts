@@ -34,7 +34,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.review.needText':
     "un servei d'IA que pugui cercar al web (la majoria de plans de pagament ho permeten). L'app no s'hi connecta i mai no veu el teu compte.",
   'newStrategy.review.advanced': 'Configuració avançada',
-  'newStrategy.review.aiMeta': '{weeks, plural, one {cada setmana} other {cada # setmanes}} · les {top} millors',
+  'newStrategy.review.aiMeta': '{days, plural, one {cada dia} other {cada # dies}} · les {top} millors',
   'newStrategy.review.useTemplate': 'Fes servir aquesta plantilla',
   'newStrategy.review.tickOne': 'Marca almenys una acció a vigilar.',
   'newStrategy.review.aiReads': 'Què llegeix la IA',
@@ -148,7 +148,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.budget.firstSteps': 'Els primers {shown} de {total} passos',
   'newStrategy.budget.stepsInBudget': '{steps} al pressupost',
   'newStrategy.budget.aiPace':
-    'Un pas cada {every, plural, one {setmana} other {# setmanes}} gasta el pressupost en unes {total} setmanes.',
+    'Un pas cada {every, plural, one {dia} other {# dies}} gasta el pressupost en uns {total} dies.',
   'newStrategy.budget.lastLive':
     "Quan s'acaba el pressupost, l'estratègia deixa d'assenyalar compres. Només les operacions que confirmes fan servir el pressupost; els senyals omesos, no.",
   'newStrategy.budget.lastSim': "Quan s'acaba el pressupost, l'estratègia deixa de comprar.",

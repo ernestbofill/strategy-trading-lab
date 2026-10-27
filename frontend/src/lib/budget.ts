@@ -54,5 +54,5 @@ export function summarize(budget: number, step: number, maxSteps: number): Budge
   }
 }
 
-/** Weeks until an AI round's one-step-per-round pace has used the whole budget. */
-export const weeksToUse = (totalSteps: number, everyWeeks: number) => totalSteps * everyWeeks
+/** Days until an AI round's one-step-per-round pace has used the whole budget. */
+export const daysToUse = (totalSteps: number, everyDays: number) => totalSteps * everyDays

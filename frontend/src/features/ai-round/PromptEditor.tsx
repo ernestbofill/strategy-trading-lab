@@ -18,7 +18,7 @@ export const MAX_INSTRUCTIONS = 4000
 interface PromptEditorProps {
   top: ReactNode
   initial: AiSetup
-  everyWeeks: number
+  everyDays: number
   /** The stocks the prompt lists. */
   assetIds: string[]
   /** Resolves when saved; rejects with a message for the user. */
@@ -29,14 +29,14 @@ interface PromptEditorProps {
  * Edit prompt (spec: Review, "The prompt"; not drawn): what the AI reads, and the instructions in the user's own words, with
  * "Reset to suggested". The date line, the answer table and the stocks stay the app's, so it can read the answer.
  */
-export function PromptEditor({ top, initial, everyWeeks, assetIds, onSave }: PromptEditorProps) {
+export function PromptEditor({ top, initial, everyDays, assetIds, onSave }: PromptEditorProps) {
   const t = useT()
   const [sources, setSources] = useState<Record<AiSource, boolean>>({ news: initial.news, mood: initial.mood, figures: initial.figures })
   // Null while the instructions follow the suggested ones (they change with the sources).
   const [text, setText] = useState<string | null>(initial.instructions)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<FormMessageState>(null)
-  const { preview, failed } = useAiPromptPreview({ ...sources, instructions: text, everyWeeks, assetIds })
+  const { preview, failed } = useAiPromptPreview({ ...sources, instructions: text, everyDays, assetIds })
   const suggested = preview?.suggested ?? ''
   const edited = text !== null && text.trim() !== suggested.trim()
 

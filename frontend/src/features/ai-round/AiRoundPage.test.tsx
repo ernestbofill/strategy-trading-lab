@@ -21,6 +21,7 @@ const round = (fields: Partial<AiRoundDetail> = {}): AiRoundDetail => ({
   roundId: 'r1',
   dueOn: '2026-10-27',
   lastDay: '2026-11-02',
+  nextDueOn: '2026-11-10',
   open: true,
   today: '2026-10-27',
   promptVersion: 1,
@@ -32,7 +33,7 @@ const round = (fields: Partial<AiRoundDetail> = {}): AiRoundDetail => ({
     { assetId: 'zs', symbol: 'ZS', name: 'Zscaler' },
     { assetId: 'vrt', symbol: 'VRT', name: 'Vertiv' },
   ],
-  everyWeeks: 2,
+  everyDays: 14,
   topN: 1,
   lastModel: 'Claude · Opus',
   sharing: false,
@@ -60,6 +61,7 @@ function open(detail: AiRoundDetail) {
       <Routes>
         <Route path="/strategies/:id/ai-round" element={<AiRoundPage />} />
         <Route path="/strategies/:id/signals/:signalId" element={<p>Signal page</p>} />
+        <Route path="/strategies/:id" element={<p>Strategy page</p>} />
         <Route path="/" element={<p>Dashboard</p>} />
       </Routes>
     </MemoryRouter>,
@@ -83,12 +85,13 @@ describe('AiRoundPage', () => {
     expect(read).toHaveBeenCalledWith('st', '| Stock | Overall |\n| ZS | 83 |')
     expect(screen.getByText('Zscaler gets step 2 of 5 (€100).')).toBeTruthy()
     expect(screen.getByText('Strong quarter')).toBeTruthy()
+    expect(screen.getByText('The simulation buys at once, at the latest price.')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Share my AI rounds' }))
     fireEvent.click(screen.getByRole('button', { name: 'Use these scores' }))
 
     await screen.findByText('Dashboard')
-    expect(use).toHaveBeenCalledWith('st', '| Stock | Overall |\n| ZS | 83 |', 'Claude · Opus', true, round().prompt)
+    expect(use).toHaveBeenCalledWith('st', '| Stock | Overall |\n| ZS | 83 |', 'Claude · Opus', true, round().prompt, false)
   })
 
   it('waits for a new answer to be read before its scores can be used', async () => {
@@ -135,14 +138,39 @@ describe('AiRoundPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Use these scores' }))
 
     await screen.findByText('Signal page')
-    expect(use).toHaveBeenCalledWith('st', 'answer', 'Mistral Large', null, round().prompt)
+    expect(screen.queryByText('The simulation buys at once, at the latest price.')).toBeNull()
+    expect(use).toHaveBeenCalledWith('st', 'answer', 'Mistral Large', null, round().prompt, false)
   })
 
-  it('says when the next round is due before it opens', async () => {
-    open(round({ open: false, dueOn: '2026-11-10', lastDay: '2026-11-16' }))
+  it('says when the next round is due before it opens, and runs an extra round on request', async () => {
+    open(round({ open: false, dueOn: '2026-11-10', lastDay: '2026-11-16', sharingAsked: true }))
+    vi.spyOn(api, 'readAiAnswer').mockResolvedValue(reading)
+    const use = vi.spyOn(api, 'useAiScores').mockResolvedValue({ roundId: 'r2', signalIds: ['sig'], mode: 'simulation' })
 
     expect(await screen.findByRole('heading', { name: 'Next AI round' })).toBeTruthy()
     expect(screen.getByText(/Your next AI round is due on/)).toBeTruthy()
     await waitFor(() => expect(screen.queryByLabelText("Your AI's whole answer")).toBeNull())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run a round now' }))
+    expect(screen.getByRole('heading', { name: 'An extra AI round' })).toBeTruthy()
+    // Only the scheduled round can be skipped.
+    expect(screen.queryByRole('button', { name: 'Skip this round' })).toBeNull()
+    paste('answer')
+    await screen.findByText('✓ Every stock scored, all scores 0-100.')
+    fireEvent.click(screen.getByRole('button', { name: 'Use these scores' }))
+    await screen.findByText('Dashboard')
+    expect(use).toHaveBeenCalledWith('st', 'answer', 'Claude · Opus', null, round().prompt, true)
+  })
+
+  it('skips the round that is due and goes back to the strategy', async () => {
+    open(round({ mode: 'live' }))
+    const skip = vi.spyOn(api, 'skipAiRound').mockResolvedValue()
+
+    await screen.findByRole('heading', { name: 'Time for the AI round' })
+    expect(screen.getByText(/The next one is due on/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this round' }))
+
+    await screen.findByText('Strategy page')
+    expect(skip).toHaveBeenCalledWith('st', 'r1')
   })
 })

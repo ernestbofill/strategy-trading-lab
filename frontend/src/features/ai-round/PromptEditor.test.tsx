@@ -22,7 +22,7 @@ function open(instructions: string | null, onSave = vi.fn().mockResolvedValue(un
       <PromptEditor
         top={null}
         initial={{ news: true, mood: false, figures: false, instructions }}
-        everyWeeks={2}
+        everyDays={14}
         assetIds={['zs']}
         onSave={onSave}
       />

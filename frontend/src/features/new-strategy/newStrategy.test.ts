@@ -46,7 +46,7 @@ describe('newStrategyFrom', () => {
   })
 
   it('sends what the AI prompt asks for, for a template driven by AI rounds', () => {
-    const ai = { ...dip, key: 'ai', aiRound: { everyWeeks: 2, topN: 1 } } as TemplateDetail
+    const ai = { ...dip, key: 'ai', aiRound: { everyDays: 14, topN: 1 } } as TemplateDetail
     const draft = { ...initialDraft, aiSources: { news: true, mood: false, figures: true }, aiInstructions: 'Score the AI products.' }
     expect(newStrategyFrom(draft, ai, 'Mine', 'EUR').ai).toEqual({ news: true, mood: false, figures: true, instructions: 'Score the AI products.' })
     expect(newStrategyFrom(draft, dip, 'Mine', 'EUR').ai).toBeUndefined()

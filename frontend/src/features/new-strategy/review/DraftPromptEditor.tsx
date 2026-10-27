@@ -20,12 +20,12 @@ export function DraftPromptEditor() {
     <LoadableScreen state={useTemplate(key)} top={top} what={t('newStrategy.what.template')}>
       {(template) => {
         const mine = draft.templateKey === template.key
-        const { everyWeeks, assetIds } = aiPromptScope(template, mine ? draft.settings : {}, mine ? draft.unticked : [])
+        const { everyDays, assetIds } = aiPromptScope(template, mine ? draft.settings : {}, mine ? draft.unticked : [])
         return (
           <PromptEditor
             top={top}
             initial={mine ? { ...draft.aiSources, instructions: draft.aiInstructions } : { news: true, mood: true, figures: true, instructions: null }}
-            everyWeeks={everyWeeks}
+            everyDays={everyDays}
             assetIds={assetIds}
             onSave={async ({ instructions, ...sources }) => {
               if (!mine) draft.switchTemplate(template.key)

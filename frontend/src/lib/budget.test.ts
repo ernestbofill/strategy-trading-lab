@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clamp, plural, resolveBudget, summarize, weeksToUse } from './budget'
+import { clamp, daysToUse, plural, resolveBudget, summarize } from './budget'
 
 describe('summarize', () => {
   it('matches the default example', () => {
@@ -16,7 +16,7 @@ describe('helpers', () => {
     expect(plural(1, 'step', 'steps')).toBe('1 step')
     expect(plural(2, 'stock', 'stocks')).toBe('2 stocks')
   })
-  it('counts weeks for AI rounds', () => expect(weeksToUse(30, 2)).toBe(60))
+  it('counts days for AI rounds', () => expect(daysToUse(30, 14)).toBe(420))
 })
 
 describe('resolveBudget', () => {

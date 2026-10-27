@@ -14,10 +14,11 @@ const dip = {
   backtest: { periods: [{ period: 'All', template: 212, index: 248, worstYear: -21 }] },
   defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: { zoneStartPct: 5, zoneEndPct: 6, peakDays: 60 } },
   settings: [
-    { key: 'zoneStartPct', sentence: 'The discount zone starts {value} below the recent peak.', value: '{n}%', step: 1, min: 1, max: 39, below: 'zoneEndPct' },
-    { key: 'zoneEndPct', sentence: 'It ends {value} below the recent peak.', value: '{n}%', step: 1, min: 2, max: 40 },
-    { key: 'peakDays', sentence: 'The recent peak is the highest price of the last {value}.', value: '{n} days', step: 5, min: 20, max: 60 },
+    { key: 'zoneStartPct', sentence: 'The discount zone starts {value} below the recent peak.', value: '{n}%', step: 1, min: 1, max: 39, below: 'zoneEndPct', group: 'signal', help: 'The smallest dip that counts.' },
+    { key: 'zoneEndPct', sentence: 'It ends {value} below the recent peak.', value: '{n}%', step: 1, min: 2, max: 40, group: 'signal' },
+    { key: 'peakDays', sentence: 'The recent peak is the highest price of the last {value}.', value: '{n} days', step: 5, min: 20, max: 60, group: 'signal' },
   ],
+  settingGroups: [{ key: 'signal', title: '2 · Buy signal', lead: 'A candidate signals in the zone, above the `SMA 50`.' }],
 } as unknown as TemplateDetail
 
 const trend = {
@@ -29,6 +30,7 @@ const trend = {
     { key: 'smaDays', sentence: 'The trend line is the average price over {value}.', value: '{n} days', step: 10, min: 50, max: 300 },
     { key: 'bandPct', sentence: 'The buy and sell lines are {value} above and below the trend line.', value: '{n}%', step: 1, min: 0, max: 10 },
   ],
+  settingGroups: [],
 } as unknown as TemplateDetail
 
 /** The screen it returns to: shows what the draft kept. */
@@ -75,6 +77,14 @@ describe('Advanced', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }))
     expect(await screen.findByText('Saved {"peakDays":55}')).toBeTruthy()
+  })
+
+  it('shows each group with what it decides, and what a setting changes', async () => {
+    open()
+    const group = await screen.findByRole('region', { name: '2 · Buy signal' })
+    expect(within(group).getByText('SMA 50')).toBeTruthy()
+    expect(within(group).getAllByRole('group')).toHaveLength(3)
+    expect(within(row(/The discount zone starts/)).getByText('The smallest dip that counts.')).toBeTruthy()
   })
 
   it('puts every value back with Reset to tested', async () => {

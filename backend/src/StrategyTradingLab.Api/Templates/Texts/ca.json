@@ -7,15 +7,15 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**La tendència llarga és alcista:** l'acció està per sobre de la seva `SMA 200` (preu mitjà dels últims 200 dies)."
+        "text": "**És una guanyadora provada:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
       },
       {
         "marker": "02",
-        "text": "**Espera un descompte:** entra a la zona de descompte, entre un `5-15%` per sota del seu màxim recent."
+        "text": "**Espera un descompte:** entra a la zona de descompte, entre un `{zoneStartPct}-{zoneEndPct}%` per sota del seu màxim recent."
       },
       {
         "marker": "03",
-        "text": "**El retrocés no és un col·lapse:** continua per sobre de la seva `SMA 50` (preu mitjà dels últims 50 dies)."
+        "text": "**El retrocés no és un col·lapse:** continua per sobre de la seva `SMA {floorDays}` (preu mitjà dels últims {floorDays} dies)."
       }
     ],
     "backtest": {
@@ -29,25 +29,59 @@
       "notCandidate": "Per sota de la seva tendència llarga"
     },
     "settings": {
+      "minGainPct": {
+        "sentence": "Creixement provat: el màxim recent és almenys un {value} per sobre del mínim.",
+        "value": "{n}%",
+        "help": "Més alt: només compten les pujades més fortes, i hi ha menys candidates. Més baix: hi entren més accions, amb tendències més febles."
+      },
+      "gainDays": {
+        "sentence": "El mínim és el tancament més baix dels últims {value}.",
+        "value": "{n} dies de mercat",
+        "help": "21 dies de mercat són un mes, més o menys (168 ≈ 8 mesos). Més llarg: compta un mínim més antic, i una pujada més lenta pot entrar. Més curt: la pujada ha de ser recent."
+      },
+      "trendDays": {
+        "sentence": "La mitjana llarga és la SMA de {value}.",
+        "value": "{n} dies",
+        "help": "La base de la pila, i ha d'anar pujant. Més llarga: més estable i més lenta de girar, de manera que una tendència compta més tard i és candidata més temps."
+      },
+      "peakDays": {
+        "sentence": "El màxim recent és el tancament més alt dels últims {value}.",
+        "value": "{n} dies",
+        "help": "D'on es mesura el retrocés. Més llarg: un màxim més antic i sovint més alt, i el mateix preu es llegeix com un retrocés més profund."
+      },
       "zoneStartPct": {
         "sentence": "La zona de descompte comença {value} per sota del màxim recent.",
-        "value": "{n}%"
+        "value": "{n}%",
+        "help": "El retrocés més petit que compta. Més baix: dona senyal abans, amb retrocessos petits. Més alt: espera un descompte més gran, i hi ha menys senyals."
       },
       "zoneEndPct": {
         "sentence": "Acaba {value} per sota del màxim recent.",
-        "value": "{n}%"
-      },
-      "peakDays": {
-        "sentence": "El màxim recent és el preu més alt dels últims {value}.",
-        "value": "{n} dies"
-      },
-      "trendDays": {
-        "sentence": "La tendència llarga és el preu mitjà durant {value}.",
-        "value": "{n} dies"
+        "value": "{n}%",
+        "help": "El retrocés més profund que compta. Més alt: també compra caigudes més fortes, mentre es mantinguin per sobre de la mitjana terra."
       },
       "floorDays": {
-        "sentence": "El retrocés s'ha de mantenir per sobre de la mitjana de {value}.",
-        "value": "{n} dies"
+        "sentence": "La mitjana terra és la SMA de {value}.",
+        "value": "{n} dies",
+        "help": "La part de dalt de la pila de la candidata i el terra de la zona: un tancament per sota és un col·lapse, no un retrocés. Més curta: el terra segueix el preu de prop, i els retrocessos profunds el travessen."
+      },
+      "cooldownDays": {
+        "sentence": "Després d'un pas, espera {value} abans del següent senyal de compra.",
+        "value": "{n} dies naturals",
+        "help": "Compta des de la compra del pas. Més curt: els passos arriben més junts. Més llarg: els passos d'una acció es reparteixen en més retrocessos."
+      }
+    },
+    "settingGroups": {
+      "candidate": {
+        "title": "1 · Candidata: quines accions vigila",
+        "lead": "Una acció és candidata, una guanyadora provada, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
+      },
+      "signal": {
+        "title": "2 · Senyal de compra: quan una candidata dona senyal",
+        "lead": "Una candidata dona senyal de compra quan el seu tancament és a la zona de descompte: entre l'inici i el final de la zona per sota del màxim recent, i encara per sobre de la mitjana terra. El senyal s'acaba quan el preu surt de la zona, cap amunt cap al màxim o cap avall a través del terra."
+      },
+      "pace": {
+        "title": "3 · Ritme: cada quan compra",
+        "lead": "Cada senyal compra un pas. Una acció rep com a màxim un pas per cada estada a la zona, i fins als passos del teu pressupost en total."
       }
     }
   },
@@ -59,11 +93,11 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**Havia caigut molt:** l'acció va baixar almenys un `30%` des del seu màxim de l'últim any."
+        "text": "**Va ser castigada:** l'acció va caure almenys un `{drawdownPct}%` des del seu màxim de l'últim any."
       },
       {
         "marker": "02",
-        "text": "**Ha girat:** puja un `15%` per sobre de la seva `SMA 50` (preu mitjà dels últims 50 dies)."
+        "text": "**Ha girat:** puja un `{aboveSma50Pct}%` per sobre de la seva `SMA 50` (preu mitjà dels últims 50 dies)."
       },
       {
         "marker": "03",
@@ -79,6 +113,66 @@
     "stockStatus": {
       "zone": "la línia de compra",
       "notCandidate": "No ha caigut prou"
+    },
+    "settings": {
+      "drawdownPct": {
+        "sentence": "Castigada: almenys un {value} per sota del màxim de 52 setmanes.",
+        "value": "{n}%",
+        "help": "Més alt: només compten les caigudes fortes, i hi ha menys candidates. Més baix: també compten caigudes més suaus."
+      },
+      "candidateDays": {
+        "sentence": "Continua sent candidata {value} després de l'última vegada que va estar castigada.",
+        "value": "{n} dies de mercat",
+        "help": "Més llarg: una recuperació més lenta encara pot donar senyal. 0: ha de girar mentre encara està castigada."
+      },
+      "aboveSma50Pct": {
+        "sentence": "La línia de compra és un {value} per sobre de la SMA 50.",
+        "value": "{n}%",
+        "help": "Més alt: espera un moviment més fort i evita més rebots falsos, però compra més tard i més car."
+      },
+      "volumeRatio": {
+        "sentence": "El volum mitjà de 5 dies és almenys {value} el de 50 dies.",
+        "value": "{n}×",
+        "help": "Més negociació confirma el gir. Més alt: menys senyals i més ben recolzats. 1: n'hi ha prou amb un volum normal."
+      },
+      "maxChasePct": {
+        "sentence": "Límit de persecució: compra només fins a un {value} per sobre de la línia de compra o del nivell d'una fita.",
+        "value": "{n}%",
+        "help": "Més alt: encara compra un gir que ha saltat molt per sobre de la línia. Més baix: deixa passar els girs massa ràpids."
+      },
+      "nearHighPct": {
+        "sentence": "Fita prop del màxim antic: a menys d'un {value} del màxim de 52 setmanes.",
+        "value": "{n}%",
+        "help": "Més alt: aquesta fita arriba abans en la recuperació."
+      },
+      "breakoutPullbackPct": {
+        "sentence": "Fita de ruptura: un retrocés d'almenys un {value}, i després un tancament per sobre del màxim anterior.",
+        "value": "{n}%",
+        "help": "Més alt: cal un retrocés més profund abans, i la ruptura arriba menys sovint."
+      },
+      "cooldownDays": {
+        "sentence": "Després d'un pas, espera {value} abans del següent senyal de compra.",
+        "value": "{n} dies naturals",
+        "help": "Compta des de la compra del pas. Més llarg: els passos es reparteixen, encara que les fites arribin juntes."
+      }
+    },
+    "settingGroups": {
+      "candidate": {
+        "title": "1 · Candidata: quines accions vigila",
+        "lead": "Una acció és candidata, castigada, quan el seu tancament és almenys la caiguda per sota del màxim de 52 setmanes i per sota de la seva `SMA 200`. Continua sent candidata una estona després, de manera que encara pot donar senyal quan es recupera. Una acció que no és candidata no rep cap senyal."
+      },
+      "signal": {
+        "title": "2 · Senyal de compra: el primer pas",
+        "lead": "Una candidata dona senyal del primer pas quan gira: el tancament és almenys el gir per sobre de la seva `SMA 50` (la línia de compra), amb volum creixent, i no gaire per sobre de la línia. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
+      },
+      "milestones": {
+        "title": "3 · Fites: els passos següents",
+        "lead": "Un cop comprada, cada nou senyal que el gir és real dona un pas més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'un retrocés. Cadascuna es compra només fins al límit de persecució per sobre del seu nivell."
+      },
+      "pace": {
+        "title": "4 · Ritme: cada quan compra",
+        "lead": "Un pas és una compra, fins als passos del teu pressupost per acció."
+      }
     }
   },
   "bear": {
@@ -89,15 +183,15 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**El mercat ha caigut molt:** l'S&P 500 està un `20%` o més per sota del seu màxim."
+        "text": "**El mercat ha caigut molt:** l'S&P 500 està un `{drawdownPct}%` o més per sota del seu màxim."
       },
       {
         "marker": "02",
-        "text": "**El primer rebot:** puja un `5%` des del seu mínim. Aquest és el primer pas."
+        "text": "**El primer rebot:** puja un `{reboundPct}%` des del seu mínim. Aquest és el primer pas."
       },
       {
         "marker": "03",
-        "text": "**Després, per passos:** un pas més cada `2 setmanes`, fins que s'acabi el pressupost."
+        "text": "**Després, per passos:** un pas més cada `{stepEveryDays}` dies de mercat, fins que s'acabi el pressupost."
       }
     ],
     "backtest": {
@@ -111,6 +205,42 @@
       "notCandidate": "{n}% per sota del seu màxim de 6 mesos",
       "watching": "En una caiguda: {n}% per sobre del seu mínim",
       "holding": "Els passos d'aquesta caiguda ja estan comprats"
+    },
+    "settings": {
+      "drawdownPct": {
+        "sentence": "Una caiguda és almenys un {value} per sota del màxim recent.",
+        "value": "{n}%",
+        "help": "Més alt: només compten les caigudes grans, i els senyals arriben rarament (amb anys de diferència). Més baix: també compten correccions més petites."
+      },
+      "highDays": {
+        "sentence": "El màxim recent és el tancament més alt dels últims {value}.",
+        "value": "{n} dies de mercat",
+        "help": "21 dies de mercat són un mes, més o menys (126 ≈ 6 mesos). Més llarg: la caiguda es mesura des d'un màxim més antic i sovint més alt."
+      },
+      "reboundPct": {
+        "sentence": "El primer pas arriba un {value} per sobre del tancament més baix de la caiguda.",
+        "value": "{n}%",
+        "help": "Més baix: compra abans, més a prop del fons, però pot agafar una caiguda que no s'ha acabat. Més alt: espera una recuperació més clara."
+      },
+      "stepEveryDays": {
+        "sentence": "Després, un pas cada {value}.",
+        "value": "{n} dies de mercat",
+        "help": "10 dies de mercat són unes 2 setmanes. Més curt: el pressupost entra més de pressa. Més llarg: reparteix les compres en més part de la recuperació."
+      }
+    },
+    "settingGroups": {
+      "candidate": {
+        "title": "1 · La caiguda: quan comença a vigilar",
+        "lead": "El fons és en una caiguda quan el seu tancament és almenys la caiguda per sota del màxim recent. A partir d'aquí segueix el tancament més baix. Sense caiguda, no hi ha cap senyal."
+      },
+      "signal": {
+        "title": "2 · Senyal de compra: el primer pas",
+        "lead": "El primer pas arriba quan el tancament rebota el rebot per sobre del tancament més baix de la caiguda."
+      },
+      "pace": {
+        "title": "3 · Ritme: els passos següents",
+        "lead": "Després del primer pas, arriba un pas més a ritme fix fins que es compren els passos del teu pressupost. Llavors el cicle s'acaba quan el preu torna al màxim antic, o, quan la caiguda és més antiga que el període del màxim recent, quan comença una nova caiguda."
+      }
     }
   },
   "trend": {
@@ -120,12 +250,19 @@
     "rationale": "Els mercats es mouen en ones llargues. L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa, per esquivar la caiguda. Després de la caiguda busca un nou senyal de compra.",
     "settings": {
       "smaDays": {
-        "sentence": "La línia de tendència és el preu mitjà dels últims {value}.",
-        "value": "{n} dies"
+        "sentence": "La línia de tendència és la SMA de {value}.",
+        "value": "{n} dies",
+        "help": "Més llarga: més estable i menys senyals, però entra i surt més tard d'una tendència. Més curta: reacciona abans, amb més girs falsos."
       },
       "bandPct": {
         "sentence": "Les línies de compra i de venda són un {value} per sobre i per sota de la línia de tendència.",
-        "value": "{n}%"
+        "value": "{n}%",
+        "help": "Més ampla: menys operacions i menys senyals falsos, però compra i ven més tard. 0: opera a cada creuament."
+      },
+      "cooldownDays": {
+        "sentence": "Després d'una venda, espera {value} abans del següent senyal de compra.",
+        "value": "{n} dies naturals",
+        "help": "Compta des de la venda. Un senyal de venda no s'endarrereix mai. Més llarg: menys vendes seguides d'una recompra quan el mercat va amunt i avall."
       }
     },
     "rules": [
@@ -153,6 +290,16 @@
     "stockStatus": {
       "zone": "la línia de compra",
       "notCandidate": "Per sota de la seva mitjana de 200 dies"
+    },
+    "settingGroups": {
+      "signal": {
+        "title": "1 · Senyals de compra i de venda",
+        "lead": "La línia de tendència és una mitjana del tancament. Hi ha senyal de compra quan el tancament és més de la banda per sobre, i de venda quan és més de la banda per sota. Entremig, res no canvia: la banda evita que un mercat que oscil·la al voltant de la línia entri i surti contínuament."
+      },
+      "pace": {
+        "title": "2 · Ritme: cada quan opera",
+        "lead": "Tot a dins, tot a fora: cada senyal cobreix tot el pressupost."
+      }
     }
   },
   "ai": {

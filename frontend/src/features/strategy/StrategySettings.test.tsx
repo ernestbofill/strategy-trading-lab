@@ -25,6 +25,7 @@ const template = {
     { key: 'zoneEndPct', step: 1, min: 3, max: 30, sentence: 'Down to {value} below peak', value: '{n}%' },
     { key: 'peakDays', step: 10, min: 20, max: 120, sentence: 'Peak of last {value}', value: '{n} days' },
   ],
+  settingGroups: [],
   backtest: {
     periods: [{ period: '2020-2024', template: 120, index: 80, worstYear: -10 }],
     yearly: [],

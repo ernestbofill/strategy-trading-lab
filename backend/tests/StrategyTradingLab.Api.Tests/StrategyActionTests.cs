@@ -38,8 +38,8 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     [NeonFact]
     public async Task A_strategy_is_renamed_with_the_name_rules_of_Confirm()
     {
-        var (client, email) = await factory.SignedUpAsync();
-        var (other, otherEmail) = await factory.SignedUpAsync();
+        var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
+        var (other, otherEmail) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
         {
             var (first, second) = ($"First {Tag()}", $"Second {Tag()}");
@@ -68,7 +68,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     [NeonFact]
     public async Task The_alerts_switch_turns_a_running_strategys_notifications_off_and_on()
     {
-        var (client, email) = await factory.SignedUpAsync();
+        var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
         {
             var id = await StartAsync(client, $"Alerts {Tag()}");
@@ -92,7 +92,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     [NeonFact]
     public async Task Ending_a_strategy_misses_its_waiting_signals_frees_its_name_and_refuses_trades()
     {
-        var (client, email) = await factory.SignedUpAsync();
+        var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
         {
             var name = $"End {Tag()}";
@@ -161,7 +161,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     [NeonFact]
     public async Task Ending_an_ai_strategy_skips_its_round_due()
     {
-        var (client, email) = await factory.SignedUpAsync();
+        var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
         {
             Guid id;
@@ -206,7 +206,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     [NeonFact]
     public async Task Ended_strategies_follow_the_running_ones_on_the_dashboard_and_can_be_archived()
     {
-        var (client, email) = await factory.SignedUpAsync();
+        var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
         {
             var archived = await StartAsync(client, $"Archived {Tag()}");

@@ -75,6 +75,11 @@ public static class Messages
     public static readonly Message PickOneStock = new("Pick at least one stock.", "Tria almenys una acció.");
     public static readonly Message PickExactlyOneFund = new("Pick exactly one fund.", "Tria exactament un fons.");
     public static readonly Message NotAFund = new("That is not a fund we can follow.", "Aquest no és un fons que puguem seguir.");
+    public static readonly Message SearchLength = new("Type 2 to {0} characters.", "Escriu de 2 a {0} caràcters.");
+    public static readonly Message PickStockOrFund = new("Search stocks or funds.", "Cerca accions o fons.");
+    public static readonly Message NotAStock = new("That is not a stock we can follow.", "Aquesta no és una acció que puguem seguir.");
+    public static readonly Message PriceSourceDown = new("The price source didn't answer. Try again in a moment.", "La font de preus no ha respost. Torna-ho a provar d'aquí a una estona.");
+    public static readonly Message CantAddNow = new("Adding is paused for a moment. Pick one from the list, or try again later.", "Ara mateix no es pot afegir. Tria'n un de la llista o torna-ho a provar més tard.");
     public static readonly Message NotStocks = new("Some of those are not stocks we can follow.", "Algunes d'aquestes no són accions que puguem seguir.");
     public static readonly Message SetBudget = new("Set a budget.", "Fixa un pressupost.");
     public static readonly Message WholeBudget = new("Use a whole amount from {0:0} to {1:0}.", "Fes servir un import sencer entre {0:0} i {1:0}.");

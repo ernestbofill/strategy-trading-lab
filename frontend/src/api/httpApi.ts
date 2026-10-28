@@ -197,6 +197,25 @@ async function feedback(method: string, path: string, body?: unknown): Promise<R
   return response
 }
 
+/** The stock and fund search. Any refusal (a short query, not a fund, the price source down) carries a message for the user. */
+async function assets(path: string, body?: unknown): Promise<Response> {
+  const response = await fetch(`${BASE_URL}/assets${path}`, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 403) throw new ForbiddenError()
+  if (response.status === 429) throw new TooManyTriesError()
+  if (!response.ok) {
+    const problem = (await response.json().catch(() => null)) as Problem | string
+    const message = typeof problem === 'string' ? problem : (problem?.errors ? Object.values(problem.errors).flat()[0] : problem?.detail)
+    if (message) throw new InvalidValueError(message)
+    throw new Error(`${path} failed: HTTP ${response.status}`)
+  }
+  return response
+}
+
 export const httpApi: Api = {
   getAccount,
   signUp: async (signUp) => void (await account('/sign-up', signUp)),
@@ -226,6 +245,9 @@ export const httpApi: Api = {
     void (await tradesRequest('DELETE', `/trades/${encodeURIComponent(tradeId)}`)),
   skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
   snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
+  searchAssets: async (query, kind) =>
+    (await assets(`/search?${new URLSearchParams({ q: query, kind })}`)).json(),
+  addAsset: async (symbol, kind) => (await assets('', { symbol, kind })).json(),
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
   deleteStrategy: async (id) => {
     const response = await fetch(`${BASE_URL}/strategies/${encodeURIComponent(id)}`, {

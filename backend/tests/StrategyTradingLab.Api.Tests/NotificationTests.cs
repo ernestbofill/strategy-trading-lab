@@ -17,7 +17,7 @@ public class NotificationTests
     [Fact]
     public void A_dip_alert_says_what_the_rules_found_with_the_step_and_the_close()
     {
-        var (subject, body) = EmailTexts.SignalAlert(Dip(), "https://app.example");
+        var (subject, body, _) = EmailTexts.SignalAlert(Dip(), "https://app.example");
 
         Assert.Equal("Zscaler: your rules for Zscaler & friends are met", subject);
         Assert.Contains("Your rules for Zscaler & friends are met for Zscaler: 8.2% below its recent peak, still above its 50-day average.", body);
@@ -46,7 +46,7 @@ public class NotificationTests
 
         Assert.Contains("down 16.5% from its 6-month high and 5.2% above its low", EmailTexts.SignalText(bear));
         Assert.Contains("the market closed 3.4% above its 200-day average", EmailTexts.SignalText(trendBuy));
-        var (_, sellBody) = EmailTexts.SignalAlert(trendSell, "https://app.example");
+        var (_, sellBody, _) = EmailTexts.SignalAlert(trendSell, "https://app.example");
         Assert.Contains("Your rules for Zscaler & friends are met for a sale: the market closed 3.1% below its 200-day average.", sellBody);
         Assert.DoesNotContain("Under your settings", sellBody);
     }
@@ -64,7 +64,7 @@ public class NotificationTests
         };
         var score = new[] { new ScoreLine("Zscaler & friends", StrategyMode.Live, new DateOnly(2026, 10, 1), 1), new ScoreLine("The comeback", StrategyMode.Simulation, new DateOnly(2026, 10, 5), 0) };
 
-        var (subject, body) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, [], close, score, "https://app.example");
+        var (subject, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, [], close, score, "https://app.example");
 
         Assert.Equal("Your daily overview, 23 Oct 2026", subject);
         foreach (var section in new[] { "Waiting for you", "What changed today", "Close to the line", "Your strategies" }) Assert.Contains(section, body);
@@ -81,7 +81,7 @@ public class NotificationTests
     [Fact]
     public void An_empty_waiting_list_leaves_that_section_out()
     {
-        var (_, body) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example");
+        var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example");
 
         Assert.DoesNotContain("Waiting for you", body);
     }
@@ -89,7 +89,7 @@ public class NotificationTests
     [Fact]
     public void The_ai_round_email_names_every_round_due_that_day()
     {
-        var (subject, body) = EmailTexts.AiRoundDue(
+        var (subject, body, _) = EmailTexts.AiRoundDue(
             [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks"), (Guid.Parse("33333333-3333-3333-3333-333333333333"), "Tech scores")],
             "https://app.example");
 
@@ -102,7 +102,7 @@ public class NotificationTests
     [Fact]
     public void The_ai_round_email_and_signal_are_in_catalan_for_a_catalan_user()
     {
-        var (subject, body) = EmailTexts.AiRoundDue([(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Les meves IA")], "https://app.example", "ca");
+        var (subject, body, _) = EmailTexts.AiRoundDue([(Guid.Parse("11111111-1111-1111-1111-111111111111"), "Les meves IA")], "https://app.example", "ca");
         var signal = Dip("""{"score":91,"rank":1}""") with { TemplateKey = "ai" };
 
         Assert.Equal("És l'hora de la ronda d'IA de Les meves IA", subject);
@@ -114,7 +114,7 @@ public class NotificationTests
     [Fact]
     public void The_overview_lists_ai_rounds_due_with_the_signals_waiting()
     {
-        var (_, body) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "en",
+        var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "en",
             [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks")]);
 
         Assert.Contains("Waiting for you\n- Time for the AI round of My AI picks. https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
@@ -123,10 +123,10 @@ public class NotificationTests
     sealed class Captured : IEmailSender
     {
         public List<(string To, string Subject, string Body)> Sent { get; } = [];
-        public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken)
+        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
-            Sent.Add((to, subject, body));
+            Sent.Add((email.To, email.Subject, email.Body));
             return Task.CompletedTask;
         }
     }
@@ -135,8 +135,8 @@ public class NotificationTests
     {
         public bool SetUp { get; set; }
         public int Sent { get; private set; }
-        public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken)
+        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
             if (!SetUp) throw new EmailNotSetUpException();
             Sent++;

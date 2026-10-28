@@ -1,8 +1,8 @@
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Notifications;
 
@@ -132,122 +132,96 @@ public static class EmailTexts
     /// <summary>The signal's Confirm a signal page.</summary>
     public static string SignalUrl(SignalLine s, string appUrl) => $"{appUrl}/strategies/{s.StrategyId}/signals/{s.SignalId}";
 
+    static string ModeName(StrategyMode mode, string locale) =>
+        mode == StrategyMode.Live ? (locale == "ca" ? "En directe" : "Live") : (locale == "ca" ? "Simulació" : "Simulation");
+
+    /// <summary>The alert and the reminder: the signal box and the link to the signal.</summary>
+    static EmailContent Signal(SignalLine s, string appUrl, string locale, string subject, string? intro, string eyebrow)
+    {
+        var ca = locale == "ca";
+        var email = new EmailDocument(locale, appUrl).Eyebrow($"{eyebrow} · {ModeName(s.Mode, locale)}");
+        if (intro is not null) email.Paragraph(intro);
+        return email.Box(SignalText(s, locale))
+            .Action(ca ? "Consulta'l i indica si hi has actuat:" : "See it, and say whether you acted on it:", ca ? "Veure el senyal" : "See the signal", SignalUrl(s, appUrl))
+            .Disclaimer(ca ? DisclaimerCa : DisclaimerEn)
+            .Build(subject);
+    }
+
     /// <summary>The reminder the day after a snooze: the same text as the alert.</summary>
-    public static (string Subject, string Body) SnoozeReminder(SignalLine s, string appUrl, string locale = "en")
-    {
-        if (locale == "ca")
-            return ($"Recordatori: {s.StockName}, les teves regles per a {s.StrategyName}",
-                $"Has demanat que et recordem aquest senyal.\n\n{SignalText(s, locale)}\n\nConsulta'l i indica si hi has actuat:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerCa}");
+    public static EmailContent SnoozeReminder(SignalLine s, string appUrl, string locale = "en") => locale == "ca"
+        ? Signal(s, appUrl, locale, $"Recordatori: {s.StockName}, les teves regles per a {s.StrategyName}", "Has demanat que et recordem aquest senyal.", "Recordatori")
+        : Signal(s, appUrl, locale, $"Reminder: {s.StockName}, your rules for {s.StrategyName}", "You asked to be reminded of this signal.", "Reminder");
 
-        return ($"Reminder: {s.StockName}, your rules for {s.StrategyName}",
-            $"You asked to be reminded of this signal.\n\n{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerEn}");
-    }
-
-    public static (string Subject, string Body) SignalAlert(SignalLine s, string appUrl, string locale = "en")
-    {
-        if (locale == "ca")
-            return ($"{s.StockName}: es compleixen les teves regles per a {s.StrategyName}",
-                $"{SignalText(s, locale)}\n\nConsulta'l i indica si hi has actuat:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerCa}");
-
-        return ($"{s.StockName}: your rules for {s.StrategyName} are met",
-            $"{SignalText(s)}\n\nSee it, and say whether you acted on it:\n{SignalUrl(s, appUrl)}\n\n{DisclaimerEn}");
-    }
+    public static EmailContent SignalAlert(SignalLine s, string appUrl, string locale = "en") => locale == "ca"
+        ? Signal(s, appUrl, locale, $"{s.StockName}: es compleixen les teves regles per a {s.StrategyName}", null, s.Side == TradeSide.Sell ? "Senyal de venda" : "Senyal")
+        : Signal(s, appUrl, locale, $"{s.StockName}: your rules for {s.StrategyName} are met", null, s.Side == TradeSide.Sell ? "Sale signal" : "Signal");
 
     /// <summary>The AI round screen of a strategy.</summary>
     public static string AiRoundUrl(Guid strategyId, string appUrl) => $"{appUrl}/strategies/{strategyId}/ai-round";
 
     /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
-    public static (string Subject, string Body) AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en")
+    public static EmailContent AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en")
     {
         var ca = locale == "ca";
         var names = strategies.Count == 1 ? strategies[0].Name
             : string.Join(", ", strategies.Take(strategies.Count - 1).Select(s => s.Name)) + (ca ? " i " : " and ") + strategies[^1].Name;
         var many = strategies.Count > 1;
-        var text = new StringBuilder(ca
-            ? $"És l'hora de la ronda d'IA {(many ? "de les estratègies" : "de")} {names}. Són uns dos minuts.\n\n"
-            : $"Time for the AI round{(many ? "s" : "")} of {names}. It takes about two minutes.\n\n");
-        foreach (var (id, name) in strategies) text.Append($"{name}: {AiRoundUrl(id, appUrl)}\n");
-        text.Append(ca
-            ? $"\nL'aplicació no es connecta a la teva IA. Si omets una ronda, aquella ronda no té senyal.\n\n{DisclaimerCa}"
-            : $"\nThe app doesn't connect to your AI. If you skip a round, there's no signal that round.\n\n{DisclaimerEn}");
-        return (ca ? $"És l'hora de la ronda d'IA de {names}" : $"Time for the AI round of {names}", text.ToString());
+        return new EmailDocument(locale, appUrl)
+            .Eyebrow(ca ? "Ronda d'IA" : "AI round")
+            .Paragraph(ca
+                ? $"És l'hora de la ronda d'IA {(many ? "de les estratègies" : "de")} {names}. Són uns dos minuts."
+                : $"Time for the AI round{(many ? "s" : "")} of {names}. It takes about two minutes.")
+            .Links(strategies.Select(s => (s.Name, AiRoundUrl(s.StrategyId, appUrl))))
+            .Paragraph(ca
+                ? "L'aplicació no es connecta a la teva IA. Si omets una ronda, aquella ronda no té senyal."
+                : "The app doesn't connect to your AI. If you skip a round, there's no signal that round.")
+            .Disclaimer(ca ? DisclaimerCa : DisclaimerEn)
+            .Build(ca ? $"És l'hora de la ronda d'IA de {names}" : $"Time for the AI round of {names}");
     }
 
     /// <summary>The daily overview: what waits, what changed, what is close, and one line per strategy.</summary>
-    public static (string Subject, string Body) Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
+    public static EmailContent Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
         IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en",
         IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null)
     {
         aiRoundsDue ??= [];
-        if (locale == "ca")
-        {
-            var text = new StringBuilder($"El teu resum diari, {Date(day, locale)}.\n");
-            if (waiting.Count > 0 || aiRoundsDue.Count > 0)
-            {
-                text.Append("\nT’espera a tu\n");
-                foreach (var (id, name) in aiRoundsDue) text.Append($"- És l'hora de la ronda d'IA de {name}. {AiRoundUrl(id, appUrl)}\n");
-                foreach (var s in waiting)
-                {
-                    var detail = s.Side == TradeSide.Sell ? ": venda" : s.StepNo is { } no && s.MaxSteps is { } max ? $": pas {no} de {max}" : "";
-                    text.Append($"- {s.StockName}, {s.StrategyName}{detail}, tancament del {Date(s.Date, locale)}. {SignalUrl(s, appUrl)}\n");
-                }
-            }
-            text.Append("\nQuè ha canviat avui\n");
-            if (changed.Count == 0) text.Append("- No s'ha complert cap regla nova.\n");
-            foreach (var s in changed) text.Append($"- ({(s.Mode == StrategyMode.Live ? "En directe" : "Simulació")}) {SignalText(s, locale).Replace("\n", " ")}\n");
-            if (close.Count > 0)
-            {
-                text.Append("\nA prop de la línia\n");
-                foreach (var c in close)
-                {
-                    var line = c.TemplateKey switch
-                    {
-                        "dip" => "per sobre de la zona de descompte",
-                        "bear" => "per sota de la línia de rebot",
-                        _ => "per sota de la línia de compra",
-                    };
-                    text.Append($"- ({(c.Mode == StrategyMode.Live ? "En directe" : "Simulació")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}\n");
-                }
-            }
-            text.Append("\nLes teves estratègies\n");
-            foreach (var s in scoreboard)
-                text.Append($"- {s.Name} ({(s.Mode == StrategyMode.Live ? "En directe" : "Simulació")}): des del {Date(s.StartedOn, locale)}, {s.Signals} {(s.Signals == 1 ? "senyal" : "senyals")}\n");
-            text.Append($"\nObre l'aplicació: {appUrl}/\n\n{DisclaimerCa}");
-            return ($"El teu resum diari, {Date(day, locale)}", text.ToString());
-        }
+        var ca = locale == "ca";
+        var title = ca ? $"El teu resum diari, {Date(day, locale)}" : $"Your daily overview, {Date(day)}";
+        var email = new EmailDocument(locale, appUrl).Eyebrow(ca ? "Resum diari" : "Daily overview").Heading(title + ".");
 
-        var textEn = new StringBuilder($"Your daily overview, {Date(day)}.\n");
         if (waiting.Count > 0 || aiRoundsDue.Count > 0)
-        {
-            textEn.Append("\nWaiting for you\n");
-            foreach (var (id, name) in aiRoundsDue) textEn.Append($"- Time for the AI round of {name}. {AiRoundUrl(id, appUrl)}\n");
-            foreach (var s in waiting)
-            {
-                var detail = s.Side == TradeSide.Sell ? ": sale" : s.StepNo is { } no && s.MaxSteps is { } max ? $": step {no} of {max}" : "";
-                textEn.Append($"- {s.StockName}, {s.StrategyName}{detail}, close on {Date(s.Date)}. {SignalUrl(s, appUrl)}\n");
-            }
-        }
-        textEn.Append("\nWhat changed today\n");
-        if (changed.Count == 0) textEn.Append("- No rules were newly met.\n");
-        foreach (var s in changed) textEn.Append($"- ({(s.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {SignalText(s).Replace("\n", " ")}\n");
+            email.Section(ca ? "T’espera a tu" : "Waiting for you",
+                aiRoundsDue.Select(r => new EmailItem(ca ? $"És l'hora de la ronda d'IA de {r.Name}." : $"Time for the AI round of {r.Name}.", AiRoundUrl(r.StrategyId, appUrl)))
+                .Concat(waiting.Select(s =>
+                {
+                    var detail = s.Side == TradeSide.Sell ? (ca ? ": venda" : ": sale")
+                        : s.StepNo is { } no && s.MaxSteps is { } max ? (ca ? $": pas {no} de {max}" : $": step {no} of {max}") : "";
+                    return new EmailItem(ca ? $"{s.StockName}, {s.StrategyName}{detail}, tancament del {Date(s.Date, locale)}."
+                        : $"{s.StockName}, {s.StrategyName}{detail}, close on {Date(s.Date)}.", SignalUrl(s, appUrl));
+                })));
+
+        email.Section(ca ? "Què ha canviat avui" : "What changed today", changed.Count == 0
+            ? [new EmailItem(ca ? "No s'ha complert cap regla nova." : "No rules were newly met.")]
+            : changed.Select(s => new EmailItem(SignalText(s, locale).Replace("\n", " "), Tag: ModeName(s.Mode, locale), Live: s.Mode == StrategyMode.Live)));
+
         if (close.Count > 0)
-        {
-            textEn.Append("\nClose to the line\n");
-            foreach (var c in close)
+            email.Section(ca ? "A prop de la línia" : "Close to the line", close.Select(c =>
             {
                 var line = c.TemplateKey switch
                 {
-                    "dip" => "above the discount zone",
-                    "bear" => "below the bounce line",
-                    _ => "below the buy line",
+                    "dip" => ca ? "per sobre de la zona de descompte" : "above the discount zone",
+                    "bear" => ca ? "per sota de la línia de rebot" : "below the bounce line",
+                    _ => ca ? "per sota de la línia de compra" : "below the buy line",
                 };
-                textEn.Append($"- ({(c.Mode == StrategyMode.Live ? "Live" : "Simulation")}) {c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}\n");
-            }
-        }
-        textEn.Append("\nYour strategies\n");
-        foreach (var s in scoreboard)
-            textEn.Append($"- {s.Name} ({(s.Mode == StrategyMode.Live ? "Live" : "Simulation")}): since {Date(s.StartedOn)}, {s.Signals} {(s.Signals == 1 ? "signal" : "signals")}\n");
-        textEn.Append($"\nOpen the app: {appUrl}/\n\n{DisclaimerEn}");
-        return ($"Your daily overview, {Date(day)}", textEn.ToString());
+                return new EmailItem($"{c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}", Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live);
+            }));
+
+        email.Section(ca ? "Les teves estratègies" : "Your strategies", scoreboard.Select(s => new EmailItem(ca
+            ? $"{s.Name} ({ModeName(s.Mode, locale)}): des del {Date(s.StartedOn, locale)}, {s.Signals} {(s.Signals == 1 ? "senyal" : "senyals")}"
+            : $"{s.Name} ({ModeName(s.Mode, locale)}): since {Date(s.StartedOn)}, {s.Signals} {(s.Signals == 1 ? "signal" : "signals")}")));
+
+        return email.Links([(ca ? "Obre l'aplicació" : "Open the app", $"{appUrl}/")])
+            .Disclaimer(ca ? DisclaimerCa : DisclaimerEn)
+            .Build(title);
     }
 }

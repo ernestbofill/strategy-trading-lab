@@ -155,7 +155,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { return now; } // UTC, as the dashboard does.
     }
 
-    async Task<(string Subject, string Body)> ComposeOverviewAsync(Guid userId, DateOnly day, DateOnly lastSession, string locale, CancellationToken cancellationToken)
+    async Task<EmailContent> ComposeOverviewAsync(Guid userId, DateOnly day, DateOnly lastSession, string locale, CancellationToken cancellationToken)
     {
         var strategies = await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var ids = strategies.Select(s => s.Id).ToList();
@@ -213,13 +213,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     /// (nothing happened: a later run tries again); a refused send is recorded as failed; a shutdown keeps the claim (once, never twice).
     /// Any other error is recorded and does not stop the others.
     /// </summary>
-    async Task<bool> SendAsync(Guid notificationId, string to, Func<Task<(string Subject, string Body)>> compose, CancellationToken cancellationToken)
+    async Task<bool> SendAsync(Guid notificationId, string to, Func<Task<EmailContent>> compose, CancellationToken cancellationToken)
     {
         string? error = null;
         try
         {
-            var (subject, body) = await compose();
-            await sender.SendAsync(to, subject, body, cancellationToken);
+            await sender.SendAsync(new OutgoingEmail(to, await compose()), cancellationToken);
         }
         catch (EmailNotSetUpException)
         {

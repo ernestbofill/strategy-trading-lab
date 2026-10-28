@@ -2,8 +2,14 @@ using System.Threading.Channels;
 
 namespace StrategyTradingLab.Api.Email;
 
-/// <summary>An email to send; <paramref name="ReplyTo"/> is where an answer goes, when not to the app's own account.</summary>
-public record OutgoingEmail(string To, string Subject, string Body, string? ReplyTo = null);
+/// <summary>
+/// An email to send: <paramref name="Body"/> is the plain text, <paramref name="Html"/> the same as HTML (see <see cref="EmailDocument"/>);
+/// <paramref name="ReplyTo"/> is where an answer goes, when not to the app's own account.
+/// </summary>
+public record OutgoingEmail(string To, string Subject, string Body, string? ReplyTo = null, string? Html = null)
+{
+    public OutgoingEmail(string to, EmailContent content, string? replyTo = null) : this(to, content.Subject, content.Text, replyTo, content.Html) { }
+}
 
 /// <summary>
 /// Emails sent after the request has answered, so an answer never waits on (or reveals, by its timing) a send.
@@ -34,7 +40,7 @@ public class EmailWorker(EmailQueue queue, IServiceScopeFactory scopes, IHostEnv
             using var scope = scopes.CreateScope();
             try
             {
-                await scope.ServiceProvider.GetRequiredService<IEmailSender>().SendAsync(email.To, email.Subject, email.Body, email.ReplyTo, stoppingToken);
+                await scope.ServiceProvider.GetRequiredService<IEmailSender>().SendAsync(email, stoppingToken);
             }
             catch (EmailNotSetUpException) when (environment.IsDevelopment())
             {

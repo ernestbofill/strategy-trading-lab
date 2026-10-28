@@ -16,7 +16,7 @@ public class AdminTestEmailTests
     {
         public List<string> SentTo { get; } = [];
 
-        public Task<string> SendToAccountAsync(string subject, string body, CancellationToken cancellationToken)
+        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken)
         {
             if (account is null) throw new EmailNotSetUpException();
             if (failure is not null) throw failure;
@@ -24,7 +24,7 @@ public class AdminTestEmailTests
             return Task.FromResult(account);
         }
 
-        public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     sealed class Api(FakeSender sender) : AccountsApi

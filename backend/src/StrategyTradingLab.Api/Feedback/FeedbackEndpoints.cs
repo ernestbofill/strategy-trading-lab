@@ -132,14 +132,14 @@ public static partial class FeedbackEndpoints
             || string.Equals(owner, senderEmail, StringComparison.OrdinalIgnoreCase)) return null;
 
         var kind = item.Kind.ToString().ToLowerInvariant();
-        var body = new System.Text.StringBuilder($"{senderEmail} sent feedback ({kind})");
-        body.Append(item.Route is null ? ".\n\n" : $" on {item.Route}.\n\n");
-        if (item.SelectedText is not null) body.Append($"About: \"{item.SelectedText}\"\n\n");
-        body.Append(item.Text).Append("\n\n");
-        body.Append("Reply to this email to answer them.");
-        if (configuration["PublicUrl"]?.TrimEnd('/') is { Length: > 0 } appUrl) body.Append($"\nAll feedback: {appUrl}/feedback");
+        var appUrl = configuration["PublicUrl"]?.TrimEnd('/') is { Length: > 0 } url ? url : null;
+        var email = new EmailDocument("en", appUrl).Eyebrow($"Feedback · {kind}")
+            .Paragraph($"{senderEmail} sent feedback ({kind}){(item.Route is null ? "." : $" on {item.Route}.")}");
+        if (item.SelectedText is not null) email.Quote("About", item.SelectedText);
+        email.Paragraph(item.Text).Paragraph("Reply to this email to answer them.");
+        if (appUrl is not null) email.Links([("All feedback", $"{appUrl}/feedback")]);
         // The subject holds no address: failed sends log it.
-        return new(owner, $"New feedback ({kind})", body.ToString(), ReplyTo: senderEmail);
+        return new(owner, email.Build($"New feedback ({kind})"), replyTo: senderEmail);
     }
 
     public static Dictionary<string, string[]> ValidateCreate(CreateFeedbackRequest request, out string text, out string? route,

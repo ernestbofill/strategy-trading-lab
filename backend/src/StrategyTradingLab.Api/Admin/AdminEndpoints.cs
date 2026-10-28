@@ -89,9 +89,11 @@ public static class AdminEndpoints
                 return TypedResults.Problem("Too many test emails: try again in an hour.", statusCode: StatusCodes.Status429TooManyRequests);
             try
             {
-                var sentTo = await email.SendToAccountAsync("Strategy Trading Lab: test email",
-                    $"This is a test email from the Strategy Trading Lab admin page, sent {time.GetUtcNow():yyyy-MM-dd HH:mm} UTC.\n\n" +
-                    "If you got it, the app can send its emails.", cancellationToken);
+                // In the app's email layout, so the owner sees how the emails look in their mail app.
+                var sentTo = await email.SendToAccountAsync(new EmailDocument().Eyebrow("Admin")
+                    .Paragraph($"This is a test email from the Strategy Trading Lab admin page, sent {time.GetUtcNow():yyyy-MM-dd HH:mm} UTC.")
+                    .Paragraph("If you got it, the app can send its emails.")
+                    .Build("Strategy Trading Lab: test email"), cancellationToken);
                 return TypedResults.Ok(new TestEmailSent(sentTo));
             }
             catch (EmailNotSetUpException error)

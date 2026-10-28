@@ -174,7 +174,7 @@ public class AssetEndpointTests
             // Funds and stocks share the limit.
             var refused = await client.PostAsJsonAsync("/assets", new { symbol = stock, kind = "stock" });
             Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
-            Assert.StartsWith("You've added 1 stocks and funds, the most for now.", await refused.Content.ReadFromJsonAsync<string>());
+            Assert.StartsWith("You can add up to 1 new stocks and funds, and you've reached it.", await refused.Content.ReadFromJsonAsync<string>());
 
             // Stored ones never count: the seeded fund, and the user's own added one.
             Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/assets", new { symbol = TemplateAssets.Spy.Symbol, kind = "fund" })).StatusCode);

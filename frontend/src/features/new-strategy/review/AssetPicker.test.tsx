@@ -150,7 +150,7 @@ describe('"+ Add a stock"', () => {
 
   it("says so when nothing is found, and shows the server's reason at the user's limit", async () => {
     vi.spyOn(api, 'searchAssets').mockResolvedValueOnce([]).mockResolvedValue([zscaler])
-    vi.spyOn(api, 'addAsset').mockRejectedValue(new InvalidValueError("You've added 30 stocks and funds, the most for now."))
+    vi.spyOn(api, 'addAsset').mockRejectedValue(new InvalidValueError("You can add up to 30 new stocks and funds, and you've reached it."))
     open(dip([stock('NVDA')]))
 
     await search('zzzz')
@@ -159,7 +159,7 @@ describe('"+ Add a stock"', () => {
     fireEvent.change(screen.getByLabelText('Search stocks'), { target: { value: 'zscaler' } })
     fireEvent.click(await screen.findByRole('button', { name: /Zscaler, Inc\./ }, { timeout: 2000 }))
 
-    expect(await screen.findByText("You've added 30 stocks and funds, the most for now.")).toBeTruthy()
+    expect(await screen.findByText("You can add up to 30 new stocks and funds, and you've reached it.")).toBeTruthy()
     expect(screen.getAllByRole('checkbox')).toHaveLength(1)
   })
 

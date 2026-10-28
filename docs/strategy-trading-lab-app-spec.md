@@ -69,7 +69,7 @@ These apply to every screen, email and alert.
 | 2 · Review a template (one per template) | `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI` | Pick screen "Continue" or "Learn more"; Edit links on Confirm | Advanced settings, How we tested, Choose the mode |
 | 2b · Advanced settings | `Advanced` | Review; "Tune the settings" on the strategy page; Confirm | Back to where it came from |
 | 2c · How we tested | `HowTested` | "How we tested ›" on a review (not on the AI review) | Back to that review |
-| 3 · Choose the mode | `Mode` | Review "Use this template"; "Go live with these settings" (not drawn) | Set your budget |
+| 3 · Choose the mode | `Mode` | Review "Use this template"; "Go live with these settings" (built, #92; not drawn) | Set your budget |
 | 4 · Set your budget | `Budget` | Choose the mode; Confirm | Confirm |
 | 5 · Name, preview and confirm | `Confirm` | Set your budget | Dashboard |
 | Dashboard (home) | `Home` | Confirm; app start for returning users | Strategy page, Confirm a signal, AI round, Pick a template |
@@ -81,7 +81,7 @@ These apply to every screen, email and alert.
 
 **Adding a strategy:** dashboard "+ New strategy" → the same screens. All templates are shown, with "You run [n] from this template" on templates already in use (not drawn).
 
-**Going live from a simulation (not drawn):** "Go live with these settings" on a simulation's page starts the flow at Choose the mode, with Live selected and the stocks, settings and budget copied. The simulation keeps running or can be ended; the two keep separate histories.
+**Going live from a simulation (built, #92; not drawn):** "Go live with these settings" on a running simulation's page fills the new-strategy draft from it and opens Choose the mode with Live selected. The draft takes its template, its stocks (starter-list stocks it doesn't watch come unticked, stocks it added come added), its fund, the settings that differ from the tested defaults, its budget, step and max steps, an AI strategy's sources and instructions, and its currency (the copy keeps it, whatever the account's). The name is the simulation's with " live" (Catalan " en directe"), numbered while a running strategy has it ("Zscaler & friends live 2"). Every screen of the flow can still change it. An account without a confirmed email falls back to Simulation on Choose the mode, which says why. `POST /strategies` keeps `sourceStrategyId` for a live strategy only, and refuses one that isn't the user's own simulation (`errors.sourceStrategyId`). The simulation keeps running or can be ended; the two keep separate histories. A live copy's page shows "Copied from [simulation name]", a link to it, while the simulation exists.
 
 **Headers.** Every screen of the new-strategy flow has a top bar with "← BACK" on the left and the step ("1 / 5" to "5 / 5") on the right. The first screen shows "STL // NEW STRATEGY" instead of a back link (when reached from the dashboard, show "← BACK" to the dashboard). Back goes to the previous screen.
 
@@ -547,7 +547,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
   - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
-- For simulations, a third link: "Go live with these settings" (not drawn).
+- For running simulations, a third tile: "Go live" / "With these settings" (built, #92; not drawn), see *Going live from a simulation*. A live copy shows "Copied from [simulation name]" under its name.
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - **Alerts switch** (built #91, not drawn), for strategies that email: live ones, "Email me this strategy's signals"; AI simulations, "Email me when its AI round is due"; live AI ones, "Email me its signals and AI rounds". Under it: "The daily overview still lists them." On by default. There is no pause: with alerts off the strategy keeps running quietly, and signals left unanswered become *Missed* when they end. A snooze needs alerts on.
 - **"End the strategy"** (built #91, not drawn), running strategies only, with a confirm step in place: "End [name]? The daily check stops and signals still waiting close as missed. Its history stays, read-only. This can't be undone." with "End it" and "Keep it running". Ending sets it to ended (the end date is the user's today), makes every waiting signal *Missed* (ending that day, snooze cleared), skips its AI round due, and frees its name.
@@ -719,7 +719,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.
 - Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
-- Go live with these settings; changing the budget.
+- Changing the budget.
 - Snooze on Confirm a signal; "Enter shares instead" and the exchange-rate line.
 - Daily overview email and its settings.
 - Empty, loading and error states.

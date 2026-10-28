@@ -40,7 +40,9 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
   const t = useT()
   const draft = useNewStrategyDraft()
   const { mode, update } = draft
-  const { currency } = useCurrentAccount()
+  const account = useCurrentAccount()
+  // A live copy keeps its simulation's currency.
+  const currency = draft.currency ?? account.currency
   const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'

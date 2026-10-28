@@ -281,6 +281,28 @@ a.stock:hover {
   color: var(--primary);
 }
 
+/* "Go live with these settings" is a button that looks like the other tiles. */
+button.tileLink {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.tileLink:disabled {
+  cursor: default;
+}
+button.tileLink:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.copiedFrom {
+  margin: var(--space-1) 0 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-sidebar);
+}
+
 @media (min-width: 768px) {
   .title {
     font-size: 36px;

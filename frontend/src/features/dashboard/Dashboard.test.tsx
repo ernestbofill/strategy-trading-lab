@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type StrategySummary } from '../../api'
+import { NewStrategyDraftProvider } from '../new-strategy/NewStrategyDraft'
 import { Dashboard } from './Dashboard'
 
 vi.mock('../account/AccountContext', () => ({
@@ -46,9 +47,11 @@ describe('Dashboard', () => {
       ],
     })
     render(
-      <MemoryRouter>
-        <Dashboard />
-      </MemoryRouter>,
+      <NewStrategyDraftProvider owner="a@example.com">
+        <MemoryRouter>
+          <Dashboard />
+        </MemoryRouter>
+      </NewStrategyDraftProvider>,
     )
 
     const ended = await screen.findByRole('link', { name: /Ended one/ })

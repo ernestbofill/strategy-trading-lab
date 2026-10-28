@@ -14,7 +14,7 @@ import { useTemplate } from './useTemplate'
 /** 3 · Choose the mode (wireframe `Mode`). */
 export function ChooseMode() {
   const t = useT()
-  const { mode, templateKey, update } = useNewStrategyDraft()
+  const { mode, templateKey, sourceStrategyId, update } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const isLive = mode === 'live'
   // Live signals come by email, so going live needs a confirmed address (the server refuses it too).
@@ -74,7 +74,8 @@ export function ChooseMode() {
             name="mode"
             value={m.id}
             checked={mode === m.id}
-            onSelect={() => update({ mode: m.id })}
+            // A "Go live" copy switched to Simulation is a new simulation: no source, and the template's name.
+            onSelect={() => update(m.id === 'simulation' && sourceStrategyId ? { mode: m.id, sourceStrategyId: null, name: null } : { mode: m.id })}
             badge={<Tag tone={m.tag}>{m.badge}</Tag>}
             title={m.name}
             disabled={m.id === 'live' && !emailVerified}

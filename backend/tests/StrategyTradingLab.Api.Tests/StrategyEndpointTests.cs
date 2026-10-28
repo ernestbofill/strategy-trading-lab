@@ -202,6 +202,79 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
         }
     }
 
+    static object LiveCopy(string name, Guid sourceId, string mode = "live") => new
+    {
+        templateKey = "dip", name, mode,
+        budget = new { amount = 3000, step = 100, maxSteps = 5 },
+        assetIds = TemplateCatalog.Find("dip")!.Watches.Assets.Select(asset => asset.Id).Take(3),
+        sourceStrategyId = sourceId,
+    };
+
+    [NeonFact]
+    public async Task A_live_copy_keeps_the_users_simulation_it_came_from()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.VerifiedAsync();
+        try
+        {
+            var simulation = await (await client.PostAsJsonAsync("/strategies", Request("dip", name))).Content.ReadFromJsonAsync<JsonElement>();
+            var simulationId = simulation.GetProperty("id").GetGuid();
+
+            var response = await client.PostAsJsonAsync("/strategies", LiveCopy($"{name} live", simulationId));
+
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            var id = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+            var detail = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}");
+            Assert.Equal(simulationId, detail.GetProperty("sourceStrategyId").GetGuid());
+            Assert.Equal(name, detail.GetProperty("sourceStrategyName").GetString());
+            // The simulation keeps running, on its own.
+            var source = await client.GetFromJsonAsync<JsonElement>($"/strategies/{simulationId}");
+            Assert.Equal("running", source.GetProperty("status").GetString());
+            Assert.Equal(JsonValueKind.Null, source.GetProperty("sourceStrategyId").ValueKind);
+
+            // A simulation started with a source doesn't keep it.
+            var copy = await client.PostAsJsonAsync("/strategies", LiveCopy($"{name} sim", simulationId, "simulation"));
+            Assert.Equal(HttpStatusCode.Created, copy.StatusCode);
+            var copyId = (await copy.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+            var copyDetail = await client.GetFromJsonAsync<JsonElement>($"/strategies/{copyId}");
+            Assert.Equal(JsonValueKind.Null, copyDetail.GetProperty("sourceStrategyId").ValueKind);
+        }
+        finally
+        {
+            await Remove($"{name} sim");
+            await Remove($"{name} live");
+            await Remove(name);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_live_copy_of_another_users_strategy_or_of_a_live_one_is_refused()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.VerifiedAsync();
+        var (other, _) = await factory.VerifiedAsync();
+        try
+        {
+            var theirs = await (await other.PostAsJsonAsync("/strategies", Request("dip", $"{name} theirs"))).Content.ReadFromJsonAsync<JsonElement>();
+            var live = await (await client.PostAsJsonAsync("/strategies", Request("dip", $"{name} mine", "live"))).Content.ReadFromJsonAsync<JsonElement>();
+
+            foreach (var sourceId in new[] { theirs.GetProperty("id").GetGuid(), live.GetProperty("id").GetGuid(), Guid.NewGuid() })
+            {
+                var response = await client.PostAsJsonAsync("/strategies", LiveCopy($"{name} copy", sourceId));
+
+                Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+                var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+                Assert.Equal("Pick one of your simulations to copy.", problem.GetProperty("errors").GetProperty("sourceStrategyId")[0].GetString());
+            }
+        }
+        finally
+        {
+            await Remove($"{name} copy");
+            await Remove($"{name} mine");
+            await Remove($"{name} theirs");
+        }
+    }
+
     [NeonFact]
     public async Task A_setting_out_of_range_is_a_validation_problem()
     {

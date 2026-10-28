@@ -8,6 +8,8 @@ interface Draft extends DraftState {
   update: (patch: DraftPatch) => void
   /** Choose a template. A different one starts over from the defaults. */
   switchTemplate: (templateKey: TemplateKey) => void
+  /** Replace the whole draft, e.g. with a simulation's settings ("Go live with these settings"). */
+  load: (state: DraftState) => void
   /** Back to the defaults: call when a strategy is started. */
   reset: () => void
 }
@@ -27,8 +29,9 @@ export function NewStrategyDraftProvider({ owner, children }: { owner: string | 
 
   const update = useCallback((patch: DraftPatch) => setState((s) => ({ ...s, ...patch })), [])
   const switchTemplate = useCallback((key: TemplateKey) => setState((s) => withTemplate(s, key)), [])
+  const load = useCallback((next: DraftState) => setState(next), [])
   const reset = useCallback(() => setState(initialDraft), [])
-  const draft = useMemo(() => ({ ...state, update, switchTemplate, reset }), [state, update, switchTemplate, reset])
+  const draft = useMemo(() => ({ ...state, update, switchTemplate, load, reset }), [state, update, switchTemplate, load, reset])
   return <DraftContext.Provider value={draft}>{children}</DraftContext.Provider>
 }
 

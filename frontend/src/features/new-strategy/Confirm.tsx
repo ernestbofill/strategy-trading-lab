@@ -18,11 +18,9 @@ import styles from './Confirm.module.css'
 import { fundOf, tickedStocks } from './draftState'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
-import { defaultName, newStrategyFrom } from './newStrategy'
+import { defaultName, NAME_MAX_LENGTH, newStrategyFrom } from './newStrategy'
 import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
 import { useTemplate } from './useTemplate'
-
-const NAME_MAX_LENGTH = 60
 
 interface SummaryRow {
   label: string
@@ -49,7 +47,10 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const t = useT()
   const draft = useNewStrategyDraft()
   const { mode, update, reset } = draft
-  const { currency, emailVerified } = useCurrentAccount()
+  const account = useCurrentAccount()
+  const { emailVerified } = account
+  // A live copy keeps its simulation's currency.
+  const currency = draft.currency ?? account.currency
   const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'

@@ -2,6 +2,9 @@ import type { Currency, NewStrategy, TemplateDetail } from '../../api'
 import { resolveBudget } from '../../lib/budget'
 import { fundOf, tickedStocks, type DraftState } from './draftState'
 
+/** The longest name a strategy may have (the API checks it too). */
+export const NAME_MAX_LENGTH = 60
+
 /** What to send to start the strategy the user set up: their choices over the template's tested defaults. */
 export function newStrategyFrom(draft: DraftState, template: TemplateDetail, name: string, currency: Currency): NewStrategy {
   const { watches, defaults } = template
@@ -18,6 +21,8 @@ export function newStrategyFrom(draft: DraftState, template: TemplateDetail, nam
     settings: draft.settings,
     // What the prompt asks for, for templates driven by AI rounds.
     ...(template.aiRound ? { ai: { ...draft.aiSources, instructions: draft.aiInstructions } } : {}),
+    // Only a live strategy keeps the simulation it was copied from.
+    ...(draft.mode === 'live' && draft.sourceStrategyId ? { sourceStrategyId: draft.sourceStrategyId } : {}),
   }
 }
 

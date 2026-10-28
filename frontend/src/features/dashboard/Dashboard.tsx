@@ -5,6 +5,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
+import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { pickPath } from '../new-strategy/paths'
 import { useTemplates } from '../new-strategy/useTemplate'
 import { useCurrentAccount } from '../account/AccountContext'
@@ -21,6 +22,7 @@ export function Dashboard() {
   const t = useT()
   const dashboard = useDashboard()
   const { emailVerified } = useCurrentAccount()
+  const draft = useNewStrategyDraft()
   // Loads the template list in the background, so Pick a template opens at once.
   useTemplates()
   const top = <TopBar title={t('dashboard.title')} aside={<TextAction to={accountPath}>{t('dashboard.account')}</TextAction>} />
@@ -41,7 +43,8 @@ export function Dashboard() {
             <WaitingList items={waiting} />
             <div className={styles.cards}>
               {strategies.filter((s) => s.status === 'running').map(card)}
-              <Link to={pickPath} className={`ui-strong ${styles.add}`}>
+              {/* A "Go live" copy left unfinished isn't a new strategy: start over. */}
+              <Link to={pickPath} className={`ui-strong ${styles.add}`} onClick={() => draft.sourceStrategyId && draft.reset()}>
                 {t('dashboard.newStrategy')}
               </Link>
             </div>

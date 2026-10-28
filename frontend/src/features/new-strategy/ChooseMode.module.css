@@ -14,9 +14,11 @@
 
 .confirmFirst {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  flex-direction: column;
   gap: var(--space-1);
+}
+.confirmFirst p {
+  margin: 0;
 }
 
 .inkNote {

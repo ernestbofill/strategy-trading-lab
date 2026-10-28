@@ -80,9 +80,10 @@ export function ChooseMode() {
             disabled={m.id === 'live' && !emailVerified}
             footer={
               m.id === 'live' && !emailVerified && (
-                <span className={styles.confirmFirst}>
-                  {t('newStrategy.mode.live.confirmFirst')} <ResendLink />
-                </span>
+                <div className={styles.confirmFirst}>
+                  <p>{t('newStrategy.mode.live.confirmFirst')}</p>
+                  <ResendLink />
+                </div>
               )
             }
           >

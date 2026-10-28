@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace StrategyTradingLab.Api.Admin;
 
 /// <summary>
@@ -71,7 +73,7 @@ public static class SettingDefinitions
         : "Use HH:MM, e.g. 22:30.";
 
     static string? WholeNumber(string value) =>
-        int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out _)
+        int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out _)
             ? null
             : "Use a whole number, e.g. 30.";
 

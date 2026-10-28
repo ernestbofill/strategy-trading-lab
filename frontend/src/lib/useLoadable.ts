@@ -88,7 +88,8 @@ export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | 
     stale.delete(cacheKey)
 
     const cached = settled.get(cacheKey)
-    if (cached && cached.status !== 'error' && !isStale) return
+    // A screen that opens while another one reloads the key (Confirm before the dashboard) waits for that reload too.
+    if (cached && cached.status !== 'error' && !isStale && !pending.has(cacheKey)) return
     if (isStale && (!cached || cached.status === 'error')) {
       settled.delete(cacheKey)
     }

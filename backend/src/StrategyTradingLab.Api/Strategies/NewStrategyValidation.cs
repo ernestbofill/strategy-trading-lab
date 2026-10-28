@@ -10,6 +10,8 @@ public static class NewStrategyValidation
     public const int NameMaxLength = 60;
     public const decimal MinBudget = 500, MaxBudget = 1_000_000, MinStep = 10;
     public const int MaxSteps = 20;
+    /// <summary>The most stocks a strategy watches (spec: "+ Add a stock").</summary>
+    public const int MaxStocks = 60;
 
     /// <summary>Errors by field, empty when the strategy is valid. <c>assets</c> are the ones found for <c>AssetIds</c>.</summary>
     public static Dictionary<string, string[]> Validate(NewStrategy request, Template template, IReadOnlyCollection<Asset> assets, string locale = "en")
@@ -31,6 +33,7 @@ public static class NewStrategyValidation
         if (ids.Distinct().Count() != ids.Count) Fail("assetIds", Messages.ListedOnce.In(locale));
         else if (ids.Count == 0) Fail("assetIds", fund ? Messages.PickTheFund.In(locale) : Messages.PickOneStock.In(locale));
         else if (fund && ids.Count != 1) Fail("assetIds", Messages.PickExactlyOneFund.In(locale));
+        else if (ids.Count > MaxStocks) Fail("assetIds", Messages.TooManyStocks.In(locale, MaxStocks));
         else if (assets.Count != ids.Count || assets.Any(asset => !asset.Active || (asset.Kind == AssetKind.Fund) != fund))
             Fail("assetIds", fund ? Messages.NotAFund.In(locale) : Messages.NotStocks.In(locale));
 

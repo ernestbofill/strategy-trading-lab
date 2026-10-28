@@ -806,7 +806,7 @@ export interface Api {
   snoozeSignal(id: string): Promise<string>
   /** Stored and new stocks or funds by name or symbol. Rejects with `InvalidValueError` (its message is for the user), `TooManyTriesError`. */
   searchAssets(query: string, kind: 'stock' | 'fund'): Promise<AssetMatch[]>
-  /** Adds a search result that has no id yet and loads its prices. Rejects as `searchAssets` does, and with `ForbiddenError` before the email is confirmed. */
+  /** Adds a search result that has no id yet and loads its prices. Rejects as `searchAssets` does, with `ForbiddenError` before the email is confirmed, and with `InvalidValueError` (the server's words) at the user's limit of new ones. */
   addAsset(symbol: string, kind: 'stock' | 'fund'): Promise<AddedAsset>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>

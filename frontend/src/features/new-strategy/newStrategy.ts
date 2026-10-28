@@ -1,6 +1,6 @@
 import type { Currency, NewStrategy, TemplateDetail } from '../../api'
 import { resolveBudget } from '../../lib/budget'
-import { fundOf, type DraftState } from './draftState'
+import { fundOf, tickedStocks, type DraftState } from './draftState'
 
 /** What to send to start the strategy the user set up: their choices over the template's tested defaults. */
 export function newStrategyFrom(draft: DraftState, template: TemplateDetail, name: string, currency: Currency): NewStrategy {
@@ -14,10 +14,7 @@ export function newStrategyFrom(draft: DraftState, template: TemplateDetail, nam
     mode: draft.mode,
     currency,
     budget: { amount: budget, step: hasSteps ? step : null, maxSteps: hasSteps ? maxSteps : null },
-    assetIds:
-      watches.kind === 'fund'
-        ? [fundOf(draft, template)!.id]
-        : watches.starterList.filter((s) => !draft.unticked.includes(s.symbol)).map((s) => s.id),
+    assetIds: watches.kind === 'fund' ? [fundOf(draft, template)!.id] : tickedStocks(draft, template).map((s) => s.id),
     settings: draft.settings,
     // What the prompt asks for, for templates driven by AI rounds.
     ...(template.aiRound ? { ai: { ...draft.aiSources, instructions: draft.aiInstructions } } : {}),

@@ -6,6 +6,7 @@ import { useT } from '../../../i18n/I18n'
 import { PromptEditor } from '../../ai-round/PromptEditor'
 import { useNewStrategyDraft } from '../NewStrategyDraft'
 import { reviewPath } from '../paths'
+import { tickedStocks } from '../draftState'
 import { useTemplate } from '../useTemplate'
 import { aiPromptScope } from './aiSources'
 
@@ -20,7 +21,7 @@ export function DraftPromptEditor() {
     <LoadableScreen state={useTemplate(key)} top={top} what={t('newStrategy.what.template')}>
       {(template) => {
         const mine = draft.templateKey === template.key
-        const { everyDays, assetIds } = aiPromptScope(template, mine ? draft.settings : {}, mine ? draft.unticked : [])
+        const { everyDays, assetIds } = aiPromptScope(template, mine ? draft.settings : {}, tickedStocks(draft, template))
         return (
           <PromptEditor
             top={top}

@@ -15,7 +15,7 @@ import { accountEmailsPath } from '../account/paths'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
-import { fundOf } from './draftState'
+import { fundOf, tickedStocks } from './draftState'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, newStrategyFrom } from './newStrategy'
@@ -48,7 +48,7 @@ export function Confirm() {
 function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNode }) {
   const t = useT()
   const draft = useNewStrategyDraft()
-  const { mode, unticked, update, reset } = draft
+  const { mode, update, reset } = draft
   const { currency, emailVerified } = useCurrentAccount()
   const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
@@ -100,7 +100,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const stocksValue = (() => {
     const { watches } = template
     if (watches.kind === 'fund') return fundOf(draft, template)!.name
-    const ticked = watches.starterList.filter((s) => !unticked.includes(s.symbol))
+    const ticked = tickedStocks(draft, template)
     const more = ticked.length - 1
     return more > 0
       ? t('newStrategy.confirm.stocksMore', { first: ticked[0].name, n: more })

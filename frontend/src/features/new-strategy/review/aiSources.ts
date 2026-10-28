@@ -1,4 +1,4 @@
-import type { TemplateDetail } from '../../../api'
+import type { Security, TemplateDetail } from '../../../api'
 import type { Translate } from '../../../i18n/I18n'
 import type { AiSource } from '../NewStrategyDraft'
 import { settingValues, type SettingValues } from '../settings'
@@ -11,10 +11,9 @@ export const aiSources = (t: Translate): { id: AiSource; title: string; detail: 
 ]
 
 /** What a template's prompt is written for besides the sources: the rhythm in days, and the stocks still ticked. */
-export function aiPromptScope(template: TemplateDetail, settings: SettingValues, unticked: string[]): { everyDays: number; assetIds: string[] } {
-  const stocks = template.watches.kind === 'stocks' ? template.watches.starterList : []
+export function aiPromptScope(template: TemplateDetail, settings: SettingValues, ticked: Security[]): { everyDays: number; assetIds: string[] } {
   return {
     everyDays: Number(settingValues(template, settings).everyDays ?? template.aiRound?.everyDays ?? 14),
-    assetIds: stocks.filter((s) => !unticked.includes(s.symbol)).map((s) => s.id),
+    assetIds: ticked.map((s) => s.id),
   }
 }

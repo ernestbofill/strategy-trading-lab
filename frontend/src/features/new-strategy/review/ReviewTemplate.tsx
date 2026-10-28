@@ -21,8 +21,8 @@ import { rulesWithSettings, settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
 import { PromptText } from '../../ai-round/PromptText'
 import { useAiPromptPreview } from '../../ai-round/useAiPromptPreview'
-import { fundOf } from '../draftState'
-import { FundPicker } from './FundPicker'
+import { fundOf, MAX_STOCKS, stocksOf, tickedStocks, untickedOf } from '../draftState'
+import { AssetPicker } from './AssetPicker'
 import { aiPromptScope, aiSources as aiSourcesOf } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
@@ -44,24 +44,58 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
   const t = useT()
   const draft = useNewStrategyDraft()
   const { aiRound, watches } = template
-  const stocks = watches.kind === 'stocks' ? watches.starterList : []
-  const { unticked } = draft
-  const tickedCount = stocks.length - unticked.length
+  const [adding, setAdding] = useState(false)
+  const stocks = stocksOf(draft, template)
+  const unticked = untickedOf(draft, template)
+  const added = draft.templateKey === template.key ? draft.added : []
+  const tickedCount = tickedStocks(draft, template).length
   const canContinue = watches.kind === 'fund' || tickedCount > 0
+  const full = stocks.length >= MAX_STOCKS
 
-  const toggleStock = (symbol: string) =>
+  // A change on another template's draft starts this template's over (as Advanced settings and the fund picker do).
+  const own = () => {
+    if (draft.templateKey !== template.key) draft.switchTemplate(template.key)
+  }
+
+  const toggleStock = (symbol: string) => {
+    own()
     draft.update({
       unticked: unticked.includes(symbol) ? unticked.filter((s) => s !== symbol) : [...unticked, symbol],
     })
+  }
+
+  // A picked stock goes to the end of the list, ticked; one already listed is only ticked.
+  const addStock = (picked: Security, pricesIn: boolean) => {
+    own()
+    draft.update({
+      added: stocks.some((s) => s.id === picked.id) ? added : [...added, { ...picked, pricesIn }],
+      unticked: unticked.filter((s) => s !== picked.symbol),
+    })
+    setAdding(false)
+  }
 
   const stockList = (
     <>
       <CheckList
         label={t('newStrategy.review.stocksLabel')}
-        items={stocks.map((s) => ({ id: s.symbol, title: s.name, detail: s.what }))}
+        items={stocks.map((s) => ({
+          id: s.symbol,
+          title: s.name,
+          detail: 'pricesIn' in s && !s.pricesIn ? t('newStrategy.review.noHistory') : s.what,
+        }))}
         isChecked={(symbol) => !unticked.includes(symbol)}
         onToggle={toggleStock}
+        footer={
+          full ? (
+            <span className="caption">{t('newStrategy.review.stocksFull', { max: MAX_STOCKS })}</span>
+          ) : (
+            <TextAction onClick={() => setAdding((v) => !v)}>
+              {t(adding ? 'newStrategy.review.closePicker' : 'newStrategy.review.addStock')}
+            </TextAction>
+          )
+        }
       />
+      {adding && !full && <AssetPicker kind="stock" onPick={addStock} />}
       <p className={styles.info}>{t('newStrategy.review.longerLists')}</p>
     </>
   )
@@ -187,7 +221,8 @@ function FundSection({ template }: { template: TemplateDetail }) {
         </div>
       )}
       {picking && (
-        <FundPicker
+        <AssetPicker
+          kind="fund"
           onPick={(picked, pricesIn) => {
             if (!pricesIn) setWaiting((w) => [...w, picked.id])
             choose(picked)
@@ -201,9 +236,14 @@ function FundSection({ template }: { template: TemplateDetail }) {
 /** "What the AI reads" and "The prompt", for templates driven by AI rounds. */
 function AiSettings({ template }: { template: TemplateDetail }) {
   const t = useT()
-  const { aiSources, aiInstructions, settings, unticked, update } = useNewStrategyDraft()
+  const draft = useNewStrategyDraft()
+  const { aiSources, aiInstructions, settings, update } = draft
   const toggle = (id: AiSource) => update({ aiSources: { ...aiSources, [id]: !aiSources[id] } })
-  const { preview, failed } = useAiPromptPreview({ ...aiSources, instructions: aiInstructions, ...aiPromptScope(template, settings, unticked) })
+  const { preview, failed } = useAiPromptPreview({
+    ...aiSources,
+    instructions: aiInstructions,
+    ...aiPromptScope(template, settings, tickedStocks(draft, template)),
+  })
 
   return (
     <>

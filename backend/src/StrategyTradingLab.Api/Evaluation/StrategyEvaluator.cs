@@ -75,7 +75,9 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             var from = bars.FindIndex(b => b.Date >= start);
             if (from < 0) continue; // Nothing since the strategy (or the stock) started.
             var replayFrom = await ReplayFromAsync(strategy.Id, asset.Id, bars[^1].Date, cancellationToken);
-            from = Math.Max(from, bars.FindIndex(b => b.Date >= replayFrom));
+            // No bar from that day on (a price row revised away): the latest bar, never back to the start.
+            var replayIndex = bars.FindIndex(b => b.Date >= replayFrom);
+            from = Math.Max(from, replayIndex < 0 ? bars.Count - 1 : replayIndex);
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);

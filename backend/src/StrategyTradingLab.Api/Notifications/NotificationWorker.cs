@@ -2,7 +2,10 @@ using StrategyTradingLab.Api.Admin;
 
 namespace StrategyTradingLab.Api.Notifications;
 
-/// <summary>Looks every hour for users whose morning has begun and who haven't had today's overview or a snoozed signal's reminder (see <see cref="NotificationService"/>).</summary>
+/// <summary>
+/// Looks every hour for users whose morning has begun and who haven't had a snoozed signal's or an AI round's reminder, and for an
+/// overview the send right after the daily check couldn't deliver (see <see cref="NotificationService"/>).
+/// </summary>
 public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory scopes, TimeProvider time, ILogger<NotificationWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

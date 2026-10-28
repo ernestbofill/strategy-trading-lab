@@ -219,11 +219,21 @@ public class StrategyEvaluatorTests
         {
             // Day 300 dipped; its first check is on day 301, still in the zone: one signal, on day 301, as for a stock just added.
             await Evaluator(db).RunAsync(default);
-            await Evaluator(db).RunAsync(default);
-
-            var signal = await db.Signals.SingleAsync(s => s.StrategyId == strategyId);
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
             Assert.Equal((new DateOnly(2024, 1, 1).AddDays(301), 1), (signal.SignalDate, signal.StepNo));
             Assert.Equal(SignalStatus.Waiting, signal.Status);
+
+            // The next session: back at the peak. The check carries on from day 301: the signal's window closes, nothing new.
+            var day302 = new DateOnly(2024, 1, 1).AddDays(302);
+            var peak = await db.Prices.Where(p => p.AssetId == assetId).MaxAsync(p => p.Close);
+            db.Prices.Add(new PriceDaily { AssetId = assetId, Date = day302, Open = peak, High = peak, Low = peak, Close = peak, Volume = 1000 });
+            await db.SaveChangesAsync();
+            await Evaluator(db).RunAsync(default);
+
+            signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal((SignalStatus.Missed, day302), (signal.Status, signal.EndedOn));
+            Assert.Equal([new DateOnly(2024, 1, 1).AddDays(301), day302],
+                await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).OrderBy(e => e.Date).Select(e => e.Date).ToListAsync());
         }
         finally
         {

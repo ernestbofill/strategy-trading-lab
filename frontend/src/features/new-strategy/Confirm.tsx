@@ -132,13 +132,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
       to: budgetPath,
     },
-<<<<<<< HEAD
-    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview') },
-    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts'), to: modePath }] : []),
-=======
     { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: accountEmailsPath },
-    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts') }] : []),
->>>>>>> origin/main
+    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts'), to: modePath }] : []),
     ...(template.aiRound
       ? [
           {

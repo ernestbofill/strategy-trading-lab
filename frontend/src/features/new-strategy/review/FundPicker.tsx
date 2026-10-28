@@ -49,6 +49,8 @@ export function FundPicker({ onPick }: FundPickerProps) {
     return () => {
       current = false
       clearTimeout(timer)
+      // A search dropped mid-way doesn't leave "Searching…" behind.
+      setBusy(false)
     }
   }, [trimmed, t])
 

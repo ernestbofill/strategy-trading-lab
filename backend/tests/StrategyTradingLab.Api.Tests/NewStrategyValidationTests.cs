@@ -47,6 +47,14 @@ public class NewStrategyValidationTests
     }
 
     [Fact]
+    public void A_strategy_watches_at_most_60_stocks()
+    {
+        Assert.Empty(Check(TemplateCatalog.Dip, TemplateCatalog.Dip.Budget, assets: [.. Enumerable.Range(0, 60).Select(_ => Stock())]));
+        Assert.Equal(["Use at most 60 stocks."],
+            Check(TemplateCatalog.Dip, TemplateCatalog.Dip.Budget, assets: [.. Enumerable.Range(0, 61).Select(_ => Stock())])["assetIds"]);
+    }
+
+    [Fact]
     public void Errors_can_be_returned_in_catalan()
     {
         var request = new NewStrategy("dip", "", StrategyMode.Simulation, TemplateCatalog.Dip.Budget, []);

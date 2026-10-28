@@ -45,6 +45,13 @@ describe('newStrategyFrom', () => {
     })
   })
 
+  it('sends the stocks the user added after the starter list, unless unticked, and none from another template', () => {
+    const added = [{ ...stock('ZS'), pricesIn: true }, { ...stock('CRWD'), pricesIn: false }]
+    const draft = { ...initialDraft, added, unticked: ['AVGO', 'CRWD'] }
+    expect(newStrategyFrom(draft, dip, 'Mine', 'USD').assetIds).toEqual(['id-NVDA', 'id-META', 'id-ZS'])
+    expect(newStrategyFrom({ ...draft, templateKey: 'comeback' }, dip, 'Mine', 'USD').assetIds).toEqual(['id-NVDA', 'id-AVGO', 'id-META'])
+  })
+
   it('sends what the AI prompt asks for, for a template driven by AI rounds', () => {
     const ai = { ...dip, key: 'ai', aiRound: { everyDays: 14, topN: 1 } } as TemplateDetail
     const draft = { ...initialDraft, aiSources: { news: true, mood: false, figures: true }, aiInstructions: 'Score the AI products.' }

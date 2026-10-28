@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace StrategyTradingLab.Api.Admin;
 
 /// <summary>
@@ -39,7 +41,13 @@ public static class SettingDefinitions
         new("PRICES_TIME_ZONE", "Prices", "The time zone for the time below, e.g. Europe/Madrid.", Default: "Europe/Madrid", Validate: TimeZone),
         new("PRICES_DAILY_TIME", "Prices", "When the daily refresh starts, HH:MM (after the US close, which is 22:00 in Madrid).",
             Default: "22:30", Validate: Time),
+
+        // "+ Add a stock" and the fund picker (Assets/AssetEndpoints). Picking one already in the app never counts.
+        new(UserAssetLimit, "Assets", "How many new stocks and funds one user can add to the app. 0: none.",
+            Default: "30", Validate: WholeNumber),
     ];
+
+    public const string UserAssetLimit = "USER_ASSET_LIMIT";
 
     const string GmailAccount = "nest.u333@gmail.com";
 
@@ -63,6 +71,11 @@ public static class SettingDefinitions
     static string? Time(string value) => System.Text.RegularExpressions.Regex.IsMatch(value, @"^([01]\d|2[0-3]):[0-5]\d$")
         ? null
         : "Use HH:MM, e.g. 22:30.";
+
+    static string? WholeNumber(string value) =>
+        int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out _)
+            ? null
+            : "Use a whole number, e.g. 30.";
 
     static string? Port(string value) =>
         int.TryParse(value, out var port) && port is >= 1 and <= 65535 ? null : "Use a port from 1 to 65535.";

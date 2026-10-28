@@ -2,26 +2,34 @@ import { useEffect, useState } from 'react'
 import { api, ForbiddenError, TooManyTriesError, InvalidValueError, type AssetMatch, type Security } from '../../../api'
 import { TextField } from '../../../components/Field'
 import { useT } from '../../../i18n/I18n'
-import styles from './FundPicker.module.css'
+import styles from './AssetPicker.module.css'
+
+/** What the picker looks for: stocks for a stock template's list, funds for a fund template. */
+export type PickerKind = 'stock' | 'fund'
 
 /** Searches start this long after the last key, so typing a name asks once. */
 const DEBOUNCE_MS = 400
 
 /** What to say when a search or an add fails: the server's message when it has one for the user. */
-function failure(e: unknown, t: ReturnType<typeof useT>): string {
-  if (e instanceof ForbiddenError) return t('newStrategy.fund.confirmEmail')
-  if (e instanceof TooManyTriesError) return t('newStrategy.fund.tooMany')
+function failure(e: unknown, kind: PickerKind, t: ReturnType<typeof useT>): string {
+  if (e instanceof ForbiddenError) return t(`newStrategy.picker.${kind}.confirmEmail`)
+  if (e instanceof TooManyTriesError) return t('newStrategy.picker.tooMany')
+  // The server's reason: not a stock or fund it can follow, the user's limit of new ones, the price source down.
   if (e instanceof InvalidValueError) return e.message
-  return t('newStrategy.fund.failed')
+  return t('newStrategy.picker.failed')
 }
 
-interface FundPickerProps {
-  /** Called with the picked fund once it is stored; `pricesIn` is false while its history loads. */
-  onPick: (fund: Security, pricesIn: boolean) => void
+interface AssetPickerProps {
+  kind: PickerKind
+  /** Called with the picked stock or fund once it is stored; `pricesIn` is false while its history loads. */
+  onPick: (asset: Security, pricesIn: boolean) => void
 }
 
-/** "Change" on the fund block: search funds by name or symbol, and add one that isn't stored yet. */
-export function FundPicker({ onPick }: FundPickerProps) {
+/**
+ * "+ Add a stock" on the stock list and "Change" on the fund block: search by name or symbol, pick a stored one at once,
+ * and add one that isn't stored yet (a confirmed email, and the user's limit of new ones).
+ */
+export function AssetPicker({ kind, onPick }: AssetPickerProps) {
   const t = useT()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<AssetMatch[] | null>(null)
@@ -36,12 +44,12 @@ export function FundPicker({ onPick }: FundPickerProps) {
       setBusy(true)
       setError(null)
       try {
-        const found = await api.searchAssets(trimmed, 'fund')
+        const found = await api.searchAssets(trimmed, kind)
         if (current) setResults(found)
       } catch (e) {
         if (current) {
           setResults(null)
-          setError(failure(e, t))
+          setError(failure(e, kind, t))
         }
       } finally {
         if (current) setBusy(false)
@@ -53,7 +61,7 @@ export function FundPicker({ onPick }: FundPickerProps) {
       // A search dropped mid-way doesn't leave "Searching…" behind.
       setBusy(false)
     }
-  }, [trimmed, t])
+  }, [trimmed, kind, t])
 
   const pick = async (match: AssetMatch) => {
     if (match.id) {
@@ -63,10 +71,10 @@ export function FundPicker({ onPick }: FundPickerProps) {
     setBusy(true)
     setError(null)
     try {
-      const added = await api.addAsset(match.symbol, 'fund')
+      const added = await api.addAsset(match.symbol, kind)
       onPick(added.asset, added.pricesIn)
     } catch (e) {
-      setError(failure(e, t))
+      setError(failure(e, kind, t))
       setBusy(false)
     }
   }
@@ -75,16 +83,16 @@ export function FundPicker({ onPick }: FundPickerProps) {
   return (
     <div className={styles.picker}>
       <TextField
-        label={t('newStrategy.fund.search')}
-        placeholder={t('newStrategy.fund.placeholder')}
+        label={t(`newStrategy.picker.${kind}.search`)}
+        placeholder={t('newStrategy.picker.placeholder')}
         value={query}
         onChange={setQuery}
         error={error}
-        hint={busy ? t('newStrategy.fund.searching') : undefined}
+        hint={busy ? t('newStrategy.picker.searching') : undefined}
       />
-      {shown && shown.length === 0 && !busy && <p className="caption">{t('newStrategy.fund.none')}</p>}
+      {shown && shown.length === 0 && !busy && <p className="caption">{t(`newStrategy.picker.${kind}.none`)}</p>}
       {shown && shown.length > 0 && (
-        <ul className={styles.results} aria-label={t('newStrategy.fund.results')}>
+        <ul className={styles.results} aria-label={t(`newStrategy.picker.${kind}.results`)}>
           {shown.map((match) => (
             <li key={match.symbol}>
               <button type="button" className={styles.result} disabled={busy} onClick={() => pick(match)}>
@@ -98,7 +106,7 @@ export function FundPicker({ onPick }: FundPickerProps) {
           ))}
         </ul>
       )}
-      <p className="caption">{t('newStrategy.fund.exchanges')}</p>
+      <p className="caption">{t(`newStrategy.picker.${kind}.exchanges`)}</p>
     </div>
   )
 }

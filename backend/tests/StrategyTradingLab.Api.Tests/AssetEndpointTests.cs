@@ -36,11 +36,13 @@ public class AssetEndpointTests
         public Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken) => Task.FromResult(PriceRefresher.BaseCurrency);
     }
 
-    sealed class Api(IMarketDataSource source) : AccountsApi
+    /// <summary><paramref name="assetLimit"/>: the server's value for USER_ASSET_LIMIT (the page's, if set, would win).</summary>
+    sealed class Api(IMarketDataSource source, int? assetLimit = null) : AccountsApi
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             base.ConfigureWebHost(builder);
+            if (assetLimit is { } limit) builder.UseSetting(Admin.SettingDefinitions.UserAssetLimit, limit.ToString());
             builder.ConfigureTestServices(services => services.AddSingleton(source));
         }
     }
@@ -157,5 +159,36 @@ public class AssetEndpointTests
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Assert.False(await db.Assets.AnyAsync(a => a.Symbol == stock || a.Symbol == xetra));
+    }
+
+    [NeonFact]
+    public async Task A_user_adds_at_most_the_limit_of_new_assets_but_can_always_pick_a_stored_one()
+    {
+        var (fund, xetra, stock) = (NewSymbol(), NewSymbol(), NewSymbol());
+        await using var api = new Api(new FakeSource(fund, xetra, stock), assetLimit: 1);
+        var (client, _) = await api.VerifiedAsync();
+        try
+        {
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/assets", new { symbol = fund, kind = "fund" })).StatusCode);
+
+            // Funds and stocks share the limit.
+            var refused = await client.PostAsJsonAsync("/assets", new { symbol = stock, kind = "stock" });
+            Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+            Assert.StartsWith("You can add up to 1 new stocks and funds, and you've reached it.", await refused.Content.ReadFromJsonAsync<string>());
+
+            // Stored ones never count: the seeded fund, and the user's own added one.
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/assets", new { symbol = TemplateAssets.Spy.Symbol, kind = "fund" })).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/assets", new { symbol = fund, kind = "fund" })).StatusCode);
+
+            using var scope = api.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.Assets.AnyAsync(a => a.Symbol == stock));
+        }
+        finally
+        {
+            using var scope = api.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.Assets.Where(a => a.Symbol == fund || a.Symbol == stock).ExecuteDeleteAsync();
+        }
     }
 }

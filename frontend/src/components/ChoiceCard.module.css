@@ -24,6 +24,13 @@
 .card:hover {
   background: var(--surface-hover);
 }
+.card[data-disabled] .main {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.card[data-disabled]:hover {
+  background: var(--surface-sidebar);
+}
 .card[data-selected] {
   border-color: var(--primary);
   box-shadow: var(--glow-primary);

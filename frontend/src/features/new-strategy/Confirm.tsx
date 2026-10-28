@@ -130,7 +130,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       to: budgetPath,
     },
     { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview') },
-    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts') }] : []),
+    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts'), to: modePath }] : []),
     ...(template.aiRound
       ? [
           {

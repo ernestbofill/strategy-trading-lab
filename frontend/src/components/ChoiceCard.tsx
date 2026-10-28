@@ -25,12 +25,14 @@ interface ChoiceCardProps {
   children?: ReactNode
   /** Interactive content below the body (links), kept outside the radio's label. */
   footer?: ReactNode
+  /** Can't be picked for now; the footer says why. */
+  disabled?: boolean
 }
 
 /** A selectable card backed by a native radio input; the whole card is the tap target. */
-export function ChoiceCard({ name, value, checked, onSelect, title, badge, subtitle, children, footer }: ChoiceCardProps) {
+export function ChoiceCard({ name, value, checked, onSelect, title, badge, subtitle, children, footer, disabled }: ChoiceCardProps) {
   return (
-    <div className={styles.card} data-selected={checked || undefined}>
+    <div className={styles.card} data-selected={checked || undefined} data-disabled={disabled || undefined}>
       <label className={styles.main}>
         <input
           type="radio"
@@ -38,6 +40,7 @@ export function ChoiceCard({ name, value, checked, onSelect, title, badge, subti
           value={value}
           checked={checked}
           onChange={onSelect}
+          disabled={disabled}
           className="visually-hidden"
         />
         <span className={styles.head}>

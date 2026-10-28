@@ -31,7 +31,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
     public async Task A_strategy_starts_with_the_templates_tested_defaults_and_shows_on_the_dashboard()
     {
         var name = $"Test {Guid.NewGuid()}";
-        var (client, email) = await factory.SignedUpAsync();
+        var (client, email) = await factory.VerifiedAsync();
         try
         {
             var response = await client.PostAsJsonAsync("/strategies", Request("dip", $"  {name}  ", "live"));
@@ -174,6 +174,27 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             var stored = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Strategies.SingleAsync(s => s.Name == name);
             Assert.Equal(40, stored.Params.RootElement.GetProperty("peakDays").GetInt32());
             Assert.Equal(5, stored.Params.RootElement.GetProperty("zoneStartPct").GetDecimal());
+        }
+        finally
+        {
+            await Remove(name);
+        }
+    }
+
+    [NeonFact]
+    public async Task Going_live_needs_a_confirmed_email_and_a_simulation_does_not()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.SignedUpAsync();
+        try
+        {
+            var live = await client.PostAsJsonAsync("/strategies", Request("dip", name, "live"));
+            var simulation = await client.PostAsJsonAsync("/strategies", Request("dip", name));
+
+            Assert.Equal(HttpStatusCode.BadRequest, live.StatusCode);
+            var problem = await live.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal("Confirm your email to go live.", problem.GetProperty("errors").GetProperty("mode")[0].GetString());
+            Assert.Equal(HttpStatusCode.Created, simulation.StatusCode);
         }
         finally
         {

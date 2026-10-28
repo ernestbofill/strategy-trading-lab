@@ -1,8 +1,11 @@
+import { useEffect } from 'react'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tag, type TagTone } from '../../components/Tag'
 import { useT } from '../../i18n/I18n'
+import { useCurrentAccount } from '../account/AccountContext'
+import { ResendLink } from '../account/ResendLink'
 import styles from './ChooseMode.module.css'
 import { useNewStrategyDraft, type Mode } from './NewStrategyDraft'
 import { budgetPath, reviewPath } from './paths'
@@ -14,6 +17,13 @@ export function ChooseMode() {
   const { mode, templateKey, update } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const isLive = mode === 'live'
+  // Live signals come by email, so going live needs a confirmed address (the server refuses it too).
+  const { emailVerified } = useCurrentAccount()
+
+  // A draft that came here live (e.g. picked before the email changed) falls back to a simulation.
+  useEffect(() => {
+    if (!emailVerified && isLive) update({ mode: 'simulation' })
+  }, [emailVerified, isLive, update])
 
   const modes: { id: Mode; tag: TagTone; badge: string; name: string; line: string; facts: [label: string, text: string][] }[] = [
     {
@@ -67,6 +77,14 @@ export function ChooseMode() {
             onSelect={() => update({ mode: m.id })}
             badge={<Tag tone={m.tag}>{m.badge}</Tag>}
             title={m.name}
+            disabled={m.id === 'live' && !emailVerified}
+            footer={
+              m.id === 'live' && !emailVerified && (
+                <span className={styles.confirmFirst}>
+                  {t('newStrategy.mode.live.confirmFirst')} <ResendLink />
+                </span>
+              )
+            }
           >
             <span className={styles.line}>{m.line}</span>
             <span className={styles.facts}>

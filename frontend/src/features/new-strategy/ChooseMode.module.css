@@ -12,6 +12,13 @@
   color: var(--ink-sidebar);
 }
 
+.confirmFirst {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
 .inkNote {
   color: var(--ink);
 }

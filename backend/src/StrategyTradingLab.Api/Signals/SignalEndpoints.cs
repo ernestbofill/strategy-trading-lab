@@ -126,6 +126,13 @@ public static class SignalEndpoints
     {
         db.ChangeTracker.Clear(); // Only this method writes: nothing loaded to check the request may be saved by it.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        // Hold the strategy row until this answer commits: End (which updates that row) waits for it, or this waits for End
+        // and then sees the strategy ended.
+        var running = await db.Database.SqlQuery<string>($"""
+            SELECT st.status AS "Value" FROM strategies st JOIN signals s ON s.strategy_id = st.id
+            WHERE s.id = {signalId} FOR SHARE OF st
+            """).ToListAsync(cancellationToken);
+        if (running is not ["running"]) return false;
         var now = time.GetUtcNow();
         var answered = await db.Signals
             .Where(s => s.Id == signalId && (s.Status == SignalStatus.Waiting || s.Status == SignalStatus.Missed)

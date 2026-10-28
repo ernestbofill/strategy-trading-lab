@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, TooManyTriesError, InvalidValueError, type AssetMatch, type Security } from '../../../api'
+import { api, ForbiddenError, TooManyTriesError, InvalidValueError, type AssetMatch, type Security } from '../../../api'
 import { TextField } from '../../../components/Field'
 import { useT } from '../../../i18n/I18n'
 import styles from './FundPicker.module.css'
@@ -9,6 +9,7 @@ const DEBOUNCE_MS = 400
 
 /** What to say when a search or an add fails: the server's message when it has one for the user. */
 function failure(e: unknown, t: ReturnType<typeof useT>): string {
+  if (e instanceof ForbiddenError) return t('newStrategy.fund.confirmEmail')
   if (e instanceof TooManyTriesError) return t('newStrategy.fund.tooMany')
   if (e instanceof InvalidValueError) return e.message
   return t('newStrategy.fund.failed')

@@ -23,7 +23,8 @@ public record AddedAssetDto(SecurityDto Asset, bool PricesIn);
 
 /// <summary>
 /// The fund picker (and later "+ Add a stock", ROADMAP item 14): search by name or symbol, and add what isn't stored yet
-/// through <see cref="AssetCatalog"/>. For logged-in users, rate limited per user, as both call the price source.
+/// through <see cref="AssetCatalog"/>. For logged-in users (adding needs a confirmed email), rate limited per user, as both
+/// call the price source.
 /// </summary>
 public static class AssetEndpoints
 {
@@ -123,6 +124,8 @@ public static class AssetEndpoints
                 return TypedResults.Problem(Messages.PriceSourceDown.In(user.Locale), statusCode: StatusCodes.Status502BadGateway);
             }
         })
+        // Adding writes to the assets every user shares, so it needs a confirmed email, as feedback does.
+        .RequireAuthorization(Policies.VerifiedEmail)
         .RequireRateLimiting(AddLimit)
         .WithName("AddAsset")
         .WithSummary("Adds a stock or fund from a supported exchange by its symbol and loads its prices; a stored one is returned as it is.");

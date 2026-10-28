@@ -38,6 +38,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.fund.results': "Fons trobats",
   'newStrategy.fund.none': "No hem trobat cap fons. Prova amb el símbol.",
   'newStrategy.fund.exchanges': "Fons de les borses dels EUA, Londres, París, Amsterdam, Copenhaguen i Hong Kong.",
+  'newStrategy.fund.confirmEmail': "Confirma el correu per afegir un fons nou. Els fons que ja són a l'app es poden triar ara.",
   'newStrategy.fund.tooMany': "Massa cerques. Torna-ho a provar d'aquí a una hora.",
   'newStrategy.fund.failed': "La cerca no ha funcionat. Torna-ho a provar.",
   'newStrategy.review.needLabel': 'Què necessites:',

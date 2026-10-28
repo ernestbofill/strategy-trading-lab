@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { api, type TemplateDetail } from '../../../api'
+import { api, ForbiddenError, type TemplateDetail } from '../../../api'
 import { invalidateAll } from '../../../lib/useLoadable'
 import { NewStrategyDraftProvider } from '../NewStrategyDraft'
 import { ReviewTemplate } from './ReviewTemplate'
@@ -81,5 +81,20 @@ describe('the fund picker', () => {
 
     expect(add).not.toHaveBeenCalled()
     expect(screen.getByText('Tracks the Nasdaq-100')).toBeTruthy()
+  })
+
+  it('asks to confirm the email before adding a new fund', async () => {
+    vi.spyOn(api, 'searchAssets').mockResolvedValue([
+      { id: null, symbol: 'VT', name: 'Vanguard Total World', exchange: 'ARCX', what: 'Vanguard Total World' },
+    ])
+    vi.spyOn(api, 'addAsset').mockRejectedValue(new ForbiddenError())
+    open()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Change' }))
+    fireEvent.change(screen.getByLabelText('Search funds'), { target: { value: 'world' } })
+    fireEvent.click(await screen.findByRole('button', { name: /Vanguard Total World/ }, { timeout: 2000 }))
+
+    expect(await screen.findByText(/Confirm your email to add a new fund/)).toBeTruthy()
+    expect(screen.getByText('iShares Core S&P 500')).toBeTruthy()
   })
 })

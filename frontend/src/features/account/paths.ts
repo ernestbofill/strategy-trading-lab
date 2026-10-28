@@ -1,6 +1,11 @@
 import { dashboardPath } from '../new-strategy/paths'
 
-export { accountPath } from '../dashboard/paths'
+import { accountPath } from '../dashboard/paths'
+
+export { accountPath }
+/** The hash of the account page's Emails section, and the link that opens the page at it (Confirm's "Edit" on Daily overview). */
+export const EMAILS_HASH = '#emails'
+export const accountEmailsPath = `${accountPath}${EMAILS_HASH}`
 export const signUpPath = '/sign-up'
 export const logInPath = '/log-in'
 export const forgotPasswordPath = '/forgot-password'

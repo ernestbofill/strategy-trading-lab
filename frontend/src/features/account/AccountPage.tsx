@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, UnauthorizedError, type Currency, type Locale } from '../../api'
 import { Checkbox, FormMessage, PasswordField, SegmentedField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
@@ -12,7 +12,7 @@ import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
 import { currencyOptionsWith } from './currencies'
 import { errorText } from './copy'
-import { logInPath } from './paths'
+import { EMAILS_HASH, logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
@@ -26,6 +26,12 @@ export function AccountPage() {
   const navigate = useNavigate()
   const [loggingOut, setLoggingOut] = useState(false)
   const [logOutError, setLogOutError] = useState<string | null>(null)
+  const { hash } = useLocation()
+
+  // Confirm's "Edit" on Daily overview opens the page at its Emails section.
+  useEffect(() => {
+    if (hash === EMAILS_HASH) document.getElementById(EMAILS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
+  }, [hash])
 
   const logOut = async () => {
     setLoggingOut(true)
@@ -81,7 +87,7 @@ export function AccountPage() {
         </Section>
       )}
 
-      <Section title={t('account.page.emails')}>
+      <Section id={EMAILS_HASH.slice(1)} title={t('account.page.emails')}>
         <OverviewEmail current={account.overviewEmail} onSaved={refresh} />
       </Section>
 

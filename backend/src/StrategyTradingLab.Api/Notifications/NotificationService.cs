@@ -11,13 +11,13 @@ namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>
 /// Sends the notification emails (spec: Notifications): the live signal alert right after the daily check that found it, and
-/// the daily overview early in the user's morning. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
+/// the daily overview right after the daily check that evaluated the session. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
 /// key is the dedupe contract), then the email is sent and the row says whether it worked. Only to verified addresses.
 /// </summary>
 public class NotificationService(AppDbContext db, IEmailSender sender, SettingsStore settings, IConfiguration configuration, ILogger<NotificationService> logger)
 {
-    /// <summary>The overview goes out from this hour in the user's own time zone ("early morning").</summary>
-    public const int OverviewHour = 7;
+    /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder).</summary>
+    public const int MorningHour = 7;
 
     /// <summary>How far back an alert that wasn't sent is still tried.</summary>
     public const int AlertDays = 3;
@@ -55,8 +55,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     }
 
     /// <summary>
-    /// The overview of the last finished US session, once, to every user whose next morning has begun (07:00 in their time zone,
-    /// on a later calendar day than the session): one per trading day, so a weekend sends Friday's once and not three times.
+    /// The overview of the last finished US session, once, to every user the daily check has evaluated that session for: sent right
+    /// after the check (and by the hourly catch-up when that send couldn't go out). One per trading day, so a weekend sends Friday's
+    /// once and not three times.
     /// </summary>
     public async Task<int> SendOverviewsAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -70,11 +71,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         var sent = 0;
         foreach (var user in users)
         {
-            var local = LocalTime(now, user.TimeZone);
-            if (local.Hour < OverviewHour || DateOnly.FromDateTime(local.DateTime) <= lastSession) continue;
             if (await ClaimAsync(user.Id, null, NotificationKind.Overview, lastSession, cancellationToken) is not { } claimed) continue;
 
-            var today = DateOnly.FromDateTime(local.DateTime);
+            // AI rounds due count by the user's own date, which may already be the day after the session.
+            var today = DateOnly.FromDateTime(LocalTime(now, user.TimeZone).DateTime);
             if (await SendAsync(claimed, user.Email, () => ComposeOverviewAsync(user.Id, today, lastSession, user.Locale, cancellationToken), cancellationToken)) sent++;
         }
         return sent;
@@ -106,7 +106,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var local = LocalTime(now, row.TimeZone);
             var day = row.signal.SnoozedUntil!.Value;
             var localDay = DateOnly.FromDateTime(local.DateTime);
-            if (localDay < day || (localDay == day && local.Hour < OverviewHour)) continue;
+            if (localDay < day || (localDay == day && local.Hour < MorningHour)) continue;
             // A day already gone (the reminder couldn't go out then, e.g. notifications were off) isn't reminded late.
             if (localDay > day.AddDays(1)) continue;
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
@@ -140,7 +140,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var first = group.First();
             var local = LocalTime(now, first.TimeZone);
             var localDay = DateOnly.FromDateTime(local.DateTime);
-            if (localDay < group.Key.DueOn || (localDay == group.Key.DueOn && local.Hour < OverviewHour)) continue;
+            if (localDay < group.Key.DueOn || (localDay == group.Key.DueOn && local.Hour < MorningHour)) continue;
             if (localDay > group.Key.DueOn.AddDays(1)) continue; // A day gone isn't reminded late; the overview still lists it.
             if (await ClaimAsync(group.Key.UserId, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken) is not { } claimed) continue;
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
@@ -155,7 +155,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { return now; } // UTC, as the dashboard does.
     }
 
-    async Task<EmailContent> ComposeOverviewAsync(Guid userId, DateOnly day, DateOnly lastSession, string locale, CancellationToken cancellationToken)
+    async Task<EmailContent> ComposeOverviewAsync(Guid userId, DateOnly today, DateOnly lastSession, string locale, CancellationToken cancellationToken)
     {
         var strategies = await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var ids = strategies.Select(s => s.Id).ToList();
@@ -181,12 +181,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             .OrderBy(x => x.Distance).Take(5)
             .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].Mode, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
 
-        var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= day)
+        var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
             .OrderBy(r => r.DueOn).Select(r => r.StrategyId).ToListAsync(cancellationToken);
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id))).ToList();
-        return EmailTexts.Overview(day, waiting, changed, close, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))]);
+        return EmailTexts.Overview(lastSession, waiting, changed, close, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))]);
     }
 
     static SignalLine Line(Signal signal, Strategy strategy, Asset asset) => SignalLine.From(signal, strategy, asset);

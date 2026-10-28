@@ -166,25 +166,26 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         {
             state.Finished(time.GetUtcNow(), results, evaluation);
         }
-        await SendAlertsAsync(stoppingToken);
+        await SendNotificationsAsync(stoppingToken);
     }
 
     /// <summary>
-    /// Right after the check that found them, the alerts for live signals still waiting. After the run is recorded as finished,
-    /// and apart from it: an email problem is not a refresh failure.
+    /// Right after the check, the alerts for the live signals it found that are still waiting, then the daily overview. After the
+    /// run is recorded as finished, and apart from it: an email problem is not a refresh failure.
     /// </summary>
-    async Task SendAlertsAsync(CancellationToken stoppingToken)
+    async Task SendNotificationsAsync(CancellationToken stoppingToken)
     {
         try
         {
             using var scope = scopes.CreateScope();
             var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
-            if (await notifications.EnabledAsync(stoppingToken))
-                logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken));
+            if (!await notifications.EnabledAsync(stoppingToken)) return;
+            logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken));
+            logger.LogInformation("Sent {Count} daily overviews.", await notifications.SendOverviewsAsync(time.GetUtcNow(), stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            logger.LogWarning("The signal alerts couldn't be sent: {Reason}", error.Message);
+            logger.LogWarning("The signal alerts or overviews couldn't be sent: {Reason}", error.Message);
         }
     }
 }

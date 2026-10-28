@@ -236,7 +236,7 @@ public class NotificationTests
     }
 
     [NeonFact]
-    public async Task The_overview_goes_out_once_a_day_from_seven_in_the_users_morning_to_verified_users_who_want_it()
+    public async Task The_overview_goes_out_once_a_session_right_after_the_check_to_verified_users_who_want_it()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
@@ -247,22 +247,21 @@ public class NotificationTests
         try
         {
             var sender = new Captured();
-            // Madrid is UTC+2 on 2026-10-23: 04:30 UTC is 06:30 there, 05:30 UTC is 07:30.
-            var early = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 4, 30, 0, TimeSpan.Zero), default);
+            // New York is UTC-4 on 2026-10-22: the bar is final at 20:30 UTC. 21:00 UTC is 23:00 in Madrid, before its next morning.
+            var thursday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 22, 21, 0, 0, TimeSpan.Zero), default);
             var morning = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero), default);
-            var again = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 9, 0, 0, TimeSpan.Zero), default);
-            // Saturday morning: Friday's session is over, so Friday's overview goes out. Sunday and Monday morning add nothing: still Friday's.
-            var next = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 24, 6, 0, 0, TimeSpan.Zero), default);
-            var sunday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 25, 6, 0, 0, TimeSpan.Zero), default);
+            // Friday evening: Friday's session. Saturday to Monday morning add nothing: still Friday's.
+            var friday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default);
+            var saturday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 24, 6, 0, 0, TimeSpan.Zero), default);
             var monday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 26, 6, 0, 0, TimeSpan.Zero), default);
 
-            Assert.Equal(0, early);
+            Assert.True(thursday >= 1);
+            Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your daily overview, 22 Oct 2026");
             Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your daily overview, 23 Oct 2026");
             Assert.DoesNotContain(sender.Sent, m => m.To == off.Email || m.To == unverified.Email);
-            Assert.True(morning >= 1);
-            Assert.Equal(0, again);
-            Assert.True(next >= 1); // Friday's, on Saturday morning.
-            Assert.Equal((0, 0), (sunday, monday));
+            Assert.Equal(0, morning);
+            Assert.True(friday >= 1);
+            Assert.Equal((0, 0), (saturday, monday));
             var mail = sender.Sent.First(m => m.To == wanted.Email);
             Assert.Contains("Waiting for you", mail.Body); // The seeded live signal is still waiting.
             Assert.Equal(2, await db.Notifications.CountAsync(n => n.UserId == wanted.UserId && n.Kind == NotificationKind.Overview));

@@ -153,7 +153,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Language: English or Catalan, chosen by the user with two buttons. Editable later in the account.
 - Currency: euro (the default), US dollar or British pound, as three buttons (a few short choices look the same on every device, unlike a select's menu). It is the currency of the user's new strategies: budgets, steps and results. Editable in the account; a running strategy keeps the currency it started with. Assumed: three currencies for now, and the same budget limits (500 to 1,000,000) in each.
 - Daily overview by email, on by default.
-- Time zone, guessed from the browser and editable. It sets when the overview arrives (early morning in Europe).
+- Time zone, guessed from the browser and editable. It sets when reminders arrive (snoozed signals and AI rounds, from 07:00); the overview itself goes out right after the daily check.
 - The disclaimer, accepted once: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." Plus one line: the app is for learning, testing and following strategies, and it never trades for you. The button stays off until the box is ticked.
 - No push permission and no AI data sharing at sign-up: those are asked when first needed.
 - Button: "Create my account". Link: "I already have an account" → Log-in.
@@ -471,7 +471,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 | Stocks | "[first stock] and [n] more" (fund templates: the fund's name) | Review |
 | Settings | "Tested defaults", or "[n] changed" | Advanced settings |
 | Budget | "€[budget] · steps of €[step] · up to [max] per stock" | Set your budget |
-| Daily overview | "By email, after the US market close" | Overview settings (not drawn) |
+| Daily overview | "By email, after the US market close" | The account page's Emails section |
 | Alerts (Live only) | "App and email" | Choose the mode |
 | Prompt (AI only, built) | "Suggested" or "Edited" | Edit prompt |
 
@@ -665,7 +665,7 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 
 **Email layout** (issue #79): every email the app sends (account, notifications, feedback to the owner, the admin test email) uses one layout in the app's cyberpunk style, built by `EmailDocument`: a "▲ STRATEGY TRADING LAB" brand line, a card on the dark ground with a mint top edge, a small uppercase label for the kind of email ("Signal · Live", "Daily overview", "Your account"), then the content, the short disclaimer at the foot of the card wherever signals or results appear, and a footer with "Open the app". The main link is a button with the address under it ("Or open this link:"), for clients that block buttons; the overview's sections are lists with *Live* (pink) and *Simulation* (cyan) tags, and each waiting item links to its page. Each email is sent as HTML and as plain text (multipart/alternative) built from the same blocks, so both say the same thing; clients that don't show HTML show the text. Tables and inline styles only (mail clients drop `<style>`), the text 16px, buttons at least 44px tall, at most 560px wide. Dark only, like the app: assumed, since mail apps that force a light theme may recolour it. The footer doesn't say "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.
 
-**Daily overview** (email, not drawn), once a day after the US close, timed for the user's time zone. Reads like a briefing; never uses buy or sell as an instruction.
+**Daily overview** (email, not drawn), once per US session, right after the daily check has evaluated it (around 22:30 in Madrid), titled with the session's date; an overview that couldn't go out then is sent by the hourly check. A time of the user's choice comes with the overview settings (after launch). Reads like a briefing; never uses buy or sell as an instruction.
 1. **Waiting for you**: unanswered live signals and AI rounds due, each with a link.
 2. **What changed today**: e.g. "ZS fell 8% from its recent peak and is still above its 50-day average (average price over 50 days). That meets the rules of your strategy *Zscaler & friends*." For simulations, also today's signal trades.
 3. **Close to the line**: the stocks nearest to each strategy's rules, with the distance.

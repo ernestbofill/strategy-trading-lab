@@ -47,6 +47,7 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
         };
         db.Strategies.Add(strategy);
         await db.SaveChangesAsync();
+        await StrategyEvaluatorTests.CheckedBeforeAsync(db, strategy.Id, asset.Id, start);
         await new StrategyEvaluator(db, new Clock(new DateTimeOffset(2024, 12, 2, 12, 0, 0, TimeSpan.Zero)), NullLogger<StrategyEvaluator>.Instance)
             .RunAsync(default);
         return (client, strategy.Id, asset.Id);

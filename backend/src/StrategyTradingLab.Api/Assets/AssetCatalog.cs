@@ -29,7 +29,19 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
 
     static string Truncate(string text, int max) => text.Length <= max ? text : text[..(max - 1)].TrimEnd() + "…";
 
-    public async Task<AddedAsset> AddAsync(string symbol, Guid? addedBy, CancellationToken cancellationToken)
+    /// <summary>
+    /// The exchanges users can add from (MICs): those of the seeded stocks and funds, to start (spec: "+ Add a stock").
+    /// The owner can add from any exchange on <c>/admin/assets</c>.
+    /// </summary>
+    public static readonly IReadOnlySet<string> SupportedExchanges =
+        TemplateAssets.All.Where(seed => seed.Kind != AssetKind.Index).Select(seed => seed.Exchange).ToHashSet();
+
+    /// <summary>
+    /// Adds the asset, or returns the stored one. <paramref name="allowed"/> (its kind and MIC) refuses a new one the caller
+    /// can't add, before anything is stored; a stored one is the caller's to check.
+    /// </summary>
+    public async Task<AddedAsset> AddAsync(string symbol, Guid? addedBy, CancellationToken cancellationToken,
+        Func<AssetKind, string, bool>? allowed = null)
     {
         var wanted = symbol.Trim().ToUpperInvariant();
         var asset = await FindAsync(wanted, cancellationToken);
@@ -43,6 +55,8 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
                 ?? throw new AssetNotFoundException($"Yahoo has no stock, fund or index with the symbol {wanted}.");
             var kind = KindOf(match.Type)
                 ?? throw new AssetNotFoundException($"Yahoo lists {match.Symbol} as {match.Type.ToLowerInvariant()}: only stocks, funds and indexes can be added.");
+            if (allowed is not null && !allowed(kind, Mic(match.Exchange)))
+                throw new AssetNotFoundException($"{match.Symbol} can't be added here.");
             var currency = await source.CurrencyAsync(match.Symbol, cancellationToken);
 
             asset = new Asset

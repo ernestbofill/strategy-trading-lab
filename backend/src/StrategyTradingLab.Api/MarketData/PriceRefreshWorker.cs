@@ -181,11 +181,22 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
             if (!await notifications.EnabledAsync(stoppingToken)) return;
             logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken));
-            logger.LogInformation("Sent {Count} daily overviews.", await notifications.SendOverviewsAsync(time.GetUtcNow(), stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
-            logger.LogWarning("The signal alerts or overviews couldn't be sent: {Reason}", error.Message);
+            logger.LogWarning("The signal alerts couldn't be sent: {Reason}", error.Message);
+        }
+        // Apart from the alerts, so a failed alert doesn't hold the overviews back.
+        try
+        {
+            using var scope = scopes.CreateScope();
+            var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
+            if (await notifications.EnabledAsync(stoppingToken))
+                logger.LogInformation("Sent {Count} daily overviews.", await notifications.SendOverviewsAsync(time.GetUtcNow(), stoppingToken));
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The daily overviews couldn't be sent: {Reason}", error.Message);
         }
     }
 }

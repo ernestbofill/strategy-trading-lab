@@ -16,7 +16,7 @@ namespace StrategyTradingLab.Api.Notifications;
 /// </summary>
 public class NotificationService(AppDbContext db, IEmailSender sender, SettingsStore settings, IConfiguration configuration, ILogger<NotificationService> logger)
 {
-    /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder).</summary>
+    /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder), and no overview goes out before it.</summary>
     public const int MorningHour = 7;
 
     /// <summary>How far back an alert that wasn't sent is still tried.</summary>
@@ -56,8 +56,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
 
     /// <summary>
     /// The overview of the last finished US session, once, to every user the daily check has evaluated that session for: sent right
-    /// after the check (and by the hourly catch-up when that send couldn't go out). One per trading day, so a weekend sends Friday's
-    /// once and not three times.
+    /// after the check, and by the hourly check for whoever wasn't sent it then (email not set up yet, a restart, an address just
+    /// confirmed). Never in the user's night (before 07:00 their time): it waits for the morning. One per trading day, so a weekend
+    /// sends Friday's once and not three times.
     /// </summary>
     public async Task<int> SendOverviewsAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -71,10 +72,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         var sent = 0;
         foreach (var user in users)
         {
+            var local = LocalTime(now, user.TimeZone);
+            if (local.Hour < MorningHour) continue;
             if (await ClaimAsync(user.Id, null, NotificationKind.Overview, lastSession, cancellationToken) is not { } claimed) continue;
 
             // AI rounds due count by the user's own date, which may already be the day after the session.
-            var today = DateOnly.FromDateTime(LocalTime(now, user.TimeZone).DateTime);
+            var today = DateOnly.FromDateTime(local.DateTime);
             if (await SendAsync(claimed, user.Email, () => ComposeOverviewAsync(user.Id, today, lastSession, user.Locale, cancellationToken), cancellationToken)) sent++;
         }
         return sent;

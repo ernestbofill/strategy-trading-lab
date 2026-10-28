@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { I18nProvider, useI18n } from './i18n/I18n'
 import { AccountProvider, useAccount } from './features/account/AccountContext'
@@ -36,10 +36,12 @@ import { AiRoundPage } from './features/ai-round/AiRoundPage'
 import { AiRoundsPage } from './features/ai-round/AiRoundsPage'
 import { StrategyPromptEditor } from './features/ai-round/StrategyPromptEditor'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
+import { LazyPage } from './components/LazyPage'
+import { lazyPage } from './lib/lazyPage'
 
 // Loaded only when an owner opens /admin, so users never download the admin pages or TanStack Table.
-const AdminSettings = lazy(() => import('./features/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })))
-const AdminAssets = lazy(() => import('./features/admin/AdminAssets').then((m) => ({ default: m.AdminAssets })))
+const AdminSettings = lazyPage(() => import('./features/admin/AdminSettings').then((m) => m.AdminSettings))
+const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((m) => m.AdminAssets))
 
 /** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
@@ -90,17 +92,17 @@ export default function App() {
                   <Route
                     path="/admin"
                     element={
-                      <Suspense fallback={null}>
+                      <LazyPage back="/">
                         <AdminSettings />
-                      </Suspense>
+                      </LazyPage>
                     }
                   />
                   <Route
                     path="/admin/assets"
                     element={
-                      <Suspense fallback={null}>
+                      <LazyPage back="/admin">
                         <AdminAssets />
-                      </Suspense>
+                      </LazyPage>
                     }
                   />
                   <Route path="/feedback" element={<FeedbackPage />} />

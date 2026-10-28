@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { api, NameTakenError, type StrategyDetail } from '../../api'
+import { api, NameTakenError, type Dashboard, type StrategyDetail, type TemplateDetail } from '../../api'
+import { invalidateAll } from '../../lib/useLoadable'
+import { NewStrategyDraftProvider, useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { StrategyPage } from './StrategyPage'
 
 afterEach(() => {
@@ -39,14 +41,38 @@ function open(strategy: StrategyDetail) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getStrategy').mockResolvedValue(strategy)
   render(
-    <MemoryRouter initialEntries={[`/strategies/${strategy.id}`]}>
-      <Routes>
-        <Route path="/strategies/:id" element={<StrategyPage />} />
-        <Route path="/" element={<p>Dashboard</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <NewStrategyDraftProvider owner="a@example.com">
+      <MemoryRouter initialEntries={[`/strategies/${strategy.id}`]}>
+        <Routes>
+          <Route path="/strategies/:id" element={<StrategyPage />} />
+          <Route path="/" element={<p>Dashboard</p>} />
+          <Route path="/new/mode" element={<DraftProbe />} />
+        </Routes>
+      </MemoryRouter>
+    </NewStrategyDraftProvider>,
   )
 }
+
+/** Stands in for Choose the mode: shows the draft it opens with. */
+function DraftProbe() {
+  const { load: _load, update: _update, switchTemplate: _switch, reset: _reset, ...draft } = useNewStrategyDraft()
+  return <pre data-testid="draft">{JSON.stringify(draft)}</pre>
+}
+
+const dipTemplate = {
+  key: 'dip',
+  name: 'Winners at a discount',
+  watches: {
+    kind: 'stocks',
+    starterList: [
+      { id: 'a', symbol: 'ZS', name: 'Zscaler', what: '' },
+      { id: 'b', symbol: 'CRWD', name: 'CrowdStrike', what: '' },
+    ],
+  },
+  defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: { peakDays: 60 } },
+  settings: [],
+  settingGroups: [],
+} as unknown as TemplateDetail
 
 describe('StrategyPage', () => {
   it('shows a live strategy next to the rules alone and the index, and leads a waiting signal to the user', async () => {
@@ -211,5 +237,77 @@ describe('StrategyPage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Unarchive' }))
     expect(archive).toHaveBeenCalledWith('u', false)
+  })
+
+  it('offers "Go live" on a running simulation only', async () => {
+    open(detail({ id: 'gl-live' }))
+    expect(await screen.findByRole('button', { name: 'End the strategy' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Go live/ })).toBeNull()
+    cleanup()
+
+    open(detail({ id: 'gl-ended', mode: 'simulation', signals: null, status: 'ended', endedOn: '2026-10-20' }))
+    expect(await screen.findByRole('button', { name: 'Archive' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Go live/ })).toBeNull()
+  })
+
+  it('"Go live" fills the draft from the simulation and opens Choose the mode with Live picked', async () => {
+    invalidateAll()
+    vi.spyOn(api, 'getTemplate').mockResolvedValue(dipTemplate)
+    vi.spyOn(api, 'getDashboard').mockResolvedValue({
+      today: '2026-10-24',
+      strategies: [{ name: 'Zscaler & friends live', status: 'running' }, { name: 'Old', status: 'ended' }],
+      waiting: [],
+    } as unknown as Dashboard)
+    open(
+      detail({
+        id: 'gl-sim',
+        mode: 'simulation',
+        signals: null,
+        currency: 'USD',
+        budget: { amount: 6000, used: 0, step: 200, maxSteps: 4, steps: 0, totalSteps: 30 },
+        settings: { peakDays: 40 },
+        stocks: [
+          {
+            assetId: 'a', symbol: 'ZS', name: 'Zscaler', status: 'watching', steps: 0, rulesSteps: null, maxSteps: 4,
+            distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
+          },
+          {
+            assetId: 'n', symbol: 'NET', name: 'Cloudflare', status: 'watching', steps: 0, rulesSteps: null, maxSteps: 4,
+            distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
+          },
+        ],
+      }),
+    )
+
+    const goLive = await screen.findByRole('button', { name: /Go live With these settings/ })
+    await vi.waitFor(() => expect((goLive as HTMLButtonElement).disabled).toBe(false))
+    // The dashboard's names number the copy.
+    await vi.waitFor(() => expect(api.getDashboard).toHaveBeenCalled())
+    await act(async () => {
+      await vi.mocked(api.getDashboard).mock.results[0].value
+    })
+    fireEvent.click(goLive)
+
+    const draft = JSON.parse((await screen.findByTestId('draft')).textContent!)
+    expect(draft).toMatchObject({
+      templateKey: 'dip',
+      mode: 'live',
+      unticked: ['CRWD'],
+      added: [{ id: 'n', symbol: 'NET', name: 'Cloudflare', pricesIn: true }],
+      settings: { peakDays: 40 },
+      budget: 6000,
+      step: 200,
+      maxSteps: 4,
+      name: 'Zscaler & friends live 2',
+      currency: 'USD',
+      sourceStrategyId: 'gl-sim',
+    })
+  })
+
+  it('links a live copy to the simulation it came from', async () => {
+    open(detail({ id: 'copy', sourceStrategyId: 'sim-9', sourceStrategyName: 'Zscaler sim' }))
+
+    expect((await screen.findByRole('link', { name: 'Zscaler sim' })).getAttribute('href')).toBe('/strategies/sim-9')
+    expect(screen.getByText(/Copied from/)).toBeTruthy()
   })
 })

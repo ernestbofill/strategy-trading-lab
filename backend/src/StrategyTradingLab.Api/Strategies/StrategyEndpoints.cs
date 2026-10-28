@@ -86,6 +86,11 @@ public static class StrategyEndpoints
             var errors = NewStrategyValidation.Validate(request, template, assets, user.Locale);
             // Live signals are sent by email (spec: Choose the mode), so a live strategy needs a confirmed address.
             if (request.Mode == StrategyMode.Live && user.EmailVerifiedAt is null) errors["mode"] = [Messages.ConfirmEmailToGoLive.In(user.Locale)];
+            // "Go live with these settings": a live copy keeps the simulation it came from, which must be one of the user's.
+            var source = request.Mode == StrategyMode.Live ? request.SourceStrategyId : null;
+            if (source is { } sourceId && !await db.Strategies.AnyAsync(
+                    s => s.Id == sourceId && s.UserId == user.Id && s.Mode == StrategyMode.Simulation, cancellationToken))
+                errors["sourceStrategyId"] = [Messages.NotYourSimulation.In(user.Locale)];
             var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             // The AI template's prompt choices (Review: "What the AI reads", Edit prompt).
             if (parameters is not null && template == TemplateCatalog.Ai)
@@ -104,6 +109,7 @@ public static class StrategyEndpoints
                 Currency = request.Currency ?? user.Currency,
                 Budget = request.Budget,
                 Params = parameters,
+                SourceStrategyId = source,
                 Assets = [.. assets.Select(asset => new StrategyAsset
                     { AssetId = asset.Id, Active = true, AddedAt = time.GetUtcNow() })],
             };
@@ -472,9 +478,17 @@ public static class StrategyEndpoints
                 settings[s.Key] = prop.GetDecimal();
         }
 
+        var aiSetup = template == TemplateCatalog.Ai && strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) is { } aiParams
+            ? new AiSetup(aiParams.News, aiParams.Mood, aiParams.Figures, aiParams.Instructions)
+            : null;
+        var sourceName = strategy.SourceStrategyId is { } sourceId
+            ? await db.Strategies.AsNoTracking().Where(s => s.Id == sourceId && s.UserId == user.Id).Select(s => s.Name).SingleOrDefaultAsync(cancellationToken)
+            : null;
+
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.Status,
             EndedOn(strategy, user), strategy.ArchivedAt is not null, strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, resultsDay), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai);
+            book.Figures(strategy, resultsDay), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
+            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName);
     }
 }

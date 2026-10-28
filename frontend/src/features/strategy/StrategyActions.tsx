@@ -1,10 +1,16 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, InvalidValueError, NameTakenError, UnauthorizedError, type StrategyDetail } from '../../api'
 import { Checkbox, FormMessage, TextField } from '../../components/Field'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { invalidate, invalidateAll } from '../../lib/useLoadable'
-import { dashboardCacheKey } from '../dashboard/useDashboard'
+import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
+import { draftFromStrategy } from '../new-strategy/goLive'
+import { defaultName, NAME_MAX_LENGTH } from '../new-strategy/newStrategy'
+import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
+import { modePath } from '../new-strategy/paths'
+import { useTemplate } from '../new-strategy/useTemplate'
 import styles from './StrategyActions.module.css'
 import { strategyCacheKey } from './useStrategy'
 
@@ -168,5 +174,37 @@ export function ArchiveStrategy({ s }: { s: StrategyDetail }) {
       </TextAction>
       {failed && <p role="alert">{t('strategy.archiveFailed')}</p>}
     </div>
+  )
+}
+
+/**
+ * "Go live with these settings", on a running simulation: the new-strategy draft takes its stocks, settings, budget and
+ * currency, named "[name] live" (numbered while a running strategy has that name), and Choose the mode opens with Live picked.
+ */
+export function GoLive({ s, className, titleClassName, detailClassName }: {
+  s: StrategyDetail
+  className: string
+  titleClassName: string
+  detailClassName: string
+}) {
+  const t = useT()
+  const navigate = useNavigate()
+  const { load } = useNewStrategyDraft()
+  const template = useTemplate(s.templateKey)
+  const dashboard = useDashboard()
+
+  const goLive = () => {
+    if (template.status !== 'ready') return
+    const taken = dashboard.status === 'ready' ? dashboard.data.strategies.filter((x) => x.status === 'running').map((x) => x.name) : []
+    const name = defaultName(t('strategy.goLive.name', { name: s.name }), taken).slice(0, NAME_MAX_LENGTH)
+    load(draftFromStrategy(s, template.data, name))
+    navigate(modePath)
+  }
+
+  return (
+    <button type="button" className={className} onClick={goLive} disabled={template.status !== 'ready'}>
+      <span className={titleClassName}>{t('strategy.tile.goLiveTitle')}</span>
+      <span className={detailClassName}>{t('strategy.tile.goLiveSub')}</span>
+    </button>
   )
 }

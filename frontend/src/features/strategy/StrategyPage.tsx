@@ -8,10 +8,10 @@ import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { aiRoundPath, aiRoundsPath, signalPath, strategySettingsPath } from '../dashboard/paths'
+import { aiRoundPath, aiRoundsPath, signalPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
-import { AlertsSwitch, ArchiveStrategy, EndStrategy, RenameForm } from './StrategyActions'
+import { AlertsSwitch, ArchiveStrategy, EndStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
@@ -214,6 +214,11 @@ function StrategyView({ s }: { s: StrategyDetail }) {
             <em>{s.templateName}</em> · {since}
           </span>
         </div>
+        {s.sourceStrategyId && s.sourceStrategyName && (
+          <p className={styles.copiedFrom}>
+            {t('strategy.copiedFrom')} <Link to={strategyPath(s.sourceStrategyId)}>{s.sourceStrategyName}</Link>
+          </p>
+        )}
       </div>
       <Summary s={s} />
       <Stocks s={s} />
@@ -231,6 +236,10 @@ function StrategyView({ s }: { s: StrategyDetail }) {
               <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.aiRoundsTitle')}</span>
               <span className={styles.detail}>{t('strategy.tile.aiRoundsSub')}</span>
             </Link>
+          )}
+          {/* A running simulation can start a live copy; the two keep separate histories. */}
+          {running && !live && (
+            <GoLive s={s} className={styles.tileLink} titleClassName={`ui-strong ${styles.tileTitle}`} detailClassName={styles.detail} />
           )}
         </div>
       )}

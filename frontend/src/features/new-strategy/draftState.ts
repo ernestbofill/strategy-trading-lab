@@ -1,4 +1,4 @@
-import type { Security, TemplateDetail, TemplateKey } from '../../api'
+import type { Currency, Security, TemplateDetail, TemplateKey } from '../../api'
 
 export type Mode = 'simulation' | 'live'
 
@@ -33,6 +33,10 @@ export interface DraftState {
   settings: Record<string, number>
   /** What the user typed on the last screen; null until then, so the name follows the template. */
   name: string | null
+  /** The budget's currency when it isn't the account's: a live copy keeps its simulation's. */
+  currency: Currency | null
+  /** The simulation a live copy came from ("Go live with these settings"); null for a new strategy. */
+  sourceStrategyId: string | null
 }
 
 /** What `update` may change: everything but the template, which only `switchTemplate` changes. */
@@ -52,6 +56,8 @@ export const initialDraft: DraftState = {
   maxSteps: null,
   settings: {},
   name: null,
+  currency: null,
+  sourceStrategyId: null,
 }
 
 /** Another template starts over from the defaults; the same one keeps everything the user has set. */

@@ -323,6 +323,11 @@ export interface StrategyDetail {
   settings?: Record<string, number> | null
   /** AI strategies only: the next round and how the picks did. */
   aiRounds?: AiRoundsSummary | null
+  /** AI strategies only: what the prompt asks for. */
+  ai?: AiSetup | null
+  /** A live copy: the simulation it came from ("Go live with these settings"), while that exists. */
+  sourceStrategyId?: string | null
+  sourceStrategyName?: string | null
 }
 
 /** What the AI prompt asks for: the sources on, and the user's own instructions (null for the suggested ones). */
@@ -606,6 +611,8 @@ export interface NewStrategy {
   settings: Record<string, number>
   /** Templates driven by AI rounds: what the prompt asks for. */
   ai?: AiSetup
+  /** A live strategy copied from one of the user's simulations ("Go live with these settings"). */
+  sourceStrategyId?: string
 }
 
 /** A setting on the admin page. A secret's `value` is never sent: only whether it is set. */

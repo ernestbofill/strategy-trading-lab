@@ -84,3 +84,11 @@ describe('defaultName', () => {
     expect(defaultName('Winners at a discount', ['Winners at a discount', 'Winners at a discount 3'])).toBe('Winners at a discount 2')
   })
 })
+
+describe('newStrategyFrom, a live copy', () => {
+  it('sends the simulation it came from only for a live strategy', () => {
+    const copy = { ...initialDraft, mode: 'live' as const, sourceStrategyId: 'sim-1' }
+    expect(newStrategyFrom(copy, dip, 'Mine live', 'USD').sourceStrategyId).toBe('sim-1')
+    expect(newStrategyFrom({ ...copy, mode: 'simulation' }, dip, 'Mine live', 'USD').sourceStrategyId).toBeUndefined()
+  })
+})

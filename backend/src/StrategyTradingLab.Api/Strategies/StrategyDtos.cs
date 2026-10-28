@@ -10,10 +10,11 @@ namespace StrategyTradingLab.Api.Strategies;
 /// <summary>
 /// What the Confirm screen sends. <c>Currency</c> is the one the user saw while setting the budget; without it the user's
 /// current one is used. <c>Settings</c> are the Advanced settings the user changed (setting key → value); the rest keep the
-/// template's tested defaults.
+/// template's tested defaults. <c>SourceStrategyId</c> is the simulation a live copy came from ("Go live with these settings"):
+/// one of the user's simulations, kept for a live strategy only.
 /// </summary>
 public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, Budget Budget, IReadOnlyList<Guid> AssetIds,
-    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null);
+    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null);
 
 /// <summary>New settings (rules) for a running strategy.</summary>
 public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
@@ -162,7 +163,8 @@ public record UpdateTradeRequest(
 
 /// <summary>
 /// The strategy page. <c>Words</c> are the template's for a stock that isn't bought; <c>Signals</c> is live only. An ended
-/// strategy's results stop at <c>EndedOn</c>, its local end date.
+/// strategy's results stop at <c>EndedOn</c>, its local end date. <c>Ai</c> is what an AI strategy's prompt asks for.
+/// <c>SourceStrategyId</c> and <c>SourceStrategyName</c>: the simulation a live copy came from, while it exists.
 /// </summary>
 public record StrategyDetail(
     Guid Id,
@@ -187,4 +189,7 @@ public record StrategyDetail(
     IReadOnlyList<StrategySignalItem> SignalHistory,
     IReadOnlyList<CurrencyRates> Rates,
     IReadOnlyDictionary<string, decimal>? Settings = null,
-    AiRoundsSummary? AiRounds = null);
+    AiRoundsSummary? AiRounds = null,
+    AiSetup? Ai = null,
+    Guid? SourceStrategyId = null,
+    string? SourceStrategyName = null);

@@ -60,9 +60,9 @@ export const initialDraft: DraftState = {
   sourceStrategyId: null,
 }
 
-/** Another template starts over from the defaults; the same one keeps everything the user has set. */
+/** Another template starts over, and so does picking one after a "Go live" copy: the copy is never reused for a new strategy. */
 export const withTemplate = (draft: DraftState, templateKey: TemplateKey): DraftState =>
-  draft.templateKey === templateKey ? draft : { ...initialDraft, templateKey }
+  draft.templateKey === templateKey && draft.sourceStrategyId === null ? draft : { ...initialDraft, templateKey }
 
 /** The fund a fund template watches: the one the user picked, else the template's. */
 export const fundOf = (draft: DraftState, template: TemplateDetail): Security | null =>

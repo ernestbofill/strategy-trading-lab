@@ -196,13 +196,16 @@ export function GoLive({ s, className, titleClassName, detailClassName }: {
   const goLive = () => {
     if (template.status !== 'ready') return
     const taken = dashboard.status === 'ready' ? dashboard.data.strategies.filter((x) => x.status === 'running').map((x) => x.name) : []
-    const name = defaultName(t('strategy.goLive.name', { name: s.name }), taken).slice(0, NAME_MAX_LENGTH)
+    // Cut before numbering, so a long name keeps its " 2".
+    const name = defaultName(t('strategy.goLive.name', { name: s.name }).slice(0, NAME_MAX_LENGTH - 3), taken)
     load(draftFromStrategy(s, template.data, name))
     navigate(modePath)
   }
 
+  // Shown once the template is in: a tile that can't work isn't shown.
+  if (template.status !== 'ready') return null
   return (
-    <button type="button" className={className} onClick={goLive} disabled={template.status !== 'ready'}>
+    <button type="button" className={className} onClick={goLive}>
       <span className={titleClassName}>{t('strategy.tile.goLiveTitle')}</span>
       <span className={detailClassName}>{t('strategy.tile.goLiveSub')}</span>
     </button>

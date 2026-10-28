@@ -22,9 +22,9 @@ public record AddAssetRequest(string? Symbol, string? Kind);
 public record AddedAssetDto(SecurityDto Asset, bool PricesIn);
 
 /// <summary>
-/// The fund picker (and later "+ Add a stock", ROADMAP item 14): search by name or symbol, and add what isn't stored yet
+/// The fund picker and "+ Add a stock": search by name or symbol, and add what isn't stored yet
 /// through <see cref="AssetCatalog"/>. For logged-in users (adding needs a confirmed email), rate limited per user, as both
-/// call the price source.
+/// call the price source. Each user adds at most <c>USER_ASSET_LIMIT</c> new ones (an admin setting).
 /// </summary>
 public static class AssetEndpoints
 {
@@ -92,7 +92,8 @@ public static class AssetEndpoints
         .WithSummary("Stocks or funds by name or symbol: stored ones first, then the price source's from the exchanges the app supports.");
 
         group.MapPost("/", async Task<Results<Ok<AddedAssetDto>, ValidationProblem, ProblemHttpResult, Conflict<string>>> (AddAssetRequest request,
-            Sessions sessions, AssetCatalog catalog, DatabaseSwitch databases, CancellationToken cancellationToken) =>
+            Sessions sessions, AssetCatalog catalog, DatabaseSwitch databases, AppDbContext db, SettingsStore settings,
+            CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             var symbol = request.Symbol?.Trim() ?? "";
@@ -101,6 +102,14 @@ public static class AssetEndpoints
             if (symbol.Length is 0 or > AssetCatalog.MaxSymbolLength) return Invalid("symbol", refused);
             // Adding fetches prices, and prices belong to the database this host owns (as on /admin/assets).
             if (databases.Active != databases.Home) return TypedResults.Conflict(Messages.CantAddNow.In(user.Locale));
+            // A user adds at most the admin's number of new assets; one already stored is returned as it is and never counts.
+            var upper = symbol.ToUpperInvariant();
+            if (!await db.Assets.AnyAsync(a => a.Symbol == upper, cancellationToken))
+            {
+                var limit = await UserAssetLimitAsync(settings, cancellationToken);
+                if (await db.Assets.CountAsync(a => a.AddedBy == user.Id, cancellationToken) >= limit)
+                    return TypedResults.Conflict(Messages.AssetLimit.In(user.Locale, limit));
+            }
             try
             {
                 var added = await catalog.AddAsync(symbol, user.Id, cancellationToken,
@@ -129,6 +138,14 @@ public static class AssetEndpoints
         .RequireRateLimiting(AddLimit)
         .WithName("AddAsset")
         .WithSummary("Adds a stock or fund from a supported exchange by its symbol and loads its prices; a stored one is returned as it is.");
+    }
+
+    /// <summary>How many new assets one user may add (the admin setting); its default if the value can't be read.</summary>
+    static async Task<int> UserAssetLimitAsync(SettingsStore settings, CancellationToken cancellationToken)
+    {
+        var definition = SettingDefinitions.Find(SettingDefinitions.UserAssetLimit)!;
+        var value = (await settings.ValuesAsync(cancellationToken)).GetValueOrDefault(definition.Key);
+        return int.TryParse(value, out var limit) && limit >= 0 ? limit : int.Parse(definition.Default!);
     }
 
     /// <summary>Users search and add stocks and funds; indexes are followed, not bought.</summary>

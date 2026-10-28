@@ -142,7 +142,8 @@ export const newStrategy = {
   'newStrategy.mode.live.name': 'Live',
   'newStrategy.mode.live.line': 'Follow it with real money at your own broker.',
   'newStrategy.mode.live.who': 'you, at your broker, if and when you choose.',
-  'newStrategy.mode.live.app': 'alerts you to each signal and records what you confirm.',
+  'newStrategy.mode.live.app': 'emails you each signal and records what you confirm.',
+  'newStrategy.mode.live.confirmFirst': 'Confirm your email to go live.',
   'newStrategy.mode.live.you': 'confirm each signal: I did it, or I skipped it.',
 
   // 4 / 5 Set your budget
@@ -201,7 +202,7 @@ export const newStrategy = {
   'newStrategy.confirm.budgetStepsFund': '{budget} · steps of {step} · up to {max} for the fund',
   'newStrategy.confirm.budgetStepsStock': '{budget} · steps of {step} · up to {max} per stock',
   'newStrategy.confirm.overview': 'By email, after the US market close',
-  'newStrategy.confirm.alerts': 'App and email',
+  'newStrategy.confirm.alerts': 'Email',
   'newStrategy.confirm.prompt': 'Suggested',
   'newStrategy.confirm.promptEdited': 'Edited',
   'newStrategy.confirm.next': 'What happens next',

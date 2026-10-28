@@ -137,7 +137,8 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.mode.live.name': 'En directe',
   'newStrategy.mode.live.line': 'Segueix-la amb diners reals al teu propi broker.',
   'newStrategy.mode.live.who': 'tu, al teu broker, si i quan ho decideixis.',
-  'newStrategy.mode.live.app': 't’avisa de cada senyal i registra el que confirmes.',
+  'newStrategy.mode.live.app': 't’envia cada senyal per correu i registra el que confirmes.',
+  'newStrategy.mode.live.confirmFirst': 'Confirma el teu correu per començar en directe.',
   'newStrategy.mode.live.you': 'confirmes cada senyal: l’he fet, o l’he omès.',
 
   'newStrategy.budget.title': 'Defineix el pressupost',
@@ -195,7 +196,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.confirm.budgetStepsFund': '{budget} · passos de {step} · fins a {max} per al fons',
   'newStrategy.confirm.budgetStepsStock': '{budget} · passos de {step} · fins a {max} per acció',
   'newStrategy.confirm.overview': 'Per correu, després del tancament del mercat dels EUA',
-  'newStrategy.confirm.alerts': "A l'app i per correu",
+  'newStrategy.confirm.alerts': 'Per correu',
   'newStrategy.confirm.prompt': 'Suggerit',
   'newStrategy.confirm.promptEdited': 'Editat',
   'newStrategy.confirm.next': 'Què passa després',

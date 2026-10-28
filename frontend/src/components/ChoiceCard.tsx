@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import styles from './ChoiceCard.module.css'
 
 /** Single-choice list of cards (template picker, mode picker). Flows into columns on wider screens. */
@@ -25,12 +25,15 @@ interface ChoiceCardProps {
   children?: ReactNode
   /** Interactive content below the body (links), kept outside the radio's label. */
   footer?: ReactNode
+  /** Can't be picked for now; the footer says why. */
+  disabled?: boolean
 }
 
 /** A selectable card backed by a native radio input; the whole card is the tap target. */
-export function ChoiceCard({ name, value, checked, onSelect, title, badge, subtitle, children, footer }: ChoiceCardProps) {
+export function ChoiceCard({ name, value, checked, onSelect, title, badge, subtitle, children, footer, disabled }: ChoiceCardProps) {
+  const footerId = useId()
   return (
-    <div className={styles.card} data-selected={checked || undefined}>
+    <div className={styles.card} data-selected={checked || undefined} data-disabled={disabled || undefined}>
       <label className={styles.main}>
         <input
           type="radio"
@@ -38,6 +41,8 @@ export function ChoiceCard({ name, value, checked, onSelect, title, badge, subti
           value={value}
           checked={checked}
           onChange={onSelect}
+          disabled={disabled}
+          aria-describedby={disabled && footer ? footerId : undefined}
           className="visually-hidden"
         />
         <span className={styles.head}>
@@ -50,7 +55,11 @@ export function ChoiceCard({ name, value, checked, onSelect, title, badge, subti
         </span>
         {children && <span className={styles.body}>{children}</span>}
       </label>
-      {footer && <div className={styles.footer}>{footer}</div>}
+      {footer && (
+        <div id={footerId} className={styles.footer}>
+          {footer}
+        </div>
+      )}
     </div>
   )
 }

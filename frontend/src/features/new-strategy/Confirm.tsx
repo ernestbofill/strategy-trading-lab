@@ -49,7 +49,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const t = useT()
   const draft = useNewStrategyDraft()
   const { mode, update, reset } = draft
-  const { currency } = useCurrentAccount()
+  const { currency, emailVerified } = useCurrentAccount()
   const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
@@ -82,7 +82,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       setError(
         e instanceof NameTakenError
           ? t('newStrategy.confirm.nameTaken')
-          : t('newStrategy.confirm.startFailed'),
+          : isLive && !emailVerified
+            ? t('newStrategy.mode.live.confirmFirst')
+            : t('newStrategy.confirm.startFailed'),
       )
       setStarting(false)
       return
@@ -131,7 +133,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       to: budgetPath,
     },
     { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: accountEmailsPath },
-    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts') }] : []),
+    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts'), to: modePath }] : []),
     ...(template.aiRound
       ? [
           {

@@ -17,3 +17,6 @@
 .tag[data-tone="dev"] {
   color: var(--warning);
 }
+.tag[data-tone="ended"] {
+  color: var(--ink-sidebar);
+}

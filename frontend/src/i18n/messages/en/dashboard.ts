@@ -22,4 +22,7 @@ export const dashboard = {
   'dashboard.waiting.buy': 'Your rules for {strategy} are met for {stock}. Did you act on it?',
   'dashboard.waiting.sell': 'Your rules for {strategy} are met for a sale. Did you act on it?',
   'dashboard.waiting.aiRound': 'Time for the AI round of {strategy}.',
+  'dashboard.ended': 'ENDED',
+  'dashboard.card.endedOn': 'ended {date}',
+  'dashboard.archived': 'Archived ({n})',
 } as const

@@ -346,4 +346,82 @@ public class StrategyEvaluatorTests
             await CleanAsync(db, user.Id, asset.Id);
         }
     }
+    [NeonFact]
+    public async Task A_waiting_signal_is_missed_once_its_stock_is_delisted()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+            Assert.Equal(SignalStatus.Waiting, (await db.Signals.SingleAsync(s => s.StrategyId == strategyId)).Status);
+            await db.Signals.Where(s => s.StrategyId == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, new DateOnly(2024, 12, 3)));
+
+            await db.Assets.Where(a => a.Id == assetId).ExecuteUpdateAsync(a => a.SetProperty(x => x.Active, false));
+            var run = await Evaluator(db).RunAsync(default);
+
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(SignalStatus.Missed, signal.Status);
+            Assert.Equal(new DateOnly(2024, 11, 29), signal.EndedOn); // The last session before the clock's Monday noon.
+            Assert.Null(signal.SnoozedUntil);
+            Assert.True(run.Missed >= 1);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_waiting_signal_is_missed_once_its_stock_is_unticked()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+            await db.StrategyAssets.Where(a => a.StrategyId == strategyId).ExecuteUpdateAsync(a => a.SetProperty(x => x.Active, false));
+
+            await Evaluator(db).RunAsync(default);
+
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(SignalStatus.Missed, signal.Status);
+            Assert.Equal(new DateOnly(2024, 11, 29), signal.EndedOn);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+
+    [NeonFact]
+    public async Task A_waiting_signal_left_on_an_ended_strategy_is_missed_by_the_next_run()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+            // As if the strategy ended while that run was writing its signal.
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, StrategyStatus.Ended)
+                .SetProperty(x => x.EndedAt, DateTimeOffset.UtcNow));
+
+            await Evaluator(db).RunAsync(default);
+
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(SignalStatus.Missed, signal.Status);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
 }

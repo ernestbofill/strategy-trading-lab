@@ -68,6 +68,8 @@ public static class Messages
     public static readonly Message TradeTooBig = new("That is more than one trade can be.", "Això és més del que pot ser una operació.");
 
     // Strategies
+    public static readonly Message StrategyIsEnded = new("This strategy has ended, so it can't change.", "Aquesta estratègia ha acabat, així que no pot canviar.");
+    public static readonly Message OnlyEndedArchive = new("Only an ended strategy can be archived.", "Només es pot arxivar una estratègia acabada.");
     public static readonly Message NameTaken = new("You already have a running strategy with that name.", "Ja tens una estratègia en marxa amb aquest nom.");
     public static readonly Message UseNameLength = new("Use 1 to {0} characters.", "Fes servir d'1 a {0} caràcters.");
     public static readonly Message PickMode = new("Pick simulation or live.", "Tria simulació o en directe.");

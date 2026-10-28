@@ -44,6 +44,8 @@ public static class SignalEndpoints
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var (signal, strategy, asset) = found;
             if (!Answerable(signal)) return TypedResults.Conflict(AlreadyAnswered);
+            // An ended strategy's history is final: its missed signals stay missed.
+            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             // The same currency needs no rate (it is 1): nothing to load.
             var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
@@ -69,6 +71,7 @@ public static class SignalEndpoints
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             if (!Answerable(found.Signal)) return TypedResults.Conflict(AlreadyAnswered);
+            if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
             return await AnswerAsync(db, id, SignalStatus.Skipped, request.Reason, null, time, cancellationToken)
                 ? TypedResults.NoContent() : TypedResults.Conflict(AlreadyAnswered);
         })
@@ -123,9 +126,18 @@ public static class SignalEndpoints
     {
         db.ChangeTracker.Clear(); // Only this method writes: nothing loaded to check the request may be saved by it.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        // Hold the strategy row until this answer commits: End (which updates that row) waits for it, or this waits for End
+        // and then sees the strategy ended.
+        var running = await db.Database.SqlQuery<string>($"""
+            SELECT st.status AS "Value" FROM strategies st JOIN signals s ON s.strategy_id = st.id
+            WHERE s.id = {signalId} FOR SHARE OF st
+            """).ToListAsync(cancellationToken);
+        if (running is not ["running"]) return false;
         var now = time.GetUtcNow();
         var answered = await db.Signals
-            .Where(s => s.Id == signalId && (s.Status == SignalStatus.Waiting || s.Status == SignalStatus.Missed))
+            .Where(s => s.Id == signalId && (s.Status == SignalStatus.Waiting || s.Status == SignalStatus.Missed)
+                // Checked again in the update: a strategy ended since the request's check takes no answer.
+                && db.Strategies.Any(st => st.Id == s.StrategyId && st.Status == StrategyStatus.Running))
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, status).SetProperty(x => x.SkipReason, reason)
                 .SetProperty(x => x.AnsweredAt, now)
                 .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken); // Only a waiting signal can be snoozed (the table's check).

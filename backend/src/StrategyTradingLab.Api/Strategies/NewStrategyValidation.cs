@@ -19,8 +19,7 @@ public static class NewStrategyValidation
         var errors = new Dictionary<string, string[]>();
         void Fail(string field, string message) => errors[field] = [message];
 
-        var name = request.Name?.Trim() ?? "";
-        if (name.Length is 0 or > NameMaxLength) Fail("name", Messages.UseNameLength.In(locale, NameMaxLength));
+        if (NameError(request.Name, locale) is { } nameError) Fail("name", nameError);
 
         if (request.Mode is not { } mode || !Enum.IsDefined(mode)) Fail("mode", Messages.PickMode.In(locale));
 
@@ -39,6 +38,10 @@ public static class NewStrategyValidation
 
         return errors;
     }
+
+    /// <summary>What is wrong with a strategy's name (Confirm, Rename): trimmed, 1 to <see cref="NameMaxLength"/> characters. Null when fine.</summary>
+    public static string? NameError(string? name, string locale) =>
+        (name?.Trim() ?? "").Length is 0 or > NameMaxLength ? Messages.UseNameLength.In(locale, NameMaxLength) : null;
 
     static void ValidateBudget(Budget budget, Template template, Action<string, string> fail, string locale)
     {

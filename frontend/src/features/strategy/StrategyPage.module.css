@@ -21,6 +21,11 @@
   color: var(--ink-sidebar);
 }
 
+.ended {
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+
 .summary {
   display: flex;
   flex-direction: column;

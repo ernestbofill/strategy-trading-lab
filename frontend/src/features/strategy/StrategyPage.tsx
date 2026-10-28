@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { AiRoundsSummary, StrategyDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
+import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { aiRoundPath, aiRoundsPath, signalPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
+import { AlertsSwitch, ArchiveStrategy, EndStrategy, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
@@ -178,40 +181,63 @@ export function StrategyPage() {
 
   return (
     <LoadableScreen state={strategy} top={top} what={t('strategy.what')}>
-      {(s) => {
-        const live = s.mode === 'live'
-        const since = s.startedOn === s.today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
-        const source = live ? t('strategy.source.live') : t('strategy.source.sim')
-        return (
-          <Screen top={top} note={`${source} ${t('common.disclaimer')} ${t('common.pastResults')}`}>
-            <div className={styles.header}>
-              <h1 className={styles.title}>{s.name}</h1>
-              <div className={styles.sub}>
-                <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
-                <span>
-                  <em>{s.templateName}</em> · {since}
-                </span>
-              </div>
-            </div>
-            <Summary s={s} />
-            <Stocks s={s} />
-            <SignalsAndTrades s={s} />
-            <div className={styles.tiles}>
-              <Link to={strategySettingsPath(s.id)} className={styles.tileLink}>
-                <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
-                <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
-              </Link>
-              {s.aiRounds && (
-                <Link to={aiRoundsPath(s.id)} className={styles.tileLink}>
-                  <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.aiRoundsTitle')}</span>
-                  <span className={styles.detail}>{t('strategy.tile.aiRoundsSub')}</span>
-                </Link>
-              )}
-            </div>
-            <DeleteStrategy id={s.id} name={s.name} />
-          </Screen>
-        )
-      }}
+      {(s) => <StrategyView s={s} />}
     </LoadableScreen>
+  )
+}
+
+/**
+ * A loaded strategy. A running one has "RENAME" in the top bar, the alerts switch (strategies that email) and "End the
+ * strategy"; an ended one is read-only, with "Ended on [date]", "Archive" or "Unarchive", and "Delete the strategy".
+ */
+function StrategyView({ s }: { s: StrategyDetail }) {
+  const t = useT()
+  const [renaming, setRenaming] = useState(false)
+  const live = s.mode === 'live'
+  const running = s.status === 'running'
+  const since = s.startedOn === s.today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
+  const source = live ? t('strategy.source.live') : t('strategy.source.sim')
+  const top = (
+    <TopBar
+      back={dashboardPath}
+      aside={renaming ? undefined : <TextAction onClick={() => setRenaming(true)}>{t('strategy.rename')}</TextAction>}
+    />
+  )
+  return (
+    <Screen top={top} note={`${source} ${t('common.disclaimer')} ${t('common.pastResults')}`}>
+      <div className={styles.header}>
+        {renaming ? <RenameForm s={s} onClose={() => setRenaming(false)} /> : <h1 className={styles.title}>{s.name}</h1>}
+        <div className={styles.sub}>
+          <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
+          {s.endedOn && <span className={styles.ended}>{t('strategy.endedOn', { date: shortDate(s.endedOn) })}</span>}
+          <span>
+            <em>{s.templateName}</em> · {since}
+          </span>
+        </div>
+      </div>
+      <Summary s={s} />
+      <Stocks s={s} />
+      <SignalsAndTrades s={s} />
+      {(running || s.aiRounds) && (
+        <div className={styles.tiles}>
+          {running && (
+            <Link to={strategySettingsPath(s.id)} className={styles.tileLink}>
+              <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
+              <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
+            </Link>
+          )}
+          {s.aiRounds && (
+            <Link to={aiRoundsPath(s.id)} className={styles.tileLink}>
+              <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.aiRoundsTitle')}</span>
+              <span className={styles.detail}>{t('strategy.tile.aiRoundsSub')}</span>
+            </Link>
+          )}
+        </div>
+      )}
+      {/* Only strategies that email have alerts: live ones (signals) and AI ones (rounds due). */}
+      {running && (live || s.aiRounds) && <AlertsSwitch s={s} />}
+      {running ? <EndStrategy s={s} /> : <ArchiveStrategy s={s} />}
+      <DeleteStrategy id={s.id} name={s.name} />
+    </Screen>
   )
 }

@@ -141,6 +141,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - **Signals follow the rules, not the user's trades.** Each strategy keeps the rules' own position (its signal trades), and signals come from it, in both modes. After a skip, the rules carry on as if the step had been bought (the next signal for that stock is the next step), and a *Index trend* sell signal arrives even if the user never bought.
 - **Simulation:** the app records every trade the rules call for, at the next trading day's opening price, with the tested fee per trade, about 0.2% of the amount plus 1 in the strategy's currency (€1, $1 or £1; rounded, not converted). The fee is inside the step: amount plus fee is the step (the backtest charged it on top, which changes its results by a fraction of a point). Results come from those signal trades.
 - **Live:** the app sends each signal and the user confirms it. Results come only from confirmed trades at the prices the user entered; the rules' own position is shown next to them.
+- **A stock the strategy no longer follows** (delisted, unticked or removed): the daily check closes its waiting signals as *Missed*, ending on the last session (#91). It no longer checks the stock; trades in it stay in the results.
 - **Budget used** is what the buys cost (with fees) minus the cost of the shares sold since, at average cost: a sale frees budget again. Simulation counts signal trades; live counts only confirmed and hand-logged trades. When the budget is used up, the strategy stops signalling buys.
 - **Budget and settings can change while a strategy runs** (strategy page). The new values apply from then on. Lowering the budget below what is already used, or the max steps below a stock's current step, stops further buys; nothing is sold.
 
@@ -505,13 +506,15 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an index fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
 - A running strategy's own figures are since its start, so they have no worst year yet: until it has a year of its own, the card adds "Template's worst year: [−X%]" under the index fund (product rule: results next to the worst year). The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
 - AI strategy with no results: "No results yet. They start after your first AI round."
-- Below the cards: a dashed button "+ New strategy" → Pick a template. A user runs at most 10 strategies at once: at 10, the button is off and reads "You run 10 strategies, the most for now. End one to start another." (assumed copy)
+- **Ended strategies** (#91): after the running ones and the "+ New strategy" button, last ended first. The card carries an "ENDED" tag before the mode tag, "*[template]* · ended [date]" under the name, and its results as they stood on its end date.
+- **Archived** (#91): the ended strategies the user archived, in a collapsed "Archived ([n])" section at the bottom (closed by default). Only running strategies appear in *Waiting for you*.
+- Below the running cards: a dashed button "+ New strategy" → Pick a template. A user runs at most 10 strategies at once: at 10, the button is off and reads "You run 10 strategies, the most for now. End one to start another." (assumed copy)
 
 ### Strategy page (`StrategyDetail`, drawn in its Live variant)
 
 **Copy and layout**
-- Top bar: "← STRATEGIES" · "RENAME" (renames the strategy in place; not drawn)
-- H1: the strategy name; under it the mode tag and "*[template]* · since [date]".
+- Top bar: "← STRATEGIES" · "RENAME" (built #91, not drawn): the heading becomes a "Name" field with "Save" and "Cancel". Confirm's rules: trimmed, 1 to 60 characters, unique among the user's running strategies ignoring capitals; a taken name reads "You already run a strategy with this name. Pick another." under the field. An ended strategy can be renamed too.
+- H1: the strategy name; under it the mode tag, "Ended on [date]" for an ended strategy, and "*[template]* · since [date]".
 - **Summary box**
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "Index fund" `[+X%]`; a chart with three lines (You solid and highlighted, The rules alone solid, Index fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "Index fund" `[+X%]`, a two-line chart, and "Budget used".
@@ -546,7 +549,9 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For simulations, a third link: "Go live with these settings" (not drawn).
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
-- A notifications switch for this strategy, and "End the strategy" (not drawn). There is no pause: with notifications off the strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
+- **Alerts switch** (built #91, not drawn), for strategies that email: live ones, "Email me this strategy's signals"; AI simulations, "Email me when its AI round is due"; live AI ones, "Email me its signals and AI rounds". Under it: "The daily overview still lists them." On by default. There is no pause: with alerts off the strategy keeps running quietly, and signals left unanswered become *Missed* when they end. A snooze needs alerts on.
+- **"End the strategy"** (built #91, not drawn), running strategies only, with a confirm step in place: "End [name]? The daily check stops and signals still waiting close as missed. Its history stays, read-only. This can't be undone." with "End it" and "Keep it running". Ending sets it to ended (the end date is the user's today), makes every waiting signal *Missed* (ending that day, snooze cleared), skips its AI round due, and frees its name.
+- **An ended strategy** (built #91): read-only. Its results stop at its end date. No alerts switch, no "Tune the settings", no "Log a trade by hand" and no editing or deleting trades, and its missed signals can't be answered any more (the API answers 409, "This strategy has ended, so it can't change."); its answered signals still open. At the bottom: "Archive" (or "Unarchive" when archived), then "Delete the strategy".
 - "Delete the strategy" (built, not drawn), at the bottom: a confirm step in place, "Delete [name]? Its signals, trades and results go with it. This can't be undone." with "Delete" and "Keep it". It deletes the strategy for good, with its stocks, signals, trades, results and AI rounds, and the rounds it shared (nothing would point to them any more, so turning sharing off couldn't remove them). Then the dashboard, in place of the strategy page in the history. The name is free again.
 - Bottom, Live: "Your results come from the trades you confirmed, at your prices. Not financial advice. Signals follow your rules." Simulation (draft): "Results come from paper trades at the next day's opening price. Not financial advice. Signals follow your rules."
 
@@ -688,7 +693,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **Template:** static, in the code, not the database: key, copy (per language), tested defaults with a version number, starter list or fund.
 - **Asset:** a stock or fund: symbol, exchange, name, what it does, currency; for added ones, sector and industry from the price source, who added it and when, and whether it is hidden. Seeded or added, it is a plain row: adding one needs no migration or deploy. Prices are fetched daily for the assets some running strategy lists, and for the index fund the results compare with.
 - **Invites:** the link's code, who made it, uses left; each account records who invited it.
-- **Strategy:** user, template key, the tested-defaults version it started from, name, mode, start date, status (running or ended; no pause), notifications on/off, currency, budget (budget, step size, max steps per stock; editable), parameter values, and for a live copy the simulation it came from. AI settings (round frequency, top N, sources, the user's instructions) are in the parameters.
+- **Strategy:** user, template key, the tested-defaults version it started from, name, mode, start date, status (running or ended; no pause), when it ended and when it was archived (ended ones only), notifications on/off, currency, budget (budget, step size, max steps per stock; editable), parameter values, and for a live copy the simulation it came from. AI settings (round frequency, top N, sources, the user's instructions) are in the parameters.
 - **Strategy stocks:** per strategy, each stock or the fund: active (ticked) or not, added, removed.
 - **Signal trades:** per strategy and stock, the trades the rules made, one per signal (date, side, price, shares, amount, fee, exchange rate, step). Drives signals in both modes and the results in simulation.
 - **Signals:** strategy, stock, side, step and max steps and step size at the time, the rule facts, the close, date, status (waiting, confirmed, skipped, missed; "did" on screen), skip reason, snoozed until, end date.
@@ -709,12 +714,12 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Budget variants for *Index trend* and *Bear markets*.
 - Stock page: chart with the discount zone shaded, status history, trades (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
 - Stock list editor from the strategy page ("Edit list"; "+ Add a stock" on the review is built, #90).
-- Until a screen is built, the controls that open it are hidden, not shown disabled: "Edit list", "Rename", the "Backtest" tile, and Confirm's "Edit" on the Daily overview and Alerts rows. The item that builds the screen brings its control back.
+- Until a screen is built, the controls that open it are hidden, not shown disabled: "Edit list", the "Backtest" tile, and Confirm's "Edit" on the Daily overview and Alerts rows. The item that builds the screen brings its control back.
 - Sell signals for *Index trend*, and its "Out of the market" status.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.
 - Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
-- Go live with these settings; renaming; changing the budget; the notifications switch; ending a strategy.
+- Go live with these settings; changing the budget.
 - Snooze on Confirm a signal; "Enter shares instead" and the exchange-rate line.
 - Daily overview email and its settings.
 - Empty, loading and error states.
@@ -724,7 +729,7 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 - "Coming soon" cards on Pick a template for templates the engine can't run yet.
 - Live mode gated on a confirmed email, with email-only alerts until web push exists.
 - ~~Statuses for *Bear markets*; the "Signals and trades" list on the strategy page.~~ (both built: #60, #61)
-- Ended strategies (where they go is an open decision).
+- ~~Ended strategies.~~ (built #91: kept read-only with an "Ended" mark; the user can archive them)
 - The legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest), linked from a footer.
 - Account: download my data, delete my account, "Invite a friend".
 - Unsubscribe links in emails.

@@ -18,7 +18,16 @@ public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, B
 /// <summary>New settings (rules) for a running strategy.</summary>
 public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
 
-/// <summary>A strategy as shown on the dashboard.</summary>
+/// <summary>A new name for a strategy (Rename): the same rules as Confirm's.</summary>
+public record RenameStrategy(string? Name);
+
+/// <summary>The strategy's alerts switch.</summary>
+public record StrategyNotifications(bool? Enabled);
+
+/// <summary>
+/// A strategy as shown on the dashboard. <c>EndedOn</c> is the user's local date it ended (null while running); its results
+/// stop there. <c>Archived</c> ones go in the dashboard's collapsed Archived section.
+/// </summary>
 public record StrategySummary(
     Guid Id,
     string Name,
@@ -30,7 +39,10 @@ public record StrategySummary(
     decimal Budget,
     decimal Used,
     StrategyResults? Results,
-    PastResult? PastResult);
+    PastResult? PastResult,
+    StrategyStatus Status = StrategyStatus.Running,
+    DateOnly? EndedOn = null,
+    bool Archived = false);
 
 /// <summary>What a strategy has earned since it started, in percent, next to the index fund (null when its prices are missing). Null until it has trades.</summary>
 public record StrategyResults(decimal Strategy, decimal? Index, IReadOnlyList<decimal> History);
@@ -43,7 +55,10 @@ public enum WaitingKind { BuySignal, SellSignal, AiRound }
 /// <summary>Something that needs the user.</summary>
 public record WaitingItem(Guid Id, WaitingKind Kind, Guid StrategyId, string StrategyName, string? StockName);
 
-/// <summary><c>Today</c> is the user's local date, to tell a strategy started today from an older one.</summary>
+/// <summary>
+/// <c>Today</c> is the user's local date, to tell a strategy started today from an older one. <c>Strategies</c>: the running
+/// ones, newest first, then the ended ones, last ended first, the archived ones last.
+/// </summary>
 public record Dashboard(DateOnly Today, IReadOnlyList<StrategySummary> Strategies, IReadOnlyList<WaitingItem> Waiting);
 
 /// <summary>The budget and what the strategy's buys use of it. <c>Steps</c> and <c>TotalSteps</c> are null for all in, all out.</summary>
@@ -145,13 +160,20 @@ public record UpdateTradeRequest(
     FxSource? FxSource,
     decimal? FxRate);
 
-/// <summary>The strategy page. <c>Words</c> are the template's for a stock that isn't bought; <c>Signals</c> is live only.</summary>
+/// <summary>
+/// The strategy page. <c>Words</c> are the template's for a stock that isn't bought; <c>Signals</c> is live only. An ended
+/// strategy's results stop at <c>EndedOn</c>, its local end date.
+/// </summary>
 public record StrategyDetail(
     Guid Id,
     string Name,
     string TemplateKey,
     string TemplateName,
     StrategyMode Mode,
+    StrategyStatus Status,
+    DateOnly? EndedOn,
+    bool Archived,
+    bool Notifications,
     DateOnly StartedOn,
     DateOnly Today,
     string Currency,

@@ -180,7 +180,8 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | mode | text, not null | `simulation` \| `live`. Never changes |
 | status | text, not null | `running` \| `ended` |
 | started_on | date, not null | "since [date]" |
-| ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))` |
+| ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. Ending closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
+| archived_at | timestamptz, null | When the user archived the ended strategy (the dashboard's collapsed Archived section). `CHECK (archived_at IS NULL OR status = 'ended')` |
 | notifications | bool, not null, default true | Signal notifications for this strategy, on every channel. Off = it keeps running quietly |
 | currency | char(3), not null | Fixed at creation. Budget, trade amounts and results are in it |
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |

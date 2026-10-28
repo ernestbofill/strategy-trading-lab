@@ -1385,3 +1385,28 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261028205950_AddStrategyArchivedAt') THEN
+    ALTER TABLE strategies ADD archived_at timestamptz;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261028205950_AddStrategyArchivedAt') THEN
+    ALTER TABLE strategies ADD CONSTRAINT ck_strategies_archived_at CHECK (archived_at IS NULL OR status = 'ended');
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261028205950_AddStrategyArchivedAt') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261028205950_AddStrategyArchivedAt', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

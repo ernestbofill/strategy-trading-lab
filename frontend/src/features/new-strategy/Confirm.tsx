@@ -11,6 +11,7 @@ import { useT } from '../../i18n/I18n'
 import { resolveBudget } from '../../lib/budget'
 import { money } from '../../lib/format'
 import { useCurrentAccount } from '../account/AccountContext'
+import { accountEmailsPath } from '../account/paths'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
@@ -129,7 +130,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
       to: budgetPath,
     },
-    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview') },
+    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: accountEmailsPath },
     ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts') }] : []),
     ...(template.aiRound
       ? [

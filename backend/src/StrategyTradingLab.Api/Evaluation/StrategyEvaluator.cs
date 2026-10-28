@@ -59,7 +59,7 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
     async Task<Changes> EvaluateAsync(Strategy strategy, DateOnly lastSession, DateTimeOffset now, ExchangeRates rates,
         CancellationToken cancellationToken)
     {
-        int signals = 0, trades = 0, missed = 0;
+        int signals = 0, trades = 0, missed = await CloseUnfollowedAsync(strategy, lastSession, cancellationToken);
         var added = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).ToDictionary(a => a.AssetId, a => DateOnly.FromDateTime(a.AddedAt.UtcDateTime));
         var wanted = added.Keys.ToList();
         // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
@@ -83,6 +83,21 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             missed += run.Missed;
         }
         return new Changes(signals, trades, missed);
+    }
+
+    /// <summary>
+    /// The waiting signals of stocks the daily check no longer follows (delisted, unticked or removed from the strategy) would
+    /// never close: they become missed, ending on the last session. Returns how many.
+    /// </summary>
+    async Task<int> CloseUnfollowedAsync(Strategy strategy, DateOnly lastSession, CancellationToken cancellationToken)
+    {
+        var ticked = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
+        // Read in the database, so an answer saved meanwhile stands. Only a waiting signal can be snoozed (the table's check).
+        return await db.Signals.Where(s => s.StrategyId == strategy.Id && s.Status == SignalStatus.Waiting
+                && !db.Assets.Any(a => a.Id == s.AssetId && a.Active && ticked.Contains(a.Id)))
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
+                .SetProperty(x => x.EndedOn, x => x.EndedOn ?? lastSession)
+                .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
     }
 
     async Task<Changes> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,

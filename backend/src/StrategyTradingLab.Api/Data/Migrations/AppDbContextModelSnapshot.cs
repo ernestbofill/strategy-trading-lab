@@ -1411,6 +1411,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset?>("ArchivedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("archived_at");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamptz")
@@ -1506,6 +1510,8 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.ToTable("strategies", null, t =>
                         {
+                            t.HasCheckConstraint("ck_strategies_archived_at", "archived_at IS NULL OR status = 'ended'");
+
                             t.HasCheckConstraint("ck_strategies_budget_step", "budget_step <= budget_amount");
 
                             t.HasCheckConstraint("ck_strategies_budget_steps", "(budget_step IS NULL) = (budget_max_steps IS NULL)");

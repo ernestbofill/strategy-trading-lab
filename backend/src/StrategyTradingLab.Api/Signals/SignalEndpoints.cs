@@ -44,6 +44,8 @@ public static class SignalEndpoints
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var (signal, strategy, asset) = found;
             if (!Answerable(signal)) return TypedResults.Conflict(AlreadyAnswered);
+            // An ended strategy's history is final: its missed signals stay missed.
+            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             // The same currency needs no rate (it is 1): nothing to load.
             var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
@@ -69,6 +71,7 @@ public static class SignalEndpoints
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             if (!Answerable(found.Signal)) return TypedResults.Conflict(AlreadyAnswered);
+            if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
             return await AnswerAsync(db, id, SignalStatus.Skipped, request.Reason, null, time, cancellationToken)
                 ? TypedResults.NoContent() : TypedResults.Conflict(AlreadyAnswered);
         })

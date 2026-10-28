@@ -21,6 +21,8 @@ public static class TradeEndpoints
             var strategy = await db.Strategies.Include(s => s.Assets).FirstOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict(Messages.LiveOnlyLog.In(user.Locale));
+            // An ended strategy's history is final (spec: Strategy page, ended).
+            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             var activeAsset = strategy.Assets.FirstOrDefault(a => a.AssetId == request.AssetId && a.Active && a.RemovedAt == null);
             if (activeAsset is null)
@@ -79,6 +81,7 @@ public static class TradeEndpoints
             var strategy = await db.Strategies.FirstOrDefaultAsync(s => s.Id == trade.StrategyId && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict(Messages.LiveOnlyEdit.In(user.Locale));
+            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             var asset = await db.Assets.FindAsync([trade.AssetId], cancellationToken);
             if (asset is null) return TypedResults.NotFound();
@@ -132,6 +135,7 @@ public static class TradeEndpoints
             var strategy = await db.Strategies.FirstOrDefaultAsync(s => s.Id == trade.StrategyId && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict(Messages.LiveOnlyDelete.In(user.Locale));
+            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             trade.DeletedAt = time.GetUtcNow();
             await db.SaveChangesAsync(cancellationToken);

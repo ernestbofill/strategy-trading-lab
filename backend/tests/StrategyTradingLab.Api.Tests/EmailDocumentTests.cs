@@ -41,6 +41,7 @@ public class EmailDocumentTests
 
         Assert.Contains("lang=\"ca\"", email.Html);
         Assert.Contains("O obre aquest enlla&#231;:", email.Html);
+        Assert.Contains("opacity:0;color:#100d23;\">Confirma:</div>", email.Html); // The inbox preview is the call to action.
         Assert.Contains("Obre l&#39;aplicaci&#243;", email.Html);
     }
 

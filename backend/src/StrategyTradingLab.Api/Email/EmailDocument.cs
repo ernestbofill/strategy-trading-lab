@@ -76,8 +76,10 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             $"<p style=\"margin:0 0 16px;padding:8px 12px;border-left:3px solid {Hairline};font-style:italic;\">{Lines(text)}</p>");
 
     /// <summary>The main link: the lead and the address in the text, a button with the link under it in the HTML.</summary>
-    public EmailDocument Action(string lead, string button, string url) =>
-        Add($"{lead}\n{url}",
+    public EmailDocument Action(string lead, string button, string url)
+    {
+        preheader ??= lead;
+        return Add($"{lead}\n{url}",
             $"<p style=\"margin:0 0 12px;\">{Encode(lead.TrimEnd(':'))}.</p>" +
             $"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 8px;\"><tr>" +
             $"<td bgcolor=\"{Primary}\" style=\"background:{Primary};border-radius:2px;\">" +
@@ -85,6 +87,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             $"letter-spacing:0.5px;text-transform:uppercase;color:{OnAction};text-decoration:none;\">{Encode(button)}</a></td></tr></table>" +
             $"<p style=\"margin:0 0 20px;font-size:12px;line-height:18px;color:{InkSoft};word-break:break-all;\">" +
             $"{Encode(Ca ? "O obre aquest enllaç:" : "Or open this link:")} <a href=\"{Encode(url)}\" style=\"color:{InkSoft};\">{Encode(url)}</a></p>");
+    }
 
     /// <summary>Links side by side: one "label: url" line each in the text, outlined buttons in the HTML.</summary>
     public EmailDocument Links(IEnumerable<(string Label, string Url)> links)

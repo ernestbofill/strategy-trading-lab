@@ -47,6 +47,24 @@ export interface Rule {
 
 export type Watches = { kind: 'stocks'; starterList: Security[] } | { kind: 'fund'; fund: Security }
 
+/** One result of the stock and fund search: backend Assets/AssetEndpoints.cs (AssetMatch). */
+export interface AssetMatch {
+  /** Null until it is added: only the price source knows it yet. */
+  id: string | null
+  symbol: string
+  name: string
+  /** The exchange's MIC ("XNYS"). */
+  exchange: string
+  what: string
+}
+
+/** What adding a stock or fund gave: backend Assets/AssetEndpoints.cs (AddedAssetDto). */
+export interface AddedAsset {
+  asset: Security
+  /** False while its price history isn't in: the strategy waits for it. */
+  pricesIn: boolean
+}
+
 export interface PeriodResult {
   period: string
   /** Percent return of the template, the index fund, and the worst calendar year. */
@@ -786,6 +804,10 @@ export interface Api {
   skipSignal(id: string, reason: SkipReason | null): Promise<void>
   /** Resolves with the day the user is reminded. */
   snoozeSignal(id: string): Promise<string>
+  /** Stored and new stocks or funds by name or symbol. Rejects with `InvalidValueError` (its message is for the user), `TooManyTriesError`. */
+  searchAssets(query: string, kind: 'stock' | 'fund'): Promise<AssetMatch[]>
+  /** Adds a search result that has no id yet and loads its prices. Rejects as `searchAssets` does, and with `ForbiddenError` before the email is confirmed. */
+  addAsset(symbol: string, kind: 'stock' | 'fund'): Promise<AddedAsset>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
   /** Deletes a strategy for good, with its signals, trades, results and AI rounds. One already gone counts as deleted. */

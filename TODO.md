@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] After #82 deploys: send the test email from `/admin` and check how the new HTML emails look in Gmail on the phone and on desktop (and Apple Mail or Outlook if you use them). (#82)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
 - [x] ~~Before merging #28: run `dotnet test` against the Neon dev branch.~~ Not needed: CI now runs every backend test, the database ones included (#32). #28 is merged. (#28, #31)
 - [x] After #28 and #31 are merged: sign up on the live app with your own email, and check the confirmation email arrives. (#31)

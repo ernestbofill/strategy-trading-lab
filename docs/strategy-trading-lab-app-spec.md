@@ -238,6 +238,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Fund block** (fund templates)
 - Heading "The fund it watches". One row: the fund's name, a one-line description, and a "Change" link (fund picker, not drawn: the same search as "+ Add a stock", showing funds only; the picked fund replaces the default, and its line is its name).
+- **Fund picker (built, assumed details):** "Change" opens a search field ("Search funds", "Name or symbol") under the row; "Close" folds it. Results come after a short pause in typing (2+ characters): the funds already in the app first, then the price source's from the supported exchanges, each with its name and "SYMBOL · EXCHANGE". Picking one that isn't stored adds it with its price history; if the history doesn't load, the row's line reads "Not enough price history yet." A caption names the exchanges ("Funds from the US, London, Paris, Amsterdam, Copenhagen and Hong Kong exchanges."). With a picked fund, a line under the row reads "Tested with [tested fund]. Past results are that fund's." and "Use the tested fund" goes back to it. Confirm's row shows the picked fund. Adding a fund the app doesn't have yet needs a confirmed email (searching and picking a stored fund don't): "Confirm your email to add a new fund. Funds already in the app can be picked now." Errors: "No fund found. Try its symbol.", "Too many searches. Try again in an hour.", the server's reason (not a fund, price source down). The results still compare with the index fund (SPY), whatever fund is watched.
 
 **Per-template content**
 
@@ -662,6 +663,8 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 
 ## 7. Notifications
 
+**Email layout** (issue #79): every email the app sends (account, notifications, feedback to the owner, the admin test email) uses one layout in the app's cyberpunk style, built by `EmailDocument`: a "▲ STRATEGY TRADING LAB" brand line, a card on the dark ground with a mint top edge, a small uppercase label for the kind of email ("Signal · Live", "Daily overview", "Your account"), then the content, the short disclaimer at the foot of the card wherever signals or results appear, and a footer with "Open the app". The main link is a button with the address under it ("Or open this link:"), for clients that block buttons; the overview's sections are lists with *Live* (pink) and *Simulation* (cyan) tags, and each waiting item links to its page. Each email is sent as HTML and as plain text (multipart/alternative) built from the same blocks, so both say the same thing; clients that don't show HTML show the text. Tables and inline styles only (mail clients drop `<style>`), the text 16px, buttons at least 44px tall, at most 560px wide. Dark only, like the app: assumed, since mail apps that force a light theme may recolour it. The footer doesn't say "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.
+
 **Daily overview** (email, not drawn), once a day after the US close, timed for the user's time zone. Reads like a briefing; never uses buy or sell as an instruction.
 1. **Waiting for you**: unanswered live signals and AI rounds due, each with a link.
 2. **What changed today**: e.g. "ZS fell 8% from its recent peak and is still above its 50-day average (average price over 50 days). That meets the rules of your strategy *Zscaler & friends*." For simulations, also today's signal trades.
@@ -701,8 +704,8 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Index trend* and *Bear markets*.
 - Stock page: chart with the discount zone shaded, status history, trades (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
-- Stock list editor from the strategy page, stock search ("+ Add a stock"), fund picker ("Change").
-- Until a screen is built, the controls that open it are hidden, not shown disabled: "+ Add a stock", the fund's "Change", "Edit list", "Rename", the "Backtest" tile, and Confirm's "Edit" on the Daily overview and Alerts rows. The item that builds the screen brings its control back.
+- Stock list editor from the strategy page, stock search ("+ Add a stock").
+- Until a screen is built, the controls that open it are hidden, not shown disabled: "+ Add a stock", "Edit list", "Rename", the "Backtest" tile, and Confirm's "Edit" on the Daily overview and Alerts rows. The item that builds the screen brings its control back.
 - Sell signals for *Index trend*, and its "Out of the market" status.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.

@@ -31,6 +31,8 @@ public static class EmailTexts
     public const string DisclaimerCa = "No és assessorament financer. Els senyals segueixen les teves regles.";
     public const string Disclaimer = DisclaimerEn;
 
+    static string DisclaimerFor(string locale) => locale == "ca" ? DisclaimerCa : DisclaimerEn;
+
     static string Money(decimal amount, string currency) =>
         (currency switch { "EUR" => "€", "USD" => "$", "GBP" => "£", _ => currency + " " }) + amount.ToString("#,0.##", CultureInfo.InvariantCulture);
 
@@ -143,7 +145,7 @@ public static class EmailTexts
         if (intro is not null) email.Paragraph(intro);
         return email.Box(SignalText(s, locale))
             .Action(ca ? "Consulta'l i indica si hi has actuat:" : "See it, and say whether you acted on it:", ca ? "Veure el senyal" : "See the signal", SignalUrl(s, appUrl))
-            .Disclaimer(ca ? DisclaimerCa : DisclaimerEn)
+            .Disclaimer(DisclaimerFor(locale))
             .Build(subject);
     }
 
@@ -175,7 +177,7 @@ public static class EmailTexts
             .Paragraph(ca
                 ? "L'aplicació no es connecta a la teva IA. Si omets una ronda, aquella ronda no té senyal."
                 : "The app doesn't connect to your AI. If you skip a round, there's no signal that round.")
-            .Disclaimer(ca ? DisclaimerCa : DisclaimerEn)
+            .Disclaimer(DisclaimerFor(locale))
             .Build(ca ? $"És l'hora de la ronda d'IA de {names}" : $"Time for the AI round of {names}");
     }
 
@@ -221,7 +223,7 @@ public static class EmailTexts
             : $"{s.Name} ({ModeName(s.Mode, locale)}): since {Date(s.StartedOn)}, {s.Signals} {(s.Signals == 1 ? "signal" : "signals")}")));
 
         return email.Links([(ca ? "Obre l'aplicació" : "Open the app", $"{appUrl}/")])
-            .Disclaimer(ca ? DisclaimerCa : DisclaimerEn)
+            .Disclaimer(DisclaimerFor(locale))
             .Build(title);
     }
 }

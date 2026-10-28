@@ -142,7 +142,8 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
     string Html(string subject)
     {
         var lang = Ca ? "ca" : "en";
-        var preview = preheader is null ? "" : Encode(preheader.Replace('\n', ' ') is { Length: > 140 } p ? p[..139] + "…" : preheader.Replace('\n', ' '));
+        var line = preheader?.Replace('\n', ' ') ?? "";
+        var preview = Encode(line.Length > 140 ? line[..139] + "…" : line);
         var brand = appUrl is null ? "STRATEGY TRADING LAB"
             : $"<a href=\"{Encode(appUrl)}/\" style=\"color:{Primary};text-decoration:none;\">STRATEGY TRADING LAB</a>";
         // No "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.

@@ -205,6 +205,7 @@ async function assets(path: string, body?: unknown): Promise<Response> {
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (response.status === 401) endedSession()
+  if (response.status === 403) throw new ForbiddenError()
   if (response.status === 429) throw new TooManyTriesError()
   if (!response.ok) {
     const problem = (await response.json().catch(() => null)) as Problem | string

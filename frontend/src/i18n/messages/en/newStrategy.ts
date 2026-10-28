@@ -40,6 +40,7 @@ export const newStrategy = {
   'newStrategy.fund.results': "Funds found",
   'newStrategy.fund.none': "No fund found. Try its symbol.",
   'newStrategy.fund.exchanges': "Funds from the US, London, Paris, Amsterdam, Copenhagen and Hong Kong exchanges.",
+  'newStrategy.fund.confirmEmail': "Confirm your email to add a new fund. Funds already in the app can be picked now.",
   'newStrategy.fund.tooMany': "Too many searches. Try again in an hour.",
   'newStrategy.fund.failed': "The search didn't work. Try again.",
   'newStrategy.review.needLabel': 'What you need:',

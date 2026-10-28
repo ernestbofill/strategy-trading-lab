@@ -58,6 +58,21 @@ public class AssetEndpointTests
     }
 
     [NeonFact]
+    public async Task Adding_needs_a_confirmed_email_but_searching_does_not()
+    {
+        var (fund, xetra, stock) = (NewSymbol(), NewSymbol(), NewSymbol());
+        await using var api = new Api(new FakeSource(fund, xetra, stock));
+        var (client, _) = await api.SignedUpAsync();
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/assets/search?q=world&kind=fund")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync("/assets", new { symbol = fund, kind = "fund" })).StatusCode);
+
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.False(await db.Assets.AnyAsync(a => a.Symbol == fund));
+    }
+
+    [NeonFact]
     public async Task Search_lists_stored_funds_first_then_new_ones_from_supported_exchanges()
     {
         var (fund, xetra, stock) = (NewSymbol(), NewSymbol(), NewSymbol());
@@ -86,7 +101,7 @@ public class AssetEndpointTests
     {
         var (fund, xetra, stock) = (NewSymbol(), NewSymbol(), NewSymbol());
         await using var api = new Api(new FakeSource(fund, xetra, stock));
-        var (client, _) = await api.SignedUpAsync();
+        var (client, _) = await api.VerifiedAsync();
         var name = $"Test {Guid.NewGuid()}";
         try
         {
@@ -125,7 +140,7 @@ public class AssetEndpointTests
     {
         var (fund, xetra, stock) = (NewSymbol(), NewSymbol(), NewSymbol());
         await using var api = new Api(new FakeSource(fund, xetra, stock));
-        var (client, _) = await api.SignedUpAsync();
+        var (client, _) = await api.VerifiedAsync();
 
         async Task<string?> Refusal(string symbol)
         {

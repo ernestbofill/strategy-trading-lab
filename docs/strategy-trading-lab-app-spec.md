@@ -158,7 +158,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - No push permission and no AI data sharing at sign-up: those are asked when first needed.
 - Button: "Create my account". Link: "I already have an account" → Log-in.
 - **App start without a session** (built, #31): Sign-up on a device that has never logged in, Log-in on one that has (the device remembers it, nothing secret), and Log-in for any other address the user opened, coming back to it afterwards.
-- **On success** the user is logged in at once and goes straight to Pick a strategy template. A "Check your email" notice is shown at the top of the dashboard and new-strategy flow until the email is confirmed ("We sent a link to [email] to confirm it." and "Send it again"); the link itself is only in the email. Until the email is verified the user can use the app, but cannot go live yet (assumed; nothing gates it until live strategies send alerts). Verifying needs no log-in, and the link logs no one in (so it can't be used to log someone into another account): it says "Your email is confirmed" and goes to the dashboard if logged in, else to Log-in. An expired or used link says "This link has expired. Ask for a new one." and goes to the account (which sends it again) if logged in, else to Log-in.
+- **On success** the user is logged in at once and goes straight to Pick a strategy template. A "Check your email" notice is shown at the top of the dashboard and new-strategy flow until the email is confirmed ("We sent a link to [email] to confirm it." and "Send it again"); the link itself is only in the email. Until the email is verified the user can use the app, but cannot go live yet: live signals come by email (built, #89; see Choose the mode). Verifying needs no log-in, and the link logs no one in (so it can't be used to log someone into another account): it says "Your email is confirmed" and goes to the dashboard if logged in, else to Log-in. An expired or used link says "This link has expired. Ask for a new one." and goes to the account (which sends it again) if logged in, else to Log-in.
 - **Errors** (under the field): the email is not valid; the password is too short; the disclaimer is not ticked. "That email is already registered" is never shown: the answer to every sign-up looks the same ("Check your email"), and an existing account gets an email saying someone tried to sign up with its address and a link to log in. This way nobody can find out who has an account.
 - Too many attempts: "Too many tries. Wait a few minutes and try again."
 - **Who can sign up** (assumed copy): a setting on the admin page, *open*, *invite only* or *closed*. It stays open while the app is built; from the quiet launch it is invite only, and nobody signs up without an invite until sign-ups open for the public beta (decided). With the gate on, sign-up works only from an invite link; without one, or with a used-up link, the form is replaced by "Sign-ups are by invitation for now." (closed: "Sign-ups are closed for now."). Ernest's own links give the *vip* role. Each vip has their own invite link on the account page ("Invite a friend · [n] invites left"), with 3 uses by default (a setting on the admin page); the people a vip invites get the *user* role and can't invite. The account records who invited it. No rewards for inviting.
@@ -413,11 +413,13 @@ Content is per template (period, scope, figures). *Index trend* is all in, all o
 | --- | --- | --- |
 | Line | "Test it on paper. No real money." | "Follow it with real money at your own broker." |
 | Who trades: | "the app, on paper, every time the rules say so." | "you, at your broker, if and when you choose." |
-| The app: | "records each trade at the next day's opening price." | "alerts you to each signal and records what you confirm." |
+| The app: | "records each trade at the next day's opening price." | "emails you each signal and records what you confirm." (until web push: "alerts you to each signal …") |
 | You: | "nothing. Read the daily overview." | "confirm each signal: I did it, or I skipped it." |
 
+**Until the email is confirmed** (built, #89): the Live card can't be picked; under it, "Confirm your email to go live." and "Send the link again". A draft that arrives live falls back to Simulation. `POST /strategies` refuses a live strategy from an unconfirmed account (`errors.mode`).
+
 **When Live is selected**
-- An info box "Alerts": "Your browser will ask to allow notifications, so signals reach you right after the market close. Email alerts are on too, as a fallback. On iPhone, add the app to your home screen first."
+- While web push isn't built (after launch), no Alerts box and no notification prompt: alerts come by email. With web push, an info box "Alerts": "Your browser will ask to allow notifications, so signals reach you right after the market close. Email alerts are on too, as a fallback. On iPhone, add the app to your home screen first."
 - Above the button: "The app never trades for you or connects to your broker. It records only what you confirm."
 - Request web push permission when the user continues (or on a button in the box). If it's refused, email is the only alert channel.
 
@@ -472,7 +474,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 | Settings | "Tested defaults", or "[n] changed" | Advanced settings |
 | Budget | "€[budget] · steps of €[step] · up to [max] per stock" | Set your budget |
 | Daily overview | "By email, after the US market close" | The account page's Emails section |
-| Alerts (Live only) | "App and email" | Choose the mode |
+| Alerts (Live only) | "Email" ("App and email" once web push is built) | Choose the mode |
 | Prompt (AI only, built) | "Suggested" or "Edited" | Edit prompt |
 
 - **"What happens next"**

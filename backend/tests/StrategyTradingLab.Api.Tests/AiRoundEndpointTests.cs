@@ -38,7 +38,8 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
     /// <summary>Two euro test stocks with a month of prices up to the last finished session, and a new AI strategy watching them.</summary>
     async Task<Seeded> StartAsync(string mode, object? ai = null, object? settings = null)
     {
-        var (client, email) = await factory.SignedUpAsync();
+        // Going live needs a confirmed email.
+        var (client, email) = mode == "live" ? await factory.VerifiedAsync() : await factory.SignedUpAsync();
         var tag = Guid.NewGuid().ToString("N")[..8];
         Guid alpha, beta;
         using (var scope = factory.Services.CreateScope())

@@ -45,6 +45,7 @@ public static class Messages
         "Aquesta estratègia ha acabat, així que no hi ha cap recordatori per enviar.");
     public static readonly Message NotificationsOff = new("This strategy's notifications are off, so there is no reminder to send.",
         "Les notificacions d'aquesta estratègia estan desactivades, així que no hi ha cap recordatori per enviar.");
+    public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu correu per començar en directe.");
     public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma la teva adreça de correu per rebre recordatoris.");
 
     public static readonly Message LiveOnlyLog = new("Trades can only be logged for live strategies.", "Només es poden registrar operacions en estratègies en directe.");

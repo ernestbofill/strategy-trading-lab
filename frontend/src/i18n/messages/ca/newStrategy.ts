@@ -200,5 +200,5 @@ export const newStrategy: Record<keyof typeof en, string> = {
     "A partir d'avui l'app vigila les teves accions i t'avisa tan bon punt es compleixen les regles.",
   'newStrategy.confirm.next.liveConfirm': "Confirmes cada senyal, i l'app fa el seguiment dels resultats del que has fet.",
   'newStrategy.confirm.next.simRuns': "A partir d'avui funciona amb preus reals i registra les seves pròpies operacions sobre el paper.",
-  'newStrategy.confirm.next.simFirst': 'El teu primer resum diari arriba demà.',
+  'newStrategy.confirm.next.simFirst': 'El teu primer resum diari arriba després del proper tancament del mercat dels EUA.',
 }

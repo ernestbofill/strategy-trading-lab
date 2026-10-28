@@ -10,7 +10,7 @@ export const account: Record<keyof typeof en, string> = {
   'account.expiredLink': "Aquest enllaç ha caducat. Demana'n un de nou.",
   'account.error.tooManyTries': 'Massa intents. Espera uns minuts i torna-ho a provar.',
   'account.error.generic': 'Alguna cosa ha fallat. Torna-ho a provar.',
-  'account.overviewEmail': 'Envia-m un resum diari per correu, ben d’hora al matí.',
+  'account.overviewEmail': 'Envia’m un resum diari per correu, després del tancament del mercat dels EUA.',
   'account.currencyName.EUR': 'Euro',
   'account.currencyName.USD': 'Dòlar dels EUA',
   'account.currencyName.GBP': 'Lliura esterlina',

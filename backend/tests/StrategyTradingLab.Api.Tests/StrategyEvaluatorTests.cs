@@ -79,7 +79,7 @@ public class StrategyEvaluatorTests
         Assert.False(days[3].WindowOpen); // Day 302: back at the peak.
     }
 
-    static async Task<(Guid UserId, Guid StrategyId, Guid AssetId)> SeedAsync(AppDbContext db, StrategyMode mode, bool windowCloses)
+    static async Task<(Guid UserId, Guid StrategyId, Guid AssetId)> SeedAsync(AppDbContext db, StrategyMode mode, bool windowCloses, bool checkedBefore = true)
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         var asset = new Asset { Symbol = $"E{tag}", Exchange = "TEST", Name = "Test asset", Currency = "USD" };
@@ -97,7 +97,19 @@ public class StrategyEvaluatorTests
         };
         db.Strategies.Add(strategy);
         await db.SaveChangesAsync();
+        if (checkedBefore) await CheckedBeforeAsync(db, strategy.Id, asset.Id, start);
         return (user.Id, strategy.Id, asset.Id);
+    }
+
+    /// <summary>
+    /// As if the daily check had run on the day before the strategy started: its later runs then evaluate every day since, where
+    /// a first run looks at the latest day only.
+    /// </summary>
+    internal static async Task CheckedBeforeAsync(AppDbContext db, Guid strategyId, Guid assetId, DateOnly start)
+    {
+        db.DailyEvaluations.Add(new DailyEvaluation
+            { StrategyId = strategyId, AssetId = assetId, Date = start.AddDays(-1), Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+        await db.SaveChangesAsync();
     }
 
     static async Task CleanAsync(AppDbContext db, Guid userId, Guid assetId)
@@ -140,7 +152,7 @@ public class StrategyEvaluatorTests
             Assert.Equal(98.80m, trade.Amount); // The step includes its fee: 98.80 + 0.2% of it + 1 = 100.
             Assert.Equal(1.20m, trade.Fee);
             Assert.Equal(Math.Round(98.80m / trade.Price, 6), trade.Shares);
-            var today = await db.DailyEvaluations.SingleAsync(e => e.StrategyId == strategyId);
+            var today = await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).OrderByDescending(e => e.Date).FirstAsync();
             Assert.Equal(new DateOnly(2024, 1, 1).AddDays(301), today.Date);
             Assert.Equal(EvaluationStatus.Building, today.Status);
         }
@@ -174,26 +186,21 @@ public class StrategyEvaluatorTests
     }
 
     [NeonFact]
-    public async Task A_waiting_signal_is_missed_once_its_stock_is_delisted()
+    public async Task A_first_check_looks_at_the_latest_day_only_with_no_backlog_of_old_signals()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        // The dip on day 300 and the return to the peak on day 302 both came before the strategy's first check.
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: true, checkedBefore: false);
         try
         {
             await Evaluator(db).RunAsync(default);
-            Assert.Equal(SignalStatus.Waiting, (await db.Signals.SingleAsync(s => s.StrategyId == strategyId)).Status);
-            await db.Signals.Where(s => s.StrategyId == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, new DateOnly(2024, 12, 3)));
 
-            await db.Assets.Where(a => a.Id == assetId).ExecuteUpdateAsync(a => a.SetProperty(x => x.Active, false));
-            var run = await Evaluator(db).RunAsync(default);
-
-            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
-            Assert.Equal(SignalStatus.Missed, signal.Status);
-            Assert.Equal(new DateOnly(2024, 11, 29), signal.EndedOn); // The last session before the clock's Monday noon.
-            Assert.Null(signal.SnoozedUntil);
-            Assert.True(run.Missed >= 1);
+            Assert.Equal(0, await SignalCount(db, strategyId)); // Not a missed signal from day 300.
+            var evaluated = await db.DailyEvaluations.SingleAsync(e => e.StrategyId == strategyId);
+            Assert.Equal(new DateOnly(2024, 1, 1).AddDays(302), evaluated.Date);
+            Assert.Equal(EvaluationStatus.Watching, evaluated.Status);
         }
         finally
         {
@@ -202,22 +209,31 @@ public class StrategyEvaluatorTests
     }
 
     [NeonFact]
-    public async Task A_waiting_signal_is_missed_once_its_stock_is_unticked()
+    public async Task A_first_check_signals_a_stock_already_in_its_zone_on_the_latest_day_and_later_checks_carry_on_from_there()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
         try
         {
+            // Day 300 dipped; its first check is on day 301, still in the zone: one signal, on day 301, as for a stock just added.
             await Evaluator(db).RunAsync(default);
-            await db.StrategyAssets.Where(a => a.StrategyId == strategyId).ExecuteUpdateAsync(a => a.SetProperty(x => x.Active, false));
-
-            await Evaluator(db).RunAsync(default);
-
             var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
-            Assert.Equal(SignalStatus.Missed, signal.Status);
-            Assert.Equal(new DateOnly(2024, 11, 29), signal.EndedOn);
+            Assert.Equal((new DateOnly(2024, 1, 1).AddDays(301), 1), (signal.SignalDate, signal.StepNo));
+            Assert.Equal(SignalStatus.Waiting, signal.Status);
+
+            // The next session: back at the peak. The check carries on from day 301: the signal's window closes, nothing new.
+            var day302 = new DateOnly(2024, 1, 1).AddDays(302);
+            var peak = await db.Prices.Where(p => p.AssetId == assetId).MaxAsync(p => p.Close);
+            db.Prices.Add(new PriceDaily { AssetId = assetId, Date = day302, Open = peak, High = peak, Low = peak, Close = peak, Volume = 1000 });
+            await db.SaveChangesAsync();
+            await Evaluator(db).RunAsync(default);
+
+            signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal((SignalStatus.Missed, day302), (signal.Status, signal.EndedOn));
+            Assert.Equal([new DateOnly(2024, 1, 1).AddDays(301), day302],
+                await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).OrderBy(e => e.Date).Select(e => e.Date).ToListAsync());
         }
         finally
         {
@@ -239,7 +255,7 @@ public class StrategyEvaluatorTests
             await Evaluator(db).RunAsync(default);
 
             Assert.Equal(0, await SignalCount(db, strategyId));
-            Assert.Empty(await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).ToListAsync());
+            Assert.Equal(1, await db.DailyEvaluations.CountAsync(e => e.StrategyId == strategyId)); // Only the seeded one.
         }
         finally
         {
@@ -308,6 +324,7 @@ public class StrategyEvaluatorTests
         };
         db.Strategies.Add(strategy);
         await db.SaveChangesAsync();
+        await CheckedBeforeAsync(db, strategy.Id, asset.Id, start);
         try
         {
             await Evaluator(db).RunAsync(default);
@@ -329,4 +346,56 @@ public class StrategyEvaluatorTests
             await CleanAsync(db, user.Id, asset.Id);
         }
     }
+    [NeonFact]
+    public async Task A_waiting_signal_is_missed_once_its_stock_is_delisted()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+            Assert.Equal(SignalStatus.Waiting, (await db.Signals.SingleAsync(s => s.StrategyId == strategyId)).Status);
+            await db.Signals.Where(s => s.StrategyId == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, new DateOnly(2024, 12, 3)));
+
+            await db.Assets.Where(a => a.Id == assetId).ExecuteUpdateAsync(a => a.SetProperty(x => x.Active, false));
+            var run = await Evaluator(db).RunAsync(default);
+
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(SignalStatus.Missed, signal.Status);
+            Assert.Equal(new DateOnly(2024, 11, 29), signal.EndedOn); // The last session before the clock's Monday noon.
+            Assert.Null(signal.SnoozedUntil);
+            Assert.True(run.Missed >= 1);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_waiting_signal_is_missed_once_its_stock_is_unticked()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+            await db.StrategyAssets.Where(a => a.StrategyId == strategyId).ExecuteUpdateAsync(a => a.SetProperty(x => x.Active, false));
+
+            await Evaluator(db).RunAsync(default);
+
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(SignalStatus.Missed, signal.Status);
+            Assert.Equal(new DateOnly(2024, 11, 29), signal.EndedOn);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
 }

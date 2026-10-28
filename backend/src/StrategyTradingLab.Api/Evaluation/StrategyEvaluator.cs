@@ -22,8 +22,8 @@ record Changes(int NewSignals, int NewTrades, int Missed);
 /// <summary>
 /// The daily check (spec: How the two modes run): runs each running strategy's rules over each of its stocks' stored
 /// prices, up to the last finished US session, and keeps what they say: a signal for each step the rules call for, its
-/// signal trade at the next day's opening price once that day has one, and where the stock stands today. A strategy
-/// starts fresh on its start day, as the POC's backtest does. Idempotent: a second run the same day changes nothing.
+/// signal trade at the next day's opening price once that day has one, and where the stock stands today. A strategy's
+/// first check looks at the latest finished day only, and the rules start fresh from there, as the POC's backtest does on its start day. Idempotent: a second run the same day changes nothing.
 /// </summary>
 public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<StrategyEvaluator> logger)
 {
@@ -74,6 +74,10 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             var start = added[asset.Id] > strategy.StartedOn ? added[asset.Id] : strategy.StartedOn;
             var from = bars.FindIndex(b => b.Date >= start);
             if (from < 0) continue; // Nothing since the strategy (or the stock) started.
+            var replayFrom = await ReplayFromAsync(strategy.Id, asset.Id, bars[^1].Date, cancellationToken);
+            // No bar from that day on (a price row revised away): the latest bar, never back to the start.
+            var replayIndex = bars.FindIndex(b => b.Date >= replayFrom);
+            from = Math.Max(from, replayIndex < 0 ? bars.Count - 1 : replayIndex);
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);
@@ -98,6 +102,22 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
                 .SetProperty(x => x.EndedOn, x => x.EndedOn ?? lastSession)
                 .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+    }
+
+    /// <summary>
+    /// The first day the rules replay for this strategy and stock (ROADMAP item 7, decided in #58). The first run evaluates the
+    /// latest finished day only, as for a stock just added, so a strategy that existed before its engine ran gets no backlog of
+    /// old signals. Later runs replay from that first day, or from an earlier signal's day (a strategy that got a backlog before
+    /// this rule keeps counting those steps).
+    /// </summary>
+    async Task<DateOnly> ReplayFromAsync(Guid strategyId, Guid assetId, DateOnly latest, CancellationToken cancellationToken)
+    {
+        var firstEvaluated = await db.DailyEvaluations.Where(r => r.StrategyId == strategyId && r.AssetId == assetId)
+            .MinAsync(r => (DateOnly?)r.Date, cancellationToken);
+        if (firstEvaluated is null) return latest;
+        var firstSignal = await db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId)
+            .MinAsync(s => (DateOnly?)s.SignalDate, cancellationToken);
+        return firstSignal < firstEvaluated ? firstSignal.Value : firstEvaluated.Value;
     }
 
     async Task<Changes> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,

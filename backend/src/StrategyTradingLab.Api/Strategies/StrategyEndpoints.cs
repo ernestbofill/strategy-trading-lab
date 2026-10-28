@@ -84,6 +84,8 @@ public static class StrategyEndpoints
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
             var errors = NewStrategyValidation.Validate(request, template, assets, user.Locale);
+            // Live signals are sent by email (spec: Choose the mode), so a live strategy needs a confirmed address.
+            if (request.Mode == StrategyMode.Live && user.EmailVerifiedAt is null) errors["mode"] = [Messages.ConfirmEmailToGoLive.In(user.Locale)];
             var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             // The AI template's prompt choices (Review: "What the AI reads", Edit prompt).
             if (parameters is not null && template == TemplateCatalog.Ai)

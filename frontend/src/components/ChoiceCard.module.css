@@ -24,6 +24,17 @@
 .card:hover {
   background: var(--surface-hover);
 }
+.card[data-disabled] .main {
+  cursor: not-allowed;
+}
+/* Only the tag and the radio fade: the text keeps its contrast. */
+.card[data-disabled] .badge,
+.card[data-disabled] .radio {
+  opacity: 0.4;
+}
+.card[data-disabled]:hover {
+  background: var(--surface-sidebar);
+}
 .card[data-selected] {
   border-color: var(--primary);
   box-shadow: var(--glow-primary);

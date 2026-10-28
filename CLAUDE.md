@@ -53,6 +53,8 @@ Ernest works from a Mac and a Windows PC with VS Code. The AI tools run both loc
 | Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 
+**Test accounts.** When a feature needs a signed-in check, make disposable accounts on the dev database only, never on production: sign up on the local app with a `claude-<feature>-<yyyymmdd>@stl.invalid` address and a fresh password you don't keep, and set what the check needs (a confirmed email, the owner role) on that row in the dev database. How: [docs/dev-browser-test-account.md](docs/dev-browser-test-account.md).
+
 Secrets are never committed and never pasted into chat, PRs or logs. When a step needs a secret or a manual setting (a new variable, an API key, a cloud environment setting), tell Ernest exactly what to set and where, by name, never by value. Keep working if it doesn't block you, and stop only when you can't go on without it.
 
 Every manual step for Ernest goes in two places: the PR's *Manual steps for Ernest*, and `TODO.md` under *Todos from Claude to Ernest*, with the PR number. Ernest works from `TODO.md`, so a step only in a PR gets lost. When a step is done, tick it.

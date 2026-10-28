@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { api, type StrategyDetail } from '../../api'
+import { api, NameTakenError, type StrategyDetail } from '../../api'
 import { StrategyPage } from './StrategyPage'
 
 afterEach(() => {
@@ -16,6 +16,10 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   templateKey: 'dip',
   templateName: 'Winners at a discount',
   mode: 'live',
+  status: 'running',
+  endedOn: null,
+  archived: false,
+  notifications: true,
   startedOn: '2026-10-13',
   today: '2026-10-24',
   currency: 'EUR',
@@ -109,5 +113,103 @@ describe('StrategyPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
     expect((await screen.findByRole('alert')).textContent).toBe("Couldn't delete it. Try again.")
     expect(screen.getByRole('heading', { name: 'Zscaler & friends' })).toBeTruthy()
+  })
+
+  it('renames the strategy in place and says when the name is taken', async () => {
+    open(detail({ id: 'r' }))
+    const rename = vi.spyOn(api, 'renameStrategy').mockRejectedValueOnce(new NameTakenError()).mockResolvedValueOnce()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rename' }))
+    const field = screen.getByRole('textbox', { name: 'Name' })
+    expect((field as HTMLInputElement).value).toBe('Zscaler & friends')
+    expect(screen.queryByRole('button', { name: 'Rename' })).toBeNull()
+
+    fireEvent.change(field, { target: { value: '  Taken  ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('You already run a strategy with this name. Pick another.')
+    expect(rename).toHaveBeenLastCalledWith('r', 'Taken')
+
+    fireEvent.change(field, { target: { value: 'Free' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByRole('button', { name: 'Rename' })).toBeTruthy()
+    expect(rename).toHaveBeenLastCalledWith('r', 'Free')
+  })
+
+  it('cancels a rename without saving', async () => {
+    open(detail({ id: 'c' }))
+    const rename = vi.spyOn(api, 'renameStrategy').mockResolvedValue()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rename' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('heading', { name: 'Zscaler & friends' })).toBeTruthy()
+    expect(rename).not.toHaveBeenCalled()
+  })
+
+  it("switches a live strategy's alerts", async () => {
+    open(detail({ id: 'a' }))
+    const alerts = vi.spyOn(api, 'setStrategyNotifications').mockResolvedValue()
+
+    const box = await screen.findByRole('checkbox', { name: "Email me this strategy's signals" })
+    expect((box as HTMLInputElement).checked).toBe(true)
+    fireEvent.click(box)
+    expect(alerts).toHaveBeenCalledWith('a', false)
+  })
+
+  it('has no alerts switch on a simulation that sends no emails', async () => {
+    open(detail({ id: 'n', mode: 'simulation', signals: null }))
+
+    expect(await screen.findByRole('button', { name: 'End the strategy' })).toBeTruthy()
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+
+  it('ends the strategy after a confirm step', async () => {
+    open(detail({ id: 'e' }))
+    const end = vi.spyOn(api, 'endStrategy').mockResolvedValue()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'End the strategy' }))
+    expect(screen.getByText(/End Zscaler & friends\? The daily check stops/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it running' }))
+    expect(end).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'End the strategy' }))
+    fireEvent.click(screen.getByRole('button', { name: 'End it' }))
+    expect(end).toHaveBeenCalledWith('e')
+  })
+
+  it('shows an ended strategy read-only, with Archive and Delete', async () => {
+    open(
+      detail({
+        id: 'x',
+        status: 'ended',
+        endedOn: '2026-10-20',
+        trades: [
+          {
+            id: 't1', assetId: 'a', symbol: 'ZS', stockName: 'Zscaler', tradeDate: '2026-10-14', side: 'buy', price: 100,
+            assetCurrency: 'EUR', enteredAs: 'amount', amount: 99, shares: 0.99, fee: 1, strategyCurrency: 'EUR', fxRate: 1,
+            fxSource: 'reference', source: 'manual', signalId: null,
+          },
+        ],
+      }),
+    )
+    const archive = vi.spyOn(api, 'archiveStrategy').mockResolvedValue()
+
+    expect(await screen.findByText(/Ended on/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'End the strategy' })).toBeNull()
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(screen.queryByRole('link', { name: /Tune the settings/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Log a trade by hand/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Delete the strategy' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
+    expect(archive).toHaveBeenCalledWith('x', true)
+  })
+
+  it('offers to unarchive an archived strategy', async () => {
+    open(detail({ id: 'u', status: 'ended', endedOn: '2026-10-20', archived: true }))
+    const archive = vi.spyOn(api, 'archiveStrategy').mockResolvedValue()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Unarchive' }))
+    expect(archive).toHaveBeenCalledWith('u', false)
   })
 })

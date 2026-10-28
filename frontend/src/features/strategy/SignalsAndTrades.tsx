@@ -31,6 +31,9 @@ type TimelineItem =
 export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
   const t = useT()
   const live = s.mode === 'live'
+  // An ended strategy's history is final: no trades to log, edit or delete.
+  const running = s.status === 'running'
+  const editable = live && running
 
   const [formMode, setFormMode] = useState<'add' | null>(null)
   const [editingTrade, setEditingTrade] = useState<StrategyTradeItem | null>(null)
@@ -55,7 +58,7 @@ export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
     <Section
       title={t('trades.title')}
       aside={
-        live ? (
+        editable ? (
           <TextAction
             onClick={() => {
               setEditingTrade(null)
@@ -105,7 +108,7 @@ export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
                 <li key={`trade-${trade.id}`}>
                   <TradeRow
                     trade={trade}
-                    live={live}
+                    editable={editable}
                     isDeleting={deletingTradeId === trade.id}
                     onStartEdit={() => {
                       setFormMode(null)
@@ -127,7 +130,8 @@ export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
             const { signal } = item
             return (
               <li key={`sig-${signal.id}`}>
-                <SignalRow s={s} signal={signal} live={live} />
+                {/* An ended strategy's signals can't be answered any more: only an answered one still opens. */}
+                <SignalRow s={s} signal={signal} live={live && (running || signal.status === 'confirmed' || signal.status === 'skipped')} />
               </li>
             )
           })}
@@ -139,7 +143,7 @@ export function SignalsAndTrades({ s }: { s: StrategyDetail }) {
 
 function TradeRow({
   trade,
-  live,
+  editable,
   isDeleting,
   onStartEdit,
   onStartDelete,
@@ -147,7 +151,8 @@ function TradeRow({
   onConfirmDelete,
 }: {
   trade: StrategyTradeItem
-  live: boolean
+  /** Live and running: the user's own trade can be edited or deleted. */
+  editable: boolean
   isDeleting: boolean
   onStartEdit: () => void
   onStartDelete: () => void
@@ -194,7 +199,7 @@ function TradeRow({
           <Tag tone={trade.side === 'buy' ? 'live' : 'sim'}>{t(trade.side === 'buy' ? 'trades.buyTag' : 'trades.sellTag')}</Tag>
           {trade.source === 'manual' && <span className={styles.manualBadge}>{t('trades.manual')}</span>}
         </div>
-        {live && (
+        {editable && (
           <div className={styles.rowActions}>
             <TextAction onClick={onStartEdit}>{t('trades.edit')}</TextAction>
             <TextAction onClick={onStartDelete}>{t('trades.delete')}</TextAction>

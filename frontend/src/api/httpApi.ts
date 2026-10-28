@@ -78,6 +78,26 @@ async function tradesRequest(method: string, path: string, body?: unknown): Prom
   return response
 }
 
+/** A strategy action (rename, alerts, end, archive). A 409 is `InvalidValueError` with the API's reason, a 400 `InvalidFieldsError`. */
+async function strategyAction(method: 'PUT' | 'POST', id: string, action: string, body?: unknown): Promise<void> {
+  const path = `/strategies/${encodeURIComponent(id)}/${action}`
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (response.status === 401) endedSession()
+  if (response.status === 409) {
+    if (action === 'name') throw new NameTakenError()
+    throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
+  }
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+  }
+  if (!response.ok) throw new Error(`${method} ${path} failed: HTTP ${response.status}`)
+}
+
 /** POSTs an answer to a signal. A 400 with field errors is `InvalidFieldsError`; a 409 (already answered) is `InvalidValueError`. */
 async function signalPost(path: string, body?: unknown): Promise<Response> {
   const response = await fetch(`${BASE_URL}/signals${path}`, {
@@ -258,6 +278,10 @@ export const httpApi: Api = {
     // Already gone (another tab, or a retry after a request that went through) is what the user asked for.
     if (!response.ok && response.status !== 404) throw new Error(`DELETE /strategies/${id} failed: HTTP ${response.status}`)
   },
+  renameStrategy: (id, name) => strategyAction('PUT', id, 'name', { name }),
+  setStrategyNotifications: (id, enabled) => strategyAction('PUT', id, 'notifications', { enabled }),
+  endStrategy: (id) => strategyAction('POST', id, 'end'),
+  archiveStrategy: (id, archived) => strategyAction('POST', id, archived ? 'archive' : 'unarchive'),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
   sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,

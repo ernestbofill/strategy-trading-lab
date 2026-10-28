@@ -60,7 +60,11 @@ function Body({ s }: { s: StrategySummary }) {
 export function StrategyCard({ strategy: s, today, waiting }: { strategy: StrategySummary; today: string; waiting?: WaitingItem }) {
   const t = useT()
   const live = s.mode === 'live'
-  const since = s.startedOn === today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
+  const since = s.endedOn
+    ? t('dashboard.card.endedOn', { date: shortDate(s.endedOn) })
+    : s.startedOn === today
+      ? t('strategy.startedToday')
+      : t('strategy.since', { date: shortDate(s.startedOn) })
   return (
     <Link to={strategyPath(s.id)} className={styles.card}>
       <div className={styles.head}>
@@ -72,6 +76,7 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
         </div>
         <span className={styles.badges}>
           {waiting && <WaitingDot item={waiting} />}
+          {s.status === 'ended' && <Tag tone="ended">{t('dashboard.ended')}</Tag>}
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
         </span>
       </div>

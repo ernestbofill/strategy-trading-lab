@@ -28,3 +28,14 @@
   margin: 0;
   text-align: center;
 }
+
+.archived > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--ink-sidebar);
+}
+.archived[open] > summary {
+  margin-bottom: var(--space-2);
+}

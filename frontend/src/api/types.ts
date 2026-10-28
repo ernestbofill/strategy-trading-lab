@@ -182,7 +182,15 @@ export interface StrategySummary {
   results: StrategyResults | null
   /** Null for templates that can't be backtested. */
   pastResult: PastResult | null
+  status: StrategyStatus
+  /** The local date it ended; its results stop there. Null while it runs. */
+  endedOn: string | null
+  /** An ended strategy the user archived: in the dashboard's collapsed Archived section. */
+  archived: boolean
 }
+
+/** A running strategy is checked every day; an ended one keeps its history, read-only. */
+export type StrategyStatus = 'running' | 'ended'
 
 /** Something that needs the user, newest first on the dashboard. */
 export interface WaitingItem {
@@ -197,6 +205,7 @@ export interface WaitingItem {
 export interface Dashboard {
   /** The server's local date, "2026-10-17", to tell a strategy started today from an older one. */
   today: string
+  /** Running ones first, then the ended ones, the archived ones last. */
   strategies: StrategySummary[]
   waiting: WaitingItem[]
 }
@@ -289,6 +298,12 @@ export interface StrategyDetail {
   templateKey: TemplateKey
   templateName: string
   mode: StrategyMode
+  status: StrategyStatus
+  /** The local date it ended; its results stop there. Null while it runs. */
+  endedOn: string | null
+  archived: boolean
+  /** Emails for its signals and AI rounds (the alerts switch). */
+  notifications: boolean
   startedOn: string
   /** The user's local date. */
   today: string
@@ -812,6 +827,14 @@ export interface Api {
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
   /** Deletes a strategy for good, with its signals, trades, results and AI rounds. One already gone counts as deleted. */
   deleteStrategy(id: string): Promise<void>
+  /** Rejects with `NameTakenError` when another running strategy has the name, `InvalidFieldsError` for a wrong length. */
+  renameStrategy(id: string, name: string): Promise<void>
+  /** The alerts switch of a running strategy. Rejects with `InvalidValueError` once it has ended. */
+  setStrategyNotifications(id: string, enabled: boolean): Promise<void>
+  /** Ends a running strategy: its waiting signals become missed and its name is free. Rejects with `InvalidValueError` when it has ended already. */
+  endStrategy(id: string): Promise<void>
+  /** Archives (or, with false, brings back) an ended strategy. Rejects with `InvalidValueError` for a running one. */
+  archiveStrategy(id: string, archived: boolean): Promise<void>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */
   getAdminSettings(): Promise<AdminSetting[]>
   /**

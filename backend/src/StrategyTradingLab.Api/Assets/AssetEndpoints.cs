@@ -43,10 +43,10 @@ public static class AssetEndpoints
             if (KindFrom(kind) is not { } wanted) return Invalid("kind", Messages.PickStockOrFund.In(user.Locale));
 
             // The stored ones first: they need no adding. A symbol starts with the query, a name contains it.
-            var pattern = $"%{EscapeLike(query)}%";
+            var escaped = EscapeLike(query);
             var stored = await db.Assets.AsNoTracking()
                 .Where(a => a.Active && a.Kind == wanted
-                    && (EF.Functions.ILike(a.Symbol, EscapeLike(query) + "%") || EF.Functions.ILike(a.Name, pattern)))
+                    && (EF.Functions.ILike(a.Symbol, escaped + "%") || EF.Functions.ILike(a.Name, $"%{escaped}%")))
                 .OrderBy(a => a.Name).Take(MaxResults)
                 .Select(a => new AssetMatch(a.Id, a.Symbol, a.Name, a.Exchange,
                     a.Texts.Where(t => t.Locale == user.Locale).Select(t => t.What).FirstOrDefault()
@@ -110,7 +110,7 @@ public static class AssetEndpoints
                     ?? asset.Texts.First(t => t.Locale == TemplateTexts.DefaultLocale).What;
                 return TypedResults.Ok(new AddedAssetDto(new SecurityDto(asset.Id, asset.Symbol, asset.Name, what), added.Problem is null));
             }
-            catch (MarketDataException error) when (error is UnsupportedCurrencyException)
+            catch (UnsupportedCurrencyException)
             {
                 return Invalid("symbol", refused);
             }

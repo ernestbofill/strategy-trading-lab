@@ -43,4 +43,12 @@ public class EmailDocumentTests
         Assert.Contains("O obre aquest enlla&#231;:", email.Html);
         Assert.Contains("Obre l&#39;aplicaci&#243;", email.Html);
     }
+
+    [Fact]
+    public void A_long_preview_is_cut_without_splitting_an_emoji()
+    {
+        var html = new EmailDocument().Paragraph(new string('a', 138) + "😀" + new string('b', 10)).Build("S").Html;
+
+        Assert.Contains(new string('a', 138) + "…</div>", html);
+    }
 }

@@ -59,7 +59,13 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
                 Subject = subject, SubjectEncoding = Encoding.UTF8, Body = body, BodyEncoding = Encoding.UTF8,
             };
             // multipart/alternative: clients that show HTML show it, the rest the plain text, which says the same.
-            if (html is not null) message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(html, Encoding.UTF8, MediaTypeNames.Text.Html));
+            // Quoted-printable: the HTML is one long line, over SMTP's 998-character limit if sent as 7bit.
+            if (html is not null)
+            {
+                var view = AlternateView.CreateAlternateViewFromString(html, Encoding.UTF8, MediaTypeNames.Text.Html);
+                view.TransferEncoding = TransferEncoding.QuotedPrintable;
+                message.AlternateViews.Add(view);
+            }
             if (replyTo is not null) message.ReplyToList.Add(new MailAddress(replyTo));
             client = new SmtpClient(host, port)
             {

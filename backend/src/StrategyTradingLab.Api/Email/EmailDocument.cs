@@ -143,7 +143,8 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
     {
         var lang = Ca ? "ca" : "en";
         var line = preheader?.Replace('\n', ' ') ?? "";
-        var preview = Encode(line.Length > 140 ? line[..139] + "…" : line);
+        var cut = line.Length > 140 && char.IsHighSurrogate(line[138]) ? 138 : 139; // Never half an emoji.
+        var preview = Encode(line.Length > 140 ? line[..cut] + "…" : line);
         var brand = appUrl is null ? "STRATEGY TRADING LAB"
             : $"<a href=\"{Encode(appUrl)}/\" style=\"color:{Primary};text-decoration:none;\">STRATEGY TRADING LAB</a>";
         // No "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.

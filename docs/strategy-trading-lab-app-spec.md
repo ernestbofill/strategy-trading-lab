@@ -238,6 +238,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Fund block** (fund templates)
 - Heading "The fund it watches". One row: the fund's name, a one-line description, and a "Change" link (fund picker, not drawn: the same search as "+ Add a stock", showing funds only; the picked fund replaces the default, and its line is its name).
+- **Fund picker (built, assumed details):** "Change" opens a search field ("Search funds", "Name or symbol") under the row; "Close" folds it. Results come after a short pause in typing (2+ characters): the funds already in the app first, then the price source's from the supported exchanges, each with its name and "SYMBOL · EXCHANGE". Picking one that isn't stored adds it with its price history; if the history doesn't load, the row's line reads "Not enough price history yet." A caption names the exchanges ("Funds from the US, London, Paris, Amsterdam, Copenhagen and Hong Kong exchanges."). With a picked fund, a line under the row reads "Tested with [tested fund]. Past results are that fund's." and "Use the tested fund" goes back to it. Confirm's row shows the picked fund. Errors: "No fund found. Try its symbol.", "Too many searches. Try again in an hour.", the server's reason (not a fund, price source down). The results still compare with the index fund (SPY), whatever fund is watched.
 
 **Per-template content**
 
@@ -701,8 +702,8 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Index trend* and *Bear markets*.
 - Stock page: chart with the discount zone shaded, status history, trades (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
-- Stock list editor from the strategy page, stock search ("+ Add a stock"), fund picker ("Change").
-- Until a screen is built, the controls that open it are hidden, not shown disabled: "+ Add a stock", the fund's "Change", "Edit list", "Rename", the "Backtest" tile, and Confirm's "Edit" on the Daily overview and Alerts rows. The item that builds the screen brings its control back.
+- Stock list editor from the strategy page, stock search ("+ Add a stock").
+- Until a screen is built, the controls that open it are hidden, not shown disabled: "+ Add a stock", "Edit list", "Rename", the "Backtest" tile, and Confirm's "Edit" on the Daily overview and Alerts rows. The item that builds the screen brings its control back.
 - Sell signals for *Index trend*, and its "Out of the market" status.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.

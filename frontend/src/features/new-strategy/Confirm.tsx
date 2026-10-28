@@ -14,6 +14,7 @@ import { useCurrentAccount } from '../account/AccountContext'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
+import { fundOf } from './draftState'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, newStrategyFrom } from './newStrategy'
@@ -95,7 +96,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
 
   const stocksValue = (() => {
     const { watches } = template
-    if (watches.kind === 'fund') return watches.fund.name
+    if (watches.kind === 'fund') return fundOf(draft, template)!.name
     const ticked = watches.starterList.filter((s) => !unticked.includes(s.symbol))
     const more = ticked.length - 1
     return more > 0

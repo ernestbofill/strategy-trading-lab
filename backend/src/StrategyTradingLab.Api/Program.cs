@@ -102,6 +102,15 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
+    // Asset search and adding, per user: both call the price source, and adding loads a whole price history.
+    void PerUser(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
+        RateLimitPartition.GetFixedWindowLimiter(AssetEndpoints.UserKey(http),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue($"RateLimits:{policy}", permits), Window = window,
+            }));
+    PerUser(AssetEndpoints.SearchLimit, 100, TimeSpan.FromHours(1));
+    PerUser(AssetEndpoints.AddLimit, 10, TimeSpan.FromHours(1));
 });
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -195,6 +204,7 @@ app.MapTrades();
 app.MapAdmin();
 app.MapAccount();
 app.MapFeedback();
+app.MapAssets();
 
 // For the client to show which API it talks to, and a DEV tag while it uses the dev database.
 app.MapGet("/version", (DatabaseSwitch databases) => TypedResults.Ok(VersionResponse.Current with { Database = databases.Active }))

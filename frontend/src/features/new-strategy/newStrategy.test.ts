@@ -58,6 +58,11 @@ describe('newStrategyFrom', () => {
       assetIds: ['id-CSPX'],
     })
   })
+
+  it('sends the fund the user picked instead of the tested one', () => {
+    const draft = { ...initialDraft, templateKey: 'trend' as const, fund: stock('QQQ') }
+    expect(newStrategyFrom(draft, trend, 'Trend', 'EUR').assetIds).toEqual(['id-QQQ'])
+  })
 })
 
 describe('defaultName', () => {

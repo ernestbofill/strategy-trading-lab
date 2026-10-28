@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
-import type { AiRound, TemplateDetail, TemplateKey } from '../../../api'
+import type { AiRound, Security, TemplateDetail, TemplateKey } from '../../../api'
 import { Callout, LabelledLine } from '../../../components/Callout'
 import { CheckList } from '../../../components/CheckList'
 import { Columns } from '../../../components/Columns'
@@ -21,6 +21,8 @@ import { rulesWithSettings, settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
 import { PromptText } from '../../ai-round/PromptText'
 import { useAiPromptPreview } from '../../ai-round/useAiPromptPreview'
+import { fundOf } from '../draftState'
+import { FundPicker } from './FundPicker'
 import { aiPromptScope, aiSources as aiSourcesOf } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
@@ -86,11 +88,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
           {stockList}
         </Section>
       ) : (
-        <Section title={t('newStrategy.review.fund')}>
-          <div className={styles.fund}>
-            <ItemRow title={watches.fund.name} detail={watches.fund.what} />
-          </div>
-        </Section>
+        <FundSection template={template} />
       )}
     </>
   )
@@ -150,6 +148,53 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
       />
       <Columns main={main} aside={aside} />
     </Screen>
+  )
+}
+
+/** "The fund it watches": the template's, or one the user picks with "Change". */
+function FundSection({ template }: { template: TemplateDetail }) {
+  const t = useT()
+  const draft = useNewStrategyDraft()
+  const [picking, setPicking] = useState(false)
+  // Funds added this visit whose price history isn't in yet.
+  const [waiting, setWaiting] = useState<string[]>([])
+  const fund = fundOf(draft, template)!
+  const tested = template.watches.kind === 'fund' ? template.watches.fund : fund
+  const changed = fund.id !== tested.id
+
+  const choose = (picked: Security | null) => {
+    if (draft.templateKey !== template.key) draft.switchTemplate(template.key)
+    draft.update({ fund: picked && picked.id !== tested.id ? picked : null })
+    setPicking(false)
+  }
+
+  return (
+    <Section
+      title={t('newStrategy.review.fund')}
+      aside={
+        <TextAction onClick={() => setPicking((v) => !v)}>
+          {t(picking ? 'newStrategy.review.closePicker' : 'newStrategy.review.change')}
+        </TextAction>
+      }
+    >
+      <div className={styles.fund}>
+        <ItemRow title={fund.name} detail={waiting.includes(fund.id) ? t('newStrategy.review.noHistory') : fund.what} />
+      </div>
+      {changed && (
+        <div className={styles.tested}>
+          <p className="caption">{t('newStrategy.review.testedFund', { name: tested.name })}</p>
+          <TextAction onClick={() => choose(null)}>{t('newStrategy.review.useTestedFund')}</TextAction>
+        </div>
+      )}
+      {picking && (
+        <FundPicker
+          onPick={(picked, pricesIn) => {
+            if (!pricesIn) setWaiting((w) => [...w, picked.id])
+            choose(picked)
+          }}
+        />
+      )}
+    </Section>
   )
 }
 

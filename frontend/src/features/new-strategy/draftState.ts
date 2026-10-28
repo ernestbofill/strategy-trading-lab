@@ -1,4 +1,4 @@
-import type { TemplateKey } from '../../api'
+import type { Security, TemplateDetail, TemplateKey } from '../../api'
 
 export type Mode = 'simulation' | 'live'
 
@@ -9,6 +9,8 @@ export interface DraftState {
   templateKey: TemplateKey
   /** Symbols the user unticked. */
   unticked: string[]
+  /** The fund the user picked instead of the template's (fund picker); null for the template's. */
+  fund: Security | null
   aiSources: Record<AiSource, boolean>
   /** The prompt's instructions in the user's words (Edit prompt); null for the suggested ones. */
   aiInstructions: string | null
@@ -30,6 +32,7 @@ export const initialDraft: DraftState = {
   // Winners at a discount is selected by default, so "Continue" is always enabled.
   templateKey: 'dip',
   unticked: [],
+  fund: null,
   aiSources: { news: true, mood: true, figures: true },
   aiInstructions: null,
   mode: 'simulation',
@@ -43,3 +46,7 @@ export const initialDraft: DraftState = {
 /** Another template starts over from the defaults; the same one keeps everything the user has set. */
 export const withTemplate = (draft: DraftState, templateKey: TemplateKey): DraftState =>
   draft.templateKey === templateKey ? draft : { ...initialDraft, templateKey }
+
+/** The fund a fund template watches: the one the user picked, else the template's. */
+export const fundOf = (draft: DraftState, template: TemplateDetail): Security | null =>
+  template.watches.kind !== 'fund' ? null : draft.templateKey === template.key && draft.fund ? draft.fund : template.watches.fund

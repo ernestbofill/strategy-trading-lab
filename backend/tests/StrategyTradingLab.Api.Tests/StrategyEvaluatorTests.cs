@@ -398,4 +398,30 @@ public class StrategyEvaluatorTests
         }
     }
 
+
+    [NeonFact]
+    public async Task A_waiting_signal_left_on_an_ended_strategy_is_missed_by_the_next_run()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+            // As if the strategy ended while that run was writing its signal.
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, StrategyStatus.Ended)
+                .SetProperty(x => x.EndedAt, DateTimeOffset.UtcNow));
+
+            await Evaluator(db).RunAsync(default);
+
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(SignalStatus.Missed, signal.Status);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
 }

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { api, InvalidFieldsError, NameTakenError, UnauthorizedError, type StrategyDetail } from '../../api'
+import { api, InvalidFieldsError, InvalidValueError, NameTakenError, UnauthorizedError, type StrategyDetail } from '../../api'
 import { Checkbox, FormMessage, TextField } from '../../components/Field'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
@@ -114,9 +114,12 @@ export function EndStrategy({ s }: { s: StrategyDetail }) {
       await api.endStrategy(s.id)
     } catch (err) {
       if (err instanceof UnauthorizedError) return
-      setFailed(true)
-      setBusy(false)
-      return
+      // Already ended (another tab, another device): show it as it is.
+      if (!(err instanceof InvalidValueError)) {
+        setFailed(true)
+        setBusy(false)
+        return
+      }
     }
     // Its signals, AI rounds and the dashboard all change.
     invalidateAll()

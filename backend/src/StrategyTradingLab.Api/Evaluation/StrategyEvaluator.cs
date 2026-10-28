@@ -34,8 +34,14 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         var strategies = await db.Strategies.AsNoTracking().Include(s => s.Assets)
             .Where(s => s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var rates = await ExchangeRates.LoadAsync(db, null, cancellationToken);
+        // A run that loaded a strategy just before it ended can leave it a waiting signal: the next run closes it.
+        var leftOver = await db.Signals.Where(s => s.Status == SignalStatus.Waiting
+                && db.Strategies.Any(st => st.Id == s.StrategyId && st.Status == StrategyStatus.Ended))
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
+                .SetProperty(x => x.EndedOn, x => x.EndedOn ?? lastSession)
+                .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
 
-        int signals = 0, trades = 0, missed = 0, failed = 0, evaluated = 0;
+        int signals = 0, trades = 0, missed = leftOver, failed = 0, evaluated = 0;
         foreach (var strategy in strategies.Where(s => TemplateRules.Supports(s.TemplateKey)))
         {
             try

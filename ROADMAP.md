@@ -118,7 +118,7 @@ Roughly in the order they become useful:
 - Template texts and backtest figures in the user's currency.
 - Daily overview settings (a time of your choice).
 - AI comparison page (results by AI model, never a ranking of stocks).
-- Store a daily result per strategy, once strategies get long or many (today results are worked out on every request).
+- Store a daily result per strategy, once strategies get long or many (today results are worked out on every request, ended and archived ones too, though theirs are frozen: #91 review).
 - **Set your budget, with the ticked stocks** (low priority). "Enough for 6 stocks bought in full" ignores how many stocks are ticked, and can say "enough for 0 stocks" when a step is larger than a stock's maximum.
 - **Set your budget, out-of-range values** (low priority). A typed value outside the limits is changed without a word. Say what changed and why, next to the field.
 - **AI rounds, lighter reads** (low priority). `ChangesAsync` runs one price query per round session on every strategy page load; the dashboard GET sweeps each AI strategy with its own query (loading full answers); the round history returns every prompt and answer in one payload; `aiRequest` repeats `tradesRequest`. Load closes once, sweep in one query, fetch a round's text when it opens, share one request helper.

@@ -128,7 +128,9 @@ public static class SignalEndpoints
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var now = time.GetUtcNow();
         var answered = await db.Signals
-            .Where(s => s.Id == signalId && (s.Status == SignalStatus.Waiting || s.Status == SignalStatus.Missed))
+            .Where(s => s.Id == signalId && (s.Status == SignalStatus.Waiting || s.Status == SignalStatus.Missed)
+                // Checked again in the update: a strategy ended since the request's check takes no answer.
+                && db.Strategies.Any(st => st.Id == s.StrategyId && st.Status == StrategyStatus.Running))
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, status).SetProperty(x => x.SkipReason, reason)
                 .SetProperty(x => x.AnsweredAt, now)
                 .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken); // Only a waiting signal can be snoozed (the table's check).

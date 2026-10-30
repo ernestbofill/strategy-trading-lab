@@ -84,6 +84,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             Assert.Equal(HttpStatusCode.NotFound, (await other.DeleteAsync($"/strategies/{id}")).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/strategies/{id}")).StatusCode);
 
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
             Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/strategies/{id}")).StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/strategies/{id}")).StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/strategies/{id}")).StatusCode);

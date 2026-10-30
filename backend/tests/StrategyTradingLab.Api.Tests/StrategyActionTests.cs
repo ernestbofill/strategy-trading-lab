@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
-/// <summary>The strategy page's actions, end to end: rename, the alerts switch, End, and archiving an ended strategy.</summary>
+/// <summary>The strategy page's actions, end to end: rename, the alerts switch, Archive, and deleting an archived strategy.</summary>
 public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsApi>
 {
     static object Request(string name, string mode = "live") => new
@@ -80,7 +80,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
             Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/notifications", new { enabled = true })).StatusCode);
             Assert.True((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("notifications").GetBoolean());
 
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/end", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
             Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync($"/strategies/{id}/notifications", new { enabled = false })).StatusCode);
         }
         finally
@@ -90,7 +90,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
-    public async Task Ending_a_strategy_misses_its_waiting_signals_frees_its_name_and_refuses_trades()
+    public async Task Archiving_a_strategy_misses_its_waiting_signals_frees_its_name_and_refuses_trades()
     {
         var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
@@ -119,8 +119,8 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
                 (signalId, tradeId) = (signal.Id, manual.Id);
             }
 
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/end", null)).StatusCode);
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/strategies/{id}/end", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
 
             using (var scope = factory.Services.CreateScope())
             {
@@ -137,7 +137,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
             var detail = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}");
             Assert.Equal("ended", detail.GetProperty("status").GetString());
             Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", detail.GetProperty("endedOn").GetString());
-            Assert.False(detail.GetProperty("archived").GetBoolean());
+            Assert.False(detail.TryGetProperty("archived", out _));
 
             // Its history is final.
             var trade = new { assetId, side = "buy", date = new DateOnly(2026, 9, 22), price = 100, enteredAs = "amount", amount = 99, fee = 1, fxSource = "reference" };
@@ -159,7 +159,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
-    public async Task Ending_an_ai_strategy_skips_its_round_due()
+    public async Task Archiving_an_ai_strategy_skips_its_round_due()
     {
         var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
@@ -180,7 +180,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
                 id = strategy.Id;
             }
 
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/end", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
 
             using (var scope = factory.Services.CreateScope())
             {
@@ -204,33 +204,29 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
-    public async Task Ended_strategies_follow_the_running_ones_on_the_dashboard_and_can_be_archived()
+    public async Task Archived_strategies_follow_the_running_ones_last_archived_first_and_only_they_can_be_deleted()
     {
         var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
         try
         {
-            var archived = await StartAsync(client, $"Archived {Tag()}");
-            var ended = await StartAsync(client, $"Ended {Tag()}", "simulation");
+            var first = await StartAsync(client, $"First {Tag()}");
+            var second = await StartAsync(client, $"Second {Tag()}", "simulation");
             var running = await StartAsync(client, $"Running {Tag()}");
 
-            // Only an ended strategy can be archived.
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/strategies/{archived}/archive", null)).StatusCode);
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{archived}/end", null)).StatusCode);
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{ended}/end", null)).StatusCode);
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{archived}/archive", null)).StatusCode);
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{archived}/archive", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{first}/archive", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{second}/archive", null)).StatusCode);
 
             var strategies = (await client.GetFromJsonAsync<JsonElement>("/dashboard")).GetProperty("strategies").EnumerateArray().ToList();
-            Assert.Equal([running, ended, archived], strategies.Select(s => s.GetProperty("id").GetGuid()));
+            Assert.Equal([running, second, first], strategies.Select(s => s.GetProperty("id").GetGuid()));
             Assert.Equal(["running", "ended", "ended"], strategies.Select(s => s.GetProperty("status").GetString()));
-            Assert.Equal([false, false, true], strategies.Select(s => s.GetProperty("archived").GetBoolean()));
             Assert.Equal(JsonValueKind.Null, strategies[0].GetProperty("endedOn").ValueKind);
             Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", strategies[1].GetProperty("endedOn").GetString());
-            Assert.True((await client.GetFromJsonAsync<JsonElement>($"/strategies/{archived}")).GetProperty("archived").GetBoolean());
 
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{archived}/unarchive", null)).StatusCode);
-            Assert.False((await client.GetFromJsonAsync<JsonElement>($"/strategies/{archived}")).GetProperty("archived").GetBoolean());
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/strategies/{running}/unarchive", null)).StatusCode);
+            // A running strategy is archived before it can go; an archived one is deleted for good.
+            Assert.Equal(HttpStatusCode.Conflict, (await client.DeleteAsync($"/strategies/{running}")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/strategies/{running}")).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/strategies/{first}")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/strategies/{first}")).StatusCode);
         }
         finally
         {

@@ -1,8 +1,7 @@
 
 ## Todos from Claude to Ernest
-- [ ] GitHub Actions won't start jobs: "recent account payments have failed or your spending limit needs to be increased". Fix it in GitHub → Settings → Billing & plans, then re-run CI on #94. Until then no PR gets CI and backend merges don't deploy. (#94)
-- [ ] After #82 deploys: send the test email from `/admin` and check how the new HTML emails look in Gmail on the phone and on desktop (and Apple Mail or Outlook if you use them). (#82)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
+- [x] After #82 deploys: send the test email from `/admin` and check how the new HTML emails look in Gmail on the phone and on desktop (and Apple Mail or Outlook if you use them). (#82)
 - [x] ~~Before merging #28: run `dotnet test` against the Neon dev branch.~~ Not needed: CI now runs every backend test, the database ones included (#32). #28 is merged. (#28, #31)
 - [x] After #28 and #31 are merged: sign up on the live app with your own email, and check the confirmation email arrives. (#31)
 - [x] Confirm or reorder ROADMAP → Next. (#20)
@@ -28,11 +27,11 @@
 - [x] Database switch (#30): copy `deploy/backend/production.env.example` to `deploy/backend/production.env` (gitignored) and fill it in: the production branch's variables (as in today's `api.env`), `DATABASE_URL_DEV` (the dev branch's pooled URL) and `ADMIN_PASSWORD` (a long one of your own). Then run *Terminal → Run Task → Deploy backend environment to Oracle* (or `deploy/backend/deploy-env.sh` on the Mac, `deploy-env.ps1` on Windows). Until `ADMIN_PASSWORD` is there the page can't switch the database on the server. Optional, locally: `DATABASE_URL_PRODUCTION` in `.env.local` lets your local API switch to production.
 - [x] Set `OWNER_EMAIL` to your account's email in `deploy/backend/production.env` and run *Deploy backend environment to Oracle*; `ADMIN_PASSWORD` is no longer used and can go. Your account (verified email) becomes the owner the next time it is used, and only the owner opens `/admin`. Locally, put `OWNER_EMAIL` in `.env.local`. After the first deploy, the database box's switch logs you out (sessions live in the database in use): log in again there. (#39)
 
-- [x] Review the launch plan in ROADMAP.md. Answered on 2026-10-25; recorded in `docs/decisions.md`. (#58)
 - [ ] Still to decide, in ROADMAP → Open decisions: the rest of the launch scope, ended strategies, who the legal notice names, and pre-registered accounts (before the security pass, item 27). (#58)
-- [ ] When item 4 comes up: pick a plus address of your own inbox for Claude's owner account (on dev and production), confirm it once from the email, and add its password to `.env.local` on each machine and to the cloud environment's secrets; Claude will name the variable. (#58)
-- [ ] Choose and buy the app's domain (needed for items 21 and 22). (#58)
+- [x] ~~When item 4 comes up: pick a plus address of your own inbox for Claude's owner account (on dev and production), confirm it once from the email, and add its password to `.env.local` on each machine and to the cloud environment's secrets; Claude will name the variable.~~ Not needed: item 4 moved to *Ideas → A QA agent*, and Claude uses disposable dev accounts for checks (#86). (#58)
 - [ ] When item 21 comes up: open a Brevo account; Claude will say which DNS records and settings to add. (#58)
+- [x] Review the launch plan in ROADMAP.md. Answered on 2026-10-25; recorded in `docs/decisions.md`. (#58)
+- [x] Choose and buy the app's domain (needed for items 21 and 22). (#58)
 
 - [x] *Your AI's top picks* (#70): try the suggested prompt once in the AI you use (copy it on the AI round screen), paste the answer back, and tell Claude if the reader complains or the scores look off. Then confirm or change Claude's assumptions in ROADMAP → Open decisions (anonymous sharing, the round rules, prompt v1). No secret or setting is needed. (#70)
 

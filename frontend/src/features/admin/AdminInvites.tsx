@@ -234,7 +234,7 @@ function ShareCard({ invite, sent, onAnother }: { invite: AdminInvite; sent: boo
           <dd className={styles.link}>{invite.link}</dd>
         </div>
       </dl>
-      <p className={styles.previewLabel}>Message ({invite.locale === 'ca' ? 'Català' : 'English'})</p>
+      <p className={styles.previewLabel}>Message ({languageName(invite.locale)})</p>
       <pre className={styles.preview}>{invite.message}</pre>
       <div className={styles.actions}>
         <CopyButton text={invite.message} label="Copy message" primary />
@@ -294,7 +294,7 @@ function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () =
         </span>
       </div>
       <p className={styles.meta}>
-        <span className={styles.mono}>{invite.code}</span> · {invite.locale === 'ca' ? 'Català' : 'English'} · {invite.createdAt.slice(0, 10)}
+        <span className={styles.mono}>{invite.code}</span> · {languageName(invite.locale)} · {invite.createdAt.slice(0, 10)}
         {invite.email && <> · {invite.email}</>}
       </p>
       {invite.joined.map((u) => (
@@ -356,6 +356,8 @@ function statusOf(invite: AdminInvite): Status {
   if (invite.revokedAt) return 'revoked'
   return invite.sentAt ? 'sent' : 'waiting'
 }
+
+const languageName = (locale: Locale) => LANGUAGES.find((l) => l.value === locale)?.label
 
 const fullName = (invite: AdminInvite) => [invite.firstName, invite.lastName].filter(Boolean).join(' ')
 

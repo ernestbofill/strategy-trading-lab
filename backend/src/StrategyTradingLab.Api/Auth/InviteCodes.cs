@@ -15,7 +15,7 @@ public static class InviteCodes
     {
         var chars = new char[8];
         for (var i = 0; i < chars.Length; i++) chars[i] = Alphabet[RandomNumberGenerator.GetInt32(Alphabet.Length)];
-        return $"{new string(chars, 0, 4)}-{new string(chars, 4, 4)}";
+        return Format(chars);
     }
 
     /// <summary>A typed code as stored: case and spaces or dashes don't matter. Null when it can't be a code.</summary>
@@ -23,6 +23,8 @@ public static class InviteCodes
     {
         if (typed is not { Length: <= 40 }) return null;
         var chars = typed.Where(char.IsAsciiLetterOrDigit).Select(char.ToUpperInvariant).ToArray();
-        return chars.Length == 8 && chars.All(Alphabet.Contains) ? $"{new string(chars, 0, 4)}-{new string(chars, 4, 4)}" : null;
+        return chars.Length == 8 && chars.All(Alphabet.Contains) ? Format(chars) : null;
     }
+
+    static string Format(char[] chars) => $"{new string(chars, 0, 4)}-{new string(chars, 4, 4)}";
 }

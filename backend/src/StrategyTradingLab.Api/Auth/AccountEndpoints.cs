@@ -51,7 +51,7 @@ public static class AccountEndpoints
 
         group.MapGet("/sign-up-options", async (string? invite, AppDbContext db, SettingsStore settings, CancellationToken cancellationToken) =>
         {
-            var found = string.IsNullOrWhiteSpace(invite) ? null : await InviteEndpoints.FindUsableAsync(db, invite, cancellationToken);
+            var found = await InviteEndpoints.FindUsableAsync(db, invite, cancellationToken);
             var invitedBy = found is null ? null
                 : await db.Users.Where(u => u.Id == found.CreatedBy).Select(u => u.FirstName).SingleOrDefaultAsync(cancellationToken);
             return TypedResults.Ok(new SignUpOptions(await InviteEndpoints.InviteOnlyAsync(settings, cancellationToken),
@@ -66,10 +66,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             var errors = new Dictionary<string, string[]>();
-            var firstName = AccountRules.NormalizeName(request.FirstName);
-            if (firstName is null) errors["firstName"] = [Messages.EnterFirstName.In(reqLocale)];
-            var lastName = AccountRules.NormalizeName(request.LastName);
-            if (lastName is null) errors["lastName"] = [Messages.EnterLastName.In(reqLocale)];
+            var (firstName, lastName) = CheckNames(request.FirstName, request.LastName, errors, reqLocale);
             var email = AccountRules.NormalizeEmail(request.Email);
             if (email is null) errors["email"] = [Messages.UseAnEmail.In(reqLocale)];
             if (AccountRules.PasswordError(request.Password, email, reqLocale) is { } passwordError) errors["password"] = [passwordError];
@@ -80,8 +77,7 @@ public static class AccountEndpoints
             if (!AccountRules.IsTimeZone(request.TimeZone)) errors["timeZone"] = [Messages.PickTimeZone.In(reqLocale)];
             if (!request.DisclaimerAccepted) errors["disclaimerAccepted"] = [Messages.TickTheBox.In(reqLocale)];
             // An invite counts whatever the setting, so an invited person gets its role while sign-ups are open too.
-            var invite = string.IsNullOrWhiteSpace(request.InviteCode) ? null
-                : await InviteEndpoints.FindUsableAsync(db, request.InviteCode, cancellationToken);
+            var invite = await InviteEndpoints.FindUsableAsync(db, request.InviteCode, cancellationToken);
             if (invite is null && !string.IsNullOrWhiteSpace(request.InviteCode)) errors["inviteCode"] = [Messages.InviteNotValid.In(reqLocale)];
             else if (invite is null && await InviteEndpoints.InviteOnlyAsync(settings, cancellationToken))
                 errors["inviteCode"] = [Messages.InviteNeeded.In(reqLocale)];
@@ -197,10 +193,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             var errors = new Dictionary<string, string[]>();
-            var firstName = AccountRules.NormalizeName(request.FirstName);
-            if (firstName is null) errors["firstName"] = [Messages.EnterFirstName.In(reqLocale)];
-            var lastName = AccountRules.NormalizeName(request.LastName);
-            if (lastName is null) errors["lastName"] = [Messages.EnterLastName.In(reqLocale)];
+            var (firstName, lastName) = CheckNames(request.FirstName, request.LastName, errors, reqLocale);
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id)
@@ -351,6 +344,16 @@ public static class AccountEndpoints
     {
         hasher.VerifyHashedPassword(null!, DummyHash, password ?? "");
         return PasswordVerificationResult.Failed;
+    }
+
+    /// <summary>The normalized names; the ones that don't pass are added to <c>errors</c>.</summary>
+    static (string? FirstName, string? LastName) CheckNames(string? first, string? last, Dictionary<string, string[]> errors, string locale)
+    {
+        var firstName = AccountRules.NormalizeName(first);
+        if (firstName is null) errors["firstName"] = [Messages.EnterFirstName.In(locale)];
+        var lastName = AccountRules.NormalizeName(last);
+        if (lastName is null) errors["lastName"] = [Messages.EnterLastName.In(locale)];
+        return (firstName, lastName);
     }
 
     static async Task<string> NewToken(AppDbContext db, User user, EmailTokenPurpose purpose, DateTimeOffset expiresAt,

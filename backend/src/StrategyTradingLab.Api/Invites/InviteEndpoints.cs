@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Admin;
@@ -111,18 +112,20 @@ public static class InviteEndpoints
     }
 
     /// <summary>Not revoked and not used up.</summary>
-    public static bool Usable(Invite invite) => invite.RevokedAt is null && invite.Uses < invite.MaxUses;
+    static readonly Expression<Func<Invite, bool>> IsUsable = i => i.RevokedAt == null && i.Uses < i.MaxUses;
+    static readonly Func<Invite, bool> UsableNow = IsUsable.Compile();
+    public static bool Usable(Invite invite) => UsableNow(invite);
 
     /// <summary>The usable invite with that code (typed in any case, with or without the dash), or null.</summary>
     public static async Task<Invite?> FindUsableAsync(AppDbContext db, string? typed, CancellationToken cancellationToken) =>
         InviteCodes.Normalize(typed) is { } code
             ? await db.Invites.AsNoTracking()
-                .SingleOrDefaultAsync(i => i.Code == code && i.RevokedAt == null && i.Uses < i.MaxUses, cancellationToken)
+                .Where(IsUsable).SingleOrDefaultAsync(i => i.Code == code, cancellationToken)
             : null;
 
     /// <summary>Uses the invite once: false when it was used up or revoked meanwhile. One UPDATE, so two sign-ups can't share its last use.</summary>
     public static async Task<bool> ClaimAsync(AppDbContext db, Guid id, CancellationToken cancellationToken) =>
-        await db.Invites.Where(i => i.Id == id && i.RevokedAt == null && i.Uses < i.MaxUses)
+        await db.Invites.Where(i => i.Id == id).Where(IsUsable)
             .ExecuteUpdateAsync(i => i.SetProperty(x => x.Uses, x => x.Uses + 1), cancellationToken) == 1;
 
     /// <summary>Whether sign-ups need an invite: the admin setting, open unless it says invite_only.</summary>

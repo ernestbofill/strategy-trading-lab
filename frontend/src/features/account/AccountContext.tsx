@@ -97,6 +97,12 @@ export function useAccount(): AccountContextValue {
   return value
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+export function useOptionalAccount(): Account | null {
+  const { state } = useAccount()
+  return state.status === 'ready' ? state.account : null
+}
+
 /** The logged-in user, inside `RequireAccount`. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useCurrentAccount(): Account {

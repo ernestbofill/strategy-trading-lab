@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useIsOwner } from '../features/account/AccountContext'
 import { useBackendVersion } from '../lib/backendVersion'
 import { useT } from '../i18n/I18n'
+import { Footer } from './Footer'
 import styles from './Screen.module.css'
 import { Tag } from './Tag'
 
@@ -85,12 +86,15 @@ export function Screen({ top, action, note, noteAbove, children }: ScreenProps) 
   return (
     <div className={styles.screen}>
       {top}
-      <main className={styles.content}>{children}</main>
+      <main className={styles.content}>
+        {children}
+        <Footer />
+      </main>
       {(action || note) && (
-        <footer className={styles.footer} data-note-above={noteAbove || undefined}>
+        <div className={styles.footer} data-note-above={noteAbove || undefined}>
           {action && <div className={styles.action}>{action}</div>}
           {note && <p className={`caption ${styles.note}`}>{note}</p>}
-        </footer>
+        </div>
       )}
     </div>
   )

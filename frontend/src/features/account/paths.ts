@@ -34,3 +34,6 @@ export function safeNext(next: string | null | undefined): string {
 
 /** Log-in, coming back to `from` afterwards. */
 export const logInPathFor = (from: string) => `${logInPath}?next=${encodeURIComponent(from)}`
+
+/** Sign-up, coming back to `from` afterwards. */
+export const signUpPathFor = (from: string) => `${signUpPath}?next=${encodeURIComponent(from)}`

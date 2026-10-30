@@ -1,0 +1,12 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 640px;
+}
+
+.text {
+  margin: 0;
+  font: 14px/22px var(--font-ui);
+  color: var(--ink);
+}

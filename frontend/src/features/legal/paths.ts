@@ -1,0 +1,5 @@
+export const legalNoticePath = '/legal/notice'
+export const termsPath = '/legal/terms'
+export const privacyPath = '/legal/privacy'
+export const disclaimerPath = '/legal/disclaimer'
+export const aboutPath = '/legal/about'

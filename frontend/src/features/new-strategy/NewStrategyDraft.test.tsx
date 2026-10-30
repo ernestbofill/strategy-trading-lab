@@ -21,4 +21,16 @@ describe('NewStrategyDraftProvider', () => {
     rerender()
     expect(result.current).toMatchObject({ budget: null, mode: 'simulation' })
   })
+
+  it('keeps the draft when a guest signs up or logs in', () => {
+    let owner: string | null = null
+    const wrapper = ({ children }: { children: ReactNode }) => <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
+    const { result, rerender } = renderHook(() => useNewStrategyDraft(), { wrapper })
+
+    act(() => result.current.update({ budget: 3500, mode: 'live', name: 'My Guest Strategy' }))
+    owner = 'newly-signed-up@example.com'
+    rerender()
+
+    expect(result.current).toMatchObject({ budget: 3500, mode: 'live', name: 'My Guest Strategy' })
+  })
 })

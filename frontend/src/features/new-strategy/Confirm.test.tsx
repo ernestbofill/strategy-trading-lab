@@ -40,7 +40,14 @@ function DashboardStub() {
 function open() {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getAccount').mockResolvedValue({
-    email: 'a@example.com', emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, currency: 'EUR', role: 'user', aiSharing: false,
+    email: 'a@example.com',
+    emailVerified: true,
+    locale: 'en',
+    timeZone: 'UTC',
+    overviewEmail: true,
+    currency: 'EUR',
+    role: 'user',
+    aiSharing: false,
   })
   vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
   vi.spyOn(api, 'getDashboard').mockResolvedValue({ strategies: [], waiting: [] } as unknown as Dashboard)
@@ -73,5 +80,26 @@ describe('Confirm', () => {
     expect(screen.queryByRole('heading', { name: 'Ready to start' })).toBeNull()
     expect(start).toHaveBeenCalledTimes(1)
     expect(start.mock.calls[0][0]).toMatchObject({ templateKey: 'ai' })
+  })
+
+  it('renders "Create an account to start it" for guests and links to sign-up with next', async () => {
+    vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+    vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
+    render(
+      <AccountProvider>
+        <NewStrategyDraftProvider owner={null}>
+          <ChooseAi />
+          <MemoryRouter initialEntries={['/new/confirm']}>
+            <Routes>
+              <Route path="/new/confirm" element={<Confirm />} />
+            </Routes>
+          </MemoryRouter>
+        </NewStrategyDraftProvider>
+      </AccountProvider>,
+    )
+
+    const action = await screen.findByRole('link', { name: 'Create an account to start it' })
+    expect(action.getAttribute('href')).toBe('/sign-up?next=%2Fnew%2Fconfirm')
   })
 })

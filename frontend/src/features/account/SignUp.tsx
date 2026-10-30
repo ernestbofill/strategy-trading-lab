@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { api, InvalidFieldsError, type Currency, type Locale } from '../../api'
 import { Checkbox, FormMessage, PasswordField, SegmentedField, SelectField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
@@ -12,7 +12,7 @@ import { dashboardPath, pickPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
 import { errorText } from './copy'
-import { logInPath } from './paths'
+import { logInPath, logInPathFor, safeNext } from './paths'
 import { guessTimeZone, timeZones } from './timeZones'
 
 /** Sign-up (spec: Sign-up). A new account is logged in at once and goes to Pick a template. */
@@ -31,11 +31,14 @@ export function SignUp() {
   const [message, setMessage] = useState<FormMessageState>(null)
   const [busy, setBusy] = useState(false)
   const [signedUp, setSignedUp] = useState(false)
+  const [searchParams] = useSearchParams()
+  const nextParam = searchParams.get('next')
+  const next = nextParam ? safeNext(nextParam) : (signedUp ? pickPath : dashboardPath)
   // Built once: the list holds the guessed zone, and any zone picked comes from it.
   const zones = useMemo(() => timeZones(guessTimeZone()).map((z) => ({ value: z, label: z.replaceAll('_', ' ') })), [])
   const currOptions = useMemo(() => currencyOptionsWith(t), [t])
 
-  if (state.status === 'ready' && state.account) return <Navigate to={signedUp ? pickPath : dashboardPath} replace />
+  if (state.status === 'ready' && state.account) return <Navigate to={next} replace />
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -108,7 +111,8 @@ export function SignUp() {
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>
       <div className={styles.links}>
-        <TextAction to={logInPath}>{t('account.signUp.haveAccount')}</TextAction>
+        <TextAction to={nextParam ? logInPathFor(nextParam) : logInPath}>{t('account.signUp.haveAccount')}</TextAction>
+        <TextAction to={pickPath}>{t('account.signUp.skipLookAround')}</TextAction>
       </div>
     </Screen>
   )

@@ -69,4 +69,45 @@ describe('app routes', () => {
     expect(await screen.findByText('Pick template screen')).toBeTruthy()
     expect(screen.queryByText('Dashboard screen')).toBeNull()
   })
+
+  it('lets guests view the template picker at /new without an account', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/new')
+
+    expect(await screen.findByText('Pick template screen')).toBeTruthy()
+  })
+
+  it('offers Skip for now, look around on sign-up, leading to /new', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/sign-up')
+
+    const skipLink = screen.getByRole('link', { name: 'Skip for now, look around' })
+    expect(skipLink.getAttribute('href')).toBe('/new')
+    fireEvent.click(skipLink)
+
+    expect(await screen.findByText('Pick template screen')).toBeTruthy()
+  })
+
+  it('renders legal links in the footer on every screen', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/sign-up')
+
+    expect(screen.getByRole('link', { name: 'Legal notice' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Terms of use' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Privacy policy' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Disclaimer' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'About' })).toBeTruthy()
+  })
+
+  it('renders public legal pages such as /legal/disclaimer', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/legal/disclaimer')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Disclaimer' })).toBeTruthy()
+    expect(screen.getByText(/you decide and trade at your own broker/)).toBeTruthy()
+  })
 })

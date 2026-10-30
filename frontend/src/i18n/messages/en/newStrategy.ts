@@ -6,6 +6,7 @@ export const newStrategy = {
 
   // 1 / 5 Pick a template
   'newStrategy.pick.topBar': 'STL // NEW STRATEGY',
+  'newStrategy.pick.logIn': 'LOG IN',
   'newStrategy.pick.continue': 'Continue',
   'newStrategy.pick.note': 'Pick one to start. You can add more strategies later, from any template.',
   'newStrategy.pick.eyebrow': 'Welcome to Strategy Trading Lab',
@@ -186,6 +187,7 @@ export const newStrategy = {
   'newStrategy.confirm.starting': 'Starting…',
   'newStrategy.confirm.startLive': 'Start following it live',
   'newStrategy.confirm.startSim': 'Start the simulation',
+  'newStrategy.confirm.createAccountToStart': 'Create an account to start it',
   'newStrategy.confirm.edit': 'Edit',
   'newStrategy.confirm.row.template': 'Template',
   'newStrategy.confirm.row.mode': 'Mode',

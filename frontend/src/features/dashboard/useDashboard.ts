@@ -3,4 +3,5 @@ import { useLoadable, type Loadable } from '../../lib/useLoadable'
 
 export const dashboardCacheKey = 'dashboard'
 
-export const useDashboard = (): Loadable<Dashboard> => useLoadable(dashboardCacheKey, api.getDashboard)
+export const useDashboard = (enabled = true): Loadable<Dashboard> =>
+  useLoadable(enabled ? dashboardCacheKey : null, api.getDashboard)

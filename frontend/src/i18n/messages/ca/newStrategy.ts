@@ -5,6 +5,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.what.test': 'la prova',
 
   'newStrategy.pick.topBar': 'STL // NOVA ESTRATÈGIA',
+  'newStrategy.pick.logIn': 'INICIA LA SESSIÓ',
   'newStrategy.pick.continue': 'Continua',
   'newStrategy.pick.note': "Tria'n una per començar. Més endavant podràs afegir més estratègies, a partir de qualsevol plantilla.",
   'newStrategy.pick.eyebrow': 'Et donem la benvinguda a Strategy Trading Lab',
@@ -180,6 +181,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.confirm.starting': 'Iniciant…',
   'newStrategy.confirm.startLive': 'Comença a seguir-la en directe',
   'newStrategy.confirm.startSim': 'Comença la simulació',
+  'newStrategy.confirm.createAccountToStart': 'Crea un compte per començar',
   'newStrategy.confirm.edit': 'Edita',
   'newStrategy.confirm.row.template': 'Plantilla',
   'newStrategy.confirm.row.mode': 'Mode',

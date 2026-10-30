@@ -78,7 +78,7 @@ class InviteConfiguration : IEntityTypeConfiguration<Invite>
         entity.Property(invite => invite.Email).HasColumnType("citext");
         entity.Property(invite => invite.Role).HasColumnDefault(UserRole.Vip);
         entity.Property(invite => invite.MaxUses).HasColumnDefault(1);
-        entity.HasOne<User>().WithMany().HasForeignKey(invite => invite.CreatedBy).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne<User>().WithMany().HasForeignKey(invite => invite.CreatedBy).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

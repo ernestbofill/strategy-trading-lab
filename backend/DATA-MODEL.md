@@ -116,7 +116,7 @@ An invite to sign up (spec: Sign-up, Admin · Invites). Only the owner makes the
 | --- | --- | --- |
 | id | uuid PK | |
 | code | varchar(9), unique, not null | "ABCD-EFGH" (`Auth/InviteCodes`). Kept as it is, so the owner can copy the message again |
-| created_by | uuid FK → users (cascade), not null | Who made it |
+| created_by | uuid FK → users (set null), null | Who made it; null once that account is deleted, so the invite and who joined with it stay |
 | role | text, not null, default `vip` | The role an account made with it gets |
 | first_name | varchar(100), not null | Whom it is for: the message greets them by it |
 | last_name | varchar(100), null | |

@@ -995,7 +995,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
@@ -1990,8 +1990,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     b.HasOne("StrategyTradingLab.Api.Data.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_invites_users_created_by");
                 });
 

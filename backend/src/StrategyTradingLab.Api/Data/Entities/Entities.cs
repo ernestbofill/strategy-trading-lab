@@ -70,7 +70,8 @@ public class Invite
     public Guid Id { get; set; }
     /// <summary>"ABCD-EFGH", see Auth/InviteCodes.</summary>
     public required string Code { get; set; }
-    public Guid CreatedBy { get; set; }
+    /// <summary>Null once its maker's account is deleted: the invite (and who joined with it) stays.</summary>
+    public Guid? CreatedBy { get; set; }
     public UserRole Role { get; set; } = UserRole.Vip;
     public required string FirstName { get; set; }
     public string? LastName { get; set; }

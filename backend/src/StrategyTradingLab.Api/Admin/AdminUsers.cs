@@ -31,7 +31,8 @@ public static class AdminUsersEndpoints
                     db.Strategies.Count(s => s.UserId == u.Id && s.Status == StrategyStatus.Ended),
                     u.FirstName, u.LastName,
                     // Who made the invite the account signed up with, if any.
-                    db.Users.Where(o => db.Invites.Any(i => i.Id == u.InviteId && i.CreatedBy == o.Id)).Select(o => o.Email).FirstOrDefault()))
+                    db.Invites.Where(i => i.Id == u.InviteId)
+                        .Join(db.Users, i => i.CreatedBy, o => (Guid?)o.Id, (i, o) => (string?)o.Email).FirstOrDefault()))
                 .ToListAsync(cancellationToken);
             var running = await db.Strategies.AsNoTracking().Where(s => s.Status == StrategyStatus.Running)
                 .GroupBy(s => new { s.TemplateKey, s.Mode })

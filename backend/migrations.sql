@@ -1521,3 +1521,35 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    ALTER TABLE invites DROP CONSTRAINT fk_invites_users_created_by;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    ALTER TABLE invites ALTER COLUMN created_by DROP NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    ALTER TABLE invites ADD CONSTRAINT fk_invites_users_created_by FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261030182805_KeepInvitesOfDeletedUsers', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

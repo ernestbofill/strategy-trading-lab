@@ -71,7 +71,7 @@ export function AdminInvites() {
         {state.status === 'ready' && state.invites.length > 0 && (
           <ul className={styles.list}>
             {state.invites.map((invite) => (
-              <InviteRow key={`${invite.id}:${invite.sentAt}:${invite.revokedAt}:${invite.uses}`} invite={invite} onChanged={load} />
+              <InviteRow key={invite.id} invite={invite} onChanged={load} />
             ))}
           </ul>
         )}
@@ -186,7 +186,7 @@ function NewInviteForm({ onCreated }: { onCreated: (invite: AdminInvite, sent: b
       className={styles.form}
       onSubmit={(e) => {
         e.preventDefault()
-        void create(email.trim() !== '')
+        void create(false) // Enter never sends: an email can't be taken back.
       }}
       noValidate
     >
@@ -206,10 +206,10 @@ function NewInviteForm({ onCreated }: { onCreated: (invite: AdminInvite, sent: b
       <SegmentedField label="Language of the invite" value={locale} onChange={(v) => setLocale(v as Locale)} options={LANGUAGES} error={errors.locale} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <div className={styles.actions}>
-        <button type="submit" className={`ui-strong ${styles.primary}`} disabled={busy !== null || email.trim() === ''}>
+        <button type="button" className={`ui-strong ${styles.primary}`} disabled={busy !== null || email.trim() === ''} onClick={() => void create(true)}>
           {busy === 'send' ? 'Sending…' : '✉ Send by email'}
         </button>
-        <button type="button" className={`ui-strong ${styles.button}`} disabled={busy !== null} onClick={() => void create(false)}>
+        <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy !== null}>
           {busy === 'copy' ? 'Making it…' : 'Make it, copy the text'}
         </button>
       </div>
@@ -274,8 +274,7 @@ function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () =
       if (done) setMessage({ tone: 'done', text: done })
       await onChanged()
     } catch (err) {
-      if (err instanceof UnauthorizedError) return
-      setMessage({
+      if (!(err instanceof UnauthorizedError)) setMessage({
         tone: 'error',
         text: err instanceof TooManyTriesError ? 'Too many invite emails this hour. Copy the message instead.'
           : err instanceof InvalidValueError ? err.message
@@ -307,7 +306,7 @@ function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () =
           <CopyButton text={invite.message} label="Copy message" />
           {invite.email && (
             <button type="button" className={`ui-strong ${styles.textButton}`} disabled={busy}
-              onClick={() => void run(() => api.sendAdminInvite(invite.id))}>
+              onClick={() => void run(() => api.sendAdminInvite(invite.id), `Emailed to ${invite.email}.`)}>
               {invite.sentAt ? 'Email again' : 'Email it'}
             </button>
           )}

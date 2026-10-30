@@ -94,7 +94,11 @@ export function SignUp() {
     } catch (err) {
       if (err instanceof InvalidFieldsError) {
         setErrors(err.fields)
-        if (err.fields.inviteCode) setShowCode(true)
+        // The link's invite was used or revoked since the page loaded: drop the welcome and let them type another code.
+        if (err.fields.inviteCode) {
+          setShowCode(true)
+          setOptions((o) => o && { ...o, invite: null })
+        }
       } else setMessage({ tone: 'error', text: errorText(err) })
     }
     setBusy(false)
@@ -180,7 +184,6 @@ export function SignUp() {
         <Checkbox checked={accepted} onChange={setAccepted} error={errors.disclaimerAccepted}>
           {t('account.signUp.accept', { disclaimer: t('common.disclaimerFull') })}
         </Checkbox>
-        {invite && errors.inviteCode && <FormMessage tone="error">{errors.inviteCode}</FormMessage>}
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>
       <div className={styles.links}>

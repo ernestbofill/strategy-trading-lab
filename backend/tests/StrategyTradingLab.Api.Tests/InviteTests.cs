@@ -168,4 +168,14 @@ public class InviteTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.Accepted,
             (await visitor.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(api.NewEmail(), inviteCode: code))).StatusCode);
     }
+
+    [NeonFact]
+    public async Task A_mistyped_sign_ups_value_on_the_server_keeps_the_gate_shut()
+    {
+        using var mistyped = api.WithWebHostBuilder(b => b.UseSetting(SettingDefinitions.SignUps, "INVITE-ONLY"));
+        using var visitor = mistyped.CreateApiClient();
+
+        Assert.True((await visitor.GetFromJsonAsync<JsonElement>("/account/sign-up-options")).GetProperty("inviteOnly").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await visitor.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(api.NewEmail()))).StatusCode);
+    }
 }

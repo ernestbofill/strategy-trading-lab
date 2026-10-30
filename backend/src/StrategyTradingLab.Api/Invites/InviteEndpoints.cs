@@ -128,9 +128,12 @@ public static class InviteEndpoints
         await db.Invites.Where(i => i.Id == id).Where(IsUsable)
             .ExecuteUpdateAsync(i => i.SetProperty(x => x.Uses, x => x.Uses + 1), cancellationToken) == 1;
 
-    /// <summary>Whether sign-ups need an invite: the admin setting, open unless it says invite_only.</summary>
+    /// <summary>
+    /// Whether sign-ups need an invite: the admin setting. Only exactly "open" opens them, so a mistyped value on the
+    /// server (which the page doesn't check) keeps the gate shut rather than open.
+    /// </summary>
     public static async Task<bool> InviteOnlyAsync(SettingsStore settings, CancellationToken cancellationToken) =>
-        (await settings.ValuesAsync(cancellationToken)).GetValueOrDefault(SettingDefinitions.SignUps) == SettingDefinitions.SignUpsInviteOnly;
+        await settings.ValueAsync(SettingDefinitions.Find(SettingDefinitions.SignUps)!, cancellationToken) != SettingDefinitions.SignUpsOpen;
 
     /// <summary>Queues the invite's email, with answers going to the owner, and notes when it was sent.</summary>
     static async Task SendAsync(AppDbContext db, Invite invite, User owner, InviteTexts texts, EmailQueue emails, TimeProvider time,

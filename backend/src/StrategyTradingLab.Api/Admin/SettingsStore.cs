@@ -37,6 +37,14 @@ public class SettingsStore(AppDbContext db, IConfiguration configuration, IDataP
         return SettingDefinitions.All.ToDictionary(d => d.Key, d => Resolve(d, rows).Value);
     }
 
+    /// <summary>One plain setting's value, read alone: no secret is unsealed (Sign-up asks for SIGN_UPS on every load).</summary>
+    public async Task<string?> ValueAsync(SettingDefinition definition, CancellationToken cancellationToken)
+    {
+        if (definition.Secret) throw new ArgumentException("Read secrets with ValuesAsync, with the settings they are bound to.", nameof(definition));
+        var rows = await db.AppSettings.AsNoTracking().Where(row => row.Key == definition.Key).ToDictionaryAsync(row => row.Key, cancellationToken);
+        return Resolve(definition, rows).Value;
+    }
+
     /// <summary>
     /// Saves the page's value. A secret is sealed with the values of the settings it is bound to, and only if they are
     /// still the ones the page showed (<paramref name="expected"/>): false when they changed meanwhile, and nothing is saved.

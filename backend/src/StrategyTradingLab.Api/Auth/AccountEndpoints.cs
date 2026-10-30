@@ -21,8 +21,11 @@ public record LocaleRequest(string? Locale);
 public record OverviewEmailRequest(bool? Enabled);
 public record NameRequest(string? FirstName, string? LastName);
 
-/// <summary>Who an invite is for, to greet them on Sign-up and fill in what is known.</summary>
-public record SignUpInvite(string Code, string FirstName, string? LastName, string? Email, string Locale, string? InvitedBy);
+/// <summary>
+/// Who an invite is for, to greet them on Sign-up: only the first name and language. Anyone holding the code (a
+/// forwarded message) sees this, so not the invitee's email or last name.
+/// </summary>
+public record SignUpInvite(string Code, string FirstName, string Locale, string? InvitedBy);
 
 /// <summary>What Sign-up needs to know first: whether an invite is needed, and the invite the link carries, if it is usable.</summary>
 public record SignUpOptions(bool InviteOnly, SignUpInvite? Invite);
@@ -55,7 +58,7 @@ public static class AccountEndpoints
             var invitedBy = found is null ? null
                 : await db.Users.Where(u => u.Id == found.CreatedBy).Select(u => u.FirstName).SingleOrDefaultAsync(cancellationToken);
             return TypedResults.Ok(new SignUpOptions(await InviteEndpoints.InviteOnlyAsync(settings, cancellationToken),
-                found is null ? null : new SignUpInvite(found.Code, found.FirstName, found.LastName, found.Email, found.Locale, invitedBy)));
+                found is null ? null : new SignUpInvite(found.Code, found.FirstName, found.Locale, invitedBy)));
         })
         .RequireRateLimiting(InviteLimit)
         .WithSummary("Whether sign-up needs an invite, and who the given invite is for (null when it can't be used).");

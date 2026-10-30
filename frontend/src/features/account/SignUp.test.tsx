@@ -27,17 +27,16 @@ function open(options: SignUpOptions, url = '/sign-up') {
   )
 }
 
-const invite = { code: 'ABCD-EFGH', firstName: 'Anna', lastName: 'Puig', email: 'anna@example.com', locale: 'en' as const, invitedBy: 'Ernest' }
+const invite = { code: 'ABCD-EFGH', firstName: 'Anna', locale: 'en' as const, invitedBy: 'Ernest' }
 
 describe('SignUp', () => {
-  it('greets the invitee from an invite link and fills in what the invite knows', async () => {
+  it('greets the invitee from an invite link and fills in their first name', async () => {
     open({ inviteOnly: true, invite }, '/sign-up?invite=abcd-efgh')
 
     expect(await screen.findByRole('heading', { name: 'Welcome, Anna' })).toBeTruthy()
     expect(screen.getByText('Ernest invited you to Strategy Trading Lab.')).toBeTruthy()
     expect(screen.getByText('ABCD-EFGH')).toBeTruthy()
     expect((screen.getByLabelText('First name') as HTMLInputElement).value).toBe('Anna')
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('anna@example.com')
     expect(api.getSignUpOptions).toHaveBeenCalledWith('abcd-efgh')
   })
 
@@ -52,7 +51,7 @@ describe('SignUp', () => {
     open({ inviteOnly: false, invite: null }, '/sign-up?invite=ZZZZ-ZZZZ')
 
     expect(await screen.findByText(/This invite can't be used any more/)).toBeTruthy()
-    expect((screen.getByLabelText('Invite code') as HTMLInputElement).value).toBe('ZZZZ-ZZZZ')
+    expect((screen.getByLabelText('Invite code') as HTMLInputElement).value).toBe('') // Cleared: open sign-ups need none.
   })
 
   it('hides the code field while sign-ups are open, until asked for, and sends the names and the code', async () => {

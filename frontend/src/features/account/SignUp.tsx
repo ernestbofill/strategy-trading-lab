@@ -55,10 +55,9 @@ export function SignUp() {
         if (!live) return
         setOptions(loaded)
         const invite = loaded.invite
-        if (!invite) return
-        setFirstName(invite.firstName)
-        setLastName(invite.lastName ?? '')
-        setEmail(invite.email ?? '')
+        // A dead code from the link would block a sign-up that needs none: clear it.
+        if (!invite) return setInviteCode((code) => (code === linkCode ? '' : code))
+        setFirstName((typed) => typed || invite.firstName) // Never over what was typed while it loaded.
         setInviteCode(invite.code)
         setLocale(invite.locale)
         setAppLocale(invite.locale)

@@ -705,8 +705,6 @@ export interface SignUp {
 export interface SignUpInvite {
   code: string
   firstName: string
-  lastName: string | null
-  email: string | null
   locale: Locale
   /** The inviter's first name, when they have one. */
   invitedBy: string | null

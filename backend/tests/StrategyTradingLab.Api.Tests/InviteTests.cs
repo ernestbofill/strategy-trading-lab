@@ -99,6 +99,7 @@ public class InviteTests(AccountsApi api) : IClassFixture<AccountsApi>
         var options = await visitor.GetFromJsonAsync<JsonElement>($"/account/sign-up-options?invite={code.ToLowerInvariant()}");
         Assert.Equal("Anna", options.GetProperty("invite").GetProperty("firstName").GetString());
         Assert.Equal("ca", options.GetProperty("invite").GetProperty("locale").GetString());
+        Assert.False(options.GetProperty("invite").TryGetProperty("email", out _)); // Not shown to whoever holds the code.
 
         var email = api.NewEmail();
         Assert.Equal(HttpStatusCode.Accepted, (await visitor.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(email, inviteCode: code))).StatusCode);

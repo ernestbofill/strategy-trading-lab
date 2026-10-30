@@ -105,8 +105,15 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
-    // Each look-up tells whether a code works, so it is limited like a guess; Sign-up asks once per page load.
-    PerClient(AccountEndpoints.InviteLimit, 30, TimeSpan.FromHours(1));
+    // A look-up with a code tells whether it works, so it is limited like a guess; one without a code (every Sign-up
+    // load, many visitors behind one address) only says whether sign-ups are invite only, and isn't limited.
+    options.AddPolicy(AccountEndpoints.InviteLimit, http => string.IsNullOrEmpty(http.Request.Query["invite"])
+        ? RateLimitPartition.GetNoLimiter("no-code")
+        : RateLimitPartition.GetFixedWindowLimiter(AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue($"RateLimits:{AccountEndpoints.InviteLimit}", 30), Window = TimeSpan.FromHours(1),
+            }));
     // Asset search and adding, per user: both call the price source, and adding loads a whole price history.
     void PerUser(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
         RateLimitPartition.GetFixedWindowLimiter(AssetEndpoints.UserKey(http),

@@ -112,7 +112,8 @@ public static class InviteEndpoints
     }
 
     /// <summary>Not revoked and not used up.</summary>
-    static readonly Expression<Func<Invite, bool>> IsUsable = i => i.RevokedAt == null && i.Uses < i.MaxUses;
+    // An invite whose maker's account is gone is in no owner's list, so nobody could revoke it: it stops working.
+    static readonly Expression<Func<Invite, bool>> IsUsable = i => i.RevokedAt == null && i.Uses < i.MaxUses && i.CreatedBy != null;
     static readonly Func<Invite, bool> UsableNow = IsUsable.Compile();
     public static bool Usable(Invite invite) => UsableNow(invite);
 

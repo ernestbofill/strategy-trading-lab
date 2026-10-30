@@ -100,7 +100,8 @@ function SignUpGate() {
     void api
       .getAdminSettings()
       .then((settings) => {
-        const value = settings.find((s) => s.key === SIGN_UPS)?.value === 'invite_only' ? 'invite_only' : 'open'
+        // As the API reads it: only exactly "open" opens sign-ups.
+        const value = settings.find((s) => s.key === SIGN_UPS)?.value === 'open' ? 'open' : 'invite_only'
         if (!live) return
         setSaved(value)
         setChoice(value)

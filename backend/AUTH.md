@@ -51,7 +51,7 @@ All JSON, under `/api`. State-changing ones follow the CSRF rule above.
 | Endpoint | Does |
 | --- | --- |
 | `POST /account/sign-up` | first and last name, email, password, language, time zone, currency (optional, `EUR`), overview on/off, disclaimer accepted, invite code (needed while `SIGN_UPS` is `invite_only`). Same answer whether or not the email exists; a new user is logged in, with the invite's role. The invite is claimed in the same transaction as the account, so a failed or duplicate sign-up leaves it unused |
-| `GET /account/sign-up-options?invite=` | whether sign-ups are invite only, and who a usable invite is for (null otherwise). 30 an hour per client, since each answer tells whether a code works |
+| `GET /account/sign-up-options?invite=` | whether sign-ups are invite only, and who a usable invite is for (null otherwise). 30 an hour per client when it carries a code, since each answer tells whether a code works; without one it isn't limited |
 | `POST /account/name` | first and last name of the logged-in user |
 | `POST /account/currency` | currency (`EUR`, `USD` or `GBP`) for the logged-in user's new strategies. Running ones keep theirs |
 | `POST /account/log-in` | email, password. Same error for a wrong email and a wrong password; the lock counts tries per email |

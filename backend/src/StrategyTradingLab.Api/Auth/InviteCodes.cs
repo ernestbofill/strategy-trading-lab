@@ -9,11 +9,13 @@ namespace StrategyTradingLab.Api.Auth;
 public static class InviteCodes
 {
     const string Alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-    public const int Length = 9;
+    const int Group = 4;
+    /// <summary>Two groups and the dash, as stored.</summary>
+    public const int Length = 2 * Group + 1;
 
     public static string New()
     {
-        var chars = new char[8];
+        var chars = new char[2 * Group];
         for (var i = 0; i < chars.Length; i++) chars[i] = Alphabet[RandomNumberGenerator.GetInt32(Alphabet.Length)];
         return Format(chars);
     }
@@ -23,8 +25,8 @@ public static class InviteCodes
     {
         if (typed is not { Length: <= 40 }) return null;
         var chars = typed.Where(char.IsAsciiLetterOrDigit).Select(char.ToUpperInvariant).ToArray();
-        return chars.Length == 8 && chars.All(Alphabet.Contains) ? Format(chars) : null;
+        return chars.Length == 2 * Group && chars.All(Alphabet.Contains) ? Format(chars) : null;
     }
 
-    static string Format(char[] chars) => $"{new string(chars, 0, 4)}-{new string(chars, 4, 4)}";
+    static string Format(char[] chars) => $"{new string(chars, 0, Group)}-{new string(chars, Group, Group)}";
 }

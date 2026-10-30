@@ -14,7 +14,7 @@ const roleText: Record<Role, string> = { user: 'User', vip: 'VIP', owner: 'Owner
 const day = (at: string | null) => (at ? isoDate(new Date(at)) : '–')
 
 const columns: DataTableColumn<AdminUser>[] = [
-  { id: 'email', header: 'Email', accessorFn: (u) => u.email },
+  { id: 'email', header: 'Email', accessorFn: (u) => u.email, cell: (u) => <span className={styles.email}>{u.email}</span> },
   { id: 'role', header: 'Role', accessorFn: (u) => u.role, cell: (u) => roleText[u.role] },
   {
     id: 'confirmed',
@@ -42,7 +42,7 @@ const filters: DataTableFilter[] = [
   {
     columnId: 'confirmed',
     label: 'Email confirmed',
-    allLabel: 'Confirmed or not',
+    allLabel: 'Any email',
     options: [
       { value: 'yes', label: 'Confirmed' },
       { value: 'no', label: 'Not confirmed' },

@@ -51,6 +51,10 @@
   font-weight: 400;
 }
 
+.email {
+  overflow-wrap: anywhere;
+}
+
 .yes {
   color: var(--success);
   font-family: var(--font-mono);

@@ -24,7 +24,7 @@ public static class AdminUsersEndpoints
     {
         group.MapGet("/users", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
-            var users = await db.Users.AsNoTracking()
+            var users = await db.Users.AsNoTracking().OrderByDescending(u => u.CreatedAt)
                 .Select(u => new AdminUser(u.Id, u.Email, u.Role, u.CreatedAt, u.EmailVerifiedAt != null,
                     db.Sessions.Where(s => s.UserId == u.Id).Max(s => (DateTimeOffset?)s.LastUsedAt),
                     db.Strategies.Count(s => s.UserId == u.Id && s.Status == StrategyStatus.Running),
@@ -40,8 +40,7 @@ public static class AdminUsersEndpoints
                     running.Where(r => r.TemplateKey == t.Key && r.Mode == StrategyMode.Simulation).Sum(r => r.Count),
                     running.Where(r => r.TemplateKey == t.Key && r.Mode == StrategyMode.Live).Sum(r => r.Count)))
                 .ToList();
-            return new AdminUsers(new AdminUserCounts(users.Count, users.Count(u => u.Confirmed), byTemplate),
-                [.. users.OrderByDescending(u => u.Joined)]);
+            return new AdminUsers(new AdminUserCounts(users.Count, users.Count(u => u.Confirmed), byTemplate), users);
         })
         .WithSummary("Every account, newest first, with its role, confirmed email, last visit and strategies; and the counts above the list.");
     }

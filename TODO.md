@@ -1,5 +1,7 @@
 
 ## Todos from Claude to Ernest
+- [ ] After #99 deploys: add your first name on the account page, so invites say "Ernest invited you" and are signed. Then send yourself a test invite in English and in Catalan, and open the link logged out on the phone (Sign-up with an invite wasn't checked by eye). (#99)
+- [ ] When the quiet launch starts: switch *Who can sign up* to *Invite only* on `/admin/invites`. (#99)
 - [ ] GitHub Actions won't start jobs: "recent account payments have failed or your spending limit needs to be increased". Fix it in GitHub → Settings → Billing & plans, then re-run CI on #94. Until then no PR gets CI and backend merges don't deploy. (#94)
 - [ ] After #82 deploys: send the test email from `/admin` and check how the new HTML emails look in Gmail on the phone and on desktop (and Apple Mail or Outlook if you use them). (#82)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)

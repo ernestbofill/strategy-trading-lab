@@ -5,7 +5,7 @@ import { Checkbox, FormMessage, TextField } from '../../components/Field'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { invalidate, invalidateAll } from '../../lib/useLoadable'
-import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
+import { useDashboard } from '../dashboard/useDashboard'
 import { draftFromStrategy } from '../new-strategy/goLive'
 import { defaultName, NAME_MAX_LENGTH } from '../new-strategy/newStrategy'
 import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
@@ -13,12 +13,6 @@ import { modePath } from '../new-strategy/paths'
 import { useTemplate } from '../new-strategy/useTemplate'
 import styles from './StrategyActions.module.css'
 import { strategyCacheKey } from './useStrategy'
-
-/** The page and the dashboard show the change. */
-const reload = (id: string) => {
-  invalidate(strategyCacheKey(id))
-  invalidate(dashboardCacheKey)
-}
 
 /** "RENAME": the heading becomes a field with Save and Cancel. Confirm's rules: 1 to 60 characters, unique among running strategies. */
 export function RenameForm({ s, onClose }: { s: StrategyDetail; onClose: () => void }) {
@@ -99,8 +93,8 @@ export function AlertsSwitch({ s }: { s: StrategyDetail }) {
   )
 }
 
-/** "End the strategy", after a confirm step: the daily check stops, waiting signals close as missed, the history stays. */
-export function EndStrategy({ s }: { s: StrategyDetail }) {
+/** "Archive the strategy", after a confirm step: the daily check stops, waiting signals close as missed, the history stays. */
+export function ArchiveStrategy({ s }: { s: StrategyDetail }) {
   const t = useT()
   const [asking, setAsking] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -109,18 +103,18 @@ export function EndStrategy({ s }: { s: StrategyDetail }) {
   if (!asking)
     return (
       <div className={styles.start}>
-        <TextAction onClick={() => setAsking(true)}>{t('strategy.end')}</TextAction>
+        <TextAction onClick={() => setAsking(true)}>{t('strategy.archive')}</TextAction>
       </div>
     )
 
-  const end = async () => {
+  const archive = async () => {
     setBusy(true)
     setFailed(false)
     try {
-      await api.endStrategy(s.id)
+      await api.archiveStrategy(s.id)
     } catch (err) {
       if (err instanceof UnauthorizedError) return
-      // Already ended (another tab, another device): show it as it is.
+      // Already archived (another tab, another device): show it as it is.
       if (!(err instanceof InvalidValueError)) {
         setFailed(true)
         setBusy(false)
@@ -133,46 +127,17 @@ export function EndStrategy({ s }: { s: StrategyDetail }) {
 
   return (
     <div className={styles.confirmBox}>
-      <p>{t('strategy.endAsk', { name: s.name })}</p>
-      {failed && <p role="alert">{t('strategy.endFailed')}</p>}
+      <p>{t('strategy.archiveAsk', { name: s.name })}</p>
+      {failed && <p role="alert">{t('strategy.archiveFailed')}</p>}
       <div className={styles.confirmActions}>
-        <button type="button" className={styles.btnDanger} disabled={busy} onClick={end}>
-          {busy ? t('strategy.ending') : t('strategy.endConfirm')}
+        <button type="button" className={styles.btnDanger} disabled={busy} onClick={archive}>
+          {busy ? t('strategy.archiving') : t('strategy.archiveConfirm')}
         </button>
         {/* Focus on the safe choice, so the keyboard lands in the confirm step. */}
         <button type="button" className={styles.btnSecondary} disabled={busy} onClick={() => setAsking(false)} autoFocus>
-          {t('strategy.endKeep')}
+          {t('strategy.archiveKeep')}
         </button>
       </div>
-    </div>
-  )
-}
-
-/** "Archive" (or "Unarchive") an ended strategy: it moves to the dashboard's collapsed Archived section. */
-export function ArchiveStrategy({ s }: { s: StrategyDetail }) {
-  const t = useT()
-  const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
-
-  const toggle = async () => {
-    setBusy(true)
-    setFailed(false)
-    try {
-      await api.archiveStrategy(s.id, !s.archived)
-      reload(s.id)
-    } catch (err) {
-      if (err instanceof UnauthorizedError) return
-      setFailed(true)
-    }
-    setBusy(false)
-  }
-
-  return (
-    <div className={styles.start}>
-      <TextAction onClick={() => void toggle()} disabled={busy}>
-        {s.archived ? t('strategy.unarchive') : t('strategy.archive')}
-      </TextAction>
-      {failed && <p role="alert">{t('strategy.archiveFailed')}</p>}
     </div>
   )
 }

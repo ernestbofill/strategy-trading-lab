@@ -63,7 +63,6 @@ const mockStrategy = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   mode: 'live',
   status: 'running',
   endedOn: null,
-  archived: false,
   notifications: true,
   startedOn: '2026-10-01',
   today: '2026-10-25',

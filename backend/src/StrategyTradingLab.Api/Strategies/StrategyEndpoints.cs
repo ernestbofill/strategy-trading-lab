@@ -24,10 +24,10 @@ public static class StrategyEndpoints
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var all = await db.Strategies.AsNoTracking().Where(strategy => strategy.UserId == user.Id).ToListAsync(cancellationToken);
-            // Running ones newest first, then the ended ones, last ended first, the archived ones last.
+            // Running ones newest first, then the archived ones, last archived first.
             var strategies = all.Where(s => s.Status == StrategyStatus.Running)
                 .OrderByDescending(s => s.StartedOn).ThenByDescending(s => s.CreatedAt)
-                .Concat(all.Where(s => s.Status != StrategyStatus.Running).OrderBy(s => s.ArchivedAt is not null).ThenByDescending(s => s.EndedAt))
+                .Concat(all.Where(s => s.Status != StrategyStatus.Running).OrderByDescending(s => s.EndedAt))
                 .ToList();
             var running = strategies.Where(s => s.Status == StrategyStatus.Running).ToList();
             var today = Today(user, time);
@@ -150,10 +150,15 @@ public static class StrategyEndpoints
         .WithName("UpdateStrategySettings")
         .WithSummary("Updates the settings (rules) of a running strategy.");
 
-        group.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound>> (
+        group.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
+            var status = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id).Select(s => (StrategyStatus?)s.Status)
+                .SingleOrDefaultAsync(cancellationToken);
+            if (status is null) return TypedResults.NotFound();
+            // Only an archived one: a running strategy is archived first, so its signals close before it goes.
+            if (status != StrategyStatus.Ended) return TypedResults.Conflict(Messages.ArchiveBeforeDelete.In(user.Locale));
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             // Its AI rounds first, keeping the ids of their shared copies: once the rounds are gone nothing points to those
             // (spec: AI data sharing). Deleting the rows waits for a round being used right now, and then sees its shared copy.
@@ -166,13 +171,14 @@ public static class StrategyEndpoints
                 """).ToListAsync(cancellationToken);
             if (shared.Count > 0) await db.SharedAiRounds.Where(s => shared.Contains(s.Id)).ExecuteDeleteAsync(cancellationToken);
             // Its stocks, signals, trades and evaluations go with it (ON DELETE CASCADE).
-            var deleted = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id).ExecuteDeleteAsync(cancellationToken);
+            var deleted = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Ended)
+                .ExecuteDeleteAsync(cancellationToken);
             if (deleted == 0) return TypedResults.NotFound();
             await transaction.CommitAsync(cancellationToken);
             return TypedResults.NoContent();
         })
         .WithName("DeleteStrategy")
-        .WithSummary("Deletes a strategy for good, with its signals, trades, results and AI rounds.");
+        .WithSummary("Deletes an archived strategy for good, with its signals, trades, results and AI rounds.");
 
         group.MapPut("/{id:guid}/name", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (
             Guid id, RenameStrategy request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
@@ -214,7 +220,7 @@ public static class StrategyEndpoints
         .WithName("SetStrategyNotifications")
         .WithSummary("Turns a running strategy's alerts (emails for its signals and AI rounds) on or off. The daily overview still lists them.");
 
-        group.MapPost("/{id:guid}/end", async Task<Results<NoContent, NotFound, Conflict<string>>> (
+        group.MapPost("/{id:guid}/archive", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
@@ -222,7 +228,7 @@ public static class StrategyEndpoints
             var now = time.GetUtcNow();
             var today = Today(user, time);
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            // Only while it runs, so two taps end it once. The daily check runs running strategies only, and the running name index frees its name.
+            // Only while it runs, so two taps archive it once. The daily check runs running strategies only, and the running name index frees its name.
             var ended = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, StrategyStatus.Ended).SetProperty(x => x.EndedAt, now).SetProperty(x => x.UpdatedAt, now),
                     cancellationToken);
@@ -239,32 +245,9 @@ public static class StrategyEndpoints
             await transaction.CommitAsync(cancellationToken);
             return TypedResults.NoContent();
         })
-        .WithName("EndStrategy")
-        .WithSummary("Ends a running strategy: the daily check stops, its waiting signals become missed and its name is free. Its history stays.");
-
-        group.MapPost("/{id:guid}/archive", (Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
-            ArchiveAsync(id, time.GetUtcNow(), db, sessions, cancellationToken))
         .WithName("ArchiveStrategy")
-        .WithSummary("Moves an ended strategy to the dashboard's Archived section.");
+        .WithSummary("Archives a running strategy: the daily check stops, its waiting signals become missed and its name is free. Its history stays, read-only.");
 
-        group.MapPost("/{id:guid}/unarchive", (Guid id, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
-            ArchiveAsync(id, null, db, sessions, cancellationToken))
-        .WithName("UnarchiveStrategy")
-        .WithSummary("Brings an archived strategy back among the ended ones on the dashboard.");
-    }
-
-    /// <summary>Archives an ended strategy (<paramref name="at"/>) or brings it back (null). A running one can't be archived.</summary>
-    static async Task<Results<NoContent, NotFound, Conflict<string>>> ArchiveAsync(Guid id, DateTimeOffset? at, AppDbContext db, Sessions sessions,
-        CancellationToken cancellationToken)
-    {
-        var user = await CurrentUser(sessions, cancellationToken);
-        var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
-        if (strategy is null) return TypedResults.NotFound();
-        if (strategy.Status != StrategyStatus.Ended) return TypedResults.Conflict(Messages.OnlyEndedArchive.In(user.Locale));
-        // Archiving again keeps the first date.
-        strategy.ArchivedAt = at is null ? null : strategy.ArchivedAt ?? at;
-        await db.SaveChangesAsync(cancellationToken);
-        return TypedResults.NoContent();
     }
 
     /// <summary>The logged-in user: the endpoints require one (RequireUser), so it is there.</summary>
@@ -299,7 +282,7 @@ public static class StrategyEndpoints
         var results = figures is null ? null : new StrategyResults(figures.You, figures.Index, [.. figures.History.Select(p => p.You)]);
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
             strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(template, texts),
-            strategy.Status, EndedOn(strategy, user), strategy.ArchivedAt is not null);
+            strategy.Status, EndedOn(strategy, user));
     }
 
     static PastResult? PastResultOf(Template template, TemplateTexts texts) =>
@@ -486,7 +469,7 @@ public static class StrategyEndpoints
             : null;
 
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
-            EndedOn(strategy, user), strategy.ArchivedAt is not null, strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
+            EndedOn(strategy, user), strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName);

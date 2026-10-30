@@ -30,20 +30,19 @@ const summary = (fields: Partial<StrategySummary>): StrategySummary => ({
   pastResult: { years: '2010-2024', template: 212, index: 180, worstYear: -21 },
   status: 'running',
   endedOn: null,
-  archived: false,
   ...fields,
 })
 
 describe('Dashboard', () => {
-  it('lists ended strategies with an ENDED tag after the running ones, and folds the archived ones away', async () => {
+  it('folds the archived strategies away after the running ones, with an ARCHIVED tag', async () => {
     vi.spyOn(api, 'getTemplates').mockResolvedValue([])
     vi.spyOn(api, 'getDashboard').mockResolvedValue({
       today: '2026-10-28',
       waiting: [],
       strategies: [
         summary({ id: 'r', name: 'Running one' }),
-        summary({ id: 'e', name: 'Ended one', status: 'ended', endedOn: '2026-10-20' }),
-        summary({ id: 'a', name: 'Archived one', status: 'ended', endedOn: '2026-10-10', archived: true }),
+        summary({ id: 'e', name: 'Archived lately', status: 'ended', endedOn: '2026-10-20' }),
+        summary({ id: 'a', name: 'Archived long ago', status: 'ended', endedOn: '2026-10-10' }),
       ],
     })
     render(
@@ -54,13 +53,12 @@ describe('Dashboard', () => {
       </NewStrategyDraftProvider>,
     )
 
-    const ended = await screen.findByRole('link', { name: /Ended one/ })
-    expect(within(ended).getByText('ENDED')).toBeTruthy()
-    expect(within(ended).getByText(/ended/)).toBeTruthy()
-    expect(within(screen.getByRole('link', { name: /Running one/ })).queryByText('ENDED')).toBeNull()
-
-    const archived = screen.getByText('Archived (1)').closest('details')!
+    expect(within(await screen.findByRole('link', { name: /Running one/ })).queryByText('ARCHIVED')).toBeNull()
+    const archived = screen.getByText('Archived (2)').closest('details')!
     expect(archived.open).toBe(false)
-    expect(within(archived).getByText('Archived one')).toBeTruthy()
+    const lately = within(archived).getByRole('link', { name: /Archived lately/ })
+    expect(within(lately).getByText('ARCHIVED')).toBeTruthy()
+    expect(within(lately).getByText(/archived Oct 20/)).toBeTruthy()
+    expect(within(archived).getByText('Archived long ago')).toBeTruthy()
   })
 })

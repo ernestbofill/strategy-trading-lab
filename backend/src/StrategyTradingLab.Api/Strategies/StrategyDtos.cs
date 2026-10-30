@@ -26,8 +26,8 @@ public record RenameStrategy(string? Name);
 public record StrategyNotifications(bool? Enabled);
 
 /// <summary>
-/// A strategy as shown on the dashboard. <c>EndedOn</c> is the user's local date it ended (null while running); its results
-/// stop there. <c>Archived</c> ones go in the dashboard's collapsed Archived section.
+/// A strategy as shown on the dashboard. <c>EndedOn</c> is the user's local date it was archived (status <c>Ended</c>, null
+/// while running); its results stop there, and it goes in the dashboard's collapsed Archived section.
 /// </summary>
 public record StrategySummary(
     Guid Id,
@@ -42,8 +42,7 @@ public record StrategySummary(
     StrategyResults? Results,
     PastResult? PastResult,
     StrategyStatus Status = StrategyStatus.Running,
-    DateOnly? EndedOn = null,
-    bool Archived = false);
+    DateOnly? EndedOn = null);
 
 /// <summary>What a strategy has earned since it started, in percent, next to the index fund (null when its prices are missing). Null until it has trades.</summary>
 public record StrategyResults(decimal Strategy, decimal? Index, IReadOnlyList<decimal> History);
@@ -58,7 +57,7 @@ public record WaitingItem(Guid Id, WaitingKind Kind, Guid StrategyId, string Str
 
 /// <summary>
 /// <c>Today</c> is the user's local date, to tell a strategy started today from an older one. <c>Strategies</c>: the running
-/// ones, newest first, then the ended ones, last ended first, the archived ones last.
+/// ones, newest first, then the archived ones, last archived first.
 /// </summary>
 public record Dashboard(DateOnly Today, IReadOnlyList<StrategySummary> Strategies, IReadOnlyList<WaitingItem> Waiting);
 
@@ -175,7 +174,6 @@ public record StrategyDetail(
     StrategyMode Mode,
     StrategyStatus Status,
     DateOnly? EndedOn,
-    bool Archived,
     bool Notifications,
     DateOnly StartedOn,
     DateOnly Today,

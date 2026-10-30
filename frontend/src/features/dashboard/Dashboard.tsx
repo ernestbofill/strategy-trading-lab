@@ -27,12 +27,11 @@ export function Dashboard() {
   return (
     <LoadableScreen state={dashboard} top={top} what={t('dashboard.what')}>
       {({ today, strategies, waiting }) => {
-        // The API sends the running ones first, then the ended ones, the archived ones last.
+        // The API sends the running ones first, then the archived ones, last archived first.
         const card = (s: StrategySummary) => (
           <StrategyCard key={s.id} strategy={s} today={today} waiting={waiting.find((w) => w.strategyId === s.id)} />
         )
-        const ended = strategies.filter((s) => s.status === 'ended' && !s.archived)
-        const archived = strategies.filter((s) => s.archived)
+        const archived = strategies.filter((s) => s.status === 'ended')
         return (
           <Screen top={top} note={`${t('common.disclaimer')} ${t('common.pastResults')}`}>
             <VerifyNotice />
@@ -45,7 +44,6 @@ export function Dashboard() {
                 {t('dashboard.newStrategy')}
               </Link>
             </div>
-            {ended.length > 0 && <div className={styles.cards}>{ended.map(card)}</div>}
             {archived.length > 0 && (
               <details className={styles.archived}>
                 <summary className="ui-strong">{t('dashboard.archived', { n: archived.length })}</summary>

@@ -1,0 +1,62 @@
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.totals {
+  margin: 0;
+  display: flex;
+  gap: var(--space-4);
+}
+.totals div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.totals dt {
+  font: 11px/16px var(--font-ui);
+  color: var(--ink-muted);
+}
+.totals dd {
+  margin: 0;
+  font: 18px/26px var(--font-mono);
+}
+
+.running {
+  flex: 1 1 260px;
+  border-collapse: collapse;
+  font: 12px/20px var(--font-mono);
+}
+.running caption {
+  text-align: left;
+  padding-bottom: var(--space-1);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.running th,
+.running td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border-hairline);
+  text-align: right;
+}
+.running th:first-child {
+  text-align: left;
+  font-family: var(--font-ui);
+  font-weight: 400;
+}
+.running thead th {
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+
+.yes {
+  color: var(--success);
+  font-family: var(--font-mono);
+}
+
+.no {
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+}

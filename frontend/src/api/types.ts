@@ -759,6 +759,33 @@ export interface YahooCheck {
 
 export type AssetKind = 'stock' | 'fund' | 'index'
 
+/** An account on the admin users page: backend Admin/AdminUsers.cs (AdminUser). */
+export interface AdminUser {
+  id: string
+  email: string
+  role: Role
+  joined: string
+  confirmed: boolean
+  /** The last time any of its sessions was used; null when none is kept. */
+  lastVisit: string | null
+  running: number
+  archived: number
+}
+
+/** Running strategies of one template, by mode. */
+export interface AdminTemplateCount {
+  templateKey: TemplateKey
+  templateName: string
+  simulation: number
+  live: number
+}
+
+/** The admin users page: backend Admin/AdminUsers.cs (AdminUsers). Users newest first. */
+export interface AdminUsers {
+  counts: { users: number; confirmed: number; running: AdminTemplateCount[] }
+  users: AdminUser[]
+}
+
 /** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
 export interface AdminAsset {
   id: string
@@ -867,6 +894,7 @@ export interface Api {
   switchAdminDatabase(name: DatabaseName): Promise<void>
 /** All assets, for the admin assets page. */
   getAdminAssets(): Promise<AdminAsset[]>
+  getAdminUsers(): Promise<AdminUsers>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */

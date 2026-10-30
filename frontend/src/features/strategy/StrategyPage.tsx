@@ -12,7 +12,7 @@ import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib
 import { aiRoundPath, aiRoundsPath, signalPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
-import { AlertsSwitch, ArchiveStrategy, EndStrategy, GoLive, RenameForm } from './StrategyActions'
+import { AlertsSwitch, ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
@@ -195,8 +195,8 @@ export function StrategyPage() {
 }
 
 /**
- * A loaded strategy. A running one has "RENAME" in the top bar, the alerts switch (strategies that email) and "End the
- * strategy"; an ended one is read-only, with "Ended on [date]", "Archive" or "Unarchive", and "Delete the strategy".
+ * A loaded strategy. A running one has "RENAME" in the top bar, the alerts switch (strategies that email) and "Archive the
+ * strategy"; an archived one is read-only, with "Archived on [date]" and "Delete the strategy".
  */
 function StrategyView({ s }: { s: StrategyDetail }) {
   const t = useT()
@@ -217,7 +217,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
         {renaming ? <RenameForm s={s} onClose={() => setRenaming(false)} /> : <h1 className={styles.title}>{s.name}</h1>}
         <div className={styles.sub}>
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
-          {s.endedOn && <span className={styles.ended}>{t('strategy.endedOn', { date: shortDate(s.endedOn) })}</span>}
+          {s.endedOn && <span className={styles.ended}>{t('strategy.archivedOn', { date: shortDate(s.endedOn) })}</span>}
           <span>
             <em>{s.templateName}</em> · {since}
           </span>
@@ -253,8 +253,8 @@ function StrategyView({ s }: { s: StrategyDetail }) {
       )}
       {/* Only strategies that email have alerts: live ones (signals) and AI ones (rounds due). */}
       {running && (live || s.aiRounds) && <AlertsSwitch s={s} />}
-      {running ? <EndStrategy s={s} /> : <ArchiveStrategy s={s} />}
-      <DeleteStrategy id={s.id} name={s.name} />
+      {/* One way out of each state: a running strategy is archived, and only an archived one can be deleted. */}
+      {running ? <ArchiveStrategy s={s} /> : <DeleteStrategy id={s.id} name={s.name} />}
     </Screen>
   )
 }

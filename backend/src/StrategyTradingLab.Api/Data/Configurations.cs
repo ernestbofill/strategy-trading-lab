@@ -101,7 +101,6 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
         {
             table.HasInCheck("template_key", TemplateCatalog.Keys);
             table.HasCheckConstraint("ck_strategies_ended_at", "(status = 'ended') = (ended_at IS NOT NULL)");
-            table.HasCheckConstraint("ck_strategies_archived_at", "archived_at IS NULL OR status = 'ended'");
             table.HasCheckConstraint("ck_strategies_budget_step", "budget_step <= budget_amount");
             table.HasCheckConstraint("ck_strategies_budget_steps",
                 "(budget_step IS NULL) = (budget_max_steps IS NULL)");

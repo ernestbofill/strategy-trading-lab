@@ -47,8 +47,8 @@ public static class Messages
     // Signals
     public static readonly Message AlreadyAnswered = new("This signal is already answered.", "Aquest senyal ja té resposta.");
     public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot ajornar un senyal que encara espera.");
-    public static readonly Message StrategyEnded = new("This strategy has ended, so there is no reminder to send.",
-        "Aquesta estratègia ha acabat, així que no hi ha cap recordatori per enviar.");
+    public static readonly Message StrategyEnded = new("This strategy is archived, so there is no reminder to send.",
+        "Aquesta estratègia està arxivada, així que no hi ha cap recordatori per enviar.");
     public static readonly Message NotificationsOff = new("This strategy's notifications are off, so there is no reminder to send.",
         "Les notificacions d'aquesta estratègia estan desactivades, així que no hi ha cap recordatori per enviar.");
     public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu correu per començar en directe.");
@@ -75,8 +75,8 @@ public static class Messages
     public static readonly Message TradeTooBig = new("That is more than one trade can be.", "Això és més del que pot ser una operació.");
 
     // Strategies
-    public static readonly Message StrategyIsEnded = new("This strategy has ended, so it can't change.", "Aquesta estratègia ha acabat, així que no pot canviar.");
-    public static readonly Message OnlyEndedArchive = new("Only an ended strategy can be archived.", "Només es pot arxivar una estratègia acabada.");
+    public static readonly Message StrategyIsEnded = new("This strategy is archived, so it can't change.", "Aquesta estratègia està arxivada, així que no pot canviar.");
+    public static readonly Message ArchiveBeforeDelete = new("Archive the strategy before deleting it.", "Arxiva l’estratègia abans d’esborrar-la.");
     public static readonly Message NameTaken = new("You already have a running strategy with that name.", "Ja tens una estratègia en marxa amb aquest nom.");
     public static readonly Message UseNameLength = new("Use 1 to {0} characters.", "Fes servir d'1 a {0} caràcters.");
     public static readonly Message PickMode = new("Pick simulation or live.", "Tria simulació o en directe.");

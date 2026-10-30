@@ -6,7 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
 // As nginx does in production: /api/templates reaches the API's /templates (`dotnet run` in backend/src/StrategyTradingLab.Api).
-const proxy = { '/api': { target: 'http://localhost:5184', rewrite: (path: string) => path.replace(/^\/api/, '') } }
+// STL_API_URL points it at an API on another port, e.g. a second worktree's while the first one holds 5184.
+const proxy = { '/api': { target: process.env.STL_API_URL ?? 'http://localhost:5184', rewrite: (path: string) => path.replace(/^\/api/, '') } }
 
 // https://vite.dev/config/
 export default defineConfig({

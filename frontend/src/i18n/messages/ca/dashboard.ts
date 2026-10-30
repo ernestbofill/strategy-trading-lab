@@ -24,7 +24,7 @@ export const dashboard: Record<keyof typeof en, string> = {
   'dashboard.waiting.buy': 'Les teves regles per a {strategy} es compleixen per a {stock}. Hi has actuat?',
   'dashboard.waiting.sell': 'Les teves regles per a {strategy} es compleixen per a una venda. Hi has actuat?',
   'dashboard.waiting.aiRound': 'És el moment de la ronda d’IA de {strategy}.',
-  'dashboard.ended': 'ACABADA',
-  'dashboard.card.endedOn': 'acabada el {date}',
+  'dashboard.ended': 'ARXIVADA',
+  'dashboard.card.endedOn': 'arxivada el {date}',
   'dashboard.archived': 'Arxivades ({n})',
 }

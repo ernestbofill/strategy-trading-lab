@@ -183,13 +183,11 @@ export interface StrategySummary {
   /** Null for templates that can't be backtested. */
   pastResult: PastResult | null
   status: StrategyStatus
-  /** The local date it ended; its results stop there. Null while it runs. */
+  /** The local date it was archived; its results stop there. Null while it runs. */
   endedOn: string | null
-  /** An ended strategy the user archived: in the dashboard's collapsed Archived section. */
-  archived: boolean
 }
 
-/** A running strategy is checked every day; an ended one keeps its history, read-only. */
+/** A running strategy is checked every day; an archived one (`ended`) keeps its history, read-only. */
 export type StrategyStatus = 'running' | 'ended'
 
 /** Something that needs the user, newest first on the dashboard. */
@@ -205,7 +203,7 @@ export interface WaitingItem {
 export interface Dashboard {
   /** The server's local date, "2026-10-17", to tell a strategy started today from an older one. */
   today: string
-  /** Running ones first, then the ended ones, the archived ones last. */
+  /** Running ones first, then the archived ones, last archived first. */
   strategies: StrategySummary[]
   waiting: WaitingItem[]
 }
@@ -301,9 +299,8 @@ export interface StrategyDetail {
   investsIn: InvestsIn
   mode: StrategyMode
   status: StrategyStatus
-  /** The local date it ended; its results stop there. Null while it runs. */
+  /** The local date it was archived; its results stop there. Null while it runs. */
   endedOn: string | null
-  archived: boolean
   /** Emails for its signals and AI rounds (the alerts switch). */
   notifications: boolean
   startedOn: string
@@ -821,6 +818,37 @@ export interface YahooCheck {
 
 export type AssetKind = 'stock' | 'fund' | 'index'
 
+/** An account on the admin users page: backend Admin/AdminUsers.cs (AdminUser). */
+export interface AdminUser {
+  id: string
+  email: string
+  role: Role
+  joined: string
+  confirmed: boolean
+  /** The last time any of its sessions was used; null when none is kept. */
+  lastVisit: string | null
+  running: number
+  archived: number
+  firstName: string | null
+  lastName: string | null
+  /** The email of whoever made the invite it signed up with; null without one. */
+  invitedBy: string | null
+}
+
+/** Running strategies of one template, by mode. */
+export interface AdminTemplateCount {
+  templateKey: TemplateKey
+  templateName: string
+  simulation: number
+  live: number
+}
+
+/** The admin users page: backend Admin/AdminUsers.cs (AdminUsers). Users newest first. */
+export interface AdminUsers {
+  counts: { users: number; confirmed: number; running: AdminTemplateCount[] }
+  users: AdminUser[]
+}
+
 /** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
 export interface AdminAsset {
   id: string
@@ -900,16 +928,14 @@ export interface Api {
   addAsset(symbol: string, kind: 'stock' | 'fund'): Promise<AddedAsset>
   /** Starts a strategy. Rejects with `NameTakenError` when the user already runs one with that name. */
   startStrategy(strategy: NewStrategy): Promise<StrategySummary>
-  /** Deletes a strategy for good, with its signals, trades, results and AI rounds. One already gone counts as deleted. */
+  /** Deletes an archived strategy for good, with its signals, trades, results and AI rounds. One already gone counts as deleted. */
   deleteStrategy(id: string): Promise<void>
   /** Rejects with `NameTakenError` when another running strategy has the name, `InvalidFieldsError` for a wrong length. */
   renameStrategy(id: string, name: string): Promise<void>
   /** The alerts switch of a running strategy. Rejects with `InvalidValueError` once it has ended. */
   setStrategyNotifications(id: string, enabled: boolean): Promise<void>
-  /** Ends a running strategy: its waiting signals become missed and its name is free. Rejects with `InvalidValueError` when it has ended already. */
-  endStrategy(id: string): Promise<void>
-  /** Archives (or, with false, brings back) an ended strategy. Rejects with `InvalidValueError` for a running one. */
-  archiveStrategy(id: string, archived: boolean): Promise<void>
+  /** Archives a running strategy: the daily check stops, its waiting signals become missed and its name is free. Rejects with `InvalidValueError` when it is archived already. */
+  archiveStrategy(id: string): Promise<void>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */
   getAdminSettings(): Promise<AdminSetting[]>
   getAdminInvites(): Promise<AdminInvite[]>
@@ -939,6 +965,7 @@ export interface Api {
   switchAdminDatabase(name: DatabaseName): Promise<void>
 /** All assets, for the admin assets page. */
   getAdminAssets(): Promise<AdminAsset[]>
+  getAdminUsers(): Promise<AdminUsers>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */

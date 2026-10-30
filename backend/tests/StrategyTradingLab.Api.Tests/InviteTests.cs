@@ -91,7 +91,7 @@ public class InviteTests(AccountsApi api) : IClassFixture<AccountsApi>
     [NeonFact]
     public async Task Sign_up_with_an_invite_gives_the_vip_role_once_and_records_who_joined()
     {
-        using var owner = await api.OwnerAsync();
+        var (owner, ownerEmail) = await api.VerifiedAsync(UserRole.Owner);
         var invite = await NewInvite(owner);
         var code = invite.GetProperty("code").GetString()!;
 
@@ -116,6 +116,11 @@ public class InviteTests(AccountsApi api) : IClassFixture<AccountsApi>
         var listed = (await owner.GetFromJsonAsync<JsonElement>("/admin/invites")).EnumerateArray().Single(i => i.GetProperty("code").GetString() == code);
         Assert.Equal(1, listed.GetProperty("uses").GetInt32());
         Assert.Equal(email, listed.GetProperty("joined")[0].GetProperty("email").GetString());
+
+        // The Users page says who invited the account.
+        var users = (await owner.GetFromJsonAsync<JsonElement>("/admin/users")).GetProperty("users").EnumerateArray();
+        Assert.Equal(ownerEmail, users.Single(u => u.GetProperty("email").GetString() == email).GetProperty("invitedBy").GetString());
+        owner.Dispose();
     }
 
     [NeonFact]

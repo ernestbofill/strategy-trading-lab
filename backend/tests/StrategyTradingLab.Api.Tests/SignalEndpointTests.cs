@@ -92,6 +92,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync($"/signals/{first}/trade", Trade())).StatusCode);
 
             // user_trades.signal_id is NO ACTION: the cascade from the strategy removes the trade and its signal in one statement.
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{strategyId}/archive", null)).StatusCode);
             Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/strategies/{strategyId}")).StatusCode);
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

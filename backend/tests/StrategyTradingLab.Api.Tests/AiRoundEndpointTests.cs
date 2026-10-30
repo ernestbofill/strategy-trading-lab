@@ -225,6 +225,7 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             Assert.True(await db.SharedAiRounds.AnyAsync(x => x.Answer.Contains($"BE{s.Tag}")));
 
+            Assert.Equal(HttpStatusCode.NoContent, (await s.Client.PostAsync($"/strategies/{s.StrategyId}/archive", null)).StatusCode);
             Assert.Equal(HttpStatusCode.NoContent, (await s.Client.DeleteAsync($"/strategies/{s.StrategyId}")).StatusCode);
             Assert.False(await db.Strategies.AnyAsync(x => x.Id == s.StrategyId));
             Assert.False(await db.AiRounds.AnyAsync(x => x.StrategyId == s.StrategyId));

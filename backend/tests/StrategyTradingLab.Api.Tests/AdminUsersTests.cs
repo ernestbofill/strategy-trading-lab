@@ -24,8 +24,8 @@ public class AdminUsersTests(AdminFixture fixture) : IClassFixture<AdminFixture>
     [NeonFact]
     public async Task Lists_each_account_with_its_strategies_and_counts_running_ones_by_template_and_mode()
     {
-        var (client, email) = await fixture.VerifiedAsync(UserRole.Vip);
         var before = await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/users");
+        var (client, email) = await fixture.VerifiedAsync(UserRole.Vip);
         var dip = (Func<JsonElement, JsonElement>)(page => page.GetProperty("counts").GetProperty("running").EnumerateArray()
             .Single(t => t.GetProperty("templateKey").GetString() == TemplateCatalog.Dip.Key));
 
@@ -51,8 +51,8 @@ public class AdminUsersTests(AdminFixture fixture) : IClassFixture<AdminFixture>
         Assert.Equal(joined.OrderByDescending(d => d), joined);
         Assert.Equal(users.Count, page.GetProperty("counts").GetProperty("users").GetInt32());
         Assert.True(page.GetProperty("counts").GetProperty("users").GetInt32() > before.GetProperty("counts").GetProperty("users").GetInt32());
-        // At least: other test classes may start strategies at the same time.
-        Assert.True(dip(page).GetProperty("live").GetInt32() >= dip(before).GetProperty("live").GetInt32() + 1);
+        // Other test classes start and archive Dip strategies at the same time, so only this one is sure to be counted.
+        Assert.True(dip(page).GetProperty("live").GetInt32() >= 1);
         Assert.Equal(TemplateCatalog.All.Count, page.GetProperty("counts").GetProperty("running").GetArrayLength());
         Assert.Equal("Winners at a discount", dip(page).GetProperty("templateName").GetString());
     }

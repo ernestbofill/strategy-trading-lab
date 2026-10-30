@@ -116,7 +116,7 @@ export function AdminUsers() {
             getRowId={(u) => u.id}
             columns={columns}
             filters={filters}
-            searchPlaceholder="Search by email…"
+            searchPlaceholder="Search users…"
             initialSort={{ id: 'joined', desc: true }}
           />
         </>

@@ -23,7 +23,7 @@ What it leaves out, so it ships sooner (still an open decision, at the bottom; *
 | The starter lists, "+ Add a stock", the fund picker, Edit list on a running strategy | |
 | Alerts by email | Web push |
 | Tested results of the defaults, honestly labelled | Re-running the backtest with your settings, the Backtest page (its tile hidden until then) |
-| Rename, end, go live, alerts switch, trades you can fix, Tune the settings on a running strategy | Change the budget, the stock page |
+| Rename, end, go live, alerts switch, trades you can fix, Tune the settings on a running strategy, the stock page | Change the budget |
 
 The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu.md](docs/regulation-spain-eu.md)): **Milestone 1** finishes the core loop, **Milestone 2** makes it publishable, then a **quiet launch** (invite only from then on; sign-up stays open while the app is built), then **Milestone 3**, the **public beta**.
 
@@ -52,6 +52,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Agentic workflow and instructions (#20, #41, #47). Two disclaimers: short and full (#21). The launch plan in this file (#58).
 - Send feedback on the account page and the dashboard, emailed to the owner with the sender as Reply-To (#77, item 26).
 - Fixes from user feedback (#77): shares shown to at most 3 decimals, the template list loaded in the background from the dashboard so Pick a template opens at once, currency and language as buttons instead of a select, and the controls of unbuilt screens hidden (item 5).
+- Fixes from user feedback (#95): every number other than a price or amount to at most 3 decimals (exchange rates, percentages), "Funds · [n]" on the strategy page of a fund template, the index fund named "S&P 500 fund" with a hidden "i" explanation, and the template list loaded in the background on every signed-in screen (not only the dashboard).
 - Catalan: English and Catalan catalogs in the frontend with language selection on sign-up and the account page (per-device storage, synced via `POST /account/locale`), embedded template texts (`Texts/ca.json`), localized backend error and validation messages, account emails, and signal alerts. Standard terminology in `docs/glossary-ca.md`.
 
 ## Next
@@ -92,6 +93,8 @@ Both modes work end to end for every template the pick screen offers.
 26. ~~**Feedback.**~~ Built (#77): "Send feedback" on the account page, with a link on the dashboard (not in the bottom bar, which holds the disclaimer and the one action), any kind, emailed to `OWNER_EMAIL` with the sender as Reply-To; the list is on `/admin` and `/feedback` (#48).
 27. **Security pass.** High risk. Security headers (CSP, HSTS, no framing), dependency audits in CI (`npm audit`, `dotnet list package --vulnerable`), rate limits on every public endpoint, the open decision on pre-registered accounts settled, and a `/security-review` of the whole app with its findings fixed.
 28. **Every screen, finished.** Normal. Empty, loading and error states everywhere (a 404 page, an error page, the PWA offline message). The top bar and navigation as a whole: it wraps on phones ("STL // DASHBOARD" on two lines at 375px), "← BACK" on Pick a template right after sign-up goes back to the sign-up form, and logging out sends you to `/log-in?next=/account`. Advanced settings asks before leaving with unsaved changes (needs a data router for `useBlocker`, open since #55). *The comeback*'s Holding row says "[n] of [max] steps · its milestones are used" when no milestone is left (decided: keep the POC's behaviour, #58). An accessibility pass (contrast, 44px targets, labels) at phone and desktop width.
+34. **The stock page.** Normal. *Spec: gap* (Ernest's feedback, #95). Tapping a stock on the strategy page opens its own page: what it is (name, symbol, exchange, what it does), its status under this strategy's rules and how close it is to the next signal (the strategy row's `distancePct`, in words: "3.2% above the discount zone"), a price chart with the rule's line or zone drawn on it, and this strategy's trades in it. Describe, don't instruct: no "close to a buy", only where the price is against the rules.
+35. **Emails when a stock gets close or changes status.** Normal. *Spec: gap* (Ernest's feedback, #95). Opt in per strategy on the account page's Emails section: a line in the daily overview (first) when a stock comes within a set distance of its signal, or becomes or stops being a candidate (for example "Below its long trend" → watching). Separate emails only if the overview lines aren't enough, so a long list doesn't flood the inbox; web push later (after launch).
 29. **End-to-end tests of the main journeys.** Tooling. Playwright in CI, against the API and a throwaway database with its own owner: look around → sign up (with and without the invite gate) → start a simulation → dashboard; a live signal → confirm it → results; add a stock; end a strategy; delete the account. So the loop can merge without Ernest testing by hand.
 
 ### If there's time before the quiet launch

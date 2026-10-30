@@ -56,7 +56,7 @@ describe('SignalPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Zscaler' })).toBeTruthy()
     expect(screen.getByText(/8.2% below its recent peak/).textContent).toContain("Under your settings that's step 2 of 5 (€100).")
-    expect(screen.getByText(/At/).textContent).toContain('$1.0900 per €1')
+    expect(screen.getByText(/At/).textContent).toContain('$1.09 per €1')
     fireEvent.change(screen.getByLabelText('Fee (EUR, optional)'), { target: { value: '1.20' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the trade' }))
 

@@ -47,7 +47,8 @@ These apply to every screen, email and alert.
 - **Describe, don't instruct.** Template names describe the situation the rules look for. On a template's page the strategy is the subject ("It signals when…"), never the user. Never "buy now", no urgency, no price targets or return forecasts.
 - **Signals report rules.** Every signal says which rule was met, the facts that met it and what that means under the user's settings.
 - **The user owns the setup.** Lists, settings and budgets are the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
-- **No promises.** No claims that markets or stocks will rise or recover. Results are always shown next to the index fund and the worst year.
+- **No promises.** No claims that markets or stocks will rise or recover. Results are always shown next to the index fund and the worst year. On screen the index fund is named **"S&P 500 fund"**, with a small "i" after the label that opens "Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold." (#95). The explanation stays hidden until asked for, so the figures stay short.
+- **Numbers:** prices and amounts to the cent (2 decimals); every other number (shares, exchange rates, percentages) to at most 3 decimals (#95).
 - **A disclaimer everywhere results or signals appear, in two lengths.** The user sees it over and over, so screens seen again and again (Review, How we tested, the strategy page, Confirm a signal, the footer) use the short one: "Not financial advice. Signals follow your rules." Where the user commits (accepted once at sign-up, above the button on Name, preview and confirm, and the legal page) use the full one: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." The wireframes still show the full one everywhere; this rule wins.
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
@@ -224,7 +225,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 3. **"The idea"**: the rationale in plain words, no numbers, no promises.
 4. **"It signals when"**: numbered rules (01, 02, 03), each "**Plain label:** detail", with numbers and terms highlighted and explained in brackets.
 5. **What it watches**: "Choose stocks to watch" (stock templates) or "The fund it watches" (fund templates).
-6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "Index fund" `[+X%]`, "Worst year" `[−X%]`; the caption "Past results don't promise future ones."; and a "How we tested ›" link to 2c.
+6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"), "Worst year" `[−X%]`; the caption "Past results don't promise future ones."; and a "How we tested ›" link to 2c.
 7. **"What can go wrong:"** one line.
 8. A row "Advanced settings ›" → 2b.
 9. Button "Use this template" → Choose the mode. Under it, the disclaimer.
@@ -390,7 +391,7 @@ The settings are available when starting a strategy and on a running one (Tune t
   - "Each signal is bought at the next day's opening price."
   - "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
   - "Results in euro, at each day's exchange rate."
-  - "The index fund gets the same money on the same days."
+  - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
   - "Fees: [€X] per trade. Taxes not included."
 - **"By period"**: a table "Period" / "Template" / "Index" / "Worst yr", rows "[2010-14]", "[2015-19]", "[2020-24]", "All".
 - Warning box **"What a backtest can't show"**:
@@ -502,8 +503,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 **Strategy cards**, one per strategy; the whole card links to its strategy page.
 - Header: the strategy name; under it "*[template]* · since [date]" or "*[template]* · started today"; on the right the mode tag ("LIVE" or "SIM"). A small glowing dot before the tag marks a card with something waiting, with an accessible label ("Signal waiting" or "AI round due"). The Waiting for you list carries the detail; the dot only points to the card.
-- Running: the result since start, big, "[+X.X%]"; under it "Index fund: [+X.X%]"; a small line chart on the right; a budget bar and "€[used] of €[budget] used".
-- Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an index fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
+- Running: the result since start, big, "[+X.X%]"; under it "S&P 500 fund: [+X.X%]"; a small line chart on the right; a budget bar and "€[used] of €[budget] used".
+- Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an S&P 500 fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
 - A running strategy's own figures are since its start, so they have no worst year yet: until it has a year of its own, the card adds "Template's worst year: [−X%]" under the index fund (product rule: results next to the worst year). The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
 - AI strategy with no results: "No results yet. They start after your first AI round."
 - **Ended strategies** (#91): after the running ones and the "+ New strategy" button, last ended first. The card carries an "ENDED" tag before the mode tag, "*[template]* · ended [date]" under the name, and its results as they stood on its end date.
@@ -516,14 +517,14 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Top bar: "← STRATEGIES" · "RENAME" (built #91, not drawn): the heading becomes a "Name" field with "Save" and "Cancel". Confirm's rules: trimmed, 1 to 60 characters, unique among the user's running strategies ignoring capitals; a taken name reads "You already run a strategy with this name. Pick another." under the field. An ended strategy can be renamed too.
 - H1: the strategy name; under it the mode tag, "Ended on [date]" for an ended strategy, and "*[template]* · since [date]".
 - **Summary box**
-  - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "Index fund" `[+X%]`; a chart with three lines (You solid and highlighted, The rules alone solid, Index fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
-  - Simulation (not drawn): "Since start" `[+X%]` and "Index fund" `[+X%]`, a two-line chart, and "Budget used".
+  - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"); a chart with three lines (You solid and highlighted, The rules alone solid, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
+  - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
   - Under the chart, until the strategy has a year of its own: "The template's worst year, [years]: [−X%]" (product rule: results next to the worst year).
   - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, as on the dashboard card, with its worst year. The chart appears with the first buy.
   - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
   - A figure that can't be worked out (the index fund has no prices at all) shows "–".
   - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".
-- **"Stocks · [n]"**, with an **"Edit list"** link on the right that opens the stock list editor (same list as on the review, for this strategy).
+- **"Stocks · [n]"** (**"Funds · [n]"** for a template that invests in a fund, #95), with an **"Edit list"** link on the right that opens the stock list editor (same list as on the review, for this strategy).
 - One row per stock, each a link to that stock's page (not drawn):
   - The name, a status pill and a detail line:
     - "WAITING FOR YOU" (live; "Signal: step [n] of [max]") → Confirm a signal

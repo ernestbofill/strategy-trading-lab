@@ -39,6 +39,7 @@ const strategyDetail: StrategyDetail = {
   name: 'Dip Strategy',
   templateKey: 'dip',
   templateName: 'Winners at a discount',
+  investsIn: 'stockList',
   mode: 'live',
   status: 'running',
   endedOn: null,

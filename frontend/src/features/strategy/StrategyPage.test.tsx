@@ -17,6 +17,7 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   name: 'Zscaler & friends',
   templateKey: 'dip',
   templateName: 'Winners at a discount',
+  investsIn: 'stockList',
   mode: 'live',
   status: 'running',
   endedOn: null,
@@ -102,9 +103,38 @@ describe('StrategyPage', () => {
     expect(screen.getByRole('link', { name: /Tune the settings Change its rules/i }).getAttribute('href')).toBe(
       '/strategies/live/settings',
     )
+    expect(screen.getByRole('heading', { name: 'Stocks · 1' })).toBeTruthy()
     expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).toContain(
       "Past results don't promise future ones.",
     )
+  })
+
+  it("titles a fund strategy's list Funds and explains the S&P 500 fund only when asked", async () => {
+    open(
+      detail({
+        id: 'trend',
+        templateKey: 'trend',
+        investsIn: 'indexFund',
+        mode: 'simulation',
+        signals: null,
+        results: { you: 2, rules: null, index: 3, history: [] },
+        stocks: [
+          {
+            assetId: 'spy', symbol: 'SPY', name: 'SPDR S&P 500 ETF', status: 'holding', steps: 1, rulesSteps: null, maxSteps: null,
+            distancePct: null, signalId: null, signalStep: null, invested: 100, result: 2,
+          },
+        ],
+      }),
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Funds · 1' })).toBeTruthy()
+    const tip = screen.getByRole('button', { name: 'What is the S&P 500 fund?' })
+    expect(screen.queryByText(/Buy and hold/)).toBeNull()
+    fireEvent.click(tip)
+    expect(tip.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByText(/Buy and hold/)).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByText(/Buy and hold/)).toBeNull()
   })
 
   it("shows a simulation without trades the template's past, with its worst year", async () => {

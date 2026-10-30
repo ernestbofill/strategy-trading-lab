@@ -297,6 +297,8 @@ export interface StrategyDetail {
   name: string
   templateKey: TemplateKey
   templateName: string
+  /** What the template invests in: a stock list or one fund. */
+  investsIn: InvestsIn
   mode: StrategyMode
   status: StrategyStatus
   /** The local date it ended; its results stop there. Null while it runs. */

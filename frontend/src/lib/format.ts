@@ -19,6 +19,11 @@ export const symbolOf = (currency: string) => CURRENCIES.find((c) => c.code === 
 /** €3,000 / $3,000 / £3,000: an amount in a strategy's or an account's currency. */
 export const money = (n: number, currency: Currency) => `${symbolOf(currency)}${amountFormat.format(n)}`
 
+const rateFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
+
+/** 1.113 / 0.85: an exchange rate or any other plain number, to at most 3 decimals (prices and amounts use 2: `exact`). */
+export const formatRate = (n: number) => rateFormat.format(n)
+
 const sharesFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
 const fewSharesFormat = new Intl.NumberFormat('en-US', { maximumSignificantDigits: 3 })
 
@@ -31,10 +36,10 @@ export const formatShares = (n: number) => (Math.abs(n) < 1 ? fewSharesFormat : 
 /** €3,000: for what was tested in euro (a template's backtest). */
 export const eur = (n: number) => money(n, 'EUR')
 
-/** +12% / −8% with a true minus sign, so the sign carries the meaning, not only the colour. */
+/** +12% / −8% with a true minus sign, so the sign carries the meaning, not only the colour; at most 3 decimals. */
 export const signedPct = (n: number, digits?: number) => {
   const abs = Math.abs(n)
-  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${digits === undefined ? abs : abs.toFixed(digits)}%`
+  return `${n > 0 ? '+' : n < 0 ? '−' : ''}${digits === undefined ? formatRate(abs) : abs.toFixed(digits)}%`
 }
 
 /** Local calendar date as "2026-10-13". */

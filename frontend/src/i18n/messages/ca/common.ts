@@ -4,6 +4,8 @@ export const common: Record<keyof typeof en, string> = {
   'common.disclaimer': 'No és assessorament financer. Els senyals segueixen les teves regles.',
   'common.disclaimerFull': 'No és assessorament financer. Els senyals segueixen les teves regles; tu decideixes i operes al teu broker.',
   'common.pastResults': 'Els resultats passats no garanteixen els futurs.',
+  'common.indexTip.label': 'Què és el fons S&P 500?',
+  'common.indexTip.text': 'Comprar i mantenir: els mateixos diners en un fons de l’S&P 500 (SPY) els mateixos dies, sense vendre mai.',
   'common.back': '\u2190 ENRERE',
   'common.devDatabase': "L'API fa servir la base de dades de desenvolupament",
   'common.show': 'Mostra',

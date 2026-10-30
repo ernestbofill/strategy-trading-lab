@@ -485,7 +485,7 @@ public static class StrategyEndpoints
             ? await db.Strategies.AsNoTracking().Where(s => s.Id == sourceId && s.UserId == user.Id).Select(s => s.Name).SingleOrDefaultAsync(cancellationToken)
             : null;
 
-        return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode, strategy.Status,
+        return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
             EndedOn(strategy, user), strategy.ArchivedAt is not null, strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,

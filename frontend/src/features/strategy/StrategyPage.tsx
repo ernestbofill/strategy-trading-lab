@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { AiRoundsSummary, StrategyDetail } from '../../api'
+import { InfoTip } from '../../components/InfoTip'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
@@ -18,10 +19,13 @@ import { SignalsAndTrades } from './SignalsAndTrades'
 import { stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
 
-function Figure({ label, value, highlight }: { label: string; value: number | null; highlight?: boolean }) {
+function Figure({ label, value, highlight, tip }: { label: string; value: number | null; highlight?: boolean; tip?: ReactNode }) {
   return (
     <div className={styles.figure}>
-      <div className={styles.figureLabel}>{label}</div>
+      <div className={styles.figureLabel}>
+        {label}
+        {tip}
+      </div>
       <div className={styles.figureValue} data-tone={highlight ? pctTone(value) : undefined}>
         {signedPctOrDash(value, 1)}
       </div>
@@ -41,7 +45,11 @@ function Summary({ s }: { s: StrategyDetail }) {
           <div className={styles.figures} data-count={live ? 3 : 2}>
             <Figure label={live ? t('strategy.figure.you') : t('strategy.figure.sinceStart')} value={results.you} highlight />
             {live && <Figure label={t('strategy.figure.rules')} value={results.rules} />}
-            <Figure label={t('strategy.figure.index')} value={results.index} />
+            <Figure
+              label={t('strategy.figure.index')}
+              value={results.index}
+              tip={<InfoTip label={t('common.indexTip.label')} text={t('common.indexTip.text')} />}
+            />
           </div>
           <ResultsChart history={results.history} live={live} />
           {pastResult && (
@@ -130,7 +138,7 @@ function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummar
 function Stocks({ s }: { s: StrategyDetail }) {
   const t = useT()
   return (
-    <Section title={t('strategy.stocks', { count: s.stocks.length })}>
+    <Section title={t(s.investsIn === 'stockList' ? 'strategy.stocks' : 'strategy.funds', { count: s.stocks.length })}>
       <ul className={styles.stocks}>
         {s.stocks.map((row) => {
           const line = stockLine(row, s.mode, s.currency, s.words, t)

@@ -16,7 +16,7 @@ import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
-import { exact, formatShares, money, shortDate, symbolOf } from '../../lib/format'
+import { exact, formatRate, formatShares, money, shortDate, symbolOf } from '../../lib/format'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { signalPath } from '../dashboard/paths'
@@ -220,7 +220,7 @@ function TradeRow({
         )}
         {trade.assetCurrency !== trade.strategyCurrency && (
           <span>
-            {' '}· <span className={styles.mono}>{trade.fxRate} {trade.assetCurrency}/{trade.strategyCurrency}</span>
+            {' '}· <span className={styles.mono}>{formatRate(trade.fxRate)} {trade.assetCurrency}/{trade.strategyCurrency}</span>
           </span>
         )}
       </div>

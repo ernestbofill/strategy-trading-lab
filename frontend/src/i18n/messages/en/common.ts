@@ -5,6 +5,8 @@ export const common = {
   'common.disclaimerFull': 'Not financial advice. Signals follow your rules; you decide and trade at your own broker.',
   /** Wherever past results appear. */
   'common.pastResults': "Past results don't promise future ones.",
+  'common.indexTip.label': 'What is the S&P 500 fund?',
+  'common.indexTip.text': 'Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold.',
   /** The top bar's link to the screen before. */
   'common.back': '\u2190 BACK',
   /** Tooltip of the DEV tag in the top bar. */

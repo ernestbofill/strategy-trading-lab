@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatShares, isoDate, money, shortDate, signedPct } from './format'
+import { formatRate, formatShares, isoDate, money, shortDate, signedPct } from './format'
 
 describe('signedPct', () => {
   it('writes a true minus sign and a plus sign', () => {
@@ -10,6 +10,17 @@ describe('signedPct', () => {
   it('can show decimals', () => {
     expect(signedPct(6.4, 1)).toBe('+6.4%')
     expect(signedPct(-2, 1)).toBe('−2.0%')
+  })
+  it('shows at most 3 decimals', () => {
+    expect(signedPct(1.23456)).toBe('+1.235%')
+  })
+})
+
+describe('formatRate', () => {
+  it('shows at most 3 decimals', () => {
+    expect(formatRate(1.11308992)).toBe('1.113')
+    expect(formatRate(0.85)).toBe('0.85')
+    expect(formatRate(2)).toBe('2')
   })
 })
 

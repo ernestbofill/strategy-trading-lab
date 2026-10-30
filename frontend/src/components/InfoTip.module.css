@@ -1,0 +1,53 @@
+.tip {
+  display: inline;
+}
+
+/* A 14px mark with a 44px hit area that doesn't push the label's line apart. */
+.button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-left: var(--space-1);
+  padding: 0;
+  vertical-align: top;
+  margin-top: 1px;
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--ink-muted);
+  font: 600 10px/1 var(--font-mono);
+  cursor: pointer;
+}
+.button::after {
+  content: '';
+  position: absolute;
+  inset: -15px;
+}
+.button[aria-expanded='true'],
+.button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.text {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-widget);
+  color: var(--ink);
+  font: 12px/18px var(--font-ui);
+  text-transform: none;
+  letter-spacing: normal;
+}

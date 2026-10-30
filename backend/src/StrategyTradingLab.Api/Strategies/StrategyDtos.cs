@@ -171,6 +171,7 @@ public record StrategyDetail(
     string Name,
     string TemplateKey,
     string TemplateName,
+    InvestsIn InvestsIn,
     StrategyMode Mode,
     StrategyStatus Status,
     DateOnly? EndedOn,

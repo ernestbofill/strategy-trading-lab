@@ -7,7 +7,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
-import { exact, formatShares, money, shortDate, symbolOf } from '../../lib/format'
+import { exact, formatRate, formatShares, money, shortDate, symbolOf } from '../../lib/format'
 import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { useT } from '../../i18n/I18n'
 import { strategyPath } from '../dashboard/paths'
@@ -281,7 +281,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
                   <p className={styles.plain}>
                     {reference ? (
                       t('signal.rate.at', {
-                        rate: `${symbolOf(s.assetCurrency)}${reference.rate.toFixed(4)}`,
+                        rate: `${symbolOf(s.assetCurrency)}${formatRate(reference.rate)}`,
                         unit: `${symbolOf(s.strategyCurrency)}1`,
                         date: shortDate(reference.date),
                       })

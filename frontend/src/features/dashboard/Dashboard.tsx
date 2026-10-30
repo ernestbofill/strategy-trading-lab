@@ -7,7 +7,6 @@ import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { pickPath } from '../new-strategy/paths'
-import { useTemplates } from '../new-strategy/useTemplate'
 import { useCurrentAccount } from '../account/AccountContext'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
@@ -23,8 +22,6 @@ export function Dashboard() {
   const dashboard = useDashboard()
   const { emailVerified } = useCurrentAccount()
   const draft = useNewStrategyDraft()
-  // Loads the template list in the background, so Pick a template opens at once.
-  useTemplates()
   const top = <TopBar title={t('dashboard.title')} aside={<TextAction to={accountPath}>{t('dashboard.account')}</TextAction>} />
 
   return (

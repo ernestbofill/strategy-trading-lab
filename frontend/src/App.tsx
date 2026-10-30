@@ -37,6 +37,7 @@ import { AiRoundsPage } from './features/ai-round/AiRoundsPage'
 import { StrategyPromptEditor } from './features/ai-round/StrategyPromptEditor'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 import { LazyPage } from './components/LazyPage'
+import { useTemplates } from './features/new-strategy/useTemplate'
 import { lazyPage } from './lib/lazyPage'
 
 // Loaded only when an owner opens /admin, so users never download the admin pages or TanStack Table.
@@ -63,12 +64,24 @@ function LocaleFromAccount() {
   return null
 }
 
+/** Loads the template list in the background once signed in, so Pick a template opens at once from anywhere. */
+function PreloadTemplates() {
+  useTemplates()
+  return null
+}
+
+function Preloads() {
+  const { state } = useAccount()
+  return state.status === 'ready' && state.account ? <PreloadTemplates /> : null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <I18nProvider>
         <AccountProvider>
           <LocaleFromAccount />
+          <Preloads />
         <DraftPerUser>
             <Routes>
               <Route path={signUpPath} element={<SignUp />} />

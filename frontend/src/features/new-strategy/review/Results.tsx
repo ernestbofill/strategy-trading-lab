@@ -1,4 +1,5 @@
 import type { PeriodResult } from '../../../api'
+import { InfoTip } from '../../../components/InfoTip'
 import { useT } from '../../../i18n/I18n'
 import { signedPct } from '../../../lib/format'
 import styles from './Results.module.css'
@@ -12,19 +13,27 @@ function Pct({ value, plain }: { value: number; plain?: boolean }) {
   )
 }
 
-/** The three figures of the Tested box: this template, the index fund, the worst year. */
+/** The three figures of the Tested box: this template, the S&P 500 fund, the worst year. */
 export function ResultFigures({ result }: { result: PeriodResult }) {
   const t = useT()
   const figures = [
     { label: t('newStrategy.results.thisTemplate'), value: result.template },
-    { label: t('newStrategy.results.indexFund'), value: result.index, plain: true },
+    {
+      label: t('newStrategy.results.indexFund'),
+      value: result.index,
+      plain: true,
+      tip: <InfoTip label={t('common.indexTip.label')} text={t('common.indexTip.text')} />,
+    },
     { label: t('newStrategy.results.worstYear'), value: result.worstYear },
   ]
   return (
     <dl className={styles.figures}>
       {figures.map((f) => (
         <div key={f.label}>
-          <dt>{f.label}</dt>
+          <dt>
+            {f.label}
+            {f.tip}
+          </dt>
           <dd>
             <Pct value={f.value} plain={f.plain} />
           </dd>

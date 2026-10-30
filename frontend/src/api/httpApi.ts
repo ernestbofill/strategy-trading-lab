@@ -292,6 +292,7 @@ export const httpApi: Api = {
   getAdminDatabases: async () => (await admin('GET', '/database')).json(),
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
   getAdminAssets: async () => (await admin('GET', '/assets')).json(),
+  getAdminUsers: async () => (await admin('GET', '/users')).json(),
   setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
   addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
   updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),

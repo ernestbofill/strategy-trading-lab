@@ -4,11 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Invites;
 
 namespace StrategyTradingLab.Api.Auth;
 
 public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool OverviewEmail, bool DisclaimerAccepted,
-    string? Currency = null);
+    string? Currency = null, string? FirstName = null, string? LastName = null, string? InviteCode = null);
 public record LogInRequest(string? Email, string? Password);
 public record TokenRequest(string? Token);
 public record ResetPasswordRequest(string? Token, string? Password);
@@ -17,11 +19,18 @@ public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
 public record LocaleRequest(string? Locale);
 public record OverviewEmailRequest(bool? Enabled);
+public record NameRequest(string? FirstName, string? LastName);
+
+/// <summary>Who an invite is for, to greet them on Sign-up and fill in what is known.</summary>
+public record SignUpInvite(string Code, string FirstName, string? LastName, string? Email, string Locale, string? InvitedBy);
+
+/// <summary>What Sign-up needs to know first: whether an invite is needed, and the invite the link carries, if it is usable.</summary>
+public record SignUpOptions(bool InviteOnly, SignUpInvite? Invite);
 
 public record ResetRecipient(string Email, string Locale);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
-public record AccountDto(string Email, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role, bool AiSharing = false);
+public record AccountDto(string Email, string? FirstName, string? LastName, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role, bool AiSharing = false);
 
 /// <summary>A message for the user, the same whatever the email (sign-up, forgot password).</summary>
 public record AccountMessage(string Message);
@@ -30,7 +39,7 @@ public record AccountMessage(string Message);
 public static class AccountEndpoints
 {
     public const string SignUpLimit = "account-sign-up", LogInLimit = "account-log-in", EmailLimit = "account-email",
-        PasswordLimit = "account-password";
+        PasswordLimit = "account-password", InviteLimit = "account-invite";
     static readonly TimeSpan VerifyFor = TimeSpan.FromHours(24), ResetFor = TimeSpan.FromHours(1);
 
     /// <summary>Checked when the email has no account, so a wrong email takes as long as a wrong password.</summary>
@@ -40,12 +49,27 @@ public static class AccountEndpoints
     {
         var group = app.MapGroup("/account").WithTags("Account");
 
+        group.MapGet("/sign-up-options", async (string? invite, AppDbContext db, SettingsStore settings, CancellationToken cancellationToken) =>
+        {
+            var found = string.IsNullOrWhiteSpace(invite) ? null : await InviteEndpoints.FindUsableAsync(db, invite, cancellationToken);
+            var invitedBy = found is null ? null
+                : await db.Users.Where(u => u.Id == found.CreatedBy).Select(u => u.FirstName).SingleOrDefaultAsync(cancellationToken);
+            return TypedResults.Ok(new SignUpOptions(await InviteEndpoints.InviteOnlyAsync(settings, cancellationToken),
+                found is null ? null : new SignUpInvite(found.Code, found.FirstName, found.LastName, found.Email, found.Locale, invitedBy)));
+        })
+        .RequireRateLimiting(InviteLimit)
+        .WithSummary("Whether sign-up needs an invite, and who the given invite is for (null when it can't be used).");
+
         group.MapPost("/sign-up", async Task<Results<Accepted<AccountMessage>, ValidationProblem>> (SignUpRequest request,
-            AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, AccountEmails emails, TimeProvider time,
-            HttpContext context, CancellationToken cancellationToken) =>
+            AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, AccountEmails emails, SettingsStore settings,
+            TimeProvider time, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);
             var errors = new Dictionary<string, string[]>();
+            var firstName = AccountRules.NormalizeName(request.FirstName);
+            if (firstName is null) errors["firstName"] = [Messages.EnterFirstName.In(reqLocale)];
+            var lastName = AccountRules.NormalizeName(request.LastName);
+            if (lastName is null) errors["lastName"] = [Messages.EnterLastName.In(reqLocale)];
             var email = AccountRules.NormalizeEmail(request.Email);
             if (email is null) errors["email"] = [Messages.UseAnEmail.In(reqLocale)];
             if (AccountRules.PasswordError(request.Password, email, reqLocale) is { } passwordError) errors["password"] = [passwordError];
@@ -55,11 +79,17 @@ public static class AccountEndpoints
             if (!AccountRules.Currencies.Contains(currency)) errors["currency"] = [Messages.PickCurrency.In(reqLocale)];
             if (!AccountRules.IsTimeZone(request.TimeZone)) errors["timeZone"] = [Messages.PickTimeZone.In(reqLocale)];
             if (!request.DisclaimerAccepted) errors["disclaimerAccepted"] = [Messages.TickTheBox.In(reqLocale)];
+            // An invite counts whatever the setting, so an invited person gets its role while sign-ups are open too.
+            var invite = string.IsNullOrWhiteSpace(request.InviteCode) ? null
+                : await InviteEndpoints.FindUsableAsync(db, request.InviteCode, cancellationToken);
+            if (invite is null && !string.IsNullOrWhiteSpace(request.InviteCode)) errors["inviteCode"] = [Messages.InviteNotValid.In(reqLocale)];
+            else if (invite is null && await InviteEndpoints.InviteOnlyAsync(settings, cancellationToken))
+                errors["inviteCode"] = [Messages.InviteNeeded.In(reqLocale)];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
             // The same answer whether or not the email has an account (spec: Sign-up). The emails go out after it.
             var answer = TypedResults.Accepted((string?)null, new AccountMessage(Messages.CheckYourEmail.In(reqLocale)));
-            // Emails compare without case (citext); the warning goes to the address on file.
+            // Emails compare without case (citext); the warning goes to the address on file. The invite stays unused.
             if (await db.Users.Where(u => u.Email == email).Select(u => new { u.Email, u.Locale }).SingleOrDefaultAsync(cancellationToken) is { } registered)
             {
                 hasher.HashPassword(null!, request.Password!); // The same slow step as a new account, so timing tells less.
@@ -70,20 +100,29 @@ public static class AccountEndpoints
             var now = time.GetUtcNow();
             var user = new User
             {
-                Email = email!, TimeZone = request.TimeZone!, Locale = locale, Currency = currency, OverviewEmail = request.OverviewEmail,
-                DisclaimerAcceptedAt = now,
+                Email = email!, FirstName = firstName, LastName = lastName, TimeZone = request.TimeZone!, Locale = locale,
+                Currency = currency, OverviewEmail = request.OverviewEmail, DisclaimerAcceptedAt = now,
+                Role = invite?.Role ?? UserRole.User, InviteId = invite?.Id,
             };
             user.PasswordHash = hasher.HashPassword(user, request.Password!);
             db.Users.Add(user);
-            try
+            // The invite's use and the account are one: a failed sign-up leaves the invite unused.
+            await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
             {
-                await db.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
-            {
-                var existingUser = await db.Users.Where(u => u.Email == email).Select(u => u.Locale).FirstOrDefaultAsync(cancellationToken);
-                emails.AlreadyRegistered(email!, existingUser ?? locale); // Signed up twice at the same moment.
-                return answer;
+                if (invite is not null && !await InviteEndpoints.ClaimAsync(db, invite.Id, cancellationToken))
+                    return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["inviteCode"] = [Messages.InviteNotValid.In(reqLocale)] });
+                try
+                {
+                    await db.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    var existingUser = await db.Users.Where(u => u.Email == email).Select(u => u.Locale).FirstOrDefaultAsync(cancellationToken);
+                    emails.AlreadyRegistered(email!, existingUser ?? locale); // Signed up twice at the same moment.
+                    return answer;
+                }
             }
             emails.Verify(email!, await NewToken(db, user, EmailTokenPurpose.VerifyEmail, now + VerifyFor, cancellationToken), locale);
             await sessions.StartAsync(user, cancellationToken);
@@ -134,7 +173,7 @@ public static class AccountEndpoints
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            return TypedResults.Ok(new AccountDto(user.Email, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency, user.Role, user.AiSharing));
+            return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency, user.Role, user.AiSharing));
         })
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");
@@ -152,6 +191,24 @@ public static class AccountEndpoints
         })
         .RequireUser()
         .WithSummary("Sets the currency of the user's new strategies. Running ones keep theirs.");
+
+        group.MapPost("/name", async Task<Results<NoContent, ValidationProblem>> (NameRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
+            var errors = new Dictionary<string, string[]>();
+            var firstName = AccountRules.NormalizeName(request.FirstName);
+            if (firstName is null) errors["firstName"] = [Messages.EnterFirstName.In(reqLocale)];
+            var lastName = AccountRules.NormalizeName(request.LastName);
+            if (lastName is null) errors["lastName"] = [Messages.EnterLastName.In(reqLocale)];
+            if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            await db.Users.Where(u => u.Id == user.Id)
+                .ExecuteUpdateAsync(u => u.SetProperty(x => x.FirstName, firstName).SetProperty(x => x.LastName, lastName), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Sets the logged-in user's first and last name.");
 
         group.MapPost("/locale", async Task<Results<NoContent, ValidationProblem>> (LocaleRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>

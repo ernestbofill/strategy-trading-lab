@@ -62,7 +62,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var errors = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
-        foreach (var field in new[] { "email", "password", "locale", "timeZone", "disclaimerAccepted", "currency" })
+        foreach (var field in new[] { "firstName", "lastName", "email", "password", "locale", "timeZone", "disclaimerAccepted", "currency" })
             Assert.True(errors.TryGetProperty(field, out _), field);
         var sameAsEmail = await client.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(email, email));
         Assert.Equal(HttpStatusCode.BadRequest, sameAsEmail.StatusCode);
@@ -76,7 +76,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
 
         using var pounds = api.CreateApiClient();
         var email = api.NewEmail();
-        var body = new { email, password = "a long password", locale = "en", timeZone = "Europe/Madrid", overviewEmail = true, disclaimerAccepted = true, currency = "GBP" };
+        var body = new { firstName = "Test", lastName = "User", email, password = "a long password", locale = "en", timeZone = "Europe/Madrid", overviewEmail = true, disclaimerAccepted = true, currency = "GBP" };
         Assert.Equal(HttpStatusCode.Accepted, (await pounds.PostAsJsonAsync("/account/sign-up", body)).StatusCode);
         Assert.Equal("GBP", (await Me(pounds)).GetProperty("currency").GetString());
 
@@ -95,7 +95,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
 
         using var catalan = api.CreateApiClient();
         var email = api.NewEmail();
-        var body = new { email, password = "a long password", locale = "ca", timeZone = "Europe/Madrid", overviewEmail = true, disclaimerAccepted = true, currency = "EUR" };
+        var body = new { firstName = "Test", lastName = "User", email, password = "a long password", locale = "ca", timeZone = "Europe/Madrid", overviewEmail = true, disclaimerAccepted = true, currency = "EUR" };
         Assert.Equal(HttpStatusCode.Accepted, (await catalan.PostAsJsonAsync("/account/sign-up", body)).StatusCode);
         Assert.Equal("ca", (await Me(catalan)).GetProperty("locale").GetString());
 

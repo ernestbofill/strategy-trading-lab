@@ -26,7 +26,7 @@ function StartLive() {
 function open(emailVerified: boolean) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getAccount').mockResolvedValue({
-    email: 'a@example.com', emailVerified, locale: 'en', timeZone: 'UTC', overviewEmail: true, currency: 'EUR', role: 'user', aiSharing: false,
+    email: 'a@example.com', firstName: null, lastName: null, emailVerified, locale: 'en', timeZone: 'UTC', overviewEmail: true, currency: 'EUR', role: 'user', aiSharing: false,
   })
   vi.spyOn(api, 'getTemplate').mockResolvedValue({ key: 'dip', name: 'Winners at a discount', backtest: {} } as unknown as TemplateDetail)
   render(

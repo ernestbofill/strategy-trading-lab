@@ -41,6 +41,9 @@ public class User : IHasUpdatedAt
 {
     public Guid Id { get; set; }
     public required string Email { get; set; }
+    /// <summary>Asked at sign-up since invites (#96); accounts from before have none until they add it.</summary>
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
     public string? PasswordHash { get; set; }
     public DateTimeOffset? EmailVerifiedAt { get; set; }
     public required string TimeZone { get; set; }
@@ -52,8 +55,34 @@ public class User : IHasUpdatedAt
     /// <summary>Share AI rounds anonymously (off by default), and when that last changed.</summary>
     public bool AiSharing { get; set; }
     public DateTimeOffset? AiSharingChangedAt { get; set; }
+    /// <summary>The invite the account signed up with, if any: who invited it is the invite's maker.</summary>
+    public Guid? InviteId { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// An invite to sign up (spec: Sign-up, Invites): a code the invitee opens as a link or types, who made it, the role it
+/// gives and whom it is for. The code is kept as it is, so its maker can copy the message again.
+/// </summary>
+public class Invite
+{
+    public Guid Id { get; set; }
+    /// <summary>"ABCD-EFGH", see Auth/InviteCodes.</summary>
+    public required string Code { get; set; }
+    public Guid CreatedBy { get; set; }
+    public UserRole Role { get; set; } = UserRole.Vip;
+    public required string FirstName { get; set; }
+    public string? LastName { get; set; }
+    /// <summary>Where it was emailed, if it was; the invitee may sign up with another address.</summary>
+    public string? Email { get; set; }
+    /// <summary>The language of the message and the email, and the sign-up form's first language.</summary>
+    public required string Locale { get; set; }
+    public int MaxUses { get; set; } = 1;
+    public int Uses { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? SentAt { get; set; }
+    public DateTimeOffset? RevokedAt { get; set; }
 }
 
 /// <summary>A logged-in device: the hash of the token in its stl_session cookie. See backend/AUTH.md.</summary>

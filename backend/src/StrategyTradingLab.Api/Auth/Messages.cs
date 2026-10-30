@@ -36,6 +36,12 @@ public static class Messages
     public static readonly Message SayTrueOrFalse = new("Say true or false.", "Indica si està activat o desactivat.");
     public static readonly Message ResetLinkSent = new("If that email has an account, we sent a link. It works for 1 hour.",
         "Si aquest correu té un compte, t'hem enviat un enllaç. Funciona durant 1 hora.");
+    public static readonly Message EnterFirstName = new("Enter your first name.", "Escriu el teu nom.");
+    public static readonly Message EnterLastName = new("Enter your last name.", "Escriu els teus cognoms.");
+    public static readonly Message InviteNeeded = new("Sign-ups are by invitation for now. Enter your invite code.",
+        "De moment, el registre és amb invitació. Escriu el teu codi d'invitació.");
+    public static readonly Message InviteNotValid = new("This invite code doesn't work. Check it, or ask for a new one.",
+        "Aquest codi d'invitació no funciona. Revisa'l o demana'n un de nou.");
     public static readonly Message WrongCurrentPassword = new("That isn't your current password.", "Aquesta no és la teva contrasenya actual.");
 
     // Signals

@@ -42,12 +42,17 @@ public static class SettingDefinitions
         new("PRICES_DAILY_TIME", "Prices", "When the daily refresh starts, HH:MM (after the US close, which is 22:00 in Madrid).",
             Default: "22:30", Validate: Time),
 
+        // Who can sign up (Auth/AccountEndpoints, spec: Sign-up). Open while the app is built; invite only from the quiet launch.
+        new(SignUps, "Sign-ups", "Who can sign up: open (anyone) or invite_only (only with an invite, made on /admin/invites).",
+            Default: SignUpsOpen, Validate: SignUpMode),
+
         // "+ Add a stock" and the fund picker (Assets/AssetEndpoints). Picking one already in the app never counts.
         new(UserAssetLimit, "Assets", "How many new stocks and funds one user can add to the app. 0: none.",
             Default: "30", Validate: WholeNumber),
     ];
 
     public const string UserAssetLimit = "USER_ASSET_LIMIT";
+    public const string SignUps = "SIGN_UPS", SignUpsOpen = "open", SignUpsInviteOnly = "invite_only";
 
     const string GmailAccount = "nest.u333@gmail.com";
 
@@ -62,6 +67,8 @@ public static class SettingDefinitions
 
     static string? Host(string value) =>
         value.Length <= 253 && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-') ? null : "Use a server name, e.g. smtp.gmail.com.";
+
+    static string? SignUpMode(string value) => value is SignUpsOpen or SignUpsInviteOnly ? null : "Use open or invite_only.";
 
     static string? Bool(string value) => value is "true" or "false" ? null : "Use true or false.";
 

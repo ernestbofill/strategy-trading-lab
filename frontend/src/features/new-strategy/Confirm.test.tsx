@@ -40,7 +40,7 @@ function DashboardStub() {
 function open() {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getAccount').mockResolvedValue({
-    email: 'a@example.com', emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, currency: 'EUR', role: 'user', aiSharing: false,
+    email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, currency: 'EUR', role: 'user', aiSharing: false,
   })
   vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
   vi.spyOn(api, 'getDashboard').mockResolvedValue({ strategies: [], waiting: [] } as unknown as Dashboard)

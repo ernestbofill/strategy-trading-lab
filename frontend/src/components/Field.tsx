@@ -55,9 +55,11 @@ interface TextFieldProps {
   /** The first and last day a date field allows ("2026-10-22"). */
   min?: string
   max?: string
+  /** 'words' for names; off otherwise (emails, codes). */
+  autoCapitalize?: 'off' | 'words' | 'characters'
 }
 
-export function TextField({ label, value, onChange, type = 'text', autoComplete, placeholder, hint, error, aside, min, max }: TextFieldProps) {
+export function TextField({ label, value, onChange, type = 'text', autoComplete, placeholder, hint, error, aside, min, max, autoCapitalize = 'off' }: TextFieldProps) {
   const id = useId()
   return (
     <FieldShell id={id} label={label} hint={hint} error={error} aside={aside}>
@@ -70,7 +72,7 @@ export function TextField({ label, value, onChange, type = 'text', autoComplete,
         min={min}
         max={max}
         autoComplete={autoComplete}
-        autoCapitalize="off"
+        autoCapitalize={autoCapitalize}
         spellCheck={false}
         value={value}
         aria-invalid={error ? true : undefined}

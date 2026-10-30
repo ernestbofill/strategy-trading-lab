@@ -42,6 +42,7 @@ export function AdminSettings() {
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
       <section className={styles.group}>
         <h2 className={styles.groupTitle}>Management</h2>
+        <NavRow label="Invites" meta="invite people and choose who can sign up" to="/admin/invites" />
         <NavRow label="Assets" meta="stocks, funds and indexes" to="/admin/assets" />
         <NavRow label="Feedback" meta="open issues, ideas and notes" to="/feedback" />
       </section>

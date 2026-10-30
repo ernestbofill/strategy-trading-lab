@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Templates;
 
@@ -53,6 +54,31 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
         entity.Property(user => user.AiSharing).HasColumnDefault(false);
+        entity.Property(user => user.FirstName).HasMaxLength(AccountRules.NameMax);
+        entity.Property(user => user.LastName).HasMaxLength(AccountRules.NameMax);
+        entity.HasIndex(user => user.InviteId);
+        entity.HasOne<Invite>().WithMany().HasForeignKey(user => user.InviteId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+class InviteConfiguration : IEntityTypeConfiguration<Invite>
+{
+    public void Configure(EntityTypeBuilder<Invite> entity)
+    {
+        entity.ToTable("invites", table =>
+        {
+            table.HasCheckConstraint("ck_invites_uses", "uses >= 0 AND uses <= max_uses");
+            table.HasInCheck("locale", AccountRules.Locales);
+        });
+        entity.HasIndex(invite => invite.Code).IsUnique();
+        entity.HasIndex(invite => invite.CreatedBy);
+        entity.Property(invite => invite.Code).HasMaxLength(InviteCodes.Length);
+        entity.Property(invite => invite.FirstName).HasMaxLength(AccountRules.NameMax);
+        entity.Property(invite => invite.LastName).HasMaxLength(AccountRules.NameMax);
+        entity.Property(invite => invite.Email).HasColumnType("citext");
+        entity.Property(invite => invite.Role).HasColumnDefault(UserRole.Vip);
+        entity.Property(invite => invite.MaxUses).HasColumnDefault(1);
+        entity.HasOne<User>().WithMany().HasForeignKey(invite => invite.CreatedBy).OnDelete(DeleteBehavior.Cascade);
     }
 }
 

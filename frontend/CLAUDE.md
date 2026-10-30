@@ -3,6 +3,7 @@
 ## Commands (run in `frontend/`)
 
 - `npm run dev`: dev server on http://localhost:5173. It proxies `/api` to the .NET API on http://localhost:5184 (`dotnet run` in `backend/src/StrategyTradingLab.Api`).
+  - Another worktree's API already on 5184: set `STL_API_URL` to point the proxy elsewhere. `.claude/launch.json` has `backend-alt` (port 5194) and `frontend-alt` (5175) for that.
 - `npm run preview`: serves the production build, with the same `/api` proxy
 - `npm run build`: typecheck (`tsc -b`) and production build
 - `npm run lint`: oxlint, which should report no warnings

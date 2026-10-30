@@ -21,8 +21,9 @@ static class ApiClients
         return client;
     }
 
-    public static object SignUpBody(string email, string password = "a long password") =>
-        new { email, password, locale = "en", timeZone = "Europe/Madrid", overviewEmail = true, disclaimerAccepted = true };
+    public static object SignUpBody(string email, string password = "a long password", string? inviteCode = null) =>
+        new { firstName = "Test", lastName = "User", email, password, locale = "en", timeZone = "Europe/Madrid", overviewEmail = true,
+            disclaimerAccepted = true, inviteCode };
 }
 
 /// <summary>Collects the emails the app sends, instead of sending them.</summary>
@@ -126,7 +127,7 @@ public class AccountsApi : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        foreach (var policy in new[] { AccountEndpoints.SignUpLimit, AccountEndpoints.LogInLimit, AccountEndpoints.EmailLimit, AccountEndpoints.PasswordLimit, FeedbackEndpoints.SubmitLimit })
+        foreach (var policy in new[] { AccountEndpoints.SignUpLimit, AccountEndpoints.LogInLimit, AccountEndpoints.EmailLimit, AccountEndpoints.PasswordLimit, AccountEndpoints.InviteLimit, FeedbackEndpoints.SubmitLimit })
             builder.UseSetting($"RateLimits:{policy}", "1000");
         builder.ConfigureTestServices(services => services.AddScoped<IEmailSender>(_ => Emails));
     }

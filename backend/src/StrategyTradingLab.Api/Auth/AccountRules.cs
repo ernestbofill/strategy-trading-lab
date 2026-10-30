@@ -5,7 +5,7 @@ namespace StrategyTradingLab.Api.Auth;
 /// <summary>What an account's fields must be (spec: Sign-up). Messages are for the user.</summary>
 public static class AccountRules
 {
-    public const int PasswordMin = 10, PasswordMax = 128;
+    public const int PasswordMin = 10, PasswordMax = 128, NameMax = 100;
     public static readonly IReadOnlyList<string> Locales = ["en", "ca"];
     /// <summary>The currencies a user can pick for new strategies (ISO 4217). The first is the default.</summary>
     public static readonly IReadOnlyList<string> Currencies = ["EUR", "USD", "GBP"];
@@ -27,6 +27,13 @@ public static class AccountRules
         if (email is not null && string.Equals(password.Trim(), email, StringComparison.OrdinalIgnoreCase))
             return Messages.PasswordIsEmail.In(locale);
         return null;
+    }
+
+    /// <summary>A first or last name as stored: trimmed, inner runs of spaces made one. Null when empty, too long or not printable.</summary>
+    public static string? NormalizeName(string? value)
+    {
+        var name = string.Join(' ', (value ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        return name.Length is > 0 and <= NameMax && !name.Any(char.IsControl) ? name : null;
     }
 
     public static bool IsTimeZone(string? id) => id is { Length: > 0 and <= 64 } && TimeZoneInfo.TryFindSystemTimeZoneById(id, out _);

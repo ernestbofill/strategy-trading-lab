@@ -28,6 +28,40 @@
       ],
       "port": 5184,
       "url": "http://localhost:5184"
+    },
+    {
+      "name": "frontend-alt",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "frontend",
+        "--",
+        "--port",
+        "5175",
+        "--strictPort"
+      ],
+      "port": 5175,
+      "env": {
+        "STL_API_URL": "http://localhost:5194"
+      }
+    },
+    {
+      "name": "backend-alt",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "backend/src/StrategyTradingLab.Api",
+        "--launch-profile",
+        "http",
+        "--",
+        "--urls",
+        "http://localhost:5194"
+      ],
+      "port": 5194,
+      "url": "http://localhost:5194"
     }
   ]
 }

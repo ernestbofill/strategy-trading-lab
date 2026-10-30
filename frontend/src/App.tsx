@@ -44,6 +44,7 @@ import { lazyPage } from './lib/lazyPage'
 const AdminSettings = lazyPage(() => import('./features/admin/AdminSettings').then((m) => m.AdminSettings))
 const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((m) => m.AdminAssets))
 const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m) => m.AdminUsers))
+const AdminInvites = lazyPage(() => import('./features/admin/AdminInvites').then((m) => m.AdminInvites))
 
 /** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
@@ -124,6 +125,14 @@ export default function App() {
                     element={
                       <LazyPage back="/admin">
                         <AdminAssets />
+                      </LazyPage>
+                    }
+                  />
+                  <Route
+                    path="/admin/invites"
+                    element={
+                      <LazyPage back="/admin">
+                        <AdminInvites />
                       </LazyPage>
                     }
                   />

@@ -1,0 +1,261 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 12px var(--space-3) var(--space-3);
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+}
+
+.groupTitle {
+  margin: 0;
+  font: 600 16px/24px var(--font-ui);
+  color: var(--ink);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 560px;
+}
+
+.names {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px var(--space-3);
+}
+
+.muted {
+  margin: 0;
+  font: 14px/20px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.actions,
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rowActions {
+  column-gap: var(--space-3);
+}
+
+.button,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 88px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.button {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+.button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.primary {
+  background: var(--action-rest);
+  border: 1px solid transparent;
+  color: var(--on-action);
+}
+.primary:hover:not(:disabled),
+.primary:focus-visible {
+  background: var(--action);
+  box-shadow: var(--glow-primary);
+}
+
+.button:disabled,
+.primary:disabled,
+.textButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.linkButton {
+  text-decoration: none;
+}
+
+.textButton {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.danger {
+  color: var(--danger-ink);
+}
+
+/* The invite just made. */
+.share {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 640px;
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  background: linear-gradient(135deg, var(--surface-selection), var(--surface-deep) 75%);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--glow-primary);
+  overflow: hidden;
+}
+.share::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-violet), var(--hot-pink), var(--primary));
+}
+
+.shareEyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.shareTitle {
+  margin: 0;
+  font: 700 22px/30px var(--font-mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.facts {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+.facts div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.facts dt {
+  min-width: 48px;
+  font: 12px/18px var(--font-ui);
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.facts dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.code {
+  padding: 2px var(--space-2);
+  font: 700 20px/28px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  background: var(--surface-console);
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius-sm);
+}
+
+.link {
+  font: 13px/20px var(--font-mono);
+  color: var(--ink-sidebar);
+  overflow-wrap: anywhere;
+}
+
+.previewLabel {
+  margin: 0 0 calc(-1 * var(--space-2));
+  font: 12px/18px var(--font-ui);
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.preview {
+  margin: 0;
+  padding: 12px var(--space-3);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 14px/22px var(--font-ui);
+  color: var(--ink);
+  background: var(--surface-deep);
+  border-left: 3px solid var(--accent-violet);
+}
+
+/* The invites made so far. */
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--surface-editor);
+}
+
+.itemHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.itemName {
+  font: 600 16px/24px var(--font-ui);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.status {
+  padding: 0 var(--space-2);
+  font-size: 12px;
+  line-height: 20px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+}
+.status[data-status='joined'] {
+  color: var(--success);
+}
+.status[data-status='sent'] {
+  color: var(--info);
+}
+.status[data-status='waiting'] {
+  color: var(--warning);
+}
+.status[data-status='revoked'] {
+  color: var(--ink-muted);
+}
+
+.meta {
+  margin: 0;
+  font: 14px/20px var(--font-ui);
+  color: var(--ink-sidebar);
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  color: var(--ink);
+}

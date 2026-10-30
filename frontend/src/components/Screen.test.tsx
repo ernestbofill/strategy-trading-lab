@@ -13,7 +13,7 @@ afterEach(() => {
 
 const makeAccount = (role: 'user' | 'owner'): Account => ({
   email: 'test@example.com',
-  emailVerified: true,
+  firstName: null, lastName: null, emailVerified: true,
   locale: 'en',
   timeZone: 'UTC',
   overviewEmail: true,

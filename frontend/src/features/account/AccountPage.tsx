@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, UnauthorizedError, type Currency, type Locale } from '../../api'
-import { Checkbox, FormMessage, PasswordField, SegmentedField, type FormMessageState } from '../../components/Field'
+import { Checkbox, FormMessage, PasswordField, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
@@ -64,6 +64,10 @@ export function AccountPage() {
             <ResendLink />
           </>
         )}
+      </Section>
+
+      <Section title={t('account.page.name')}>
+        <NameForm firstName={account.firstName ?? ''} lastName={account.lastName ?? ''} onSaved={refresh} />
       </Section>
 
       <Section title={t('account.page.app')}>
@@ -140,6 +144,45 @@ function LanguageForm({ current, onSaved }: { current: Locale; onSaved: () => Pr
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || locale === current}>
         {busy ? t('account.saving') : t('account.page.languageSave')}
+      </button>
+    </form>
+  )
+}
+
+function NameForm({ firstName, lastName, onSaved }: { firstName: string; lastName: string; onSaved: () => Promise<unknown> }) {
+  const t = useT()
+  const [first, setFirst] = useState(firstName)
+  const [last, setLast] = useState(lastName)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState<FormMessageState>(null)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setErrors({})
+    setMessage(null)
+    try {
+      await api.setName(first, last)
+      if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
+      setMessage({ tone: 'done', text: t('account.page.nameSaved') })
+    } catch (err) {
+      if (err instanceof InvalidFieldsError) setErrors(err.fields)
+      else setMessage({ tone: 'error', text: errorText(err) })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <form className={styles.form} onSubmit={submit} noValidate>
+      <div className={styles.names}>
+        <TextField label={t('account.field.firstName')} autoComplete="given-name" autoCapitalize="words" value={first} onChange={setFirst} error={errors.firstName} />
+        <TextField label={t('account.field.lastName')} autoComplete="family-name" autoCapitalize="words" value={last} onChange={setLast} error={errors.lastName} />
+      </div>
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || (first === firstName && last === lastName)}>
+        {busy ? t('account.saving') : t('account.page.nameSave')}
       </button>
     </form>
   )

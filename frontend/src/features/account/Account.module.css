@@ -5,6 +5,13 @@
   max-width: 480px;
 }
 
+/* First and last name side by side: two short fields fit a phone. */
+.names {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px var(--space-3);
+}
+
 .links {
   display: flex;
   flex-wrap: wrap;

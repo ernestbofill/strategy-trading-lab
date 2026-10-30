@@ -22,11 +22,12 @@ const page: AdminUsersPage = {
   users: [
     {
       id: 'u2', email: 'new@example.com', role: 'user', joined: '2026-10-29T10:00:00Z', confirmed: false, lastVisit: null,
-      running: 0, archived: 0,
+      running: 0, archived: 0, firstName: null, lastName: null, invitedBy: null,
     },
     {
       id: 'u1', email: 'friend@example.com', role: 'vip', joined: '2026-10-20T10:00:00Z', confirmed: true,
       lastVisit: '2026-10-28T10:00:00Z', running: 2, archived: 1,
+      firstName: 'Anna', lastName: 'Puig', invitedBy: 'owner@example.com',
     },
   ],
 }

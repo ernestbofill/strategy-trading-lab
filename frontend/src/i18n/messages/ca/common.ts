@@ -33,7 +33,5 @@ export const common: Record<keyof typeof en, string> = {
   'legal.about.content':
     'Un laboratori d’estratègies i aplicació d’acompanyament. Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en directe. L’aplicació mai no posa ordres ni es connecta a cap broker.',
   'legal.topBar': 'STL // LEGAL',
-  'legal.genericTitle': 'Legal',
-  'legal.genericLead': 'Informació legal.',
   'legal.laterStep': 'Aquesta pàgina vindrà en un pas posterior.',
 }

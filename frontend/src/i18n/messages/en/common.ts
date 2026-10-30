@@ -39,7 +39,5 @@ export const common = {
   'legal.about.content':
     'A strategy lab and monitoring side app. Pick a strategy template, tune its rules, and follow it as a simulation or live. The app never places orders and never connects to a broker.',
   'legal.topBar': 'STL // LEGAL',
-  'legal.genericTitle': 'Legal',
-  'legal.genericLead': 'Legal information.',
   'legal.laterStep': 'This page comes in a later step.',
 } as const

@@ -1,7 +1,16 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n/I18n'
+import type { MessageKey } from '../i18n/messages/en'
 import { aboutPath, disclaimerPath, legalNoticePath, privacyPath, termsPath } from '../features/legal/paths'
 import styles from './Footer.module.css'
+
+const links: { to: string; label: MessageKey }[] = [
+  { to: legalNoticePath, label: 'legal.notice.title' },
+  { to: termsPath, label: 'legal.terms.title' },
+  { to: privacyPath, label: 'legal.privacy.title' },
+  { to: disclaimerPath, label: 'legal.disclaimer.title' },
+  { to: aboutPath, label: 'legal.about.title' },
+]
 
 export function Footer() {
   const t = useT()
@@ -11,31 +20,13 @@ export function Footer() {
       <p className={styles.disclaimer}>{t('common.disclaimer')}</p>
       <nav aria-label={t('legal.nav')} className={styles.nav}>
         <ul className={styles.links}>
-          <li>
-            <Link to={legalNoticePath} className={styles.link}>
-              {t('legal.notice.title')}
-            </Link>
-          </li>
-          <li>
-            <Link to={termsPath} className={styles.link}>
-              {t('legal.terms.title')}
-            </Link>
-          </li>
-          <li>
-            <Link to={privacyPath} className={styles.link}>
-              {t('legal.privacy.title')}
-            </Link>
-          </li>
-          <li>
-            <Link to={disclaimerPath} className={styles.link}>
-              {t('legal.disclaimer.title')}
-            </Link>
-          </li>
-          <li>
-            <Link to={aboutPath} className={styles.link}>
-              {t('legal.about.title')}
-            </Link>
-          </li>
+          {links.map(({ to, label }) => (
+            <li key={to}>
+              <Link to={to} className={styles.link}>
+                {t(label)}
+              </Link>
+            </li>
+          ))}
         </ul>
       </nav>
     </footer>

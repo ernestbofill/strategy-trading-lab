@@ -41,7 +41,7 @@ public class User : IHasUpdatedAt
 {
     public Guid Id { get; set; }
     public required string Email { get; set; }
-    /// <summary>Asked at sign-up since invites (#96); accounts from before have none until they add it.</summary>
+    /// <summary>Asked at sign-up since invites; accounts from before have none until they add it on the account page.</summary>
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? PasswordHash { get; set; }

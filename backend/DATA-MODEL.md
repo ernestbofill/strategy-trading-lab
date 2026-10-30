@@ -93,18 +93,38 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | --- | --- | --- |
 | id | uuid PK | |
 | email | citext, unique, not null | Case-insensitive |
+| first_name, last_name | varchar(100), null | Asked at sign-up since invites; null for older accounts until they add it |
 | password_hash | text, null | ASP.NET Core Identity `PasswordHasher` hash. Set at sign-up; null only for a user who can't log in |
 | email_verified_at | timestamptz, null | |
 | time_zone | text, not null | IANA name, e.g. `Europe/Madrid`. The overview goes out early morning in it |
 | locale | text, not null | `en` \| `ca` in v1 (BCP 47 tags). Picked by the user at sign-up, never guessed; editable in the account. Sets the language and formats of emails and notifications |
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
-| role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip is for invited people with special privileges (no invitation yet) |
+| role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip comes from an owner's invite |
 | overview_email | bool, not null, default true | Daily overview on/off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | created_at, updated_at | timestamptz | |
 
 | ai_sharing | bool, not null, default false | Shares AI rounds (asked at the first round, changed in the account; off removes what was shared) |
 | ai_sharing_changed_at | timestamptz, null | When the user last answered; null until then (the round screen shows the consent box) |
+| invite_id | uuid FK → invites, null (set null) | The invite the account signed up with; who invited it is that invite's maker |
+
+### `invites`
+
+An invite to sign up (spec: Sign-up, Admin · Invites). Only the owner makes them for now.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| code | varchar(9), unique, not null | "ABCD-EFGH" (`Auth/InviteCodes`). Kept as it is, so the owner can copy the message again |
+| created_by | uuid FK → users (cascade), not null | Who made it |
+| role | text, not null, default `vip` | The role an account made with it gets |
+| first_name | varchar(100), not null | Whom it is for: the message greets them by it |
+| last_name | varchar(100), null | |
+| email | citext, null | Where it was emailed; the invitee may sign up with another address |
+| locale | text, not null | `en` \| `ca`: the message, the email and the sign-up form's first language |
+| max_uses, uses | int, not null (1, 0) | `CHECK (uses >= 0 AND uses <= max_uses)`. A sign-up claims a use with one conditional UPDATE in the same transaction as the account |
+| created_at | timestamptz | |
+| sent_at, revoked_at | timestamptz, null | Last emailed; revoked (it can't be used any more) |
 
 ### `sessions` and `email_tokens`
 

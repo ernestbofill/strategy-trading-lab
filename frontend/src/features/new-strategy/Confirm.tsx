@@ -20,6 +20,7 @@ import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, NAME_MAX_LENGTH, newStrategyFrom } from './newStrategy'
 import { advancedPath, budgetPath, confirmPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
+import { useDraftCurrency } from './useDraftCurrency'
 import { useTemplate } from './useTemplate'
 
 interface SummaryRow {
@@ -50,8 +51,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const account = useOptionalAccount()
   const isGuest = !account
   const emailVerified = account?.emailVerified ?? false
-  // A live copy keeps its simulation's currency; guests default to EUR.
-  const currency = draft.currency ?? account?.currency ?? 'EUR'
+  const currency = useDraftCurrency()
   const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
@@ -134,7 +134,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
       to: budgetPath,
     },
-    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: accountEmailsPath },
+    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: isGuest ? undefined : accountEmailsPath },
     ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts'), to: modePath }] : []),
     ...(template.aiRound
       ? [

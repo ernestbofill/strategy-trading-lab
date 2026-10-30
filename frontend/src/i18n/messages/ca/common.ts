@@ -27,7 +27,7 @@ export const common: Record<keyof typeof en, string> = {
   'legal.privacy.lead': 'Com s’emmagatzemen i es tracten les dades.',
   'legal.disclaimer.title': 'Avís de responsabilitat',
   'legal.disclaimer.content':
-    'Els resultats passats no garanteixen els futurs. Strategy Trading Lab és un laboratori d’estratègies i una aplicació de seguiment per aprendre i seguir estratègies amb les teves pròpies regles. L’aplicació mai no posa ordres ni es connecta a cap broker.',
+    'Strategy Trading Lab és un laboratori d’estratègies i una aplicació de seguiment per aprendre i seguir estratègies amb les teves pròpies regles. L’aplicació mai no posa ordres ni es connecta a cap broker.',
   'legal.about.title': 'Quant a',
   'legal.about.lead': 'Quant a Strategy Trading Lab.',
   'legal.about.content':

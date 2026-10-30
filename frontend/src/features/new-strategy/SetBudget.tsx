@@ -16,10 +16,10 @@ import {
   daysToUse,
 } from '../../lib/budget'
 import { currencyName, money } from '../../lib/format'
-import { useOptionalAccount } from '../account/AccountContext'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { confirmPath, modePath } from './paths'
 import styles from './SetBudget.module.css'
+import { useDraftCurrency } from './useDraftCurrency'
 import { useTemplate } from './useTemplate'
 
 /** 4 · Set your budget (wireframe `Budget`). */
@@ -40,9 +40,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
   const t = useT()
   const draft = useNewStrategyDraft()
   const { mode, update } = draft
-  const account = useOptionalAccount()
-  // A live copy keeps its simulation's currency; guests default to EUR.
-  const currency = draft.currency ?? account?.currency ?? 'EUR'
+  const currency = useDraftCurrency()
   const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'

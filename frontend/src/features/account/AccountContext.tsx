@@ -12,8 +12,6 @@ interface AccountContextValue {
    * session, or undefined when it couldn't tell (the request failed).
    */
   refresh: () => Promise<Account | null | undefined>
-  /** The last user logged in on this tab, kept through a log-out: a new one starts the new-strategy draft over. */
-  owner: string | null
   /** The session is gone (log-out, or a 401). */
   clear: () => void
 }
@@ -26,9 +24,7 @@ const AccountContext = createContext<AccountContextValue | null>(null)
  */
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AccountState>({ status: 'loading' })
-  // The cached loads and the new-strategy draft belong to the owner: a different one clears both. A ref mirrors it,
-  // so a refresh compares against the latest owner, not the one of its render.
-  const [owner, setOwner] = useState<string | null>(null)
+  // The cached loads belong to the last user logged in on this tab: a different one clears them.
   const ownerRef = useRef<string | null>(null)
   /**
    * Bumped by every refresh and clear: only the latest one's answer counts, so an older /me can't undo a log-in. An
@@ -47,7 +43,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         if (account.email !== ownerRef.current) {
           invalidateAll()
           ownerRef.current = account.email
-          setOwner(account.email)
         }
       }
       setState({ status: 'ready', account })
@@ -86,7 +81,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }
   }, [refresh, clear])
 
-  const value = useMemo(() => ({ state, refresh, owner, clear }), [state, refresh, owner, clear])
+  const value = useMemo(() => ({ state, refresh, clear }), [state, refresh, clear])
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>
 }
 

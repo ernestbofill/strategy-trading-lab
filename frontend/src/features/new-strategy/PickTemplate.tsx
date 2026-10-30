@@ -6,10 +6,10 @@ import { Tagline } from '../../components/Tagline'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { useOptionalAccount } from '../account/AccountContext'
-import { logInPath, signUpPath } from '../account/paths'
+import { logInPathFor, signUpPath } from '../account/paths'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { homePath, reviewPath } from './paths'
+import { homePath, pickPath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
 import { useTemplates } from './useTemplate'
 
@@ -30,7 +30,7 @@ export function PickTemplate() {
           title={t('newStrategy.pick.topBar')}
           back={hasHistory ? (isGuest ? signUpPath : homePath) : undefined}
           step={isGuest ? undefined : '1 / 5'}
-          aside={isGuest ? <TextAction to={logInPath}>{t('newStrategy.pick.logIn')}</TextAction> : undefined}
+          aside={isGuest ? <TextAction to={logInPathFor(pickPath)}>{t('newStrategy.pick.logIn')}</TextAction> : undefined}
         />
       }
       action={<PrimaryAction to={reviewPath(templateKey)}>{t('newStrategy.pick.continue')}</PrimaryAction>}

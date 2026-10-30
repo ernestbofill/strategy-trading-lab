@@ -65,7 +65,7 @@ describe('PickTemplate', () => {
 
     expect(screen.getByText('Welcome to Strategy Trading Lab')).toBeTruthy()
     const logInLink = screen.getByRole('link', { name: 'LOG IN' })
-    expect(logInLink.getAttribute('href')).toBe('/log-in')
+    expect(logInLink.getAttribute('href')).toBe('/log-in?next=%2Fnew')
     expect(screen.queryByText('1 / 5')).toBeNull()
   })
 

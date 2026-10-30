@@ -101,5 +101,7 @@ describe('Confirm', () => {
 
     const action = await screen.findByRole('link', { name: 'Create an account to start it' })
     expect(action.getAttribute('href')).toBe('/sign-up?next=%2Fnew%2Fconfirm')
+    // The overview email is an account setting: a guest gets no Edit link to it.
+    expect(screen.queryByRole('link', { name: /Edit.*overview/i })).toBeNull()
   })
 })

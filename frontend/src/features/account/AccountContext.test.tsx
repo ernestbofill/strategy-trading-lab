@@ -31,20 +31,6 @@ describe('AccountProvider', () => {
     await act(async () => startUp.resolve(null)) // The start-up check, sent before the log-in, answers last.
 
     expect(result.current.state).toEqual({ status: 'ready', account: account('a@example.com') })
-    expect(result.current.owner).toBe('a@example.com')
-  })
-
-  it('keeps the owner through a log-out and changes it for another user', async () => {
-    vi.spyOn(api, 'getAccount').mockResolvedValueOnce(account('a@example.com')).mockResolvedValueOnce(account('b@example.com'))
-    const { result } = renderHook(() => useAccount(), { wrapper: AccountProvider })
-    await waitFor(() => expect(result.current.owner).toBe('a@example.com'))
-
-    act(() => result.current.clear())
-    expect(result.current.state).toEqual({ status: 'ready', account: null })
-    expect(result.current.owner).toBe('a@example.com')
-
-    await act(async () => void (await result.current.refresh()))
-    expect(result.current.owner).toBe('b@example.com')
   })
 
   it('keeps a known account when a re-check fails, and says it couldn\'t tell', async () => {

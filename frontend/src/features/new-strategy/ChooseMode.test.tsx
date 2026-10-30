@@ -47,6 +47,26 @@ function open(emailVerified: boolean) {
 }
 
 describe('ChooseMode', () => {
+  it('opens for a guest, who may pick Live', async () => {
+    vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+    vi.spyOn(api, 'getTemplate').mockResolvedValue({ key: 'dip', name: 'Winners at a discount', backtest: {} } as unknown as TemplateDetail)
+    render(
+      <AccountProvider>
+        <NewStrategyDraftProvider owner={null}>
+          <MemoryRouter initialEntries={['/new/mode']}>
+            <Routes>
+              <Route path="/new/mode" element={<ChooseMode />} />
+            </Routes>
+          </MemoryRouter>
+        </NewStrategyDraftProvider>
+      </AccountProvider>,
+    )
+
+    const live = await screen.findByRole('radio', { name: /Live/ })
+    expect((live as HTMLInputElement).disabled).toBe(false)
+  })
+
   it('keeps Live off until the email is confirmed, and falls back to a simulation', async () => {
     open(false)
 

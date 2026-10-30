@@ -23,7 +23,12 @@ export function LegalPage({ section }: { section: Section }) {
     <Screen top={<TopBar title={t('legal.topBar')} back="/" />}>
       <PageHeader title={t(title)} lead={t(lead)} />
       <div className={styles.content}>
-        {content ? <p className={styles.text}>{t(content)}</p> : <ScreenMessage>{t('legal.laterStep')}</ScreenMessage>}
+        {content ? (
+          <p className={styles.text}>
+            {section === 'disclaimer' && `${t('common.pastResults')} `}
+            {t(content)}
+          </p>
+        ) : <ScreenMessage>{t('legal.laterStep')}</ScreenMessage>}
       </div>
     </Screen>
   )

@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tag, type TagTone } from '../../components/Tag'
 import { useT } from '../../i18n/I18n'
-import { useCurrentAccount } from '../account/AccountContext'
+import { useOptionalAccount } from '../account/AccountContext'
 import { ResendLink } from '../account/ResendLink'
 import styles from './ChooseMode.module.css'
 import { useNewStrategyDraft, type Mode } from './NewStrategyDraft'
@@ -17,8 +17,9 @@ export function ChooseMode() {
   const { mode, templateKey, sourceStrategyId, update } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const isLive = mode === 'live'
-  // Live signals come by email, so going live needs a confirmed address (the server refuses it too).
-  const { emailVerified } = useCurrentAccount()
+  // Live signals come by email, so going live needs a confirmed address (the server refuses it too). A guest may
+  // still pick it: signing up and confirming the address come before the strategy starts.
+  const emailVerified = useOptionalAccount()?.emailVerified ?? true
 
   // A draft that came here live (e.g. picked before the email changed) falls back to a simulation.
   useEffect(() => {

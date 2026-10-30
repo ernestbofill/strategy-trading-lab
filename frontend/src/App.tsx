@@ -48,9 +48,9 @@ const AdminSettings = lazyPage(() => import('./features/admin/AdminSettings').th
 const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((m) => m.AdminAssets))
 const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m) => m.AdminUsers))
 
-/** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
+/** The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
-  const { owner } = useAccount()
+  const owner = useOptionalAccount()?.email ?? null
   return <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
 }
 
@@ -80,9 +80,7 @@ function Preloads() {
 }
 
 function FeedbackCaptureIfLoggedIn() {
-  const account = useOptionalAccount()
-  if (!account?.emailVerified) return null
-  return <FeedbackCapture />
+  return useOptionalAccount() ? <FeedbackCapture /> : null
 }
 
 /** Root layout providing in-app feedback capture across all screens for logged-in users with verified email. */

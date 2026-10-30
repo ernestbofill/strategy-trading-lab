@@ -173,6 +173,8 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - On Name, preview and confirm, the button reads "Create an account to start it" and opens Sign-up. After sign-up (logged in at once) the user is back on Confirm with the draft, and starts it from there.
 - A guest has no dashboard, account or emails. The top bar shows "LOG IN" instead of "ACCOUNT", and the first screen's eyebrow stays "Welcome to Strategy Trading Lab".
 - The template endpoints are public already; nothing about a guest is stored on the server.
+- A guest's draft is shown in euro and stays in euro after sign-up (the amounts aren't converted). Live can be picked; the email must be confirmed before the strategy starts. A guest never sees another user's draft: a log-out clears it.
+- Every screen ends with a footer: links to the legal pages (`/legal/notice`, `/terms`, `/privacy`, `/disclaimer`, `/about`) and the short disclaimer. The pages are placeholders with the disclaimer's text, to be written.
 
 ### Log-in (not drawn)
 
@@ -732,7 +734,7 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 - Live mode gated on a confirmed email, with email-only alerts until web push exists.
 - ~~Statuses for *Bear markets*; the "Signals and trades" list on the strategy page.~~ (both built: #60, #61)
 - ~~Ended strategies.~~ (built #91; since #96 ending is archiving: kept read-only under Archived, and can then be deleted)
-- The legal pages (legal notice, terms, privacy, disclaimer, About with conflicts of interest), linked from a footer.
+- The legal pages' text (legal notice, terms, privacy, About with conflicts of interest); the footer and placeholder pages are built (#100).
 - Account: download my data, delete my account, "Invite a friend".
 - Unsubscribe links in emails.
 - Admin: health and failure alerts, users (block, delete), invites and test invites, adding and editing assets, an audit log of owner actions, and feedback.

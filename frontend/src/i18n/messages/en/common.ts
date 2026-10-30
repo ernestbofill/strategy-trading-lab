@@ -33,7 +33,7 @@ export const common = {
   'legal.privacy.lead': 'How data is stored and handled.',
   'legal.disclaimer.title': 'Disclaimer',
   'legal.disclaimer.content':
-    'Past results don’t promise future ones. Strategy Trading Lab is a strategy lab and monitoring app for learning and following strategies with your own rules. The app never places orders and never connects to a broker.',
+    'Strategy Trading Lab is a strategy lab and monitoring app for learning and following strategies with your own rules. The app never places orders and never connects to a broker.',
   'legal.about.title': 'About',
   'legal.about.lead': 'About Strategy Trading Lab.',
   'legal.about.content':

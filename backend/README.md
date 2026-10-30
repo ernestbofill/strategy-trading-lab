@@ -32,6 +32,27 @@ The repo root is linked to the Neon project (`.neon`, `neon.ts`). Local work use
 
 In Development the API reads `.env.local` itself. `ConnectionStrings:Default` (user secrets or environment) overrides `DATABASE_URL` when set.
 
+### On a new computer
+
+`.neon` and `.env.local` are gitignored, so a fresh clone has neither. Nothing above needs to be kept by hand: Neon writes it again. With the Neon CLI (`npm install -g neon`), from the repo root:
+
+```bash
+neon login
+```
+
+```bash
+neon link --branch dev
+```
+
+`neon link` asks for the project, writes `.neon` and pulls the dev branch's variables into `.env.local`. Later, `neon env pull` refreshes them (it only rewrites the Neon lines). For the server's environment, copy [production.env.example](../deploy/backend/production.env.example) to `deploy/backend/production.env` (gitignored) and fill its Neon lines with `neon env pull --branch production --file deploy/backend/production.env`; the rest of that file (`ADMIN_PASSWORD`, `DATABASE_URL_DEV`) is yours to fill ([deploy/backend](../deploy/backend/README.md)).
+
+Neon doesn't write the other lines in `.env.local`. Copy them from the other computer or a password manager:
+
+| Variable | Used for |
+| --- | --- |
+| `OWNER_EMAIL` | The account that gets the owner role on log-in |
+| `STL_BROWSER_TEST_EMAIL`, `STL_BROWSER_TEST_PASSWORD` | The older fixed browser test account ([docs/dev-browser-test-account.md](../docs/dev-browser-test-account.md)) |
+
 ## Run
 
 From `backend/`:

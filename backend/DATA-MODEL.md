@@ -13,7 +13,7 @@ Source: [app spec §8](../docs/strategy-trading-lab-app-spec.md#8-data-the-app-n
 - **Assets** is the name for stocks and funds (the UI still says *stock* or *fund*). The API identifies an asset by its **id**, not its symbol: the frontend's `Security` DTO gains an `id`, and the draft's `unticked` becomes a list of asset ids.
 - **Multi-currency ready.** Every amount is read in a stated currency. v1 runs in euro with US dollar prices, but nothing in the schema assumes it.
 - **A day is the US market date** (`America/New_York`, trading calendar) for every `date` column: `started_on`, `signal_date`, `snoozed_until`, `for_date`, trade dates. The user's time zone only decides when emails arrive.
-- **No pause.** A strategy runs until it is ended. Turning its notifications off is the quiet mode; unanswered signals become *missed* when their window closes.
+- **No pause.** A strategy runs until it is archived (status `ended`). Turning its notifications off is the quiet mode; unanswered signals become *missed* when their window closes.
 - **Live signals are answered Confirm, Skip or Snooze.** There is no automatic reminder; Snooze notifies again the next day.
 - **Translation-ready.** The database stores codes and facts, never display sentences: statuses, reasons and signal facts are rendered in the reader's `locale` when shown or sent. v1 ships in English and Catalan; template copy is one file per language. The only translatable database text, what an asset does, is in `asset_texts`, one row per language.
 - **Accounts**: sign-up, log-in and sessions ([AUTH.md](AUTH.md)). There is no seeded user.
@@ -31,7 +31,7 @@ Source: [app spec §8](../docs/strategy-trading-lab-app-spec.md#8-data-the-app-n
 - Dates are `date` (US market date, see above). Moments are `timestamptz` (UTC).
 - Status and kind fields are `text` with a `CHECK` constraint, not Postgres enums (easier to extend). C# maps them to enums through one snake_case converter (`PriceRanAway` ↔ `price_ran_away`).
 - Every table has `created_at timestamptz not null default now()`; mutable tables also have `updated_at`, set by a SaveChanges interceptor.
-- Deletes: a user can delete a strategy for good (`DELETE /strategies/{id}`, #73): its stocks, signals, trades, evaluations and AI rounds cascade from `strategies`, and its shared AI rounds are deleted first through the rounds' `shared_round_id` (a shared round has no key to the strategy). Ending a strategy (item 11) will keep it. Deleting the account cascades everything a user owns from `users`. Manual trades are soft-deleted (`deleted_at`).
+- Deletes: a user can delete a strategy for good (`DELETE /strategies/{id}`, #73): its stocks, signals, trades, evaluations and AI rounds cascade from `strategies`, and its shared AI rounds are deleted first through the rounds' `shared_round_id` (a shared round has no key to the strategy). Only an archived strategy can be deleted (the API answers 409 for a running one, #96); archiving keeps it. Deleting the account cascades everything a user owns from `users`. Manual trades are soft-deleted (`deleted_at`).
 - `jsonb` columns (`params`, `facts`) map to `JsonDocument` in EF and are deserialized to the template's record by `template_key` (EF can't map a different record per template).
 - Extensions: `citext` (`HasPostgresExtension("citext")`).
 
@@ -176,12 +176,11 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | user_id | uuid FK → users, cascade | |
 | template_key | text, not null | `CHECK` on the five keys (`dip`, `comeback`, `bear`, `trend`, `ai`); a new template updates the check |
 | defaults_version | int, not null | The template's tested-defaults version at creation |
-| name | text, not null | Unique per user among running strategies, case-insensitive: unique index on `(user_id, lower(name)) WHERE status = 'running'`. Ending one frees its name |
+| name | text, not null | Unique per user among running strategies, case-insensitive: unique index on `(user_id, lower(name)) WHERE status = 'running'`. Archiving one frees its name |
 | mode | text, not null | `simulation` \| `live`. Never changes |
 | status | text, not null | `running` \| `ended` |
 | started_on | date, not null | "since [date]" |
-| ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. Ending closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
-| archived_at | timestamptz, null | When the user archived the ended strategy (the dashboard's collapsed Archived section). `CHECK (archived_at IS NULL OR status = 'ended')` |
+| ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. When it was archived (the screens' word for `ended`, #96): archiving closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
 | notifications | bool, not null, default true | Signal notifications for this strategy, on every channel. Off = it keeps running quietly |
 | currency | char(3), not null | Fixed at creation. Budget, trade amounts and results are in it |
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |

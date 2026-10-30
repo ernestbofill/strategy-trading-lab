@@ -104,9 +104,8 @@ public class Strategy : IHasUpdatedAt
     public StrategyMode Mode { get; set; }
     public StrategyStatus Status { get; set; }
     public DateOnly StartedOn { get; set; }
+    /// <summary>When the user archived it (status <c>Ended</c>): it stops, and shows in the dashboard's collapsed Archived section.</summary>
     public DateTimeOffset? EndedAt { get; set; }
-    /// <summary>When the user archived it: an ended strategy only, shown in the dashboard's collapsed Archived section.</summary>
-    public DateTimeOffset? ArchivedAt { get; set; }
     public bool Notifications { get; set; } = true;
     public required string Currency { get; set; }
     public required Budget Budget { get; set; }

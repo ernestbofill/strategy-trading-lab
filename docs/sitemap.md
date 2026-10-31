@@ -31,11 +31,12 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 │   └── /verify            Verify email → dashboard if signed in, otherwise Log in
 ├── /log-in                Log in ➕
 ├── /forgot-password       Reset password ➕
-└── /legal
-    ├── /legal/disclaimer      "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
-    ├── /legal/terms           Terms of use
-    ├── /legal/privacy         Privacy policy (GDPR), incl. AI data sharing
-    └── /legal/cookies         Cookie policy
+└── /legal                 Redirects to /legal/notice
+    ├── /legal/notice      Legal notice (LSSI-CE Art. 10)
+    ├── /legal/terms       Terms of use
+    ├── /legal/privacy     Privacy policy (GDPR) and cookie disclosure
+    ├── /legal/disclaimer  Full disclaimer and risk warning
+    └── /about             About Strategy Trading Lab & conflicts of interest (MAR)
 ```
 
 | Page | Purpose | Key content |

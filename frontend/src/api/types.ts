@@ -721,6 +721,8 @@ export interface Account {
   role: Role
   /** Shares AI rounds anonymously. */
   aiSharing: boolean
+  termsVersionAccepted?: string | null
+  termsAcceptedAt?: string | null
 }
 
 /** What Sign-up sends. */
@@ -735,6 +737,8 @@ export interface SignUp {
   overviewEmail: boolean
   currency: Currency
   disclaimerAccepted: boolean
+  /** The accepted legal terms version. */
+  termsVersion?: string
   /** From an invite link or typed; needed while sign-ups are invite only. */
   inviteCode?: string
 }

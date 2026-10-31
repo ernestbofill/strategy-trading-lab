@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 
@@ -57,6 +58,14 @@ public class ModelTests
 
         Assert.Equal("skip_reason", reason.GetColumnName());
         Assert.Equal("text", reason.GetColumnType());
+    }
+
+    [Fact]
+    public void User_terms_version_accepted_column_is_configured()
+    {
+        var property = Model.FindEntityType(typeof(User))!.FindProperty(nameof(User.TermsVersionAccepted))!;
+        Assert.Equal("terms_version_accepted", property.GetColumnName());
+        Assert.Equal(AccountRules.TermsVersionMax, property.GetMaxLength());
     }
 
     [Fact]

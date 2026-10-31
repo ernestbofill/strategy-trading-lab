@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
     migration_id character varying(150) NOT NULL,
     product_version character varying(32) NOT NULL,
     CONSTRAINT pk___ef_migrations_history PRIMARY KEY (migration_id)
@@ -1553,3 +1553,28 @@ BEGIN
 END $EF$;
 COMMIT;
 
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at timestamp with time zone;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version_accepted character varying(32);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261031093333_AddTermsAccepted', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;

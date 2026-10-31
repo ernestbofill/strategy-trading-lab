@@ -104,9 +104,10 @@ describe('app routes', () => {
 
     open('/sign-up')
 
+    expect(screen.getByRole('contentinfo')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Legal notice' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Terms of use' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Privacy policy' })).toBeTruthy()
+    expect(screen.getAllByRole('link', { name: 'Terms of use' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'Privacy policy' }).length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: 'Disclaimer' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'About' })).toBeTruthy()
   })
@@ -117,6 +118,14 @@ describe('app routes', () => {
     open('/legal/disclaimer')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Disclaimer' })).toBeTruthy()
-    expect(screen.getByText(/you decide and trade at your own broker/)).toBeTruthy()
+    expect(screen.getAllByText(/you decide and trade at your own broker/).length).toBeGreaterThan(0)
+  })
+
+  it('redirects /legal to /legal/notice', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/legal')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Legal notice' })).toBeTruthy()
   })
 })

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 
 namespace StrategyTradingLab.Api.Tests;
@@ -58,11 +59,11 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         var email = api.NewEmail();
 
         var response = await client.PostAsJsonAsync("/account/sign-up",
-            new { email = "not an email", password = "short", locale = "fr", timeZone = "Mars/Base", overviewEmail = true, disclaimerAccepted = false, currency = "XXX" });
+            new { email = "not an email", password = "short", locale = "fr", timeZone = "Mars/Base", overviewEmail = true, disclaimerAccepted = false, currency = "XXX", termsVersion = "invalid-version" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var errors = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
-        foreach (var field in new[] { "firstName", "lastName", "email", "password", "locale", "timeZone", "disclaimerAccepted", "currency" })
+        foreach (var field in new[] { "firstName", "lastName", "email", "password", "locale", "timeZone", "disclaimerAccepted", "currency", "termsVersion" })
             Assert.True(errors.TryGetProperty(field, out _), field);
         var sameAsEmail = await client.PostAsJsonAsync("/account/sign-up", ApiClients.SignUpBody(email, email));
         Assert.Equal(HttpStatusCode.BadRequest, sameAsEmail.StatusCode);
@@ -104,6 +105,15 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         var refused = await client.PostAsJsonAsync("/account/locale", new { locale = "fr" });
         Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
         Assert.Equal("ca", (await Me(client)).GetProperty("locale").GetString());
+    }
+
+    [NeonFact]
+    public async Task Sign_up_records_terms_version_accepted()
+    {
+        var (client, _) = await api.SignedUpAsync();
+        var me = await Me(client);
+        Assert.Equal(AccountRules.CurrentTermsVersion, me.GetProperty("termsVersionAccepted").GetString());
+        Assert.NotNull(me.GetProperty("termsAcceptedAt").GetString());
     }
 
     [NeonFact]

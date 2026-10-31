@@ -12,6 +12,15 @@
   gap: 20px var(--space-3);
 }
 
+.inlineLink {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.inlineLink:hover {
+  text-decoration: none;
+}
+
 .links {
   display: flex;
   flex-wrap: wrap;

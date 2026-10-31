@@ -70,10 +70,10 @@ describe('PickTemplate', () => {
   })
 
   it('shows 1 / 5 step in top bar for logged-in users', () => {
+    currentAccount = {
       email: 'user@example.com',
       firstName: null,
       lastName: null,
-      email: 'user@example.com',
       emailVerified: true,
       locale: 'en',
       timeZone: 'UTC',

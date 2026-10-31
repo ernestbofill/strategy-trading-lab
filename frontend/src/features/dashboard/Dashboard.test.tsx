@@ -8,6 +8,13 @@ import { Dashboard } from './Dashboard'
 
 vi.mock('../account/AccountContext', () => ({
   useCurrentAccount: () => ({ email: 'reader@example.com', emailVerified: true }),
+  useOptionalAccount: () => ({ email: 'reader@example.com', emailVerified: true }),
+  useAccount: () => ({
+    state: { status: 'ready', account: { email: 'reader@example.com', emailVerified: true } },
+    refresh: vi.fn(),
+    owner: 'reader@example.com',
+    clear: vi.fn(),
+  }),
   useIsOwner: () => false,
 }))
 

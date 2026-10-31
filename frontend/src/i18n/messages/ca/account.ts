@@ -20,7 +20,9 @@ export const account: Record<keyof typeof en, string> = {
   // Sign-up
   'account.signUp.topBar': 'STL // CREA UN COMPTE',
   'account.signUp.title': 'Crea el teu compte',
-  'account.signUp.lead': 'Segueix estratègies amb les teves pròpies regles. L’aplicació mai no opera per tu.',
+  'account.signUp.lead':
+    'Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en directe. L’aplicació mai no posa ordres ni es connecta a cap broker.',
+  'account.signUp.skipLookAround': 'Salta-ho de moment, fes un cop d’ull',
   'account.signUp.language': 'Llengua',
   'account.signUp.currency': 'Moneda',
   'account.signUp.timeZone': 'Zona horària',

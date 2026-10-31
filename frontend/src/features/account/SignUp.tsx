@@ -13,7 +13,7 @@ import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
 import { errorText } from './copy'
 import { InviteWelcome } from './InviteWelcome'
-import { INVITE_PARAM, logInPath } from './paths'
+import { INVITE_PARAM, logInPath, logInPathFor, safeNext } from './paths'
 import { guessTimeZone, timeZones } from './timeZones'
 
 /**
@@ -42,6 +42,9 @@ export function SignUp() {
   const [message, setMessage] = useState<FormMessageState>(null)
   const [busy, setBusy] = useState(false)
   const [signedUp, setSignedUp] = useState(false)
+  const [searchParams] = useSearchParams()
+  const nextParam = searchParams.get('next')
+  const next = nextParam ? safeNext(nextParam) : (signedUp ? pickPath : dashboardPath)
   // Built once: the list holds the guessed zone, and any zone picked comes from it.
   const zones = useMemo(() => timeZones(guessTimeZone()).map((z) => ({ value: z, label: z.replaceAll('_', ' ') })), [])
   const currOptions = useMemo(() => currencyOptionsWith(t), [t])
@@ -68,7 +71,7 @@ export function SignUp() {
     }
   }, [linkCode, setAppLocale])
 
-  if (state.status === 'ready' && state.account) return <Navigate to={signedUp ? pickPath : dashboardPath} replace />
+  if (state.status === 'ready' && state.account) return <Navigate to={next} replace />
 
   const invite = options?.invite ?? null
   const linkFailed = linkCode !== '' && options !== null && invite === null
@@ -189,7 +192,8 @@ export function SignUp() {
         {!invite && !showCode && !codeNeeded && (
           <TextAction onClick={() => setShowCode(true)}>{t('account.signUp.haveInvite')}</TextAction>
         )}
-        <TextAction to={logInPath}>{t('account.signUp.haveAccount')}</TextAction>
+        <TextAction to={nextParam ? logInPathFor(nextParam) : logInPath}>{t('account.signUp.haveAccount')}</TextAction>
+        <TextAction to={pickPath}>{t('account.signUp.skipLookAround')}</TextAction>
       </div>
     </Screen>
   )

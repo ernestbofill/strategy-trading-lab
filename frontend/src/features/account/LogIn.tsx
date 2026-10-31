@@ -9,13 +9,14 @@ import { useT } from '../../i18n/I18n'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
 import { errorText } from './copy'
-import { forgotPasswordPath, safeNext, signUpPath } from './paths'
+import { forgotPasswordPath, safeNext, signUpPath, signUpPathFor } from './paths'
 
 /** Log-in (spec: Log-in). Afterwards the screen the user was on, or the dashboard. */
 export function LogIn() {
   const t = useT()
   const { state, refresh } = useAccount()
-  const next = safeNext(useSearchParams()[0].get('next'))
+  const nextParam = useSearchParams()[0].get('next')
+  const next = safeNext(nextParam)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +66,7 @@ export function LogIn() {
       </form>
       <div className={styles.links}>
         <TextAction to={forgotPasswordPath}>{t('account.logIn.forgot')}</TextAction>
-        <TextAction to={signUpPath}>{t('account.logIn.create')}</TextAction>
+        <TextAction to={nextParam ? signUpPathFor(nextParam) : signUpPath}>{t('account.logIn.create')}</TextAction>
       </div>
     </Screen>
   )

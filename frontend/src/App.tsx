@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { I18nProvider, useI18n } from './i18n/I18n'
-import { AccountProvider, useAccount } from './features/account/AccountContext'
+import { AccountProvider, useAccount, useOptionalAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
 import { ForgotPassword } from './features/account/ForgotPassword'
 import { LogIn } from './features/account/LogIn'
@@ -18,6 +18,7 @@ import { ResetPassword } from './features/account/ResetPassword'
 import { SignUp } from './features/account/SignUp'
 import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
+import { FeedbackCapture } from './features/feedback/FeedbackCapture'
 import { FeedbackPage } from './features/feedback/FeedbackSection'
 import { Dashboard } from './features/dashboard/Dashboard'
 import { Advanced } from './features/new-strategy/Advanced'
@@ -39,6 +40,8 @@ import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 import { LazyPage } from './components/LazyPage'
 import { useTemplates } from './features/new-strategy/useTemplate'
 import { lazyPage } from './lib/lazyPage'
+import { LegalPage } from './features/legal/LegalPage'
+import { aboutPath, disclaimerPath, legalNoticePath, privacyPath, termsPath } from './features/legal/paths'
 
 // Loaded only when an owner opens /admin, so users never download the admin pages or TanStack Table.
 const AdminSettings = lazyPage(() => import('./features/admin/AdminSettings').then((m) => m.AdminSettings))
@@ -46,9 +49,9 @@ const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((
 const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m) => m.AdminUsers))
 const AdminInvites = lazyPage(() => import('./features/admin/AdminInvites').then((m) => m.AdminInvites))
 
-/** The new-strategy draft belongs to one user: another user logging in on this tab starts it over. */
+/** The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
-  const { owner } = useAccount()
+  const owner = useOptionalAccount()?.email ?? null
   return <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
 }
 
@@ -77,6 +80,21 @@ function Preloads() {
   return state.status === 'ready' && state.account ? <PreloadTemplates /> : null
 }
 
+function FeedbackCaptureIfLoggedIn() {
+  return useOptionalAccount() ? <FeedbackCapture /> : null
+}
+
+/** Root layout providing in-app feedback capture across all screens for logged-in users with verified email. */
+function AppLayout() {
+  const { pathname } = useLocation()
+  return (
+    <>
+      <Outlet />
+      <FeedbackCaptureIfLoggedIn key={pathname} />
+    </>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -84,15 +102,22 @@ export default function App() {
         <AccountProvider>
           <LocaleFromAccount />
           <Preloads />
-        <DraftPerUser>
+          <DraftPerUser>
             <Routes>
-              <Route path={signUpPath} element={<SignUp />} />
-              <Route path={logInPath} element={<LogIn />} />
-              <Route path={forgotPasswordPath} element={<ForgotPassword />} />
-              <Route path={resetPasswordPath} element={<ResetPassword />} />
-              <Route path={verifyEmailPath} element={<VerifyEmail />} />
-              <Route element={<RequireAccount />}>
-                <Route path={homePath} element={<Dashboard />} />
+              <Route element={<AppLayout />}>
+                <Route path={signUpPath} element={<SignUp />} />
+                <Route path={logInPath} element={<LogIn />} />
+                <Route path={forgotPasswordPath} element={<ForgotPassword />} />
+                <Route path={resetPasswordPath} element={<ResetPassword />} />
+                <Route path={verifyEmailPath} element={<VerifyEmail />} />
+
+                <Route path={legalNoticePath} element={<LegalPage section="notice" />} />
+                <Route path={termsPath} element={<LegalPage section="terms" />} />
+                <Route path={privacyPath} element={<LegalPage section="privacy" />} />
+                <Route path={disclaimerPath} element={<LegalPage section="disclaimer" />} />
+                <Route path={aboutPath} element={<LegalPage section="about" />} />
+
+                {/* Public new-strategy flow: guests can look around and configure a draft without an account */}
                 <Route path={pickPath} element={<PickTemplate />} />
                 <Route path="/new/templates/:key" element={<ReviewTemplate />} />
                 <Route path="/new/templates/:key/how-tested" element={<HowTested />} />
@@ -101,51 +126,56 @@ export default function App() {
                 <Route path="/new/mode" element={<ChooseMode />} />
                 <Route path={budgetPath} element={<SetBudget />} />
                 <Route path={confirmPath} element={<Confirm />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path={accountPath} element={<AccountPage />} />
-                <Route element={<RequireOwner />}>
-                  <Route
-                    path="/admin"
-                    element={
-                      <LazyPage back="/">
-                        <AdminSettings />
-                      </LazyPage>
-                    }
-                  />
-                  <Route
-                    path="/admin/users"
-                    element={
-                      <LazyPage back="/admin">
-                        <AdminUsers />
-                      </LazyPage>
-                    }
-                  />
-                  <Route
-                    path="/admin/assets"
-                    element={
-                      <LazyPage back="/admin">
-                        <AdminAssets />
-                      </LazyPage>
-                    }
-                  />
-                  <Route
-                    path="/admin/invites"
-                    element={
-                      <LazyPage back="/admin">
-                        <AdminInvites />
-                      </LazyPage>
-                    }
-                  />
-                  <Route path="/feedback" element={<FeedbackPage />} />
+
+                {/* Routes requiring an authenticated account */}
+                <Route element={<RequireAccount />}>
+                  <Route path={homePath} element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path={accountPath} element={<AccountPage />} />
+                  <Route element={<RequireOwner />}>
+                    <Route
+                      path="/admin"
+                      element={
+                        <LazyPage back="/">
+                          <AdminSettings />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/admin/users"
+                      element={
+                        <LazyPage back="/admin">
+                          <AdminUsers />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/admin/assets"
+                      element={
+                        <LazyPage back="/admin">
+                          <AdminAssets />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/admin/invites"
+                      element={
+                        <LazyPage back="/admin">
+                          <AdminInvites />
+                        </LazyPage>
+                      }
+                    />
+                    <Route path="/feedback" element={<FeedbackPage />} />
+                  </Route>
+                  <Route path="/strategies/:id" element={<StrategyPage />} />
+                  <Route path="/strategies/:id/settings" element={<StrategySettings />} />
+                  <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
+                  <Route path="/strategies/:id/ai-round" element={<AiRoundPage />} />
+                  <Route path="/strategies/:id/ai-rounds" element={<AiRoundsPage />} />
+                  <Route path="/strategies/:id/prompt" element={<StrategyPromptEditor />} />
                 </Route>
-                <Route path="/strategies/:id" element={<StrategyPage />} />
-                <Route path="/strategies/:id/settings" element={<StrategySettings />} />
-                <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
-                <Route path="/strategies/:id/ai-round" element={<AiRoundPage />} />
-                <Route path="/strategies/:id/ai-rounds" element={<AiRoundsPage />} />
-                <Route path="/strategies/:id/prompt" element={<StrategyPromptEditor />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </DraftPerUser>
         </AccountProvider>

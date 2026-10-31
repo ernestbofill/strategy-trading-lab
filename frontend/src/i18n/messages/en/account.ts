@@ -19,7 +19,9 @@ export const account = {
   // Sign-up
   'account.signUp.topBar': 'STL // SIGN UP',
   'account.signUp.title': 'Create your account',
-  'account.signUp.lead': 'Follow strategies with your own rules. The app never trades for you.',
+  'account.signUp.lead':
+    'Pick a strategy template, tune its rules, and run it as a simulation or live. The app never places orders and never connects to a broker.',
+  'account.signUp.skipLookAround': 'Skip for now, look around',
   'account.signUp.language': 'Language',
   'account.signUp.currency': 'Currency',
   'account.signUp.timeZone': 'Time zone',

@@ -10,8 +10,8 @@ import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { resolveBudget } from '../../lib/budget'
 import { money } from '../../lib/format'
-import { useCurrentAccount } from '../account/AccountContext'
-import { accountEmailsPath } from '../account/paths'
+import { useOptionalAccount } from '../account/AccountContext'
+import { accountEmailsPath, signUpPathFor } from '../account/paths'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
@@ -19,7 +19,8 @@ import { fundOf, tickedStocks } from './draftState'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, NAME_MAX_LENGTH, newStrategyFrom } from './newStrategy'
-import { advancedPath, budgetPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
+import { advancedPath, budgetPath, confirmPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
+import { useDraftCurrency } from './useDraftCurrency'
 import { useTemplate } from './useTemplate'
 
 interface SummaryRow {
@@ -47,10 +48,10 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const t = useT()
   const draft = useNewStrategyDraft()
   const { mode, update, reset } = draft
-  const account = useCurrentAccount()
-  const { emailVerified } = account
-  // A live copy keeps its simulation's currency.
-  const currency = draft.currency ?? account.currency
+  const account = useOptionalAccount()
+  const isGuest = !account
+  const emailVerified = account?.emailVerified ?? false
+  const currency = useDraftCurrency()
   const amount = (n: number) => money(n, currency)
   const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
@@ -63,8 +64,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Numbered against the user's strategies once they are loaded; the server still refuses a name that is taken.
-  const dashboard = useDashboard()
+  // Numbered against the user's strategies once they are loaded; only queried for logged-in accounts.
+  const dashboard = useDashboard(Boolean(account))
   const taken = dashboard.status === 'ready' ? dashboard.data.strategies.map((s) => s.name) : []
   const fallback = defaultName(template.name, taken)
   const name = draft.name ?? fallback
@@ -133,7 +134,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
       to: budgetPath,
     },
-    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: accountEmailsPath },
+    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: isGuest ? undefined : accountEmailsPath },
     ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts'), to: modePath }] : []),
     ...(template.aiRound
       ? [
@@ -165,9 +166,13 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     <Screen
       top={top}
       action={
-        <PrimaryAction onClick={start} disabled={starting}>
-          {starting ? t('newStrategy.confirm.starting') : isLive ? t('newStrategy.confirm.startLive') : t('newStrategy.confirm.startSim')}
-        </PrimaryAction>
+        isGuest ? (
+          <PrimaryAction to={signUpPathFor(confirmPath)}>{t('newStrategy.confirm.createAccountToStart')}</PrimaryAction>
+        ) : (
+          <PrimaryAction onClick={start} disabled={starting}>
+            {starting ? t('newStrategy.confirm.starting') : isLive ? t('newStrategy.confirm.startLive') : t('newStrategy.confirm.startSim')}
+          </PrimaryAction>
+        )
       }
       note={t('common.disclaimerFull')}
       noteAbove

@@ -158,13 +158,13 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     /// The first day of an asset's whole history: <see cref="HistoryYears"/> before the earliest strategy that lists it
     /// (any strategy for the index fund, which all results are compared with), so its trades always have their prices.
     /// </summary>
-    async Task<DateOnly> HistoryStartAsync(Guid assetId, CancellationToken cancellationToken)
-    {
-        var strategies = assetId == StrategyBook.IndexFundId
+    Task<DateOnly> HistoryStartAsync(Guid assetId, CancellationToken cancellationToken) =>
+        HistoryStartAsync(assetId == StrategyBook.IndexFundId
             ? db.Strategies
-            : db.Strategies.Where(s => db.StrategyAssets.Any(sa => sa.StrategyId == s.Id && sa.AssetId == assetId));
-        return HistoryStart(await strategies.MinAsync(s => (DateOnly?)s.StartedOn, cancellationToken), Today());
-    }
+            : db.Strategies.Where(s => db.StrategyAssets.Any(sa => sa.StrategyId == s.Id && sa.AssetId == assetId)), cancellationToken);
+
+    async Task<DateOnly> HistoryStartAsync(IQueryable<Strategy> strategies, CancellationToken cancellationToken) =>
+        HistoryStart(await strategies.MinAsync(s => (DateOnly?)s.StartedOn, cancellationToken), Today());
 
     /// <summary><see cref="HistoryYears"/> before the earliest strategy's start, or before today when there is none (or it starts later).</summary>
     public static DateOnly HistoryStart(DateOnly? earliestStart, DateOnly today) =>
@@ -209,7 +209,8 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
             .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
         // Asked to replace them, nothing stored, or a broken history: the whole history, which replaces every stored rate.
         var full = replaceFrom is not null || latestStored is null || await HasRateGapAsync(quote, cancellationToken);
-        var days = await source.DailyAsync(symbol, full ? replaceFrom ?? await RatesStartAsync(cancellationToken) : null, adjusted: false, cancellationToken);
+        DateOnly? since = full ? replaceFrom ?? await RatesStartAsync(cancellationToken) : null;
+        var days = await source.DailyAsync(symbol, since, adjusted: false, cancellationToken);
         // The last month doesn't reach back to the stored days (a long outage): fetch it all, so no weeks are left missing.
         if (!full && days.Count > 0 && latestStored < days[0].Date)
         {
@@ -252,8 +253,7 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     }
 
     /// <summary>The first day of the rates' whole history: <see cref="HistoryYears"/> before the earliest strategy, which any currency may need.</summary>
-    async Task<DateOnly> RatesStartAsync(CancellationToken cancellationToken) =>
-        HistoryStart(await db.Strategies.MinAsync(s => (DateOnly?)s.StartedOn, cancellationToken), Today());
+    Task<DateOnly> RatesStartAsync(CancellationToken cancellationToken) => HistoryStartAsync(db.Strategies, cancellationToken);
 
     /// <summary>True when two of the currency's stored rates are more than <see cref="MaxGapDays"/> apart.</summary>
     Task<bool> HasRateGapAsync(string quote, CancellationToken cancellationToken) =>

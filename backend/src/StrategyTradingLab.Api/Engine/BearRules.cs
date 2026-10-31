@@ -145,6 +145,24 @@ public class BearRules : IBuyRules
         };
         var windowOpen = status == RuleStatus.BuySignal
             || (phase is "accumulating" or "done" && price >= bounceLine);
-        return new RuleDecision(status, reason, facts, windowOpen, stepNo);
+        // In normal markets only the drop counts; in a drop, the bounce off its low; while buying, the pace of the steps.
+        var inDrop = phase != "normal";
+        List<RuleCheck> checks =
+        [
+            inDrop
+                ? new("drop", CheckGroup.Candidate, true, belowDropPeakPct, p.DrawdownPct, Level: Math.Round(peak, 2))
+                : new("drop", CheckGroup.Candidate, false, belowHighPct, p.DrawdownPct, Level: Math.Round(high, 2),
+                    Progress: RuleCheck.ProgressOf(belowHighPct, p.DrawdownPct)),
+        ];
+        if (inDrop)
+        {
+            var bounced = phase != "drawdown";
+            checks.Add(new("bounce", CheckGroup.Buy, bounced, aboveLowPct, p.ReboundPct, Level: Math.Round(bounceLine, 2),
+                Progress: bounced ? null : RuleCheck.ProgressOf(aboveLowPct, p.ReboundPct)));
+        }
+        if (phase == "accumulating" || (phase == "done" && status == RuleStatus.BuySignal))
+            checks.Add(new("pace", CheckGroup.Next, status == RuleStatus.BuySignal, sinceLast, p.StepEveryDays,
+                Progress: status == RuleStatus.BuySignal ? null : RuleCheck.ProgressOf(sinceLast, p.StepEveryDays)));
+        return new RuleDecision(status, reason, facts, windowOpen, stepNo) { Checks = checks };
     }
 }

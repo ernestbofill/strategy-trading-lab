@@ -6,6 +6,7 @@ using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Evaluation;
 using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Signals;
@@ -307,7 +308,7 @@ public static class StrategyEndpoints
 
         // Assets referenced by the strategy, its signals, or its trades.
         var allAssetIds = shown.Concat(signalEntities.Select(s => s.AssetId)).Distinct().ToList();
-        var assetsById = await db.Assets.AsNoTracking().Where(a => allAssetIds.Contains(a.Id))
+        var assetsById = await db.Assets.AsNoTracking().Include(a => a.Texts).Where(a => allAssetIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, cancellationToken);
 
         // Each stock's latest evaluation: where the rules stand today.
@@ -316,6 +317,11 @@ public static class StrategyEndpoints
             .ToDictionaryAsync(r => r.AssetId, cancellationToken);
 
         var assets = shown.Where(assetsById.ContainsKey).Select(id => assetsById[id]).ToList();
+
+        // The close each latest evaluation looked at (one day for most strategies).
+        var checkedDays = latest.Values.Select(r => r.Date).Distinct().ToList();
+        var closes = await db.Prices.AsNoTracking().Where(p => shown.Contains(p.AssetId) && checkedDays.Contains(p.Date))
+            .Select(p => new { p.AssetId, p.Date, p.Close }).ToListAsync(cancellationToken);
 
         var you = book.You(strategy);
         var maxSteps = strategy.Budget.MaxSteps;
@@ -351,7 +357,9 @@ public static class StrategyEndpoints
             // Before an AI strategy's daily check has a verdict: watching once a round scored the stock, else not scored yet.
             var latestStatus = evaluation?.Status
                 ?? (ai is null ? null : aiScores!.ContainsKey(asset.Id) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
-            var status = StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey);
+            var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
+            var status = StrategyPage.WithCandidacy(
+                StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey), checks);
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
             var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
             decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
@@ -363,7 +371,16 @@ public static class StrategyEndpoints
                 Invested: invested,
                 Result: Performance.GainPct(trades, book.Prices, resultsDay, strategy.Currency),
                 SignalSide: signal?.Side,
-                AiScore: aiScores is not null && aiScores.TryGetValue(asset.Id, out var score) ? score : null);
+                AiScore: aiScores is not null && aiScores.TryGetValue(asset.Id, out var score) ? score : null)
+            {
+                Exchange = asset.Exchange,
+                Currency = asset.Currency,
+                What = asset.Texts.FirstOrDefault(t => t.Locale == user.Locale)?.What
+                    ?? asset.Texts.FirstOrDefault(t => t.Locale == TemplateTexts.DefaultLocale)?.What,
+                CheckedOn = evaluation?.Date,
+                Close = evaluation is null ? null : closes.FirstOrDefault(c => c.AssetId == asset.Id && c.Date == evaluation.Date)?.Close,
+                Checks = checks,
+            };
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
         .ToList();
@@ -472,6 +489,13 @@ public static class StrategyEndpoints
             EndedOn(strategy, user), strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
-            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName);
+            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks };
     }
+
+    /// <summary>The rule checks a daily evaluation stored (none before they were stored).</summary>
+    static IReadOnlyList<RuleCheck> ChecksOf(JsonDocument facts) =>
+        facts.RootElement.ValueKind == JsonValueKind.Object && facts.RootElement.TryGetProperty(StrategyEvaluator.ChecksKey, out var checks)
+            && checks.ValueKind == JsonValueKind.Array
+            ? checks.Deserialize<List<RuleCheck>>(JsonSerializerOptions.Web) ?? []
+            : [];
 }

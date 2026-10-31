@@ -29,6 +29,7 @@ import { Confirm } from './features/new-strategy/Confirm'
 import { budgetPath, confirmPath, homePath, pickPath } from './features/new-strategy/paths'
 import { PickTemplate } from './features/new-strategy/PickTemplate'
 import { SignalPage } from './features/signal/SignalPage'
+import { StockPage } from './features/strategy/StockPage'
 import { StrategyPage } from './features/strategy/StrategyPage'
 import { StrategySettings } from './features/strategy/StrategySettings'
 import { HowTested } from './features/new-strategy/review/HowTested'
@@ -169,6 +170,7 @@ export default function App() {
                   </Route>
                   <Route path="/strategies/:id" element={<StrategyPage />} />
                   <Route path="/strategies/:id/settings" element={<StrategySettings />} />
+                  <Route path="/strategies/:id/stocks/:assetId" element={<StockPage />} />
                   <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
                   <Route path="/strategies/:id/ai-round" element={<AiRoundPage />} />
                   <Route path="/strategies/:id/ai-rounds" element={<AiRoundsPage />} />

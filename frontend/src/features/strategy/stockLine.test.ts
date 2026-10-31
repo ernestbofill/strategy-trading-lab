@@ -15,6 +15,7 @@ const row = (fields: Partial<StockRow>): StockRow => ({
   signalStep: null,
   invested: 0,
   result: null,
+  exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
   ...fields,
 })
 const words = { zone: 'the discount zone', notCandidate: 'Below its long trend' }
@@ -68,8 +69,28 @@ describe('stockLine', () => {
     expect(stockLine(row({ distancePct: 0 }), 'live', 'EUR', words).detail).toBe('Rules not met today')
     expect(stockLine(row({ distancePct: 0.3 }), 'live', 'EUR', words).detail).toBe('<1% from the discount zone')
     const notCandidate = stockLine(row({ status: 'notCandidate' }), 'live', 'EUR', words)
-    expect([notCandidate.pill, notCandidate.detail]).toEqual(['WATCHING', 'Below its long trend'])
+    expect([notCandidate.pill, notCandidate.detail]).toEqual(['NOT A CANDIDATE', 'Below its long trend'])
     expect(stockLine(row({ status: 'noBudget' }), 'live', 'EUR', words).detail).toBe('No budget left for its steps')
+  })
+
+  it('names the rules a stock misses, from its checks, as the stock page does', () => {
+    const texts = {
+      gain: { label: 'Proven growth', detail: 'Rose {value}%.', short: 'rose {value}% (needs {min}%)' },
+      zone: { label: 'In the zone', detail: '', short: '{value}% below its peak (zone {min}–{max}%)' },
+      volume: { label: 'Volume', detail: '', short: 'volume {value}× (needs {min}×)' },
+    }
+    const check = (key: string, group: 'candidate' | 'buy', met: boolean, value: number, min: number, max: number | null = null) => ({
+      key, group, met, value, min, max, level: null, progress: null, used: null,
+    })
+    const candidate = row({
+      status: 'watching',
+      checks: [check('gain', 'candidate', true, 80, 50), check('zone', 'buy', true, 7, 5, 15), check('volume', 'buy', false, 0.84, 1.2)],
+    })
+    const line = stockLine(candidate, 'live', 'EUR', words, texts)
+    expect([line.pill, line.detail]).toEqual(['CANDIDATE', 'Volume 0.84× (needs 1.2×)'])
+
+    const not = stockLine(row({ status: 'notCandidate', checks: [check('gain', 'candidate', false, 31.5, 50)] }), 'live', 'EUR', words, texts)
+    expect([not.pill, not.detail]).toEqual(['NOT A CANDIDATE', 'Rose 31.5% (needs 50%)'])
   })
 
   it('shows the result with what was put in, or a dash with no buys', () => {

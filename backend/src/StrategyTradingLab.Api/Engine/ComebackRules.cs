@@ -18,6 +18,7 @@ public class ComebackRules : IBuyRules
     readonly IReadOnlyList<decimal> close;
     readonly decimal?[] sma50, sma200, high252, vol5, vol50;
     readonly bool[] candidate;
+    readonly int?[] beatenAgo;
     readonly BuyWindow window = new();
 
     // State between days, as the POC keeps in its `state`.
@@ -36,7 +37,7 @@ public class ComebackRules : IBuyRules
         high252 = Indicators.RollingHigh(close, HighDays);
         vol5 = Indicators.Sma(volume, VolumeShort);
         vol50 = Indicators.Sma(volume, VolumeLong);
-        candidate = Candidates();
+        (candidate, beatenAgo) = Candidates();
     }
 
     public int Length => close.Count;
@@ -45,10 +46,14 @@ public class ComebackRules : IBuyRules
 
     public int CooldownDays => p.CooldownDays;
 
-    /// <summary>A candidate stays one for <c>CandidateDays</c> days after it was last beaten down (today included).</summary>
-    bool[] Candidates()
+    /// <summary>
+    /// A candidate stays one for <c>CandidateDays</c> days after it was last beaten down (today included). Also how many
+    /// trading days ago that was, each day (null if never).
+    /// </summary>
+    (bool[] Candidate, int?[] BeatenAgo) Candidates()
     {
         var result = new bool[close.Count];
+        var ago = new int?[close.Count];
         var lastBeaten = int.MinValue;
         for (var i = 0; i < close.Count; i++)
         {
@@ -56,8 +61,9 @@ public class ComebackRules : IBuyRules
                 && (!p.BelowSma200 || (sma200[i] is { } slow && close[i] < slow)))
                 lastBeaten = i;
             result[i] = lastBeaten != int.MinValue && i - lastBeaten <= p.CandidateDays;
+            ago[i] = lastBeaten == int.MinValue ? null : i - lastBeaten;
         }
-        return result;
+        return (result, ago);
     }
 
     decimal Chase(decimal level) => level * (1 + p.MaxChasePct / 100);
@@ -98,7 +104,7 @@ public class ComebackRules : IBuyRules
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > Chase(buyLine),
                 "Price or volume fell back below the buy conditions.",
                 $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase.");
-            return new RuleDecision(status, reason, facts, window.Open);
+            return new RuleDecision(status, reason, facts, window.Open) { Checks = TurnChecks(i, price, high, buyLine) };
         }
 
         var (milestones, bought) = Milestones(i, day);
@@ -107,7 +113,32 @@ public class ComebackRules : IBuyRules
         // (a buy marks it used, which must not close the window the day after).
         var windowOpen = milestones.Any(m => InWindow(m, price));
         if (held == RuleStatus.BuySignal && active is not null) facts["milestone"] = active.Term;
-        return new RuleDecision(held, heldReason, facts, windowOpen);
+        List<RuleCheck> checks = [.. milestones.Select(m => new RuleCheck(m.Key, CheckGroup.Next, used.Contains(m.Key) || InWindow(m, price),
+            m.Level is { } level ? Math.Round(Indicators.PctFrom(price, level), 1) : null,
+            m.Key switch { "near_high" => p.NearHighPct, "breakout" => p.BreakoutPullbackPct, _ => null },
+            p.MaxChasePct, m.Level is { } line ? Math.Round(line, 2) : null, Used: used.Contains(m.Key)))];
+        if (RuleCheck.Cooldown(day, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
+        return new RuleDecision(held, heldReason, facts, windowOpen) { Checks = checks };
+    }
+
+    /// <summary>The checks before the first step: beaten down lately (with the drop and the SMA 200 for context), then the turn.</summary>
+    List<RuleCheck> TurnChecks(int i, decimal price, decimal high, decimal buyLine)
+    {
+        var ratio = vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 ? short5 / long50 : 0;
+        List<RuleCheck> checks =
+        [
+            new("beaten", CheckGroup.Candidate, candidate[i], beatenAgo[i], p.DrawdownPct, p.CandidateDays),
+            new("drop", CheckGroup.Candidate, null, Math.Round(Indicators.PctFrom(price, high), 1), p.DrawdownPct, Level: Math.Round(high, 2)),
+        ];
+        if (p.BelowSma200 && sma200[i] is { } slow)
+            checks.Add(new("vsSma200", CheckGroup.Candidate, null, Math.Round(Indicators.PctFrom(price, slow), 1), Level: Math.Round(slow, 2)));
+        var vsLine = Math.Round(Indicators.PctFrom(price, buyLine), 1);
+        checks.Add(new("buyLine", CheckGroup.Buy, price >= buyLine, vsLine, p.AboveSma50Pct, p.MaxChasePct, Math.Round(buyLine, 2)));
+        if (price > Chase(buyLine)) checks.Add(new("chase", CheckGroup.Buy, false, vsLine, Max: p.MaxChasePct, Level: Math.Round(Chase(buyLine), 2)));
+        var volumeOk = VolumeOk(i);
+        checks.Add(new("volume", CheckGroup.Buy, volumeOk, Math.Round(ratio, 2), p.VolumeRatio,
+            Progress: volumeOk ? null : RuleCheck.ProgressOf(ratio, p.VolumeRatio)));
+        return checks;
     }
 
     sealed record Milestone(string Key, string Term, bool Reached, decimal? Level);

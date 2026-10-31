@@ -1,0 +1,30 @@
+.pill {
+  padding: 0 6px;
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--radius-sm);
+  font: 11px/16px var(--font-mono);
+  color: var(--ink);
+}
+.pill[data-tone="waiting"] {
+  border-color: var(--hot-pink);
+  background: var(--hot-pink);
+  color: var(--on-action);
+}
+.pill[data-tone="signal"] {
+  border-color: var(--info);
+  background: var(--info);
+  color: var(--on-action);
+}
+.pill[data-tone="holding"] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.pill[data-tone="building"] {
+  border-color: var(--info);
+  color: var(--info);
+}
+
+.pill[data-tone="muted"] {
+  border-style: dashed;
+  color: var(--ink-muted);
+}

@@ -1,3 +1,4 @@
+using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Strategies;
@@ -43,6 +44,13 @@ public static class StrategyPage
             _ => StockStatus.Watching,
         };
     }
+
+    /// <summary>
+    /// A stock the rules only watch is a candidate unless a candidate check failed: a signal that ended because the stock stopped
+    /// being a candidate (the engine's <c>SignalEnded</c>) reads as not a candidate, as the stock page shows it.
+    /// </summary>
+    public static StockStatus WithCandidacy(StockStatus status, IReadOnlyList<RuleCheck> checks) =>
+        status == StockStatus.Watching && checks.Any(c => c.Group == CheckGroup.Candidate && c.Met == false) ? StockStatus.NotCandidate : status;
 
     /// <summary>The pill's order on the page: what waits for the user first, then what the rules are doing.</summary>
     public static int Order(StockStatus status) => status switch

@@ -24,6 +24,10 @@ public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture
             (await client.PutAsJsonAsync($"/admin/assets/{TemplateAssets.CBrain.Id}/active", new { active = false })).StatusCode,
             (await client.PostAsJsonAsync("/admin/assets", new { symbol = "AAPL" })).StatusCode,
             (await client.PutAsJsonAsync($"/admin/assets/{TemplateAssets.CBrain.Id}", new { name = "x", what = "y" })).StatusCode,
+            (await client.DeleteAsync("/admin/assets/prices")).StatusCode,
+            (await client.DeleteAsync($"/admin/assets/{TemplateAssets.CBrain.Id}/prices")).StatusCode,
+            (await client.PostAsJsonAsync($"/admin/assets/{TemplateAssets.CBrain.Id}/prices", new { years = 2 })).StatusCode,
+            (await client.PostAsJsonAsync("/admin/assets/rates", new { years = 2 })).StatusCode,
         ];
 
         using var stranger = fixture.CreateApiClient();
@@ -76,9 +80,15 @@ public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture
     /// <summary>Knows one listing, <see cref="Symbol"/>, and answers 30 days of prices for anything.</summary>
     sealed class FakeSource(string symbol) : IMarketDataSource
     {
-        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<Candle>>([.. Enumerable.Range(0, 30)
+        /// <summary>The first day the last whole-history request asked for.</summary>
+        public DateOnly? Since { get; private set; }
+
+        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken)
+        {
+            Since = since ?? Since;
+            return Task.FromResult<IReadOnlyList<Candle>>([.. Enumerable.Range(0, 30)
                 .Select(day => new Candle(new DateOnly(2026, 9, 1).AddDays(day), 10, 11, 9, 10, 1000))]);
+        }
 
         public Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<SymbolMatch>>([new(symbol, "Example Corporation", "NYQ", "EQUITY", "Industrials", "Specialty Industrial Machinery")]);
@@ -159,6 +169,49 @@ public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             await db.Strategies.Where(s => s.Name == $"Count {symbol}").ExecuteDeleteAsync();
             await db.Assets.Where(a => a.Symbol == symbol).ExecuteDeleteAsync();
+        }
+    }
+
+    // Deleting every price and downloading every rate aren't run here: they would change the shared dev database's real rows.
+    [NeonFact]
+    public async Task Downloads_and_deletes_one_assets_prices()
+    {
+        var symbol = $"T{Guid.NewGuid():N}"[..10].ToUpperInvariant();
+        var source = new FakeSource(symbol);
+        await using var api = new Api(source);
+        using var admin = await api.OwnerAsync();
+        try
+        {
+            var added = await (await admin.PostAsJsonAsync("/admin/assets", new { symbol })).Content.ReadFromJsonAsync<JsonElement>();
+            var id = added.GetProperty("asset").GetProperty("id").GetGuid();
+
+            var downloaded = await admin.PostAsJsonAsync($"/admin/assets/{id}/prices", new { years = 3 });
+
+            Assert.Equal(HttpStatusCode.OK, downloaded.StatusCode);
+            var row = await downloaded.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal("2026-09-30", row.GetProperty("latestPriceDate").GetString());
+            Assert.Equal(JsonValueKind.Null, row.GetProperty("pricesProblem").ValueKind);
+            Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-3), source.Since);
+            // One year is less than the strategies' two (no strategy lists it): the two years win, so the rules keep their window.
+            await admin.PostAsJsonAsync($"/admin/assets/{id}/prices", new { years = 1 });
+            Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-2), source.Since);
+
+            var noYears = await admin.PostAsJsonAsync($"/admin/assets/{id}/prices", new { years = 0 });
+            Assert.Equal(HttpStatusCode.BadRequest, noYears.StatusCode);
+            Assert.Equal("Choose 1 to 30 years.",
+                (await noYears.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors").GetProperty("years")[0].GetString());
+
+            Assert.Equal(HttpStatusCode.NoContent, (await admin.DeleteAsync($"/admin/assets/{id}/prices")).StatusCode);
+            var emptied = (await admin.GetFromJsonAsync<JsonElement>("/admin/assets")).EnumerateArray().Single(a => a.GetProperty("id").GetGuid() == id);
+            Assert.Equal(JsonValueKind.Null, emptied.GetProperty("latestPriceDate").ValueKind);
+
+            Assert.Equal(HttpStatusCode.NotFound, (await admin.DeleteAsync($"/admin/assets/{Guid.NewGuid()}/prices")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await admin.PostAsJsonAsync($"/admin/assets/{Guid.NewGuid()}/prices", new { years = 2 })).StatusCode);
+        }
+        finally
+        {
+            using var scope = api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<AppDbContext>().Assets.Where(a => a.Symbol == symbol).ExecuteDeleteAsync();
         }
     }
 

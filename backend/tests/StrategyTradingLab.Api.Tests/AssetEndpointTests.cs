@@ -20,7 +20,7 @@ public class AssetEndpointTests
     /// </summary>
     sealed class FakeSource(string fund, string xetraFund, string stock) : IMarketDataSource
     {
-        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken) =>
+        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Candle>>([.. Enumerable.Range(0, 30)
                 .Select(day => new Candle(new DateOnly(2026, 9, 1).AddDays(day), 10, 11, 9, 10, 1000))]);
 

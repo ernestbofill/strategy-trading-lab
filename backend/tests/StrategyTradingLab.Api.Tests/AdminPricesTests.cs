@@ -13,7 +13,7 @@ public class AdminPricesTests
 {
     sealed class FakeSource(Func<string, IReadOnlyList<Candle>> days) : IMarketDataSource
     {
-        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken) =>
+        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken) =>
             Task.FromResult(days(symbol));
 
         public Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken) =>

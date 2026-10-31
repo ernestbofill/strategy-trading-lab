@@ -6,6 +6,7 @@ using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.MarketData;
@@ -31,11 +32,23 @@ public record AdminPrices(bool Running, DateTimeOffset? NextRun, DateTimeOffset?
 /// <summary>One symbol asked of Yahoo by "Test Yahoo": its newest day and close, or why it didn't answer.</summary>
 public record YahooCheck(string Symbol, bool Ok, DateOnly? Day, decimal? Close, string? Problem, int Milliseconds);
 
-/// <summary>An asset on the admin page: its details, whether it is active, how many running strategies watch it, and its newest stored price date.</summary>
+/// <summary>
+/// An asset on the admin page: its details, whether it is active, how many running strategies watch it, its newest stored
+/// price date, and why its last price fetch failed (null when it worked).
+/// </summary>
 public record AdminAsset(Guid Id, string Symbol, string Exchange, string Name, string What, AssetKind Kind,
-    string Currency, bool Active, int Strategies, DateOnly? LatestPriceDate);
+    string Currency, bool Active, int Strategies, DateOnly? LatestPriceDate, string? PricesProblem);
 
 public record AssetActive(bool Active);
+
+/// <summary>How many years of daily prices to download, back from today.</summary>
+public record PriceDownload(int Years);
+
+/// <summary>What deleting every price did: the price rows and exchange-rate rows removed.</summary>
+public record PricesFlushed(int Prices, int Rates);
+
+/// <summary>What downloading the exchange rates did: the rows stored, and the currencies that failed with why.</summary>
+public record RatesDownloaded(int Rows, IReadOnlyList<RefreshResult> Problems);
 
 /// <summary>A symbol to add, as Yahoo writes it ("AAPL", "SAP.DE").</summary>
 public record AssetSymbol(string? Symbol);
@@ -182,7 +195,7 @@ public static class AdminEndpoints
                     new(symbol, ok, day, close, problem, (int)time.GetElapsedTime(started).TotalMilliseconds);
                 try
                 {
-                    var days = await source.DailyAsync(symbol, fullHistory: false, adjusted: adjusted, cancellationToken);
+                    var days = await source.DailyAsync(symbol, since: null, adjusted: adjusted, cancellationToken);
                     checks.Add(days.Count == 0
                         ? Check(false, null, null, "Yahoo answered with no days.")
                         : Check(true, days[^1].Date, days[^1].Close, null));
@@ -216,6 +229,7 @@ public static class AdminEndpoints
     static void MapAssets(RouteGroupBuilder group)
     {
         var assets = group.MapGroup("/assets");
+        MapAssetPrices(assets);
 
         assets.MapGet("/", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
@@ -285,6 +299,96 @@ public static class AdminEndpoints
         .WithSummary("Hides or restores an asset.");
     }
 
+    /// <summary>Deleting and downloading prices by hand, for all assets (one call per asset, so no request runs long) or one.</summary>
+    static void MapAssetPrices(RouteGroupBuilder assets)
+    {
+        assets.MapDelete("/prices", async Task<Results<Ok<PricesFlushed>, Conflict<string>>> (PriceRefresher refresher,
+            PriceRefreshState state, DatabaseSwitch databases, CancellationToken cancellationToken) =>
+        {
+            var flushed = (Prices: 0, Rates: 0);
+            if (await WriteAsync(databases, state, async () => flushed = await refresher.FlushAllAsync(cancellationToken)) is { } refused)
+                return refused;
+            return TypedResults.Ok(new PricesFlushed(flushed.Prices, flushed.Rates));
+        })
+        .WithSummary("Deletes every stored price and exchange rate.");
+
+        assets.MapDelete("/{id:guid}/prices", async Task<Results<NoContent, NotFound, Conflict<string>>> (Guid id, AppDbContext db,
+            PriceRefreshState state, DatabaseSwitch databases, CancellationToken cancellationToken) =>
+        {
+            if (!await db.Assets.AnyAsync(a => a.Id == id, cancellationToken)) return TypedResults.NotFound();
+            if (await WriteAsync(databases, state, () => db.Prices.Where(p => p.AssetId == id).ExecuteDeleteAsync(cancellationToken)) is { } refused)
+                return refused;
+            return TypedResults.NoContent();
+        })
+        .WithSummary("Deletes one asset's stored prices.");
+
+        assets.MapPost("/{id:guid}/prices", async Task<Results<Ok<AdminAsset>, NotFound, ValidationProblem, Conflict<string>, ProblemHttpResult>> (
+            Guid id, PriceDownload request, AppDbContext db, PriceRefresher refresher, PriceRefreshState state, DatabaseSwitch databases,
+            TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            if (YearsProblem(request.Years) is { } yearsProblem) return Invalid("years", yearsProblem);
+            var asset = await db.Assets.AsNoTracking().SingleOrDefaultAsync(a => a.Id == id, cancellationToken);
+            if (asset is null) return TypedResults.NotFound();
+            try
+            {
+                if (await WriteAsync(databases, state, () => refresher.ReplaceAssetAsync(asset, Since(time, request.Years), cancellationToken)) is { } refused)
+                    return refused;
+            }
+            catch (MarketDataException error)
+            {
+                // The asset keeps the problem too, for the list.
+                return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
+            }
+            return TypedResults.Ok(await AdminAssets(db, db.Assets.Where(a => a.Id == id)).SingleAsync(cancellationToken));
+        })
+        .WithSummary("Replaces one asset's stored prices with the daily prices of the last given years.");
+
+        assets.MapPost("/rates", async Task<Results<Ok<RatesDownloaded>, ValidationProblem, Conflict<string>>> (PriceDownload request,
+            PriceRefresher refresher, PriceRefreshState state, DatabaseSwitch databases, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            if (YearsProblem(request.Years) is { } yearsProblem) return Invalid("years", yearsProblem);
+            IReadOnlyList<RefreshResult> results = [];
+            if (await WriteAsync(databases, state, async () => results = await refresher.ReplaceRatesAsync(Since(time, request.Years), cancellationToken)) is { } refused)
+                return refused;
+            return TypedResults.Ok(new RatesDownloaded(results.Sum(r => r.Rows), [.. results.Where(r => r.Outcome == RefreshOutcome.Failed)]));
+        })
+        .WithSummary("Replaces the euro exchange rates of every currency in use with the daily rates of the last given years.");
+    }
+
+    public const int MaxDownloadYears = 30;
+
+    static string? YearsProblem(int years) =>
+        years is < 1 or > MaxDownloadYears ? $"Choose 1 to {MaxDownloadYears} years." : null;
+
+    static DateOnly Since(TimeProvider time, int years) => DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime).AddYears(-years);
+
+    /// <summary>
+    /// Runs one of the admin's price writes, or says why not (null when it ran): prices belong to the database this host
+    /// owns, and no other bulk write (the daily refresh, another download) may run at the same time. A clash with a
+    /// smaller write (an asset added, an AI round's prices) is refused too, to try again.
+    /// </summary>
+    static async Task<Conflict<string>?> WriteAsync(DatabaseSwitch databases, PriceRefreshState state, Func<Task> write)
+    {
+        if (databases.Active != databases.Home) return TypedResults.Conflict("The API is switched to another database: switch back to change the prices.");
+        if (state.Running || !await state.Writing.WaitAsync(0))
+            return TypedResults.Conflict("Prices are being fetched (the daily refresh or another download): try again when it's done.");
+        try
+        {
+            await write();
+            return null;
+        }
+        // Only the clash itself: any other database error is a real failure, answered 500 and logged.
+        catch (Exception error) when (error is DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } }
+            or PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            return TypedResults.Conflict("The prices changed meanwhile: try again.");
+        }
+        finally
+        {
+            state.Writing.Release();
+        }
+    }
+
     /// <summary>The admin page's rows for those assets.</summary>
     static IQueryable<AdminAsset> AdminAssets(AppDbContext db, IQueryable<Asset> assets)
     {
@@ -302,7 +406,8 @@ public static class AdminEndpoints
                 asset.Currency,
                 asset.Active,
                 listed.Count(sa => sa.AssetId == asset.Id),
-                db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date)));
+                db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date),
+                asset.PricesProblem));
     }
 
     static ValidationProblem Invalid(string field, string message) =>

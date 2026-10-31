@@ -15,8 +15,8 @@ public record SymbolMatch(string Symbol, string Name, string Exchange, string Ty
 /// <summary>Where daily candles come from, so the refresh can be tested without the network.</summary>
 public interface IMarketDataSource
 {
-    /// <summary>The last month, or the whole history. Oldest first; days without prices are left out.</summary>
-    Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken);
+    /// <summary>The days from <paramref name="since"/> on, or the last month when it is null. Oldest first; days without prices are left out.</summary>
+    Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken);
 
     /// <summary>The best matches for a symbol or a name, best first.</summary>
     Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken);
@@ -38,10 +38,17 @@ public class YahooClient(HttpClient http) : IMarketDataSource
 {
     public const string BaseAddress = "https://query1.finance.yahoo.com/";
 
-    public async Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken)
+    /// <summary>
+    /// A date range rather than <c>range=max</c>: for a long history Yahoo answers <c>max</c> with weekly, monthly or
+    /// quarterly bars, whatever the interval asked for (<see cref="Parse"/> refuses those). The range starts a day early:
+    /// an exchange east of UTC (Tokyo, Hong Kong) stamps a day's bar before that day's midnight in UTC.
+    /// </summary>
+    public async Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken)
     {
-        var range = fullHistory ? "max" : "1mo";
-        var json = await GetAsync($"v8/finance/chart/{Uri.EscapeDataString(symbol)}?range={range}&interval=1d&events=div%2Csplits", symbol, cancellationToken);
+        var span = since is { } from
+            ? $"period1={new DateTimeOffset(from.AddDays(-1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()}&period2={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}"
+            : "range=1mo";
+        var json = await GetAsync($"v8/finance/chart/{Uri.EscapeDataString(symbol)}?{span}&interval=1d&events=div%2Csplits", symbol, cancellationToken);
         return Parse(json, symbol, adjusted);
     }
 
@@ -155,8 +162,11 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         using var document = JsonDocument.Parse(json);
         var result = ChartResult(document, symbol);
 
-        if (!result.TryGetProperty("timestamp", out var timestamps)) return []; // A symbol with no days in the range.
         var meta = result.GetProperty("meta");
+        // Bars of a week or more would be stored as days, and no rule could fill its window: refuse them.
+        if (Text(meta, "dataGranularity") is { } granularity && granularity != "1d")
+            throw new MarketDataException($"Yahoo sent {granularity} bars for {symbol} instead of daily ones.");
+        if (!result.TryGetProperty("timestamp", out var timestamps)) return []; // A symbol with no days in the range.
         var offset = meta.TryGetProperty("gmtoffset", out var gmt) ? gmt.GetInt32() : 0;
         // A bar's date is the day in the exchange's zone at that bar's time: the zone's offset changes with the clocks, while
         // gmtoffset is only today's, which would date a summer-time bar a day early after the clocks go back.

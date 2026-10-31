@@ -198,6 +198,14 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("name");
 
+                    b.Property<DateTimeOffset?>("PricesCheckedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("prices_checked_at");
+
+                    b.Property<string>("PricesProblem")
+                        .HasColumnType("text")
+                        .HasColumnName("prices_problem");
+
                     b.Property<string>("Sector")
                         .HasColumnType("text")
                         .HasColumnName("sector");

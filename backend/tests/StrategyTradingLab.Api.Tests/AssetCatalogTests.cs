@@ -21,10 +21,10 @@ public class AssetCatalogTests
         public bool PricesFail { get; set; }
         public int Searches { get; private set; }
 
-        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken)
+        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken)
         {
             if (PricesFail) throw new MarketDataException($"Yahoo answered HTTP 429 for {symbol}.");
-            IReadOnlyList<Candle> days = [.. Enumerable.Range(fullHistory ? 0 : 20, fullHistory ? 30 : 10)
+            IReadOnlyList<Candle> days = [.. Enumerable.Range(since is not null ? 0 : 20, since is not null ? 30 : 10)
                 .Select(day => new Candle(new DateOnly(2026, 9, 1).AddDays(day), 100 + day, 101 + day, 99 + day, 100 + day, 1000))];
             return Task.FromResult(days);
         }

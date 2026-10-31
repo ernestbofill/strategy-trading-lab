@@ -3,6 +3,7 @@ import { api, InvalidFieldsError, InvalidValueError, UnauthorizedError, type Adm
 import { FormMessage, TextField, type FormMessageState } from '../../components/Field'
 import { Section } from '../../components/Section'
 import styles from './AdminAssets.module.css'
+import { AssetPricesActions } from './AssetPrices'
 
 /** What adding did, in one line. */
 function addedText({ asset, created, problem }: AdminAddedAsset): FormMessageState {
@@ -65,8 +66,12 @@ export function AddAssetForm({ onAdded }: { onAdded: () => Promise<void> }) {
   )
 }
 
-/** Edits an asset's name and its English "what it does". */
-export function EditAssetForm({ asset, onDone }: { asset: AdminAsset; onDone: (saved: boolean) => Promise<void> }) {
+/** Edits an asset's name and its English "what it does", and downloads or deletes its prices. */
+export function EditAssetForm({ asset, onDone, onPricesChanged }: {
+  asset: AdminAsset
+  onDone: (saved: boolean) => Promise<void>
+  onPricesChanged: () => Promise<void>
+}) {
   const [name, setName] = useState(asset.name)
   const [what, setWhat] = useState(asset.what)
   const [busy, setBusy] = useState(false)
@@ -74,7 +79,10 @@ export function EditAssetForm({ asset, onDone }: { asset: AdminAsset; onDone: (s
   const form = useRef<HTMLFormElement>(null)
 
   // Opened from a row further down: bring it into view (jsdom has no scrollIntoView).
-  useEffect(() => form.current?.scrollIntoView?.({ block: 'center' }), [])
+  // In braces: a browser where scrollIntoView returns a promise would have React call it as the effect's clean-up.
+  useEffect(() => {
+    form.current?.scrollIntoView?.({ block: 'center' })
+  }, [])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -104,6 +112,7 @@ export function EditAssetForm({ asset, onDone }: { asset: AdminAsset; onDone: (s
         </div>
         {errors.form && <FormMessage tone="error">{errors.form}</FormMessage>}
       </form>
+      <AssetPricesActions asset={asset} onChanged={onPricesChanged} />
     </Section>
   )
 }

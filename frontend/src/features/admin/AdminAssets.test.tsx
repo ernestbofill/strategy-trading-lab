@@ -22,6 +22,7 @@ const assets: AdminAsset[] = [
     active: true,
     strategies: 2,
     latestPriceDate: '2026-10-22',
+    pricesProblem: null,
   },
   {
     id: 'a2',
@@ -34,6 +35,7 @@ const assets: AdminAsset[] = [
     active: false,
     strategies: 0,
     latestPriceDate: null,
+    pricesProblem: 'Yahoo sent 3mo bars for SPY instead of daily ones.',
   },
 ]
 
@@ -53,6 +55,8 @@ describe('AdminAssets', () => {
     expect(await screen.findByText('Electrical power equipment')).toBeTruthy()
     expect(screen.getByText('ETN')).toBeTruthy()
     expect(screen.getByText('2026-10-22')).toBeTruthy()
+    // A failed price fetch is shown on the asset, not only in the server log.
+    expect(screen.getByText('Yahoo sent 3mo bars for SPY instead of daily ones.')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide Eaton' }))
     expect(setActive).toHaveBeenCalledWith('a1', false)

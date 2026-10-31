@@ -31,11 +31,23 @@ public record AdminPrices(bool Running, DateTimeOffset? NextRun, DateTimeOffset?
 /// <summary>One symbol asked of Yahoo by "Test Yahoo": its newest day and close, or why it didn't answer.</summary>
 public record YahooCheck(string Symbol, bool Ok, DateOnly? Day, decimal? Close, string? Problem, int Milliseconds);
 
-/// <summary>An asset on the admin page: its details, whether it is active, how many running strategies watch it, and its newest stored price date.</summary>
+/// <summary>
+/// An asset on the admin page: its details, whether it is active, how many running strategies watch it, its newest stored
+/// price date, and why its last price fetch failed (null when it worked).
+/// </summary>
 public record AdminAsset(Guid Id, string Symbol, string Exchange, string Name, string What, AssetKind Kind,
-    string Currency, bool Active, int Strategies, DateOnly? LatestPriceDate);
+    string Currency, bool Active, int Strategies, DateOnly? LatestPriceDate, string? PricesProblem);
 
 public record AssetActive(bool Active);
+
+/// <summary>How many years of daily prices to download, back from today.</summary>
+public record PriceDownload(int Years);
+
+/// <summary>What deleting every price did: the price rows and exchange-rate rows removed.</summary>
+public record PricesFlushed(int Prices, int Rates);
+
+/// <summary>What downloading the exchange rates did: the rows stored, and the currencies that failed with why.</summary>
+public record RatesDownloaded(int Rows, IReadOnlyList<RefreshResult> Problems);
 
 /// <summary>A symbol to add, as Yahoo writes it ("AAPL", "SAP.DE").</summary>
 public record AssetSymbol(string? Symbol);
@@ -182,7 +194,7 @@ public static class AdminEndpoints
                     new(symbol, ok, day, close, problem, (int)time.GetElapsedTime(started).TotalMilliseconds);
                 try
                 {
-                    var days = await source.DailyAsync(symbol, fullHistory: false, adjusted: adjusted, cancellationToken);
+                    var days = await source.DailyAsync(symbol, since: null, adjusted: adjusted, cancellationToken);
                     checks.Add(days.Count == 0
                         ? Check(false, null, null, "Yahoo answered with no days.")
                         : Check(true, days[^1].Date, days[^1].Close, null));
@@ -216,6 +228,7 @@ public static class AdminEndpoints
     static void MapAssets(RouteGroupBuilder group)
     {
         var assets = group.MapGroup("/assets");
+        MapAssetPrices(assets);
 
         assets.MapGet("/", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
@@ -285,6 +298,73 @@ public static class AdminEndpoints
         .WithSummary("Hides or restores an asset.");
     }
 
+    /// <summary>Deleting and downloading prices by hand, for all assets (one call per asset, so no request runs long) or one.</summary>
+    static void MapAssetPrices(RouteGroupBuilder assets)
+    {
+        assets.MapDelete("/prices", async Task<Results<Ok<PricesFlushed>, Conflict<string>>> (PriceRefresher refresher,
+            PriceRefreshState state, DatabaseSwitch databases, CancellationToken cancellationToken) =>
+        {
+            if (PricesBusy(databases, state) is { } busy) return busy;
+            var (prices, rates) = await refresher.FlushAllAsync(cancellationToken);
+            return TypedResults.Ok(new PricesFlushed(prices, rates));
+        })
+        .WithSummary("Deletes every stored price and exchange rate.");
+
+        assets.MapDelete("/{id:guid}/prices", async Task<Results<NoContent, NotFound, Conflict<string>>> (Guid id, AppDbContext db,
+            PriceRefreshState state, DatabaseSwitch databases, CancellationToken cancellationToken) =>
+        {
+            if (PricesBusy(databases, state) is { } busy) return busy;
+            if (!await db.Assets.AnyAsync(a => a.Id == id, cancellationToken)) return TypedResults.NotFound();
+            await db.Prices.Where(p => p.AssetId == id).ExecuteDeleteAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithSummary("Deletes one asset's stored prices.");
+
+        assets.MapPost("/{id:guid}/prices", async Task<Results<Ok<AdminAsset>, NotFound, ValidationProblem, Conflict<string>, ProblemHttpResult>> (
+            Guid id, PriceDownload request, AppDbContext db, PriceRefresher refresher, PriceRefreshState state, DatabaseSwitch databases,
+            TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            if (YearsProblem(request.Years) is { } yearsProblem) return Invalid("years", yearsProblem);
+            if (PricesBusy(databases, state) is { } busy) return busy;
+            var asset = await db.Assets.AsNoTracking().SingleOrDefaultAsync(a => a.Id == id, cancellationToken);
+            if (asset is null) return TypedResults.NotFound();
+            try
+            {
+                await refresher.ReplaceAssetAsync(asset, Since(time, request.Years), cancellationToken);
+            }
+            catch (MarketDataException error)
+            {
+                // The asset keeps the problem too, for the list.
+                return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
+            }
+            return TypedResults.Ok(await AdminAssets(db, db.Assets.Where(a => a.Id == id)).SingleAsync(cancellationToken));
+        })
+        .WithSummary("Replaces one asset's stored prices with the daily prices of the last given years.");
+
+        assets.MapPost("/rates", async Task<Results<Ok<RatesDownloaded>, ValidationProblem, Conflict<string>>> (PriceDownload request,
+            PriceRefresher refresher, PriceRefreshState state, DatabaseSwitch databases, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            if (YearsProblem(request.Years) is { } yearsProblem) return Invalid("years", yearsProblem);
+            if (PricesBusy(databases, state) is { } busy) return busy;
+            var results = await refresher.ReplaceRatesAsync(Since(time, request.Years), cancellationToken);
+            return TypedResults.Ok(new RatesDownloaded(results.Sum(r => r.Rows), [.. results.Where(r => r.Outcome == RefreshOutcome.Failed)]));
+        })
+        .WithSummary("Replaces the euro exchange rates of every currency in use with the daily rates of the last given years.");
+    }
+
+    public const int MaxDownloadYears = 30;
+
+    static string? YearsProblem(int years) =>
+        years is < 1 or > MaxDownloadYears ? $"Choose 1 to {MaxDownloadYears} years." : null;
+
+    static DateOnly Since(TimeProvider time, int years) => DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime).AddYears(-years);
+
+    /// <summary>Prices belong to the database this host owns, and the daily refresh mustn't write them at the same time.</summary>
+    static Conflict<string>? PricesBusy(DatabaseSwitch databases, PriceRefreshState state) =>
+        databases.Active != databases.Home ? TypedResults.Conflict("The API is switched to another database: switch back to change the prices.")
+        : state.Running ? TypedResults.Conflict("The daily price refresh is running: try again when it's done.")
+        : null;
+
     /// <summary>The admin page's rows for those assets.</summary>
     static IQueryable<AdminAsset> AdminAssets(AppDbContext db, IQueryable<Asset> assets)
     {
@@ -302,7 +382,8 @@ public static class AdminEndpoints
                 asset.Currency,
                 asset.Active,
                 listed.Count(sa => sa.AssetId == asset.Id),
-                db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date)));
+                db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date),
+                asset.PricesProblem));
     }
 
     static ValidationProblem Invalid(string field, string message) =>

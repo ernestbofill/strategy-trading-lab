@@ -5,6 +5,7 @@ import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import styles from './AdminAssets.module.css'
 import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
 import { AddAssetForm, EditAssetForm } from './AssetForms'
+import { AllPricesSection } from './AssetPrices'
 
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; assets: AdminAsset[] }
 
@@ -35,7 +36,15 @@ const columns: DataTableColumn<AdminAsset>[] = [
     id: 'latestPriceDate',
     header: 'Latest price',
     accessorFn: (a) => a.latestPriceDate ?? '',
-    cell: (a) => a.latestPriceDate ?? '–',
+    cell: (a) =>
+      a.pricesProblem ? (
+        <div className={styles.assetCell}>
+          <span>{a.latestPriceDate ?? '–'}</span>
+          <span className={styles.problem}>{a.pricesProblem}</span>
+        </div>
+      ) : (
+        (a.latestPriceDate ?? '–')
+      ),
     mono: true,
   },
   {
@@ -119,7 +128,12 @@ export function AdminAssets() {
           {error}
         </p>
       )}
-      {state.status === 'ready' && !editing && <AddAssetForm onAdded={reload} />}
+      {state.status === 'ready' && !editing && (
+        <>
+          <AddAssetForm onAdded={reload} />
+          <AllPricesSection assets={state.assets} onChanged={reload} />
+        </>
+      )}
       {editing && (
         <EditAssetForm
           key={editing.id}
@@ -128,6 +142,7 @@ export function AdminAssets() {
             if (saved) await reload()
             setEditing(null)
           }}
+          onPricesChanged={reload}
         />
       )}
       {state.status === 'ready' && (

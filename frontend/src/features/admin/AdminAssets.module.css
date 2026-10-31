@@ -10,6 +10,11 @@
   color: var(--ink-sidebar);
 }
 
+.problem {
+  font: 12px/18px var(--font-ui);
+  color: var(--danger-ink);
+}
+
 .active {
   color: var(--success);
   font-family: var(--font-mono);
@@ -33,6 +38,11 @@
 
 .actionButton:hover:not(:disabled) {
   background: var(--surface-hover);
+}
+
+.actionButton.danger {
+  border-color: var(--danger-ink);
+  color: var(--danger-ink);
 }
 
 .actionButton:disabled {

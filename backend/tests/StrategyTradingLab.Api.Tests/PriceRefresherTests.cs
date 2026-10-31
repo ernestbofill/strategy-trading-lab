@@ -17,13 +17,15 @@ public class PriceRefresherTests
     sealed class FakeSource(Func<int, decimal> close) : IMarketDataSource
     {
         public int FullRequests { get; private set; }
+        /// <summary>The first day the last whole-history request asked for.</summary>
+        public DateOnly? Since { get; private set; }
         public bool Fails { get; set; }
 
-        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken)
+        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken)
         {
             if (Fails) throw new MarketDataException("down");
-            if (fullHistory) FullRequests++;
-            IReadOnlyList<Candle> days = [.. Enumerable.Range(fullHistory ? 0 : 20, fullHistory ? 30 : 10).Select(d => Day(d, close(d)))];
+            if (since is not null) (FullRequests, Since) = (FullRequests + 1, since);
+            IReadOnlyList<Candle> days = [.. Enumerable.Range(since is not null ? 0 : 20, since is not null ? 30 : 10).Select(d => Day(d, close(d)))];
             return Task.FromResult(days);
         }
 
@@ -59,6 +61,21 @@ public class PriceRefresherTests
     [Fact]
     public void A_gap_with_no_shared_day_needs_the_full_history() =>
         Assert.True(PriceRefresher.NeedsFullHistory(Recent((20, 10), (21, 11)), new Dictionary<DateOnly, decimal> { [Day(1, 0).Date] = 9 }));
+
+    [Fact]
+    public void The_history_starts_two_years_before_today_or_the_earliest_strategy()
+    {
+        var today = new DateOnly(2026, 10, 31);
+
+        Assert.Equal(new DateOnly(2024, 10, 31), PriceRefresher.HistoryStart(null, today));
+        Assert.Equal(new DateOnly(2023, 3, 1), PriceRefresher.HistoryStart(new DateOnly(2025, 3, 1), today));
+        Assert.Equal(new DateOnly(2024, 10, 31), PriceRefresher.HistoryStart(new DateOnly(2026, 11, 2), today)); // Starts later: today.
+    }
+
+    sealed class FixedTime(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
 
     static async Task<(Asset Asset, AppDbContext Db, IServiceScope Scope)> NewAssetAsync(AccountsApi api)
     {
@@ -136,6 +153,42 @@ public class PriceRefresherTests
             await Assert.ThrowsAsync<MarketDataException>(() => refresher.RefreshAssetAsync(asset, default));
 
             Assert.Equal(30, await db.Prices.CountAsync(p => p.AssetId == asset.Id));
+            var failed = await db.Assets.AsNoTracking().SingleAsync(a => a.Id == asset.Id);
+            Assert.Equal("down", failed.PricesProblem);
+            Assert.NotNull(failed.PricesCheckedAt);
+
+            source.Fails = false;
+            await refresher.RefreshAssetAsync(asset, default);
+
+            Assert.Null((await db.Assets.AsNoTracking().SingleAsync(a => a.Id == asset.Id)).PricesProblem);
+        }
+        finally
+        {
+            await db.Assets.Where(a => a.Id == asset.Id).ExecuteDeleteAsync();
+        }
+    }
+
+    [NeonFact]
+    public async Task A_gap_in_the_stored_days_fetches_the_whole_history_again_from_two_years_back()
+    {
+        using var api = new AccountsApi();
+        var (asset, db, scope) = await NewAssetAsync(api);
+        using var _ = scope;
+        try
+        {
+            var source = new FakeSource(d => 100 + d);
+            var refresher = new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance)
+                { Time = new FixedTime(new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero)) };
+            await refresher.RefreshAssetAsync(asset, default);
+            // Days 3–19 missing: a 17-day gap, as weekly or monthly bars leave. The last month alone would still match.
+            await db.Prices.Where(p => p.AssetId == asset.Id && p.Date > Day(2, 0).Date && p.Date < Day(20, 0).Date).ExecuteDeleteAsync();
+
+            var result = await refresher.RefreshAssetAsync(asset, default);
+
+            Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
+            Assert.Equal(2, source.FullRequests);
+            Assert.Equal(new DateOnly(2024, 10, 31), source.Since); // No strategy lists it: two years before today.
+            Assert.Equal(30, await db.Prices.CountAsync(p => p.AssetId == asset.Id));
         }
         finally
         {
@@ -164,6 +217,34 @@ public class PriceRefresherTests
         finally
         {
             await db.FxRates.Where(r => r.Quote == "TST").ExecuteDeleteAsync();
+        }
+    }
+
+    [NeonFact]
+    public async Task Gapped_exchange_rates_are_replaced_by_the_whole_history()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        try
+        {
+            // Monthly rates, as the old range=max request stored them, the last of them inside the recent month.
+            db.FxRates.AddRange(new[] { -60, -30, 25 }.Select(d => new FxRate { Date = Day(d, 0).Date, Base = "EUR", Quote = "TSG", Rate = 2 }));
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            var source = new FakeSource(d => 1 + d / 100m);
+
+            var result = await new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance).RefreshRateAsync("TSG", default);
+
+            Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
+            Assert.Equal(1, source.FullRequests);
+            // Every old rate is gone, the ones before the fetched days too.
+            Assert.Equal(30, await db.FxRates.CountAsync(r => r.Base == "EUR" && r.Quote == "TSG"));
+            Assert.False(await db.FxRates.AnyAsync(r => r.Quote == "TSG" && r.Date < Day(0, 0).Date));
+        }
+        finally
+        {
+            await db.FxRates.Where(r => r.Quote == "TSG").ExecuteDeleteAsync();
         }
     }
 

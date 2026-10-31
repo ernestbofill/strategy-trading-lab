@@ -12,14 +12,17 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
     public void Verify(string to, string token, string locale = "en")
     {
         var url = $"{AppUrl}/verify-email?token={token}";
+        var reclaimUrl = $"{AppUrl}/forgot-password";
         queue.Enqueue(new(to, locale == "ca"
             ? Email(locale)
                 .Action("Confirma el teu correu obrint aquest enllaç:", "Confirma el correu", url)
-                .Paragraph("Funciona durant 24 hores. Si no t'has registrat a Strategy Trading Lab, ignora aquest correu.")
+                .Paragraph("Funciona durant 24 hores. Si no t'has registrat a Strategy Trading Lab, ignora aquest correu: el compte quedarà sense confirmar.")
+                .Paragraph($"Per prendre el control del compte, restableix la contrasenya a {reclaimUrl}.")
                 .Build("Confirma el teu correu per a Strategy Trading Lab")
             : Email(locale)
                 .Action("Confirm your email by opening this link:", "Confirm my email", url)
-                .Paragraph("It works for 24 hours. If you didn't sign up for Strategy Trading Lab, ignore this email.")
+                .Paragraph("It works for 24 hours. If you didn't sign up for Strategy Trading Lab, ignore this email: the account will stay unconfirmed.")
+                .Paragraph($"To take control of the account, reset its password at {reclaimUrl}.")
                 .Build("Confirm your email for Strategy Trading Lab")));
     }
 

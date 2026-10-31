@@ -199,6 +199,50 @@ public class PriceRefresherTests
     }
 
     [NeonFact]
+    public async Task A_trade_recorded_before_the_stored_days_fetches_two_years_before_it()
+    {
+        using var api = new AccountsApi();
+        var (asset, db, scope) = await NewAssetAsync(api);
+        using var _ = scope;
+        var user = new User { Email = $"held-{Guid.NewGuid():N}@example.com", TimeZone = "UTC", Locale = "en" };
+        try
+        {
+            var time = new FixedTime(new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero));
+            var source = new FakeSource(d => 100 + d);
+            var refresher = new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance) { Time = time };
+            await refresher.RefreshAssetAsync(asset, default);
+            // A holding bought long before the strategy and the stored days (2026-09-01 on).
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+            var strategy = new Strategy
+            {
+                UserId = user.Id, TemplateKey = "dip", Name = "Held", Mode = StrategyMode.Live, Status = StrategyStatus.Running,
+                StartedOn = new DateOnly(2026, 10, 1), Currency = "USD", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+                Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            };
+            db.Strategies.Add(strategy);
+            await db.SaveChangesAsync();
+            db.UserTrades.Add(new UserTrade
+            {
+                StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = new DateOnly(2025, 1, 15), Side = TradeSide.Buy, Price = 100,
+                EnteredAs = EnteredAs.Amount, Amount = 99, Shares = 0.99m, Fee = 1, FxRate = 1, FxSource = FxSource.User, Source = TradeSource.Manual,
+            });
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+
+            var result = await refresher.RefreshAssetAsync(asset, default);
+
+            Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
+            Assert.Equal(new DateOnly(2023, 1, 15), source.Since);
+        }
+        finally
+        {
+            await db.Users.Where(u => u.Id == user.Id).ExecuteDeleteAsync();
+            await db.Assets.Where(a => a.Id == asset.Id).ExecuteDeleteAsync();
+        }
+    }
+
+    [NeonFact]
     public async Task Exchange_rates_are_stored_per_day_and_refreshed_in_place()
     {
         using var api = new AccountsApi();

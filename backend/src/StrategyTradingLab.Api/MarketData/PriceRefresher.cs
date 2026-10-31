@@ -115,9 +115,14 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
 
     async Task<RefreshResult> LoadAssetAsync(Asset asset, DateOnly? replaceFrom, CancellationToken cancellationToken)
     {
-        // Asked to replace it, or nothing stored (a new asset): straight to the whole history, without asking for the last month first.
-        var full = replaceFrom is not null || !await db.Prices.AnyAsync(p => p.AssetId == asset.Id, cancellationToken);
-        DateOnly? keepFrom = replaceFrom;
+        // Asked to replace it, nothing stored (a new asset), or a trade recorded before the stored days (a holding bought
+        // earlier): straight to the whole history, without asking for the last month first. It never starts later than
+        // the stored days, so a longer download by hand isn't cut back.
+        var oldest = await db.Prices.Where(p => p.AssetId == asset.Id).MinAsync(p => (DateOnly?)p.Date, cancellationToken);
+        // The index fund is compared with every trade.
+        var full = replaceFrom is not null || oldest is null
+            || await TradedBeforeAsync(asset.Id == StrategyBook.IndexFundId ? null : asset.Id, oldest.Value, cancellationToken);
+        var keepFrom = replaceFrom ?? oldest;
         IReadOnlyList<Candle> days = [];
         var from = DateOnly.MinValue;
         if (!full)
@@ -128,10 +133,8 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
             // Projected in the database, so the stored rows aren't tracked (they would clash with the rows added below).
             var stored = (await db.Prices.Where(p => p.AssetId == asset.Id && p.Date >= from)
                 .Select(p => new { p.Date, p.Close }).ToListAsync(cancellationToken)).ToDictionary(p => p.Date, p => p.Close);
+            // A re-adjusted history (a split, a dividend) is fetched again, over the span already stored.
             full = NeedsFullHistory(days, stored);
-            // A re-adjusted history (a split, a dividend) is fetched again over the span already stored, so a longer
-            // download by hand isn't cut back.
-            if (full) keepFrom = await db.Prices.Where(p => p.AssetId == asset.Id).MinAsync(p => (DateOnly?)p.Date, cancellationToken);
         }
         if (full)
         {
@@ -158,9 +161,9 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     /// </summary>
     Task<DateOnly> HistoryStartAsync(Guid assetId, CancellationToken cancellationToken) =>
         assetId == StrategyBook.IndexFundId
-            ? HistoryStartAsync(db.Strategies, db.UserTrades, cancellationToken)
+            ? HistoryStartAsync(db.Strategies, Trades(), cancellationToken)
             : HistoryStartAsync(db.Strategies.Where(s => db.StrategyAssets.Any(sa => sa.StrategyId == s.Id && sa.AssetId == assetId)),
-                db.UserTrades.Where(t => t.AssetId == assetId), cancellationToken);
+                Trades().Where(t => t.AssetId == assetId), cancellationToken);
 
     async Task<DateOnly> HistoryStartAsync(IQueryable<Strategy> strategies, IQueryable<UserTrade> trades, CancellationToken cancellationToken)
     {
@@ -168,6 +171,13 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         var traded = await trades.MinAsync(t => (DateOnly?)t.TradeDate, cancellationToken);
         return HistoryStart(traded is { } day && (started is null || day < started) ? day : started, Today());
     }
+
+    /// <summary>True when a user recorded a trade of the asset (of any asset when null) before <paramref name="day"/>.</summary>
+    Task<bool> TradedBeforeAsync(Guid? assetId, DateOnly day, CancellationToken cancellationToken) =>
+        Trades().AnyAsync(t => (assetId == null || t.AssetId == assetId) && t.TradeDate < day, cancellationToken);
+
+    /// <summary>The trades users recorded and haven't deleted.</summary>
+    IQueryable<UserTrade> Trades() => db.UserTrades.Where(t => t.DeletedAt == null);
 
     /// <summary><see cref="HistoryYears"/> before the earliest start or trade, or before today when there is none (or it is later).</summary>
     public static DateOnly HistoryStart(DateOnly? earliestStart, DateOnly today) =>
@@ -207,17 +217,17 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     async Task<RefreshResult> LoadRateAsync(string quote, DateOnly? replaceFrom, CancellationToken cancellationToken)
     {
         var symbol = $"{BaseCurrency}{quote}=X";
-        var latestStored = await db.FxRates.Where(r => r.Base == BaseCurrency && r.Quote == quote)
-            .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
-        // Asked to replace them, or nothing stored: the whole history, which replaces every stored rate.
-        var full = replaceFrom is not null || latestStored is null;
-        DateOnly? since = full ? Earlier(replaceFrom, await RatesStartAsync(cancellationToken)) : null;
+        var stored = db.FxRates.Where(r => r.Base == BaseCurrency && r.Quote == quote);
+        var latestStored = await stored.MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
+        var oldest = await stored.MinAsync(r => (DateOnly?)r.Date, cancellationToken);
+        // Asked to replace them, nothing stored, or a trade recorded before the stored rates: the whole history, which
+        // replaces every stored rate. It never starts later than the stored rates.
+        var full = replaceFrom is not null || oldest is null || await TradedBeforeAsync(null, oldest.Value, cancellationToken);
+        DateOnly? since = full ? Earlier(replaceFrom ?? oldest, await RatesStartAsync(cancellationToken)) : null;
         var days = await source.DailyAsync(symbol, since, adjusted: false, cancellationToken);
-        // The last month doesn't reach back to the stored days (a long outage): fetch it all, over the span already stored,
-        // so no weeks are left missing.
+        // The last month doesn't reach back to the stored days (a long outage): fetch it all, so no weeks are left missing.
         if (!full && days.Count > 0 && latestStored < days[0].Date)
         {
-            var oldest = await db.FxRates.Where(r => r.Base == BaseCurrency && r.Quote == quote).MinAsync(r => (DateOnly?)r.Date, cancellationToken);
             days = await source.DailyAsync(symbol, Earlier(oldest, await RatesStartAsync(cancellationToken)), adjusted: false, cancellationToken);
             full = true;
         }
@@ -257,5 +267,5 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     }
 
     /// <summary>The first day of the rates' whole history: <see cref="HistoryYears"/> before the earliest strategy or trade, which any currency may need.</summary>
-    Task<DateOnly> RatesStartAsync(CancellationToken cancellationToken) => HistoryStartAsync(db.Strategies, db.UserTrades, cancellationToken);
+    Task<DateOnly> RatesStartAsync(CancellationToken cancellationToken) => HistoryStartAsync(db.Strategies, Trades(), cancellationToken);
 }

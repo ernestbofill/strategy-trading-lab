@@ -20,10 +20,10 @@ function reason(e: unknown): string | null {
   return "Couldn't reach the server."
 }
 
-/** The failures, the first few in full: an asset's reason also shows in its row. */
+/** The failures, the first few in full (a Yahoo problem also shows in the asset's row). */
 function failedText(failed: string[]): string {
   const shown = 5
-  const more = failed.length > shown ? ` …and ${failed.length - shown} more, shown in their rows.` : ''
+  const more = failed.length > shown ? ` …and ${failed.length - shown} more.` : ''
   return `Failed: ${failed.slice(0, shown).join(' ')}${more}`
 }
 
@@ -90,17 +90,21 @@ export function AllPricesSection({ assets, onChanged }: { assets: AdminAsset[]; 
         }
       }
       setMessage({ tone: 'done', text: 'Downloading the exchange rates…' })
-      const done = `Downloaded ${active.length - failed.length} of ${active.length} assets and the exchange rates.`
-      // First: a currency has no row of its own to show it. A refused call keeps the assets' summary.
+      const assetsDone = `Downloaded ${active.length - failed.length} of ${active.length} assets`
+      // A refused call keeps the assets' summary.
+      const rateFailures: string[] = []
       try {
         const rates = await api.downloadAdminRates(count)
-        failed.unshift(...rates.problems.map((p) => `${p.name}: ${p.problem ?? 'failed'}`))
+        rateFailures.push(...rates.problems.map((p) => `${p.name}: ${p.problem ?? 'failed'}`))
       } catch (e) {
         const why = reason(e)
         if (why === null) return
-        failed.unshift(`Exchange rates: ${why}`)
+        rateFailures.push(`Exchange rates: ${why}`)
       }
-      setMessage(failed.length === 0 ? { tone: 'done', text: done } : { tone: 'error', text: `${done} ${failedText(failed)}` })
+      const done = rateFailures.length === 0 ? `${assetsDone} and the exchange rates.` : `${assetsDone}.`
+      // The rates first: a currency has no row of its own to show it.
+      const all = [...rateFailures, ...failed]
+      setMessage(all.length === 0 ? { tone: 'done', text: done } : { tone: 'error', text: `${done} ${failedText(all)}` })
     } catch (e) {
       const why = reason(e)
       if (why !== null) setMessage({ tone: 'error', text: why })

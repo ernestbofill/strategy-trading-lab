@@ -127,7 +127,12 @@ public class AccountsApi : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        foreach (var policy in new[] { AccountEndpoints.SignUpLimit, AccountEndpoints.LogInLimit, AccountEndpoints.EmailLimit, AccountEndpoints.PasswordLimit, AccountEndpoints.InviteLimit, FeedbackEndpoints.SubmitLimit })
+        foreach (var policy in new[]
+        {
+            AccountEndpoints.SignUpLimit, AccountEndpoints.LogInLimit, AccountEndpoints.EmailLimit, AccountEndpoints.PasswordLimit,
+            AccountEndpoints.InviteLimit, AccountEndpoints.LogOutLimit, FeedbackEndpoints.SubmitLimit,
+            StrategyTradingLab.Api.Templates.TemplateEndpoints.TemplatesLimit, Program.HealthLimit, Program.VersionLimit
+        })
             builder.UseSetting($"RateLimits:{policy}", "1000");
         builder.ConfigureTestServices(services => services.AddScoped<IEmailSender>(_ => Emails));
     }

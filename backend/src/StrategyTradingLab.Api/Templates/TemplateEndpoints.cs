@@ -7,9 +7,11 @@ namespace StrategyTradingLab.Api.Templates;
 
 public static class TemplateEndpoints
 {
+    public const string TemplatesLimit = "templates";
+
     public static void MapTemplates(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/templates").WithTags("Templates");
+        var group = app.MapGroup("/templates").WithTags("Templates").RequireRateLimiting(TemplatesLimit);
 
         group.MapGet("/", async (Sessions sessions, CancellationToken cancellationToken) =>
         {

@@ -35,7 +35,7 @@ export const account: Record<keyof typeof en, string> = {
   'account.signUp.haveAccount': 'Ja tinc un compte',
   'account.signUp.inviteCode': "Codi d'invitació",
   'account.signUp.inviteHint': 'El trobaràs a la invitació, com ara ABCD-EFGH.',
-  'account.signUp.haveInvite': "Tinc un codi d'invitació",
+  'account.signUp.inviteCodeOptional': "Codi d'invitació (opcional)",
   'account.signUp.inviteOnly': 'De moment, el registre és amb invitació. Escriu el codi de la teva invitació.',
   'account.invite.eyebrow': 'Tens una invitació',
   'account.invite.title': 'Benvingut/da, {name}',

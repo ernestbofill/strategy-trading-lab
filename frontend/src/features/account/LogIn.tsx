@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
+import { pickPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
 import { errorText } from './copy'
@@ -67,6 +68,7 @@ export function LogIn() {
       <div className={styles.links}>
         <TextAction to={forgotPasswordPath}>{t('account.logIn.forgot')}</TextAction>
         <TextAction to={nextParam ? signUpPathFor(nextParam) : signUpPath}>{t('account.logIn.create')}</TextAction>
+        <TextAction to={pickPath}>{t('account.signUp.skipLookAround')}</TextAction>
       </div>
     </Screen>
   )

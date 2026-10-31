@@ -33,7 +33,7 @@ export const account = {
   'account.signUp.haveAccount': 'I already have an account',
   'account.signUp.inviteCode': 'Invite code',
   'account.signUp.inviteHint': 'It is in your invite, like ABCD-EFGH.',
-  'account.signUp.haveInvite': 'I have an invite code',
+  'account.signUp.inviteCodeOptional': 'Invite code (optional)',
   'account.signUp.inviteOnly': 'Sign-ups are by invitation for now. Enter the code from your invite.',
   'account.invite.eyebrow': "You're invited",
   'account.invite.title': 'Welcome, {name}',

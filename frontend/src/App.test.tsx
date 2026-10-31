@@ -90,6 +90,15 @@ describe('app routes', () => {
     expect(await screen.findByText('Pick template screen')).toBeTruthy()
   })
 
+  it('offers Skip for now, look around on log-in too', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/log-in')
+
+    const skipLink = screen.getByRole('link', { name: 'Skip for now, look around' })
+    expect(skipLink.getAttribute('href')).toBe('/new')
+  })
+
   it('renders legal links in the footer on every screen', async () => {
     vi.spyOn(api, 'getAccount').mockResolvedValue(null)
 

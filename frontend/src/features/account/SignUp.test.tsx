@@ -51,15 +51,15 @@ describe('SignUp', () => {
     open({ inviteOnly: false, invite: null }, '/sign-up?invite=ZZZZ-ZZZZ')
 
     expect(await screen.findByText(/This invite can't be used any more/)).toBeTruthy()
-    expect((screen.getByLabelText('Invite code') as HTMLInputElement).value).toBe('') // Cleared: open sign-ups need none.
+    expect((screen.getByLabelText('Invite code (optional)') as HTMLInputElement).value).toBe('') // Cleared: open sign-ups need none.
   })
 
-  it('hides the code field while sign-ups are open, until asked for, and sends the names and the code', async () => {
+  it('shows the code field as optional while sign-ups are open, and sends the names and the code', async () => {
     open({ inviteOnly: false, invite: null })
     const signUp = vi.spyOn(api, 'signUp').mockRejectedValue(new InvalidFieldsError({ password: 'Use at least 10 characters.' }))
 
-    fireEvent.click(await screen.findByRole('button', { name: 'I have an invite code' }))
-    fireEvent.change(screen.getByLabelText('Invite code'), { target: { value: 'abcd efgh' } })
+    expect(screen.queryByRole('button', { name: /invite code/i })).toBeNull()
+    fireEvent.change(await screen.findByLabelText('Invite code (optional)'), { target: { value: 'abcd efgh' } })
     fireEvent.change(screen.getByLabelText('First name'), { target: { value: 'Joan' } })
     fireEvent.change(screen.getByLabelText('Last name'), { target: { value: 'Vila' } })
     fireEvent.click(screen.getByRole('checkbox', { name: /Not financial advice/ }))

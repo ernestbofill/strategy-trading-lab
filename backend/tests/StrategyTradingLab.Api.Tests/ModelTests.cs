@@ -33,7 +33,7 @@ public class ModelTests
         var tables = Model.GetEntityTypes().Select(entity => entity.GetTableName()).Order();
 
         Assert.Equal(
-            ["ai_rounds", "app_settings", "asset_texts", "assets", "daily_evaluations", "email_tokens", "feedback_items", "fx_rates", "notifications", "prices_daily", "push_subscriptions", "sessions", "shared_ai_rounds", "signal_trades", "signals",
+            ["ai_rounds", "app_settings", "asset_texts", "assets", "daily_evaluations", "email_tokens", "feedback_items", "fx_rates", "invites", "notifications", "prices_daily", "push_subscriptions", "sessions", "shared_ai_rounds", "signal_trades", "signals",
              "strategies", "strategy_assets", "user_trades", "users"],
             tables);
     }

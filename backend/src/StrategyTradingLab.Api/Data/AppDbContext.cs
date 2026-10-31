@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<UserSession> Sessions => Set<UserSession>();
     public DbSet<EmailToken> EmailTokens => Set<EmailToken>();
+    public DbSet<Invite> Invites => Set<Invite>();
     public DbSet<PriceDaily> Prices => Set<PriceDaily>();
     public DbSet<FxRate> FxRates => Set<FxRate>();
     public DbSet<DailyEvaluation> DailyEvaluations => Set<DailyEvaluation>();

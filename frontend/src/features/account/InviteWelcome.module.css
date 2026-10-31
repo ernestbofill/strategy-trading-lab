@@ -1,0 +1,83 @@
+.card {
+  position: relative;
+  max-width: 480px;
+  padding: var(--space-4) var(--space-3);
+  background: linear-gradient(135deg, var(--surface-selection), var(--surface-deep) 70%);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--glow-primary);
+  overflow: hidden;
+}
+
+/* A thin violet-to-mint bar along the top edge. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-violet), var(--hot-pink), var(--primary));
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font: 700 26px/34px var(--font-mono);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.from {
+  margin: 0 0 var(--space-2);
+  font: 600 16px/24px var(--font-ui);
+  color: var(--ink);
+}
+
+.lead {
+  margin: 0 0 var(--space-3);
+  font: 14px/22px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.codeLabel {
+  font: 12px/18px var(--font-ui);
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.codeValue {
+  padding: 2px var(--space-2);
+  font: 700 18px/26px var(--font-mono);
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  background: var(--surface-console);
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: arrive 400ms ease-out;
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

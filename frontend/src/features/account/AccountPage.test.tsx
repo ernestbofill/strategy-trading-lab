@@ -9,7 +9,7 @@ let currentRole: Role = 'user'
 
 const baseAccount: Account = {
   email: 'user@example.com',
-  emailVerified: true,
+  firstName: null, lastName: null, emailVerified: true,
   locale: 'en',
   timeZone: 'Europe/Madrid',
   overviewEmail: true,

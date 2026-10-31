@@ -1,7 +1,7 @@
 import { currentLocale } from '../i18n/locale'
 import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { sessionEnded } from './session'
-import type { Account, Api, FeedbackItem, StrategySummary, StrategyTradeItem } from './types'
+import type { Account, Api, FeedbackItem, SignUpOptions, StrategySummary, StrategyTradeItem } from './types'
 
 // The .NET API. nginx serves it at /api on the app's own host; in development Vite proxies /api to it.
 const BASE_URL = '/api'
@@ -170,6 +170,14 @@ async function account(path: string, body?: unknown, { link, session }: AccountC
   return response
 }
 
+async function getSignUpOptions(invite?: string): Promise<SignUpOptions> {
+  const query = invite ? `?invite=${encodeURIComponent(invite)}` : ''
+  const response = await fetch(`${BASE_URL}/account/sign-up-options${query}`, { headers: { Accept: 'application/json', ...langHeader() } })
+  if (response.status === 429) throw new TooManyTriesError()
+  if (!response.ok) throw new Error(`GET /account/sign-up-options failed: HTTP ${response.status}`)
+  return (await response.json()) as SignUpOptions
+}
+
 async function getAccount(): Promise<Account | null> {
   const response = await fetch(`${BASE_URL}/account/me`, { headers: { Accept: 'application/json', ...langHeader() } })
   if (response.status === 401) return null
@@ -239,6 +247,8 @@ async function assets(path: string, body?: unknown): Promise<Response> {
 export const httpApi: Api = {
   getAccount,
   signUp: async (signUp) => void (await account('/sign-up', signUp)),
+  getSignUpOptions,
+  setName: async (firstName, lastName) => void (await account('/name', { firstName, lastName }, { session: true })),
   logIn: async (email, password) => void (await account('/log-in', { email, password })),
   logOut: async () => void (await account('/log-out')),
   verifyEmail: async (token) => void (await account('/verify-email', { token }, { link: true })),
@@ -282,6 +292,10 @@ export const httpApi: Api = {
   setStrategyNotifications: (id, enabled) => strategyAction('PUT', id, 'notifications', { enabled }),
   archiveStrategy: (id) => strategyAction('POST', id, 'archive'),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
+  getAdminInvites: async () => (await admin('GET', '/invites')).json(),
+  createAdminInvite: async (invite) => (await admin('POST', '/invites', invite)).json(),
+  sendAdminInvite: async (id) => (await admin('POST', `/invites/${encodeURIComponent(id)}/send`)).json(),
+  revokeAdminInvite: async (id) => void (await admin('POST', `/invites/${encodeURIComponent(id)}/revoke`)),
   setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
   sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,
   resetAdminSetting: async (key, clear) => void (await admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),

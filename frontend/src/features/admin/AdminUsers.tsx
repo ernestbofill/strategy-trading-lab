@@ -15,6 +15,7 @@ const day = (at: string | null) => (at ? isoDate(new Date(at)) : '–')
 
 const columns: DataTableColumn<AdminUser>[] = [
   { id: 'email', header: 'Email', accessorFn: (u) => u.email, cell: (u) => <span className={styles.email}>{u.email}</span> },
+  { id: 'name', header: 'Name', accessorFn: (u) => [u.firstName, u.lastName].filter(Boolean).join(' '), cell: (u) => [u.firstName, u.lastName].filter(Boolean).join(' ') || '–' },
   { id: 'role', header: 'Role', accessorFn: (u) => u.role, cell: (u) => roleText[u.role] },
   {
     id: 'confirmed',
@@ -22,6 +23,7 @@ const columns: DataTableColumn<AdminUser>[] = [
     accessorFn: (u) => (u.confirmed ? 'yes' : 'no'),
     cell: (u) => <span className={u.confirmed ? styles.yes : styles.no}>{u.confirmed ? 'Yes' : 'No'}</span>,
   },
+  { id: 'invitedBy', header: 'Invited by', accessorFn: (u) => u.invitedBy ?? '', cell: (u) => u.invitedBy ?? '–' },
   { id: 'joined', header: 'Joined', accessorFn: (u) => u.joined, cell: (u) => day(u.joined), mono: true },
   { id: 'lastVisit', header: 'Last visit', accessorFn: (u) => u.lastVisit ?? '', cell: (u) => day(u.lastVisit), mono: true },
   { id: 'running', header: 'Running', accessorFn: (u) => u.running, mono: true, align: 'right' },

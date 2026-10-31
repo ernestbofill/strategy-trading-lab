@@ -1435,3 +1435,121 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    ALTER TABLE users ADD first_name character varying(100);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    ALTER TABLE users ADD invite_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    ALTER TABLE users ADD last_name character varying(100);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    CREATE TABLE invites (
+        id uuid NOT NULL,
+        code character varying(9) NOT NULL,
+        created_by uuid NOT NULL,
+        role text NOT NULL DEFAULT 'vip',
+        first_name character varying(100) NOT NULL,
+        last_name character varying(100),
+        email citext,
+        locale text NOT NULL,
+        max_uses integer NOT NULL DEFAULT 1,
+        uses integer NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        sent_at timestamptz,
+        revoked_at timestamptz,
+        CONSTRAINT pk_invites PRIMARY KEY (id),
+        CONSTRAINT ck_invites_locale CHECK (locale IN ('en', 'ca')),
+        CONSTRAINT ck_invites_role CHECK (role IN ('user', 'vip', 'owner')),
+        CONSTRAINT ck_invites_uses CHECK (uses >= 0 AND uses <= max_uses),
+        CONSTRAINT fk_invites_users_created_by FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    CREATE INDEX ix_users_invite_id ON users (invite_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    CREATE UNIQUE INDEX ix_invites_code ON invites (code);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    CREATE INDEX ix_invites_created_by ON invites (created_by);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    ALTER TABLE users ADD CONSTRAINT fk_users_invites_invite_id FOREIGN KEY (invite_id) REFERENCES invites (id) ON DELETE SET NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030175433_AddInvites') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261030175433_AddInvites', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    ALTER TABLE invites DROP CONSTRAINT fk_invites_users_created_by;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    ALTER TABLE invites ALTER COLUMN created_by DROP NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    ALTER TABLE invites ADD CONSTRAINT fk_invites_users_created_by FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261030182805_KeepInvitesOfDeletedUsers') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261030182805_KeepInvitesOfDeletedUsers', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

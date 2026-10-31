@@ -1,5 +1,7 @@
 
 ## Todos from Claude to Ernest
+- [ ] After #99 deploys: add your first name on the account page, so invites say "Ernest invited you" and are signed. Then send yourself a test invite in English and in Catalan, and open the link logged out on the phone (Sign-up with an invite wasn't checked by eye). (#99)
+- [ ] When the quiet launch starts: switch *Who can sign up* to *Invite only* on `/admin/invites`. (#99)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
 - [x] After #82 deploys: send the test email from `/admin` and check how the new HTML emails look in Gmail on the phone and on desktop (and Apple Mail or Outlook if you use them). (#82)
 - [x] ~~Before merging #28: run `dotnet test` against the Neon dev branch.~~ Not needed: CI now runs every backend test, the database ones included (#32). #28 is merged. (#28, #31)

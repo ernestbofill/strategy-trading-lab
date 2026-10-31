@@ -7,6 +7,8 @@ export { accountPath }
 export const EMAILS_HASH = '#emails'
 export const accountEmailsPath = `${accountPath}${EMAILS_HASH}`
 export const signUpPath = '/sign-up'
+/** The invite code in an invite link: /sign-up?invite=ABCD-EFGH. */
+export const INVITE_PARAM = 'invite'
 export const logInPath = '/log-in'
 export const forgotPasswordPath = '/forgot-password'
 export const resetPasswordPath = '/reset-password'

@@ -17,6 +17,7 @@ using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Invites;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
@@ -79,6 +80,8 @@ builder.Services.AddSessionAuthorization();
 builder.Services.AddSingleton<LogInThrottle>();
 builder.Services.AddSingleton<TestEmailLimit>();
 builder.Services.AddSingleton<TestYahooLimit>();
+builder.Services.AddSingleton<InviteEmailLimit>();
+builder.Services.AddSingleton<InviteTexts>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AccountEmails>();
 
@@ -102,6 +105,15 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
+    // A look-up with a code tells whether it works, so it is limited like a guess; one without a code (every Sign-up
+    // load, many visitors behind one address) only says whether sign-ups are invite only, and isn't limited.
+    options.AddPolicy(AccountEndpoints.InviteLimit, http => string.IsNullOrEmpty(http.Request.Query["invite"])
+        ? RateLimitPartition.GetNoLimiter("no-code")
+        : RateLimitPartition.GetFixedWindowLimiter(AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue($"RateLimits:{AccountEndpoints.InviteLimit}", 30), Window = TimeSpan.FromHours(1),
+            }));
     // Asset search and adding, per user: both call the price source, and adding loads a whole price history.
     void PerUser(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
         RateLimitPartition.GetFixedWindowLimiter(AssetEndpoints.UserKey(http),
@@ -202,6 +214,7 @@ app.MapSignals();
 app.MapAiRounds();
 app.MapTrades();
 app.MapAdmin();
+app.MapInvites();
 app.MapAccount();
 app.MapFeedback();
 app.MapAssets();

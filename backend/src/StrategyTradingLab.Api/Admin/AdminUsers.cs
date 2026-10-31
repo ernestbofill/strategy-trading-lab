@@ -7,7 +7,7 @@ namespace StrategyTradingLab.Api.Admin;
 
 /// <summary>A user on the admin users page. <c>LastVisit</c>: the last time any of their sessions was used (null if none is kept).</summary>
 public record AdminUser(Guid Id, string Email, UserRole Role, DateTimeOffset Joined, bool Confirmed, DateTimeOffset? LastVisit,
-    int Running, int Archived);
+    int Running, int Archived, string? FirstName = null, string? LastName = null, string? InvitedBy = null);
 
 /// <summary>Running strategies of one template, by mode.</summary>
 public record AdminTemplateCount(string TemplateKey, string TemplateName, int Simulation, int Live);
@@ -28,7 +28,11 @@ public static class AdminUsersEndpoints
                 .Select(u => new AdminUser(u.Id, u.Email, u.Role, u.CreatedAt, u.EmailVerifiedAt != null,
                     db.Sessions.Where(s => s.UserId == u.Id).Max(s => (DateTimeOffset?)s.LastUsedAt),
                     db.Strategies.Count(s => s.UserId == u.Id && s.Status == StrategyStatus.Running),
-                    db.Strategies.Count(s => s.UserId == u.Id && s.Status == StrategyStatus.Ended)))
+                    db.Strategies.Count(s => s.UserId == u.Id && s.Status == StrategyStatus.Ended),
+                    u.FirstName, u.LastName,
+                    // Who made the invite the account signed up with, if any.
+                    db.Invites.Where(i => i.Id == u.InviteId)
+                        .Join(db.Users, i => i.CreatedBy, o => (Guid?)o.Id, (i, o) => (string?)o.Email).FirstOrDefault()))
                 .ToListAsync(cancellationToken);
             var running = await db.Strategies.AsNoTracking().Where(s => s.Status == StrategyStatus.Running)
                 .GroupBy(s => new { s.TemplateKey, s.Mode })

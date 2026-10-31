@@ -9,7 +9,7 @@ vi.mock('./features/new-strategy/PickTemplate', () => ({ PickTemplate: () => <p>
 
 const account: Account = {
   email: 'user@example.com',
-  emailVerified: false,
+  firstName: null, lastName: null, emailVerified: false,
   locale: 'en',
   timeZone: 'UTC',
   overviewEmail: true,

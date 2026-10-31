@@ -976,6 +976,92 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Invite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("citext")
+                        .HasColumnName("email");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("locale");
+
+                    b.Property<int>("MaxUses")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("max_uses");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasDefaultValue("vip")
+                        .HasColumnName("role");
+
+                    b.Property<DateTimeOffset?>("SentAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("sent_at");
+
+                    b.Property<int>("Uses")
+                        .HasColumnType("integer")
+                        .HasColumnName("uses");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invites");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invites_code");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_invites_created_by");
+
+                    b.ToTable("invites", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_invites_locale", "locale IN ('en', 'ca')");
+
+                            t.HasCheckConstraint("ck_invites_role", "role IN ('user', 'vip', 'owner')");
+
+                            t.HasCheckConstraint("ck_invites_uses", "uses >= 0 AND uses <= max_uses");
+                        });
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1601,6 +1687,20 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("timestamptz")
                         .HasColumnName("email_verified_at");
 
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("first_name");
+
+                    b.Property<Guid?>("InviteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invite_id");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("last_name");
+
                     b.Property<string>("Locale")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1638,6 +1738,9 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
+
+                    b.HasIndex("InviteId")
+                        .HasDatabaseName("ix_users_invite_id");
 
                     b.ToTable("users", null, t =>
                         {
@@ -1882,6 +1985,15 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasConstraintName("fk_feedback_items_users_user_id");
                 });
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Invite", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_invites_users_created_by");
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Notification", b =>
                 {
                     b.HasOne("StrategyTradingLab.Api.Data.Entities.Signal", null)
@@ -1990,6 +2102,15 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_strategy_assets_strategies_strategy_id");
+                });
+
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.User", b =>
+                {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Invite", null)
+                        .WithMany()
+                        .HasForeignKey("InviteId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_users_invites_invite_id");
                 });
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.UserSession", b =>

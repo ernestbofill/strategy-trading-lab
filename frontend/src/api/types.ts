@@ -671,6 +671,9 @@ export interface FeedbackPatch {
 /** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
 export interface Account {
   email: string
+  /** Asked at sign-up since invites; older accounts have none until they add it. */
+  firstName: string | null
+  lastName: string | null
   emailVerified: boolean
   locale: Locale
   timeZone: string
@@ -684,6 +687,8 @@ export interface Account {
 
 /** What Sign-up sends. */
 export interface SignUp {
+  firstName: string
+  lastName: string
   email: string
   password: string
   locale: Locale
@@ -692,6 +697,61 @@ export interface SignUp {
   overviewEmail: boolean
   currency: Currency
   disclaimerAccepted: boolean
+  /** From an invite link or typed; needed while sign-ups are invite only. */
+  inviteCode?: string
+}
+
+/** Who an invite is for: Sign-up greets them and fills in what is known. */
+export interface SignUpInvite {
+  code: string
+  firstName: string
+  locale: Locale
+  /** The inviter's first name, when they have one. */
+  invitedBy: string | null
+}
+
+/** What Sign-up asks first: backend Auth/AccountEndpoints.cs (SignUpOptions). */
+export interface SignUpOptions {
+  inviteOnly: boolean
+  /** Null without a code, or when the code can't be used (revoked or used up). */
+  invite: SignUpInvite | null
+}
+
+/** Someone who signed up with an invite. */
+export interface InvitedUser {
+  email: string
+  firstName: string | null
+  lastName: string | null
+  joinedAt: string
+}
+
+/** An invite on /admin/invites: backend Invites/InviteEndpoints.cs (AdminInvite). */
+export interface AdminInvite {
+  id: string
+  code: string
+  link: string
+  /** Ready to copy into WhatsApp or anywhere else, in the invite's language. */
+  message: string
+  firstName: string
+  lastName: string | null
+  email: string | null
+  locale: Locale
+  role: Role
+  maxUses: number
+  uses: number
+  createdAt: string
+  sentAt: string | null
+  revokedAt: string | null
+  joined: InvitedUser[]
+}
+
+export interface NewInvite {
+  firstName: string
+  lastName?: string
+  email?: string
+  locale: Locale
+  /** Also email it to `email`. */
+  send?: boolean
 }
 
 /** The API's build, and the database it uses (the top bar shows DEV for the dev one). */
@@ -767,6 +827,10 @@ export interface AdminUser {
   lastVisit: string | null
   running: number
   archived: number
+  firstName: string | null
+  lastName: string | null
+  /** The email of whoever made the invite it signed up with; null without one. */
+  invitedBy: string | null
 }
 
 /** Running strategies of one template, by mode. */
@@ -813,6 +877,10 @@ export interface Api {
   getAccount(): Promise<Account | null>
   /** Creates an account and logs it in; the same answer when the email already has one. Rejects with `InvalidFieldsError`, `TooManyTriesError`. */
   signUp(signUp: SignUp): Promise<void>
+  /** Whether an invite is needed, and who `invite` (a code) is for. Rejects with `TooManyTriesError` when rate-limited. */
+  getSignUpOptions(invite?: string): Promise<SignUpOptions>
+  /** Rejects with `InvalidFieldsError` (`firstName`, `lastName`). */
+  setName(firstName: string, lastName: string): Promise<void>
   /** Rejects with `UnauthorizedError` for a wrong email or password, `TooManyTriesError` while the email is locked. */
   logIn(email: string, password: string): Promise<void>
   logOut(): Promise<void>
@@ -868,6 +936,12 @@ export interface Api {
   archiveStrategy(id: string): Promise<void>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */
   getAdminSettings(): Promise<AdminSetting[]>
+  getAdminInvites(): Promise<AdminInvite[]>
+  /** Rejects with `InvalidFieldsError` (`firstName`, `lastName`, `email`, `locale`). */
+  createAdminInvite(invite: NewInvite): Promise<AdminInvite>
+  /** Emails an unused invite again. Rejects with `InvalidValueError` saying why not. */
+  sendAdminInvite(id: string): Promise<AdminInvite>
+  revokeAdminInvite(id: string): Promise<void>
   /**
    * Rejects with `InvalidValueError` (its message is for the user) when the value is refused. A secret needs `shown`:
    * the values the page shows, so the API can refuse it if its mail server changed since (409).

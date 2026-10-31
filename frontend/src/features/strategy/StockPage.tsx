@@ -41,7 +41,7 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
       </div>
       {mark && (
         <span className={styles.mark} data-met={check.used ? 'used' : String(check.met)} title={mark}>
-          <span aria-hidden="true">{check.used ? '✓' : check.met ? '✓' : '○'}</span>
+          <span aria-hidden="true">{check.used || check.met ? '✓' : '○'}</span>
           <span className="visually-hidden">{mark}</span>
         </span>
       )}

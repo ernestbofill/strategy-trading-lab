@@ -321,7 +321,7 @@ public static class StrategyEndpoints
         // The close each latest evaluation looked at (one day for most strategies).
         var checkedDays = latest.Values.Select(r => r.Date).Distinct().ToList();
         var closes = await db.Prices.AsNoTracking().Where(p => shown.Contains(p.AssetId) && checkedDays.Contains(p.Date))
-            .Select(p => new { p.AssetId, p.Date, p.Close }).ToListAsync(cancellationToken);
+            .ToDictionaryAsync(p => (p.AssetId, p.Date), p => p.Close, cancellationToken);
 
         var you = book.You(strategy);
         var maxSteps = strategy.Budget.MaxSteps;
@@ -378,7 +378,7 @@ public static class StrategyEndpoints
                 What = asset.Texts.FirstOrDefault(t => t.Locale == user.Locale)?.What
                     ?? asset.Texts.FirstOrDefault(t => t.Locale == TemplateTexts.DefaultLocale)?.What,
                 CheckedOn = evaluation?.Date,
-                Close = evaluation is null ? null : closes.FirstOrDefault(c => c.AssetId == asset.Id && c.Date == evaluation.Date)?.Close,
+                Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 Checks = checks,
             };
         })

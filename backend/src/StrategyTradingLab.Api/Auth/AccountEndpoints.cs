@@ -10,7 +10,7 @@ using StrategyTradingLab.Api.Invites;
 namespace StrategyTradingLab.Api.Auth;
 
 public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool OverviewEmail, bool DisclaimerAccepted,
-    string? Currency = null, string? FirstName = null, string? LastName = null, string? InviteCode = null);
+    string? Currency = null, string? FirstName = null, string? LastName = null, string? InviteCode = null, string? TermsVersion = null);
 public record LogInRequest(string? Email, string? Password);
 public record TokenRequest(string? Token);
 public record ResetPasswordRequest(string? Token, string? Password);
@@ -33,7 +33,7 @@ public record SignUpOptions(bool InviteOnly, SignUpInvite? Invite);
 public record ResetRecipient(string Email, string Locale);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
-public record AccountDto(string Email, string? FirstName, string? LastName, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role, bool AiSharing = false);
+public record AccountDto(string Email, string? FirstName, string? LastName, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role, bool AiSharing = false, string? TermsVersionAccepted = null, DateTimeOffset? TermsAcceptedAt = null);
 
 /// <summary>A message for the user, the same whatever the email (sign-up, forgot password).</summary>
 public record AccountMessage(string Message);
@@ -79,6 +79,9 @@ public static class AccountEndpoints
             if (!AccountRules.Currencies.Contains(currency)) errors["currency"] = [Messages.PickCurrency.In(reqLocale)];
             if (!AccountRules.IsTimeZone(request.TimeZone)) errors["timeZone"] = [Messages.PickTimeZone.In(reqLocale)];
             if (!request.DisclaimerAccepted) errors["disclaimerAccepted"] = [Messages.TickTheBox.In(reqLocale)];
+            var termsVersion = string.IsNullOrWhiteSpace(request.TermsVersion) ? AccountRules.CurrentTermsVersion : request.TermsVersion.Trim();
+            if (termsVersion != AccountRules.CurrentTermsVersion || termsVersion.Length > AccountRules.TermsVersionMax)
+                errors["termsVersion"] = [Messages.InvalidTermsVersion.In(reqLocale)];
             // An invite counts whatever the setting, so an invited person gets its role while sign-ups are open too.
             var invite = await InviteEndpoints.FindUsableAsync(db, request.InviteCode, cancellationToken);
             if (invite is null && !string.IsNullOrWhiteSpace(request.InviteCode)) errors["inviteCode"] = [Messages.InviteNotValid.In(reqLocale)];
@@ -101,6 +104,7 @@ public static class AccountEndpoints
             {
                 Email = email!, FirstName = firstName, LastName = lastName, TimeZone = request.TimeZone!, Locale = locale,
                 Currency = currency, OverviewEmail = request.OverviewEmail, DisclaimerAcceptedAt = now,
+                TermsVersionAccepted = termsVersion, TermsAcceptedAt = now,
                 Role = invite?.Role ?? UserRole.User, InviteId = invite?.Id,
             };
             user.PasswordHash = hasher.HashPassword(user, request.Password!);
@@ -172,7 +176,7 @@ public static class AccountEndpoints
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency, user.Role, user.AiSharing));
+            return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency, user.Role, user.AiSharing, user.TermsVersionAccepted, user.TermsAcceptedAt));
         })
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");

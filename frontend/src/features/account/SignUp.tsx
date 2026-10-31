@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { api, InvalidFieldsError, type Currency, type Locale, type SignUpOptions } from '../../api'
 import { Checkbox, FormMessage, PasswordField, SegmentedField, SelectField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
@@ -14,7 +14,10 @@ import { useAccount } from './AccountContext'
 import { errorText } from './copy'
 import { InviteWelcome } from './InviteWelcome'
 import { INVITE_PARAM, logInPath, logInPathFor, safeNext } from './paths'
+import { privacyPath, termsPath } from '../legal/paths'
 import { guessTimeZone, timeZones } from './timeZones'
+
+export const TERMS_VERSION = '2026-10-31'
 
 /**
  * Sign-up (spec: Sign-up). A new account is logged in at once and goes to Pick a template. Opened from an invite link
@@ -85,6 +88,7 @@ export function SignUp() {
     try {
       await api.signUp({
         firstName, lastName, email, password, locale, timeZone, currency, overviewEmail, disclaimerAccepted: accepted,
+        termsVersion: TERMS_VERSION,
         inviteCode: inviteCode.trim() || undefined,
       })
       setSignedUp(true)
@@ -181,8 +185,17 @@ export function SignUp() {
         <Checkbox checked={overviewEmail} onChange={setOverviewEmail}>
           {t('account.overviewEmail')}
         </Checkbox>
-        <Checkbox checked={accepted} onChange={setAccepted} error={errors.disclaimerAccepted}>
-          {t('account.signUp.accept', { disclaimer: t('common.disclaimerFull') })}
+        <Checkbox checked={accepted} onChange={setAccepted} error={errors.disclaimerAccepted || errors.termsVersion}>
+          <span>
+            {t('account.signUp.accept', { disclaimer: t('common.disclaimerFull') })}{' '}
+            <Link to={termsPath} className={styles.inlineLink} target="_blank" rel="noopener noreferrer">
+              {t('legal.terms.title')}
+            </Link>
+            {' · '}
+            <Link to={privacyPath} className={styles.inlineLink} target="_blank" rel="noopener noreferrer">
+              {t('legal.privacy.title')}
+            </Link>
+          </span>
         </Checkbox>
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>

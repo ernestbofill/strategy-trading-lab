@@ -5,7 +5,8 @@ namespace StrategyTradingLab.Api.Auth;
 /// <summary>What an account's fields must be (spec: Sign-up). Messages are for the user.</summary>
 public static class AccountRules
 {
-    public const int PasswordMin = 10, PasswordMax = 128, NameMax = 100;
+    public const int PasswordMin = 10, PasswordMax = 128, NameMax = 100, TermsVersionMax = 32;
+    public const string CurrentTermsVersion = "2026-10-31";
     public static readonly IReadOnlyList<string> Locales = ["en", "ca"];
     /// <summary>The currencies a user can pick for new strategies (ISO 4217). The first is the default.</summary>
     public static readonly IReadOnlyList<string> Currencies = ["EUR", "USD", "GBP"];

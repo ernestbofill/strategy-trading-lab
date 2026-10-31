@@ -52,6 +52,9 @@ public class User : IHasUpdatedAt
     public UserRole Role { get; set; } = UserRole.User;
     public bool OverviewEmail { get; set; } = true;
     public DateTimeOffset? DisclaimerAcceptedAt { get; set; }
+    /// <summary>The version of the legal terms accepted by the user (e.g. "2026-10-31").</summary>
+    public string? TermsVersionAccepted { get; set; }
+    public DateTimeOffset? TermsAcceptedAt { get; set; }
     /// <summary>Share AI rounds anonymously (off by default), and when that last changed.</summary>
     public bool AiSharing { get; set; }
     public DateTimeOffset? AiSharingChangedAt { get; set; }

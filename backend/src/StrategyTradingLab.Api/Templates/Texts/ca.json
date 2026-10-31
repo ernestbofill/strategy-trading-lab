@@ -216,7 +216,7 @@
         "label": "Ha caigut fa poc",
         "detail": "L'última caiguda forta va ser fa {value} sessions. Compta durant {max} dies.",
         "short": "no ha caigut prou fa poc",
-        "none": "No ha caigut prou en l'últim any.",
+        "none": "No ha caigut prou en tot el seu historial de preus.",
         "info": "Caiguda forta: almenys un {min}% per sota del màxim de 52 setmanes i per sota de la SMA 200. Continua sent candidata {max} sessions més."
       },
       "drop": {

@@ -216,7 +216,7 @@
         "label": "Beaten down lately",
         "detail": "Last beaten down {value} trading days ago. It counts for {max} days.",
         "short": "not beaten down lately",
-        "none": "Not beaten down in the last year.",
+        "none": "Not beaten down in its price history.",
         "info": "Beaten down: at least {min}% below its 52-week high and below its SMA 200. It stays a candidate for {max} trading days after that."
       },
       "drop": {

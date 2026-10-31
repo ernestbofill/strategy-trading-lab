@@ -160,9 +160,9 @@ public class BearRules : IBuyRules
             checks.Add(new("bounce", CheckGroup.Buy, bounced, aboveLowPct, p.ReboundPct, Level: Math.Round(bounceLine, 2),
                 Progress: bounced ? null : RuleCheck.ProgressOf(aboveLowPct, p.ReboundPct)));
         }
-        if (phase == "accumulating" || (phase == "done" && status == RuleStatus.BuySignal))
-            checks.Add(new("pace", CheckGroup.Next, status == RuleStatus.BuySignal, sinceLast, p.StepEveryDays,
-                Progress: status == RuleStatus.BuySignal ? null : RuleCheck.ProgressOf(sinceLast, p.StepEveryDays)));
+        // Between steps, the wait for the next one (a signal day shows the signal itself).
+        if (phase == "accumulating" && status != RuleStatus.BuySignal)
+            checks.Add(new("pace", CheckGroup.Next, false, sinceLast, p.StepEveryDays, Progress: RuleCheck.ProgressOf(sinceLast, p.StepEveryDays)));
         return new RuleDecision(status, reason, facts, windowOpen, stepNo) { Checks = checks };
     }
 }

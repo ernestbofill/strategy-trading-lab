@@ -160,7 +160,8 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
         )}
       </div>
 
-      {s.checkTexts && (
+      {/* Without enough price history the rules say nothing yet: the status line says so. */}
+      {s.checkTexts && row.status !== 'notEnoughData' && (
         <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
           <Rules row={row} texts={s.checkTexts} />
         </Section>

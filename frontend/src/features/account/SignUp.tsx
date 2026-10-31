@@ -32,7 +32,6 @@ export function SignUp() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [inviteCode, setInviteCode] = useState(linkCode)
-  const [showCode, setShowCode] = useState(linkCode !== '')
   const [locale, setLocale] = useState<Locale>(currentAppLocale)
   const [currency, setCurrency] = useState<Currency>('EUR')
   const [timeZone, setTimeZone] = useState(guessTimeZone)
@@ -65,7 +64,7 @@ export function SignUp() {
         setLocale(invite.locale)
         setAppLocale(invite.locale)
       })
-      .catch(() => live && setShowCode(true))
+      .catch(() => undefined) // The form still works: the API checks the code.
     return () => {
       live = false
     }
@@ -98,7 +97,6 @@ export function SignUp() {
         setErrors(err.fields)
         // The link's invite was used or revoked since the page loaded: drop the welcome and let them type another code.
         if (err.fields.inviteCode) {
-          setShowCode(true)
           setOptions((o) => o && { ...o, invite: null })
         }
       } else setMessage({ tone: 'error', text: errorText(err) })
@@ -126,9 +124,9 @@ export function SignUp() {
       {linkFailed && <FormMessage tone="error">{t('account.invite.notValid')}</FormMessage>}
       {codeNeeded && !linkFailed && <p className={styles.line}>{t('account.signUp.inviteOnly')}</p>}
       <form id="sign-up" className={styles.form} onSubmit={submit} noValidate>
-        {!invite && (showCode || codeNeeded) && (
+        {!invite && (
           <TextField
-            label={t('account.signUp.inviteCode')}
+            label={codeNeeded ? t('account.signUp.inviteCode') : t('account.signUp.inviteCodeOptional')}
             autoComplete="off"
             autoCapitalize="characters"
             placeholder="ABCD-EFGH"
@@ -189,9 +187,6 @@ export function SignUp() {
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>
       <div className={styles.links}>
-        {!invite && !showCode && !codeNeeded && (
-          <TextAction onClick={() => setShowCode(true)}>{t('account.signUp.haveInvite')}</TextAction>
-        )}
         <TextAction to={nextParam ? logInPathFor(nextParam) : logInPath}>{t('account.signUp.haveAccount')}</TextAction>
         <TextAction to={pickPath}>{t('account.signUp.skipLookAround')}</TextAction>
       </div>

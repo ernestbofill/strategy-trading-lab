@@ -109,6 +109,10 @@ public class TrendRules : IBuyRules
             // How far the price still has to rise to reach the buy line (0 at or above it): "close to the line".
             ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(buyLine, price)), 2),
         };
-        return new RuleDecision(status, reason, facts, WindowOpen: up);
+        // Out of the market: the buy line. In it: the sell line. Inside the band the trend stays what it was, so "met" is the trend.
+        List<RuleCheck> checks = day.HasPosition
+            ? [new("sellLine", CheckGroup.Sell, !up, Math.Round(Indicators.PctFrom(price, sellLine), 1), p.BandPct, Level: Math.Round(sellLine, 2))]
+            : [new("buyLine", CheckGroup.Buy, up, Math.Round(Indicators.PctFrom(price, buyLine), 1), p.BandPct, Level: Math.Round(buyLine, 2))];
+        return new RuleDecision(status, reason, facts, WindowOpen: up) { Checks = checks };
     }
 }

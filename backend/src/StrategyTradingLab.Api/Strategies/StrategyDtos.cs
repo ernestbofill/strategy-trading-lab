@@ -1,3 +1,4 @@
+using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Signals;
@@ -88,10 +89,20 @@ public enum StockStatus
 /// confirmed buys), <c>RulesSteps</c> the rules' own signals (live only). <c>Signal</c> is the waiting signal (live) or
 /// today's (simulation). <c>Invested</c> is the cost of its buys, fees included, minus the cost of shares sold, as budget
 /// used counts it; <c>Result</c> is the gain in percent of it, null with no buys. <c>AiScore</c> is its overall score in the
-/// last AI round that scored it (AI strategies).
+/// last AI round that scored it (AI strategies). For the stock page: its exchange, currency and what it does; <c>CheckedOn</c>,
+/// the day of its latest evaluation, with that day's <c>Close</c> and each rule's <c>Checks</c> (none before the daily check
+/// stored them, and for the AI template).
 /// </summary>
 public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Status, int Steps, int? RulesSteps, int? MaxSteps,
-    decimal? DistancePct, Guid? SignalId, int? SignalStep, decimal Invested, decimal? Result, TradeSide? SignalSide = null, decimal? AiScore = null);
+    decimal? DistancePct, Guid? SignalId, int? SignalStep, decimal Invested, decimal? Result, TradeSide? SignalSide = null, decimal? AiScore = null)
+{
+    public string Exchange { get; init; } = "";
+    public string Currency { get; init; } = "";
+    public string? What { get; init; }
+    public DateOnly? CheckedOn { get; init; }
+    public decimal? Close { get; init; }
+    public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
+}
 
 /// <summary>A trade in the strategy's trades list.</summary>
 public record StrategyTradeItem(
@@ -191,4 +202,8 @@ public record StrategyDetail(
     AiRoundsSummary? AiRounds = null,
     AiSetup? Ai = null,
     Guid? SourceStrategyId = null,
-    string? SourceStrategyName = null);
+    string? SourceStrategyName = null)
+{
+    /// <summary>The template's words for each rule check (<see cref="StockRow.Checks"/>), by its key.</summary>
+    public IReadOnlyDictionary<string, CheckTexts>? CheckTexts { get; init; }
+}

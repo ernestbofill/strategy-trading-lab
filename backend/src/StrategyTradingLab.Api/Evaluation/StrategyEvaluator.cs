@@ -142,12 +142,12 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         var row = await db.DailyEvaluations.FindAsync([strategy.Id, asset.Id, latest.Date], cancellationToken);
         if (row is null)
             db.DailyEvaluations.Add(new DailyEvaluation
-                { StrategyId = strategy.Id, AssetId = asset.Id, Date = latest.Date, Status = status, StepNo = latest.StepNo, Facts = Facts(latest.Facts) });
+                { StrategyId = strategy.Id, AssetId = asset.Id, Date = latest.Date, Status = status, StepNo = latest.StepNo, Facts = TodaysFacts(latest) });
         else
         {
             row.Status = status;
             row.StepNo = latest.StepNo;
-            row.Facts = Facts(latest.Facts);
+            row.Facts = TodaysFacts(latest);
         }
 
         // A signal for each buy or sale the rules call for.
@@ -263,6 +263,13 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
     }
 
     static JsonDocument Facts(IReadOnlyDictionary<string, object> facts) => JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);
+
+    /// <summary>Where the stock stands today: the day's facts and, under <c>checks</c>, each rule's verdict (the stock page).</summary>
+    static JsonDocument TodaysFacts(DayEvaluation day) =>
+        JsonSerializer.SerializeToDocument(new Dictionary<string, object>(day.Facts) { [ChecksKey] = day.Checks }, JsonSerializerOptions.Web);
+
+    /// <summary>The key of the checks in a daily evaluation's facts.</summary>
+    public const string ChecksKey = "checks";
 }
 
 /// <summary>The euro against each currency by day, and the rate between any two through it.</summary>

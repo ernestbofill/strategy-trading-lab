@@ -17,7 +17,8 @@ public record TemplateTexts(
     BacktestTexts? Backtest,
     StockStatusTexts? StockStatus = null,
     IReadOnlyDictionary<string, SettingTexts>? Settings = null,
-    IReadOnlyDictionary<string, SettingGroupTexts>? SettingGroups = null)
+    IReadOnlyDictionary<string, SettingGroupTexts>? SettingGroups = null,
+    IReadOnlyDictionary<string, CheckTexts>? Checks = null)
 {
     public const string DefaultLocale = "en";
 
@@ -50,6 +51,14 @@ public record TemplateTexts(
 /// 6-month high"), <c>Watching</c> a custom watching line ("In a drop: {n}% above its low"), and <c>Holding</c> a custom done line.
 /// </summary>
 public record StockStatusTexts(string Zone, string NotCandidate, string? Watching = null, string? Holding = null);
+
+/// <summary>
+/// The words of a rule check on the stock page (Engine <c>RuleCheck</c>). <c>Label</c> names the rule, <c>Detail</c> says where
+/// the stock stands and <c>Short</c> says it in a few words for the strategy page's list; both hold <c>{value}</c> (or
+/// <c>{+value}</c>, signed), <c>{min}</c>, <c>{max}</c> and <c>{level}</c> (a price). <c>None</c> replaces both when the check
+/// has no value (never beaten down, no pullback yet). <c>Info</c> explains the rule.
+/// </summary>
+public record CheckTexts(string Label, string Detail, string Short, string? None = null, string? Info = null);
 
 /// <summary>The words of the "Tested" box and How we tested.</summary>
 public record BacktestTexts(string Scope, string Years, string Universe, string TestedDefaults);

@@ -9,3 +9,5 @@ export const accountPath = '/account'
 export const aiRoundsPath = (id: string) => `/strategies/${id}/ai-rounds`
 /** The prompt editor of a running AI strategy. */
 export const aiPromptPath = (id: string) => `/strategies/${id}/prompt`
+/** A stock's page under one strategy: where it stands on each rule. */
+export const stockPath = (strategyId: string, assetId: string) => `/strategies/${strategyId}/stocks/${assetId}`

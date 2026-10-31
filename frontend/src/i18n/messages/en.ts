@@ -6,6 +6,7 @@ import { dashboard } from './en/dashboard'
 import { feedback } from './en/feedback'
 import { newStrategy } from './en/newStrategy'
 import { signal } from './en/signal'
+import { stock } from './en/stock'
 import { strategy } from './en/strategy'
 import { trades } from './en/trades'
 
@@ -19,6 +20,7 @@ export const en = {
   ...feedback,
   ...newStrategy,
   ...signal,
+  ...stock,
   ...strategy,
   ...trades,
 }

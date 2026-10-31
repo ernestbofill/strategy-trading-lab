@@ -6,6 +6,7 @@ import { dashboard } from './ca/dashboard'
 import { feedback } from './ca/feedback'
 import { newStrategy } from './ca/newStrategy'
 import { signal } from './ca/signal'
+import { stock } from './ca/stock'
 import { strategy } from './ca/strategy'
 import { trades } from './ca/trades'
 
@@ -20,6 +21,7 @@ export const ca: Record<MessageKey, string> = {
   ...feedback,
   ...newStrategy,
   ...signal,
+  ...stock,
   ...strategy,
   ...trades,
 }

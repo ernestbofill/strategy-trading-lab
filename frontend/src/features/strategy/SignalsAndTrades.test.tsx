@@ -86,6 +86,7 @@ const mockStrategy = (fields: Partial<StrategyDetail>): StrategyDetail => ({
       signalStep: null,
       invested: 100,
       result: 2.5,
+      exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
     },
   ],
   trades: [],

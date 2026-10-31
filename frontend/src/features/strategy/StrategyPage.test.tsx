@@ -75,7 +75,7 @@ const dipTemplate = {
 } as unknown as TemplateDetail
 
 describe('StrategyPage', () => {
-  it('shows a live strategy next to the rules alone and the index, and leads a waiting signal to the user', async () => {
+  it('shows a live strategy next to the rules alone and the index, and opens each stock page', async () => {
     open(
       detail({
         id: 'live',
@@ -84,6 +84,7 @@ describe('StrategyPage', () => {
           {
             assetId: 'a', symbol: 'ZS', name: 'Zscaler', status: 'waitingForYou', steps: 1, rulesSteps: 2, maxSteps: 5,
             distancePct: null, signalId: 'sig', signalStep: 2, invested: 101, result: 3.5,
+            exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
           },
         ],
       }),
@@ -97,7 +98,7 @@ describe('StrategyPage', () => {
     expect(screen.getByText('9 did · 2 skipped · 1 missed')).toBeTruthy()
     expect(screen.getByText(/The template's worst year, 2010-2024/).textContent).toContain('−21%')
     expect(screen.getByRole('link', { name: /Zscaler WAITING FOR YOU Signal: step 2 of 5/ }).getAttribute('href')).toBe(
-      '/strategies/live/signals/sig',
+      '/strategies/live/stocks/a',
     )
     expect(screen.getByRole('link', { name: /Tune the settings Change its rules/i }).getAttribute('href')).toBe(
       '/strategies/live/settings',
@@ -121,6 +122,7 @@ describe('StrategyPage', () => {
           {
             assetId: 'spy', symbol: 'SPY', name: 'SPDR S&P 500 ETF', status: 'holding', steps: 1, rulesSteps: null, maxSteps: null,
             distancePct: null, signalId: null, signalStep: null, invested: 100, result: 2,
+            exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
           },
         ],
       }),
@@ -287,10 +289,12 @@ describe('StrategyPage', () => {
           {
             assetId: 'a', symbol: 'ZS', name: 'Zscaler', status: 'watching', steps: 0, rulesSteps: null, maxSteps: 4,
             distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
+            exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
           },
           {
             assetId: 'n', symbol: 'NET', name: 'Cloudflare', status: 'watching', steps: 0, rulesSteps: null, maxSteps: 4,
             distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
+            exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
           },
         ],
       }),

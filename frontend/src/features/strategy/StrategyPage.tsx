@@ -9,13 +9,14 @@ import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { aiRoundPath, aiRoundsPath, signalPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
+import { aiRoundPath, aiRoundsPath, stockPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
 import { AlertsSwitch, ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
+import { StockPill } from './StockPill'
 import { stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
 
@@ -141,15 +142,13 @@ function Stocks({ s }: { s: StrategyDetail }) {
     <Section title={t(s.investsIn === 'stockList' ? 'strategy.stocks' : 'strategy.funds', { count: s.stocks.length })}>
       <ul className={styles.stocks}>
         {s.stocks.map((row) => {
-          const line = stockLine(row, s.mode, s.currency, s.words, t)
+          const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
           const content = (
             <>
               <div className={styles.stockMain}>
                 <div className={styles.stockName}>{row.name}</div>
                 <div className={styles.stockStatus}>
-                  <span className={styles.pill} data-tone={line.tone}>
-                    {line.pill}
-                  </span>
+                  <StockPill tone={line.tone}>{line.pill}</StockPill>
                   <span className={styles.detail}>{line.detail}</span>
                 </div>
               </div>
@@ -161,16 +160,12 @@ function Stocks({ s }: { s: StrategyDetail }) {
               </div>
             </>
           )
-          // Only a waiting signal leads somewhere yet: the stock page isn't built.
+          // Every row opens its stock page; a signal waiting for the user is answered from there.
           return (
             <li key={row.assetId}>
-              {row.status === 'waitingForYou' && row.signalId ? (
-                <Link to={signalPath(s.id, row.signalId)} className={styles.stock}>
-                  {content}
-                </Link>
-              ) : (
-                <div className={styles.stock}>{content}</div>
-              )}
+              <Link to={stockPath(s.id, row.assetId)} className={styles.stock}>
+                {content}
+              </Link>
             </li>
           )
         })}

@@ -84,6 +84,16 @@ public class DipRules : IBuyRules
             // How far the price still has to fall to reach the zone (0 inside or below it): "close to the line".
             ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(price, zoneHigh)), 2),
         };
-        return new RuleDecision(status, reason, facts, window.Open);
+        var belowPeak = Math.Round(-pullback, 1);
+        List<RuleCheck> checks =
+        [
+            new("gain", CheckGroup.Candidate, gain >= p.MinGainPct, Math.Round(gain, 1), p.MinGainPct, Progress: RuleCheck.ProgressOf(gain, p.MinGainPct)),
+            new("stacked", CheckGroup.Candidate, aligned),
+            new("rising", CheckGroup.Candidate, trendRising[i]),
+            new("zone", CheckGroup.Buy, price <= zoneHigh && price >= peak * (1 - p.ZoneEndPct / 100), belowPeak, p.ZoneStartPct, p.ZoneEndPct, Math.Round(zoneHigh, 2)),
+            new("floor", CheckGroup.Buy, price >= sma50, Math.Round(Indicators.PctFrom(price, sma50), 1), Level: Math.Round(sma50, 2)),
+        ];
+        if (RuleCheck.Cooldown(context, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
+        return new RuleDecision(status, reason, facts, window.Open) { Checks = checks };
     }
 }

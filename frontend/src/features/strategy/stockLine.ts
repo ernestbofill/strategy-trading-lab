@@ -1,9 +1,10 @@
-import type { Currency, StockRow, StockStatusWords, StrategyMode } from '../../api'
+import type { CheckTexts, Currency, StockRow, StockStatusWords, StrategyMode } from '../../api'
 import { tNow, type Translate } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { money, signedPct } from '../../lib/format'
+import { unmetLine } from './checks'
 
-export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching'
+export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching' | 'muted'
 
 /** What a stock's row says: its pill, the line under it, and its result on the right. */
 export interface StockLine {
@@ -20,7 +21,9 @@ const pct = (d: number) => (d === 0 ? '0' : d < 1 ? '<1' : String(Math.round(d))
 const fillN = (text: string, d: number | null) =>
   d !== null && text.includes('{n}') ? text.replace('{n}', pct(d)) : text.replace('{n}% ', '')
 
-function detailOf(row: StockRow, words: StockStatusWords | null, t: Translate): string {
+type Texts = Record<string, CheckTexts> | null | undefined
+
+function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, t: Translate): string {
   const stepOf = (n: number) => (row.maxSteps === null ? String(n) : t('signal.stepOf', { n, max: row.maxSteps }))
   const fromZone = (d: number, zone: string) => t('strategy.stock.fromZone', { dist: pct(d), zone })
   switch (row.status) {
@@ -53,11 +56,14 @@ function detailOf(row: StockRow, words: StockStatusWords | null, t: Translate): 
     case 'noBudget':
       return t(row.maxSteps === null ? 'strategy.stock.noBudgetShort' : 'strategy.stock.noBudget')
     case 'outOfTheMarket':
-      return row.distancePct !== null && row.distancePct > 0 && words
+      return unmetLine(row, checks, ['buy']) ?? (row.distancePct !== null && row.distancePct > 0 && words
         ? fromZone(row.distancePct, words.zone)
-        : (words?.notCandidate ?? t('strategy.stock.rulesNotMet'))
-    case 'watching':
+        : (words?.notCandidate ?? t('strategy.stock.rulesNotMet')))
+    case 'watching': {
       if (row.aiScore !== undefined && row.aiScore !== null) return t('strategy.stock.lastScore', { score: row.aiScore })
+      // A candidate: the buy rules it still misses, as the stock page shows them.
+      const fromChecks = unmetLine(row, checks, ['buy', 'next'])
+      if (fromChecks) return fromChecks
       if (words?.watching) {
         return row.distancePct !== null ? fillN(words.watching, row.distancePct) : t('strategy.stock.rulesNotMet')
       }
@@ -65,8 +71,12 @@ function detailOf(row: StockRow, words: StockStatusWords | null, t: Translate): 
       return row.distancePct !== null && row.distancePct > 0 && words
         ? fromZone(row.distancePct, words.zone)
         : t('strategy.stock.rulesNotMet')
+    }
     case 'notCandidate':
-      return words?.notCandidate ? fillN(words.notCandidate, row.distancePct) : t('strategy.stock.notCandidate')
+      return (
+        unmetLine(row, checks, ['candidate']) ??
+        (words?.notCandidate ? fillN(words.notCandidate, row.distancePct) : t('strategy.stock.notCandidate'))
+      )
     case 'notEnoughData':
       return t('strategy.stock.notEnoughData')
     case 'notChecked':
@@ -81,11 +91,11 @@ const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
   done: ['strategy.pill.done', 'holding'],
   building: ['strategy.pill.building', 'building'],
   outOfTheMarket: ['strategy.pill.outOfMarket', 'watching'],
-  noBudget: ['strategy.pill.watching', 'watching'],
-  watching: ['strategy.pill.watching', 'watching'],
-  notCandidate: ['strategy.pill.watching', 'watching'],
-  notEnoughData: ['strategy.pill.watching', 'watching'],
-  notChecked: ['strategy.pill.watching', 'watching'],
+  noBudget: ['strategy.pill.candidate', 'watching'],
+  watching: ['strategy.pill.candidate', 'watching'],
+  notCandidate: ['strategy.pill.notCandidate', 'muted'],
+  notEnoughData: ['strategy.pill.notChecked', 'muted'],
+  notChecked: ['strategy.pill.notChecked', 'muted'],
 }
 
 /** The words of a stock's row on the strategy page (spec: Strategy page, one row per stock). */
@@ -94,6 +104,7 @@ export function stockLine(
   mode: StrategyMode,
   currency: Currency,
   words: StockStatusWords | null,
+  checks?: Texts,
   t: Translate = tNow,
 ): StockLine {
   const [key, tone] = PILL_KEYS[row.status]
@@ -101,7 +112,7 @@ export function stockLine(
   return {
     pill: t(key),
     tone,
-    detail: detailOf(row, words, t),
+    detail: detailOf(row, words, checks, t),
     result: row.result === null ? '–' : signedPct(row.result, 1),
     note:
       row.result === null

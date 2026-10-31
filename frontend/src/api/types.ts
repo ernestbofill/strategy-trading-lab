@@ -279,6 +279,42 @@ export interface StockRow {
   result: number | null
   /** AI strategies: its overall score in the last AI round that scored it. */
   aiScore?: number | null
+  /** For the stock page: where it trades, its currency and what it does. */
+  exchange: string
+  currency: string
+  what: string | null
+  /** The day of its latest check, that day's close, and each rule's verdict (empty before the daily check stored them). */
+  checkedOn: string | null
+  close: number | null
+  checks: RuleCheck[]
+}
+
+/** The part of the rules a check belongs to: what makes a candidate, what gives a buy or sell signal, what earns the next step. */
+export type CheckGroup = 'candidate' | 'buy' | 'sell' | 'next'
+
+/**
+ * One rule's verdict on the latest checked day: backend Engine/BuyRules.cs (RuleCheck). `met` is null for a figure shown
+ * for context only; `progress` (0 to 1) is how far a figure that must grow has come; `used` marks a milestone that earned its step.
+ */
+export interface RuleCheck {
+  key: string
+  group: CheckGroup
+  met: boolean | null
+  value: number | null
+  min: number | null
+  max: number | null
+  level: number | null
+  progress: number | null
+  used: boolean | null
+}
+
+/** A template's words for a check, with {value}, {+value}, {min}, {max} and {level}; `none` when the check has no value. */
+export interface CheckTexts {
+  label: string
+  detail: string
+  short: string
+  none?: string | null
+  info?: string | null
 }
 
 /** The template's words for a stock that isn't bought: "the discount zone", "Below its long trend". */
@@ -327,6 +363,8 @@ export interface StrategyDetail {
   /** A live copy: the simulation it came from ("Go live with these settings"), while that exists. */
   sourceStrategyId?: string | null
   sourceStrategyName?: string | null
+  /** The template's words for each rule check, by key. */
+  checkTexts?: Record<string, CheckTexts> | null
 }
 
 /** What the AI prompt asks for: the sources on, and the user's own instructions (null for the suggested ones). */

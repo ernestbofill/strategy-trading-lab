@@ -538,12 +538,14 @@ The same three settings can be changed later from the strategy page (not drawn).
     - "SIGNAL" (simulation, a signal on the latest checked day; "Step [n] of [max], bought at the next open")
     - "HOLDING" ("[n] of [max] steps"; also when the rules hold the stock with steps left, as *The comeback* does once its milestones are used, as in the POC: then "[n] of [max] steps · its milestones are used")
     - "BUILDING" ("[n] of [max] steps"; live when it differs: "Rules: [n] of [max] · You: [n] of [max]")
-    - "WATCHING" ("[n]% from [the template's zone]", "Rules not met today" when it is there or past it, or, when it isn't a candidate, the template's words: "Below its long trend" for *Winners at a discount*, "Not beaten down" for *The comeback*; "Not enough price history yet" and "Not checked yet" before the daily check has a verdict). The zone is "the discount zone" for *Winners at a discount* and "the buy line" for *The comeback*.
-    - "WATCHING" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
+    - "CANDIDATE": the stock meets the template's candidate rules, so the rules watch it for a buy signal. The detail line names the buy rules it still misses, in a few words, from the stock page's checks (at most two, joined by " · "): "Volume 0.84× (needs 1.2×)", "24.7% below its peak (zone 5–15%) · below the floor average". Before the daily check has stored the checks: "[n]% from [the template's zone]" or "Rules not met today". There is no "WATCHING" any more: every active stock of a strategy is watched, so the pill says whether it is a candidate.
+    - "NOT A CANDIDATE": it fails a candidate rule, so no signal comes however the price moves. The detail line names the candidate rule it misses ("Rose 31.5% (needs 50%)", "Not beaten down lately"), or the template's words before the checks are stored ("Below its long trend", "Not beaten down"). A signal that ended because the stock stopped being a candidate reads the same.
+    - "NOT CHECKED": "Not enough price history yet", or "Not checked yet" before the daily check has a verdict.
+    - "CANDIDATE" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
-    - Until the stock page is built, only a waiting row is a link.
-    - *Bear markets* shows "WATCHING" with "[n]% below its 6-month high" in normal markets and "In a drop: [n]% above its low" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought.
-    - *Index trend* shows "OUT OF THE MARKET" ("[n]% from the buy line", or "Below its long trend") when not holding, and "HOLDING" ("In the market") when holding.
+    - Every row opens the stock's page; a waiting signal is answered from there ("Answer the signal").
+    - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought.
+    - *Index trend* shows "OUT OF THE MARKET" ("−[n]% vs the buy line", or "Below its long trend" before the checks are stored) when not holding, and "HOLDING" ("In the market") when holding.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
 - **Signals and trades** (`SignalsAndTrades`):
@@ -577,6 +579,27 @@ The same three settings can be changed later from the strategy page (not drawn).
 | Followed signals | – | Did / skipped / missed |
 | Picks vs the rest (AI only) | Top-scored stocks vs the unpicked ones since each round | Same |
 | Next up | Stocks closest to their rules, with the distance | Same |
+
+### Stock page (built, not drawn)
+
+One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. No chart yet (ROADMAP, Milestone 3).
+
+- Top bar: "← BACK" to the strategy page.
+- H1: the symbol; under it the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
+- **Status box:** the same pill and line as its row on the strategy page, and "Close [price] on [date]": the close the rules looked at.
+- **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
+  - "Is it a candidate?", with "Yes: the rules watch it for a buy signal." or "No: it gets no signal, however the price moves."
+  - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).
+  - "Next step" (*The comeback*'s milestones once it holds steps, *Bear markets*' pace): "Each new sign earns one more step." A used milestone reads "Step bought".
+  - "Sell signal" (*Index trend* in the market): "Met: a sell signal for the whole position."
+  - Each rule: its name with an "i" when it has an explanation, where the stock stands with the numbers ("0.84× its 50-day average (needs 1.2×)"), a mark on the right (✓ met, ○ not met, none for a figure shown for context, such as *The comeback*'s drop from the 52-week high), and for a figure that must still grow, a bar with its percentage.
+  - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
+  - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.
+- **"Your position"** (simulation: "Paper trades"), once it has buys: steps, invested, result.
+- **Signals and trades** for this stock only; "+ Log a trade by hand" (live) offers only this stock.
+- A waiting signal (live): the primary action "Answer the signal" opens Confirm a signal.
+- Bottom: "Not financial advice. Signals follow your rules."
+- A stock that isn't in the strategy: "This stock isn't in this strategy."
 
 ### Confirm a signal (`Signal`, live only)
 
@@ -729,7 +752,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Simulation variants of Set your budget, Confirm and the strategy page. (The AI round's Live variant is built: it opens Confirm a signal for the first pick.)
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Index trend* and *Bear markets*.
-- Stock page: chart with the discount zone shaded, status history, trades (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
+- Stock page: the chart with the discount zone shaded (Milestone 3), status history.
 - Stock list editor from the strategy page ("Edit list"; "+ Add a stock" on the review is built, #90).
 - Until a screen is built, the controls that open it are hidden, not shown disabled: "Edit list", the "Backtest" tile, and Confirm's "Edit" on the Daily overview and Alerts rows. The item that builds the screen brings its control back.
 - Sell signals for *Index trend*, and its "Out of the market" status.

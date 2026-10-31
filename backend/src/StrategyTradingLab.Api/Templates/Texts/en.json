@@ -83,6 +83,43 @@
         "title": "3 · Pace: how often it buys",
         "lead": "Each signal buys one step. A stock gets at most one step per stay in the zone, and up to your budget's steps in all."
       }
+    },
+    "checks": {
+      "gain": {
+        "label": "Proven growth",
+        "detail": "Rose {value}% from its low (needs {min}%).",
+        "short": "rose {value}% (needs {min}%)",
+        "info": "The recent peak must be at least {min}% above the lowest close of the last months: only proven winners count."
+      },
+      "stacked": {
+        "label": "Averages stacked",
+        "detail": "Needs the short average above the middle one, and that above the long one.",
+        "short": "averages not stacked",
+        "info": "The SMA 50, SMA 150 and SMA 200 (average closes over those days), in that order: a steady uptrend."
+      },
+      "rising": {
+        "label": "Long average rising",
+        "detail": "Needs the long average higher than 20 trading days ago.",
+        "short": "long average not rising"
+      },
+      "zone": {
+        "label": "In the discount zone",
+        "detail": "{value}% below the recent peak. The zone is {min}–{max}% below ({level} and down).",
+        "short": "{value}% below its peak (zone {min}–{max}%)",
+        "info": "The discount zone is a dip of {min}–{max}% below the highest close of the last weeks."
+      },
+      "floor": {
+        "label": "Above the floor average",
+        "detail": "{+value}% vs the floor average ({level}).",
+        "short": "below the floor average",
+        "info": "A dip that falls through the SMA 50 is a collapse, not a discount."
+      },
+      "cooldown": {
+        "label": "Wait after a step",
+        "detail": "{value} more days to wait after the last step ({min} in all).",
+        "short": "waits {value} days after a step",
+        "info": "After each step the rules wait a few calendar days before the next buy signal."
+      }
     }
   },
   "comeback": {
@@ -173,6 +210,70 @@
         "title": "4 · Pace: how often it buys",
         "lead": "A step is one buy, up to your budget's steps per stock."
       }
+    },
+    "checks": {
+      "beaten": {
+        "label": "Beaten down lately",
+        "detail": "Last beaten down {value} trading days ago. It counts for {max} days.",
+        "short": "not beaten down lately",
+        "none": "Not beaten down in its price history.",
+        "info": "Beaten down: at least {min}% below its 52-week high and below its SMA 200. It stays a candidate for {max} trading days after that."
+      },
+      "drop": {
+        "label": "Drop from the 52-week high",
+        "detail": "{+value}% from the 52-week high ({level}).",
+        "short": "{+value}% from its high"
+      },
+      "vsSma200": {
+        "label": "Price vs SMA 200",
+        "detail": "{+value}% vs the SMA 200 ({level}).",
+        "short": "{+value}% vs SMA 200",
+        "info": "The average close of the last 200 days, the long trend."
+      },
+      "buyLine": {
+        "label": "Price vs the buy line",
+        "detail": "{+value}% vs the buy line ({level}). A step needs 0 to +{max}%.",
+        "short": "{+value}% vs the buy line",
+        "info": "The buy line is {min}% above the SMA 50, the average close of the last 50 days: the stock has turned."
+      },
+      "chase": {
+        "label": "Not too far past the line",
+        "detail": "{+value}% above the buy line: more than {max}% is too late to chase.",
+        "short": "too far past the buy line"
+      },
+      "volume": {
+        "label": "Volume: 5-day vs 50-day average",
+        "detail": "{value}× its 50-day average (needs {min}×).",
+        "short": "volume {value}× (needs {min}×)",
+        "info": "Shares traded per day: more trading than usual backs the turn."
+      },
+      "sma200": {
+        "label": "Back above the SMA 200",
+        "detail": "{+value}% vs the SMA 200 ({level}).",
+        "short": "below the SMA 200"
+      },
+      "golden": {
+        "label": "Golden cross",
+        "detail": "Needs the SMA 50 above the SMA 200. Price {+value}% vs the SMA 50 ({level}).",
+        "short": "no golden cross yet"
+      },
+      "near_high": {
+        "label": "Near the old high",
+        "detail": "Needs a close within {min}% of the 52-week high: {+value}% vs that line ({level}).",
+        "short": "{+value}% vs the near-high line"
+      },
+      "breakout": {
+        "label": "Breakout",
+        "detail": "{+value}% vs the high before its {min}% pullback ({level}).",
+        "short": "no breakout yet",
+        "none": "Needs a {min}% pullback first, then a close above the high before it."
+      },
+      "cooldown": {
+        "label": "Wait after a step",
+        "detail": "{value} more days to wait after the last step ({min} in all).",
+        "short": "waits {value} days after a step",
+        "info": "After each step the rules wait a few calendar days before the next buy signal."
+      }
     }
   },
   "bear": {
@@ -241,6 +342,24 @@
         "title": "3 · Pace: the next steps",
         "lead": "After the first step, one more step comes at a fixed pace until your budget's steps are bought. Then the cycle ends when the price gets back to its old high, or, once the drop is older than the recent-high period, when a new drop starts."
       }
+    },
+    "checks": {
+      "drop": {
+        "label": "In a drop",
+        "detail": "{value}% below its recent high ({level}). A drop is {min}% or more.",
+        "short": "{value}% below its high (drop at {min}%)",
+        "info": "The fall from the highest close of the last 6 months."
+      },
+      "bounce": {
+        "label": "Bounce off the low",
+        "detail": "{value}% above the drop's low. The first step comes at {min}% ({level}).",
+        "short": "{value}% above its low (needs {min}%)"
+      },
+      "pace": {
+        "label": "Next step",
+        "detail": "{value} of {min} trading days since the last step.",
+        "short": "{value} of {min} days to the next step"
+      }
     }
   },
   "trend": {
@@ -299,6 +418,19 @@
       "pace": {
         "title": "2 · Pace: how often it trades",
         "lead": "All in, all out: each signal covers the whole budget."
+      }
+    },
+    "checks": {
+      "buyLine": {
+        "label": "Price vs the buy line",
+        "detail": "{+value}% vs the buy line ({level}), {min}% above the trend line.",
+        "short": "{+value}% vs the buy line",
+        "info": "The trend line is the average close of the last 200 days."
+      },
+      "sellLine": {
+        "label": "Price vs the sell line",
+        "detail": "{+value}% vs the sell line ({level}), {min}% below the trend line.",
+        "short": "{+value}% vs the sell line"
       }
     }
   },

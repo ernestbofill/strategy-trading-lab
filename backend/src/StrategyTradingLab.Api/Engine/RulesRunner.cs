@@ -72,7 +72,8 @@ public static class RulesRunner
             previousStep = step;
             if (newBuy) pendingBuy = true;
             if (newSell) pendingSell = true;
-            return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell);
+            return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell)
+                { Checks = decision.Checks };
         }
     }
 }

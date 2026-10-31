@@ -36,7 +36,7 @@ describe('AllPricesSection', () => {
       .mockRejectedValueOnce(new InvalidValueError('Yahoo answered HTTP 429 for MOD.'))
     const rates = vi.spyOn(api, 'downloadAdminRates').mockResolvedValue({ rows: 500, problems: [] })
     const onChanged = vi.fn().mockResolvedValue(undefined)
-    render(<AllPricesSection assets={assets} onChanged={onChanged} />)
+    render(<AllPricesSection assets={[...assets, { ...asset('a3', 'OLD'), active: false }]} onChanged={onChanged} />)
 
     fireEvent.change(screen.getByLabelText('Years to download'), { target: { value: '3' } })
     fireEvent.click(screen.getByRole('button', { name: 'Download all' }))
@@ -44,6 +44,7 @@ describe('AllPricesSection', () => {
     expect(await screen.findByText('Downloaded 1 of 2 assets and the exchange rates. Failed: MOD: Yahoo answered HTTP 429 for MOD.')).toBeTruthy()
     expect(download).toHaveBeenNthCalledWith(1, 'a1', 3)
     expect(download).toHaveBeenNthCalledWith(2, 'a2', 3)
+    expect(download).toHaveBeenCalledTimes(2) // The hidden one is left out.
     expect(rates).toHaveBeenCalledWith(3)
     expect(onChanged).toHaveBeenCalled()
   })

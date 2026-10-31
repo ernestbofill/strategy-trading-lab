@@ -169,7 +169,7 @@ public class PriceRefresherTests
     }
 
     [NeonFact]
-    public async Task A_gap_in_the_stored_days_fetches_the_whole_history_again_from_two_years_back()
+    public async Task Weekly_bars_in_the_stored_days_fetch_the_whole_history_again_from_two_years_back()
     {
         using var api = new AccountsApi();
         var (asset, db, scope) = await NewAssetAsync(api);
@@ -179,16 +179,45 @@ public class PriceRefresherTests
             var source = new FakeSource(d => 100 + d);
             var refresher = new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance)
                 { Time = new FixedTime(new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero)) };
-            await refresher.RefreshAssetAsync(asset, default);
-            // Days 3–19 missing: a 17-day gap, as weekly or monthly bars leave. The last month alone would still match.
-            await db.Prices.Where(p => p.AssetId == asset.Id && p.Date > Day(2, 0).Date && p.Date < Day(20, 0).Date).ExecuteDeleteAsync();
+            // Weekly bars, as range=max stored them, then the recent days: the last month alone would still match.
+            db.Prices.AddRange(Enumerable.Range(1, 12).Select(w => new PriceDaily
+                { AssetId = asset.Id, Date = Day(-7 * w, 0).Date, Open = 90, High = 91, Low = 89, Close = 90, Volume = 1 }));
+            db.Prices.AddRange(Enumerable.Range(20, 10).Select(d => new PriceDaily
+                { AssetId = asset.Id, Date = Day(d, 0).Date, Open = 100 + d, High = 101 + d, Low = 99 + d, Close = 100 + d, Volume = 1 }));
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
 
             var result = await refresher.RefreshAssetAsync(asset, default);
 
             Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
-            Assert.Equal(2, source.FullRequests);
+            Assert.Equal(1, source.FullRequests);
             Assert.Equal(new DateOnly(2024, 10, 31), source.Since); // No strategy lists it: two years before today.
             Assert.Equal(30, await db.Prices.CountAsync(p => p.AssetId == asset.Id));
+        }
+        finally
+        {
+            await db.Assets.Where(a => a.Id == asset.Id).ExecuteDeleteAsync();
+        }
+    }
+
+    [NeonFact]
+    public async Task One_long_gap_such_as_a_trading_halt_is_kept_without_fetching_everything_again()
+    {
+        using var api = new AccountsApi();
+        var (asset, db, scope) = await NewAssetAsync(api);
+        using var _ = scope;
+        try
+        {
+            var source = new FakeSource(d => 100 + d);
+            var refresher = new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance);
+            await refresher.RefreshAssetAsync(asset, default);
+            // Days 3–9 missing: a 7-day halt, among daily bars. A fresh fetch would store it again, so it isn't refetched.
+            await db.Prices.Where(p => p.AssetId == asset.Id && p.Date > Day(2, 0).Date && p.Date < Day(10, 0).Date).ExecuteDeleteAsync();
+
+            var result = await refresher.RefreshAssetAsync(asset, default);
+
+            Assert.Equal(RefreshOutcome.Updated, result.Outcome);
+            Assert.Equal(1, source.FullRequests);
         }
         finally
         {

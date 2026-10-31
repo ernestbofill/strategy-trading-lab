@@ -40,12 +40,13 @@ public class YahooClient(HttpClient http) : IMarketDataSource
 
     /// <summary>
     /// A date range rather than <c>range=max</c>: for a long history Yahoo answers <c>max</c> with weekly, monthly or
-    /// quarterly bars, whatever the interval asked for (<see cref="Parse"/> refuses those).
+    /// quarterly bars, whatever the interval asked for (<see cref="Parse"/> refuses those). The range starts a day early:
+    /// an exchange east of UTC (Tokyo, Hong Kong) stamps a day's bar before that day's midnight in UTC.
     /// </summary>
     public async Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken)
     {
         var span = since is { } from
-            ? $"period1={new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()}&period2={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}"
+            ? $"period1={new DateTimeOffset(from.AddDays(-1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds()}&period2={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}"
             : "range=1mo";
         var json = await GetAsync($"v8/finance/chart/{Uri.EscapeDataString(symbol)}?{span}&interval=1d&events=div%2Csplits", symbol, cancellationToken);
         return Parse(json, symbol, adjusted);

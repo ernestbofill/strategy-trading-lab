@@ -20,6 +20,12 @@ public class PriceRefreshState
     volatile PriceRun last = new(null, null, [], null, null);
 
     public bool Running => running || pending == 1;
+
+    /// <summary>
+    /// Held while prices are written in bulk: the daily run's fetch, or one of the admin's downloads or deletes, so two of
+    /// them never delete and insert the same rows at once. The run waits for it; the admin's are refused.
+    /// </summary>
+    public SemaphoreSlim Writing { get; } = new(1, 1);
     public DateTimeOffset? LastStarted => last.Started;
     public DateTimeOffset? LastFinished => last.Finished;
     public IReadOnlyList<RefreshResult> LastResults => last.Results;
@@ -144,7 +150,15 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         try
         {
             using var scope = scopes.CreateScope();
-            results = await scope.ServiceProvider.GetRequiredService<PriceRefresher>().RunAsync(stoppingToken);
+            await state.Writing.WaitAsync(stoppingToken);
+            try
+            {
+                results = await scope.ServiceProvider.GetRequiredService<PriceRefresher>().RunAsync(stoppingToken);
+            }
+            finally
+            {
+                state.Writing.Release();
+            }
             logger.LogInformation("Prices refreshed: {Updated} updated, {Full} in full, {Failed} failed.",
                 results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory),
                 results.Count(r => r.Outcome == RefreshOutcome.Failed));

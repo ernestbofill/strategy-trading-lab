@@ -192,6 +192,9 @@ public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture
             Assert.Equal("2026-09-30", row.GetProperty("latestPriceDate").GetString());
             Assert.Equal(JsonValueKind.Null, row.GetProperty("pricesProblem").ValueKind);
             Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-3), source.Since);
+            // One year is less than the strategies' two (no strategy lists it): the two years win, so the rules keep their window.
+            await admin.PostAsJsonAsync($"/admin/assets/{id}/prices", new { years = 1 });
+            Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-2), source.Since);
 
             var noYears = await admin.PostAsJsonAsync($"/admin/assets/{id}/prices", new { years = 0 });
             Assert.Equal(HttpStatusCode.BadRequest, noYears.StatusCode);

@@ -14,7 +14,7 @@ public record RefreshResult(string Name, RefreshOutcome Outcome, int Rows, strin
 /// <summary>
 /// Brings the stored daily prices and euro exchange rates up to date, the way the POC does: a daily run fetches the last
 /// month; if that disagrees with what is stored (a split or a dividend re-adjusted the history), nothing is stored, or the
-/// stored days have a gap (<see cref="MaxGapDays"/>), the whole history (<see cref="HistoryStart"/>) is fetched and
+/// stored days are coarser than daily (<see cref="MaxMedianGapDays"/>), the whole history (<see cref="HistoryStart"/>) is fetched and
 /// replaces it. One failing symbol never stops the others, and an asset keeps why its last fetch failed
 /// (<see cref="Asset.PricesProblem"/>). Only the watched assets are fetched (<see cref="Watched"/>), with the exchange
 /// rates of their currencies and the accounts' ones.
@@ -30,10 +30,11 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     /// </summary>
     public const int HistoryYears = 2;
     /// <summary>
-    /// Stored days further apart than this (calendar days) mean a broken history, such as weekly or monthly bars, so the
-    /// whole history is fetched again. Holidays and weekends stay well under it.
+    /// Stored days are typically a day apart (three over a weekend). When the median gap is more than this (calendar
+    /// days), the history holds weekly or coarser bars, so the whole history is fetched again. A median, not the longest
+    /// gap: a real trading halt leaves one long gap, which a fresh fetch would store again, every day.
     /// </summary>
-    public const int MaxGapDays = 14;
+    public const int MaxMedianGapDays = 4;
     /// <summary>Politeness towards an unofficial endpoint.</summary>
     public TimeSpan Pause { get; set; } = TimeSpan.FromMilliseconds(300);
     public TimeProvider Time { get; set; } = TimeProvider.System;
@@ -92,7 +93,10 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     public Task<RefreshResult> RefreshAssetAsync(Asset asset, CancellationToken cancellationToken) =>
         RecordedAsync(asset, replaceFrom: null, cancellationToken);
 
-    /// <summary>Replaces all of one asset's stored prices with the days from <paramref name="since"/> on (the admin's Download).</summary>
+    /// <summary>
+    /// Replaces all of one asset's stored prices with the days from <paramref name="since"/> on (the admin's Download), or
+    /// from <see cref="HistoryStart"/> when that is earlier, so a strategy's rules always have their window.
+    /// </summary>
     public Task<RefreshResult> ReplaceAssetAsync(Asset asset, DateOnly since, CancellationToken cancellationToken) =>
         RecordedAsync(asset, since, cancellationToken);
 
@@ -122,8 +126,7 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     {
         // Asked to replace it, nothing stored (a new asset) or a broken history: straight to the whole history, without asking
         // for the last month first.
-        var full = replaceFrom is not null || !await db.Prices.AnyAsync(p => p.AssetId == asset.Id, cancellationToken)
-            || await HasGapAsync(asset.Id, cancellationToken);
+        var full = replaceFrom is not null || await NeedsWholeHistoryAsync(asset.Id, cancellationToken);
         IReadOnlyList<Candle> days = [];
         var from = DateOnly.MinValue;
         if (!full)
@@ -138,7 +141,7 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         }
         if (full)
         {
-            var since = replaceFrom ?? await HistoryStartAsync(asset.Id, cancellationToken);
+            var since = Earlier(replaceFrom, await HistoryStartAsync(asset.Id, cancellationToken));
             days = await source.DailyAsync(asset.Symbol, since, adjusted: true, cancellationToken);
             if (days.Count == 0) throw new MarketDataException($"Yahoo returned no history for {asset.Symbol}.");
         }
@@ -172,11 +175,14 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
 
     DateOnly Today() => DateOnly.FromDateTime(Time.GetUtcNow().UtcDateTime);
 
-    /// <summary>True when two of the asset's stored days are more than <see cref="MaxGapDays"/> apart.</summary>
-    Task<bool> HasGapAsync(Guid assetId, CancellationToken cancellationToken) =>
+    /// <summary>The asked-for start when it is earlier than the one the strategies need, so a download never cuts their window.</summary>
+    static DateOnly Earlier(DateOnly? asked, DateOnly needed) => asked is { } day && day < needed ? day : needed;
+
+    /// <summary>True when nothing is stored for the asset, or its stored days are coarser than daily (<see cref="MaxMedianGapDays"/>).</summary>
+    Task<bool> NeedsWholeHistoryAsync(Guid assetId, CancellationToken cancellationToken) =>
         db.Database.SqlQuery<bool>($"""
-            SELECT EXISTS (SELECT 1 FROM (SELECT date - lag(date) OVER (ORDER BY date) AS gap FROM prices_daily WHERE asset_id = {assetId}) g
-                           WHERE gap > {MaxGapDays}) AS "Value"
+            SELECT count(*) = 0 OR coalesce(percentile_cont(0.5) WITHIN GROUP (ORDER BY gap), 0) > {MaxMedianGapDays} AS "Value"
+            FROM (SELECT date - lag(date) OVER (ORDER BY date) AS gap FROM prices_daily WHERE asset_id = {assetId}) g
             """).SingleAsync(cancellationToken);
 
     /// <summary>
@@ -198,7 +204,10 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     public Task<RefreshResult> RefreshRateAsync(string quote, CancellationToken cancellationToken) =>
         LoadRateAsync(quote, replaceFrom: null, cancellationToken);
 
-    /// <summary>Replaces all of one currency's stored rates with the days from <paramref name="since"/> on (the admin's Download all).</summary>
+    /// <summary>
+    /// Replaces all of one currency's stored rates with the days from <paramref name="since"/> on (the admin's Download
+    /// all), or from the strategies' start when that is earlier.
+    /// </summary>
     public Task<RefreshResult> ReplaceRateAsync(string quote, DateOnly since, CancellationToken cancellationToken) =>
         LoadRateAsync(quote, since, cancellationToken);
 
@@ -208,8 +217,8 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         var latestStored = await db.FxRates.Where(r => r.Base == BaseCurrency && r.Quote == quote)
             .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
         // Asked to replace them, nothing stored, or a broken history: the whole history, which replaces every stored rate.
-        var full = replaceFrom is not null || latestStored is null || await HasRateGapAsync(quote, cancellationToken);
-        DateOnly? since = full ? replaceFrom ?? await RatesStartAsync(cancellationToken) : null;
+        var full = replaceFrom is not null || latestStored is null || await CoarseRatesAsync(quote, cancellationToken);
+        DateOnly? since = full ? Earlier(replaceFrom, await RatesStartAsync(cancellationToken)) : null;
         var days = await source.DailyAsync(symbol, since, adjusted: false, cancellationToken);
         // The last month doesn't reach back to the stored days (a long outage): fetch it all, so no weeks are left missing.
         if (!full && days.Count > 0 && latestStored < days[0].Date)
@@ -255,10 +264,10 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     /// <summary>The first day of the rates' whole history: <see cref="HistoryYears"/> before the earliest strategy, which any currency may need.</summary>
     Task<DateOnly> RatesStartAsync(CancellationToken cancellationToken) => HistoryStartAsync(db.Strategies, cancellationToken);
 
-    /// <summary>True when two of the currency's stored rates are more than <see cref="MaxGapDays"/> apart.</summary>
-    Task<bool> HasRateGapAsync(string quote, CancellationToken cancellationToken) =>
+    /// <summary>True when the currency's stored rates are coarser than daily (<see cref="MaxMedianGapDays"/>).</summary>
+    Task<bool> CoarseRatesAsync(string quote, CancellationToken cancellationToken) =>
         db.Database.SqlQuery<bool>($"""
-            SELECT EXISTS (SELECT 1 FROM (SELECT date - lag(date) OVER (ORDER BY date) AS gap FROM fx_rates WHERE base = {BaseCurrency} AND quote = {quote}) g
-                           WHERE gap > {MaxGapDays}) AS "Value"
+            SELECT coalesce(percentile_cont(0.5) WITHIN GROUP (ORDER BY gap), 0) > {MaxMedianGapDays} AS "Value"
+            FROM (SELECT date - lag(date) OVER (ORDER BY date) AS gap FROM fx_rates WHERE base = {BaseCurrency} AND quote = {quote}) g
             """).SingleAsync(cancellationToken);
 }

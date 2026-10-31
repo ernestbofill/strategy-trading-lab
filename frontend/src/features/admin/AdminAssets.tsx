@@ -128,12 +128,9 @@ export function AdminAssets() {
           {error}
         </p>
       )}
-      {state.status === 'ready' && !editing && (
-        <>
-          <AddAssetForm onAdded={reload} />
-          <AllPricesSection assets={state.assets} onChanged={reload} />
-        </>
-      )}
+      {state.status === 'ready' && !editing && <AddAssetForm onAdded={reload} />}
+      {/* Shown while editing too: a running Download all keeps its progress and summary. */}
+      {state.status === 'ready' && <AllPricesSection assets={state.assets} onChanged={reload} />}
       {editing && (
         <EditAssetForm
           key={editing.id}

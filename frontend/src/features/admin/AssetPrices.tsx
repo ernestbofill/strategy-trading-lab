@@ -54,13 +54,15 @@ function DeleteButton({ label, busy, onDelete }: { label: string; busy: boolean;
 }
 
 /**
- * "Prices" for every asset: download the last years of daily prices (one asset at a time, then the exchange rates), or
+ * "Prices" for every active asset: download the last years of daily prices (one asset at a time, then the exchange rates), or
  * delete them all. The daily refresh fetches two years for a watched asset with none stored.
  */
 export function AllPricesSection({ assets, onChanged }: { assets: AdminAsset[]; onChanged: () => Promise<void> }) {
   const [years, setYears] = useState(DEFAULT_YEARS)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<FormMessageState>(null)
+  // Hidden assets are left out: nobody can pick them. The others, watched or not, are what a new strategy can pick.
+  const active = assets.filter((a) => a.active)
 
   const downloadAll = async () => {
     const count = Number(years)
@@ -77,8 +79,8 @@ export function AllPricesSection({ assets, onChanged }: { assets: AdminAsset[]; 
         setMessage({ tone: 'error', text: "The daily price refresh is running: try again when it's done." })
         return
       }
-      for (const [i, asset] of assets.entries()) {
-        setMessage({ tone: 'done', text: `Downloading ${i + 1} of ${assets.length}: ${asset.symbol}…` })
+      for (const [i, asset] of active.entries()) {
+        setMessage({ tone: 'done', text: `Downloading ${i + 1} of ${active.length}: ${asset.symbol}…` })
         try {
           await api.downloadAdminAssetPrices(asset.id, count)
         } catch (e) {
@@ -89,7 +91,7 @@ export function AllPricesSection({ assets, onChanged }: { assets: AdminAsset[]; 
       }
       setMessage({ tone: 'done', text: 'Downloading the exchange rates…' })
       const rates = await api.downloadAdminRates(count)
-      const done = `Downloaded ${assets.length - failed.length} of ${assets.length} assets and the exchange rates.`
+      const done = `Downloaded ${active.length - failed.length} of ${active.length} assets and the exchange rates.`
       // First: a currency has no row of its own to show it.
       failed.unshift(...rates.problems.map((p) => `${p.name}: ${p.problem ?? 'failed'}`))
       setMessage(failed.length === 0 ? { tone: 'done', text: done } : { tone: 'error', text: `${done} ${failedText(failed)}` })
@@ -122,7 +124,7 @@ export function AllPricesSection({ assets, onChanged }: { assets: AdminAsset[]; 
       <div className={styles.form}>
         <YearsField value={years} onChange={setYears} />
         <div className={styles.buttons}>
-          <button type="button" className={`ui-strong ${styles.actionButton}`} disabled={busy || assets.length === 0} onClick={() => void downloadAll()}>
+          <button type="button" className={`ui-strong ${styles.actionButton}`} disabled={busy || active.length === 0} onClick={() => void downloadAll()}>
             Download all
           </button>
           <DeleteButton label="Delete all" busy={busy} onDelete={deleteAll} />

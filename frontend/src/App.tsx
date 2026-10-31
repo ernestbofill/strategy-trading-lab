@@ -112,6 +112,7 @@ export default function App() {
                 <Route path={resetPasswordPath} element={<ResetPassword />} />
                 <Route path={verifyEmailPath} element={<VerifyEmail />} />
 
+                <Route path="/legal" element={<Navigate to={legalNoticePath} replace />} />
                 <Route path={legalNoticePath} element={<LegalPage section="notice" />} />
                 <Route path={termsPath} element={<LegalPage section="terms" />} />
                 <Route path={privacyPath} element={<LegalPage section="privacy" />} />

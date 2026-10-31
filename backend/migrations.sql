@@ -1810,3 +1810,28 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
+    ALTER TABLE users ADD terms_accepted_at timestamptz;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
+    ALTER TABLE users ADD terms_version_accepted character varying(32);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261031093333_AddTermsAccepted', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

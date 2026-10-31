@@ -56,6 +56,7 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.AiSharing).HasColumnDefault(false);
         entity.Property(user => user.FirstName).HasMaxLength(AccountRules.NameMax);
         entity.Property(user => user.LastName).HasMaxLength(AccountRules.NameMax);
+        entity.Property(user => user.TermsVersionAccepted).HasMaxLength(AccountRules.TermsVersionMax);
         entity.HasIndex(user => user.InviteId);
         entity.HasOne<Invite>().WithMany().HasForeignKey(user => user.InviteId).OnDelete(DeleteBehavior.SetNull);
     }

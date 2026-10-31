@@ -102,6 +102,8 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip comes from an owner's invite |
 | overview_email | bool, not null, default true | Daily overview on/off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
+| terms_version_accepted | varchar(32), null | The version of the legal terms accepted by the user (e.g. `2026-10-31`) |
+| terms_accepted_at | timestamptz, null | When the terms were accepted at sign-up |
 | created_at, updated_at | timestamptz | |
 
 | ai_sharing | bool, not null, default false | Shares AI rounds (asked at the first round, changed in the account; off removes what was shared) |

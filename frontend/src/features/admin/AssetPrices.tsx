@@ -90,10 +90,16 @@ export function AllPricesSection({ assets, onChanged }: { assets: AdminAsset[]; 
         }
       }
       setMessage({ tone: 'done', text: 'Downloading the exchange rates…' })
-      const rates = await api.downloadAdminRates(count)
       const done = `Downloaded ${active.length - failed.length} of ${active.length} assets and the exchange rates.`
-      // First: a currency has no row of its own to show it.
-      failed.unshift(...rates.problems.map((p) => `${p.name}: ${p.problem ?? 'failed'}`))
+      // First: a currency has no row of its own to show it. A refused call keeps the assets' summary.
+      try {
+        const rates = await api.downloadAdminRates(count)
+        failed.unshift(...rates.problems.map((p) => `${p.name}: ${p.problem ?? 'failed'}`))
+      } catch (e) {
+        const why = reason(e)
+        if (why === null) return
+        failed.unshift(`Exchange rates: ${why}`)
+      }
       setMessage(failed.length === 0 ? { tone: 'done', text: done } : { tone: 'error', text: `${done} ${failedText(failed)}` })
     } catch (e) {
       const why = reason(e)

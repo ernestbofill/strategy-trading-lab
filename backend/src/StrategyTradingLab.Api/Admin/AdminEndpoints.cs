@@ -377,7 +377,9 @@ public static class AdminEndpoints
             await write();
             return null;
         }
-        catch (Exception error) when (error is DbUpdateException or PostgresException)
+        // Only the clash itself: any other database error is a real failure, answered 500 and logged.
+        catch (Exception error) when (error is DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } }
+            or PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             return TypedResults.Conflict("The prices changed meanwhile: try again.");
         }

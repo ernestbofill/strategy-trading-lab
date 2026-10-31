@@ -169,55 +169,28 @@ public class PriceRefresherTests
     }
 
     [NeonFact]
-    public async Task Weekly_bars_in_the_stored_days_fetch_the_whole_history_again_from_two_years_back()
+    public async Task A_re_adjusted_history_is_fetched_from_two_years_back_or_over_the_span_already_stored()
     {
         using var api = new AccountsApi();
         var (asset, db, scope) = await NewAssetAsync(api);
         using var _ = scope;
         try
         {
+            var time = new FixedTime(new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero));
             var source = new FakeSource(d => 100 + d);
-            var refresher = new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance)
-                { Time = new FixedTime(new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero)) };
-            // Weekly bars, as range=max stored them, then the recent days: the last month alone would still match.
-            db.Prices.AddRange(Enumerable.Range(1, 12).Select(w => new PriceDaily
-                { AssetId = asset.Id, Date = Day(-7 * w, 0).Date, Open = 90, High = 91, Low = 89, Close = 90, Volume = 1 }));
-            db.Prices.AddRange(Enumerable.Range(20, 10).Select(d => new PriceDaily
-                { AssetId = asset.Id, Date = Day(d, 0).Date, Open = 100 + d, High = 101 + d, Low = 99 + d, Close = 100 + d, Volume = 1 }));
+            await new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance) { Time = time }.RefreshAssetAsync(asset, default);
+            Assert.Equal(new DateOnly(2024, 10, 31), source.Since); // No strategy lists it: two years before today.
+
+            // A longer history downloaded by hand: a re-adjusting dividend fetches it all again, not only two years.
+            db.Prices.Add(new PriceDaily { AssetId = asset.Id, Date = new DateOnly(2020, 1, 2), Open = 50, High = 51, Low = 49, Close = 50, Volume = 1 });
             await db.SaveChangesAsync();
             db.ChangeTracker.Clear();
+            var halved = new FakeSource(d => (100 + d) / 2m);
 
-            var result = await refresher.RefreshAssetAsync(asset, default);
+            var result = await new PriceRefresher(db, halved, NullLogger<PriceRefresher>.Instance) { Time = time }.RefreshAssetAsync(asset, default);
 
             Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
-            Assert.Equal(1, source.FullRequests);
-            Assert.Equal(new DateOnly(2024, 10, 31), source.Since); // No strategy lists it: two years before today.
-            Assert.Equal(30, await db.Prices.CountAsync(p => p.AssetId == asset.Id));
-        }
-        finally
-        {
-            await db.Assets.Where(a => a.Id == asset.Id).ExecuteDeleteAsync();
-        }
-    }
-
-    [NeonFact]
-    public async Task One_long_gap_such_as_a_trading_halt_is_kept_without_fetching_everything_again()
-    {
-        using var api = new AccountsApi();
-        var (asset, db, scope) = await NewAssetAsync(api);
-        using var _ = scope;
-        try
-        {
-            var source = new FakeSource(d => 100 + d);
-            var refresher = new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance);
-            await refresher.RefreshAssetAsync(asset, default);
-            // Days 3–9 missing: a 7-day halt, among daily bars. A fresh fetch would store it again, so it isn't refetched.
-            await db.Prices.Where(p => p.AssetId == asset.Id && p.Date > Day(2, 0).Date && p.Date < Day(10, 0).Date).ExecuteDeleteAsync();
-
-            var result = await refresher.RefreshAssetAsync(asset, default);
-
-            Assert.Equal(RefreshOutcome.Updated, result.Outcome);
-            Assert.Equal(1, source.FullRequests);
+            Assert.Equal(new DateOnly(2020, 1, 2), halved.Since);
         }
         finally
         {
@@ -246,34 +219,6 @@ public class PriceRefresherTests
         finally
         {
             await db.FxRates.Where(r => r.Quote == "TST").ExecuteDeleteAsync();
-        }
-    }
-
-    [NeonFact]
-    public async Task Gapped_exchange_rates_are_replaced_by_the_whole_history()
-    {
-        using var api = new AccountsApi();
-        using var scope = api.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        try
-        {
-            // Monthly rates, as the old range=max request stored them, the last of them inside the recent month.
-            db.FxRates.AddRange(new[] { -60, -30, 25 }.Select(d => new FxRate { Date = Day(d, 0).Date, Base = "EUR", Quote = "TSG", Rate = 2 }));
-            await db.SaveChangesAsync();
-            db.ChangeTracker.Clear();
-            var source = new FakeSource(d => 1 + d / 100m);
-
-            var result = await new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance).RefreshRateAsync("TSG", default);
-
-            Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
-            Assert.Equal(1, source.FullRequests);
-            // Every old rate is gone, the ones before the fetched days too.
-            Assert.Equal(30, await db.FxRates.CountAsync(r => r.Base == "EUR" && r.Quote == "TSG"));
-            Assert.False(await db.FxRates.AnyAsync(r => r.Quote == "TSG" && r.Date < Day(0, 0).Date));
-        }
-        finally
-        {
-            await db.FxRates.Where(r => r.Quote == "TSG").ExecuteDeleteAsync();
         }
     }
 

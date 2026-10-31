@@ -26,7 +26,7 @@ public class Asset
     public Guid? AddedBy { get; set; }
     /// <summary>Why the last price fetch couldn't be used (Yahoo's error, bars that aren't daily); null when it worked or before the first one.</summary>
     public string? PricesProblem { get; set; }
-    /// <summary>When its prices were last fetched, whether that worked or not; null before the first fetch.</summary>
+    /// <summary>When its prices were last fetched successfully; null before the first such fetch.</summary>
     public DateTimeOffset? PricesCheckedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 

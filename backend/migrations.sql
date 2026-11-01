@@ -1918,6 +1918,13 @@ END $EF$;
 DO $EF$
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    ALTER TABLE users ALTER COLUMN unsubscribe_token DROP DEFAULT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
     CREATE UNIQUE INDEX ix_users_unsubscribe_token ON users (unsubscribe_token);
     END IF;
 END $EF$;

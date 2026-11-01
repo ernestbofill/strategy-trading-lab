@@ -162,12 +162,12 @@ app.Use(async (http, next) =>
 
 // CSRF (backend/AUTH.md): every state-changing request must carry X-Requested-With: stl, which the app always sends
 // and a form or image on another site can't. With SameSite=Lax cookies and JSON-only bodies, that closes CSRF.
-// Not the unsubscribe address: a mail app's one-click POST (RFC 8058) can't send the header, and the address uses no cookie,
-// only its private token, and can only turn emails off.
+// Not an endpoint marked SkipCsrfCheck (the unsubscribe address): a mail app's one-click POST (RFC 8058) can't send the header,
+// and the address uses no cookie, only its private token, and can only turn emails off.
 app.Use(async (http, next) =>
 {
     if (!HttpMethods.IsGet(http.Request.Method) && !HttpMethods.IsHead(http.Request.Method) && !HttpMethods.IsOptions(http.Request.Method)
-        && !http.Request.Path.StartsWithSegments("/email/unsubscribe")
+        && http.GetEndpoint()?.Metadata.GetMetadata<SkipCsrfCheck>() is null
         && http.Request.Headers["X-Requested-With"] != "stl")
     {
         http.Response.StatusCode = StatusCodes.Status400BadRequest;

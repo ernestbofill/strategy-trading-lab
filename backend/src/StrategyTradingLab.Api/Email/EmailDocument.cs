@@ -14,7 +14,7 @@ public record EmailContent(string Subject, string Text, string Html, string? One
 public enum EmailKind { Overview, Alerts }
 
 /// <summary>The addresses that turn one kind of email off for the user whose private token is in them (see <c>User.UnsubscribeToken</c>).</summary>
-public static class Unsubscribe
+public static class UnsubscribeLinks
 {
     public static string Slug(EmailKind kind) => kind == EmailKind.Overview ? "overview" : "alerts";
 
@@ -169,7 +169,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             (_, false) => "Turn off signal and reminder emails",
             _ => "Desactiva els correus de senyals i recordatoris",
         };
-        unsubscribe = (label, Email.Unsubscribe.PageUrl(appUrl, token, kind), Email.Unsubscribe.OneClickUrl(appUrl, token, kind));
+        unsubscribe = (label, UnsubscribeLinks.PageUrl(appUrl, token, kind), UnsubscribeLinks.OneClickUrl(appUrl, token, kind));
         return this;
     }
 

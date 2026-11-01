@@ -43,6 +43,14 @@ class AssetTextConfiguration : IEntityTypeConfiguration<AssetText>
     }
 }
 
+/// <summary>Gives each new user their private unsubscribe token (a value generator runs when the entity is added, never when it is read).</summary>
+class UnsubscribeTokenGenerator : Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator<string>
+{
+    public override bool GeneratesTemporaryValues => false;
+
+    public override string Next(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry) => Auth.SecretTokens.NewPlain();
+}
+
 class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> entity)
@@ -54,6 +62,7 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
         entity.Property(user => user.AlertEmails).HasColumnDefault(true);
+        entity.Property(user => user.UnsubscribeToken).HasValueGenerator<UnsubscribeTokenGenerator>();
         entity.HasIndex(user => user.UnsubscribeToken).IsUnique();
         entity.Property(user => user.AiSharing).HasColumnDefault(false);
         entity.Property(user => user.FirstName).HasMaxLength(AccountRules.NameMax);

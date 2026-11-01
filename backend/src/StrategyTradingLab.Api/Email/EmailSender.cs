@@ -9,7 +9,7 @@ namespace StrategyTradingLab.Api.Email;
 /// <summary>Why an email wasn't sent, in words for the admin page. Never holds a password.</summary>
 public class EmailException(string message, Exception? inner = null, bool transient = false) : Exception(message, inner)
 {
-    /// <summary>Whether trying again a moment later may work (a busy server, a timeout), not a refusal.</summary>
+    /// <summary>Whether trying again a moment later is safe and may work (the server said it is busy and took nothing), not a refusal.</summary>
     public bool Transient => transient;
 }
 
@@ -82,12 +82,7 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
                 message.AlternateViews.Add(view);
             }
             if (replyTo is not null) message.ReplyToList.Add(new MailAddress(replyTo));
-            // One click, as Gmail and Yahoo ask of bulk senders (RFC 8058): the mail app POSTs to the address, with no page in between.
-            if (unsubscribeUrl is not null)
-            {
-                message.Headers.Add("List-Unsubscribe", $"<{unsubscribeUrl}>");
-                message.Headers.Add("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
-            }
+            if (unsubscribeUrl is not null) AddUnsubscribeHeaders(message, unsubscribeUrl);
             client = new SmtpClient(host, port)
             {
                 EnableSsl = true,
@@ -127,13 +122,20 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
         }
     }
 
-    /// <summary>A timeout, a dropped connection or the server saying "busy, try later" (4xx): worth one more try. A refusal or a bad password isn't.</summary>
-    static bool IsTransient(Exception error) => error switch
+    /// <summary>One click, as Gmail and Yahoo ask of bulk senders (RFC 8058): the mail app POSTs to the address, with no page in between.</summary>
+    public static void AddUnsubscribeHeaders(MailMessage message, string url)
     {
-        OperationCanceledException or IOException => true,
-        SmtpException { StatusCode: SmtpStatusCode.ServiceNotAvailable or SmtpStatusCode.MailboxBusy or SmtpStatusCode.LocalErrorInProcessing
-            or SmtpStatusCode.InsufficientStorage or SmtpStatusCode.GeneralFailure } => true,
-        _ => false,
+        message.Headers.Add("List-Unsubscribe", $"<{url}>");
+        message.Headers.Add("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
+    }
+
+    /// <summary>
+    /// The server saying "busy, try later" (4xx), which means it did not take the email: worth one more try. Not a timeout or a dropped
+    /// connection (the server may already have accepted the email, and a retry would send it twice), a refusal or a bad password.
+    /// </summary>
+    static bool IsTransient(Exception error) => error is SmtpException
+    {
+        StatusCode: SmtpStatusCode.ServiceNotAvailable or SmtpStatusCode.MailboxBusy or SmtpStatusCode.LocalErrorInProcessing or SmtpStatusCode.InsufficientStorage,
     };
 
     /// <summary>The server's own words (e.g. Gmail's "Username and Password not accepted"), which never contain the password.</summary>

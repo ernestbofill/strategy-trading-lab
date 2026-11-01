@@ -27,6 +27,9 @@ namespace StrategyTradingLab.Api.Data.Migrations
             // Every existing user gets their own token before the index asks for them to differ.
             migrationBuilder.Sql("UPDATE users SET unsubscribe_token = replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');");
 
+            // AddColumn left DEFAULT '' behind; the model has none, and a second '' would break the unique index.
+            migrationBuilder.Sql("ALTER TABLE users ALTER COLUMN unsubscribe_token DROP DEFAULT;");
+
             migrationBuilder.CreateIndex(
                 name: "ix_users_unsubscribe_token",
                 table: "users",

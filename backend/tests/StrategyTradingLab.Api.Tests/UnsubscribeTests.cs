@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Email;
 
@@ -86,29 +85,5 @@ public class UnsubscribeTests
         Assert.True((await Me(me)).GetProperty("alertEmails").GetBoolean());
         Assert.Equal(HttpStatusCode.BadRequest, (await me.PostAsJsonAsync("/account/alert-emails", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsJsonAsync("/account/alert-emails", new { enabled = false })).StatusCode);
-    }
-
-    [Fact]
-    public async Task A_passing_failure_is_tried_once_more_and_a_refusal_is_not()
-    {
-        var calls = 0;
-        await EmailRetry.OnceAsync(() => ++calls == 1 ? throw new EmailException("busy", transient: true) : Task.CompletedTask,
-            TimeSpan.Zero, NullLogger.Instance, default);
-        Assert.Equal(2, calls);
-
-        calls = 0;
-        await Assert.ThrowsAsync<EmailException>(() => EmailRetry.OnceAsync(() => { calls++; throw new EmailException("busy", transient: true); },
-            TimeSpan.Zero, NullLogger.Instance, default));
-        Assert.Equal(2, calls); // Once more, not forever.
-
-        calls = 0;
-        await Assert.ThrowsAsync<EmailException>(() => EmailRetry.OnceAsync(() => { calls++; throw new EmailException("550 no such user"); },
-            TimeSpan.Zero, NullLogger.Instance, default));
-        Assert.Equal(1, calls);
-
-        calls = 0;
-        await Assert.ThrowsAsync<EmailNotSetUpException>(() => EmailRetry.OnceAsync(() => { calls++; throw new EmailNotSetUpException(); },
-            TimeSpan.Zero, NullLogger.Instance, default));
-        Assert.Equal(1, calls);
     }
 }

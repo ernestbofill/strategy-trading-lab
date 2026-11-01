@@ -58,4 +58,23 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
                 .Paragraph("It works for 1 hour. If you didn't ask for it, ignore this email: your password stays the same.")
                 .Build("Choose a new password for Strategy Trading Lab")));
     }
+
+    /// <summary>Warns that an unconfirmed account will be deleted in 7 days unless its email is confirmed.</summary>
+    public void UnconfirmedWarning(string to, string token, string locale = "en")
+    {
+        var url = $"{AppUrl}/verify-email?token={token}";
+        queue.Enqueue(new(to, locale == "ca"
+            ? Email(locale)
+                .Action("Confirma el teu correu obrint aquest enllaç:", "Confirma el correu", url)
+                .Paragraph("Funciona durant 24 hores. Fa 23 dies que vas crear el compte, però encara no s'ha confirmat.")
+                .Paragraph("Per mantenir el compte, confirma el correu durant els propers 7 dies: els comptes que no es confirmen s'eliminen al cap de 30 dies.")
+                .Paragraph("Si no t'has registrat a Strategy Trading Lab, ignora aquest correu: s'eliminarà automàticament.")
+                .Build("Confirma el teu correu per mantenir el teu compte de Strategy Trading Lab")
+            : Email(locale)
+                .Action("Confirm your email by opening this link:", "Confirm my email", url)
+                .Paragraph("It works for 24 hours. You created your account 23 days ago, but the email hasn't been confirmed yet.")
+                .Paragraph("To keep your account, confirm your email within the next 7 days: accounts never confirmed are deleted after 30 days.")
+                .Paragraph("If you didn't sign up for Strategy Trading Lab, ignore this email: it will be deleted automatically.")
+                .Build("Confirm your email to keep your Strategy Trading Lab account")));
+    }
 }

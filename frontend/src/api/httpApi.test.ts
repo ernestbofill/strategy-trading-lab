@@ -77,6 +77,15 @@ describe('httpApi.startStrategy', () => {
     await expect(httpApi.startStrategy(strategy)).rejects.toBeInstanceOf(NameTakenError)
   })
 
+  it('maps 400 with errors to InvalidFieldsError', async () => {
+    respond(400, { errors: { strategies: ['You run 10 strategies, the most for now. Archive one to start another.'] } })
+    await expect(httpApi.startStrategy(strategy)).rejects.toMatchObject({
+      name: 'InvalidFieldsError',
+      message: 'You run 10 strategies, the most for now. Archive one to start another.',
+      fields: { strategies: 'You run 10 strategies, the most for now. Archive one to start another.' },
+    })
+  })
+
   it('fails on any other error', async () => {
     respond(400)
     await expect(httpApi.startStrategy(strategy)).rejects.toThrow('HTTP 400')

@@ -8,6 +8,7 @@ import { invalidate, invalidateAll } from '../../lib/useLoadable'
 import { useDashboard } from '../dashboard/useDashboard'
 import { draftFromStrategy } from '../new-strategy/goLive'
 import { defaultName, NAME_MAX_LENGTH } from '../new-strategy/newStrategy'
+import { MAX_RUNNING_STRATEGIES } from '../new-strategy/draftState'
 import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { modePath } from '../new-strategy/paths'
 import { useTemplate } from '../new-strategy/useTemplate'
@@ -158,9 +159,12 @@ export function GoLive({ s, className, titleClassName, detailClassName }: {
   const template = useTemplate(s.templateKey)
   const dashboard = useDashboard()
 
+  const running = dashboard.status === 'ready' ? dashboard.data.strategies.filter((x) => x.status === 'running') : []
+  const atLimit = running.length >= MAX_RUNNING_STRATEGIES
+
   const goLive = () => {
-    if (template.status !== 'ready') return
-    const taken = dashboard.status === 'ready' ? dashboard.data.strategies.filter((x) => x.status === 'running').map((x) => x.name) : []
+    if (template.status !== 'ready' || atLimit) return
+    const taken = running.map((x) => x.name)
     // Cut before numbering, so a long name keeps its " 2".
     const name = defaultName(t('strategy.goLive.name', { name: s.name }).slice(0, NAME_MAX_LENGTH - 3), taken)
     load(draftFromStrategy(s, template.data, name))
@@ -169,10 +173,11 @@ export function GoLive({ s, className, titleClassName, detailClassName }: {
 
   // Shown once the template is in: a tile that can't work isn't shown.
   if (template.status !== 'ready') return null
+
   return (
-    <button type="button" className={className} onClick={goLive}>
+    <button type="button" className={className} onClick={goLive} disabled={atLimit}>
       <span className={titleClassName}>{t('strategy.tile.goLiveTitle')}</span>
-      <span className={detailClassName}>{t('strategy.tile.goLiveSub')}</span>
+      <span className={detailClassName}>{atLimit ? t('dashboard.strategiesFull', { max: MAX_RUNNING_STRATEGIES }) : t('strategy.tile.goLiveSub')}</span>
     </button>
   )
 }

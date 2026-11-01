@@ -95,4 +95,25 @@ describe('Dashboard', () => {
     const defaultCard = within(await screen.findByRole('link', { name: /Default strategy/ }))
     expect(defaultCard.getByText(/In the past, 2000-2024, the template did/)).toBeTruthy()
   })
+
+  it('disables the new strategy button at the limit of 10 running strategies', async () => {
+    vi.spyOn(api, 'getTemplates').mockResolvedValue([])
+    const running = Array.from({ length: 10 }, (_, i) => summary({ id: `s${i}`, name: `Running ${i}` }))
+    vi.spyOn(api, 'getDashboard').mockResolvedValue({
+      today: '2026-10-28',
+      waiting: [],
+      strategies: running,
+    })
+    render(
+      <NewStrategyDraftProvider owner="a@example.com">
+        <MemoryRouter>
+          <Dashboard />
+        </MemoryRouter>
+      </NewStrategyDraftProvider>,
+    )
+
+    const btn = await screen.findByRole('button', { name: /You run 10 strategies, the most for now/ })
+    expect((btn as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.queryByRole('link', { name: '+ New strategy' })).toBeNull()
+  })
 })

@@ -107,6 +107,7 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | terms_version_accepted | varchar(32), null | The version of the legal terms accepted by the user (e.g. `2026-10-31`) |
 | terms_accepted_at | timestamptz, null | When the terms were accepted at sign-up |
+| unconfirmed_warned_at | timestamptz, null | When the 23-day warning email was sent to an unconfirmed account; null until warned |
 | created_at, updated_at | timestamptz | |
 
 | ai_sharing | bool, not null, default false | Shares AI rounds (asked at the first round, changed in the account; off removes what was shared) |

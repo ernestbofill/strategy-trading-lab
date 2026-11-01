@@ -32,7 +32,9 @@ async function getRequired<T>(path: string): Promise<T> {
   return value
 }
 
-/** POSTs `body` as JSON. A 409 means the name is taken; any other failure throws. */
+type Problem = { errors?: Record<string, string[]>; detail?: string } | null
+
+/** POSTs `body` as JSON. A 409 means the name is taken; a 400 with errors maps to InvalidFieldsError; any other failure throws. */
 async function post<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
@@ -41,6 +43,12 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   })
   if (response.status === 409) throw new NameTakenError()
   if (response.status === 401) endedSession()
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) {
+      throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+    }
+  }
   if (!response.ok) throw new Error(`POST ${path} failed: HTTP ${response.status}`)
   return (await response.json()) as T
 }
@@ -139,8 +147,6 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
   if (!response.ok) throw new Error(`${method} /admin${path} failed: HTTP ${response.status}`)
   return response
 }
-
-type Problem = { errors?: Record<string, string[]>; detail?: string } | null
 
 interface AccountCall {
   /** A link endpoint (verify, reset): a 400 with only a message is an expired or used link. */

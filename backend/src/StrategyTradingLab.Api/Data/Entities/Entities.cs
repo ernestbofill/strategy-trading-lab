@@ -68,6 +68,8 @@ public class User : IHasUpdatedAt
     public DateTimeOffset? AiSharingChangedAt { get; set; }
     /// <summary>The invite the account signed up with, if any: who invited it is the invite's maker.</summary>
     public Guid? InviteId { get; set; }
+    /// <summary>When the 23-day warning email was sent to an unconfirmed account; null until warned.</summary>
+    public DateTimeOffset? UnconfirmedWarnedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }

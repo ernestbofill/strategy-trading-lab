@@ -10,6 +10,8 @@ public static class NewStrategyValidation
     public const int NameMaxLength = 60;
     public const decimal MinBudget = 500, MaxBudget = 1_000_000, MinStep = 10;
     public const int MaxSteps = 20;
+    /// <summary>The most running strategies a user can have at once (spec: Dashboard).</summary>
+    public const int MaxRunningStrategies = 10;
     /// <summary>The most stocks a strategy watches (spec: "+ Add a stock").</summary>
     public const int MaxStocks = 60;
 

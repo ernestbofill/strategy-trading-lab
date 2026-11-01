@@ -97,4 +97,31 @@ describe('Confirm', () => {
     // The overview email is an account setting: a guest gets no Edit link to it.
     expect(screen.queryByRole('link', { name: /Edit.*overview/i })).toBeNull()
   })
+
+  it('disables starting when the user already runs 10 strategies', async () => {
+    vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
+    vi.spyOn(api, 'getAccount').mockResolvedValue({
+      email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, currency: 'EUR', role: 'user', aiSharing: false,
+    })
+    vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
+    const running = Array.from({ length: 10 }, (_, i) => ({ id: `s${i}`, name: `S${i}`, status: 'running' as const } as unknown as StrategySummary))
+    vi.spyOn(api, 'getDashboard').mockResolvedValue({ strategies: running, waiting: [] } as unknown as Dashboard)
+    render(
+      <AccountProvider>
+        <NewStrategyDraftProvider owner="a@example.com">
+          <ChooseAi />
+          <MemoryRouter initialEntries={['/new/confirm']}>
+            <Routes>
+              <Route path="/new/confirm" element={<Confirm />} />
+            </Routes>
+          </MemoryRouter>
+        </NewStrategyDraftProvider>
+      </AccountProvider>,
+    )
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/You run 10 strategies, the most for now/)
+    expect(screen.queryByRole('button', { name: 'Start the simulation' })).toBeNull()
+    expect(screen.getByText('Start the simulation').getAttribute('aria-disabled')).toBe('true')
+  })
 })

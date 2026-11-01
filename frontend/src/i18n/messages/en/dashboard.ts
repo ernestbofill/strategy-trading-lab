@@ -4,6 +4,7 @@ export const dashboard = {
   'dashboard.account': 'Account',
   'dashboard.heading': 'Your strategies',
   'dashboard.newStrategy': '+ New strategy',
+  'dashboard.strategiesFull': 'You run {max} strategies, the most for now. Archive one to start another.',
   'dashboard.waitingTitle': 'Waiting for you',
   'dashboard.waitingHidden': ' waiting',
   'dashboard.dot.aiRound': 'AI round due',

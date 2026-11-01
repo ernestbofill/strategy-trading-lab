@@ -22,6 +22,7 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   status: 'running',
   endedOn: null,
   notifications: true,
+  push: false,
   startedOn: '2026-10-13',
   today: '2026-10-24',
   currency: 'EUR',

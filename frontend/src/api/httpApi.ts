@@ -296,6 +296,18 @@ export const httpApi: Api = {
   },
   renameStrategy: (id, name) => strategyAction('PUT', id, 'name', { name }),
   setStrategyNotifications: (id, enabled) => strategyAction('PUT', id, 'notifications', { enabled }),
+  setStrategyPush: (id, enabled) => strategyAction('PUT', id, 'push', { enabled }),
+  getPushKey: async () => (await getRequired<{ publicKey: string | null }>('/push/key')).publicKey,
+  savePushSubscription: (subscription) => put('/push/subscription', subscription),
+  removePushSubscription: async (endpoint) => {
+    const response = await fetch(`${BASE_URL}/push/unsubscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...APP_HEADER },
+      body: JSON.stringify({ endpoint }),
+    })
+    if (response.status === 401) endedSession()
+    if (!response.ok) throw new Error(`POST /push/unsubscribe failed: HTTP ${response.status}`)
+  },
   archiveStrategy: (id) => strategyAction('POST', id, 'archive'),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   getAdminInvites: async () => (await admin('GET', '/invites')).json(),

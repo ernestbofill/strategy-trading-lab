@@ -1,4 +1,5 @@
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Evaluation;
 
 namespace StrategyTradingLab.Api.Notifications;
 
@@ -33,6 +34,11 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     if (reminders > 0) logger.LogInformation("Sent {Count} snooze reminders.", reminders);
                     var rounds = await service.SendAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
                     if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
+                    // Push after email: a signal alert a run couldn't push is retried here, every hour, as the emails are.
+                    var pushed = await service.PushSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken)
+                        + await service.PushSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken)
+                        + await service.PushAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
+                    if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);
                 }
             }
             catch (Exception error) when (error is not OperationCanceledException)

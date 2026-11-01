@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Dashboard, type StrategySummary, type TemplateDetail } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
@@ -9,7 +9,12 @@ import { AccountProvider } from '../account/AccountContext'
 import { Confirm } from './Confirm'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from './NewStrategyDraft'
 
+// Whether the app offers push on this device (the server's key and the browser).
+const push = vi.hoisted(() => ({ offered: false }))
+vi.mock('../../lib/usePushOffered', () => ({ usePushOffered: () => push.offered }))
+
 afterEach(() => {
+  push.offered = false
   cleanup()
   vi.restoreAllMocks()
   invalidateAll()
@@ -34,7 +39,13 @@ function ChooseAi() {
 
 function DashboardStub() {
   const navigate = useNavigate()
-  return <button onClick={() => navigate(-1)}>Dashboard back</button>
+  const askPush = (useLocation().state as { askPush?: boolean } | null)?.askPush
+  return (
+    <>
+      <button onClick={() => navigate(-1)}>Dashboard back</button>
+      {askPush && <p>Asks to allow notifications</p>}
+    </>
+  )
 }
 
 function open() {
@@ -73,6 +84,30 @@ describe('Confirm', () => {
     expect(screen.queryByRole('heading', { name: 'Ready to start' })).toBeNull()
     expect(start).toHaveBeenCalledTimes(1)
     expect(start.mock.calls[0][0]).toMatchObject({ templateKey: 'ai' })
+  })
+
+  it('starts with push and asks to allow notifications on the dashboard where push is offered', async () => {
+    push.offered = true
+    open()
+    const start = vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
+
+    expect(await screen.findByText('App and email')).toBeTruthy()
+    fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
+
+    expect(await screen.findByText('Asks to allow notifications')).toBeTruthy()
+    expect(start.mock.calls[0][0]).toMatchObject({ push: true })
+  })
+
+  it('starts without push, and asks nothing, where push is not offered', async () => {
+    open()
+    const start = vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
+
+    expect(await screen.findByText('Email')).toBeTruthy()
+    fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
+
+    expect(await screen.findByRole('button', { name: 'Dashboard back' })).toBeTruthy()
+    expect(screen.queryByText('Asks to allow notifications')).toBeNull()
+    expect(start.mock.calls[0][0]).toMatchObject({ push: false })
   })
 
   it('renders "Create an account to start it" for guests and links to sign-up with next', async () => {

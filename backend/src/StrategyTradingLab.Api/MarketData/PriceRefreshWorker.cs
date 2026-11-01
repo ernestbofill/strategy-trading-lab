@@ -251,7 +251,10 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             using var scope = scopes.CreateScope();
             var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
             if (!await notifications.EnabledAsync(stoppingToken)) return;
-            logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken));
+            var session = UsSession.LastComplete(time.GetUtcNow());
+            logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(session, stoppingToken));
+            // Apart from the emails' count; a push problem stays in its own rows (a device gone, a push service down).
+            logger.LogInformation("Pushed {Count} signal alerts.", await notifications.PushSignalAlertsAsync(session, stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

@@ -205,6 +205,63 @@ public class NotificationTests
     static NotificationService Service(IServiceScope scope, IEmailSender sender) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
 
+    static NotificationService Service(IServiceScope scope, IPushSender push) =>
+        ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)new Captured(), push);
+
+    /// <summary>Delivers to every device but those whose endpoint says "gone".</summary>
+    sealed class FakePush : IPushSender
+    {
+        public string? PublicKey => "key";
+        public List<(string Endpoint, string Payload)> Sent { get; } = [];
+        public Task<PushOutcome> SendAsync(PushSubscription subscription, string payload, CancellationToken cancellationToken)
+        {
+            if (subscription.Endpoint.Contains("gone")) return Task.FromResult(PushOutcome.Gone);
+            Sent.Add((subscription.Endpoint, payload));
+            return Task.FromResult(PushOutcome.Sent);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_live_signal_is_pushed_once_to_each_device_when_its_strategy_has_push_on()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId, signalId, _) = await SeedAsync(db);
+        try
+        {
+            var tag = Guid.NewGuid().ToString("N");
+            db.PushSubscriptions.AddRange(
+                new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{tag}", P256dh = "p", Auth = "a" },
+                new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/gone-{tag}", P256dh = "p", Auth = "a" });
+            await db.SaveChangesAsync();
+            var push = new FakePush();
+
+            // Push is off on the strategy by default: nothing goes out and nothing is claimed.
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Push, true));
+
+            var first = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var second = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+
+            Assert.Equal((1, 0), (first, second));
+            var (endpoint, payload) = Assert.Single(push.Sent);
+            Assert.EndsWith(tag, endpoint);
+            using var message = JsonDocument.Parse(payload);
+            Assert.Equal($"/strategies/{strategyId}/signals/{signalId}", message.RootElement.GetProperty("url").GetString());
+            Assert.StartsWith("Your rules for Notify", message.RootElement.GetProperty("body").GetString());
+            // The device the push service called gone is forgotten.
+            Assert.Equal(1, await db.PushSubscriptions.CountAsync(p => p.UserId == userId));
+            var row = await db.Notifications.SingleAsync(n => n.UserId == userId);
+            Assert.Equal((NotificationKind.Signal, NotificationChannel.Push), (row.Kind, row.Channel));
+            Assert.NotNull(row.SentAt);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
     [NeonFact]
     public async Task A_live_signal_is_alerted_once_and_recorded()
     {

@@ -28,6 +28,14 @@ using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
 
+// `dotnet run -- vapid-keys` prints a new key pair for web push, for the server's environment (deploy/backend/README.md).
+if (args is ["vapid-keys"])
+{
+    var keys = StrategyTradingLab.Api.Notifications.VapidKeys.Create();
+    Console.WriteLine($"VAPID_PUBLIC_KEY={keys.PublicKey}\nVAPID_PRIVATE_KEY={keys.PrivateKey}");
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Locally, `neon deploy` / `neon env pull` write the Neon variables to .env.local at the repo root.
@@ -54,6 +62,7 @@ else if (!builder.Environment.IsDevelopment())
 builder.Services.AddScoped<SettingsStore>();
 builder.Services.AddScoped<AdminAlerts>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddHttpClient<StrategyTradingLab.Api.Notifications.IPushSender, StrategyTradingLab.Api.Notifications.WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailWorker>();
 
@@ -243,6 +252,7 @@ app.MapTrades();
 app.MapAdmin();
 app.MapInvites();
 app.MapAccount();
+StrategyTradingLab.Api.Notifications.WebPushEndpoints.MapWebPush(app);
 app.MapFeedback();
 app.MapUnsubscribe();
 app.MapEmailEvents();

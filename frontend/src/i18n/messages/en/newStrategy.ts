@@ -130,6 +130,10 @@ export const newStrategy = {
   'newStrategy.mode.listLabel': 'Mode',
   'newStrategy.mode.continue': 'Continue',
   'newStrategy.mode.liveNote': 'The app never trades for you or connects to your broker. It records only what you confirm.',
+  'newStrategy.mode.alerts': 'Alerts',
+  'newStrategy.mode.push': 'Also notify me on my devices',
+  'newStrategy.mode.pushHint': 'Right after the market close. Email alerts stay on as a fallback. You can change it later on the strategy page.',
+  'newStrategy.mode.pushHomeScreen': 'On iPhone, add the app to your home screen first.',
   'newStrategy.mode.noBacktest':
     '{name} has no backtest, in either mode: results start on the day the strategy starts.',
   'newStrategy.mode.tagSim': 'SIM',
@@ -207,6 +211,7 @@ export const newStrategy = {
   'newStrategy.confirm.budgetStepsStock': '{budget} · steps of {step} · up to {max} per stock',
   'newStrategy.confirm.overview': 'By email, after the US market close',
   'newStrategy.confirm.alerts': 'Email',
+  'newStrategy.confirm.alertsPush': 'App and email',
   'newStrategy.confirm.prompt': 'Suggested',
   'newStrategy.confirm.promptEdited': 'Edited',
   'newStrategy.confirm.next': 'What happens next',

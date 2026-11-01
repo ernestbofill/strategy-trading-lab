@@ -111,6 +111,7 @@ public static class StrategyEndpoints
                 Budget = request.Budget,
                 Params = parameters,
                 SourceStrategyId = source,
+                Push = request.Push,
                 Assets = [.. assets.Select(asset => new StrategyAsset
                     { AssetId = asset.Id, Active = true, AddedAt = time.GetUtcNow() })],
             };
@@ -220,6 +221,22 @@ public static class StrategyEndpoints
         })
         .WithName("SetStrategyNotifications")
         .WithSummary("Turns a running strategy's alerts (emails for its signals and AI rounds) on or off. The daily overview still lists them.");
+
+        group.MapPut("/{id:guid}/push", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (
+            Guid id, StrategyNotifications request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = await CurrentUser(sessions, cancellationToken);
+            if (request.Enabled is not { } enabled)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(user.Locale)] });
+            var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
+            if (strategy is null) return TypedResults.NotFound();
+            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
+            strategy.Push = enabled;
+            await db.SaveChangesAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithName("SetStrategyPush")
+        .WithSummary("Turns a running strategy's push notifications (its alerts on the user's devices) on or off.");
 
         group.MapPost("/{id:guid}/archive", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
@@ -514,7 +531,7 @@ public static class StrategyEndpoints
             : null;
 
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
-            EndedOn(strategy, user), strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
+            EndedOn(strategy, user), strategy.Notifications, strategy.Push, strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks };

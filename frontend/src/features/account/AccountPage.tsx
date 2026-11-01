@@ -15,6 +15,7 @@ import { errorText } from './copy'
 import { EMAILS_HASH, logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
+import { DevicePush } from './DevicePush'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SendFeedback } from '../feedback/SendFeedback'
 
@@ -94,6 +95,10 @@ export function AccountPage() {
       <Section id={EMAILS_HASH.slice(1)} title={t('account.page.emails')}>
         <EmailSwitch current={account.overviewEmail} label={t('account.overviewEmail')} save={api.setOverviewEmail} onSaved={refresh} />
         <EmailSwitch current={account.alertEmails} label={t('account.alertEmails')} save={api.setAlertEmails} onSaved={refresh} />
+      </Section>
+
+      <Section title={t('account.page.notifications')}>
+        <DevicePush />
       </Section>
 
       <Section title={t('account.page.dataPrivacy')}>

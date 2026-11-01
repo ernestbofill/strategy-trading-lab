@@ -23,7 +23,7 @@ function notify() {
   listeners.forEach((listener) => listener())
 }
 
-function isStandalone() {
+export function isStandalone() {
   const displayMode = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
   return displayMode || Reflect.get(navigator, 'standalone') === true
 }

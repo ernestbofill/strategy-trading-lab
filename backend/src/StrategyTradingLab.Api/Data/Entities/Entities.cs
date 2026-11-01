@@ -148,6 +148,8 @@ public class Strategy : IHasUpdatedAt
     /// <summary>When the user archived it (status <c>Ended</c>): it stops, and shows in the dashboard's collapsed Archived section.</summary>
     public DateTimeOffset? EndedAt { get; set; }
     public bool Notifications { get; set; } = true;
+    /// <summary>Its alerts also go to the user's devices by web push (Choose the mode's Alerts box, the strategy page). Off by default.</summary>
+    public bool Push { get; set; }
     public required string Currency { get; set; }
     public required Budget Budget { get; set; }
     public required JsonDocument Params { get; set; }

@@ -1,10 +1,14 @@
 import { useEffect } from 'react'
+import { Callout } from '../../components/Callout'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
+import { Checkbox } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tag, type TagTone } from '../../components/Tag'
 import { useT } from '../../i18n/I18n'
+import { pushSupport } from '../../lib/push'
 import { useOptionalAccount } from '../account/AccountContext'
+import { usePushOffered } from '../../lib/usePushOffered'
 import { ResendLink } from '../account/ResendLink'
 import styles from './ChooseMode.module.css'
 import { useNewStrategyDraft, type Mode } from './NewStrategyDraft'
@@ -14,9 +18,12 @@ import { useTemplate } from './useTemplate'
 /** 3 · Choose the mode (wireframe `Mode`). */
 export function ChooseMode() {
   const t = useT()
-  const { mode, templateKey, sourceStrategyId, update } = useNewStrategyDraft()
+  const { mode, templateKey, sourceStrategyId, push, update } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
   const isLive = mode === 'live'
+  // Strategies that alert: live ones (signals) and AI ones (rounds due). Push is asked for right after the strategy starts.
+  const alerts = isLive || (template.status === 'ready' && template.data.aiRound !== null)
+  const pushOffered = usePushOffered()
   // Live signals come by email, so going live needs a confirmed address (the server refuses it too). A guest may
   // still pick it: signing up and confirming the address come before the strategy starts.
   const emailVerified = useOptionalAccount()?.emailVerified ?? true
@@ -100,6 +107,18 @@ export function ChooseMode() {
           </ChoiceCard>
         ))}
       </ChoiceList>
+
+      {alerts && pushOffered && (
+        <Callout tone="info" title={t('newStrategy.mode.alerts')}>
+          <Checkbox checked={push} onChange={(checked) => update({ push: checked })}>
+            {t('newStrategy.mode.push')}
+          </Checkbox>
+          <p className="caption">
+            {t('newStrategy.mode.pushHint')}
+            {pushSupport() === 'homeScreen' && ` ${t('newStrategy.mode.pushHomeScreen')}`}
+          </p>
+        </Callout>
+      )}
 
       {template.status === 'ready' && !template.data.backtest && (
         <ScreenMessage>

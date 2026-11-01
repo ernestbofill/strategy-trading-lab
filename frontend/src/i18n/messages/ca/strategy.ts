@@ -93,6 +93,8 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.alerts.rounds': 'Envia’m un correu quan toqui la ronda d’IA',
   'strategy.alerts.both': 'Envia’m per correu els senyals i les rondes d’IA',
   'strategy.alerts.hint': 'El resum diari els continua mostrant.',
+  'strategy.push': 'Notifica també els meus dispositius',
+  'strategy.push.hint': 'Els dispositius on has permès les notificacions, a Compte.',
   'strategy.alertsFailed': 'No s’ha pogut desar. Torna-ho a provar.',
   'strategy.archive': 'Arxiva l’estratègia',
   'strategy.archiveAsk': 'Vols arxivar {name}? La comprovació diària s’atura i els senyals que encara esperen es tanquen com a perduts. L’historial es manté, només de lectura, a Arxivades. No es pot desfer.',

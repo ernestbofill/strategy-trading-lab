@@ -1,5 +1,7 @@
 
 ## Todos from Claude to Ernest
+- [ ] Before #134 deploys (or right after): make a web push key pair with `dotnet run -- vapid-keys` in `backend/src/StrategyTradingLab.Api`, put `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` in `deploy/backend/production.env` and run *Deploy backend environment to Oracle*. Keep the same pair from then on. For local testing, a second pair in `.env.local`. Without it the app only emails. (#134)
+- [ ] After #134 deploys: start a live strategy on the phone with "Also notify me on my devices", allow notifications, and check a signal or reminder arrives and opens the signal. On iPhone, from the home-screen app (not checked by eye: no real push in the dev browser). (#134)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
 - [x] After #103 deploys: on production `/admin/assets`, press *Delete all* (then *Sure? Delete all*), then *Download all* with 2 years. The prices stored before were weekly, monthly or quarterly bars, and nothing repairs them on its own. Check the summary, and that a stock no longer says "Not enough price history yet". (#103)
 - [x] After #99 deploys: add your first name on the account page, so invites say "Ernest invited you" and are signed. Then send yourself a test invite in English and in Catalan, and open the link logged out on the phone (Sign-up with an invite wasn't checked by eye). (#99)

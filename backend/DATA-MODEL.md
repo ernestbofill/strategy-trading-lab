@@ -206,7 +206,8 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | status | text, not null | `running` \| `ended` |
 | started_on | date, not null | "since [date]" |
 | ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. When it was archived (the screens' word for `ended`, #96): archiving closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
-| notifications | bool, not null, default true | Signal notifications for this strategy, on every channel. Off = it keeps running quietly |
+| notifications | bool, not null, default true | Email alerts for this strategy (signals, snooze reminders, AI rounds). Off = it keeps running quietly |
+| push | bool, not null, default false | Its alerts also go to the user's devices by web push (Choose the mode's Alerts box, the strategy page's push switch) |
 | currency | char(3), not null | Fixed at creation. Budget, trade amounts and results are in it |
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |
@@ -367,7 +368,7 @@ Every notification the app sends, one row per channel. A notification goes out *
 - `CHECK ((kind IN ('signal', 'snoozed')) = (signal_id IS NOT NULL))`.
 - A new subject adds its own column and joins the key and the check: AI rounds will add `ai_round_id` (FK → ai_rounds), not a generic id.
 
-No row is created for a channel the user can't receive (no push subscription) or when the strategy's notifications are off. Push goes to all the user's devices as one row; a per-device log can come later if support needs it.
+No row is created for a channel the user can't receive (no push subscription) or that the strategy has off (`notifications` for email, `push` for push). Push goes to all the user's devices as one row; a per-device log can come later if support needs it.
 
 ### `app_settings`
 

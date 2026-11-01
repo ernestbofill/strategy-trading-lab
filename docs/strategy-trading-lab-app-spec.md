@@ -229,7 +229,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### Account (first version, not drawn)
 
-- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch), "Currency" (three buttons, "€ EUR" over "Euro" and so on, and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Language" (two buttons, English and Català, and "Save language"; "Saved."), "Send feedback" (see *Feedback* under Admin), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (time zone, Data and privacy) stays in *Not designed yet*.
+- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch), "Notifications" (built #134: web push on this device, "On for this device." or "Off for this device." with "Turn on" / "Turn off"; or why it can't: the browser can't, iPhone needs the home screen first, or notifications are blocked in the browser's settings), "Currency" (three buttons, "€ EUR" over "Euro" and so on, and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Language" (two buttons, English and Català, and "Save language"; "Saved."), "Send feedback" (see *Feedback* under Admin), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (time zone, Data and privacy) stays in *Not designed yet*.
 
 ### 1 · Pick a strategy template (`Main`)
 
@@ -463,9 +463,10 @@ Content is per template (period, scope, figures). *Index trend* is all in, all o
 **Until the email is confirmed** (built, #89): the Live card can't be picked; under it, "Confirm your email to go live." and "Send the link again". A draft that arrives live falls back to Simulation. `POST /strategies` refuses a live strategy from an unconfirmed account (`errors.mode`).
 
 **When Live is selected**
-- While web push isn't built (ROADMAP item 30, in the launch), no Alerts box and no notification prompt: alerts come by email. With web push, an info box "Alerts": "Your browser will ask to allow notifications, so signals reach you right after the market close. Email alerts are on too, as a fallback. On iPhone, add the app to your home screen first."
 - Above the button: "The app never trades for you or connects to your broker. It records only what you confirm."
-- Request web push permission when the user continues (or on a button in the box). If it's refused, email is the only alert channel.
+
+**Alerts box** (built, #134, not drawn), for strategies that alert (live ones, and AI ones in either mode), only where the app offers push (the server has its keys and the browser can get push; on iPhone Safari it shows with the home-screen line): an info box "Alerts" with a checkbox "Also notify me on my devices", on by default, and "Right after the market close. Email alerts stay on as a fallback. You can change it later on the strategy page." (iPhone in Safari: "On iPhone, add the app to your home screen first."). It sets the strategy's push switch.
+- The permission isn't asked here but right after the strategy starts (Ernest): the dashboard opens with a "Notifications" box, "Allow notifications so its alerts reach this device right after the market close. Email is the fallback.", an "Allow notifications" button (the browser's prompt, from the tap) and "Not now". Allowed: "Notifications are on for this device."; refused: "Not allowed. Alerts come by email; you can turn notifications on later in Account." Already allowed on this device, it subscribes without asking and shows nothing. On iPhone in Safari it explains the home-screen step; blocked in the browser, it says so. Refused or not, email stays on.
 
 For *Your AI's top picks*, restate under the cards that it has no backtest (not drawn).
 
@@ -518,7 +519,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 | Settings | "Tested defaults", or "[n] changed" | Advanced settings |
 | Budget | "€[budget] · steps of €[step] · up to [max] per stock" | Set your budget |
 | Daily overview | "By email, after the US market close" | The account page's Emails section |
-| Alerts (Live only) | "Email" ("App and email" once web push is built) | Choose the mode |
+| Alerts (Live and AI) | "Email", or "App and email" with the Alerts box ticked (built, #134) | Choose the mode |
 | Prompt (AI only, built) | "Suggested" or "Edited" | Edit prompt |
 
 - **"What happens next"**
@@ -593,6 +594,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - For running simulations, a third tile: "Go live" / "With these settings" (built, #92; not drawn), see *Going live from a simulation*. A live copy shows "Copied from [simulation name]" under its name.
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - **Alerts switch** (built #91, not drawn), for strategies that email: live ones, "Email me this strategy's signals"; AI simulations, "Email me when its AI round is due"; live AI ones, "Email me its signals and AI rounds". Under it: "The daily overview still lists them." On by default. There is no pause: with alerts off the strategy keeps running quietly, and signals left unanswered become *Missed* when they end. A snooze needs alerts on.
+- **Push switch** (built #134, not drawn), under the alerts switch, for the same strategies, where the app offers push (or while it is on): "Notify my devices too", with "Devices where you allowed notifications, in Account." Turning it on also asks to allow notifications on this device, from the tap. Independent of the email switch.
 - **One action out of each state** (#96, Ernest's feedback: one word, not *End*, *Archive* and *Delete*): a running strategy can only be archived, and only an archived strategy can be deleted.
 - **"Archive the strategy"** (built #91 as *End*, renamed #96, not drawn), running strategies only, with a confirm step in place: "Archive [name]? The daily check stops and signals still waiting close as missed. Its history stays, read-only, under Archived. This can't be undone." with "Archive it" and "Keep it running". Archiving sets it to ended (the date is the user's today), makes every waiting signal *Missed* (ending that day, snooze cleared), skips its AI round due, and frees its name (`POST /strategies/{id}/archive`).
 - **An archived strategy** (built #91): read-only. Its results stop at its archive date. No alerts switch, no "Tune the settings", no "Log a trade by hand" and no editing or deleting trades, and its missed signals can't be answered any more (the API answers 409, "This strategy is archived, so it can't change."); its answered signals still open. At the bottom: "Delete the strategy". There is no unarchive.
@@ -764,6 +766,8 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 
 **Live signal alert**: web push and email, right after the daily check that found it (or after an AI round). Same text as the signal box. Sent once per channel; a snoozed signal is notified again the next day, once per channel.
 
+**Web push** (built, #134): for strategies with push on, to every device the user turned on (Choose the mode's Alerts box, the strategy page, the account page), whether or not their email is confirmed, and apart from the email switches. The live signal alert (title: the email's subject, text: the signal box), the snooze reminder and the AI round reminder, at the same times as their emails, once each; the hourly check retries one that couldn't go out. A tap opens the signal (or the round) in the app. A device the push service says is gone is forgotten. The overview stays email only. Sent with VAPID keys from the server's environment (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`): without them the app offers no push and only emails. `EMAILS_ENABLED` on the admin page switches push off too.
+
 **AI round due**: notification and email: "Time for the AI round of [strategy name]. It takes about two minutes." (built: email only, once per user and due day, from 07:00 in the user's time zone, listing every round of theirs due that day, with a link to each; not for a strategy's first round, due the day it starts; only for strategies with notifications on and a confirmed email). The daily overview's *Waiting for you* lists AI rounds due too. A live signal from a round still waiting after the next daily check gets the usual alert then.
 
 ## 8. Data the app needs
@@ -808,7 +812,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP.md) → *The launch product*; each gets its section here when it is built):
 
 - "Coming soon" cards on Pick a template for templates the engine can't run yet.
-- Live mode gated on a confirmed email, with email-only alerts until web push exists (ROADMAP item 30).
+- Live mode gated on a confirmed email (alerts by email, and by web push where the user turned it on, #134).
 - ~~Statuses for *Bear markets*; the "Signals and trades" list on the strategy page.~~ (both built: #60, #61)
 - ~~Ended strategies.~~ (built #91; since #96 ending is archiving: kept read-only under Archived, and can then be deleted)
 - ~~The legal pages' text (legal notice, terms, privacy, About with conflicts of interest); the footer and placeholder pages are built (#100).~~ (built #104)

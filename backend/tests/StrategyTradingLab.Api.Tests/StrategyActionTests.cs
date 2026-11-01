@@ -90,6 +90,64 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
+    public async Task The_push_switch_is_off_by_default_and_turns_on_and_off_while_running()
+    {
+        var (client, email) = await factory.VerifiedAsync();
+        try
+        {
+            var id = await StartAsync(client, $"Push {Tag()}");
+            Assert.False((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("push").GetBoolean());
+
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/strategies/{id}/push", new { enabled = (bool?)null })).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/push", new { enabled = true })).StatusCode);
+            Assert.True((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("push").GetBoolean());
+
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync($"/strategies/{id}/push", new { enabled = false })).StatusCode);
+        }
+        finally
+        {
+            await RemoveAsync(email);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_device_subscribes_once_moves_to_whoever_logs_in_and_unsubscribes()
+    {
+        var (first, firstEmail) = await factory.VerifiedAsync();
+        var (second, secondEmail) = await factory.VerifiedAsync();
+        try
+        {
+            var endpoint = $"https://fcm.googleapis.com/fcm/send/{Tag()}";
+            var keys = new { p256dh = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode([4, .. new byte[64]]), auth = "AAAAAAAAAAAAAAAAAAAAAA" };
+            Assert.Equal(HttpStatusCode.BadRequest,
+                (await first.PutAsJsonAsync("/push/subscription", new { endpoint = "https://attacker.example/x", keys })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest,
+                (await first.PutAsJsonAsync("/push/subscription", new { endpoint, keys = new { p256dh = "short", auth = "x" } })).StatusCode);
+
+            Assert.Equal(HttpStatusCode.NoContent, (await first.PutAsJsonAsync("/push/subscription", new { endpoint, keys })).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await first.PutAsJsonAsync("/push/subscription", new { endpoint, keys })).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await second.PutAsJsonAsync("/push/subscription", new { endpoint, keys })).StatusCode);
+
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var owner = await db.PushSubscriptions.Where(p => p.Endpoint == endpoint).Select(p => db.Users.Single(u => u.Id == p.UserId).Email).SingleAsync();
+            Assert.Equal(secondEmail, owner);
+
+            // Only the device's own user can forget it.
+            Assert.Equal(HttpStatusCode.NoContent, (await first.PostAsJsonAsync("/push/unsubscribe", new { endpoint })).StatusCode);
+            Assert.True(await db.PushSubscriptions.AnyAsync(p => p.Endpoint == endpoint));
+            Assert.Equal(HttpStatusCode.NoContent, (await second.PostAsJsonAsync("/push/unsubscribe", new { endpoint })).StatusCode);
+            Assert.False(await db.PushSubscriptions.AnyAsync(p => p.Endpoint == endpoint));
+        }
+        finally
+        {
+            await RemoveAsync(firstEmail);
+            await RemoveAsync(secondEmail);
+        }
+    }
+
+    [NeonFact]
     public async Task Archiving_a_strategy_misses_its_waiting_signals_frees_its_name_and_refuses_trades()
     {
         var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).

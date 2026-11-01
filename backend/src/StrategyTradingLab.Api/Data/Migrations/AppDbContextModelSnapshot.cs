@@ -1661,6 +1661,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("params");
 
+                    b.Property<bool>("Push")
+                        .HasColumnType("boolean")
+                        .HasColumnName("push");
+
                     b.Property<Guid?>("SourceStrategyId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_strategy_id");

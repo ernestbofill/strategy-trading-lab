@@ -1835,3 +1835,60 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE TABLE admin_alerts (
+        id uuid NOT NULL,
+        key character varying(200) NOT NULL,
+        source text NOT NULL,
+        status text NOT NULL DEFAULT 'open',
+        title character varying(200) NOT NULL,
+        detail character varying(2000),
+        strategy_id uuid,
+        count integer NOT NULL,
+        first_seen_at timestamptz NOT NULL,
+        last_seen_at timestamptz NOT NULL,
+        closed_at timestamptz,
+        CONSTRAINT pk_admin_alerts PRIMARY KEY (id),
+        CONSTRAINT ck_admin_alerts_closed_at CHECK ((status = 'open') = (closed_at IS NULL)),
+        CONSTRAINT ck_admin_alerts_count CHECK (count >= 1),
+        CONSTRAINT ck_admin_alerts_source CHECK (source IN ('daily_check', 'prices', 'strategies', 'ai_strategies', 'email')),
+        CONSTRAINT ck_admin_alerts_status CHECK (status IN ('open', 'dismissed', 'cleared')),
+        CONSTRAINT fk_admin_alerts_strategies_strategy_id FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE UNIQUE INDEX ix_admin_alerts_key ON admin_alerts (key);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE INDEX ix_admin_alerts_status_last_seen_at ON admin_alerts (status, last_seen_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE INDEX ix_admin_alerts_strategy_id ON admin_alerts (strategy_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101100746_AddAdminAlerts', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

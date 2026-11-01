@@ -14,7 +14,8 @@ namespace StrategyTradingLab.Api.Notifications;
 /// the daily overview right after the daily check that evaluated the session. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
 /// key is the dedupe contract), then the email is sent and the row says whether it worked. Only to verified addresses.
 /// </summary>
-public class NotificationService(AppDbContext db, IEmailSender sender, SettingsStore settings, IConfiguration configuration, ILogger<NotificationService> logger)
+public class NotificationService(AppDbContext db, IEmailSender sender, SettingsStore settings, IConfiguration configuration, AdminAlerts alerts,
+    ILogger<NotificationService> logger)
 {
     /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder), and no overview goes out before it.</summary>
     public const int MorningHour = 7;
@@ -51,7 +52,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
@@ -80,7 +81,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var today = DateOnly.FromDateTime(local.DateTime);
             if (await SendAsync(claimed, user.Email, () => ComposeOverviewAsync(user.Id, today, lastSession, user.Locale, cancellationToken), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
@@ -115,7 +116,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
@@ -149,7 +150,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
             if (await SendAsync(claimed, first.Email, () => Task.FromResult(EmailTexts.AiRoundDue(strategies, AppUrl, first.Locale)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     static DateTimeOffset LocalTime(DateTimeOffset now, string timeZone)
@@ -219,13 +220,15 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     async Task<bool> SendAsync(Guid notificationId, string to, Func<Task<EmailContent>> compose, CancellationToken cancellationToken)
     {
         string? error = null;
+        var shutDown = false;
         try
         {
             await sender.SendAsync(new OutgoingEmail(to, await compose()), cancellationToken);
         }
-        catch (EmailNotSetUpException)
+        catch (EmailNotSetUpException notSetUp)
         {
             await ReleaseAsync(notificationId);
+            await EmailFailedAsync(notSetUp.Message);
             return false;
         }
         // A shutdown keeps the claim: the mail server may have accepted the email already, and losing one is better than sending it twice.
@@ -234,13 +237,56 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             // Not the server's own words (they often quote the address) and never the body: both are the user's data.
             error = problem is EmailException ? "The mail server refused or couldn't send it." : "The email couldn't be written or sent.";
             logger.LogWarning("Couldn't send notification {Id}: {Kind}", notificationId, problem.GetType().Name);
+            shutDown = problem is OperationCanceledException && cancellationToken.IsCancellationRequested;
         }
+        // A shutdown isn't an email problem: the claim stays as it is, neither sent nor failed, and raises no alert.
+        if (shutDown) return false;
         var now = DateTimeOffset.UtcNow;
         await db.Notifications.Where(n => n.Id == notificationId)
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, error is null ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, error is null ? (DateTimeOffset?)null : now).SetProperty(x => x.Error, error), CancellationToken.None);
         db.ChangeTracker.Clear();
+        if (error is null) anySent = true;
+        else await EmailFailedAsync(error);
         return error is null;
+    }
+
+    const string EmailAlertKey = "email:notifications";
+
+    // What this scope's sends did, so the alert clears once, after a batch where every email went out (not per email).
+    bool anySent, anyFailed;
+
+    /// <summary>
+    /// How long a failure keeps the alert from clearing: a week, so an address that fails whenever it is sent to (a weekend or a
+    /// clock change in between) keeps the alert open, and dismissed if it was.
+    /// </summary>
+    static readonly TimeSpan FailureMemory = TimeSpan.FromDays(7);
+
+    async Task EmailFailedAsync(string problem)
+    {
+        anyFailed = true;
+        await alerts.RaiseAsync(AlertSource.Email, new NewAlert(EmailAlertKey, "Emails to users failed",
+            $"The last one: {problem} The count is the failures since every email of a run last went out."), CancellationToken.None);
+    }
+
+    /// <summary>The end of a batch: clears the email alert if emails went out and none failed. Returns how many were sent.</summary>
+    async Task<int> SettledAsync(int sent)
+    {
+        if (!anySent || anyFailed) return sent;
+        // Not while any other run failed in the last day (another time zone's overviews, the alerts): mixed results would
+        // otherwise clear the alert and open it again each day, undoing a dismiss.
+        var since = DateTimeOffset.UtcNow - FailureMemory;
+        try
+        {
+            if (await db.Notifications.AnyAsync(n => n.FailedAt > since, CancellationToken.None)) return sent;
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The email alert couldn't be checked: {Reason}", error.Message);
+            return sent;
+        }
+        await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
+        return sent;
     }
 
     /// <summary>Gives the claim back: nothing was sent, so the next run may send it.</summary>

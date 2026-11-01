@@ -52,6 +52,7 @@ erDiagram
     signals ||--o| user_trades : "confirmed as"
     strategies ||--o{ user_trades : "live trades"
     signals ||--o{ notifications : "alerted by"
+    strategies ||--o{ admin_alerts : "problems of"
 ```
 
 ## Tables
@@ -394,6 +395,25 @@ In-app feedback notes (`bug` | `idea` | `note` | `feature`). Any logged-in user 
 | created_at, updated_at | timestamptz | |
 
 Index `(status, created_at)` and `(user_id)`.
+
+### `admin_alerts`
+
+Problems the background jobs found, for the owner's Alerts page (`/admin/alerts`) instead of emails (ROADMAP item 23). One row per problem, by `key`: a job raises it each time it sees it (`count` goes up) and clears it once a run finds it gone. The owner can dismiss an open one: it stays quiet while the problem lasts, and opens again (counting from 1) only after it cleared and came back. The daily run deletes alerts cleared over 30 days ago. Cascades from `strategies`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| key | varchar(200), unique, not null | `daily-check`, `prices:SAP.DE`, `prices:behind`, `strategy:{id}`, `ai-strategy:{id}`, `email:notifications`, `email:account` |
+| source | text, not null | `daily_check` \| `prices` \| `strategies` \| `ai_strategies` \| `email` (`CHECK`). A run of one source clears that source's alerts it didn't raise. |
+| status | text, not null, default `open` | `open` \| `dismissed` \| `cleared` (`CHECK`) |
+| title | varchar(200), not null | |
+| detail | varchar(2000), null | For a strategy: its owner's email, template and mode, then each stock's problem. Never an email's address or body. |
+| strategy_id | uuid FK → strategies, cascade, null | |
+| count | int, not null | Times seen since it opened (`CHECK count >= 1`) |
+| first_seen_at, last_seen_at | timestamptz, not null | |
+| closed_at | timestamptz, null | When dismissed or cleared: `CHECK ((status = 'open') = (closed_at IS NULL))` |
+
+Index `(status, last_seen_at)` and `(strategy_id)`.
 
 ### `prices_daily`
 

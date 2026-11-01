@@ -202,7 +202,9 @@ public class FeedbackEndpointTests(AccountsApi api) : IClassFixture<AccountsApi>
     [NeonFact]
     public async Task New_feedback_is_emailed_to_the_owner_with_answers_going_to_the_sender()
     {
-        using var withOwner = api.WithWebHostBuilder(b => b.UseSetting("OWNER_EMAIL", "owner-inbox@example.test"));
+        // The last configuration source, so it wins over an OWNER_EMAIL in a developer's .env.local (UseSetting doesn't).
+        using var withOwner = api.WithWebHostBuilder(b => b.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["OWNER_EMAIL"] = "owner-inbox@example.test" })));
         var (user, userEmail) = await api.VerifiedAsync(UserRole.User, withOwner);
 
         var response = await user.PostAsJsonAsync("/feedback", new { kind = "feature", text = "Let me change the budget" });

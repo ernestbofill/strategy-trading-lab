@@ -49,6 +49,7 @@ const AdminSettings = lazyPage(() => import('./features/admin/AdminSettings').th
 const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((m) => m.AdminAssets))
 const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m) => m.AdminUsers))
 const AdminInvites = lazyPage(() => import('./features/admin/AdminInvites').then((m) => m.AdminInvites))
+const AdminAlerts = lazyPage(() => import('./features/admin/AdminAlerts').then((m) => m.AdminAlerts))
 
 /** The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. */
 function DraftPerUser({ children }: { children: ReactNode }) {
@@ -140,6 +141,14 @@ export default function App() {
                       element={
                         <LazyPage back="/">
                           <AdminSettings />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/admin/alerts"
+                      element={
+                        <LazyPage back="/admin">
+                          <AdminAlerts />
                         </LazyPage>
                       }
                     />

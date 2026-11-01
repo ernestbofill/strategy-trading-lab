@@ -889,6 +889,25 @@ export interface AdminUsers {
   users: AdminUser[]
 }
 
+/** What raised an admin alert. */
+export type AlertSource = 'dailyCheck' | 'prices' | 'strategies' | 'aiStrategies' | 'email'
+
+/** Open; dismissed (quiet while the problem lasts); or cleared, when a later run found the problem gone. */
+export type AlertStatus = 'open' | 'dismissed' | 'cleared'
+
+/** A problem the background jobs found: backend Admin/AdminAlerts.cs (AdminAlertDto). `count`: times seen since it opened. */
+export interface AdminAlert {
+  id: string
+  source: AlertSource
+  status: AlertStatus
+  title: string
+  detail: string | null
+  count: number
+  firstSeenAt: string
+  lastSeenAt: string
+  closedAt: string | null
+}
+
 /** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
 export interface AdminAsset {
   id: string
@@ -1021,6 +1040,10 @@ export interface Api {
 /** All assets, for the admin assets page. */
   getAdminAssets(): Promise<AdminAsset[]>
   getAdminUsers(): Promise<AdminUsers>
+  /** The open and dismissed alerts, and those cleared in the last 7 days, last seen first. */
+  getAdminAlerts(): Promise<AdminAlert[]>
+  /** Dismisses an open alert: it stays quiet while its problem lasts. */
+  dismissAdminAlert(id: string): Promise<void>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */

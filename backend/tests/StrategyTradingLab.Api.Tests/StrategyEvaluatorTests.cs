@@ -1,3 +1,4 @@
+using StrategyTradingLab.Api.Admin;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -122,8 +123,11 @@ public class StrategyEvaluatorTests
 
     static Task<int> TradeCount(AppDbContext db, Guid strategyId) => db.SignalTrades.CountAsync(t => t.StrategyId == strategyId);
 
-    static StrategyEvaluator Evaluator(AppDbContext db) =>
-        new(db, new Clock(new DateTimeOffset(2024, 12, 2, 12, 0, 0, TimeSpan.Zero)), NullLogger<StrategyEvaluator>.Instance);
+    static StrategyEvaluator Evaluator(AppDbContext db, TimeProvider? clock = null)
+    {
+        clock ??= new Clock(new DateTimeOffset(2024, 12, 2, 12, 0, 0, TimeSpan.Zero));
+        return new(db, new AdminAlerts(db, clock, NullLogger<AdminAlerts>.Instance), clock, NullLogger<StrategyEvaluator>.Instance);
+    }
 
     [NeonFact]
     public async Task A_simulation_strategy_gets_a_confirmed_signal_and_its_trade_at_the_next_open_once()
@@ -182,6 +186,31 @@ public class StrategyEvaluatorTests
         finally
         {
             await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_strategy_whose_prices_stopped_gets_an_alert_for_the_owner()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
+        try
+        {
+            // The prices end on 2024-10-28, a month before the check's day.
+            await Evaluator(db).RunAsync(default);
+
+            var alert = await db.AdminAlerts.AsNoTracking().SingleAsync(a => a.StrategyId == strategyId);
+            var symbol = await db.Assets.Where(a => a.Id == assetId).Select(a => a.Symbol).SingleAsync();
+            Assert.Equal((AlertSource.Strategies, $"strategy:{strategyId}"), (alert.Source, alert.Key));
+            Assert.EndsWith("is missing price data", alert.Title);
+            Assert.Contains($"{symbol}: the newest price is from 2024-10-28.", alert.Detail);
+            Assert.Contains("dip · simulation", alert.Detail);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId); // Its alert goes with the strategy.
         }
     }
 

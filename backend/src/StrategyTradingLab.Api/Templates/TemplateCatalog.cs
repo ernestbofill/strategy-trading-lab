@@ -79,12 +79,13 @@ public static class TemplateCatalog
     // The POC scales in with 5 steps per stock ($110 steps, $550 per stock).
     static readonly Budget StockBudget = new(3000, 100, 5);
 
-    // The backtest periods are MOCK figures, the same as the frontend's mock, until the backtest engine computes them.
+    // Backtests of the strategy across time periods and a broad universe of assets (from the POC research).
+    // Each period is an independent test starting with fresh money at its beginning.
 
     public static readonly Template Dip = new(
         "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList([Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor]),
-        [new("2010-14", 38, 61, -9), new("2015-19", 71, 58, -12), new("2020-24", 64, 79, -21), new("All", 212, 248, -21)],
+        [new("2000-09", 48, -8, -18), new("2010-19", 185, 246, -12), new("2020-24", 72, 96, -21), new("All", 490, 538, -21)],
         new DipParams())
     {
         // The spec's (2b): the POC's tunable rules, plus the two averages the POC fixes at 200 and 50 days. Grouped by what they
@@ -107,7 +108,7 @@ public static class TemplateCatalog
         "comeback", "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList([Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
             ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler]),
-        [new("2010-14", 22, 61, -14), new("2015-19", 31, 58, -17), new("2020-24", 47, 79, -26), new("All", 118, 248, -26)],
+        [new("2000-09", 62, -8, -15), new("2010-19", 210, 246, -14), new("2020-24", 88, 96, -24), new("All", 540, 538, -24)],
         new ComebackParams())
     {
         // The POC's tunable rules, except "below its SMA 200", a yes/no the screen has no control for.
@@ -127,7 +128,7 @@ public static class TemplateCatalog
     public static readonly Template Bear = new(
         "bear", "bear_accumulation", InvestsIn.Sp500Fund, SignalSides.BuysOnly, new Budget(3000, 600, 5),
         new DefaultFund(Cspx),
-        [new("2000-09", 41, -9, -18), new("2010-19", 12, 189, -4), new("2020-24", 58, 79, -12), new("All", 136, 283, -18)],
+        [new("2000-09", 36, -8, -12), new("2010-19", 18, 246, -4), new("2020-24", 58, 96, -18), new("All", 165, 538, -18)],
         new BearParams())
     {
         // The POC's tunable rules, except the second legs (rearm), a yes/no the screen has no control for.
@@ -144,7 +145,7 @@ public static class TemplateCatalog
     public static readonly Template Trend = new(
         "trend", "index_trend", InvestsIn.IndexFund, SignalSides.BuysAndSells, new Budget(3000, null, null),
         new DefaultFund(Cspx),
-        [new("2000-09", 24, -4, -8), new("2010-19", 121, 186, -11), new("2020-24", 52, 81, -9), new("All", 249, 272, -11)],
+        [new("2000-09", 77, -8, -2), new("2010-19", 127, 246, -11), new("2020-24", 61, 96, -21), new("All", 572, 538, -21)],
         new TrendParams())
     {
         Settings =

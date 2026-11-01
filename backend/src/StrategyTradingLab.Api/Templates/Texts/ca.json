@@ -19,9 +19,9 @@
       }
     ],
     "backtest": {
-      "scope": "9 accions, 2010-2024.",
-      "years": "2010-2024",
-      "universe": "9, la llista inicial",
+      "scope": "1.146 accions, 2000-2024.",
+      "years": "2000-2024",
+      "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
       "testedDefaults": "Els valors provats: pressupost de €3,000, passos de €100, fins a 5 per acció."
     },
     "stockStatus": {
@@ -147,9 +147,9 @@
       }
     ],
     "backtest": {
-      "scope": "16 accions, 2010-2024.",
-      "years": "2010-2024",
-      "universe": "16, la llista inicial",
+      "scope": "1.146 accions, 2000-2024.",
+      "years": "2000-2024",
+      "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
       "testedDefaults": "Els valors provats: pressupost de €3,000, passos de €100, fins a 5 per acció."
     },
     "stockStatus": {
@@ -318,9 +318,9 @@
       }
     ],
     "backtest": {
-      "scope": "3 grans caigudes, 2000-2024. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
+      "scope": "Principals índexs i fons sectorials, 2000-2024.",
       "years": "2000-2024",
-      "universe": "El fons de l'S&P 500",
+      "universe": "Principals índexs i 30 ETF sectorials en 134 mercats baixistes",
       "testedDefaults": "Els valors provats: pressupost de €3,000, 5 passos de €600."
     },
     "stockStatus": {
@@ -427,9 +427,9 @@
       }
     ],
     "backtest": {
-      "scope": "2000-2024, 23 compres i vendes.",
+      "scope": "6 índexs principals, 2000-2024.",
       "years": "2000-2024",
-      "universe": "El fons indexat",
+      "universe": "6 grans índexs globals (S&P 500, Nasdaq-100, EFA, DAX, Nikkei)",
       "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora."
     },
     "stockStatus": {

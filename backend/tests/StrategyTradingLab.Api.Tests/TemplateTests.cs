@@ -131,4 +131,15 @@ public class TemplateTests
     [InlineData(1.01)]
     public void A_step_that_leaves_nothing_to_buy_with_is_refused(decimal step) =>
         Assert.Throws<ArgumentOutOfRangeException>(() => TemplateCatalog.Fee.Split(step));
+
+    [Fact]
+    public void Templates_with_backtest_have_standardized_periods()
+    {
+        string[] expectedPeriods = ["2000-09", "2010-19", "2020-24", "All"];
+        foreach (var template in TemplateCatalog.All.Where(t => t.Backtest is not null))
+        {
+            var periods = template.Backtest!.Select(p => p.Period).ToArray();
+            Assert.Equal(expectedPeriods, periods);
+        }
+    }
 }

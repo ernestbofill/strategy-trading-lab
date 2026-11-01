@@ -72,7 +72,9 @@ function Summary({ s }: { s: StrategyDetail }) {
           {pastResult && (
             <>
               {' '}
-              {t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
+              {pastResult.isCustomized
+                ? t('strategy.pastSummary.custom')
+                : t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
               <span className={styles.mono}>{signedPct(pastResult.template)}</span> {t('strategy.pastSummary.vs')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.index)}</span> {t('strategy.pastSummary.after')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>.

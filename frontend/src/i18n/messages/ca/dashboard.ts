@@ -16,6 +16,7 @@ export const dashboard: Record<keyof typeof en, string> = {
   'dashboard.card.noTradesLive': 'Encara no hi ha operacions.',
   'dashboard.card.noTradesSim': 'Encara no hi ha operacions sobre el paper.',
   'dashboard.card.pastBefore': 'En el passat, {years}, la plantilla va fer un',
+  'dashboard.card.pastCustom': 'Amb la configuració i els valors provats, la plantilla va fer un',
   'dashboard.card.pastVs': 'enfront del',
   'dashboard.card.pastAfter': 'd’un fons de l’S&P 500. El seu pitjor any va ser del',
   'dashboard.card.bearRare': 'Les grans caigudes són poc freqüents: pot passar anys sense senyal.',

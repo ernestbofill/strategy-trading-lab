@@ -24,7 +24,7 @@ public static class StrategyEndpoints
         app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
-            var all = await db.Strategies.AsNoTracking().Where(strategy => strategy.UserId == user.Id).ToListAsync(cancellationToken);
+            var all = await db.Strategies.AsNoTracking().Where(strategy => strategy.UserId == user.Id).Include(strategy => strategy.Assets).ToListAsync(cancellationToken);
             // Running ones newest first, then the archived ones, last archived first.
             var strategies = all.Where(s => s.Status == StrategyStatus.Running)
                 .OrderByDescending(s => s.StartedOn).ThenByDescending(s => s.CreatedAt)
@@ -282,14 +282,44 @@ public static class StrategyEndpoints
         var figures = trades is { } t ? t.Book.Figures(strategy, ResultsDay(strategy, user, t.Today)) : null;
         var results = figures is null ? null : new StrategyResults(figures.You, figures.Index, [.. figures.History.Select(p => p.You)]);
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
-            strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(template, texts),
+            strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(strategy, template, texts),
             strategy.Status, EndedOn(strategy, user));
     }
 
-    static PastResult? PastResultOf(Template template, TemplateTexts texts) =>
+    static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
         template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
-            ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear)
+            ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear, IsCustomized(strategy, template, activeAssetIds))
             : null;
+
+    static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds)
+    {
+        if (template.Settings.Count > 0)
+        {
+            var root = strategy.Params.RootElement;
+            var defaultRoot = template.ParamsJson().RootElement;
+            foreach (var s in template.Settings)
+            {
+                if (root.TryGetProperty(s.Key, out var prop) && defaultRoot.TryGetProperty(s.Key, out var defProp)
+                    && prop.ValueKind == JsonValueKind.Number && defProp.ValueKind == JsonValueKind.Number
+                    && prop.GetDecimal() != defProp.GetDecimal())
+                {
+                    return true;
+                }
+            }
+        }
+
+        if (template.Watches is StarterList starter)
+        {
+            var starterIds = starter.Stocks.Select(s => s.Id).ToHashSet();
+            var activeIds = activeAssetIds ?? (strategy.Assets is null
+                ? []
+                : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
+            if (activeIds.Any(id => !starterIds.Contains(id)))
+                return true;
+        }
+
+        return false;
+    }
 
     static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, User user, DateOnly today, CancellationToken cancellationToken,
         AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null)
@@ -488,7 +518,7 @@ public static class StrategyEndpoints
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
             EndedOn(strategy, user), strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, resultsDay), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
+            book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks };
     }
 

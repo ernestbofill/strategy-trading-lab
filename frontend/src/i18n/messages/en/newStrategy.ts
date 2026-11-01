@@ -100,9 +100,11 @@ export const newStrategy = {
   'newStrategy.how.run.index': 'An S&P 500 fund (SPY) gets the same money on the same days, and is never sold.',
   'newStrategy.how.run.fees': 'Fees: {fee} per trade. Taxes not included.',
   'newStrategy.how.byPeriod': 'By period',
+  'newStrategy.how.independentPeriods':
+    "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All.",
   'newStrategy.how.cantShow': "What a backtest can't show",
   'newStrategy.how.survivors':
-    "The starter list holds companies that are around today. Stocks that failed along the way aren't in it, which flatters past results.",
+    "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results.",
   'newStrategy.how.realPrices': 'Real prices can differ from the opening price, especially on busy days.',
 
   // 2b Advanced settings

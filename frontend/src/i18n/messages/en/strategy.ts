@@ -24,6 +24,7 @@ export const strategy = {
   'strategy.ai.picksVsRest': 'Picks vs the rest',
   'strategy.ai.vs': 'vs',
   'strategy.pastSummary.before': 'In the past, {years}, the template did',
+  'strategy.pastSummary.custom': 'With the tested settings and stocks, the template did',
   'strategy.pastSummary.vs': 'vs',
   'strategy.pastSummary.after': 'for an S&P 500 fund. Its worst year was',
   'strategy.budgetUsed': 'Budget used',

@@ -41,14 +41,10 @@ function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
 
 const sameKey = (a: ArrayBuffer | null, b: Uint8Array) => a !== null && a.byteLength === b.byteLength && new Uint8Array(a).every((x, i) => x === b[i])
 
-async function registration() {
-  return navigator.serviceWorker.ready
-}
-
 /** This device's subscription, if it has one the server can send to. */
 export async function deviceSubscription(): Promise<PushSubscription | null> {
   if (pushSupport() !== 'ready' || Notification.permission !== 'granted') return null
-  return (await registration()).pushManager.getSubscription()
+  return (await navigator.serviceWorker.ready).pushManager.getSubscription()
 }
 
 /**
@@ -63,7 +59,7 @@ export async function subscribeDevice(): Promise<boolean> {
   const key = await pushKey()
   if (!key) return false
   const applicationServerKey = keyBytes(key)
-  const { pushManager } = await registration()
+  const { pushManager } = await navigator.serviceWorker.ready
   let subscription = await pushManager.getSubscription()
   if (subscription && !sameKey(subscription.options.applicationServerKey, applicationServerKey)) {
     await subscription.unsubscribe()

@@ -24,6 +24,7 @@ using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.Feedback;
 using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Neon;
+using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
@@ -31,7 +32,7 @@ using StrategyTradingLab.Api.Templates;
 // `dotnet run -- vapid-keys` prints a new key pair for web push, for the server's environment (deploy/backend/README.md).
 if (args is ["vapid-keys"])
 {
-    var keys = StrategyTradingLab.Api.Notifications.VapidKeys.Create();
+    var keys = VapidKeys.Create();
     Console.WriteLine($"VAPID_PUBLIC_KEY={keys.PublicKey}\nVAPID_PRIVATE_KEY={keys.PrivateKey}");
     return;
 }
@@ -62,7 +63,7 @@ else if (!builder.Environment.IsDevelopment())
 builder.Services.AddScoped<SettingsStore>();
 builder.Services.AddScoped<AdminAlerts>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
-builder.Services.AddHttpClient<StrategyTradingLab.Api.Notifications.IPushSender, StrategyTradingLab.Api.Notifications.WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddHttpClient<IPushSender, WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailWorker>();
 
@@ -79,9 +80,9 @@ builder.Services.AddScoped<AssetCatalog>();
 builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>();
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();
-builder.Services.AddScoped<StrategyTradingLab.Api.Notifications.NotificationService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<AiRounds>();
-builder.Services.AddHostedService<StrategyTradingLab.Api.Notifications.NotificationWorker>();
+builder.Services.AddHostedService<NotificationWorker>();
 
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();
@@ -252,7 +253,7 @@ app.MapTrades();
 app.MapAdmin();
 app.MapInvites();
 app.MapAccount();
-StrategyTradingLab.Api.Notifications.WebPushEndpoints.MapWebPush(app);
+app.MapWebPush();
 app.MapFeedback();
 app.MapUnsubscribe();
 app.MapEmailEvents();

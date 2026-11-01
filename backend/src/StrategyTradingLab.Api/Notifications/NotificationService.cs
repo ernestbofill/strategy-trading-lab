@@ -90,10 +90,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// </summary>
     public async Task<int> SendSnoozeRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        // No time zone is more than a day ahead of UTC, so later snooze days can wait.
-        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
-        // Nor more than a day behind, plus a day for time zones: older snooze days are no longer reminded (see below).
-        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
+        var (earliest, latest) = ReminderDays(now);
         var rows = await (from signal in db.Signals.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
@@ -107,12 +104,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var sent = 0;
         foreach (var row in rows)
         {
-            var local = LocalTime(now, row.TimeZone);
             var day = row.signal.SnoozedUntil!.Value;
-            var localDay = DateOnly.FromDateTime(local.DateTime);
-            if (localDay < day || (localDay == day && local.Hour < MorningHour)) continue;
-            // A day already gone (the reminder couldn't go out then, e.g. notifications were off) isn't reminded late.
-            if (localDay > day.AddDays(1)) continue;
+            if (!IsMorningOf(day, LocalTime(now, row.TimeZone))) continue;
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
         }
@@ -126,9 +119,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// </summary>
     public async Task<int> SendAiRoundRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        // As for snoozes: no time zone is more than a day from UTC.
-        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
-        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
+        var (earliest, latest) = ReminderDays(now);
         var rows = await (from round in db.AiRounds.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
@@ -142,10 +133,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         foreach (var group in rows.GroupBy(r => (r.UserId, r.DueOn)))
         {
             var first = group.First();
-            var local = LocalTime(now, first.TimeZone);
-            var localDay = DateOnly.FromDateTime(local.DateTime);
-            if (localDay < group.Key.DueOn || (localDay == group.Key.DueOn && local.Hour < MorningHour)) continue;
-            if (localDay > group.Key.DueOn.AddDays(1)) continue; // A day gone isn't reminded late; the overview still lists it.
+            if (!IsMorningOf(group.Key.DueOn, LocalTime(now, first.TimeZone))) continue;
             if (await ClaimAsync(group.Key.UserId, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken) is not { } claimed) continue;
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
             if (await SendAsync(claimed, first.Email, () => Task.FromResult(EmailTexts.AiRoundDue(strategies, AppUrl, first.Locale, first.UnsubscribeToken)), cancellationToken)) sent++;
@@ -182,8 +170,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     public async Task<int> PushSnoozeRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (push.PublicKey is null) return 0;
-        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
-        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
+        var (earliest, latest) = ReminderDays(now);
         var rows = await (from signal in db.Signals.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
@@ -209,8 +196,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     public async Task<int> PushAiRoundRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (push.PublicKey is null) return 0;
-        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
-        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
+        var (earliest, latest) = ReminderDays(now);
         var rows = await (from round in db.AiRounds.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
@@ -229,6 +215,16 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             if (await PushAsync(claimed, group.Key.UserId, PushTexts.AiRoundDue(strategies, group.Key.DueOn, first.Locale), cancellationToken)) sent++;
         }
         return sent;
+    }
+
+    /// <summary>
+    /// The due days worth looking at: no time zone is more than a day from UTC, so later days can wait, and older ones
+    /// (a day plus a day for time zones) are no longer reminded; the overview still lists them.
+    /// </summary>
+    static (DateOnly Earliest, DateOnly Latest) ReminderDays(DateTimeOffset now)
+    {
+        var utcDay = DateOnly.FromDateTime(now.UtcDateTime);
+        return (utcDay.AddDays(-2), utcDay.AddDays(1));
     }
 
     /// <summary>From 07:00 of the day in the user's time zone, until the end of the next day (a day gone isn't reminded late).</summary>

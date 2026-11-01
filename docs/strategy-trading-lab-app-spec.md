@@ -151,6 +151,40 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ## 6. Screen by screen
 
+### Welcome (marketing highlights) (not drawn)
+
+- **Entry point:** `/` for unauthenticated visitors, and `/welcome`. Authenticated visitors navigating to `/` continue directly to the Dashboard.
+- **Top bar:** "STL // STRATEGY TRADING LAB" on the left; "LOG IN" text action on the right.
+- **Hero:**
+  - Eyebrow: "SYSTEM READY // RULES-BASED LAB"
+  - Headline: "Trade rules, not emotions."
+  - Lead: "A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access."
+  - Primary CTA: "TRY AS GUEST ›" → `/new` (Pick a template), opening the in-memory draft flow with zero friction.
+  - Secondary CTA: "Create an account" → `/sign-up`.
+  - Micro-link: "Already have an account? Log in" → `/log-in`.
+- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile). Clicking any card expands its full details and interactive simulated widget (no carousel):
+  - **01 Strategy builder:**
+    - Tagline: "Define your rules before the market opens"
+    - Points: Tested mathematical templates with transparent logic (moving averages, pullbacks, turnarounds); user-controlled stock universes and step budgets; plain language rules with no black-box algorithms.
+    - Interactive widget: Template switcher (*Winners at a discount*, *The comeback*, *Bear markets*) updating live trigger criteria and step plans, with watched stock badges.
+    - CTA link: "Try building a strategy as guest ›" (`/new`).
+  - **02 Real-time simulation:**
+    - Tagline: "Forward-test on real prices with zero financial risk"
+    - Points: Closing prices refreshed daily after US market close; automated simulated trade logging following exact rules; honest metrics next to S&P 500 fund and worst-year benchmarks.
+    - Interactive widget: Forward-testing stats (`+14.2%` vs `+8.1%` index vs `-12.4%` worst year) with toggle between performance comparison and paper trade log.
+    - CTA link: "Test in simulation mode ›" (`/new`).
+  - **03 Trading tracker:**
+    - Tagline: "Execute at your broker. 100% private & non-custodial"
+    - Points: Zero broker sync (no OAuth, passwords, or API access); daily actionable signal alerts; confirm steps with broker fill prices or skip with reasons.
+    - Interactive widget: Live signal prompt for Zscaler with interactive action buttons (*I did it*, *I skipped it*, *Remind me tomorrow*) showing immediate tactile feedback and privacy callout.
+    - CTA link: "Explore live tracking flow ›" (`/new`).
+- **Trust & Architecture section:**
+  - Three cards: Zero broker access, Uncompromising benchmark honesty, and Disciplined systematic rules.
+- **Bottom CTA banner:**
+  - "Ready to test your first strategy? Explore all templates, customize settings, and run paper simulations with zero commitment. No credit card required."
+  - Dual action buttons: "TRY AS GUEST ›" and "Create an account".
+- **Disclaimer:** Full regulatory disclaimer at the bottom: "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
+
 ### Sign-up (not drawn)
 
 - First name and last name (side by side, required, at most 100 characters each), email and password, with email verification. Accounts from before the names exist have none until they add them in the account ("Name").

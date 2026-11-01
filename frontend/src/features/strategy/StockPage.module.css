@@ -47,11 +47,14 @@
 .mono {
   font-family: var(--font-mono);
 }
-.mono[data-tone="up"] {
+.mono[data-tone="up"],
+.mono[data-state="met"],
+.mono[data-state="used"] {
   color: var(--success);
 }
-.mono[data-tone="down"] {
-  color: var(--danger-ink);
+.mono[data-tone="down"],
+.mono[data-state="past"] {
+  color: var(--warning);
 }
 
 .status {
@@ -72,16 +75,61 @@
   line-height: 20px;
 }
 
+.statusMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.candidateBadge {
+  font: 500 12px/16px var(--font-mono);
+  color: var(--primary);
+}
+
 .group {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
-.group + .group {
+.group + .group,
+.group + .nextPreview,
+.nextPreview + .group {
   margin-top: 12px;
 }
 .group[data-later] .checks {
-  opacity: 0.7;
+  opacity: 0.85;
+}
+
+.nextPreview {
+  border-top: 1px solid var(--border-hairline);
+  padding-top: var(--space-1);
+}
+
+.nextSummary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--primary);
+  list-style: none;
+}
+.nextSummary::-webkit-details-marker {
+  display: none;
+}
+.nextSummary::before {
+  content: "▸";
+  font-family: var(--font-mono);
+}
+.nextPreview[open] > .nextSummary::before {
+  content: "▾";
+}
+.nextPreview[open] > .group {
+  margin-top: var(--space-1);
 }
 
 .groupTitle {
@@ -122,7 +170,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .checkLabel {
@@ -140,27 +188,43 @@
 
 .mark {
   flex: none;
-  min-width: 20px;
-  font: 600 16px/20px var(--font-mono);
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-editor);
+  font: 600 12px/16px var(--font-mono);
+  white-space: nowrap;
   color: var(--ink-muted);
 }
 .mark[data-met="true"],
 .mark[data-met="used"] {
   color: var(--success);
+  background: var(--surface-console);
+}
+.mark[data-met="past"] {
+  color: var(--warning);
+  background: var(--warning-surface);
+}
+
+.markText {
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .progress {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-1);
+  margin-top: 2px;
   font-size: 12px;
   line-height: 16px;
   color: var(--ink-muted);
 }
 
 .bar {
+  position: relative;
   flex: 1;
   height: 6px;
   background: var(--surface-editor);
@@ -168,7 +232,57 @@
   overflow: hidden;
 }
 
+.bandZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 30%;
+  width: 45%;
+  background: var(--surface-hover);
+}
+
+.targetTick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink);
+  opacity: 0.75;
+}
+
 .fill {
+  position: relative;
   height: 100%;
   background: var(--info);
+}
+.fill[data-state="met"],
+.fill[data-state="used"] {
+  background: var(--success);
+}
+.fill[data-state="past"] {
+  background: var(--warning);
+}
+
+.stackStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 2px;
+  font: 500 12px/16px var(--font-mono);
+}
+
+.stackChip {
+  padding: 2px var(--space-2);
+  background: var(--surface-editor);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+
+.stackRel {
+  font-weight: 600;
+  color: var(--warning);
+}
+.stackRel[data-ok="true"] {
+  color: var(--success);
 }

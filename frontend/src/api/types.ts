@@ -283,9 +283,10 @@ export interface StockRow {
   exchange: string
   currency: string
   what: string | null
-  /** The day of its latest check, that day's close, and each rule's verdict (empty before the daily check stored them). */
+  /** The day of its latest check, that day's close, when it became a candidate, and each rule's verdict. */
   checkedOn: string | null
   close: number | null
+  candidateSince?: string | null
   checks: RuleCheck[]
 }
 
@@ -293,8 +294,9 @@ export interface StockRow {
 export type CheckGroup = 'candidate' | 'buy' | 'sell' | 'next'
 
 /**
- * One rule's verdict on the latest checked day: backend Engine/BuyRules.cs (RuleCheck). `met` is null for a figure shown
- * for context only; `progress` (0 to 1) is how far a figure that must grow has come; `used` marks a milestone that earned its step.
+ * One rule's verdict on the latest checked day: backend Engine/BuyRules.cs (RuleCheck). `met` is a boolean verdict;
+ * `progress` (0 to 1+, exceeding 1 past the threshold) is how far a figure that must grow has come; `used` marks a
+ * milestone that earned its step; `preview` marks next-step rules shown before the first buy.
  */
 export interface RuleCheck {
   key: string
@@ -306,13 +308,21 @@ export interface RuleCheck {
   level: number | null
   progress: number | null
   used: boolean | null
+  date?: string | null
+  midLevel?: number | null
+  endLevel?: number | null
+  subValue?: number | null
+  endValue?: number | null
+  preview?: boolean | null
 }
 
-/** A template's words for a check, with {value}, {+value}, {min}, {max} and {level}; `none` when the check has no value. */
+/** A template's words for a check, with {value}, {+value}, {min}, {max}, {level}, {midLevel}, {endLevel}, and {date}; `past` when past `max`, `none` when no value. */
 export interface CheckTexts {
   label: string
   detail: string
   short: string
+  past?: string | null
+  pastShort?: string | null
   none?: string | null
   info?: string | null
 }

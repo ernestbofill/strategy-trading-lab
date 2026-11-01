@@ -9,8 +9,8 @@ using StrategyTradingLab.Api.Data.Entities;
 namespace StrategyTradingLab.Api.Email;
 
 /// <summary>
-/// Brevo's transactional webhook (Brevo: Transactional → Settings → Webhook, with the events Hard bounce, Invalid email and
-/// Spam): it tells the app which addresses can't be sent to, so the sender stops trying them (<see cref="SmtpEmailSender"/>).
+/// Brevo's transactional webhook (Brevo: Transactional → Settings → Webhook, with the events Hard Bounced, Invalid and
+/// Complaint): it tells the app which addresses can't be sent to, so the sender stops trying them (<see cref="SmtpEmailSender"/>).
 /// </summary>
 public static class EmailEventEndpoints
 {
@@ -62,7 +62,7 @@ public static class EmailEventEndpoints
         {
             "hard_bounce" => SuppressionReason.Bounced,
             "invalid_email" => SuppressionReason.Invalid,
-            "spam" => SuppressionReason.Complaint,
+            "spam" or "complaint" => SuppressionReason.Complaint, // Brevo's documentation says spam; its webhook screen says Complaint.
             _ => null,
         } : null;
 

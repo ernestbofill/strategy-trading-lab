@@ -43,18 +43,8 @@ export function WelcomePage() {
       <div className={styles.page}>
         {/* Hero Section */}
         <header className={styles.hero}>
-          <span className={styles.eyebrow}>{t('welcome.hero.eyebrow')}</span>
           <h1 className={styles.title}>{t('welcome.hero.title')}</h1>
           <p className={styles.lead}>{t('welcome.hero.lead')}</p>
-
-          <ActionRow
-            guestLabel={t('welcome.hero.tryGuest')}
-            registerLabel={t('welcome.hero.register')}
-          />
-
-          <p className={styles.haveAccountLink}>
-            <Link to={logInPath}>{t('welcome.hero.haveAccount')}</Link>
-          </p>
         </header>
 
         {/* Feature Highlights Section */}

@@ -128,25 +128,6 @@
   border-color: var(--accent);
 }
 
-.haveAccountLink {
-  margin: 0;
-  font-size: 13px;
-  color: var(--ink-muted);
-}
-
-.haveAccountLink a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--syntax-string);
-  text-decoration: underline;
-}
-
-.haveAccountLink a:hover,
-.haveAccountLink a:focus-visible {
-  color: var(--accent);
-}
-
 /* Trust Section */
 .trustSection {
   display: flex;

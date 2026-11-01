@@ -62,6 +62,7 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
         entity.Property(user => user.AlertEmails).HasColumnDefault(true);
+        entity.Property(user => user.AlertPush).HasColumnDefault(true);
         entity.Property(user => user.UnsubscribeToken).HasValueGenerator<UnsubscribeTokenGenerator>();
         entity.HasIndex(user => user.UnsubscribeToken).IsUnique();
         entity.Property(user => user.AiSharing).HasColumnDefault(false);
@@ -117,7 +118,6 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
             table.HasCheckConstraint("ck_strategies_budget_steps",
                 "(budget_step IS NULL) = (budget_max_steps IS NULL)");
         });
-        entity.Property(strategy => strategy.Notifications).HasColumnDefault(true);
         entity.Property(strategy => strategy.Currency).HasColumnType(Money.Currency);
         entity.ComplexProperty(strategy => strategy.Budget, budget =>
         {

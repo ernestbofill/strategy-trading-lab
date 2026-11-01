@@ -30,13 +30,12 @@ const ai = {
   aiRound: { everyDays: 14, topN: 1 },
 } as unknown as TemplateDetail
 
-/** Sets the draft to the AI template, as the earlier screens do, with push ticked on Choose the mode where it is offered. */
+/** Sets the draft to the AI template, as the earlier screens do. */
 function ChooseAi() {
-  const { switchTemplate, update } = useNewStrategyDraft()
+  const { switchTemplate } = useNewStrategyDraft()
   useEffect(() => {
     switchTemplate('ai')
-    update({ push: push.offered })
-  }, [switchTemplate, update])
+  }, [switchTemplate])
   return null
 }
 
@@ -54,7 +53,7 @@ function DashboardStub() {
 function open() {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getAccount').mockResolvedValue({
-    email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, currency: 'EUR', role: 'user', aiSharing: false,
+    email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false,
   })
   vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
   vi.spyOn(api, 'getDashboard').mockResolvedValue({ strategies: [], waiting: [] } as unknown as Dashboard)
@@ -89,7 +88,7 @@ describe('Confirm', () => {
     expect(start.mock.calls[0][0]).toMatchObject({ templateKey: 'ai' })
   })
 
-  it('starts with push and asks to allow notifications on the dashboard where push is offered', async () => {
+  it('asks to allow notifications on the dashboard where push is offered, with alerts by app on', async () => {
     push.offered = true
     open()
     const start = vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
@@ -98,10 +97,10 @@ describe('Confirm', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
 
     expect(await screen.findByText('Asks to allow notifications')).toBeTruthy()
-    expect(start.mock.calls[0][0]).toMatchObject({ push: true })
+    expect(start.mock.calls[0][0]).not.toHaveProperty('push')
   })
 
-  it('starts without push, and asks nothing, where push is not offered', async () => {
+  it('asks nothing where push is not offered', async () => {
     open()
     const start = vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
 
@@ -110,7 +109,7 @@ describe('Confirm', () => {
 
     expect(await screen.findByRole('button', { name: 'Dashboard back' })).toBeTruthy()
     expect(screen.queryByText('Asks to allow notifications')).toBeNull()
-    expect(start.mock.calls[0][0]).toMatchObject({ push: false })
+    expect(start).toHaveBeenCalledTimes(1)
   })
 
   it('renders "Create an account to start it" for guests and links to sign-up with next', async () => {
@@ -139,7 +138,7 @@ describe('Confirm', () => {
   it('disables starting when the user already runs 10 strategies', async () => {
     vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
     vi.spyOn(api, 'getAccount').mockResolvedValue({
-      email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, currency: 'EUR', role: 'user', aiSharing: false,
+      email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false,
     })
     vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
     const running = Array.from({ length: 10 }, (_, i) => ({ id: `s${i}`, name: `S${i}`, status: 'running' as const } as unknown as StrategySummary))

@@ -13,7 +13,7 @@ const account: Account = {
   locale: 'en',
   timeZone: 'UTC',
   overviewEmail: true,
-  alertEmails: true,
+  alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',
   aiSharing: false,

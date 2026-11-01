@@ -164,8 +164,8 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         if (appUrl is null) throw new InvalidOperationException("An unsubscribe link needs the app's address.");
         var label = (kind, Ca) switch
         {
-            (EmailKind.Overview, false) => "Turn off the daily overview",
-            (EmailKind.Overview, true) => "Desactiva el resum diari",
+            (EmailKind.Overview, false) => "Turn off summary emails",
+            (EmailKind.Overview, true) => "Desactiva els correus de resum",
             (_, false) => "Turn off signal and reminder emails",
             _ => "Desactiva els correus de senyals i recordatoris",
         };

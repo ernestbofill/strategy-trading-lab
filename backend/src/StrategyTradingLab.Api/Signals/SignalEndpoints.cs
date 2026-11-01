@@ -87,8 +87,11 @@ public static class SignalEndpoints
             if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict(Messages.OnlyWaitingCanSnooze.In(user.Locale));
             // A snooze promises a reminder: refuse it when none could be sent.
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyEnded.In(user.Locale));
-            if (!found.Strategy.Notifications) return TypedResults.Conflict(Messages.NotificationsOff.In(user.Locale));
-            if (user.EmailVerifiedAt is null) return TypedResults.Conflict(Messages.ConfirmEmailForReminders.In(user.Locale));
+            // By email (switched on and confirmed) or by push (switched on, with a device that gets it).
+            var byEmail = user.AlertEmails && user.EmailVerifiedAt is not null;
+            var byPush = user.AlertPush && await db.PushSubscriptions.AnyAsync(p => p.UserId == user.Id, cancellationToken);
+            if (!byEmail && !byPush)
+                return TypedResults.Conflict((user.AlertEmails ? Messages.ConfirmEmailForReminders : Messages.NotificationsOff).In(user.Locale));
             // The next US market day (spec: a day is a US market day), counted from the later of New York's date and the user's,
             // so it is always after the user's own today: the reminder goes out from 07:00 of that day in their time zone.
             var newYork = UsSession.Today(time.GetUtcNow());

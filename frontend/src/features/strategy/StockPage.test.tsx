@@ -34,7 +34,7 @@ const zs: StockRow = {
 
 const strategy = (stocks: StockRow[]): StrategyDetail => ({
   id: 's1', name: 'Comebacks', templateKey: 'comeback', templateName: 'The comeback', investsIn: 'stockList', mode: 'live',
-  status: 'running', endedOn: null, notifications: true, push: false, startedOn: '2026-10-13', today: '2026-10-31', currency: 'EUR',
+  status: 'running', endedOn: null, startedOn: '2026-10-13', today: '2026-10-31', currency: 'EUR',
   budget: { amount: 3000, used: 0, step: 100, maxSteps: 5, steps: 0, totalSteps: 30 }, results: null, pastResult: null,
   signals: { did: 0, skipped: 0, missed: 0 }, words: { zone: 'the buy line', notCandidate: 'Not beaten down' },
   stocks, trades: [], signalHistory: [], rates: [],

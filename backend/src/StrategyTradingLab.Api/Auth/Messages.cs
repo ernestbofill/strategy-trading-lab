@@ -35,7 +35,6 @@ public static class Messages
         "Massa intents. Espera uns minuts o restableix la contrasenya.");
     public static readonly Message ExpiredLink = new("This link has expired. Ask for a new one.", "Aquest enllaç ha caducat. Demana'n un de nou.");
     public static readonly Message SayTrueOrFalse = new("Say true or false.", "Indica si està activat o desactivat.");
-    public static readonly Message NoAlertsToPush = new("This strategy sends no alerts to notify you of.", "Aquesta estratègia no envia avisos per notificar-te.");
     public static readonly Message PushNotSupported = new("This browser can't get notifications from the app.", "Aquest navegador no pot rebre notificacions de l'app.");
     public static readonly Message ResetLinkSent = new("If that email has an account, we sent a link. It works for 1 hour.",
         "Si aquest correu té un compte, t'hem enviat un enllaç. Funciona durant 1 hora.");
@@ -52,8 +51,8 @@ public static class Messages
     public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot ajornar un senyal que encara espera.");
     public static readonly Message StrategyEnded = new("This strategy is archived, so there is no reminder to send.",
         "Aquesta estratègia està arxivada, així que no hi ha cap recordatori per enviar.");
-    public static readonly Message NotificationsOff = new("This strategy's notifications are off, so there is no reminder to send.",
-        "Les notificacions d'aquesta estratègia estan desactivades, així que no hi ha cap recordatori per enviar.");
+    public static readonly Message NotificationsOff = new("Reminders are off in your account, so there is no reminder to send.",
+        "Els recordatoris estan desactivats al teu compte, així que no hi ha cap recordatori per enviar.");
     public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu correu per començar en directe.");
     public static readonly Message NotYourSimulation = new("Pick one of your simulations to copy.", "Tria una de les teves simulacions per copiar-la.");
     public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma la teva adreça de correu per rebre recordatoris.");

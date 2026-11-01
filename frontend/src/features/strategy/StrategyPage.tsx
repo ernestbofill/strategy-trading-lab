@@ -12,7 +12,7 @@ import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib
 import { aiRoundPath, aiRoundsPath, stockPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
-import { AlertsSwitch, ArchiveStrategy, GoLive, PushSwitch, RenameForm } from './StrategyActions'
+import { ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
@@ -249,8 +249,6 @@ function StrategyView({ s }: { s: StrategyDetail }) {
         </div>
       )}
       {/* Only strategies that email have alerts: live ones (signals) and AI ones (rounds due). */}
-      {running && (live || s.aiRounds) && <AlertsSwitch s={s} />}
-      {running && (live || s.aiRounds) && <PushSwitch s={s} />}
       {/* One way out of each state: a running strategy is archived, and only an archived one can be deleted. */}
       {running ? <ArchiveStrategy s={s} /> : <DeleteStrategy id={s.id} name={s.name} />}
     </Screen>

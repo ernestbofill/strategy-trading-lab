@@ -11,7 +11,8 @@ import { useT } from '../../i18n/I18n'
 import { resolveBudget } from '../../lib/budget'
 import { money } from '../../lib/format'
 import { useOptionalAccount } from '../account/AccountContext'
-import { accountEmailsPath, signUpPathFor } from '../account/paths'
+import { accountNotificationsPath, signUpPathFor } from '../account/paths'
+import { usePushOffered } from '../account/usePushOffered'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
@@ -63,8 +64,12 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Ticked in Choose the mode's Alerts box (shown only where the app offers push), for strategies that alert.
-  const push = draft.push && (isLive || template.aiRound !== null)
+  // Strategies that alert: live ones (signals) and AI ones (rounds due). Their alerts follow the account's
+  // Notifications; the others only appear in the summary.
+  const alerts = isLive || template.aiRound !== null
+  const pushOffered = usePushOffered()
+  const byApp = alerts && pushOffered && (account?.alertPush ?? true)
+  const byEmail = account?.alertEmails ?? true
 
   // Numbered against the user's strategies once they are loaded; only queried for logged-in accounts.
   const dashboard = useDashboard(Boolean(account))
@@ -84,7 +89,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     setStarting(true)
     setError(null)
     try {
-      await api.startStrategy({ ...newStrategyFrom(draft, template, shownName, currency), push })
+      await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
     } catch (e) {
       setError(
         e instanceof NameTakenError
@@ -102,8 +107,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     invalidate(dashboardCacheKey)
     // Replace this screen in the history: going back must not reopen Confirm with the reset draft, which would
     // start a second strategy from the default template. An AI strategy's first round waits on the dashboard.
-    // With push chosen, the dashboard asks to allow notifications on this device (spec: Choose the mode, Alerts).
-    navigate(dashboardPath, { replace: true, state: push ? { askPush: true } : null })
+    // With alerts by app, the dashboard asks to allow notifications on this device (spec: Notifications).
+    navigate(dashboardPath, { replace: true, state: byApp ? { askPush: true } : null })
     reset()
   }
 
@@ -142,10 +147,23 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
       to: budgetPath,
     },
-    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: isGuest ? undefined : accountEmailsPath },
-    ...(isLive || template.aiRound
-      ? [{ label: t('newStrategy.confirm.row.alerts'), value: t(push ? 'newStrategy.confirm.alertsPush' : 'newStrategy.confirm.alerts'), to: modePath }]
-      : []),
+    {
+      label: t('newStrategy.confirm.row.notifications'),
+      value: t(
+        !alerts
+          ? account?.overviewEmail === false
+            ? 'newStrategy.confirm.notify.off'
+            : 'newStrategy.confirm.notify.summary'
+          : byApp && byEmail
+            ? 'newStrategy.confirm.notify.appEmail'
+            : byApp
+              ? 'newStrategy.confirm.notify.app'
+              : byEmail
+                ? 'newStrategy.confirm.notify.email'
+                : 'newStrategy.confirm.notify.off',
+      ),
+      to: isGuest ? undefined : accountNotificationsPath,
+    },
     ...(template.aiRound
       ? [
           {

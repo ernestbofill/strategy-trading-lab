@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account, type Role } from '../../api'
@@ -13,11 +13,15 @@ const baseAccount: Account = {
   locale: 'en',
   timeZone: 'Europe/Madrid',
   overviewEmail: true,
-  alertEmails: true,
+  alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',
   aiSharing: false,
 }
+
+const push = vi.hoisted(() => ({ offered: false }))
+vi.mock('./usePushOffered', () => ({ usePushOffered: () => push.offered }))
+vi.mock('./DevicePush', () => ({ DevicePush: () => <p>Device state</p> }))
 
 vi.mock('./AccountContext', () => ({
   useCurrentAccount: () => ({ ...baseAccount, role: currentRole }),
@@ -55,21 +59,39 @@ describe('AccountPage', () => {
     expect(screen.queryByRole('link', { name: /Admin settings/i })).toBeNull()
   })
 
-  it('lists running strategies for stock changes and turns one on', async () => {
+  it('sets signals and reminders by app and email, and the summary by email, in one place', async () => {
     currentRole = 'user'
-    vi.spyOn(api, 'getStockChangeEmails').mockResolvedValue([
-      { strategyId: 's1', name: 'Index trend', mode: 'live', enabled: false },
-    ])
-    const set = vi.spyOn(api, 'setStockChangeEmails').mockResolvedValue()
+    push.offered = true
+    const setPush = vi.spyOn(api, 'setAlertPush').mockResolvedValue()
+    const setSummary = vi.spyOn(api, 'setOverviewEmail').mockResolvedValue()
     render(
       <MemoryRouter>
         <AccountPage />
       </MemoryRouter>,
     )
 
-    const box = await screen.findByRole('checkbox', { name: /Index trend/ })
-    expect(screen.getByText('Stock changes in the overview')).toBeTruthy()
-    fireEvent.click(box)
-    await waitFor(() => expect(set).toHaveBeenCalledWith('s1', true))
+    const alerts = screen.getByRole('group', { name: 'Signals and reminders' })
+    const summary = screen.getByRole('group', { name: 'Summary' })
+    expect(within(alerts).getAllByRole('checkbox')).toHaveLength(2)
+    expect(within(summary).getAllByRole('checkbox')).toHaveLength(1)
+    fireEvent.click(within(alerts).getByRole('checkbox', { name: 'App' }))
+    fireEvent.click(within(summary).getByRole('checkbox', { name: 'Email' }))
+    await waitFor(() => expect(setPush).toHaveBeenCalledWith(false))
+    await waitFor(() => expect(setSummary).toHaveBeenCalledWith(false))
+  })
+
+  it('leaves the App box out where the app offers no push', () => {
+    currentRole = 'user'
+    push.offered = false
+    render(
+      <MemoryRouter>
+        <AccountPage />
+      </MemoryRouter>,
+    )
+
+    const alerts = screen.getByRole('group', { name: 'Signals and reminders' })
+    expect(within(alerts).queryByRole('checkbox', { name: 'App' })).toBeNull()
+    expect(within(alerts).getByRole('checkbox', { name: 'Email' })).toBeTruthy()
+    expect(screen.queryByText('This device')).toBeNull()
   })
 })

@@ -1,23 +1,21 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, UnauthorizedError, type Currency, type Locale } from '../../api'
 import { Checkbox, FormMessage, PasswordField, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
-import { Tag } from '../../components/Tag'
 import { useI18n, useT } from '../../i18n/I18n'
 import { LOCALES } from '../../i18n/locale'
-import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
 import { currencyOptionsWith } from './currencies'
 import { errorText } from './copy'
-import { EMAILS_HASH, logInPath } from './paths'
+import { NOTIFICATIONS_HASH, logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
-import { DevicePush } from './DevicePush'
+import { NotificationSettings } from './NotificationSettings'
 import { unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SendFeedback } from '../feedback/SendFeedback'
@@ -34,7 +32,7 @@ export function AccountPage() {
 
   // Confirm's "Edit" on Daily overview opens the page at its Emails section.
   useEffect(() => {
-    if (hash === EMAILS_HASH) document.getElementById(EMAILS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
+    if (hash === NOTIFICATIONS_HASH) document.getElementById(NOTIFICATIONS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
   }, [hash])
 
   const logOut = async () => {
@@ -97,14 +95,8 @@ export function AccountPage() {
         </Section>
       )}
 
-      <Section id={EMAILS_HASH.slice(1)} title={t('account.page.emails')}>
-        <EmailSwitch current={account.overviewEmail} label={t('account.overviewEmail')} save={api.setOverviewEmail} onSaved={refresh} />
-        <EmailSwitch current={account.alertEmails} label={t('account.alertEmails')} save={api.setAlertEmails} onSaved={refresh} />
-        {account.overviewEmail && <StockChangeEmailList />}
-      </Section>
-
-      <Section title={t('account.page.notifications')}>
-        <DevicePush />
+      <Section id={NOTIFICATIONS_HASH.slice(1)} title={t('account.page.notifications')}>
+        <NotificationSettings account={account} onSaved={refresh} />
       </Section>
 
       <Section title={t('account.page.dataPrivacy')}>
@@ -311,65 +303,6 @@ function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Prom
         {t('account.aiSharing')}
       </Checkbox>
       <AiSharingDetails />
-      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-    </div>
-  )
-}
-
-const stockChangeEmailsKey = 'account:stock-change-emails'
-
-/** Item 29: per running strategy, whether the daily overview tells its stock changes. Hidden with no running strategy. */
-function StockChangeEmailList() {
-  const t = useT()
-  const list = useLoadable(stockChangeEmailsKey, api.getStockChangeEmails)
-  if (list.status !== 'ready' || list.data.length === 0) return null
-  const reload = async () => invalidate(stockChangeEmailsKey)
-  return (
-    <div className={styles.form}>
-      <div>
-        <h3 className={`ui-strong ${styles.subTitle}`}>{t('account.stockChanges.title')}</h3>
-        <p className={styles.line}>{t('account.stockChanges.lead')}</p>
-      </div>
-      {list.data.map((s) => (
-        <EmailSwitch
-          key={s.strategyId}
-          current={s.enabled}
-          label={<>{s.name} <Tag tone={s.mode === 'live' ? 'live' : 'sim'}>{s.mode === 'live' ? 'LIVE' : 'SIM'}</Tag></>}
-          save={(enabled) => api.setStockChangeEmails(s.strategyId, enabled)}
-          onSaved={reload}
-        />
-      ))}
-    </div>
-  )
-}
-
-function EmailSwitch({ current, label, save, onSaved }: {
-  current: boolean
-  label: ReactNode
-  save: (enabled: boolean) => Promise<void>
-  onSaved: () => Promise<unknown>
-}) {
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
-
-  const change = async (enabled: boolean) => {
-    if (busy) return
-    setBusy(true)
-    setMessage(null)
-    try {
-      await save(enabled)
-      await onSaved()
-    } catch (err) {
-      setMessage({ tone: 'error', text: errorText(err) })
-    }
-    setBusy(false)
-  }
-
-  return (
-    <div className={styles.form}>
-      <Checkbox checked={current} onChange={(enabled) => void change(enabled)}>
-        {label}
-      </Checkbox>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
     </div>
   )

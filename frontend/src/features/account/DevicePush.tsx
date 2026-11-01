@@ -9,7 +9,7 @@ import styles from './Account.module.css'
 /** `none`: the server sends no push (no keys), so there is nothing to turn on. */
 type DeviceState = 'loading' | 'none' | 'on' | 'off'
 
-/** The account page's "Notifications" section: push on this device, on or off. */
+/** The account page's "This device" line under Notifications: push on this device, on or off. */
 export function DevicePush() {
   const t = useT()
   const support = pushSupport()
@@ -63,14 +63,13 @@ export function DevicePush() {
       <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => void change()}>
         {t(state === 'on' ? 'account.push.turnOff' : 'account.push.turnOn')}
       </button>
-      <p className="caption">{t('account.push.hint')}</p>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
     </>
   )
 }
 
 /**
- * Right after a strategy is started with push on (Ernest, 2026-11-01): asks to allow notifications on this device, from a tap,
+ * Right after a live or AI strategy starts, with alerts by app on (Ernest, 2026-11-01): asks to allow notifications on this device, from a tap,
  * since Safari only asks then. Already allowed: it subscribes quietly and shows nothing.
  */
 export function PushPrompt({ onDone }: { onDone: () => void }) {

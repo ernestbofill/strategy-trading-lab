@@ -1,13 +1,9 @@
 export const welcome = {
   'welcome.topBar': 'STL // STRATEGY TRADING LAB',
   'welcome.logIn': 'Log in',
-  'welcome.hero.eyebrow': 'SYSTEM READY // RULES-BASED LAB',
   'welcome.hero.title': 'Trade rules, not emotions.',
   'welcome.hero.lead':
     'A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access.',
-  'welcome.hero.tryGuest': 'TRY AS GUEST \u203A',
-  'welcome.hero.register': 'Create an account',
-  'welcome.hero.haveAccount': 'Already have an account? Log in',
 
   'welcome.features.eyebrow': 'CORE CAPABILITIES',
   'welcome.features.title': 'How Strategy Trading Lab works',

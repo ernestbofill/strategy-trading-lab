@@ -26,16 +26,17 @@ afterEach(() => {
 })
 
 describe('WelcomePage', () => {
-  it('renders hero title, lead, and guest/account actions', () => {
+  it('renders hero title, lead, top bar login, and bottom CTA actions', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { level: 1, name: 'Trade rules, not emotions.' })).toBeTruthy()
     expect(screen.getByText(/A transparent strategy lab/)).toBeTruthy()
+    expect(screen.queryByText('SYSTEM READY // RULES-BASED LAB')).toBeNull()
 
-    const guestLink = screen.getAllByRole('link', { name: 'TRY AS GUEST ›' })[0]
+    const guestLink = screen.getByRole('link', { name: 'TRY AS GUEST ›' })
     expect(guestLink.getAttribute('href')).toBe('/new')
 
-    const registerLink = screen.getAllByRole('link', { name: 'Create an account' })[0]
+    const registerLink = screen.getByRole('link', { name: 'Create an account' })
     expect(registerLink.getAttribute('href')).toBe('/sign-up')
 
     const loginLink = screen.getByRole('link', { name: 'Log in' })

@@ -43,6 +43,18 @@ public static class StockChanges
             ? value : null;
 
     /// <summary>
+    /// What changed on the latest of <paramref name="newestFirst"/> (a stock's recent evaluations, newest first), against the
+    /// latest earlier day that says whether the stock was a candidate: a signal or steps held in between say nothing about it, so
+    /// candidate → signal → not a candidate still reads as "no longer a candidate".
+    /// </summary>
+    public static (StockChangeKind Kind, decimal? DistancePct)? Latest(IReadOnlyList<(EvaluationStatus Status, JsonElement Facts)> newestFirst)
+    {
+        for (var i = 1; i < newestFirst.Count; i++)
+            if (Candidate(newestFirst[i].Status, newestFirst[i].Facts) is not null) return Between(newestFirst[i], newestFirst[0]);
+        return null;
+    }
+
+    /// <summary>
     /// What changed between <paramref name="before"/> and <paramref name="now"/>, or null. Becoming a candidate wins over coming
     /// close, and a stock already close the day before isn't reported again.
     /// </summary>

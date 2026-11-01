@@ -180,7 +180,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             .Where(x => x.eval.Status == EvaluationStatus.Watching);
         var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId);
         var close = watching
-            .Where(x => !stockChanges.Any(c => c.StrategyId == x.eval.StrategyId && c.AssetId == x.eval.AssetId))
+            // A stock that just came close is said once; one that just became a candidate keeps its distance here.
+            .Where(x => !stockChanges.Any(c => c.Kind == StockChangeKind.CameClose && c.StrategyId == x.eval.StrategyId && c.AssetId == x.eval.AssetId))
             .Select(x => (x.eval.StrategyId, x.Name, Distance: StockChanges.Distance(x.eval.Facts.RootElement)))
             .Where(x => x.Distance is not null)
             .OrderBy(x => x.Distance).Take(5)
@@ -195,15 +196,15 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     }
 
     /// <summary>
-    /// The stock changes of the strategies that asked for them: each stock evaluated on the last session against its evaluation
-    /// the trading day before (the recent days' rows hold both). A stock without an earlier day (just added) has nothing to compare.
+    /// The stock changes of the strategies that asked for them: each stock evaluated on the last session against its latest
+    /// earlier evaluation of the recent days (see <see cref="StockChanges.Latest"/>). A stock without an earlier day (just added) has nothing to compare.
     /// </summary>
     static List<StockChangeLine> StockChangeLines(IEnumerable<(DailyEvaluation Eval, string Name)> recent, DateOnly lastSession, Dictionary<Guid, Strategy> strategies) =>
         recent.Where(x => strategies[x.Eval.StrategyId].StockChangeEmails)
             .GroupBy(x => (x.Eval.StrategyId, x.Eval.AssetId))
-            .Select(g => g.OrderByDescending(x => x.Eval.Date).Take(2).ToList())
-            .Where(days => days.Count == 2 && days[0].Eval.Date == lastSession)
-            .Select(days => (days, change: StockChanges.Between((days[1].Eval.Status, days[1].Eval.Facts.RootElement), (days[0].Eval.Status, days[0].Eval.Facts.RootElement))))
+            .Select(g => g.OrderByDescending(x => x.Eval.Date).ToList())
+            .Where(days => days[0].Eval.Date == lastSession)
+            .Select(days => (days, change: StockChanges.Latest([.. days.Select(d => (d.Eval.Status, d.Eval.Facts.RootElement))])))
             .Where(x => x.change is not null)
             .Select(x =>
             {

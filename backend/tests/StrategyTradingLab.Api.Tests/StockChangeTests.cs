@@ -49,6 +49,16 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Null(StockChanges.Between(Day(EvaluationStatus.NotCandidate), Day(EvaluationStatus.NotCandidate)));
     }
 
+    [Fact]
+    public void A_signal_in_between_is_skipped_to_the_last_day_that_says_whether_it_was_a_candidate()
+    {
+        // Newest first: a candidate, then a signal, then not a candidate.
+        Assert.Equal((StockChangeKind.NoLongerCandidate, null), StockChanges.Latest([Day(EvaluationStatus.NotCandidate), Day(EvaluationStatus.BuySignal), Day(EvaluationStatus.Watching)]));
+        Assert.Null(StockChanges.Latest([Day(EvaluationStatus.Watching), Day(EvaluationStatus.BuySignal), Day(EvaluationStatus.Watching)]));
+        Assert.Null(StockChanges.Latest([Day(EvaluationStatus.NotCandidate), Day(EvaluationStatus.Holding)]));
+        Assert.Null(StockChanges.Latest([Day(EvaluationStatus.Watching)]));
+    }
+
     static StockChangeLine Change(StockChangeKind kind, decimal? distance = null, string template = "trend") =>
         new(Guid.NewGuid(), Guid.NewGuid(), "Index trend", StrategyMode.Live, template, "S&P 500", kind, distance);
 
@@ -124,8 +134,8 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
             var body = Assert.Single(sender.Sent, m => m.To == user.Email).Body;
             Assert.Contains($"Change asset, Asked {tag}: now a candidate, the rules watch it.", body);
             Assert.DoesNotContain($"Quiet {tag}: now a candidate", body);
-            // The stock already in the changes isn't repeated under Close to the line.
-            Assert.DoesNotContain($"Change asset, Asked {tag}: 6%", body);
+            // A stock that just became a candidate keeps its distance under Close to the line.
+            Assert.Contains($"Change asset, Asked {tag}: 6%", body);
             Assert.Contains($"Change asset, Quiet {tag}: 6%", body);
         }
         finally

@@ -270,12 +270,12 @@ public static class AccountEndpoints
             if (request.Enabled is not { } enabled)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            var updated = await db.Strategies.Where(s => s.Id == request.StrategyId && s.UserId == user.Id)
+            var updated = await db.Strategies.Where(s => s.Id == request.StrategyId && s.UserId == user.Id && s.Status == StrategyStatus.Running)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.StockChangeEmails, enabled), cancellationToken);
             return updated == 0 ? TypedResults.NotFound() : TypedResults.NoContent();
         })
         .RequireUser()
-        .WithSummary("Turns a strategy's stock changes in the daily overview on or off.");
+        .WithSummary("Turns a running strategy's stock changes in the daily overview on or off (404 for any other).");
 
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.

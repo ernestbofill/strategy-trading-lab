@@ -24,6 +24,9 @@ public static class WebPushEndpoints
     /// </summary>
     static readonly string[] PushHosts = ["fcm.googleapis.com", ".push.services.mozilla.com", ".notify.windows.com", ".push.apple.com"];
 
+    /// <summary>How many devices one user can turn on.</summary>
+    public const int MaxDevices = 10;
+
     public static bool IsPushService(string? endpoint, out Uri uri)
     {
         uri = null!;
@@ -58,10 +61,15 @@ public static class WebPushEndpoints
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             // One row per device: a device someone else used before (logged out, then this user logged in) now notifies this user only.
             string endpoint = request.Endpoint!, p256dh = request.Keys!.P256dh!, auth = request.Keys.Auth!;
+            // The same keys keep when the device started failing (the account page saves it on every visit); new keys start over.
             Task<int> Update() => db.PushSubscriptions.Where(s => s.Endpoint == endpoint).ExecuteUpdateAsync(s => s
-                .SetProperty(x => x.UserId, user.Id).SetProperty(x => x.P256dh, p256dh).SetProperty(x => x.Auth, auth)
-                .SetProperty(x => x.LastFailedAt, (DateTimeOffset?)null), cancellationToken);
+                .SetProperty(x => x.LastFailedAt, x => x.P256dh == p256dh && x.Auth == auth ? x.LastFailedAt : null)
+                .SetProperty(x => x.UserId, user.Id).SetProperty(x => x.P256dh, p256dh).SetProperty(x => x.Auth, auth), cancellationToken);
             if (await Update() > 0) return TypedResults.NoContent();
+            // At most MaxDevices per user, the newest kept: the hourly check sends to each one in turn.
+            var oldest = await db.PushSubscriptions.Where(s => s.UserId == user.Id).OrderByDescending(s => s.CreatedAt)
+                .Skip(MaxDevices - 1).Select(s => s.Id).ToListAsync(cancellationToken);
+            if (oldest.Count > 0) await db.PushSubscriptions.Where(s => oldest.Contains(s.Id)).ExecuteDeleteAsync(cancellationToken);
             db.PushSubscriptions.Add(new PushSubscription { UserId = user.Id, Endpoint = endpoint, P256dh = p256dh, Auth = auth });
             try
             {

@@ -71,6 +71,15 @@ export async function subscribeDevice(): Promise<boolean> {
   return true
 }
 
+/** Saves this device's subscription again, for the account now signed in. Never asks: only where notifications are allowed. */
+export async function claimDevice(): Promise<void> {
+  try {
+    if (await deviceSubscription()) await subscribeDevice()
+  } catch {
+    // Best effort: the account page shows the device's state.
+  }
+}
+
 /** Stops notifications on this device: the server forgets it, then the browser does. */
 export async function unsubscribeDevice(): Promise<void> {
   const subscription = await deviceSubscription()

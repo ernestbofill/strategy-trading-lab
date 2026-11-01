@@ -234,6 +234,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     }
 
     static readonly TimeSpan FailingDeviceDays = TimeSpan.FromDays(7);
+    const string PushAlertKey = "push:notifications";
 
     /// <summary>
     /// Sends a claimed push notification to every device of the user and records the result: sent if one device got it. A device
@@ -245,7 +246,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var devices = await db.PushSubscriptions.AsNoTracking().Where(p => p.UserId == userId).ToListAsync(cancellationToken);
         var payload = message.ToJson();
         var now = DateTimeOffset.UtcNow;
-        bool delivered = false, retry = false;
+        bool delivered = false, retry = false, refused = false;
         foreach (var device in devices)
         {
             PushOutcome outcome;
@@ -266,6 +267,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             if (failing && device.LastFailedAt < now - FailingDeviceDays) outcome = PushOutcome.Gone;
             delivered |= outcome == PushOutcome.Sent;
             retry |= outcome == PushOutcome.Failed;
+            refused |= outcome == PushOutcome.Refused;
             var deviceRow = db.PushSubscriptions.Where(p => p.Id == device.Id);
             if (outcome == PushOutcome.Gone) await deviceRow.ExecuteDeleteAsync(CancellationToken.None);
             // LastFailedAt is when it started failing, so it is only set once and cleared by a delivery.
@@ -274,6 +276,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             else if (outcome == PushOutcome.Sent && device.LastFailedAt is not null)
                 await deviceRow.ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, (DateTimeOffset?)null), CancellationToken.None);
         }
+        // A refusal can be the server's own setup (keys that don't match): the owner sees it on /admin/alerts, and it clears with the next delivery.
+        if (refused) await alerts.RaiseAsync(AlertSource.Email, new NewAlert(PushAlertKey, "Web push refused",
+            "A push service refused a notification for good (400, 403 or 413). One device: it may be gone. All of them: check VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are a pair."), CancellationToken.None);
+        else if (delivered) await alerts.ClearAsync(PushAlertKey, CancellationToken.None);
         // None got it but one may later (a push service down, a timeout): give the claim back, so the hourly check tries again.
         if (!delivered && retry)
         {

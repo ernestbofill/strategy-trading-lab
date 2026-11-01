@@ -19,7 +19,6 @@ import { fundOf, MAX_RUNNING_STRATEGIES, tickedStocks } from './draftState'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, NAME_MAX_LENGTH, newStrategyFrom } from './newStrategy'
-import { usePushOffered } from '../account/usePushOffered'
 import { advancedPath, budgetPath, confirmPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
 import { useDraftCurrency } from './useDraftCurrency'
 import { useTemplate } from './useTemplate'
@@ -64,8 +63,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Only where the app offers push, and for strategies that alert (Choose the mode's Alerts box).
-  const push = usePushOffered() && draft.push && (isLive || template.aiRound !== null)
+  // Ticked in Choose the mode's Alerts box (shown only where the app offers push), for strategies that alert.
+  const push = draft.push && (isLive || template.aiRound !== null)
 
   // Numbered against the user's strategies once they are loaded; only queried for logged-in accounts.
   const dashboard = useDashboard(Boolean(account))

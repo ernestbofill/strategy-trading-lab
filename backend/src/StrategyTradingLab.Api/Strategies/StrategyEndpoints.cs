@@ -120,7 +120,8 @@ public static class StrategyEndpoints
                 Budget = request.Budget,
                 Params = parameters,
                 SourceStrategyId = source,
-                Push = request.Push,
+                // Only strategies that alert: live ones (signals) and AI ones (rounds due).
+                Push = request.Push && (request.Mode == StrategyMode.Live || template == TemplateCatalog.Ai),
                 Assets = [.. assets.Select(asset => new StrategyAsset
                     { AssetId = asset.Id, Active = true, AddedAt = time.GetUtcNow() })],
             };
@@ -241,6 +242,8 @@ public static class StrategyEndpoints
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
+            if (enabled && strategy.Mode != StrategyMode.Live && !AiRounds.IsAi(strategy))
+                return TypedResults.Conflict(Messages.NoAlertsToPush.In(user.Locale));
             strategy.Push = enabled;
             await db.SaveChangesAsync(cancellationToken);
             return TypedResults.NoContent();

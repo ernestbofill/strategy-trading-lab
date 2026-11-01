@@ -77,6 +77,24 @@ public class EmailEventTests
     }
 
     [NeonFact]
+    public async Task Odd_values_and_a_wrong_content_type_never_make_a_500()
+    {
+        using var api = new AccountsApi();
+        var email = api.NewEmail();
+        try
+        {
+            using var brevo = WithKey(api).CreateClient();
+            Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json("""[{"event":"hard_bounce","email":5},{"event":1,"email":"a@b.c"},{"event":null,"email":null}]"""))).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await brevo.PostAsync($"/email/events?key={Key}", new StringContent("event=hard_bounce", Encoding.UTF8, "text/plain"))).StatusCode);
+            Assert.Empty(await Rows(api, email));
+        }
+        finally
+        {
+            await Clean(api, email);
+        }
+    }
+
+    [NeonFact]
     public async Task Without_the_right_key_the_endpoint_does_not_exist()
     {
         using var api = new AccountsApi();
@@ -102,7 +120,7 @@ public class EmailEventTests
     }
 
     [NeonFact]
-    public async Task The_sender_skips_a_suppressed_address_and_still_tries_the_others()
+    public async Task The_sender_skips_bulk_mail_to_a_suppressed_address_and_still_sends_the_rest()
     {
         using var api = new AccountsApi();
         var blocked = api.NewEmail();
@@ -125,8 +143,14 @@ public class EmailEventTests
 
             using var send = configured.Services.CreateScope();
             var sender = send.ServiceProvider.GetRequiredService<IEmailSender>();
-            await sender.SendAsync(new OutgoingEmail(blocked, "Subject", "Body"), default);
-            await Assert.ThrowsAsync<EmailException>(() => sender.SendAsync(new OutgoingEmail(api.NewEmail(), "Subject", "Body"), default));
+            const string Unsubscribe = "https://app.example/api/email/unsubscribe/tok3n/alerts";
+            // Bulk mail (it has an unsubscribe address) is skipped for a suppressed address, and says so.
+            await Assert.ThrowsAsync<EmailSuppressedException>(() => sender.SendAsync(new OutgoingEmail(blocked, "Subject", "Body", UnsubscribeUrl: Unsubscribe), default));
+            // An email someone just asked for still goes (it reaches the refusing server), and so does bulk mail to anyone else.
+            var refused = await Assert.ThrowsAsync<EmailException>(() => sender.SendAsync(new OutgoingEmail(blocked, "Subject", "Body"), default));
+            Assert.IsNotType<EmailSuppressedException>(refused);
+            var other = await Assert.ThrowsAsync<EmailException>(() => sender.SendAsync(new OutgoingEmail(api.NewEmail(), "Subject", "Body", UnsubscribeUrl: Unsubscribe), default));
+            Assert.IsNotType<EmailSuppressedException>(other);
         }
         finally
         {
@@ -147,7 +171,7 @@ public class EmailEventTests
 
             var users = await owner.GetFromJsonAsync<System.Text.Json.JsonElement>("/admin/users");
             var mine = users.GetProperty("users").EnumerateArray().Single(u => u.GetProperty("email").GetString() == email);
-            Assert.True(mine.GetProperty("emailBlocked").GetBoolean());
+            Assert.Equal("bounced", mine.GetProperty("emailBlocked").GetString());
         }
         finally
         {

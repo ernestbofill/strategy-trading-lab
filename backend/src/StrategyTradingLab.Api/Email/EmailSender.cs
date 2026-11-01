@@ -38,6 +38,9 @@ public static class EmailRetry
 /// <summary>Email isn't set up yet (no account, server or password): nothing was sent and no server was contacted.</summary>
 public class EmailNotSetUpException() : EmailException("Email isn't set up: set the account, the server and the password first.");
 
+/// <summary>Nothing was sent: the address is on the suppression list (the mail service reported it as bounced, invalid or complaining). Not a problem to alert on.</summary>
+public class EmailSuppressedException() : EmailException("The address is on the suppression list.");
+
 /// <summary>Sends the app's emails.</summary>
 public interface IEmailSender
 {
@@ -59,11 +62,13 @@ public class SmtpEmailSender(SettingsStore settings, AppDbContext db, ILogger<Sm
         var values = await settings.ValuesAsync(cancellationToken);
         if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
             throw new EmailNotSetUpException();
-        // An address the mail service reported as bounced, invalid or complaining (the webhook): not worth another try, and each one hurts the domain's name.
-        if (await db.EmailSuppressions.AnyAsync(s => s.Email == email.To, cancellationToken))
+        // Bulk mail (the overview and the alerts, which carry an unsubscribe address) never goes to an address the mail service reported as bounced,
+        // invalid or complaining (the webhook): each one hurts the domain's name. Emails someone just asked for (a confirmation, a password
+        // link) still go, so a person who later owns the address isn't locked out by an old bounce.
+        if (email.UnsubscribeUrl is not null && await db.EmailSuppressions.AnyAsync(s => s.Email == email.To, cancellationToken))
         {
             logger.LogInformation("Not sending \"{Subject}\": its address is on the suppression list.", email.Subject);
-            return;
+            throw new EmailSuppressedException();
         }
         await EmailRetry.OnceAsync(() => SendAsync(values, user, password, host, email, cancellationToken), EmailRetry.Wait, logger, cancellationToken);
     }

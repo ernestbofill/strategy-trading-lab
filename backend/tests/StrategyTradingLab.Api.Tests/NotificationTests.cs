@@ -147,6 +147,11 @@ public class NotificationTests
         }
     }
 
+    sealed class Suppressed : IEmailSender
+    {
+        public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken) => throw new EmailSuppressedException();
+    }
+
     sealed class NotSetUpThenWorks : IEmailSender
     {
         public bool SetUp { get; set; }
@@ -197,7 +202,7 @@ public class NotificationTests
         await db.Assets.Where(a => a.Id == assetId).ExecuteDeleteAsync();
     }
 
-    static NotificationService Service(IServiceScope scope, Captured sender) =>
+    static NotificationService Service(IServiceScope scope, IEmailSender sender) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
 
     [NeonFact]
@@ -220,6 +225,29 @@ public class NotificationTests
             var row = await db.Notifications.SingleAsync(n => n.UserId == userId);
             Assert.Equal((NotificationKind.Signal, NotificationChannel.Email, new DateOnly(2026, 10, 22)), (row.Kind, row.Channel, row.ForDate));
             Assert.NotNull(row.SentAt);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task An_alert_to_a_suppressed_address_is_recorded_as_skipped_not_sent_or_failed()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, _, assetId, _, _) = await SeedAsync(db);
+        try
+        {
+            var sent = await Service(scope, new Suppressed()).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+
+            Assert.Equal(0, sent);
+            var row = await db.Notifications.AsNoTracking().SingleAsync(n => n.UserId == userId);
+            Assert.Null(row.SentAt);
+            Assert.Null(row.FailedAt);
+            Assert.Contains("suppression list", row.Error);
         }
         finally
         {

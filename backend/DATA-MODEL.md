@@ -419,7 +419,7 @@ Index `(status, last_seen_at)` and `(strategy_id)`.
 
 ### `email_suppressions`
 
-Addresses the mail service (Brevo's webhook, `POST /email/events`) reported as bounced, invalid or complaining. The sender never sends to them: not the overview, nor the alerts, nor the account emails. Nothing removes a row but the owner, in the database.
+Addresses the mail service (Brevo's webhook, `POST /email/events`) reported as bounced, invalid or complaining. The sender never sends them the overview or the alerts (not the emails someone just asked for, like a confirmation or a password link). Nothing removes a row but the owner, in the database.
 
 | Column | Type | Notes |
 | --- | --- | --- |

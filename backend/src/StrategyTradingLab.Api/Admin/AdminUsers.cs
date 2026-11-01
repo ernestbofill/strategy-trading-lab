@@ -7,7 +7,7 @@ namespace StrategyTradingLab.Api.Admin;
 
 /// <summary>A user on the admin users page. <c>LastVisit</c>: the last time any of their sessions was used (null if none is kept).</summary>
 public record AdminUser(Guid Id, string Email, UserRole Role, DateTimeOffset Joined, bool Confirmed, DateTimeOffset? LastVisit,
-    int Running, int Archived, string? FirstName = null, string? LastName = null, string? InvitedBy = null, bool EmailBlocked = false);
+    int Running, int Archived, string? FirstName = null, string? LastName = null, string? InvitedBy = null, SuppressionReason? EmailBlocked = null);
 
 /// <summary>Running strategies of one template, by mode.</summary>
 public record AdminTemplateCount(string TemplateKey, string TemplateName, int Simulation, int Live);
@@ -34,7 +34,7 @@ public static class AdminUsersEndpoints
                     db.Invites.Where(i => i.Id == u.InviteId)
                         .Join(db.Users, i => i.CreatedBy, o => (Guid?)o.Id, (i, o) => (string?)o.Email).FirstOrDefault(),
                     // Reported by the mail service as bounced, invalid or complaining: the app no longer sends to it.
-                    db.EmailSuppressions.Any(s => s.Email == u.Email)))
+                    db.EmailSuppressions.Where(s => s.Email == u.Email).Select(s => (SuppressionReason?)s.Reason).FirstOrDefault()))
                 .ToListAsync(cancellationToken);
             var running = await db.Strategies.AsNoTracking().Where(s => s.Status == StrategyStatus.Running)
                 .GroupBy(s => new { s.TemplateKey, s.Mode })

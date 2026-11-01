@@ -6,11 +6,13 @@ namespace StrategyTradingLab.Api.Email;
 
 /// <summary>
 /// An email to send: <paramref name="Body"/> is the plain text, <paramref name="Html"/> the same as HTML (see <see cref="EmailDocument"/>);
-/// <paramref name="ReplyTo"/> is where an answer goes, when not to the app's own account.
+/// <paramref name="ReplyTo"/> is where an answer goes, when not to the app's own account; <paramref name="UnsubscribeUrl"/> turns
+/// on the one-click unsubscribe headers that Gmail and Yahoo require of bulk senders.
 /// </summary>
-public record OutgoingEmail(string To, string Subject, string Body, string? ReplyTo = null, string? Html = null)
+public record OutgoingEmail(string To, string Subject, string Body, string? ReplyTo = null, string? Html = null, string? UnsubscribeUrl = null)
 {
-    public OutgoingEmail(string to, EmailContent content, string? replyTo = null) : this(to, content.Subject, content.Text, replyTo, content.Html) { }
+    public OutgoingEmail(string to, EmailContent content, string? replyTo = null)
+        : this(to, content.Subject, content.Text, replyTo, content.Html, content.OneClickUnsubscribe) { }
 }
 
 /// <summary>

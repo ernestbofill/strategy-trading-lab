@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-01 · Unsubscribe: two kinds (the daily overview, and alerts with reminders), each turned off by a private per-user token in the link, with no login. The link opens a page with one button, the `List-Unsubscribe` header POSTs straight to the API (which skips the `X-Requested-With` check for that address only, since a mail app can't send it), and a failed send is retried once after 3 seconds when the failure looks passing. Bounce handling comes in its own PR. (Ernest, item 21)
 - 2026-11-01 · The admin page's test email goes to the signed-in owner's address, not the SMTP login: with Brevo the login is not a mailbox. Still never to a typed address. (Ernest)
 - 2026-11-01 · The app's own domain is `strategytradinglab.com` (bought at Spaceship, DNS managed there). The bare name is the app; `www` and the old `sslip.io` address redirect to it with a 301. (Ernest, item 22)
 - 2026-11-01 · CI audits only the backend's packages (`dotnet list package --vulnerable`); `npm audit` isn't run, so an advisory in a frontend build tool doesn't block unrelated PRs. (Ernest, #106)

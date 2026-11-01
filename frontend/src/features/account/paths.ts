@@ -13,6 +13,8 @@ export const logInPath = '/log-in'
 export const forgotPasswordPath = '/forgot-password'
 export const resetPasswordPath = '/reset-password'
 export const verifyEmailPath = '/verify-email'
+/** The link in the emails, followed by /:token/:kind (overview or alerts). */
+export const unsubscribePath = '/unsubscribe'
 
 const SAME_SITE = 'https://stl.invalid'
 

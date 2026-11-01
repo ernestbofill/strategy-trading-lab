@@ -53,6 +53,8 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Currency).HasColumnType(Money.Currency).HasColumnDefault("EUR");
         entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
+        entity.Property(user => user.AlertEmails).HasColumnDefault(true);
+        entity.HasIndex(user => user.UnsubscribeToken).IsUnique();
         entity.Property(user => user.AiSharing).HasColumnDefault(false);
         entity.Property(user => user.FirstName).HasMaxLength(AccountRules.NameMax);
         entity.Property(user => user.LastName).HasMaxLength(AccountRules.NameMax);

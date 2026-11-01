@@ -772,7 +772,7 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 - ~~Ended strategies.~~ (built #91; since #96 ending is archiving: kept read-only under Archived, and can then be deleted)
 - ~~The legal pages' text (legal notice, terms, privacy, About with conflicts of interest); the footer and placeholder pages are built (#100).~~ (built #104)
 - Account: download my data, delete my account, "Invite a friend".
-- Unsubscribe links in emails.
+- ~~Unsubscribe links in emails.~~ (built, item 21): the overview and the alerts (signal alerts, snooze reminders, AI round reminders) carry a "Turn off …" link and the `List-Unsubscribe` one-click headers. The link opens a page with one button (opening a link never changes anything, since mail scanners open every link) that turns that kind off without logging in; a switch for each kind is on the account page. Account emails (confirmation, password) have none.
 - Admin: users (block, delete), invites and test invites, adding and editing assets, an audit log of owner actions, and feedback.
 - Owner access for Claude: an owner account of its own on dev and production, for testing and validation.
 

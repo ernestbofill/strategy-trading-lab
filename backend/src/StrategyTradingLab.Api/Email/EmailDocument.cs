@@ -4,7 +4,28 @@ using System.Text;
 namespace StrategyTradingLab.Api.Email;
 
 /// <summary>An email ready to send: the plain text and the same content as HTML (spec: Emails).</summary>
-public record EmailContent(string Subject, string Text, string Html);
+/// <param name="OneClickUnsubscribe">The address that turns this kind of email off with one POST (the List-Unsubscribe header), when the email has one.</param>
+public record EmailContent(string Subject, string Text, string Html, string? OneClickUnsubscribe = null)
+{
+    public void Deconstruct(out string subject, out string text, out string html) => (subject, text, html) = (Subject, Text, Html);
+}
+
+/// <summary>The kinds of email a user can turn off from the email itself.</summary>
+public enum EmailKind { Overview, Alerts }
+
+/// <summary>The addresses that turn one kind of email off for the user whose private token is in them (see <c>User.UnsubscribeToken</c>).</summary>
+public static class Unsubscribe
+{
+    public static string Slug(EmailKind kind) => kind == EmailKind.Overview ? "overview" : "alerts";
+
+    public static EmailKind? FromSlug(string slug) => slug switch { "overview" => EmailKind.Overview, "alerts" => EmailKind.Alerts, _ => null };
+
+    /// <summary>The app's page, with one button: opening a link must never change anything, because mail scanners open every link.</summary>
+    public static string PageUrl(string appUrl, string token, EmailKind kind) => $"{appUrl}/unsubscribe/{token}/{Slug(kind)}";
+
+    /// <summary>The API's address for the List-Unsubscribe header: mail apps POST to it (RFC 8058).</summary>
+    public static string OneClickUrl(string appUrl, string token, EmailKind kind) => $"{appUrl}/api/email/unsubscribe/{token}/{Slug(kind)}";
+}
 
 /// <summary>A line in a section; <paramref name="Url"/> links it to its page, <paramref name="Tag"/> is a mode label (Live tags stand out).</summary>
 public record EmailItem(string Text, string? Url = null, string? Tag = null, bool Live = false);
@@ -24,6 +45,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
 
     readonly List<(string Text, string Html)> blocks = [];
     string? eyebrow, disclaimer, preheader;
+    (string Label, string PageUrl, string OneClickUrl)? unsubscribe;
 
     bool Ca => locale == "ca";
 
@@ -136,10 +158,29 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         return this;
     }
 
+    /// <summary>"Turn off these emails": a line above the disclaimer in the text, a link in the footer in the HTML, and the one-click address for the header.</summary>
+    public EmailDocument Unsubscribe(EmailKind kind, string token)
+    {
+        if (appUrl is null) throw new InvalidOperationException("An unsubscribe link needs the app's address.");
+        var label = (kind, Ca) switch
+        {
+            (EmailKind.Overview, false) => "Turn off the daily overview",
+            (EmailKind.Overview, true) => "Desactiva el resum diari",
+            (_, false) => "Turn off signal and reminder emails",
+            _ => "Desactiva els correus de senyals i recordatoris",
+        };
+        unsubscribe = (label, Email.Unsubscribe.PageUrl(appUrl, token, kind), Email.Unsubscribe.OneClickUrl(appUrl, token, kind));
+        return this;
+    }
+
+    /// <summary><see cref="Unsubscribe(EmailKind, string)"/> when there is a token (an email to an address without an account has none).</summary>
+    public EmailDocument WithUnsubscribe(EmailKind kind, string? token) => token is null ? this : Unsubscribe(kind, token);
+
     public EmailContent Build(string subject)
     {
-        var text = string.Join("\n\n", blocks.Select(b => b.Text).Append(disclaimer).OfType<string>());
-        return new(subject, text, Html(subject));
+        var text = string.Join("\n\n", blocks.Select(b => b.Text)
+            .Append(unsubscribe is { } u ? $"{u.Label}: {u.PageUrl}" : null).Append(disclaimer).OfType<string>());
+        return new(subject, text, Html(subject), unsubscribe?.OneClickUrl);
     }
 
     string Html(string subject)
@@ -152,7 +193,8 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             : $"<a href=\"{Encode(appUrl)}/\" style=\"color:{Primary};text-decoration:none;\">STRATEGY TRADING LAB</a>";
         // No "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.
         var footer = "Strategy Trading Lab" + (appUrl is null ? ""
-            : $" &middot; <a href=\"{Encode(appUrl)}/\" style=\"color:{InkSoft};\">{Encode(Ca ? "Obre l'aplicació" : "Open the app")}</a>");
+            : $" &middot; <a href=\"{Encode(appUrl)}/\" style=\"color:{InkSoft};\">{Encode(Ca ? "Obre l'aplicació" : "Open the app")}</a>")
+            + (unsubscribe is { } u ? $" &middot; <a href=\"{Encode(u.PageUrl)}\" style=\"color:{InkSoft};\">{Encode(u.Label)}</a>" : "");
 
         return
             $"<!doctype html><html lang=\"{lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +

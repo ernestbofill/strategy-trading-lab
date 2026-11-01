@@ -16,7 +16,7 @@ const makeAccount = (role: 'user' | 'owner'): Account => ({
   firstName: null, lastName: null, emailVerified: true,
   locale: 'en',
   timeZone: 'UTC',
-  overviewEmail: true,
+  overviewEmail: true, alertEmails: true,
   currency: 'EUR',
   role,
   aiSharing: false,

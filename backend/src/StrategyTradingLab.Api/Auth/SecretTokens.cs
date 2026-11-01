@@ -12,6 +12,9 @@ public static class SecretTokens
         return (token, Hash(token));
     }
 
+    /// <summary>A random token that is kept as it is, for the unsubscribe links in emails, which must be rebuilt for every email.</summary>
+    public static string NewPlain() => Base64UrlEncode(RandomNumberGenerator.GetBytes(24));
+
     public static byte[] Hash(string token) => SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token));
 
     static string Base64UrlEncode(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');

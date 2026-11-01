@@ -92,7 +92,8 @@ export function AccountPage() {
       )}
 
       <Section id={EMAILS_HASH.slice(1)} title={t('account.page.emails')}>
-        <OverviewEmail current={account.overviewEmail} onSaved={refresh} />
+        <EmailSwitch current={account.overviewEmail} label={t('account.overviewEmail')} save={api.setOverviewEmail} onSaved={refresh} />
+        <EmailSwitch current={account.alertEmails} label={t('account.alertEmails')} save={api.setAlertEmails} onSaved={refresh} />
       </Section>
 
       <Section title={t('account.page.dataPrivacy')}>
@@ -304,8 +305,12 @@ function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Prom
   )
 }
 
-function OverviewEmail({ current, onSaved }: { current: boolean; onSaved: () => Promise<unknown> }) {
-  const t = useT()
+function EmailSwitch({ current, label, save, onSaved }: {
+  current: boolean
+  label: string
+  save: (enabled: boolean) => Promise<void>
+  onSaved: () => Promise<unknown>
+}) {
   const [message, setMessage] = useState<FormMessageState>(null)
   const [busy, setBusy] = useState(false)
 
@@ -314,7 +319,7 @@ function OverviewEmail({ current, onSaved }: { current: boolean; onSaved: () => 
     setBusy(true)
     setMessage(null)
     try {
-      await api.setOverviewEmail(enabled)
+      await save(enabled)
       await onSaved()
     } catch (err) {
       setMessage({ tone: 'error', text: errorText(err) })
@@ -325,7 +330,7 @@ function OverviewEmail({ current, onSaved }: { current: boolean; onSaved: () => 
   return (
     <div className={styles.form}>
       <Checkbox checked={current} onChange={(enabled) => void change(enabled)}>
-        {t('account.overviewEmail')}
+        {label}
       </Checkbox>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
     </div>

@@ -7,7 +7,31 @@ using StrategyTradingLab.Api.Admin;
 namespace StrategyTradingLab.Api.Email;
 
 /// <summary>Why an email wasn't sent, in words for the admin page. Never holds a password.</summary>
-public class EmailException(string message, Exception? inner = null) : Exception(message, inner);
+public class EmailException(string message, Exception? inner = null, bool transient = false) : Exception(message, inner)
+{
+    /// <summary>Whether trying again a moment later may work (a busy server, a timeout), not a refusal.</summary>
+    public bool Transient => transient;
+}
+
+/// <summary>A failed send is tried once more after a short wait, when the failure may be passing.</summary>
+public static class EmailRetry
+{
+    public static readonly TimeSpan Wait = TimeSpan.FromSeconds(3);
+
+    public static async Task OnceAsync(Func<Task> send, TimeSpan wait, ILogger logger, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await send();
+        }
+        catch (EmailException error) when (error.Transient && !cancellationToken.IsCancellationRequested)
+        {
+            logger.LogInformation("Sending an email failed, trying once more in {Seconds}s.", wait.TotalSeconds);
+            await Task.Delay(wait, cancellationToken);
+            await send();
+        }
+    }
+}
 
 /// <summary>Email isn't set up yet (no account, server or password): nothing was sent and no server was contacted.</summary>
 public class EmailNotSetUpException() : EmailException("Email isn't set up: set the account, the server and the password first.");
@@ -33,12 +57,13 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
         var values = await settings.ValuesAsync(cancellationToken);
         if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
             throw new EmailNotSetUpException();
-        await SendAsync(values, user, password, host, email.To, email.Subject, email.Body, email.Html, email.ReplyTo, cancellationToken);
+        await EmailRetry.OnceAsync(() => SendAsync(values, user, password, host, email, cancellationToken), EmailRetry.Wait, logger, cancellationToken);
     }
 
-    async Task SendAsync(IReadOnlyDictionary<string, string?> values, string user, string password, string host, string to,
-        string subject, string body, string? html, string? replyTo, CancellationToken cancellationToken)
+    async Task SendAsync(IReadOnlyDictionary<string, string?> values, string user, string password, string host, OutgoingEmail email,
+        CancellationToken cancellationToken)
     {
+        var (to, subject, body, replyTo, html, unsubscribeUrl) = email;
         var port = int.TryParse(values["SMTP_PORT"], out var p) ? p : 587;
         MailMessage message;
         SmtpClient client;
@@ -57,6 +82,12 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
                 message.AlternateViews.Add(view);
             }
             if (replyTo is not null) message.ReplyToList.Add(new MailAddress(replyTo));
+            // One click, as Gmail and Yahoo ask of bulk senders (RFC 8058): the mail app POSTs to the address, with no page in between.
+            if (unsubscribeUrl is not null)
+            {
+                message.Headers.Add("List-Unsubscribe", $"<{unsubscribeUrl}>");
+                message.Headers.Add("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
+            }
             client = new SmtpClient(host, port)
             {
                 EnableSsl = true,
@@ -91,10 +122,19 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
                 logger.LogWarning(error, "Sending \"{Subject}\" through {Host}:{Port} failed.", subject, host, port);
                 throw new EmailException(error is OperationCanceledException
                     ? $"{host}:{port} didn't answer in time."
-                    : $"{host}:{port} refused it: {Reason(error)}", error);
+                    : $"{host}:{port} refused it: {Reason(error)}", error, IsTransient(error));
             }
         }
     }
+
+    /// <summary>A timeout, a dropped connection or the server saying "busy, try later" (4xx): worth one more try. A refusal or a bad password isn't.</summary>
+    static bool IsTransient(Exception error) => error switch
+    {
+        OperationCanceledException or IOException => true,
+        SmtpException { StatusCode: SmtpStatusCode.ServiceNotAvailable or SmtpStatusCode.MailboxBusy or SmtpStatusCode.LocalErrorInProcessing
+            or SmtpStatusCode.InsufficientStorage or SmtpStatusCode.GeneralFailure } => true,
+        _ => false,
+    };
 
     /// <summary>The server's own words (e.g. Gmail's "Username and Password not accepted"), which never contain the password.</summary>
     static string Reason(Exception error) =>

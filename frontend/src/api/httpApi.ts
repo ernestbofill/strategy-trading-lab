@@ -260,6 +260,12 @@ export const httpApi: Api = {
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
   setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
+  setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
+  unsubscribe: async (token, kind) => {
+    const response = await fetch(`${BASE_URL}/email/unsubscribe/${encodeURIComponent(token)}/${kind}`, { method: 'POST', headers: APP_HEADER })
+    if (response.status === 404) throw new ExpiredLinkError()
+    if (!response.ok) throw new Error(`Couldn't turn the emails off (${response.status}).`)
+  },
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),

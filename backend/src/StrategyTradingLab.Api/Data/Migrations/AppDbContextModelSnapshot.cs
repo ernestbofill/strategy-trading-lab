@@ -1750,6 +1750,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("timestamptz")
                         .HasColumnName("ai_sharing_changed_at");
 
+                    b.Property<bool>("AlertEmails")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("alert_emails");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamptz")
@@ -1823,6 +1828,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("time_zone");
 
+                    b.Property<string>("UnsubscribeToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("unsubscribe_token");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamptz")
@@ -1838,6 +1848,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.HasIndex("InviteId")
                         .HasDatabaseName("ix_users_invite_id");
+
+                    b.HasIndex("UnsubscribeToken")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_unsubscribe_token");
 
                     b.ToTable("users", null, t =>
                         {

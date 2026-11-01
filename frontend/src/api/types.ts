@@ -716,6 +716,8 @@ export interface Account {
   locale: Locale
   timeZone: string
   overviewEmail: boolean
+  /** Signal alerts and reminders (a strategy's own notifications switch still applies). */
+  alertEmails: boolean
   /** Of the user's new strategies; running ones keep theirs. */
   currency: Currency
   role: Role
@@ -975,6 +977,9 @@ export interface Api {
   setLocale(locale: Locale): Promise<void>
   /** Turns the daily overview email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
+  setAlertEmails(enabled: boolean): Promise<void>
+  /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */
+  unsubscribe(token: string, kind: 'overview' | 'alerts'): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
   /** Rejects with `UnauthorizedError` when the session has ended (also for `startStrategy`). */

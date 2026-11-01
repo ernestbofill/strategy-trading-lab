@@ -1892,3 +1892,49 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    ALTER TABLE users ADD alert_emails boolean NOT NULL DEFAULT TRUE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    ALTER TABLE users ADD unsubscribe_token text NOT NULL DEFAULT '';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    UPDATE users SET unsubscribe_token = replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    ALTER TABLE users ALTER COLUMN unsubscribe_token DROP DEFAULT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    CREATE UNIQUE INDEX ix_users_unsubscribe_token ON users (unsubscribe_token);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101112713_AddEmailUnsubscribe', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

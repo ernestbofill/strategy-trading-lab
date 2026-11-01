@@ -24,6 +24,17 @@ describe('httpApi', () => {
     expect(fetch).toHaveBeenCalledWith('/api/templates/bear', expect.anything())
   })
 
+  it('turns an email kind off with a POST to the link in the email, and reads a 404 as an expired link', async () => {
+    respond(204)
+    await httpApi.unsubscribe('tok/3n', 'overview')
+    expect(fetch).toHaveBeenCalledWith('/api/email/unsubscribe/tok%2F3n/overview', expect.objectContaining({ method: 'POST' }))
+
+    respond(404)
+    await expect(httpApi.unsubscribe('old', 'alerts')).rejects.toBeInstanceOf(ExpiredLinkError)
+    respond(500)
+    await expect(httpApi.unsubscribe('tok', 'alerts')).rejects.toThrow()
+  })
+
   it('treats a 404 as not found', async () => {
     respond(404)
     await expect(httpApi.getTemplate('dip')).resolves.toBeUndefined()

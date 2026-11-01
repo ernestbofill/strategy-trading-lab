@@ -102,6 +102,8 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
 | role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip comes from an owner's invite |
 | overview_email | bool, not null, default true | Daily overview on/off |
+| alert_emails | bool, not null, default true | Signal alerts, snooze reminders and AI round reminders on/off |
+| unsubscribe_token | text, not null, unique | Private random token in the unsubscribe links of this user's emails; it can only turn emails off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | terms_version_accepted | varchar(32), null | The version of the legal terms accepted by the user (e.g. `2026-10-31`) |
 | terms_accepted_at | timestamptz, null | When the terms were accepted at sign-up |

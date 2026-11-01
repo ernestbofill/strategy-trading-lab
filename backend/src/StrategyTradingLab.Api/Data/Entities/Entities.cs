@@ -55,6 +55,10 @@ public class User : IHasUpdatedAt
     public string Currency { get; set; } = "EUR";
     public UserRole Role { get; set; } = UserRole.User;
     public bool OverviewEmail { get; set; } = true;
+    /// <summary>Signal alerts, snooze reminders and AI round reminders (the daily overview has its own switch).</summary>
+    public bool AlertEmails { get; set; } = true;
+    /// <summary>Private: it is the whole credential of the unsubscribe links in this user's emails, which can only turn emails off.</summary>
+    public string UnsubscribeToken { get; set; } = null!; // Given on add by the model (UnsubscribeTokenGenerator), so reading a user draws nothing.
     public DateTimeOffset? DisclaimerAcceptedAt { get; set; }
     /// <summary>The version of the legal terms accepted by the user (e.g. "2026-10-31").</summary>
     public string? TermsVersionAccepted { get; set; }

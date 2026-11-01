@@ -138,31 +138,32 @@ public static class EmailTexts
         mode == StrategyMode.Live ? (locale == "ca" ? "En directe" : "Live") : (locale == "ca" ? "Simulació" : "Simulation");
 
     /// <summary>The alert and the reminder: the signal box and the link to the signal.</summary>
-    static EmailContent Signal(SignalLine s, string appUrl, string locale, string subject, string? intro, string eyebrow)
+    static EmailContent Signal(SignalLine s, string appUrl, string locale, string subject, string? intro, string eyebrow, string? unsubscribeToken)
     {
         var ca = locale == "ca";
         var email = new EmailDocument(locale, appUrl).Eyebrow($"{eyebrow} · {ModeName(s.Mode, locale)}");
         if (intro is not null) email.Paragraph(intro);
         return email.Box(SignalText(s, locale))
             .Action(ca ? "Consulta'l i indica si hi has actuat:" : "See it, and say whether you acted on it:", ca ? "Veure el senyal" : "See the signal", SignalUrl(s, appUrl))
+            .WithUnsubscribe(EmailKind.Alerts, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
             .Build(subject);
     }
 
     /// <summary>The reminder the day after a snooze: the same text as the alert.</summary>
-    public static EmailContent SnoozeReminder(SignalLine s, string appUrl, string locale = "en") => locale == "ca"
-        ? Signal(s, appUrl, locale, $"Recordatori: {s.StockName}, les teves regles per a {s.StrategyName}", "Has demanat que et recordem aquest senyal.", "Recordatori")
-        : Signal(s, appUrl, locale, $"Reminder: {s.StockName}, your rules for {s.StrategyName}", "You asked to be reminded of this signal.", "Reminder");
+    public static EmailContent SnoozeReminder(SignalLine s, string appUrl, string locale = "en", string? unsubscribeToken = null) => locale == "ca"
+        ? Signal(s, appUrl, locale, $"Recordatori: {s.StockName}, les teves regles per a {s.StrategyName}", "Has demanat que et recordem aquest senyal.", "Recordatori", unsubscribeToken)
+        : Signal(s, appUrl, locale, $"Reminder: {s.StockName}, your rules for {s.StrategyName}", "You asked to be reminded of this signal.", "Reminder", unsubscribeToken);
 
-    public static EmailContent SignalAlert(SignalLine s, string appUrl, string locale = "en") => locale == "ca"
-        ? Signal(s, appUrl, locale, $"{s.StockName}: es compleixen les teves regles per a {s.StrategyName}", null, s.Side == TradeSide.Sell ? "Senyal de venda" : "Senyal")
-        : Signal(s, appUrl, locale, $"{s.StockName}: your rules for {s.StrategyName} are met", null, s.Side == TradeSide.Sell ? "Sale signal" : "Signal");
+    public static EmailContent SignalAlert(SignalLine s, string appUrl, string locale = "en", string? unsubscribeToken = null) => locale == "ca"
+        ? Signal(s, appUrl, locale, $"{s.StockName}: es compleixen les teves regles per a {s.StrategyName}", null, s.Side == TradeSide.Sell ? "Senyal de venda" : "Senyal", unsubscribeToken)
+        : Signal(s, appUrl, locale, $"{s.StockName}: your rules for {s.StrategyName} are met", null, s.Side == TradeSide.Sell ? "Sale signal" : "Signal", unsubscribeToken);
 
     /// <summary>The AI round screen of a strategy.</summary>
     public static string AiRoundUrl(Guid strategyId, string appUrl) => $"{appUrl}/strategies/{strategyId}/ai-round";
 
     /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
-    public static EmailContent AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en")
+    public static EmailContent AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en", string? unsubscribeToken = null)
     {
         var ca = locale == "ca";
         var names = strategies.Count == 1 ? strategies[0].Name
@@ -177,6 +178,7 @@ public static class EmailTexts
             .Paragraph(ca
                 ? "L'aplicació no es connecta a la teva IA. Si omets una ronda, aquella ronda no té senyal."
                 : "The app doesn't connect to your AI. If you skip a round, there's no signal that round.")
+            .WithUnsubscribe(EmailKind.Alerts, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
             .Build(ca ? $"És l'hora de la ronda d'IA de {names}" : $"Time for the AI round of {names}");
     }
@@ -184,7 +186,7 @@ public static class EmailTexts
     /// <summary>The daily overview: what waits, what changed, what is close, and one line per strategy.</summary>
     public static EmailContent Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
         IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en",
-        IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null)
+        IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null, string? unsubscribeToken = null)
     {
         aiRoundsDue ??= [];
         var ca = locale == "ca";
@@ -223,6 +225,7 @@ public static class EmailTexts
             : $"{s.Name} ({ModeName(s.Mode, locale)}): since {Date(s.StartedOn)}, {s.Signals} {(s.Signals == 1 ? "signal" : "signals")}")));
 
         return email.Links([(ca ? "Obre l'aplicació" : "Open the app", $"{appUrl}/")])
+            .WithUnsubscribe(EmailKind.Overview, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
             .Build(title);
     }

@@ -107,6 +107,7 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(AccountEndpoints.LogOutLimit, 30, TimeSpan.FromMinutes(1));
     PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
+    PerClient(UnsubscribeEndpoints.UnsubscribeLimit, 120, TimeSpan.FromMinutes(1));
     PerClient(TemplateEndpoints.TemplatesLimit, 60, TimeSpan.FromMinutes(1));
     PerClient(Program.HealthLimit, 120, TimeSpan.FromMinutes(1));
     PerClient(Program.VersionLimit, 60, TimeSpan.FromMinutes(1));
@@ -161,9 +162,12 @@ app.Use(async (http, next) =>
 
 // CSRF (backend/AUTH.md): every state-changing request must carry X-Requested-With: stl, which the app always sends
 // and a form or image on another site can't. With SameSite=Lax cookies and JSON-only bodies, that closes CSRF.
+// Not an endpoint marked SkipCsrfCheck (the unsubscribe address): a mail app's one-click POST (RFC 8058) can't send the header,
+// and the address uses no cookie, only its private token, and can only turn emails off.
 app.Use(async (http, next) =>
 {
     if (!HttpMethods.IsGet(http.Request.Method) && !HttpMethods.IsHead(http.Request.Method) && !HttpMethods.IsOptions(http.Request.Method)
+        && http.GetEndpoint()?.Metadata.GetMetadata<SkipCsrfCheck>() is null
         && http.Request.Headers["X-Requested-With"] != "stl")
     {
         http.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -239,6 +243,7 @@ app.MapAdmin();
 app.MapInvites();
 app.MapAccount();
 app.MapFeedback();
+app.MapUnsubscribe();
 app.MapAssets();
 
 // For the client to show which API it talks to, and a DEV tag while it uses the dev database.

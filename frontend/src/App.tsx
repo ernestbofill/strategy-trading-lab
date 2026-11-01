@@ -11,11 +11,13 @@ import {
   logInPath,
   resetPasswordPath,
   signUpPath,
+  unsubscribePath,
   verifyEmailPath,
 } from './features/account/paths'
 import { RequireAccount } from './features/account/RequireAccount'
 import { ResetPassword } from './features/account/ResetPassword'
 import { SignUp } from './features/account/SignUp'
+import { Unsubscribe } from './features/account/Unsubscribe'
 import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
 import { FeedbackCapture } from './features/feedback/FeedbackCapture'
@@ -143,6 +145,7 @@ export default function App() {
                 <Route path={forgotPasswordPath} element={<ForgotPassword />} />
                 <Route path={resetPasswordPath} element={<ResetPassword />} />
                 <Route path={verifyEmailPath} element={<VerifyEmail />} />
+                <Route path={`${unsubscribePath}/:token/:kind`} element={<Unsubscribe />} />
 
                 <Route path="/legal" element={<Navigate to={legalNoticePath} replace />} />
                 <Route path={legalNoticePath} element={<LegalPage section="notice" />} />

@@ -21,6 +21,18 @@ public class UsSessionWeekdaysTests
         Assert.Equal(expected, UsSession.WeekdaysBetween(DateOnly.Parse(from), DateOnly.Parse(to)));
 }
 
+public class AdminAlertStorageTests
+{
+    [Fact]
+    public void The_upserts_status_words_are_those_EF_stores()
+    {
+        // The upsert is raw SQL: if these drift from the converter, every raise would fail (and only be logged).
+        Assert.Equal(["open", "dismissed", "cleared"], Data.SnakeCaseEnumConverter<AlertStatus>.StoredValues);
+        Assert.Equal("ai_strategies", AdminAlerts.Stored(AlertSource.AiStrategies));
+        Assert.Equal(Data.SnakeCaseEnumConverter<AlertSource>.StoredValues, Enum.GetValues<AlertSource>().Select(s => AdminAlerts.Stored(s)));
+    }
+}
+
 /// <summary>The owner's alerts (/admin/alerts): raised by the jobs, counted, dismissed, cleared and opened again.</summary>
 public class AdminAlertsTests(AdminFixture fixture) : IClassFixture<AdminFixture>
 {

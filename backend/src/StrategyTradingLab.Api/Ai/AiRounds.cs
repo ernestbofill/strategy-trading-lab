@@ -369,7 +369,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
                 problems.Add((row.strategy, $"\"{row.strategy.Name}\" couldn't be checked", error.Message));
             }
         }
-        await alerts.SyncAsync(AlertSource.AiStrategies, await StrategyEvaluator.StrategyAlertsAsync(db, problems, cancellationToken), cancellationToken);
+        await alerts.SyncStrategiesAsync(AlertSource.AiStrategies, "ai-strategy", problems, cancellationToken);
         return new AiDailySummary(rows.Count, trades, missed, failed);
     }
 

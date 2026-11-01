@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, type AdminAlert, type AlertSource } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -61,11 +61,13 @@ export function AdminAlerts() {
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
 
+  const mounted = useRef(true)
+
   useEffect(() => {
-    let live = true
-    void fetchAlerts().then((next) => live && setState(next))
+    mounted.current = true
+    void fetchAlerts().then((next) => mounted.current && setState(next))
     return () => {
-      live = false
+      mounted.current = false
     }
   }, [])
 
@@ -79,9 +81,11 @@ export function AdminAlerts() {
       refused = true
     }
     const next = await fetchAlerts()
-    setState(next)
-    // A refusal is only a failure if it is still open: a double tap, or a run that cleared it meanwhile, answers 404.
-    setFailed(refused && next.status === 'ready' && next.alerts.some((a) => a.id === id && a.status === 'open'))
+    if (!mounted.current) return
+    // A failed reload keeps the list on screen; a refusal is only a failure if the alert is still open (a double tap, or a
+    // run that cleared it meanwhile, answers 404).
+    if (next.status === 'ready') setState(next)
+    setFailed(next.status === 'ready' ? refused && next.alerts.some((a) => a.id === id && a.status === 'open') : true)
     setBusy(null)
   }
 
@@ -97,7 +101,7 @@ export function AdminAlerts() {
       {state.status === 'error' && <ScreenMessage>Could not load the alerts. Try again later.</ScreenMessage>}
       {state.status === 'ready' && (
         <>
-          {failed && <p className={styles.error} role="alert">Could not dismiss it. Try again.</p>}
+          {failed && <p className={styles.error} role="alert">Could not dismiss it, or reload the list. Try again.</p>}
           <Section title={`Open · ${open.length}`}>
             {open.length === 0 ? (
               <p className={styles.muted}>Nothing open.</p>

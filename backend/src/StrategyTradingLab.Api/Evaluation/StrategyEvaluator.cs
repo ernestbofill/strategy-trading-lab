@@ -72,29 +72,8 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 problems.Add((strategy, $"\"{strategy.Name}\" couldn't be checked", error.Message));
             }
         }
-        await alerts.SyncAsync(AlertSource.Strategies, await StrategyAlertsAsync(db, problems, cancellationToken), cancellationToken);
+        await alerts.SyncStrategiesAsync(AlertSource.Strategies, "strategy", problems, cancellationToken);
         return new EvaluationSummary(evaluated, signals, trades, missed, failed);
-    }
-
-    /// <summary>One alert per strategy, saying whose it is, its template and mode, then the problem.</summary>
-    internal static async Task<List<NewAlert>> StrategyAlertsAsync(AppDbContext db, IReadOnlyList<(Strategy Strategy, string Title, string Detail)> problems,
-        CancellationToken cancellationToken)
-    {
-        if (problems.Count == 0) return [];
-        var userIds = problems.Select(p => p.Strategy.UserId).Distinct().ToList();
-        Dictionary<Guid, string> emails;
-        try
-        {
-            emails = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Email, cancellationToken);
-        }
-        catch (Exception error) when (error is not OperationCanceledException)
-        {
-            // An alert never fails the check: without the emails it still names the strategy.
-            emails = [];
-        }
-        return [.. problems.Select(p => new NewAlert($"strategy:{p.Strategy.Id}", p.Title,
-            $"{emails.GetValueOrDefault(p.Strategy.UserId, "?")} · {p.Strategy.TemplateKey} · {p.Strategy.Mode.ToString().ToLowerInvariant()}\n{p.Detail}",
-            p.Strategy.Id))];
     }
 
     /// <param name="missing">Gets a line for each stock the rules couldn't check in full: no prices, prices too old, or too short a history.</param>

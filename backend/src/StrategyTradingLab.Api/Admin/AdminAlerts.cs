@@ -70,6 +70,26 @@ public class AdminAlerts(AppDbContext db, TimeProvider time, ILogger<AdminAlerts
             () => Close(db.AdminAlerts.Where(a => a.Source == source && !keys.Contains(a.Key)), cancellationToken));
     }
 
+    /// <summary>
+    /// <see cref="SyncAsync"/> for a strategy check: one alert per strategy (<c>{keyPrefix}:{id}</c>), saying whose it is, its
+    /// template and mode, then the problem. Each source has its own prefix, so one never clears the other's.
+    /// </summary>
+    public async Task SyncStrategiesAsync(AlertSource source, string keyPrefix,
+        IReadOnlyList<(Strategy Strategy, string Title, string Detail)> problems, CancellationToken cancellationToken = default)
+    {
+        Dictionary<Guid, string> emails = [];
+        if (problems.Count > 0)
+        {
+            var userIds = problems.Select(p => p.Strategy.UserId).Distinct().ToList();
+            // Without the emails an alert still names the strategy: never a reason to fail the check.
+            await Guarded("find the owners of", source.ToString(), async () => emails = await db.Users.AsNoTracking()
+                .Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Email, cancellationToken));
+        }
+        await SyncAsync(source, [.. problems.Select(p => new NewAlert($"{keyPrefix}:{p.Strategy.Id}", p.Title,
+            $"{emails.GetValueOrDefault(p.Strategy.UserId, "?")} · {p.Strategy.TemplateKey} · {p.Strategy.Mode.ToString().ToLowerInvariant()}\n{p.Detail}",
+            p.Strategy.Id))], cancellationToken);
+    }
+
     /// <summary>Deletes the alerts cleared long ago.</summary>
     public Task ForgetOldAsync(CancellationToken cancellationToken = default) =>
         Guarded("forget", "old alerts", async () =>
@@ -99,7 +119,8 @@ public class AdminAlerts(AppDbContext db, TimeProvider time, ILogger<AdminAlerts
         }
     }
 
-    static string Stored(AlertSource source) => JsonNamingPolicy.SnakeCaseLower.ConvertName(source.ToString());
+    /// <summary>As EF stores it (<see cref="SnakeCaseEnumConverter{TEnum}"/>). The upsert's <c>'open'</c> and <c>'cleared'</c> are checked by a test.</summary>
+    internal static string Stored<TEnum>(TEnum value) where TEnum : struct, Enum => JsonNamingPolicy.SnakeCaseLower.ConvertName(value.ToString());
 
     /// <summary>At most <paramref name="max"/> characters, never splitting an emoji's surrogate pair (Npgsql refuses half of one).</summary>
     static string Cut(string text, int max)

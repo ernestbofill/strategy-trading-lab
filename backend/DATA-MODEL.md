@@ -403,7 +403,7 @@ Problems the background jobs found, for the owner's Alerts page (`/admin/alerts`
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid PK | |
-| key | varchar(200), unique, not null | `daily-check`, `prices:SAP.DE`, `prices:behind`, `strategy:{id}`, `email:notifications`, `email:account` |
+| key | varchar(200), unique, not null | `daily-check`, `prices:SAP.DE`, `prices:behind`, `strategy:{id}`, `ai-strategy:{id}`, `email:notifications`, `email:account` |
 | source | text, not null | `daily_check` \| `prices` \| `strategies` \| `ai_strategies` \| `email` (`CHECK`). A run of one source clears that source's alerts it didn't raise. |
 | status | text, not null, default `open` | `open` \| `dismissed` \| `cleared` (`CHECK`) |
 | title | varchar(200), not null | |

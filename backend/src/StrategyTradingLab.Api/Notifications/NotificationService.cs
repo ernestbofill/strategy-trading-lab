@@ -220,6 +220,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     async Task<bool> SendAsync(Guid notificationId, string to, Func<Task<EmailContent>> compose, CancellationToken cancellationToken)
     {
         string? error = null;
+        var shutDown = false;
         try
         {
             await sender.SendAsync(new OutgoingEmail(to, await compose()), cancellationToken);
@@ -236,6 +237,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             // Not the server's own words (they often quote the address) and never the body: both are the user's data.
             error = problem is EmailException ? "The mail server refused or couldn't send it." : "The email couldn't be written or sent.";
             logger.LogWarning("Couldn't send notification {Id}: {Kind}", notificationId, problem.GetType().Name);
+            shutDown = problem is OperationCanceledException && cancellationToken.IsCancellationRequested;
         }
         var now = DateTimeOffset.UtcNow;
         await db.Notifications.Where(n => n.Id == notificationId)
@@ -243,15 +245,17 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
                 .SetProperty(x => x.FailedAt, error is null ? (DateTimeOffset?)null : now).SetProperty(x => x.Error, error), CancellationToken.None);
         db.ChangeTracker.Clear();
         if (error is null) anySent = true;
-        else await EmailFailedAsync(error);
+        else if (!shutDown) await EmailFailedAsync(error); // A shutdown isn't an email problem.
         return error is null;
     }
 
     const string EmailAlertKey = "email:notifications";
 
-    // What this scope's sends did, so the alert clears once, after a batch where every email went out (not per email, which
-    // would reopen a dismissed alert whenever one address fails among working ones).
+    // What this scope's sends did, so the alert clears once, after a batch where every email went out (not per email).
     bool anySent, anyFailed;
+
+    /// <summary>How long a failure keeps the alert from clearing: a day, so an address failing daily keeps it open (and dismissed).</summary>
+    static readonly TimeSpan FailureMemory = TimeSpan.FromDays(1);
 
     async Task EmailFailedAsync(string problem)
     {
@@ -263,7 +267,20 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     /// <summary>The end of a batch: clears the email alert if emails went out and none failed. Returns how many were sent.</summary>
     async Task<int> SettledAsync(int sent)
     {
-        if (anySent && !anyFailed) await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
+        if (!anySent || anyFailed) return sent;
+        // Not while any other run failed in the last day (another time zone's overviews, the alerts): mixed results would
+        // otherwise clear the alert and open it again each day, undoing a dismiss.
+        var since = DateTimeOffset.UtcNow - FailureMemory;
+        try
+        {
+            if (await db.Notifications.AnyAsync(n => n.FailedAt > since, CancellationToken.None)) return sent;
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The email alert couldn't be checked: {Reason}", error.Message);
+            return sent;
+        }
+        await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
         return sent;
     }
 

@@ -9,6 +9,8 @@ export const common = {
   'common.indexTip.text': 'Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold.',
   /** The top bar's link to the screen before. */
   'common.back': '\u2190 BACK',
+  /** Tooltip and accessible name for the header version link to the admin page. */
+  'common.admin': 'Admin',
   /** Tooltip of the DEV tag in the top bar. */
   'common.devDatabase': 'The API uses the dev database',
   /** The password toggle: the visible word, then the part only a screen reader hears ("Show password"). */

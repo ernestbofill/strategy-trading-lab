@@ -16,9 +16,11 @@ public class ComebackRules : IBuyRules
 
     readonly ComebackParams p;
     readonly IReadOnlyList<decimal> close;
+    readonly DateOnly[] dates;
     readonly decimal?[] sma50, sma200, high252, vol5, vol50;
     readonly bool[] candidate;
     readonly int?[] beatenAgo;
+    readonly DateOnly?[] beatenOn;
     readonly BuyWindow window = new();
 
     // State between days, as the POC keeps in its `state`.
@@ -31,13 +33,14 @@ public class ComebackRules : IBuyRules
     {
         p = parameters;
         close = [.. bars.Select(b => b.Close)];
+        dates = [.. bars.Select(b => b.Date)];
         var volume = bars.Select(b => (decimal)b.Volume).ToList();
         sma50 = Indicators.Sma(close, SmaShort);
         sma200 = Indicators.Sma(close, SmaLong);
         high252 = Indicators.RollingHigh(close, HighDays);
         vol5 = Indicators.Sma(volume, VolumeShort);
         vol50 = Indicators.Sma(volume, VolumeLong);
-        (candidate, beatenAgo) = Candidates();
+        (candidate, beatenAgo, beatenOn) = Candidates();
     }
 
     public int Length => close.Count;
@@ -48,12 +51,13 @@ public class ComebackRules : IBuyRules
 
     /// <summary>
     /// A candidate stays one for <c>CandidateDays</c> days after it was last beaten down (today included). Also how many
-    /// trading days ago that was, each day (null if never).
+    /// trading days ago that was, and on which date, each day (null if never).
     /// </summary>
-    (bool[] Candidate, int?[] BeatenAgo) Candidates()
+    (bool[] Candidate, int?[] BeatenAgo, DateOnly?[] BeatenOn) Candidates()
     {
         var result = new bool[close.Count];
         var ago = new int?[close.Count];
+        var on = new DateOnly?[close.Count];
         var lastBeaten = int.MinValue;
         for (var i = 0; i < close.Count; i++)
         {
@@ -62,8 +66,9 @@ public class ComebackRules : IBuyRules
                 lastBeaten = i;
             result[i] = lastBeaten != int.MinValue && i - lastBeaten <= p.CandidateDays;
             ago[i] = lastBeaten == int.MinValue ? null : i - lastBeaten;
+            on[i] = lastBeaten == int.MinValue ? null : dates[lastBeaten];
         }
-        return (result, ago);
+        return (result, ago, on);
     }
 
     decimal Chase(decimal level) => level * (1 + p.MaxChasePct / 100);
@@ -93,6 +98,7 @@ public class ComebackRules : IBuyRules
             // How far the price still has to rise to reach the buy line (0 at or above it): "close to the line".
             ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(buyLine, price)), 2),
         };
+        if (candidate[i] && beatenOn[i] is { } sinceDate) facts["candidateSince"] = sinceDate.ToString("yyyy-MM-dd");
 
         if (!day.HasPosition)
         {
@@ -113,35 +119,86 @@ public class ComebackRules : IBuyRules
         // (a buy marks it used, which must not close the window the day after).
         var windowOpen = milestones.Any(m => InWindow(m, price));
         if (held == RuleStatus.BuySignal && active is not null) facts["milestone"] = active.Term;
-        List<RuleCheck> checks = [.. milestones.Select(m => new RuleCheck(m.Key, CheckGroup.Next, used.Contains(m.Key) || InWindow(m, price),
-            m.Level is { } level ? Math.Round(Indicators.PctFrom(price, level), 1) : null,
-            m.Key switch { "near_high" => p.NearHighPct, "breakout" => p.BreakoutPullbackPct, _ => null },
-            p.MaxChasePct, m.Level is { } line ? Math.Round(line, 2) : null, Used: used.Contains(m.Key)))];
+        var checks = MilestoneChecks(i, price, milestones, preview: false);
         if (RuleCheck.Cooldown(day, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
         return new RuleDecision(held, heldReason, facts, windowOpen) { Checks = checks };
     }
 
-    /// <summary>The checks before the first step: beaten down lately (with the drop and the SMA 200 for context), then the turn.</summary>
+    /// <summary>The checks before the first step: beaten down lately, the turn, and the next-step milestones in preview.</summary>
     List<RuleCheck> TurnChecks(int i, decimal price, decimal high, decimal buyLine)
     {
         var ratio = vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 ? short5 / long50 : 0;
+        var dropPct = Math.Round(Indicators.PctFrom(price, high), 1);
+        var slow200 = sma200[i];
+        var vsSma200Pct = slow200 is { } s200 ? Math.Round(Indicators.PctFrom(price, s200), 1) : (decimal?)null;
         List<RuleCheck> checks =
         [
-            new("beaten", CheckGroup.Candidate, candidate[i], beatenAgo[i], p.DrawdownPct, p.CandidateDays),
-            new("drop", CheckGroup.Candidate, null, Math.Round(Indicators.PctFrom(price, high), 1), p.DrawdownPct, Level: Math.Round(high, 2)),
+            new("beaten", CheckGroup.Candidate, candidate[i], beatenAgo[i], p.DrawdownPct, p.CandidateDays,
+                Level: Math.Round(high, 2),
+                EndLevel: slow200 is { } l200 ? Math.Round(l200, 2) : null,
+                Date: beatenOn[i],
+                SubValue: dropPct,
+                EndValue: vsSma200Pct),
         ];
-        if (p.BelowSma200 && sma200[i] is { } slow)
-            checks.Add(new("vsSma200", CheckGroup.Candidate, null, Math.Round(Indicators.PctFrom(price, slow), 1), Level: Math.Round(slow, 2)));
+        if (!candidate[i])
+        {
+            var rawDrop = Math.Max(0, -Indicators.PctFrom(price, high));
+            checks.Add(new("drop", CheckGroup.Candidate, rawDrop >= p.DrawdownPct, dropPct, p.DrawdownPct,
+                Level: Math.Round(high, 2), Progress: RuleCheck.ProgressOf(rawDrop, p.DrawdownPct)));
+            if (p.BelowSma200 && slow200 is { } slow)
+                checks.Add(new("vsSma200", CheckGroup.Candidate, price < slow, vsSma200Pct, p.DrawdownPct, Level: Math.Round(slow, 2)));
+        }
         var vsLine = Math.Round(Indicators.PctFrom(price, buyLine), 1);
-        checks.Add(new("buyLine", CheckGroup.Buy, price >= buyLine, vsLine, p.AboveSma50Pct, p.MaxChasePct, Math.Round(buyLine, 2)));
-        if (price > Chase(buyLine)) checks.Add(new("chase", CheckGroup.Buy, false, vsLine, Max: p.MaxChasePct, Level: Math.Round(Chase(buyLine), 2)));
+        var inBuyWindow = price >= buyLine && price <= Chase(buyLine);
+        var s50Val = sma50[i] is { } s50 ? Math.Round(s50, 2) : (decimal?)null;
+        checks.Add(new("buyLine", CheckGroup.Buy, inBuyWindow, vsLine, p.AboveSma50Pct, p.MaxChasePct,
+            Math.Round(buyLine, 2), MidLevel: s50Val, EndLevel: Math.Round(Chase(buyLine), 2)));
         var volumeOk = VolumeOk(i);
         checks.Add(new("volume", CheckGroup.Buy, volumeOk, Math.Round(ratio, 2), p.VolumeRatio,
-            Progress: volumeOk ? null : RuleCheck.ProgressOf(ratio, p.VolumeRatio)));
+            Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio)));
+        checks.AddRange(MilestoneChecks(i, price, BuildMilestones(i, price, pulled: false, highBeforePullback: null), preview: true));
         return checks;
     }
 
+    List<RuleCheck> MilestoneChecks(int i, decimal price, IReadOnlyList<Milestone> milestones, bool preview)
+    {
+        var s50 = sma50[i];
+        var s200 = sma200[i];
+        var goldenSpread = s50 is { } shortAvg && s200 is { } longAvg ? Math.Round(Indicators.PctFrom(shortAvg, longAvg), 1) : (decimal?)null;
+        return [.. milestones.Select(m =>
+        {
+            var isUsed = !preview && used.Contains(m.Key);
+            var met = isUsed || InWindow(m, price);
+            var val = m.Level is { } level ? Math.Round(Indicators.PctFrom(price, level), 1) : (decimal?)null;
+            var min = m.Key switch { "near_high" => p.NearHighPct, "breakout" => p.BreakoutPullbackPct, _ => (decimal?)0 };
+            var line = m.Level is { } l ? Math.Round(l, 2) : (decimal?)null;
+            var midLine = m.Key == "golden" && s200 is { } slow ? Math.Round(slow, 2)
+                : m.Key == "near_high" && high252[i] is { } h ? Math.Round(h, 2)
+                : (decimal?)null;
+            var endLine = m.Level is { } chaseBase ? Math.Round(Chase(chaseBase), 2) : (decimal?)null;
+            return new RuleCheck(m.Key, CheckGroup.Next, met, val, min, p.MaxChasePct, line,
+                Used: isUsed,
+                MidLevel: midLine,
+                EndLevel: endLine,
+                SubValue: m.Key == "golden" ? goldenSpread : null,
+                Preview: preview ? true : null);
+        })];
+    }
+
     sealed record Milestone(string Key, string Term, bool Reached, decimal? Level);
+
+    List<Milestone> BuildMilestones(int i, decimal price, bool pulled, decimal? highBeforePullback)
+    {
+        var nearHighLevel = high252[i]!.Value * (1 - p.NearHighPct / 100); // Non-null: Decide checked it.
+        return
+        [
+            new("sma200", "Reclaims the SMA 200", price > sma200[i], sma200[i]),
+            new("golden", "Golden cross (SMA 50 above SMA 200)", sma50[i] > sma200[i], sma50[i]),
+            new("near_high", $"Within {p.NearHighPct:0.##}% of the 52-week high", price >= nearHighLevel, nearHighLevel),
+            new("breakout", $"Higher high after pulling back {p.BreakoutPullbackPct:0.##}% (breakout)", pulled && price > highBeforePullback,
+                pulled ? highBeforePullback : null),
+        ];
+    }
 
     /// <summary>Today's milestones. A buy uses up every sign already there: only new ones earn a step.</summary>
     (List<Milestone> Milestones, bool Bought) Milestones(int i, DayContext day)
@@ -158,15 +215,7 @@ public class ComebackRules : IBuyRules
             breakoutHigh = Math.Max(breakoutHigh.Value, price);
             if (price <= breakoutHigh * (1 - p.BreakoutPullbackPct / 100)) pulledBack = true; // The high before the pullback is the breakout level.
         }
-        var nearHighLevel = high252[i]!.Value * (1 - p.NearHighPct / 100); // Non-null: Decide checked it.
-        List<Milestone> milestones =
-        [
-            new("sma200", "Reclaims the SMA 200", price > sma200[i], sma200[i]),
-            new("golden", "Golden cross (SMA 50 above SMA 200)", sma50[i] > sma200[i], sma50[i]),
-            new("near_high", $"Within {p.NearHighPct:0.##}% of the 52-week high", price >= nearHighLevel, nearHighLevel),
-            new("breakout", $"Higher high after pulling back {p.BreakoutPullbackPct:0.##}% (breakout)", pulledBack && price > breakoutHigh,
-                pulledBack ? breakoutHigh : null),
-        ];
+        var milestones = BuildMilestones(i, price, pulledBack, breakoutHigh);
         if (bought)
         {
             foreach (var m in milestones.Where(m => m.Reached)) used.Add(m.Key);

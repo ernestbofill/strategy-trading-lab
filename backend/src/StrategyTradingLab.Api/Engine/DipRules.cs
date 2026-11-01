@@ -15,6 +15,7 @@ public class DipRules : IBuyRules
     readonly IReadOnlyList<decimal> close;
     readonly decimal?[] floor, middle, trend, low, high;
     readonly bool[] trendRising;
+    readonly DateOnly?[] candidateSince;
     readonly BuyWindow window = new();
 
     public DipRules(IReadOnlyList<PriceBar> bars, DipParams parameters)
@@ -27,6 +28,24 @@ public class DipRules : IBuyRules
         low = Indicators.RollingLow(close, p.GainDays);
         high = Indicators.RollingHigh(close, p.PeakDays);
         trendRising = Indicators.Rising(trend, RisingDays);
+        candidateSince = CandidateDates(bars);
+    }
+
+    DateOnly?[] CandidateDates(IReadOnlyList<PriceBar> bars)
+    {
+        var result = new DateOnly?[close.Count];
+        DateOnly? since = null;
+        for (var i = 0; i < close.Count; i++)
+        {
+            var isCandidate = floor[i] is { } sma50 && middle[i] is { } sma150 && trend[i] is { } sma200
+                && low[i] is { } lowest && high[i] is { } peak
+                && Indicators.PctFrom(peak, lowest) >= p.MinGainPct
+                && sma50 > sma150 && sma150 > sma200
+                && trendRising[i];
+            since = isCandidate ? (since ?? bars[i].Date) : null;
+            result[i] = since;
+        }
+        return result;
     }
 
     /// <summary>
@@ -73,6 +92,9 @@ public class DipRules : IBuyRules
             ? "Price bounced back toward the recent high: the dip is over."
             : "Price fell through the buy zone (below the zone or the SMA 50).";
         var (status, reason) = window.Compose(context, candidate, inZone, extended: false, lost, "");
+        var zoneBottom = peak * (1 - p.ZoneEndPct / 100);
+        var sma200Ago = i >= RisingDays && trend[i - RisingDays] is { } prev ? prev : sma200;
+        var risePct = Math.Round(Indicators.PctFrom(sma200, sma200Ago), 1);
         var facts = new Dictionary<string, object>
         {
             ["gainPct"] = Math.Round(gain, 2),
@@ -84,14 +106,21 @@ public class DipRules : IBuyRules
             // How far the price still has to fall to reach the zone (0 inside or below it): "close to the line".
             ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(price, zoneHigh)), 2),
         };
+        if (candidate && candidateSince[i] is { } sinceDate) facts["candidateSince"] = sinceDate.ToString("yyyy-MM-dd");
         var belowPeak = Math.Round(-pullback, 1);
         List<RuleCheck> checks =
         [
-            new("gain", CheckGroup.Candidate, gain >= p.MinGainPct, Math.Round(gain, 1), p.MinGainPct, Progress: RuleCheck.ProgressOf(gain, p.MinGainPct)),
-            new("stacked", CheckGroup.Candidate, aligned),
-            new("rising", CheckGroup.Candidate, trendRising[i]),
-            new("zone", CheckGroup.Buy, price <= zoneHigh && price >= peak * (1 - p.ZoneEndPct / 100), belowPeak, p.ZoneStartPct, p.ZoneEndPct, Math.Round(zoneHigh, 2)),
-            new("floor", CheckGroup.Buy, price >= sma50, Math.Round(Indicators.PctFrom(price, sma50), 1), Level: Math.Round(sma50, 2)),
+            new("gain", CheckGroup.Candidate, gain >= p.MinGainPct, Math.Round(gain, 1), p.MinGainPct,
+                Level: Math.Round(lowest, 2), EndLevel: Math.Round(peak, 2), Progress: RuleCheck.ProgressOf(gain, p.MinGainPct),
+                Date: candidate ? candidateSince[i] : null),
+            new("stacked", CheckGroup.Candidate, aligned, Math.Round(Indicators.PctFrom(sma50, sma200), 1),
+                Level: Math.Round(sma50, 2), MidLevel: Math.Round(sma150, 2), EndLevel: Math.Round(sma200, 2)),
+            new("rising", CheckGroup.Candidate, trendRising[i], risePct, 0,
+                Level: Math.Round(sma200, 2), EndLevel: Math.Round(sma200Ago, 2)),
+            new("zone", CheckGroup.Buy, price <= zoneHigh && price >= zoneBottom, belowPeak, p.ZoneStartPct, p.ZoneEndPct,
+                Math.Round(zoneHigh, 2), EndLevel: Math.Round(zoneBottom, 2)),
+            new("floor", CheckGroup.Buy, price >= sma50, Math.Round(Indicators.PctFrom(price, sma50), 1), 0,
+                Level: Math.Round(sma50, 2)),
         ];
         if (RuleCheck.Cooldown(context, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
         return new RuleDecision(status, reason, facts, window.Open) { Checks = checks };

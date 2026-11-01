@@ -364,6 +364,9 @@ public static class StrategyEndpoints
             var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
             decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
                 ? d.GetDecimal() : null;
+            DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
+                && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
+                ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
                 Steps: userSteps,
                 RulesSteps: live ? rulesSteps : null,
@@ -378,6 +381,7 @@ public static class StrategyEndpoints
                 What = asset.Texts.FirstOrDefault(t => t.Locale == user.Locale)?.What
                     ?? asset.Texts.FirstOrDefault(t => t.Locale == TemplateTexts.DefaultLocale)?.What,
                 CheckedOn = evaluation?.Date,
+                CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 Checks = checks,
             };

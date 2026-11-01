@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- The backend's version. Bump it in every PR that changes the backend (CI checks); each deploy tags it as backend-v<Version>.
          Same scheme as the frontend: minor for a new feature or endpoint, patch for a fix or small tweak, keeping -alpha. -->
-    <Version>0.42.0-alpha</Version>
+    <Version>0.43.0-alpha</Version>
   </PropertyGroup>
 
   <!-- When the build was made, for GET /version. Release only: a changing value rebuilds the project every time. -->

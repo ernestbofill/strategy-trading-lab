@@ -143,7 +143,7 @@ function groups(settings: AdminSetting[]): [string, AdminSetting[]][] {
   return [...byGroup]
 }
 
-/** "Send a test email": to the mail account itself, with the settings as saved. */
+/** "Send a test email": to the signed-in owner, with the settings as saved. */
 function TestEmail() {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)

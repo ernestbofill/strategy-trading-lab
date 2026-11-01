@@ -15,9 +15,6 @@ public class EmailNotSetUpException() : EmailException("Email isn't set up: set 
 /// <summary>Sends the app's emails.</summary>
 public interface IEmailSender
 {
-    /// <summary>Sends an email to the mail account itself and returns its address. Throws <see cref="EmailException"/>.</summary>
-    Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken);
-
     /// <summary>Sends an email to one address, with answers going to its ReplyTo when it is set. Throws <see cref="EmailException"/>.</summary>
     Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken);
 }
@@ -30,20 +27,13 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
 {
     static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
-    public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) =>
-        SendFromSettingsAsync(null, email.Subject, email.Text, email.Html, null, cancellationToken);
-
-    public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken) =>
-        SendFromSettingsAsync(email.To, email.Subject, email.Body, email.Html, email.ReplyTo, cancellationToken);
-
-    /// <summary>Sends to <paramref name="to"/>, or to the account itself when it is null, and returns the account.</summary>
-    async Task<string> SendFromSettingsAsync(string? to, string subject, string body, string? html, string? replyTo, CancellationToken cancellationToken)
+    /// <summary>Sends to <paramref name="email"/>'s address with the admin page's settings.</summary>
+    public async Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
     {
         var values = await settings.ValuesAsync(cancellationToken);
         if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
             throw new EmailNotSetUpException();
-        await SendAsync(values, user, password, host, to ?? user, subject, body, html, replyTo, cancellationToken);
-        return user;
+        await SendAsync(values, user, password, host, email.To, email.Subject, email.Body, email.Html, email.ReplyTo, cancellationToken);
     }
 
     async Task SendAsync(IReadOnlyDictionary<string, string?> values, string user, string password, string host, string to,

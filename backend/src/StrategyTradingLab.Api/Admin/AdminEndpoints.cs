@@ -96,8 +96,9 @@ public static class AdminEndpoints
         AdminUsersEndpoints.MapUsers(group);
         AdminAlerts.MapAlerts(group);
 
-        // Only ever to the account itself, so the page can't be used to send mail from it to anyone.
-        group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email,
+        // Only ever to the signed-in owner's own address (not the SMTP login, which a mail service like Brevo gives no inbox),
+        // so the page can't be used to send mail from it to anyone else.
+        group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email, ClaimsPrincipal principal,
             TestEmailLimit limit, TimeProvider time, CancellationToken cancellationToken) =>
         {
             if (!limit.TryAcquire())
@@ -105,10 +106,12 @@ public static class AdminEndpoints
             try
             {
                 // In the app's email layout, so the owner sees how the emails look in their mail app.
-                var sentTo = await email.SendToAccountAsync(new EmailDocument().Eyebrow("Admin")
+                var sentTo = principal.FindFirstValue(ClaimTypes.Email)!;
+                var content = new EmailDocument().Eyebrow("Admin")
                     .Paragraph($"This is a test email from the Strategy Trading Lab admin page, sent {time.GetUtcNow():yyyy-MM-dd HH:mm} UTC.")
                     .Paragraph("If you got it, the app can send its emails.")
-                    .Build("Strategy Trading Lab: test email"), cancellationToken);
+                    .Build("Strategy Trading Lab: test email");
+                await email.SendAsync(new OutgoingEmail(sentTo, content), cancellationToken);
                 return TypedResults.Ok(new TestEmailSent(sentTo));
             }
             catch (EmailNotSetUpException error)
@@ -120,7 +123,7 @@ public static class AdminEndpoints
                 return TypedResults.Problem(error.Message, statusCode: StatusCodes.Status502BadGateway);
             }
         })
-        .WithSummary("Sends a test email to the mail account itself, with the settings as they are now.");
+        .WithSummary("Sends a test email to the signed-in owner, with the settings as they are now.");
 
         settings.MapGet("/", async (SettingsStore store, CancellationToken cancellationToken) =>
             (await store.AllAsync(cancellationToken)).Select(Dto).ToList())

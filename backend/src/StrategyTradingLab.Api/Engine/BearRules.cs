@@ -23,6 +23,7 @@ public class BearRules : IBuyRules
     decimal low;
     int doneSteps;
     bool rearmed;
+    DateOnly cycleStart;
 
     public BearRules(IReadOnlyList<PriceBar> bars, BearParams parameters)
     {
@@ -94,6 +95,7 @@ public class BearRules : IBuyRules
                 phase = "accumulating";
                 doneSteps = 0;
                 sinceLast = 0;
+                cycleStart = day.Day;
             }
         }
 
@@ -132,17 +134,19 @@ public class BearRules : IBuyRules
         var belowHighPct = Math.Round(Math.Max(0, -Indicators.PctFrom(price, high)), 2);
         var belowDropPeakPct = peak > 0 ? Math.Round(Math.Max(0, -Indicators.PctFrom(price, peak)), 2) : belowHighPct;
         var aboveLowPct = low > 0 ? Math.Round(Math.Max(0, Indicators.PctFrom(price, low)), 2) : 0m;
+        var done = phase is "accumulating" or "done" || status == RuleStatus.BuySignal ? doneSteps : 0;
         var facts = new Dictionary<string, object>
         {
             ["belowHighPct"] = belowHighPct,
             ["belowDropPeakPct"] = belowDropPeakPct,
             ["aboveLowPct"] = aboveLowPct,
-            ["doneSteps"] = phase is "accumulating" or "done" || status == RuleStatus.BuySignal ? doneSteps : 0,
+            ["doneSteps"] = done,
             // In a drawdown, how far the price still has to bounce to reach the first step ("close to the line").
             ["distancePct"] = phase == "drawdown"
                 ? Math.Round(Math.Max(0, Indicators.PctFrom(bounceLine, price)), 2)
                 : belowHighPct,
         };
+        if (done > 0) facts["cycleStart"] = cycleStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var windowOpen = status == RuleStatus.BuySignal
             || (phase is "accumulating" or "done" && price >= bounceLine);
         // In normal markets only the drop counts; in a drop, the bounce off its low; while buying, the pace of the steps.

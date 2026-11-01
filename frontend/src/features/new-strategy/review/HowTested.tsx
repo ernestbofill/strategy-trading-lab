@@ -79,7 +79,6 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
             <Callout tone="warning" title={t('newStrategy.how.cantShow')}>
               <p>{t('newStrategy.how.survivors')}</p>
               <p>{t('newStrategy.how.realPrices')}</p>
-              <p>{t('common.pastResults')}</p>
             </Callout>
           </>
         }

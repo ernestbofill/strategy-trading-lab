@@ -15,7 +15,7 @@
   - Screens talk only to `api`.
   - DTO shapes mirror the .NET API (camelCase JSON). Change them deliberately, together with the backend.
 - `src/components/`: shared, screen-agnostic UI. Reuse these before writing new markup:
-  - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and a hint, the full disclaimer or the past-results line as `note`; they close the content, above the site footer, which already shows the short disclaimer. A form's action is `PrimaryAction form="<form id>"`, a real submit button, so Enter and password managers work.
+  - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and a short hint as `note`, never a disclaimer; they close the content, above the site footer, which is the only place the disclaimer shows. A form's action is `PrimaryAction form="<form id>"`, a real submit button, so Enter and password managers work.
   - `Field`: `TextField`, `PasswordField` (show/hide), `SelectField` (long lists), `SegmentedField` (two to four short choices, as buttons), `Checkbox` and `FormMessage`, with the error under the field.
   - `LoadableScreen`: renders the loading, error and not-found states for screens that load data.
   - `PageHeader`, `Section`, `Columns` (main + aside from 1024px), `Tag`, `Tagline`.

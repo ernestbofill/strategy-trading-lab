@@ -207,7 +207,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
     />
   )
   return (
-    <Screen top={top} note={`${source} ${t('common.pastResults')}`}>
+    <Screen top={top} note={source}>
       <div className={styles.header}>
         {renaming ? <RenameForm s={s} onClose={() => setRenaming(false)} /> : <h1 className={styles.title}>{s.name}</h1>}
         <div className={styles.sub}>

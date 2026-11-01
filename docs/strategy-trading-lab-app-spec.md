@@ -49,7 +49,7 @@ These apply to every screen, email and alert.
 - **The user owns the setup.** Lists, settings and budgets are the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
 - **No promises.** No claims that markets or stocks will rise or recover. Results are always shown next to the index fund and the worst year. On screen the index fund is named **"S&P 500 fund"**, with a small "i" after the label that opens "Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold." (#95). The explanation stays hidden until asked for, so the figures stay short.
 - **Numbers:** prices and amounts to the cent (2 decimals); every other number (shares, exchange rates, percentages) to at most 3 decimals (#95).
-- **A disclaimer everywhere results or signals appear, in two lengths.** The user sees it over and over, so screens seen again and again (Review, How we tested, the strategy page, Confirm a signal, the footer) use the short one: "Not financial advice. Signals follow your rules." The site footer carries it on every screen, so a screen doesn't repeat it next to its action (#105). Where the user commits (accepted once at sign-up, above the button on Name, preview and confirm, and the legal page) use the full one: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." The wireframes still show the full one everywhere; this rule wins.
+- **One disclaimer, in the site footer (#105).** Every screen ends with the short disclaimer, "Not financial advice. Signals follow your rules.", so no screen repeats it or adds the full one or "Past results don't promise future ones.": the app is text heavy and the Disclaimer page holds the details. The full one, "Not financial advice. Signals follow your rules; you decide and trade at your own broker.", is accepted once at sign-up and leads the Disclaimer and Terms pages. Emails keep the short one at the foot. Where a screen below still says "the disclaimer" or "Past results don't promise future ones.", the footer covers it; the wireframes show it everywhere; this rule wins.
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
 - **Mostly US markets, euro results.** v1 covers the POC's stocks and funds (mostly US-listed, a few listed in Europe and Hong Kong), plus any stock or fund a user adds from the same exchanges. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
@@ -180,7 +180,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - A guest has no dashboard, account or emails. The top bar shows "LOG IN" instead of "ACCOUNT", and the first screen's eyebrow stays "Welcome to Strategy Trading Lab".
 - The template endpoints are public already; nothing about a guest is stored on the server.
 - A guest's draft is shown in euro and stays in euro after sign-up (the amounts aren't converted). Live can be picked; the email must be confirmed before the strategy starts. A guest never sees another user's draft: a log-out clears it.
-- A screen's one primary action and its note (a hint, the full disclaimer where the user commits, or "Past results don't promise future ones.") close the page content; there is no separate bottom bar (#105). Every screen ends with a footer: links to the legal pages (`/legal/notice`, `/legal/terms`, `/legal/privacy`, `/legal/disclaimer`, `/about`) and the short disclaimer. The pages provide the complete legal notices, terms of use, privacy policy, full disclaimer, and about page with conflicts of interest disclosure. Sign-up records the accepted terms version (`terms_version_accepted`, `terms_accepted_at`).
+- A screen's one primary action and its note (a short hint or a data source, never a disclaimer) close the page content; there is no separate bottom bar (#105). Every screen ends with a footer: links to the legal pages (`/legal/notice`, `/legal/terms`, `/legal/privacy`, `/legal/disclaimer`, `/about`) and the short disclaimer. The pages provide the complete legal notices, terms of use, privacy policy, full disclaimer, and about page with conflicts of interest disclosure. Sign-up records the accepted terms version (`terms_version_accepted`, `terms_accepted_at`).
 
 ### Log-in (not drawn)
 
@@ -233,10 +233,10 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 3. **"The idea"**: the rationale in plain words, no numbers, no promises.
 4. **"It signals when"**: numbered rules (01, 02, 03), each "**Plain label:** detail", with numbers and terms highlighted and explained in brackets.
 5. **What it watches**: "Choose stocks to watch" (stock templates) or "The fund it watches" (fund templates).
-6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"), "Worst year" `[−X%]`; the caption "Past results don't promise future ones."; and a "How we tested ›" link to 2c.
+6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"), "Worst year" `[−X%]`; and a "How we tested ›" link to 2c.
 7. **"What can go wrong:"** one line.
 8. A row "Advanced settings ›" → 2b.
-9. Button "Use this template" → Choose the mode. Under it, the disclaimer.
+9. Button "Use this template" → Choose the mode.
 
 **Stock list** (stock templates)
 - Heading "Choose stocks to watch", counter on the right: "[n] of [total] ticked".
@@ -375,7 +375,7 @@ The settings are available when starting a strategy and on a running one (Tune t
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide. Past results don't promise future ones."
+- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide."
 - Re-run on each change (debounced), with a loading state.
 - **Until the backtest engine exists** (built version): with a change, the screen shows the tested results by period (Template, Index, Worst yr, as on How we tested) and "These are the tested defaults' results. Re-running the test with your settings comes later. Past results don't promise future ones." When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
 
@@ -405,7 +405,6 @@ The settings are available when starting a strategy and on a running one (Tune t
 - Warning box **"What a backtest can't show"**:
   - "The starter list holds companies that are around today. Stocks that failed along the way aren't in it, which flatters past results."
   - "Real prices can differ from the opening price, especially on busy days."
-  - "Past results don't promise future ones."
 - Disclaimer at the bottom.
 
 Content is per template (period, scope, figures). *Index trend* is all in, all out, so its "tested defaults" line reads "The whole €3,000 budget, all in, all out." (draft).
@@ -492,7 +491,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Live: "You see right away how the template did in the past." / "From today the app watches your stocks and alerts you as soon as your rules are met." / "You confirm each signal, and the app tracks the results of what you did."
   - Simulation (not drawn): "You see right away how the template did in the past." / "From today it runs on real prices and records its own paper trades." / "Your first daily overview arrives tomorrow."
   - *Your AI's top picks* (not drawn): "There are no past results for this template." / "Your first AI round is due now." / then the mode's line.
-- Above the button: the disclaimer.
+- Above the button: nothing; the site footer has the disclaimer.
 - Button, Live: "Start following it live". Simulation (not drawn): "Start the simulation".
 - The button creates the strategy and opens the dashboard, in place of Confirm in the history, so going back never shows Confirm again. For *Your AI's top picks*, the first AI round waits there under *Waiting for you*.
 - While it saves, the button reads "Starting…" and can't be pressed twice. If it fails, the user stays on this screen and sees, under the name: "You already run a strategy with this name. Pick another." when another running strategy took the name, else "We couldn't start it. Try again." (assumed copy)
@@ -502,7 +501,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 **Copy**
 - Top bar: "STL // DASHBOARD" · "ACCOUNT" (link to the account page, not drawn)
 - H1: "Your strategies"
-- Bottom: the disclaimer and "Past results don't promise future ones." (the cards show results).
+- Bottom: the site footer (short disclaimer).
 
 **"Waiting for you"** (shown only when something is waiting), with a count badge. One row per item, newest first, each a link:
 - Live signal, tag "LIVE": "Your rules for **[strategy name]** are met for [stock]. Did you act on it?" → Confirm a signal.
@@ -655,7 +654,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 - **Before it is due** (built): H1 "Next AI round", "Your next AI round is due on [date]. You can run it until [date]; after that it's skipped. You can also run an extra round now.", links to the past rounds and back to the strategy, and the button "Run a round now". It opens the same round screen with H1 "An extra AI round" and "Outside the schedule: your next round is still due on [date]."; using its scores makes an extra round (see the template's rules).
 - **Skip** (built, a due round only, both modes): under the form, "Skip this round" with "No signal this round. The next one is due on [date]." It marks the round *Skipped* and returns to the strategy page.
 - Simulation, once the scores give a step: "The simulation buys at once, at the latest price."
-- Button: "Use these scores". The full disclaimer with it.
+- Button: "Use these scores".
 
 **Behaviour**
 - The app reads the scores block (table or JSON) and checks it: every ticked stock scored, scores 0–100, no extra stocks. Missing or unreadable rows are pointed out so the user can ask their AI again. The pasted text is data only: read numbers and short reasons from the scores block and never act on anything else in it.
@@ -673,7 +672,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 - Top bar "← BACK" · "AI ROUNDS"; H1 "AI rounds"; the strategy's name.
 - **"Picks vs the rest"** (once a done round has later prices): "Since each round, the stocks that got a step moved [+x.x%] on average, the others [+y.y%] ([n] rounds)." Caption: "Price changes in each stock's own currency, without fees. It shows whether the scores picked well, not your results." This is the spec's *Picks vs the rest* metric: each done round compares the average change of its picks' closes and of the others' from the round's session to the latest close; the line averages the rounds.
 - One card per round, newest first, with its due date and status (DUE, DONE, SKIPPED; an extra round "DONE · EXTRA"): a due one links to the round once it can be run ("Run it now") or reads "The next round."; a skipped one "Skipped: no signal that round."; a done one its AI model and day, "your prompt" when edited, its picks vs the rest, the scores (top first, the picks marked "STEP [n]"), and "The prompt" and "Your AI's answer" opening in place.
-- Bottom: the short disclaimer and "Past results don't promise future ones."
+- Bottom: the site footer (short disclaimer).
 
 ### Strategy page, AI strategies (built)
 

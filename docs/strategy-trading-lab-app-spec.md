@@ -434,9 +434,10 @@ The settings are available when starting a strategy and on a running one (Tune t
   - "Results in euro, at each day's exchange rate."
   - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
   - "Fees: [€X] per trade. Taxes not included."
-- **"By period"**: a table "Period" / "Template" / "Index" / "Worst yr", rows "[2010-14]", "[2015-19]", "[2020-24]", "All".
+- **"By period"**: a table "Period" / "Template" / "Index" / "Worst yr", rows "2000-09", "2010-19", "2020-24", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`).
+- Caption under table: "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All."
 - Warning box **"What a backtest can't show"**:
-  - "The starter list holds companies that are around today. Stocks that failed along the way aren't in it, which flatters past results."
+  - "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results."
   - "Real prices can differ from the opening price, especially on busy days."
 - Disclaimer at the bottom.
 

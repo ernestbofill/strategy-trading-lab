@@ -43,6 +43,7 @@
   font-weight: 700;
   color: var(--primary);
   letter-spacing: -0.5px;
+  overflow-wrap: break-word;
 }
 
 @media (min-width: 768px) {
@@ -161,6 +162,7 @@
   line-height: 30px;
   font-weight: 600;
   color: var(--ink);
+  overflow-wrap: break-word;
 }
 
 .trustGrid {
@@ -226,6 +228,7 @@
   line-height: 32px;
   font-weight: 600;
   color: var(--primary);
+  overflow-wrap: break-word;
 }
 
 .bottomLead {

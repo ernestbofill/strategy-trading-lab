@@ -179,7 +179,10 @@
   color: var(--ink);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  min-height: 36px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .templatePill[data-active='true'] {
@@ -255,6 +258,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .statLabel {
@@ -262,6 +266,8 @@
   text-transform: uppercase;
   color: var(--ink-muted);
   font-family: var(--font-mono);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .statValue {
@@ -297,7 +303,9 @@
   font-family: var(--font-ui);
   padding: 6px 12px;
   cursor: pointer;
-  min-height: 36px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .simSubTab[data-active='true'] {
@@ -369,7 +377,10 @@
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  min-height: 40px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid transparent;
 }
 
@@ -427,6 +438,9 @@
   text-decoration: none;
   align-self: flex-start;
   margin-top: var(--space-1);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .ctaLink:hover {

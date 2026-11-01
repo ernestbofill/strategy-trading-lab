@@ -29,15 +29,16 @@ export const welcome = {
   // Mock interactive builder widget
   'welcome.builder.mock.templateLabel': 'Pick template',
   'welcome.builder.mock.t1Name': 'Winners at a discount',
-  'welcome.builder.mock.t1Tagline': 'Buy the dip',
+  'welcome.builder.mock.t1Rule': 'SMA 200 + 5%–15% discount zone',
+  'welcome.builder.mock.t1Budget': '€100 / step · max 3 steps',
   'welcome.builder.mock.t2Name': 'The comeback',
-  'welcome.builder.mock.t2Tagline': 'Stocks on the rise',
+  'welcome.builder.mock.t2Rule': 'Breakout above 50-day moving average',
+  'welcome.builder.mock.t2Budget': '€150 / step · max 2 steps',
   'welcome.builder.mock.t3Name': 'Bear markets',
-  'welcome.builder.mock.t3Tagline': 'When the market is on sale',
+  'welcome.builder.mock.t3Rule': 'S&P 500 drop ≥ 20% accumulation',
+  'welcome.builder.mock.t3Budget': '€200 / step · max 5 steps',
   'welcome.builder.mock.ruleLabel': 'Trigger rules',
-  'welcome.builder.mock.ruleValue': 'SMA 200 + 5%–15% discount zone',
   'welcome.builder.mock.budgetLabel': 'Step budget',
-  'welcome.builder.mock.budgetValue': '\u20AC100 / step \u00B7 max 3 steps',
   'welcome.builder.mock.stocksLabel': 'Watched stocks',
 
   // Pillar 2: Simulation

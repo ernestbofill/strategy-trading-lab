@@ -57,22 +57,22 @@ const PILLARS: readonly Pillar[] = [
 
 const BUILDER_TEMPLATES: Record<
   BuilderTemplateKey,
-  { nameKey: MessageKey; rule: string; budget: string }
+  { nameKey: MessageKey; ruleKey: MessageKey; budgetKey: MessageKey }
 > = {
   discount: {
     nameKey: 'welcome.builder.mock.t1Name',
-    rule: 'SMA 200 + 5%–15% discount zone',
-    budget: '€100 / step · max 3 steps',
+    ruleKey: 'welcome.builder.mock.t1Rule',
+    budgetKey: 'welcome.builder.mock.t1Budget',
   },
   comeback: {
     nameKey: 'welcome.builder.mock.t2Name',
-    rule: 'Breakout above 50-day moving average',
-    budget: '€150 / step · max 2 steps',
+    ruleKey: 'welcome.builder.mock.t2Rule',
+    budgetKey: 'welcome.builder.mock.t2Budget',
   },
   bear: {
     nameKey: 'welcome.builder.mock.t3Name',
-    rule: 'S&P 500 drop ≥ 20% accumulation',
-    budget: '€200 / step · max 5 steps',
+    ruleKey: 'welcome.builder.mock.t3Rule',
+    budgetKey: 'welcome.builder.mock.t3Budget',
   },
 }
 
@@ -124,11 +124,30 @@ export function InteractiveFeatures() {
   const [trackerState, setTrackerState] = useState<TrackerActionKey | null>(null)
 
   const activePillar = PILLARS.find((p) => p.key === activeFeature) ?? PILLARS[0]
+  const currentTrackerAction = trackerState
+    ? TRACKER_ACTIONS.find((a) => a.key === trackerState) ?? null
+    : null
+
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIndex = -1
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      nextIndex = (index + 1) % PILLARS.length
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      nextIndex = (index - 1 + PILLARS.length) % PILLARS.length
+    }
+    if (nextIndex >= 0) {
+      e.preventDefault()
+      const nextKey = PILLARS[nextIndex].key
+      setActiveFeature(nextKey)
+      const nextTabEl = document.getElementById(`tab-${nextKey}`)
+      nextTabEl?.focus()
+    }
+  }
 
   return (
     <section className={styles.container} aria-labelledby="features-heading">
       <div className={styles.cardList} role="tablist" aria-label={t('welcome.features.title')}>
-        {PILLARS.map((pillar) => {
+        {PILLARS.map((pillar, index) => {
           const isActive = activeFeature === pillar.key
           return (
             <button
@@ -141,6 +160,7 @@ export function InteractiveFeatures() {
               className={styles.featureCard}
               data-active={isActive}
               onClick={() => setActiveFeature(pillar.key)}
+              onKeyDown={(e) => handleTabKeyDown(e, index)}
             >
               <div className={styles.cardTop}>
                 <span className={styles.tag}>{t(pillar.tagKey)}</span>
@@ -186,6 +206,7 @@ export function InteractiveFeatures() {
                   type="button"
                   className={styles.templatePill}
                   data-active={builderTemplate === key}
+                  aria-pressed={builderTemplate === key}
                   onClick={() => setBuilderTemplate(key)}
                 >
                   {t(BUILDER_TEMPLATES[key].nameKey)}
@@ -196,11 +217,11 @@ export function InteractiveFeatures() {
             <div className={styles.ruleParams}>
               <div className={styles.paramBlock}>
                 <span className={styles.paramLabel}>{t('welcome.builder.mock.ruleLabel')}</span>
-                <span className={styles.paramValue}>{BUILDER_TEMPLATES[builderTemplate].rule}</span>
+                <span className={styles.paramValue}>{t(BUILDER_TEMPLATES[builderTemplate].ruleKey)}</span>
               </div>
               <div className={styles.paramBlock}>
                 <span className={styles.paramLabel}>{t('welcome.builder.mock.budgetLabel')}</span>
-                <span className={styles.paramValue}>{BUILDER_TEMPLATES[builderTemplate].budget}</span>
+                <span className={styles.paramValue}>{t(BUILDER_TEMPLATES[builderTemplate].budgetKey)}</span>
               </div>
             </div>
 
@@ -231,9 +252,13 @@ export function InteractiveFeatures() {
               ))}
             </div>
 
-            <div className={styles.simSubTabs}>
+            <div className={styles.simSubTabs} role="tablist" aria-label={t('welcome.sim.title')}>
               <button
                 type="button"
+                role="tab"
+                id="tab-sim-perf"
+                aria-selected={simTab === 'perf'}
+                aria-controls="panel-sim-content"
                 className={styles.simSubTab}
                 data-active={simTab === 'perf'}
                 onClick={() => setSimTab('perf')}
@@ -242,6 +267,10 @@ export function InteractiveFeatures() {
               </button>
               <button
                 type="button"
+                role="tab"
+                id="tab-sim-trades"
+                aria-selected={simTab === 'trades'}
+                aria-controls="panel-sim-content"
                 className={styles.simSubTab}
                 data-active={simTab === 'trades'}
                 onClick={() => setSimTab('trades')}
@@ -250,17 +279,23 @@ export function InteractiveFeatures() {
               </button>
             </div>
 
-            {simTab === 'perf' ? (
-              <p className="caption">{t('welcome.sim.mock.note')}</p>
-            ) : (
-              <div className={styles.logList}>
-                {PAPER_LOGS.map((logKey) => (
-                  <div key={logKey} className={styles.logItem}>
-                    {t(logKey)}
-                  </div>
-                ))}
-              </div>
-            )}
+            <div
+              id="panel-sim-content"
+              role="tabpanel"
+              aria-labelledby={simTab === 'perf' ? 'tab-sim-perf' : 'tab-sim-trades'}
+            >
+              {simTab === 'perf' ? (
+                <p className="caption">{t('welcome.sim.mock.note')}</p>
+              ) : (
+                <div className={styles.logList}>
+                  {PAPER_LOGS.map((logKey) => (
+                    <div key={logKey} className={styles.logItem}>
+                      {t(logKey)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -288,6 +323,7 @@ export function InteractiveFeatures() {
                   key={key}
                   type="button"
                   className={`${styles.signalBtn} ${className}`}
+                  aria-pressed={trackerState === key}
                   onClick={() => setTrackerState(key)}
                 >
                   {t(labelKey)}
@@ -295,9 +331,9 @@ export function InteractiveFeatures() {
               ))}
             </div>
 
-            {trackerState && (
+            {currentTrackerAction && (
               <div className={styles.trackerStatus} role="status">
-                {t(TRACKER_ACTIONS.find((a) => a.key === trackerState)!.statusKey)}
+                {t(currentTrackerAction.statusKey)}
               </div>
             )}
 

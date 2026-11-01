@@ -30,16 +30,17 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
 
   // Mock interactive builder widget
   'welcome.builder.mock.templateLabel': 'Tria plantilla',
-  'welcome.builder.mock.t1Name': 'L\u00EDders amb descompte',
-  'welcome.builder.mock.t1Tagline': 'Compra la caiguda',
+  'welcome.builder.mock.t1Name': 'Líders amb descompte',
+  'welcome.builder.mock.t1Rule': 'SMA 200 + zona de descompte 5%–15%',
+  'welcome.builder.mock.t1Budget': '100 € / pas · màx. 3 passos',
   'welcome.builder.mock.t2Name': 'La remuntada',
-  'welcome.builder.mock.t2Tagline': 'Accions a l\u2019al\u00E7a',
+  'welcome.builder.mock.t2Rule': 'Ruptura per sobre de la mitjana de 50 dies',
+  'welcome.builder.mock.t2Budget': '150 € / pas · màx. 2 passos',
   'welcome.builder.mock.t3Name': 'Mercats baixistes',
-  'welcome.builder.mock.t3Tagline': 'Quan el mercat est\u00E0 d\u2019oferta',
+  'welcome.builder.mock.t3Rule': 'Caiguda de l’S&P 500 ≥ 20% d’acumulació',
+  'welcome.builder.mock.t3Budget': '200 € / pas · màx. 5 passos',
   'welcome.builder.mock.ruleLabel': 'Regles de disparador',
-  'welcome.builder.mock.ruleValue': 'SMA 200 + zona de descompte 5%\u201315%',
   'welcome.builder.mock.budgetLabel': 'Pressupost per pas',
-  'welcome.builder.mock.budgetValue': '100 \u20AC / pas \u00B7 m\u00E0x. 3 passos',
   'welcome.builder.mock.stocksLabel': 'Accions en seguiment',
 
   // Pillar 2: Simulation

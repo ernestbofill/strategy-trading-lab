@@ -294,6 +294,34 @@ public class StrategyEvaluatorTests
     }
 
     [NeonFact]
+    public async Task A_new_strategy_started_after_the_last_session_is_evaluated_on_its_first_check()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
+        try
+        {
+            // The strategy was created today (e.g. over the weekend), after the last complete session.
+            var lastPrice = await db.Prices.Where(p => p.AssetId == assetId).MaxAsync(p => p.Date);
+            var startedAfterSession = lastPrice.AddDays(2);
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.StartedOn, startedAfterSession));
+            await db.StrategyAssets.Where(sa => sa.StrategyId == strategyId).ExecuteUpdateAsync(sa => sa.SetProperty(x => x.AddedAt, new DateTimeOffset(startedAfterSession.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)));
+
+            var evaluator = Evaluator(db, new Clock(new DateTimeOffset(startedAfterSession.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero)));
+            await evaluator.RunAsync(default);
+
+            var evaluated = await db.DailyEvaluations.SingleAsync(e => e.StrategyId == strategyId);
+            Assert.Equal(lastPrice, evaluated.Date);
+            Assert.True(Enum.IsDefined(evaluated.Status));
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task No_signal_is_made_when_its_step_would_not_fit_in_the_budget()
     {
         using var api = new AccountsApi();

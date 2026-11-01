@@ -89,6 +89,10 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
+            // A stock added later is evaluated from the day it was added, not from the strategy's start.
+            var start = added[asset.Id] > strategy.StartedOn ? added[asset.Id] : strategy.StartedOn;
+            if (start > DateOnly.FromDateTime(now.UtcDateTime).AddDays(1)) continue; // Nothing if the strategy (or stock) starts in the future.
+
             var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date <= lastSession).OrderBy(p => p.Date)
                 .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
             if (bars.Count == 0)
@@ -98,14 +102,11 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             }
             if (UsSession.WeekdaysBetween(bars[^1].Date, lastSession) > StaleAfterSessions)
                 missing.Add($"{asset.Symbol}: the newest price is from {bars[^1].Date:yyyy-MM-dd}.");
-            // A stock added later is evaluated from the day it was added, not from the strategy's start.
-            var start = added[asset.Id] > strategy.StartedOn ? added[asset.Id] : strategy.StartedOn;
-            var from = bars.FindIndex(b => b.Date >= start);
-            if (from < 0) continue; // Nothing since the strategy (or the stock) started.
+
             var replayFrom = await ReplayFromAsync(strategy.Id, asset.Id, bars[^1].Date, cancellationToken);
             // No bar from that day on (a price row revised away): the latest bar, never back to the start.
             var replayIndex = bars.FindIndex(b => b.Date >= replayFrom);
-            from = Math.Max(from, replayIndex < 0 ? bars.Count - 1 : replayIndex);
+            var from = replayIndex < 0 ? bars.Count - 1 : replayIndex;
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);

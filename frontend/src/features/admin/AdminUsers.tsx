@@ -21,7 +21,9 @@ const columns: DataTableColumn<AdminUser>[] = [
     id: 'confirmed',
     header: 'Email confirmed',
     accessorFn: (u) => (u.confirmed ? 'yes' : 'no'),
-    cell: (u) => <span className={u.confirmed ? styles.yes : styles.no}>{u.confirmed ? 'Yes' : 'No'}</span>,
+    cell: (u) => (
+      <span className={u.confirmed && !u.emailBlocked ? styles.yes : styles.no}>{u.emailBlocked ? 'Blocked: bounced' : u.confirmed ? 'Yes' : 'No'}</span>
+    ),
   },
   { id: 'invitedBy', header: 'Invited by', accessorFn: (u) => u.invitedBy ?? '', cell: (u) => u.invitedBy ?? '–' },
   { id: 'joined', header: 'Joined', accessorFn: (u) => u.joined, cell: (u) => day(u.joined), mono: true },

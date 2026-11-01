@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Data;
 
 namespace StrategyTradingLab.Api.Email;
 
@@ -47,7 +49,7 @@ public interface IEmailSender
 /// SMTP with STARTTLS, set on the admin page (Gmail with an app password, as in the POC). Each send reads all the
 /// settings, the password included, in one <see cref="SettingsStore.ValuesAsync"/> call, so they always belong together.
 /// </summary>
-public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> logger) : IEmailSender
+public class SmtpEmailSender(SettingsStore settings, AppDbContext db, ILogger<SmtpEmailSender> logger) : IEmailSender
 {
     static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
@@ -57,6 +59,12 @@ public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> lo
         var values = await settings.ValuesAsync(cancellationToken);
         if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
             throw new EmailNotSetUpException();
+        // An address the mail service reported as bounced, invalid or complaining (the webhook): not worth another try, and each one hurts the domain's name.
+        if (await db.EmailSuppressions.AnyAsync(s => s.Email == email.To, cancellationToken))
+        {
+            logger.LogInformation("Not sending \"{Subject}\": its address is on the suppression list.", email.Subject);
+            return;
+        }
         await EmailRetry.OnceAsync(() => SendAsync(values, user, password, host, email, cancellationToken), EmailRetry.Wait, logger, cancellationToken);
     }
 

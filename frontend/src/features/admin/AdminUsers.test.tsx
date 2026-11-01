@@ -21,11 +21,11 @@ const page: AdminUsersPage = {
   },
   users: [
     {
-      id: 'u2', email: 'new@example.com', role: 'user', joined: '2026-10-29T10:00:00Z', confirmed: false, lastVisit: null,
+      id: 'u2', email: 'new@example.com', role: 'user', joined: '2026-10-29T10:00:00Z', confirmed: false, emailBlocked: false, lastVisit: null,
       running: 0, archived: 0, firstName: null, lastName: null, invitedBy: null,
     },
     {
-      id: 'u1', email: 'friend@example.com', role: 'vip', joined: '2026-10-20T10:00:00Z', confirmed: true,
+      id: 'u1', email: 'friend@example.com', role: 'vip', joined: '2026-10-20T10:00:00Z', confirmed: true, emailBlocked: false,
       lastVisit: '2026-10-28T10:00:00Z', running: 2, archived: 1,
       firstName: 'Anna', lastName: 'Puig', invitedBy: 'owner@example.com',
     },
@@ -50,6 +50,16 @@ describe('AdminUsers', () => {
     expect(screen.getByText('friend@example.com')).toBeTruthy()
     expect(screen.getByText('VIP')).toBeTruthy()
     expect(screen.getByText('new@example.com')).toBeTruthy()
+  })
+
+  it('marks an account whose address the mail service reported as bounced', async () => {
+    vi.spyOn(api, 'getAdminUsers').mockResolvedValue({ ...page, users: [{ ...page.users[1], emailBlocked: true }] })
+    render(
+      <MemoryRouter>
+        <AdminUsers />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText('Blocked: bounced')).toBeTruthy()
   })
 
   it('says so when the users do not load', async () => {

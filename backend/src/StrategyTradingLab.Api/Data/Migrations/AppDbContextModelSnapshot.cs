@@ -912,6 +912,43 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.EmailSuppression", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("citext")
+                        .HasColumnName("email");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_suppressions");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_email_suppressions_email");
+
+                    b.ToTable("email_suppressions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_email_suppressions_reason", "reason IN ('bounced', 'invalid', 'complaint')");
+                        });
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.EmailToken", b =>
                 {
                     b.Property<Guid>("Id")

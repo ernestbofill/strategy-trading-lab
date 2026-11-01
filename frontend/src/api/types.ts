@@ -867,6 +867,8 @@ export interface AdminUser {
   role: Role
   joined: string
   confirmed: boolean
+  /** The mail service reported the address as bounced, invalid or complaining, so the app no longer sends to it. */
+  emailBlocked: boolean
   /** The last time any of its sessions was used; null when none is kept. */
   lastVisit: string | null
   running: number

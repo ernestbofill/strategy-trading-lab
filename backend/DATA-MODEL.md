@@ -417,6 +417,17 @@ Problems the background jobs found, for the owner's Alerts page (`/admin/alerts`
 
 Index `(status, last_seen_at)` and `(strategy_id)`.
 
+### `email_suppressions`
+
+Addresses the mail service (Brevo's webhook, `POST /email/events`) reported as bounced, invalid or complaining. The sender never sends to them: not the overview, nor the alerts, nor the account emails. Nothing removes a row but the owner, in the database.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| email | citext, unique, not null | Not linked to `users`: it also holds addresses that never had an account |
+| reason | text, not null | `bounced` \| `invalid` \| `complaint` (`CHECK`) |
+| created_at | timestamptz, not null, default `now()` | |
+
 ### `prices_daily`
 
 One row per asset and trading day, from Yahoo, in the asset's currency, adjusted for splits and dividends (as the POC's prices are). Refreshed once a day after the US close; a re-adjusted history (a split or dividend) is detected and replaced in full.

@@ -351,6 +351,17 @@ class FeedbackItemConfiguration : IEntityTypeConfiguration<FeedbackItem>
     }
 }
 
+class EmailSuppressionConfiguration : IEntityTypeConfiguration<EmailSuppression>
+{
+    public void Configure(EntityTypeBuilder<EmailSuppression> entity)
+    {
+        entity.ToTable("email_suppressions");
+        entity.Property(suppression => suppression.Email).HasColumnType("citext").HasMaxLength(320);
+        entity.HasIndex(suppression => suppression.Email).IsUnique();
+        entity.Property(suppression => suppression.CreatedAt).HasDefaultValueSql("now()");
+    }
+}
+
 class AdminAlertConfiguration : IEntityTypeConfiguration<AdminAlert>
 {
     public void Configure(EntityTypeBuilder<AdminAlert> entity)

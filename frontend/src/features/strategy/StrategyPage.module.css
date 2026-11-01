@@ -247,7 +247,7 @@ a.stock:hover {
   text-decoration: none;
   color: inherit;
 }
-.tileLink:hover {
+.tileLink:not(:disabled):hover {
   background: var(--surface-hover);
   border-color: var(--primary);
 }
@@ -264,7 +264,9 @@ button.tileLink {
   cursor: pointer;
 }
 button.tileLink:disabled {
-  cursor: default;
+  cursor: not-allowed;
+  opacity: 0.6;
+  border-color: var(--border);
 }
 button.tileLink:focus-visible {
   outline: 2px solid var(--border-focus);

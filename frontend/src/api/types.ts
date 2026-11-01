@@ -145,6 +145,14 @@ export interface SettingGroup {
 
 export type StrategyMode = 'simulation' | 'live'
 
+/** A running strategy on the account page's Emails section: whether the daily overview tells its stock changes. */
+export interface StockChangeEmails {
+  strategyId: string
+  name: string
+  mode: StrategyMode
+  enabled: boolean
+}
+
 /** What a strategy has earned since it started, next to the index fund. */
 export interface StrategyResults {
   /** Percent return, to one decimal. */
@@ -1001,6 +1009,10 @@ export interface Api {
   /** Turns the daily overview email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
   setAlertEmails(enabled: boolean): Promise<void>
+  /** The user's running strategies and whether the daily overview tells their stock changes. */
+  getStockChangeEmails(): Promise<StockChangeEmails[]>
+  /** Turns a strategy's stock changes in the daily overview on or off. */
+  setStockChangeEmails(strategyId: string, enabled: boolean): Promise<void>
   /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */
   unsubscribe(token: string, kind: 'overview' | 'alerts'): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>

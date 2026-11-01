@@ -110,7 +110,7 @@ public class StrategyEvaluatorTests
     internal static async Task CheckedBeforeAsync(AppDbContext db, Guid strategyId, Guid assetId, DateOnly start)
     {
         db.DailyEvaluations.Add(new DailyEvaluation
-            { StrategyId = strategyId, AssetId = assetId, Date = start.AddDays(-1), Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            { StrategyId = strategyId, AssetId = assetId, Date = start.AddDays(-1), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
         await db.SaveChangesAsync();
     }
 
@@ -264,6 +264,91 @@ public class StrategyEvaluatorTests
             Assert.Equal((SignalStatus.Missed, day302), (signal.Status, signal.EndedOn));
             Assert.Equal([new DateOnly(2024, 1, 1).AddDays(301), day302],
                 await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).OrderBy(e => e.Date).Select(e => e.Date).ToListAsync());
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task Days_checked_before_the_price_history_was_long_enough_dont_stop_the_first_real_check_from_signalling()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
+        try
+        {
+            // Days 300 and 301 were checked while only a short history was stored; the full history came later.
+            var day300 = new DateOnly(2024, 1, 1).AddDays(300);
+            foreach (var day in new[] { day300, day300.AddDays(1) })
+                db.DailyEvaluations.Add(new DailyEvaluation
+                    { StrategyId = strategyId, AssetId = assetId, Date = day, Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+
+            await Evaluator(db).RunAsync(default);
+
+            // As a first check: the latest day, still in the zone, gets its signal.
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal((day300.AddDays(1), 1), (signal.SignalDate, signal.StepNo));
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task Days_short_of_history_after_a_real_check_still_get_no_back_dated_signal()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // A real check the day before the start, then days 300 and 301 short of history (say a longer average was set).
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            var day300 = new DateOnly(2024, 1, 1).AddDays(300);
+            foreach (var day in new[] { day300, day300.AddDays(1) })
+                db.DailyEvaluations.Add(new DailyEvaluation
+                    { StrategyId = strategyId, AssetId = assetId, Date = day, Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+
+            await Evaluator(db).RunAsync(default);
+
+            Assert.Equal(0, await SignalCount(db, strategyId)); // Day 300's dip came after the real check, but those days were checked.
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_stock_with_a_signal_doesnt_start_its_steps_again_when_its_checks_were_short_of_history()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
+        try
+        {
+            // Day 300 got its step-1 signal; then the history was cut short and the rows rewritten as not enough data.
+            var day300 = new DateOnly(2024, 1, 1).AddDays(300);
+            db.Signals.Add(new Signal
+            {
+                StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, StepNo = 1, MaxSteps = 5, StepAmount = 100, SignalDate = day300,
+                ClosePrice = 1, Facts = JsonDocument.Parse("{}"), Status = SignalStatus.Waiting,
+            });
+            foreach (var day in new[] { day300, day300.AddDays(1) })
+                db.DailyEvaluations.Add(new DailyEvaluation
+                    { StrategyId = strategyId, AssetId = assetId, Date = day, Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+
+            await Evaluator(db).RunAsync(default);
+
+            Assert.Equal(1, await SignalCount(db, strategyId)); // Not a second step 1 on day 301.
         }
         finally
         {

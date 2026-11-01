@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
+import { MAX_RUNNING_STRATEGIES } from '../new-strategy/draftState'
 import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { pickPath } from '../new-strategy/paths'
 import { useCurrentAccount } from '../account/AccountContext'
@@ -38,6 +39,7 @@ export function Dashboard() {
         const card = (s: StrategySummary) => (
           <StrategyCard key={s.id} strategy={s} today={today} waiting={waiting.find((w) => w.strategyId === s.id)} />
         )
+        const running = strategies.filter((s) => s.status === 'running')
         const archived = strategies.filter((s) => s.status === 'ended')
         return (
           <Screen top={top}>
@@ -46,11 +48,17 @@ export function Dashboard() {
             {askPush && <PushPrompt onDone={pushDone} />}
             <WaitingList items={waiting} />
             <div className={styles.cards}>
-              {strategies.filter((s) => s.status === 'running').map(card)}
-              {/* A "Go live" copy left unfinished isn't a new strategy: start over. */}
-              <Link to={pickPath} className={`ui-strong ${styles.add}`} onClick={() => draft.sourceStrategyId && draft.reset()}>
-                {t('dashboard.newStrategy')}
-              </Link>
+              {running.map(card)}
+              {/* At 10 running strategies, the button is off (spec: Dashboard). */}
+              {running.length >= MAX_RUNNING_STRATEGIES ? (
+                <button type="button" className={`ui-strong ${styles.add}`} disabled>
+                  {t('dashboard.strategiesFull', { max: MAX_RUNNING_STRATEGIES })}
+                </button>
+              ) : (
+                <Link to={pickPath} className={`ui-strong ${styles.add}`} onClick={() => draft.sourceStrategyId && draft.reset()}>
+                  {t('dashboard.newStrategy')}
+                </Link>
+              )}
             </div>
             {archived.length > 0 && (
               <details className={styles.archived}>

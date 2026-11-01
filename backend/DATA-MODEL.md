@@ -107,6 +107,7 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | terms_version_accepted | varchar(32), null | The version of the legal terms accepted by the user (e.g. `2026-10-31`) |
 | terms_accepted_at | timestamptz, null | When the terms were accepted at sign-up |
+| unconfirmed_warned_at | timestamptz, null | When the 23-day warning email was sent to an unconfirmed account; null until warned |
 | created_at, updated_at | timestamptz | |
 
 | ai_sharing | bool, not null, default false | Shares AI rounds (asked at the first round, changed in the account; off removes what was shared) |
@@ -208,6 +209,7 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. When it was archived (the screens' word for `ended`, #96): archiving closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
 | notifications | bool, not null, default true | Email alerts for this strategy (signals, snooze reminders, AI rounds). Off = it keeps running quietly |
 | push | bool, not null, default false | Its alerts also go to the user's devices by web push (Choose the mode's Alerts box, the strategy page's push switch) |
+| stock_change_emails | bool, not null, default false | Whether the daily overview tells this strategy's stock changes (a stock becomes or stops being a candidate, or comes within 3% of its signal). Opt in, on the account page |
 | currency | char(3), not null | Fixed at creation. Budget, trade amounts and results are in it |
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |

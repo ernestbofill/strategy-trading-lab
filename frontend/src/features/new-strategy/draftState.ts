@@ -7,6 +7,9 @@ export type AiSource = 'news' | 'mood' | 'figures'
 /** The most stocks a strategy watches, the starter list included (the API checks it too). */
 export const MAX_STOCKS = 60
 
+/** The most running strategies a user runs at once (the API checks it too). */
+export const MAX_RUNNING_STRATEGIES = 10
+
 /** A stock the user added to the list with "+ Add a stock"; `pricesIn` is false while its history loads. */
 export interface AddedStock extends Security {
   pricesIn: boolean

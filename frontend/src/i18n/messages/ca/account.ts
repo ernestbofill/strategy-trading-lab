@@ -152,6 +152,8 @@ export const account: Record<keyof typeof en, string> = {
   'account.push.promptRefused': 'No permeses. Els avisos arriben per correu; pots activar les notificacions més endavant a Compte.',
   'account.push.promptLater': 'Ara no',
   'account.push.promptClose': 'Tanca',
+  'account.stockChanges.title': 'Canvis de les accions al resum',
+  'account.stockChanges.lead': 'Una línia quan una acció passa a ser candidata o deixa de ser-ho, o queda a menys d’un 3% del seu senyal.',
   'account.page.admin': 'Administració',
   'account.page.adminLine': 'Configuració, base de dades, preus i revisió de comentaris.',
   'account.page.adminLink': 'Configuració d\'administració →',

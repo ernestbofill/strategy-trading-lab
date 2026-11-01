@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { api, NameTakenError, type Dashboard, type StrategyDetail, type TemplateDetail } from '../../api'
+import { api, NameTakenError, type Dashboard, type StrategyDetail, type StrategySummary, type TemplateDetail } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { StrategyPage } from './StrategyPage'
@@ -10,6 +10,7 @@ import { StrategyPage } from './StrategyPage'
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  invalidateAll()
 })
 
 const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
@@ -329,5 +330,17 @@ describe('StrategyPage', () => {
 
     expect((await screen.findByRole('link', { name: 'Zscaler sim' })).getAttribute('href')).toBe('/strategies/sim-9')
     expect(screen.getByText(/Copied from/)).toBeTruthy()
+  })
+
+  it('disables "Go live" when running strategies is at 10', async () => {
+    vi.spyOn(api, 'getTemplate').mockResolvedValue(dipTemplate)
+    vi.spyOn(api, 'getDashboard').mockResolvedValue({
+      today: '2026-10-28',
+      waiting: [],
+      strategies: Array.from({ length: 10 }, (_, i) => ({ id: `s${i}`, name: `S${i}`, status: 'running' as const } as unknown as StrategySummary)),
+    })
+    open(detail({ id: 'gl-sim', mode: 'simulation' }))
+    const goLive = await screen.findByRole('button', { name: /Go live You run 10 strategies/ })
+    expect((goLive as HTMLButtonElement).disabled).toBe(true)
   })
 })

@@ -11,20 +11,21 @@ namespace StrategyTradingLab.Api.Tests;
 /// </summary>
 public sealed class NeonFactAttribute : FactAttribute
 {
-    public static readonly bool Configured = IsConfigured();
-
     public NeonFactAttribute()
     {
         if (!Configured) Skip = "No Neon branch: run `neon env pull` to write .env.local.";
     }
 
-    static bool IsConfigured()
-    {
-        var configuration = new ConfigurationBuilder()
-            .AddUserSecrets<Program>(optional: true)
-            .AddEnvironmentVariables()
-            .AddNeonDotEnv(AppContext.BaseDirectory)
-            .Build();
-        return NeonEnvironment.ConnectionString(configuration) is not null && ObjectStorage.IsConfigured(configuration);
-    }
+    /// <summary>Where the tests find the database: the environment, else the repo's .env.local.</summary>
+    public static readonly IConfiguration Configuration = new ConfigurationBuilder()
+        .AddUserSecrets<Program>(optional: true)
+        .AddEnvironmentVariables()
+        .AddNeonDotEnv(AppContext.BaseDirectory)
+        .Build();
+
+    // After Configuration, which it reads: static fields start in order.
+    public static readonly bool Configured = IsConfigured();
+
+    static bool IsConfigured() =>
+        NeonEnvironment.ConnectionString(Configuration) is not null && ObjectStorage.IsConfigured(Configuration);
 }

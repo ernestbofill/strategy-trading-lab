@@ -98,6 +98,15 @@ public static class StrategyEndpoints
                 parameters = AiRoundEndpoints.Apply(parameters, request.Ai, (field, message) => errors[$"ai.{field}"] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
+            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM users WHERE id = {user.Id} FOR NO KEY UPDATE", cancellationToken);
+            var running = await db.Strategies.CountAsync(s => s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
+            if (running >= NewStrategyValidation.MaxRunningStrategies)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["strategies"] = [Messages.StrategyLimit.In(user.Locale, NewStrategyValidation.MaxRunningStrategies)]
+                });
+
             var strategy = new Strategy
             {
                 UserId = user.Id,
@@ -121,6 +130,7 @@ public static class StrategyEndpoints
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
+                await tx.CommitAsync(cancellationToken);
             }
             // The running name index refuses a taken name, also when two requests race.
             catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RunningNameIndex })

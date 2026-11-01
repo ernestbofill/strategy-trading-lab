@@ -68,6 +68,8 @@ public class User : IHasUpdatedAt
     public DateTimeOffset? AiSharingChangedAt { get; set; }
     /// <summary>The invite the account signed up with, if any: who invited it is the invite's maker.</summary>
     public Guid? InviteId { get; set; }
+    /// <summary>When the 23-day warning email was sent to an unconfirmed account; null until warned.</summary>
+    public DateTimeOffset? UnconfirmedWarnedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
@@ -150,6 +152,8 @@ public class Strategy : IHasUpdatedAt
     public bool Notifications { get; set; } = true;
     /// <summary>Its alerts also go to the user's devices by web push (Choose the mode's Alerts box, the strategy page). Off by default.</summary>
     public bool Push { get; set; }
+    /// <summary>Whether the daily overview says when a stock becomes or stops being a candidate, or comes close to its signal (opt in, on the account page).</summary>
+    public bool StockChangeEmails { get; set; }
     public required string Currency { get; set; }
     public required Budget Budget { get; set; }
     public required JsonDocument Params { get; set; }

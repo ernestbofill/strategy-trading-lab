@@ -1681,6 +1681,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
+                    b.Property<bool>("StockChangeEmails")
+                        .HasColumnType("boolean")
+                        .HasColumnName("stock_change_emails");
+
                     b.Property<string>("TemplateKey")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1871,6 +1875,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("time_zone");
+
+                    b.Property<DateTimeOffset?>("UnconfirmedWarnedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("unconfirmed_warned_at");
 
                     b.Property<string>("UnsubscribeToken")
                         .IsRequired()

@@ -78,3 +78,9 @@
 .pushPrompt p {
   margin: 0;
 }
+
+/* A titled group inside a section (the stock changes under Emails). */
+.subTitle {
+  margin: 0 0 var(--space-1);
+  color: var(--ink);
+}

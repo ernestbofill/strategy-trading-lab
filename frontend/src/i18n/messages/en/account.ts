@@ -150,6 +150,8 @@ export const account = {
   'account.push.promptRefused': 'Not allowed. Alerts come by email; you can turn notifications on later in Account.',
   'account.push.promptLater': 'Not now',
   'account.push.promptClose': 'Close',
+  'account.stockChanges.title': 'Stock changes in the overview',
+  'account.stockChanges.lead': 'A line when a stock becomes or stops being a candidate, or comes within 3% of its signal.',
   'account.page.admin': 'Admin',
   'account.page.adminLine': 'Settings, database, prices and feedback review.',
   'account.page.adminLink': 'Admin settings →',

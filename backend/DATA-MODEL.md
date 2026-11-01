@@ -400,7 +400,7 @@ Index `(status, created_at)` and `(user_id)`.
 
 ### `admin_alerts`
 
-Problems the background jobs found, for the owner's Alerts page (`/admin/alerts`) instead of emails (ROADMAP item 23). One row per problem, by `key`: a job raises it each time it sees it (`count` goes up) and clears it once a run finds it gone. The owner can dismiss an open one: it stays quiet while the problem lasts, and opens again (counting from 1) only after it cleared and came back. The daily run deletes alerts cleared over 30 days ago. Cascades from `strategies`.
+Problems the background jobs found, for the owner's Alerts page (`/admin/alerts`) instead of emails (ROADMAP item 21). One row per problem, by `key`: a job raises it each time it sees it (`count` goes up) and clears it once a run finds it gone. The owner can dismiss an open one: it stays quiet while the problem lasts, and opens again (counting from 1) only after it cleared and came back. The daily run deletes alerts cleared over 30 days ago. Cascades from `strategies`.
 
 | Column | Type | Notes |
 | --- | --- | --- |

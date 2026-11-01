@@ -49,7 +49,7 @@ These apply to every screen, email and alert.
 - **The user owns the setup.** Lists, settings and budgets are the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
 - **No promises.** No claims that markets or stocks will rise or recover. Results are always shown next to the index fund and the worst year. On screen the index fund is named **"S&P 500 fund"**, with a small "i" after the label that opens "Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold." (#95). The explanation stays hidden until asked for, so the figures stay short.
 - **Numbers:** prices and amounts to the cent (2 decimals); every other number (shares, exchange rates, percentages) to at most 3 decimals (#95).
-- **A disclaimer everywhere results or signals appear, in two lengths.** The user sees it over and over, so screens seen again and again (Review, How we tested, the strategy page, Confirm a signal, the footer) use the short one: "Not financial advice. Signals follow your rules." Where the user commits (accepted once at sign-up, above the button on Name, preview and confirm, and the legal page) use the full one: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." The wireframes still show the full one everywhere; this rule wins.
+- **One disclaimer, in the site footer (#105).** Every screen ends with the short disclaimer, "Not financial advice. Signals follow your rules.", so no screen repeats it or adds the full one or "Past results don't promise future ones.": the app is text heavy and the Disclaimer page holds the details. The full one, "Not financial advice. Signals follow your rules; you decide and trade at your own broker.", is accepted once at sign-up and leads the Disclaimer and Terms pages. Emails keep the short one at the foot. Where a screen below still says "the disclaimer" or "Past results don't promise future ones.", the footer covers it; the wireframes show it everywhere; this rule wins.
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
 - **Mostly US markets, euro results.** v1 covers the POC's stocks and funds (mostly US-listed, a few listed in Europe and Hong Kong), plus any stock or fund a user adds from the same exchanges. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
@@ -63,7 +63,8 @@ These apply to every screen, email and alert.
 
 | Screen | Wireframe file | Reached from | Goes to |
 | --- | --- | --- | --- |
-| Sign-up (not drawn) | – | App start for new users; "Create an account" on Log-in | Check your email, then Pick a template |
+| Welcome (marketing highlights) (not drawn) | – | App start (`/`) for unauthenticated guests; `/welcome` | Pick a template ("Try as guest"), Sign-up ("Create an account"), Log-in |
+| Sign-up (not drawn) | – | App start for new users; "Create an account" on Log-in or Welcome | Check your email, then Pick a template |
 | Log-in (not drawn) | – | App start for returning users; any screen when the session has ended | Dashboard |
 | Forgot and reset password (not drawn) | – | "Forgot your password?" on Log-in; the link in the email | Log-in |
 | 1 · Pick a strategy template | `Main` | Sign-up; "+ New strategy" on the dashboard | The picked template's review |
@@ -77,6 +78,8 @@ These apply to every screen, email and alert.
 | Strategy page | `StrategyDetail` | A strategy card on the dashboard | Stock page (not drawn), stock list editor, Advanced settings, Backtest (not drawn), Confirm a signal |
 | Confirm a signal (live) | `Signal` | Waiting for you on the dashboard; a stock row; a signal alert or the daily overview | Strategy page |
 | AI round | `AIRound` | Waiting for you on the dashboard; the AI-round notification | Dashboard (simulation); Confirm a signal (live) |
+
+**Guest / Unauthenticated visitor:** `/` opens the Welcome page, introducing Strategy builder, Simulation, and Trading tracker with interactive expandable preview decks. Guests can explore the new-strategy flow without an account (`/new`), register (`/sign-up`), or log in (`/log-in`).
 
 **New user:** sign-up → pick → review → (advanced settings, how we tested) → mode → budget → confirm → dashboard.
 
@@ -148,6 +151,40 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ## 6. Screen by screen
 
+### Welcome (marketing highlights) (not drawn)
+
+- **Entry point:** `/` for unauthenticated visitors, and `/welcome`. Authenticated visitors navigating to `/` continue directly to the Dashboard.
+- **Top bar:** "STL // STRATEGY TRADING LAB" on the left; "LOG IN" text action on the right.
+- **Hero:**
+  - Eyebrow: "SYSTEM READY // RULES-BASED LAB"
+  - Headline: "Trade rules, not emotions."
+  - Lead: "A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access."
+  - Primary CTA: "TRY AS GUEST ›" → `/new` (Pick a template), opening the in-memory draft flow with zero friction.
+  - Secondary CTA: "Create an account" → `/sign-up`.
+  - Micro-link: "Already have an account? Log in" → `/log-in`.
+- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile, where the expanded detail panel renders inline directly below the active card). Clicking any card expands its full details and interactive simulated widget (clicking an expanded card collapses it; no carousel):
+  - **01 Strategy builder:**
+    - Tagline: "Define your rules before the market opens"
+    - Points: Tested mathematical templates with transparent logic (moving averages, pullbacks, turnarounds); user-controlled stock universes and step budgets; plain language rules with no black-box algorithms.
+    - Interactive widget: Template switcher (*Winners at a discount*, *The comeback*, *Bear markets*) updating live trigger criteria and step plans, with watched stock badges (`ZS`, `AAPL`, `MSFT`, `NVDA`) for stock templates and watched fund (`SPY · S&P 500 ETF`) for *Bear markets*.
+    - CTA link: "Try building a strategy as guest ›" (`/new`).
+  - **02 Real-time simulation:**
+    - Tagline: "Forward-test on real prices with zero financial risk"
+    - Points: Closing prices refreshed daily after US market close; automated simulated trade logging following exact rules; honest metrics next to S&P 500 fund and worst-year benchmarks.
+    - Interactive widget: Forward-testing stats (`+14.2%` vs `+8.1%` S&P 500 fund with `InfoTip` vs `−12.4%` worst year) with toggle between performance comparison and paper trade log.
+    - CTA link: "Test in simulation mode ›" (`/new`).
+  - **03 Trading tracker:**
+    - Tagline: "Execute at your broker. 100% private & non-custodial"
+    - Points: Zero broker sync (no OAuth, passwords, or API access); daily actionable signal alerts; confirm steps with broker fill prices or skip with reasons.
+    - Interactive widget: Live signal prompt for Zscaler with interactive action buttons (*I did it*, *I skipped it*, *Remind me tomorrow*) showing immediate tactile feedback and privacy callout.
+    - CTA link: "Explore live tracking flow ›" (`/new`).
+- **Trust & Architecture section:**
+  - Three cards: Zero broker access, Uncompromising benchmark honesty, and Disciplined systematic rules.
+- **Bottom CTA banner:**
+  - "Ready to test your first strategy? Explore all templates, customize settings, and run paper simulations with zero commitment. No credit card required."
+  - Dual action buttons: "TRY AS GUEST ›" and "Create an account".
+- **Footer:** Ends with the standard site footer ("Not financial advice. Signals follow your rules." and the legal links).
+
 ### Sign-up (not drawn)
 
 - First name and last name (side by side, required, at most 100 characters each), email and password, with email verification. Accounts from before the names exist have none until they add them in the account ("Name").
@@ -180,7 +217,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - A guest has no dashboard, account or emails. The top bar shows "LOG IN" instead of "ACCOUNT", and the first screen's eyebrow stays "Welcome to Strategy Trading Lab".
 - The template endpoints are public already; nothing about a guest is stored on the server.
 - A guest's draft is shown in euro and stays in euro after sign-up (the amounts aren't converted). Live can be picked; the email must be confirmed before the strategy starts. A guest never sees another user's draft: a log-out clears it.
-- Every screen ends with a footer: links to the legal pages (`/legal/notice`, `/legal/terms`, `/legal/privacy`, `/legal/disclaimer`, `/about`) and the short disclaimer. The pages provide the complete legal notices, terms of use, privacy policy, full disclaimer, and about page with conflicts of interest disclosure. Sign-up records the accepted terms version (`terms_version_accepted`, `terms_accepted_at`).
+- A screen's one primary action and its note (a short hint or a data source, never a disclaimer) close the page content; there is no separate bottom bar (#105). Every screen ends with a footer: links to the legal pages (`/legal/notice`, `/legal/terms`, `/legal/privacy`, `/legal/disclaimer`, `/about`) and the short disclaimer. The pages provide the complete legal notices, terms of use, privacy policy, full disclaimer, and about page with conflicts of interest disclosure. Sign-up records the accepted terms version (`terms_version_accepted`, `terms_accepted_at`).
 
 ### Log-in (not drawn)
 
@@ -233,10 +270,10 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 3. **"The idea"**: the rationale in plain words, no numbers, no promises.
 4. **"It signals when"**: numbered rules (01, 02, 03), each "**Plain label:** detail", with numbers and terms highlighted and explained in brackets.
 5. **What it watches**: "Choose stocks to watch" (stock templates) or "The fund it watches" (fund templates).
-6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"), "Worst year" `[−X%]`; the caption "Past results don't promise future ones."; and a "How we tested ›" link to 2c.
+6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"), "Worst year" `[−X%]`; and a "How we tested ›" link to 2c.
 7. **"What can go wrong:"** one line.
 8. A row "Advanced settings ›" → 2b.
-9. Button "Use this template" → Choose the mode. Under it, the disclaimer.
+9. Button "Use this template" → Choose the mode.
 
 **Stock list** (stock templates)
 - Heading "Choose stocks to watch", counter on the right: "[n] of [total] ticked".
@@ -375,7 +412,7 @@ The settings are available when starting a strategy and on a running one (Tune t
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide. Past results don't promise future ones."
+- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide."
 - Re-run on each change (debounced), with a loading state.
 - **Until the backtest engine exists** (built version): with a change, the screen shows the tested results by period (Template, Index, Worst yr, as on How we tested) and "These are the tested defaults' results. Re-running the test with your settings comes later. Past results don't promise future ones." When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
 
@@ -405,7 +442,6 @@ The settings are available when starting a strategy and on a running one (Tune t
 - Warning box **"What a backtest can't show"**:
   - "The starter list holds companies that are around today. Stocks that failed along the way aren't in it, which flatters past results."
   - "Real prices can differ from the opening price, especially on busy days."
-  - "Past results don't promise future ones."
 - Disclaimer at the bottom.
 
 Content is per template (period, scope, figures). *Index trend* is all in, all out, so its "tested defaults" line reads "The whole €3,000 budget, all in, all out." (draft).
@@ -492,7 +528,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Live: "You see right away how the template did in the past." / "From today the app watches your stocks and alerts you as soon as your rules are met." / "You confirm each signal, and the app tracks the results of what you did."
   - Simulation (not drawn): "You see right away how the template did in the past." / "From today it runs on real prices and records its own paper trades." / "Your first daily overview arrives tomorrow."
   - *Your AI's top picks* (not drawn): "There are no past results for this template." / "Your first AI round is due now." / then the mode's line.
-- Above the button: the disclaimer.
+- Above the button: nothing; the site footer has the disclaimer.
 - Button, Live: "Start following it live". Simulation (not drawn): "Start the simulation".
 - The button creates the strategy and opens the dashboard, in place of Confirm in the history, so going back never shows Confirm again. For *Your AI's top picks*, the first AI round waits there under *Waiting for you*.
 - While it saves, the button reads "Starting…" and can't be pressed twice. If it fails, the user stays on this screen and sees, under the name: "You already run a strategy with this name. Pick another." when another running strategy took the name, else "We couldn't start it. Try again." (assumed copy)
@@ -502,7 +538,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 **Copy**
 - Top bar: "STL // DASHBOARD" · "ACCOUNT" (link to the account page, not drawn)
 - H1: "Your strategies"
-- Bottom: the disclaimer and "Past results don't promise future ones." (the cards show results).
+- Bottom: the site footer (short disclaimer).
 
 **"Waiting for you"** (shown only when something is waiting), with a count badge. One row per item, newest first, each a link:
 - Live signal, tag "LIVE": "Your rules for **[strategy name]** are met for [stock]. Did you act on it?" → Confirm a signal.
@@ -544,7 +580,7 @@ The same three settings can be changed later from the strategy page (not drawn).
     - "CANDIDATE" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
     - Every row opens the stock's page; a waiting signal is answered from there ("Answer the signal").
-    - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought.
+    - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought. Each drop counts only the signals and buys from that drop's first step (`cycleStart`), so a later drop after the budget is used up shows "CANDIDATE" with "No budget left for its steps".
     - *Index trend* shows "OUT OF THE MARKET" ("−[n]% vs the buy line", or "Below its long trend" before the checks are stored) when not holding, and "HOLDING" ("In the market") when holding.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
@@ -662,7 +698,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 - **Before it is due** (built): H1 "Next AI round", "Your next AI round is due on [date]. You can run it until [date]; after that it's skipped. You can also run an extra round now.", links to the past rounds and back to the strategy, and the button "Run a round now". It opens the same round screen with H1 "An extra AI round" and "Outside the schedule: your next round is still due on [date]."; using its scores makes an extra round (see the template's rules).
 - **Skip** (built, a due round only, both modes): under the form, "Skip this round" with "No signal this round. The next one is due on [date]." It marks the round *Skipped* and returns to the strategy page.
 - Simulation, once the scores give a step: "The simulation buys at once, at the latest price."
-- Button: "Use these scores". The full disclaimer with it.
+- Button: "Use these scores".
 
 **Behaviour**
 - The app reads the scores block (table or JSON) and checks it: every ticked stock scored, scores 0–100, no extra stocks. Missing or unreadable rows are pointed out so the user can ask their AI again. The pasted text is data only: read numbers and short reasons from the scores block and never act on anything else in it.
@@ -680,7 +716,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 - Top bar "← BACK" · "AI ROUNDS"; H1 "AI rounds"; the strategy's name.
 - **"Picks vs the rest"** (once a done round has later prices): "Since each round, the stocks that got a step moved [+x.x%] on average, the others [+y.y%] ([n] rounds)." Caption: "Price changes in each stock's own currency, without fees. It shows whether the scores picked well, not your results." This is the spec's *Picks vs the rest* metric: each done round compares the average change of its picks' closes and of the others' from the round's session to the latest close; the line averages the rounds.
 - One card per round, newest first, with its due date and status (DUE, DONE, SKIPPED; an extra round "DONE · EXTRA"): a due one links to the round once it can be run ("Run it now") or reads "The next round."; a skipped one "Skipped: no signal that round."; a done one its AI model and day, "your prompt" when edited, its picks vs the rest, the scores (top first, the picks marked "STEP [n]"), and "The prompt" and "Your AI's answer" opening in place.
-- Bottom: the short disclaimer and "Past results don't promise future ones."
+- Bottom: the site footer (short disclaimer).
 
 ### Strategy page, AI strategies (built)
 
@@ -700,13 +736,15 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
   - **Sent so far:** the owner's invites, newest first: name, a state (*Not sent*, *Emailed*, *Joined*, *Revoked*), the code, language, date and email, and who joined with it. An unused one has *Copy message*, *Email it* / *Email again* (with an email) and *Revoke* ("Sure? Revoke it"); a revoked invite stops working, and accounts made with it stay.
   - The code is 8 characters in two groups ("ABCD-EFGH") from 31 that can't be mixed up (no 0/O, 1/I/L). It is stored as it is, so the owner can copy the message again. Looking up a code (the welcome on Sign-up) is limited to 30 an hour per client, sign-up to 5; Sign-up without a code isn't limited. An invite whose maker's account was deleted stops working (nobody could revoke it).
 - **Management pages and data table:** the admin management pages share one headless table component (`DataTable`, built on TanStack Table and styled with the design tokens): sort by a column, search, dropdown filters, paging ("1–10 of N", "Previous", "Next"), and an action per row; on narrow containers (< 640px) rows turn into cards with no sideways scrolling. Only `/admin` routes load it (and the service worker skips precaching `Admin*` chunks), so regular users never download it.
+- **Alerts (`/admin/alerts`, linked first under Management on `/admin` as "Alerts · [n] open", or "none open"; ROADMAP item 23):** what the background jobs found wrong, on a page instead of emails, so Ernest isn't flooded. Raised by: the daily run failing as a whole; an asset's or exchange rate's price fetch failing; the index fund's prices more than one market day behind after a refresh; a strategy that couldn't be checked (an error) or is missing price data (a ticked stock with no prices, a newest price more than 3 market days old, or too little history for its rules); an AI strategy's daily check failing; signal, overview or account emails that couldn't be sent. Each card has a title, the detail (for a strategy: whose it is, its template and mode, then a line per stock), the source, "Since [date time] · last seen [date time] · [n]×", and *Dismiss* while open. Sections: *Open · [n]* ("Nothing open." when empty), *Dismissed · [n]* ("Quiet while the problem lasts. Back only if it clears and happens again.") and *Cleared this week*. Alerts clear themselves when a later run finds the problem gone (the users' email alert when a run's emails all go out and none failed in the last week, the account email alert with the next one that goes out; email not set up while emails are on counts as a failure). No email to the owner (Ernest, item 23).
 - **Users (`/admin/users`, linked from `/admin` as "Users · accounts and their strategies"; built #97, read-only):** above the list, the counts: "Accounts" and "Confirmed", and a "Running strategies" table with a row per template (all of them, in the pick screen's order) and its running *Simulation* and *Live* strategies. Then every account in the data table, newest first (`GET /admin/users`): email, role (*User*, *VIP*, *Owner*), "Email confirmed" (*Yes*/*No*), joined and last visit (the last use of any of its sessions, "–" when none is kept) as dates, and its *Running* and *Archived* strategies. Search by email; filters by role and by confirmed email. Test accounts are counted like any other until test invites exist. The list also has each account's name and *Invited by* (the inviter's email, "–" without an invite). Blocking and deleting come with the rest of ROADMAP item 24.
-- **Assets (`/admin/assets`, linked from `/admin`):** lists every asset in the database (`GET /admin/assets`) in the data table: asset name, what it does and symbol/exchange/currency, kind (*Stock* or *Fund*), running strategies that list it (ticked or not), latest price date (or "No prices"), status (*Active* or *Hidden*), and *Edit* and *Hide* / *Show* actions per row (`PUT /admin/assets/{id}`, `PUT /admin/assets/{id}/active`). Above the table, **Add an asset**: a Yahoo symbol ("As Yahoo writes it: AAPL, SAP.DE, ^GDAXI.") and *Add* (`POST /admin/assets`). Only the exact symbol is added, and only a stock, fund or index; the app looks up its name, exchange, kind, currency, sector and industry, and fetches its price history (and its currency's exchange rate) at once. It answers "Added Apple Inc. (AAPL), prices to 2026-10-23.", "… is already here." (or, for a hidden one, "… is already here, hidden: Show it to use it."), or why not ("Yahoo has no stock, fund or index with the symbol X."). If the prices don't load, the row is kept and the answer says why; adding it again tries again. *Edit* opens the asset's name and "What it does" (English) above the table, with *Save* and *Cancel*. Prices are fetched daily only for the assets some running strategy lists (ticked or not) and the index fund.
+- **Assets (`/admin/assets`, linked from `/admin`):** lists every asset in the database (`GET /admin/assets`) in the data table: asset name, what it does and symbol/exchange/currency, kind (*Stock* or *Fund*), running strategies that list it (ticked or not), latest price date (or "No prices"), status (*Active* or *Hidden*), and *Edit* and *Hide* / *Show* actions per row (`PUT /admin/assets/{id}`, `PUT /admin/assets/{id}/active`). Above the table, **Add an asset**: a Yahoo symbol ("As Yahoo writes it: AAPL, SAP.DE, ^GDAXI.") and *Add* (`POST /admin/assets`). Only the exact symbol is added, and only a stock, fund or index; the app looks up its name, exchange, kind, currency, sector and industry, and fetches its price history (and its currency's exchange rate) at once. It answers "Added Apple Inc. (AAPL), prices to 2026-10-23.", "… is already here." (or, for a hidden one, "… is already here, hidden: Show it to use it."), or why not ("Yahoo has no stock, fund or index with the symbol X."). If the prices don't load, the row is kept and the answer says why; adding it again tries again. *Edit* opens the asset's name and "What it does" (English) above the table, with *Save* and *Cancel*. Prices are fetched daily only for the assets some running strategy lists (ticked or not) and the index fund. When an asset's last price fetch failed (Yahoo's error, or bars that aren't daily), the reason shows under its latest price date until a fetch works.
+  - **Prices**, below *Add an asset*: "Years to download" (2 by default, 1 to 30), *Download all* and *Delete all*. *Download all* replaces each active (not hidden) asset's prices with the daily prices of those years (or more, when a strategy started earlier and needs them), one asset at a time ("Downloading 3 of 31: ETN…"), then the exchange rates of every currency in use, and ends with "Downloaded 30 of 31 assets and the exchange rates." plus what failed and why. *Delete all* asks "Sure? Delete all" first, then deletes every price and exchange rate. The *Edit* panel has the same for one asset: its own years, *Download prices* and *Delete prices*. They refuse while the daily refresh or another download runs, and while the API is switched to the other database. The Prices section stays visible while an asset is edited.
 - Then "Settings": one box per group (Email, Notifications, Prices, Assets). Every setting but the password has a default (Ernest's Gmail, `smtp.gmail.com`, 587; the sender follows the account), so only the app password has to be typed; it comes last because changing a setting above it unsets it. Each row: the setting's name, what it is for, where the value comes from ("Set here", "From the server's environment", "Default", "Not set"), a field, "Save", and "Default" (back to the server's value or the default). A secret's field is always empty, with "set (hidden): type to replace" or "not set", and "Clear" instead of "Default".
 - A refused value says why under the field ("Use a port from 1 to 65535.").
 - **Assets** group: `USER_ASSET_LIMIT`, how many new stocks and funds one user can add to the app ("+ Add a stock" and the fund picker; picking one already in the app never counts). Default 30; a whole number, 0 for none ("Use a whole number, e.g. 30."). (#90)
 - The saved password only counts while the mail account, server, port and sender stay as they were when it was saved; change any of them (by saving, "Default" or on the server) and it reads "not set"; it counts again only if they go back to the values it was saved with. A password typed while the page shows outdated values is refused: "The mail settings changed since this page loaded. Reload, check them, then type the password again." So it is never sent to a server it wasn't meant for. It is only ever set on this page, never taken from the server's environment.
-- Under the Email settings, "Send a test email" sends one email to the mail account itself (never to another address, so the page can't be used to send mail elsewhere), with the settings as saved. It answers "Sent to [account]. Check its inbox." or why not, in the mail server's own words ("…refused it: Username and Password not accepted"). At most 5 an hour.
+- Under the Email settings, "Send a test email" sends one email to the signed-in owner's own address (never to another address, so the page can't be used to send mail elsewhere; not to the SMTP login, which a mail service like Brevo gives no inbox), with the settings as saved. It answers "Sent to [address]. Check its inbox." or why not, in the mail server's own words ("…refused it: Username and Password not accepted"). At most 5 an hour.
 - Above the settings, **Backend**: the API's version, commit (short) and when it was built ("unknown" in a Debug build), for information.
 - Then **Database**: "In use: Dev" or "Production", and one button to use the other ("Use production"). Every request reads and writes the one in use, this page's settings included. The switch is refused, with the reason under the button, unless that database answers and has every migration ("The dev database is missing 2 migration(s): migrate it first."); the deploy migrates production only. While the server uses the database that isn't its own (its own is production on the server, dev locally): "This server normally uses production: switch back when you are done."
 - Under it, a row per database: its host (or "Not set") and the server variable its URL comes from ("DATABASE_URL_DEV on the server"), never the rest of the URL, since it holds a password. The URLs are set only on the server (`api.env`, sent by `deploy/backend/deploy-env.ps1`), never on this page, so the page can't point the API at another database. A database whose variable isn't set can't be switched to ("The dev database has no URL: set DATABASE_URL_DEV on the server.").
@@ -778,8 +816,8 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 - ~~Ended strategies.~~ (built #91; since #96 ending is archiving: kept read-only under Archived, and can then be deleted)
 - ~~The legal pages' text (legal notice, terms, privacy, About with conflicts of interest); the footer and placeholder pages are built (#100).~~ (built #104)
 - Account: download my data, delete my account, "Invite a friend".
-- Unsubscribe links in emails.
-- Admin: health and failure alerts, users (block, delete), invites and test invites, adding and editing assets, an audit log of owner actions, and feedback.
+- ~~Unsubscribe links in emails.~~ (built, item 21): the overview and the alerts (signal alerts, snooze reminders, AI round reminders) carry a "Turn off …" link and the `List-Unsubscribe` one-click headers. The link opens a page with one button (opening a link never changes anything, since mail scanners open every link) that turns that kind off without logging in; a switch for each kind is on the account page. Account emails (confirmation, password) have none.
+- Admin: users (block, delete), invites and test invites, adding and editing assets, an audit log of owner actions, and feedback.
 - Owner access for Claude: an owner account of its own on dev and production, for testing and validation.
 
 ## 10. Open questions

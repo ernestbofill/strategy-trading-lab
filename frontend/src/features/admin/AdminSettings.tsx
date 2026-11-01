@@ -23,11 +23,28 @@ type State =
   /** `settings` is null when they can't be read: they live in the database in use, which may be the broken one. */
   | { status: 'ready'; settings: AdminSetting[] | null; databases: AdminDatabases; version: BackendVersion | null }
 
+/** How many alerts are open, for the Alerts row; null until known, or when they can't be read. */
+function useOpenAlerts() {
+  const [open, setOpen] = useState<number | null>(null)
+  useEffect(() => {
+    let live = true
+    api
+      .getAdminAlerts()
+      .then((alerts) => live && setOpen(alerts.filter((a) => a.status === 'open').length))
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [])
+  return open
+}
+
 /** Admin settings (/admin): settings the app reads, set here instead of in the server's environment. Not linked from the app. */
 export function AdminSettings() {
   const [state, setState] = useState<State>({ status: 'loading' })
 
   const load = useCallback(async () => setState(await fetchSettings()), [])
+  const openAlerts = useOpenAlerts()
 
   useEffect(() => {
     let live = true
@@ -42,6 +59,11 @@ export function AdminSettings() {
       <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
       <section className={styles.group}>
         <h2 className={styles.groupTitle}>Management</h2>
+        <NavRow
+          label="Alerts"
+          meta={openAlerts === null ? 'problems the daily jobs found' : openAlerts === 0 ? 'none open' : `${openAlerts} open`}
+          to="/admin/alerts"
+        />
         <NavRow label="Users" meta="accounts and their strategies" to="/admin/users" />
         <NavRow label="Invites" meta="invite people and choose who can sign up" to="/admin/invites" />
         <NavRow label="Assets" meta="stocks, funds and indexes" to="/admin/assets" />
@@ -121,7 +143,7 @@ function groups(settings: AdminSetting[]): [string, AdminSetting[]][] {
   return [...byGroup]
 }
 
-/** "Send a test email": to the mail account itself, with the settings as saved. */
+/** "Send a test email": to the signed-in owner, with the settings as saved. */
 function TestEmail() {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)

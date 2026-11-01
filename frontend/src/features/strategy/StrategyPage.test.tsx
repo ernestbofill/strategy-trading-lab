@@ -104,9 +104,7 @@ describe('StrategyPage', () => {
       '/strategies/live/settings',
     )
     expect(screen.getByRole('heading', { name: 'Stocks · 1' })).toBeTruthy()
-    expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).toContain(
-      "Past results don't promise future ones.",
-    )
+    expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).not.toContain('Past results')
   })
 
   it("titles a fund strategy's list Funds and explains the S&P 500 fund only when asked", async () => {

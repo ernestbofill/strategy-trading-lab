@@ -50,7 +50,7 @@ class SessionAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> 
             return AuthenticateResult.NoResult();
         var sessions = services.GetRequiredService<Sessions>();
         if (await sessions.CurrentAsync(Context.RequestAborted) is not { } user) return AuthenticateResult.NoResult();
-        List<Claim> claims = [new(ClaimTypes.NameIdentifier, user.Id.ToString()), new(ClaimTypes.Role, user.Role.ToString())];
+        List<Claim> claims = [new(ClaimTypes.NameIdentifier, user.Id.ToString()), new(ClaimTypes.Role, user.Role.ToString()), new(ClaimTypes.Email, user.Email)];
         if (user.EmailVerifiedAt is not null) claims.Add(new(SessionAuthentication.VerifiedEmailClaim, "true"));
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name));

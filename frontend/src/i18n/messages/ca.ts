@@ -9,6 +9,7 @@ import { signal } from './ca/signal'
 import { stock } from './ca/stock'
 import { strategy } from './ca/strategy'
 import { trades } from './ca/trades'
+import { welcome } from './ca/welcome'
 
 import type { MessageKey } from './en'
 
@@ -24,4 +25,5 @@ export const ca: Record<MessageKey, string> = {
   ...stock,
   ...strategy,
   ...trades,
+  ...welcome,
 }

@@ -79,6 +79,23 @@ public class NotificationTests
     }
 
     [Fact]
+    public void An_email_with_a_token_has_an_unsubscribe_link_and_the_one_click_address()
+    {
+        var alert = EmailTexts.SignalAlert(Dip(), "https://app.example", "en", "tok3n");
+        var overview = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "ca", unsubscribeToken: "tok3n");
+        var none = EmailTexts.SignalAlert(Dip(), "https://app.example");
+
+        Assert.Contains("Turn off signal and reminder emails: https://app.example/unsubscribe/tok3n/alerts", alert.Text);
+        Assert.Contains("href=\"https://app.example/unsubscribe/tok3n/alerts\"", alert.Html);
+        Assert.Equal("https://app.example/api/email/unsubscribe/tok3n/alerts", alert.OneClickUnsubscribe);
+        Assert.Contains("Desactiva el resum diari: https://app.example/unsubscribe/tok3n/overview", overview.Text);
+        Assert.EndsWith(EmailTexts.DisclaimerCa, overview.Text);
+        Assert.Null(none.OneClickUnsubscribe);
+        Assert.DoesNotContain("unsubscribe", none.Text);
+        Assert.Equal(alert.OneClickUnsubscribe, new OutgoingEmail("a@b.c", alert).UnsubscribeUrl);
+    }
+
+    [Fact]
     public void An_empty_waiting_list_leaves_that_section_out()
     {
         var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example");
@@ -123,7 +140,6 @@ public class NotificationTests
     sealed class Captured : IEmailSender
     {
         public List<(string To, string Subject, string Body)> Sent { get; } = [];
-        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
             Sent.Add((email.To, email.Subject, email.Body));
@@ -135,7 +151,6 @@ public class NotificationTests
     {
         public bool SetUp { get; set; }
         public int Sent { get; private set; }
-        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
             if (!SetUp) throw new EmailNotSetUpException();
@@ -145,11 +160,11 @@ public class NotificationTests
     }
 
     static async Task<(Guid UserId, Guid StrategyId, Guid AssetId, Guid SignalId, string Email)> SeedAsync(AppDbContext db, bool verified = true, bool overview = true,
-        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid", bool evaluated = true)
+        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid", bool evaluated = true, bool alerts = true)
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         var asset = new Asset { Symbol = $"N{tag}", Exchange = "TEST", Name = "Test asset", Currency = "USD" };
-        var user = new User { Email = $"notify-{tag}@example.com", TimeZone = timeZone, Locale = "en", OverviewEmail = overview, EmailVerifiedAt = verified ? DateTimeOffset.UtcNow : null };
+        var user = new User { Email = $"notify-{tag}@example.com", TimeZone = timeZone, Locale = "en", OverviewEmail = overview, AlertEmails = alerts, EmailVerifiedAt = verified ? DateTimeOffset.UtcNow : null };
         db.Assets.Add(asset);
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -200,9 +215,35 @@ public class NotificationTests
 
             Assert.Equal((1, 0), (first, second));
             Assert.Equal(email, Assert.Single(sender.Sent).To);
+            var token = await db.Users.Where(u => u.Id == userId).Select(u => u.UnsubscribeToken).SingleAsync();
+            Assert.Contains($"/unsubscribe/{token}/alerts", sender.Sent[0].Body);
             var row = await db.Notifications.SingleAsync(n => n.UserId == userId);
             Assert.Equal((NotificationKind.Signal, NotificationChannel.Email, new DateOnly(2026, 10, 22)), (row.Kind, row.Channel, row.ForDate));
             Assert.NotNull(row.SentAt);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task No_alert_or_reminder_for_someone_who_turned_alerts_off()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, _, assetId, signalId, _) = await SeedAsync(db, alerts: false);
+        try
+        {
+            await db.Signals.Where(s => s.Id == signalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, new DateOnly(2026, 10, 23)));
+            var sender = new Captured();
+
+            var alerts = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var reminders = await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 23, 9, 0, 0, TimeSpan.Zero), default);
+
+            Assert.Equal((0, 0), (alerts, reminders));
+            Assert.Empty(sender.Sent);
         }
         finally
         {

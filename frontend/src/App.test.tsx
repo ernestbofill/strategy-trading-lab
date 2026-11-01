@@ -13,6 +13,7 @@ const account: Account = {
   locale: 'en',
   timeZone: 'UTC',
   overviewEmail: true,
+  alertEmails: true,
   currency: 'EUR',
   role: 'user',
   aiSharing: false,
@@ -30,6 +31,23 @@ afterEach(() => {
 })
 
 describe('app routes', () => {
+  it('opens the welcome highlight page at root for guests without an account', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Trade rules, not emotions.' })).toBeTruthy()
+    expect(screen.queryByText('Dashboard screen')).toBeNull()
+  })
+
+  it('keeps the dedicated welcome route working', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/welcome')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Trade rules, not emotions.' })).toBeTruthy()
+  })
+
   it('opens the dashboard at the home route', async () => {
     vi.spyOn(api, 'getAccount').mockResolvedValue(account)
 

@@ -260,6 +260,12 @@ export const httpApi: Api = {
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
   setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
+  setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
+  unsubscribe: async (token, kind) => {
+    const response = await fetch(`${BASE_URL}/email/unsubscribe/${encodeURIComponent(token)}/${kind}`, { method: 'POST', headers: APP_HEADER })
+    if (response.status === 404) throw new ExpiredLinkError()
+    if (!response.ok) throw new Error(`Couldn't turn the emails off (${response.status}).`)
+  },
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
@@ -307,9 +313,15 @@ export const httpApi: Api = {
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
   getAdminAssets: async () => (await admin('GET', '/assets')).json(),
   getAdminUsers: async () => (await admin('GET', '/users')).json(),
+  getAdminAlerts: async () => (await admin('GET', '/alerts')).json(),
+  dismissAdminAlert: async (id) => void (await admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
   setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
   addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
   updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),
+  flushAdminPrices: async () => (await admin('DELETE', '/assets/prices')).json(),
+  flushAdminAssetPrices: async (id) => void (await admin('DELETE', `/assets/${encodeURIComponent(id)}/prices`)),
+  downloadAdminAssetPrices: async (id, years) => (await admin('POST', `/assets/${encodeURIComponent(id)}/prices`, { years })).json(),
+  downloadAdminRates: async (years) => (await admin('POST', '/assets/rates', { years })).json(),
   submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
   getFeedback: async (status) =>
     (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],

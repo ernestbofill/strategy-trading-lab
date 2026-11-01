@@ -27,6 +27,23 @@ public class YahooClientTests
         Assert.Equal(1341500, candles[1].Volume);
     }
 
+    [Theory]
+    [InlineData("3mo")]
+    [InlineData("1mo")]
+    [InlineData("1wk")]
+    public void Bars_that_are_not_daily_are_refused(string granularity)
+    {
+        // What range=max answers for a long history, whatever interval was asked for.
+        var json = Stock.Replace("\"symbol\":\"ZS\"", $"\"symbol\":\"ZS\",\"dataGranularity\":\"{granularity}\"");
+
+        var error = Assert.Throws<MarketDataException>(() => YahooClient.Parse(json, "ZS", adjusted: true));
+        Assert.Contains(granularity, error.Message);
+    }
+
+    [Fact]
+    public void Daily_bars_are_read() =>
+        Assert.Equal(3, YahooClient.Parse(Stock.Replace("\"symbol\":\"ZS\"", "\"symbol\":\"ZS\",\"dataGranularity\":\"1d\""), "ZS", adjusted: true).Count);
+
     [Fact]
     public void Unadjusted_candles_keep_the_raw_prices()
     {

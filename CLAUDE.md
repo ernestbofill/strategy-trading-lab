@@ -14,7 +14,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 
 - [ROADMAP.md](ROADMAP.md): what is built, what comes next and the open decisions. It is the backlog: take work from it and keep it up to date.
 - [docs/strategy-trading-lab-app-spec.md](docs/strategy-trading-lab-app-spec.md): every screen and behaviour. It is work in progress, and so is the implementation:
-  - Its copy is the current version, not final. You may shorten or improve it (see *UI simplicity* in the frontend instructions), except the disclaimers and "Past results don't promise future ones.", which stay word for word.
+  - Its copy is the current version, not final. You may shorten or improve it (see *UI simplicity* in the frontend instructions), except the disclaimers, which stay word for word.
   - Text in `[brackets]` is a placeholder for data or copy still to be written.
   - It has gaps, and some parts are only ideas. Where it is unclear or doesn't fit, make a reasonable assumption, build it, and update the spec in the same PR. List each assumption in the PR description.
 - [wireframes/](wireframes/): one `.dc.html` per screen (design-tool format, not runnable). Use their markup for layout, spacing and colours.
@@ -75,10 +75,8 @@ Ask for a credential when you need one.
 ## Product rules
 
 - **Describe, don't instruct.** No "buy now", no urgency, no price targets or return forecasts, no "recommended for you".
-- **A disclaimer** wherever results or signals appear. The user sees it over and over, so it comes in two lengths:
-  - Short, on screens seen again and again: "Not financial advice. Signals follow your rules."
-  - Full, where the user commits (accepted once at sign-up, above the Confirm button, the legal page): "Not financial advice. Signals follow your rules; you decide and trade at your own broker."
-- Results are always shown next to the index fund and the worst year. Past results never come without "Past results don't promise future ones."
+- **One disclaimer, in the site footer.** Every screen ends with "Not financial advice. Signals follow your rules." and the legal links; screens don't repeat it or add other disclaimer lines, because the app is already text heavy (Ernest, #105). The full one, "Not financial advice. Signals follow your rules; you decide and trade at your own broker.", is accepted once at sign-up and opens the Disclaimer and Terms pages, which hold the details (including "Past results don't promise future ones."). Emails, which have no app footer, keep the short one.
+- Results are always shown next to the index fund and the worst year.
 - Words: say *stock* or *fund* and *step*, not *tranche*.
 - Every strategy shows its mode (*Simulation* or *Live*). Results of the two modes are never mixed.
 - Mobile first (wireframes are 390px wide), but every screen must also work on desktop, with no horizontal scrolling.

@@ -308,7 +308,7 @@ public class StrategyEvaluatorTests
             await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.StartedOn, startedAfterSession));
             await db.StrategyAssets.Where(sa => sa.StrategyId == strategyId).ExecuteUpdateAsync(sa => sa.SetProperty(x => x.AddedAt, new DateTimeOffset(startedAfterSession.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)));
 
-            var evaluator = new StrategyEvaluator(db, new Clock(new DateTimeOffset(startedAfterSession.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero)), NullLogger<StrategyEvaluator>.Instance);
+            var evaluator = Evaluator(db, new Clock(new DateTimeOffset(startedAfterSession.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero)));
             await evaluator.RunAsync(default);
 
             var evaluated = await db.DailyEvaluations.SingleAsync(e => e.StrategyId == strategyId);

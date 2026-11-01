@@ -87,30 +87,35 @@
     "checks": {
       "gain": {
         "label": "Creixement provat",
-        "detail": "Ha pujat un {value}% des del seu mínim (cal un {min}%).",
+        "detail": "Ha pujat un {value}% des del seu mínim ({level} → {endLevel}, cal un {min}%).",
         "short": "ha pujat un {value}% (cal un {min}%)",
         "info": "El màxim recent ha de ser almenys un {min}% per sobre del tancament més baix dels últims mesos: només compten les guanyadores provades."
       },
       "stacked": {
         "label": "Mitjanes en ordre",
-        "detail": "Cal la mitjana curta per sobre de la mitjana, i aquesta per sobre de la llarga.",
+        "detail": "Curta {level} · mitjana {midLevel} · llarga {endLevel} (cal curta > mitjana > llarga).",
+        "none": "Cal la mitjana curta per sobre de la mitjana, i aquesta per sobre de la llarga.",
         "short": "mitjanes desordenades",
         "info": "La SMA 50, la SMA 150 i la SMA 200 (tancament mitjà d'aquests dies), en aquest ordre: una tendència alcista estable."
       },
       "rising": {
         "label": "Mitjana llarga a l'alça",
-        "detail": "Cal que la mitjana llarga sigui més alta que fa 20 sessions.",
-        "short": "la mitjana llarga no puja"
+        "detail": "{+value}% respecte a fa 20 sessions ({endLevel} → {level}, cal per sobre del 0%).",
+        "none": "Cal que la mitjana llarga sigui més alta que fa 20 sessions.",
+        "short": "la mitjana llarga no puja",
+        "info": "La mitjana llarga (SMA 200) ha de ser més alta que fa 20 sessions perquè la tendència de fons apunti amunt."
       },
       "zone": {
         "label": "A la zona de descompte",
-        "detail": "{value}% per sota del màxim recent. La zona és d'un {min}–{max}% per sota ({level} i avall).",
+        "detail": "{value}% per sota del màxim recent. La zona és d'un {min}–{max}% per sota ({level} a {endLevel}).",
+        "past": "{value}% per sota del màxim recent — ha caigut més enllà de la zona del {min}–{max}% ({level} a {endLevel}).",
         "short": "{value}% sota el màxim (zona {min}–{max}%)",
+        "pastShort": "{value}% sota el màxim (més enllà del {max}%)",
         "info": "La zona de descompte és un retrocés d'un {min}–{max}% per sota del tancament més alt de les últimes setmanes."
       },
       "floor": {
         "label": "Per sobre de la mitjana terra",
-        "detail": "{+value}% respecte a la mitjana terra ({level}).",
+        "detail": "{+value}% respecte a la mitjana terra ({level}, cal 0% o més).",
         "short": "per sota de la mitjana terra",
         "info": "Un retrocés que travessa la SMA 50 és un enfonsament, no un descompte."
       },
@@ -214,27 +219,32 @@
     "checks": {
       "beaten": {
         "label": "Ha caigut fa poc",
-        "detail": "L'última caiguda forta va ser fa {value} sessions. Compta durant {max} dies.",
+        "detail": "Candidata des del {date} (fa {value} sessions; la finestra és de {max} dies). Ara {+subValue}% des del màxim de 52 setmanes ({level}) i {+endValue}% respecte a la SMA 200 ({endLevel}).",
+        "past": "Finestra tancada: l'última caiguda forta va ser el {date} (fa {value} sessions; la finestra és de {max} dies).",
         "short": "no ha caigut prou fa poc",
+        "pastShort": "finestra tancada (fa {value}d, màx. {max}d)",
         "none": "No ha caigut prou en tot el seu historial de preus.",
-        "info": "Caiguda forta: almenys un {min}% per sota del màxim de 52 setmanes i per sota de la SMA 200. Continua sent candidata {max} sessions més."
+        "info": "Caiguda forta: almenys un {min}% per sota del màxim de 52 setmanes i per sota de la SMA 200. Continua sent candidata {max} sessions més mentre es recupera."
       },
       "drop": {
         "label": "Caiguda des del màxim de 52 setmanes",
-        "detail": "{+value}% des del màxim de 52 setmanes ({level}).",
-        "short": "{+value}% des del màxim"
+        "detail": "{+value}% des del màxim de 52 setmanes ({level}, cal −{min}% o menys).",
+        "short": "{+value}% des del màxim (cal −{min}%)",
+        "info": "Per activar una candidata, el tancament ha de caure almenys un {min}% per sota del tancament més alt de les últimes 52 setmanes."
       },
       "vsSma200": {
-        "label": "Preu respecte a la SMA 200",
-        "detail": "{+value}% respecte a la SMA 200 ({level}).",
-        "short": "{+value}% respecte a la SMA 200",
-        "info": "El tancament mitjà dels últims 200 dies, la tendència llarga."
+        "label": "Per sota de la SMA 200 en la caiguda",
+        "detail": "{+value}% respecte a la SMA 200 ({level}); cal tancar per sota de 0% alhora que la caiguda del {min}%.",
+        "short": "{+value}% respecte a la SMA 200 (cal per sota)",
+        "info": "Per convertir-se en candidata de gir, l'acció primer ha d'enfonsar-se per sota de la seva mitjana de 200 dies durant la caiguda."
       },
       "buyLine": {
         "label": "Preu respecte a la línia de compra",
-        "detail": "{+value}% respecte a la línia de compra ({level}). Un pas necessita de 0 a +{max}%.",
+        "detail": "{+value}% respecte a la línia de compra ({level}). Un pas necessita de 0% a +{max}% (fins a {endLevel}).",
+        "past": "Massa lluny: {+value}% per sobre de la línia de compra ({level}); més d'un +{max}% ({endLevel}) és massa tard.",
         "short": "{+value}% respecte a la línia de compra",
-        "info": "La línia de compra és un {min}% per sobre de la SMA 50, el tancament mitjà dels últims 50 dies: l'acció ha girat."
+        "pastShort": "massa lluny de la línia ({+value}%, màx. +{max}%)",
+        "info": "La línia de compra és un {min}% per sobre de la SMA 50 ({midLevel}), el tancament mitjà dels últims 50 dies: l'acció ha girat."
       },
       "chase": {
         "label": "No massa lluny de la línia",
@@ -249,24 +259,36 @@
       },
       "sma200": {
         "label": "Torna per sobre de la SMA 200",
-        "detail": "{+value}% respecte a la SMA 200 ({level}).",
-        "short": "per sota de la SMA 200"
+        "detail": "{+value}% respecte a la SMA 200 ({level}). Un pas necessita de 0% a +{max}% (fins a {endLevel}).",
+        "past": "Massa lluny: {+value}% per sobre de la SMA 200 ({level}); el límit és +{max}% ({endLevel}).",
+        "short": "per sota de la SMA 200",
+        "pastShort": "massa lluny de la SMA 200 ({+value}%)",
+        "info": "Fita: recuperar la mitjana de 200 dies confirma la recuperació a llarg termini i dona un pas si es compra dins de +{max}%."
       },
       "golden": {
         "label": "Creu daurada",
-        "detail": "Cal la SMA 50 per sobre de la SMA 200. Preu {+value}% respecte a la SMA 50 ({level}).",
-        "short": "encara sense creu daurada"
+        "detail": "La SMA 50 ({level}) està a {+subValue}% respecte a la SMA 200 ({midLevel}). Preu {+value}% respecte a la SMA 50 (finestra de 0% a +{max}%, fins a {endLevel}).",
+        "past": "La SMA 50 ({level}) està a {+subValue}% respecte a la SMA 200 ({midLevel}), però el preu està a {+value}% per sobre de la SMA 50 (el límit és +{max}%, {endLevel}).",
+        "short": "encara sense creu daurada",
+        "pastShort": "massa lluny de la SMA 50 ({+value}%)",
+        "info": "Fita: la mitjana de 50 dies creua per sobre de la mitjana de 200 dies, confirmant una tendència alcista a mitjà termini."
       },
       "near_high": {
         "label": "A prop del màxim antic",
-        "detail": "Cal un tancament a menys d'un {min}% del màxim de 52 setmanes: {+value}% respecte a aquesta línia ({level}).",
-        "short": "{+value}% respecte a la línia del màxim"
+        "detail": "{+value}% respecte a la línia del màxim ({level}, a menys d'un {min}% de {midLevel}). Finestra de 0% a +{max}% (fins a {endLevel}).",
+        "past": "Massa lluny: {+value}% per sobre de la línia del màxim ({level}); el límit és +{max}% ({endLevel}).",
+        "short": "{+value}% respecte a la línia del màxim",
+        "pastShort": "massa lluny de la línia del màxim ({+value}%)",
+        "info": "Fita: el preu es recupera fins a situar-se a menys d'un {min}% del màxim de 52 setmanes."
       },
       "breakout": {
         "label": "Ruptura",
-        "detail": "{+value}% respecte al màxim d'abans del retrocés d'un {min}% ({level}).",
+        "detail": "{+value}% respecte al màxim d'abans del retrocés d'un {min}% ({level}, finestra de 0% a +{max}% fins a {endLevel}).",
+        "past": "Massa lluny: {+value}% per sobre del nivell de ruptura ({level}); el límit és +{max}% ({endLevel}).",
         "short": "encara sense ruptura",
-        "none": "Primer cal un retrocés d'un {min}%, i després un tancament per sobre del màxim d'abans."
+        "pastShort": "massa lluny de la ruptura ({+value}%)",
+        "none": "Primer cal un retrocés d'un {min}%, i després un tancament per sobre del màxim d'abans.",
+        "info": "Fita: després de retrocedir almenys un {min}% des d'un màxim posterior a la compra, superar aquest màxim dona un pas."
       },
       "cooldown": {
         "label": "Espera després d'un pas",
@@ -352,13 +374,17 @@
       },
       "bounce": {
         "label": "Rebot des del mínim",
-        "detail": "{value}% per sobre del mínim de la caiguda. El primer pas arriba al {min}% ({level}).",
-        "short": "{value}% sobre el mínim (cal un {min}%)"
+        "detail": "{value}% per sobre del mínim de la caiguda ({endLevel}). El primer pas arriba al +{min}% ({level}).",
+        "none": "Un cop en una caiguda, el primer pas arriba quan el tancament puja un +{min}% des del mínim de la caiguda.",
+        "short": "{value}% sobre el mínim (cal un {min}%)",
+        "info": "En lloc d'endevinar el fons d'una caiguda, la primera compra espera un rebot del +{min}% des del mínim."
       },
       "pace": {
         "label": "Pas següent",
         "detail": "{value} de {min} sessions des de l'últim pas.",
-        "short": "{value} de {min} dies fins al pas següent"
+        "none": "Després del primer rebot, assenyala un pas més cada {min} sessions fins a comprar tots els passos.",
+        "short": "{value} de {min} dies fins al pas següent",
+        "info": "Reparteix els passos restants al llarg de la recuperació a un ritme fix d'un pas cada {min} sessions."
       }
     }
   },
@@ -423,14 +449,15 @@
     "checks": {
       "buyLine": {
         "label": "Preu respecte a la línia de compra",
-        "detail": "{+value}% respecte a la línia de compra ({level}), un {min}% per sobre de la línia de tendència.",
+        "detail": "{+value}% respecte a la línia de compra ({level}, +{min}% per sobre de la SMA {midLevel}). El tancament és a {+subValue}% de la SMA.",
         "short": "{+value}% respecte a la línia de compra",
-        "info": "La línia de tendència és el tancament mitjà dels últims 200 dies."
+        "info": "La línia de tendència és el tancament mitjà dels últims 200 dies. Assenyala compra per sobre del +{min}%; dins la banda del ±{min}% ({endLevel} a {level}), la tendència es manté."
       },
       "sellLine": {
         "label": "Preu respecte a la línia de venda",
-        "detail": "{+value}% respecte a la línia de venda ({level}), un {min}% per sota de la línia de tendència.",
-        "short": "{+value}% respecte a la línia de venda"
+        "detail": "{+value}% respecte a la línia de venda ({level}, −{min}% per sota de la SMA {midLevel}). El tancament és a {+subValue}% de la SMA.",
+        "short": "{+value}% respecte a la línia de venda",
+        "info": "Assenyala venda per sota del −{min}% de la mitjana de 200 dies; dins la banda del ±{min}% ({level} a {endLevel}), la posició es manté."
       }
     }
   },

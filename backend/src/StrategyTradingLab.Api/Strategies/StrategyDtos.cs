@@ -100,6 +100,7 @@ public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Sta
     public string Currency { get; init; } = "";
     public string? What { get; init; }
     public DateOnly? CheckedOn { get; init; }
+    public DateOnly? CandidateSince { get; init; }
     public decimal? Close { get; init; }
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
 }

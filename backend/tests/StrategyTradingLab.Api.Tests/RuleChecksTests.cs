@@ -18,7 +18,7 @@ public class RuleChecksTests
         return [.. g.Dates.Select((d, i) => new PriceBar(DateOnly.Parse(d), g.Close[i], g.Close[i], g.Close[i], g.Close[i], g.Volume?[i] ?? 0))];
     }
 
-    static IEnumerable<RuleCheck> Group(DayEvaluation day, string group) => day.Checks.Where(c => c.Group == group);
+    static IEnumerable<RuleCheck> Group(DayEvaluation day, string group) => day.Checks.Where(c => c.Group == group && c.Preview != true);
 
     static bool AllMet(DayEvaluation day, string group) => Group(day, group).All(c => c.Met != false);
 
@@ -137,5 +137,36 @@ public class RuleChecksTests
         Assert.Equal(Strategies.StockStatus.Watching, Strategies.StrategyPage.WithCandidacy(Strategies.StockStatus.Watching, waiting));
         Assert.Equal(Strategies.StockStatus.Watching, Strategies.StrategyPage.WithCandidacy(Strategies.StockStatus.Watching, []));
         Assert.Equal(Strategies.StockStatus.Building, Strategies.StrategyPage.WithCandidacy(Strategies.StockStatus.Building, lost));
+    }
+
+    [Theory]
+    [InlineData("dip", "dip-NOW")]
+    [InlineData("comeback", "comeback-NOW-2400")]
+    [InlineData("bear", "bear-SPY-5600")]
+    [InlineData("trend", "trend-SPY-5600")]
+    public void Every_check_has_a_boolean_verdict_and_candidates_report_candidate_since(string templateKey, string name)
+    {
+        var bars = Bars(name);
+        IBuyRules rules = templateKey switch
+        {
+            "dip" => new DipRules(bars, new DipParams()),
+            "comeback" => new ComebackRules(bars, new ComebackParams()),
+            "bear" => new BearRules(bars, new BearParams()),
+            _ => new TrendRules(bars, new TrendParams()),
+        };
+        var days = RulesRunner.Run(rules, bars, new StepPlan(templateKey == "trend" ? 1 : 5)).Where(d => d.Checks.Count > 0).ToList();
+
+        Assert.All(days.SelectMany(d => d.Checks), c => Assert.NotNull(c.Met));
+        if (templateKey != "trend")
+        {
+            var candidateDays = days.Where(d => Group(d, CheckGroup.Candidate).Any() && Group(d, CheckGroup.Candidate).All(c => c.Met == true)).ToList();
+            Assert.NotEmpty(candidateDays);
+            Assert.All(candidateDays, d => Assert.True(d.Facts?.ContainsKey("candidateSince") == true));
+        }
+        if (templateKey is "comeback" or "bear")
+        {
+            var prePosition = days.First(d => !Group(d, CheckGroup.Next).Any());
+            Assert.Contains(prePosition.Checks, c => c.Group == CheckGroup.Next && c.Preview == true);
+        }
     }
 }

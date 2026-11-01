@@ -91,6 +91,38 @@ describe('stockLine', () => {
 
     const not = stockLine(row({ status: 'notCandidate', checks: [check('gain', 'candidate', false, 31.5, 50)] }), 'live', 'EUR', words, texts)
     expect([not.pill, not.detail]).toEqual(['NOT A CANDIDATE', 'Rose 31.5% (needs 50%)'])
+
+    const pastTexts = {
+      ...texts,
+      zone: { ...texts.zone, pastShort: '{value}% below peak (past {max}% zone)' },
+      sma200: { label: 'SMA 200', detail: '', short: 'below the SMA 200' },
+    }
+    const pastZone = row({
+      status: 'watching',
+      checks: [
+        check('gain', 'candidate', true, 80, 50),
+        check('zone', 'buy', false, 26.7, 5, 15),
+        { ...check('sma200', 'next' as 'buy', false, -5, 0, 8), preview: true },
+      ],
+    })
+    expect(stockLine(pastZone, 'live', 'EUR', words, pastTexts).detail).toBe('26.7% below peak (past 15% zone)')
+
+    const comebackTexts = {
+      beaten: { label: 'Beaten', detail: '', short: 'not beaten down lately', pastShort: 'candidate window closed ({value}d ago)' },
+      drop: { label: 'Drop', detail: '', short: '{+value}% from its high (needs −{min}%)' },
+      golden: { label: 'Golden cross', detail: '', short: 'no golden cross yet', pastShort: 'past the SMA 50 limit ({+value}%)' },
+    }
+    const notBeaten = row({
+      status: 'notCandidate',
+      checks: [check('beaten', 'candidate', false, 74, 30, 60), check('drop', 'candidate', false, -12, 30)],
+    })
+    expect(stockLine(notBeaten, 'live', 'EUR', words, comebackTexts).detail).toBe('Candidate window closed (74d ago)')
+
+    const noGoldenYet = row({
+      status: 'watching',
+      checks: [{ ...check('golden', 'next' as 'buy', false, 14.2, 0, 8), subValue: -8.5 }],
+    })
+    expect(stockLine(noGoldenYet, 'live', 'EUR', words, comebackTexts).detail).toBe('No golden cross yet')
   })
 
   it('shows the result with what was put in, or a dash with no buys', () => {

@@ -1,23 +1,48 @@
 import type { CheckGroup, CheckTexts, RuleCheck, StockRow } from '../../api'
-import { exact, formatRate } from '../../lib/format'
+import { exact, formatRate, shortDate } from '../../lib/format'
 
 const minus = (s: string) => s.replace('-', '−')
-const plain = (n: number | null) => (n === null ? '–' : minus(formatRate(n)))
-const signed = (n: number | null) => (n === null ? '–' : `${n > 0 ? '+' : ''}${plain(n)}`)
+const plain = (n: number | null | undefined) => (n === null || n === undefined ? '–' : minus(formatRate(n)))
+const signed = (n: number | null | undefined) => (n === null || n === undefined ? '–' : `${n > 0 ? '+' : ''}${plain(n)}`)
+const price = (n: number | null | undefined, currency: string) => (n === null || n === undefined ? '–' : exact(n, currency))
 
-/** A check's words with its numbers in: {value}, {+value} (signed), {min}, {max}, and {level} (a price in the stock's currency). */
+/** Whether an unmet check has gone past its upper bound (window closed, fell past zone, or past chase limit). */
+export const isPastMax = (check: RuleCheck): boolean =>
+  check.met === false &&
+  check.value !== null &&
+  check.max !== null &&
+  check.value > check.max &&
+  !(check.key === 'golden' && (check.subValue ?? 0) <= 0)
+
+/** A check's words with its numbers in: {value}, {+value} (signed), {min}, {max}, {level}, {midLevel}, {endLevel}, and {date}. */
 export function fillCheck(text: string, check: RuleCheck, currency: string): string {
-  return text
+  const out = text
     .replaceAll('{+value}', signed(check.value))
     .replaceAll('{value}', plain(check.value))
+    .replaceAll('{+subValue}', signed(check.subValue))
+    .replaceAll('{subValue}', plain(check.subValue))
+    .replaceAll('{+endValue}', signed(check.endValue))
+    .replaceAll('{endValue}', plain(check.endValue))
     .replaceAll('{min}', plain(check.min))
     .replaceAll('{max}', plain(check.max))
-    .replaceAll('{level}', check.level === null ? '–' : exact(check.level, currency))
+    .replaceAll('{level}', price(check.level, currency))
+    .replaceAll('{midLevel}', price(check.midLevel, currency))
+    .replaceAll('{endLevel}', price(check.endLevel, currency))
+    .replaceAll('{date}', check.date ? shortDate(check.date) : '–')
+  // Cleanly strip optional clauses when rendering pre-deploy stored evaluations that lack the new fields.
+  return out
+    .replace(/ Now –%[^.]*\./g, '')
+    .replace(/ Ara –%[^.]*\./g, '')
+    .replace(/ (?:since|on|des del|el) – \(/g, ' (')
+    .replace(/\(– → –, /g, '(')
+    .replace(/ \((?:up to |fins a )?–\)/g, '')
+    .replace(/ to –\)/g, ')')
 }
 
-/** Where the stock stands on one rule: the detail sentence, or the short one for the list; `none` when it has no value. */
+/** Where the stock stands on one rule: the detail sentence, or the short one for the list; `past` when past `max`, `none` when it has no value. */
 export function checkText(check: RuleCheck, texts: CheckTexts, currency: string, kind: 'detail' | 'short'): string {
-  const text = check.value === null && texts.none ? texts.none : texts[kind]
+  const past = isPastMax(check) ? (kind === 'detail' ? texts.past : texts.pastShort) : null
+  const text = check.value === null && texts.none ? texts.none : (past ?? texts[kind])
   return fillCheck(text, check, currency)
 }
 
@@ -29,11 +54,12 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
  */
 export function unmetLine(row: StockRow, texts: Record<string, CheckTexts> | null | undefined, groups: CheckGroup[]): string | null {
   if (!texts) return null
-  const unmet = row.checks.filter((c) => groups.includes(c.group) && c.met === false && texts[c.key])
+  const unmet = row.checks.filter((c) => !c.preview && groups.includes(c.group) && c.met === false && texts[c.key])
   if (unmet.length === 0) return null
+  const beaten = unmet.find((c) => c.key === 'beaten')
+  const picked = beaten ? [beaten] : unmet.slice(0, 2)
   return capitalize(
-    unmet
-      .slice(0, 2)
+    picked
       .map((c) => checkText(c, texts[c.key], row.currency, 'short'))
       .join(' · '),
   )

@@ -334,17 +334,19 @@ public static class StrategyEndpoints
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
             var buySignals = own.Count(s => s.Side == TradeSide.Buy);
+            var bearCycle = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
+            var cycleBuys = bearCycle.CycleStart is { } cycleStart
+                ? own.Count(s => s.Side == TradeSide.Buy && s.SignalDate >= cycleStart)
+                : buySignals;
             int rulesSteps;
             if (maxSteps is null)
             {
                 var lastSignal = own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault();
                 rulesSteps = lastSignal?.Side == TradeSide.Buy ? 1 : 0;
             }
-            else if (strategy.TemplateKey == "bear"
-                && evaluation?.Facts.RootElement.TryGetProperty("doneSteps", out var ds) == true
-                && ds.ValueKind == JsonValueKind.Number)
+            else if (bearCycle.DoneSteps is { } doneSteps)
             {
-                rulesSteps = Math.Min(ds.GetInt32(), buySignals);
+                rulesSteps = Math.Min(doneSteps, cycleBuys);
             }
             else
             {
@@ -352,7 +354,8 @@ public static class StrategyEndpoints
             }
             var userSteps = maxSteps is null ? (invested > 0 ? 1 : 0)
                 : strategy.TemplateKey == "bear" && !live ? rulesSteps
-                : trades.Count(b => b.Side == TradeSide.Buy);
+                : bearCycle.DoneSteps == 0 ? 0
+                : trades.Count(b => b.Side == TradeSide.Buy && (bearCycle.CycleStart is null || b.Date >= bearCycle.CycleStart));
 
             // Before an AI strategy's daily check has a verdict: watching once a round scored the stock, else not scored yet.
             var latestStatus = evaluation?.Status

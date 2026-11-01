@@ -17,6 +17,8 @@ import { errorText } from './copy'
 import { EMAILS_HASH, logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
+import { DevicePush } from './DevicePush'
+import { unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SendFeedback } from '../feedback/SendFeedback'
 
@@ -39,6 +41,8 @@ export function AccountPage() {
     setLoggingOut(true)
     setLogOutError(null)
     try {
+      // The next person on this device mustn't get this account's alerts: the device stops first (best effort).
+      await unsubscribeDevice().catch(() => {})
       await api.logOut()
     } catch (err) {
       // Only a session that is already gone counts as logged out: otherwise the cookie still works, so say so.
@@ -97,6 +101,10 @@ export function AccountPage() {
         <EmailSwitch current={account.overviewEmail} label={t('account.overviewEmail')} save={api.setOverviewEmail} onSaved={refresh} />
         <EmailSwitch current={account.alertEmails} label={t('account.alertEmails')} save={api.setAlertEmails} onSaved={refresh} />
         {account.overviewEmail && <StockChangeEmailList />}
+      </Section>
+
+      <Section title={t('account.page.notifications')}>
+        <DevicePush />
       </Section>
 
       <Section title={t('account.page.dataPrivacy')}>

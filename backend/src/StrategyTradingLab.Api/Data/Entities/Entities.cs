@@ -150,6 +150,8 @@ public class Strategy : IHasUpdatedAt
     /// <summary>When the user archived it (status <c>Ended</c>): it stops, and shows in the dashboard's collapsed Archived section.</summary>
     public DateTimeOffset? EndedAt { get; set; }
     public bool Notifications { get; set; } = true;
+    /// <summary>Its alerts also go to the user's devices by web push (Choose the mode's Alerts box, the strategy page). Off by default.</summary>
+    public bool Push { get; set; }
     /// <summary>Whether the daily overview says when a stock becomes or stops being a candidate, or comes close to its signal (opt in, on the account page).</summary>
     public bool StockChangeEmails { get; set; }
     public required string Currency { get; set; }

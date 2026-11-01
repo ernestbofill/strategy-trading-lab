@@ -91,6 +91,8 @@ export const strategy = {
   'strategy.alerts.rounds': 'Email me when its AI round is due',
   'strategy.alerts.both': 'Email me its signals and AI rounds',
   'strategy.alerts.hint': 'The daily overview still lists them.',
+  'strategy.push': 'Notify my devices too',
+  'strategy.push.hint': 'Devices where you allowed notifications, in Account.',
   'strategy.alertsFailed': "Couldn't save it. Try again.",
   'strategy.archive': 'Archive the strategy',
   'strategy.archiveAsk': "Archive {name}? The daily check stops and signals still waiting close as missed. Its history stays, read-only, under Archived. This can't be undone.",

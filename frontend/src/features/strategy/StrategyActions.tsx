@@ -5,6 +5,8 @@ import { Checkbox, FormMessage, TextField } from '../../components/Field'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { invalidate, invalidateAll } from '../../lib/useLoadable'
+import { subscribeDevice } from '../../lib/push'
+import { usePushOffered } from '../account/usePushOffered'
 import { useDashboard } from '../dashboard/useDashboard'
 import { draftFromStrategy } from '../new-strategy/goLive'
 import { defaultName, NAME_MAX_LENGTH } from '../new-strategy/newStrategy'
@@ -89,6 +91,45 @@ export function AlertsSwitch({ s }: { s: StrategyDetail }) {
         {label}
       </Checkbox>
       <p className="caption">{t('strategy.alerts.hint')}</p>
+      {failed && <FormMessage tone="error">{t('strategy.alertsFailed')}</FormMessage>}
+    </div>
+  )
+}
+
+/**
+ * The push switch, for the same strategies (Choose the mode's Alerts box set it). Turning it on also asks to allow
+ * notifications on this device, from the tap. Only where the app offers push, unless it is already on.
+ */
+export function PushSwitch({ s }: { s: StrategyDetail }) {
+  const t = useT()
+  const offered = usePushOffered()
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  if (!offered && !s.push) return null
+
+  const change = async (enabled: boolean) => {
+    if (busy) return
+    setBusy(true)
+    setFailed(false)
+    try {
+      // Before the save: Safari only asks for permission straight from a tap. Refused, the switch still saves.
+      if (enabled) await subscribeDevice().catch(() => false)
+      await api.setStrategyPush(s.id, enabled)
+      invalidate(strategyCacheKey(s.id))
+    } catch (err) {
+      if (err instanceof UnauthorizedError) return
+      setFailed(true)
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className={styles.alerts}>
+      <Checkbox checked={s.push} onChange={(enabled) => void change(enabled)}>
+        {t('strategy.push')}
+      </Checkbox>
+      <p className="caption">{t('strategy.push.hint')}</p>
       {failed && <FormMessage tone="error">{t('strategy.alertsFailed')}</FormMessage>}
     </div>
   )

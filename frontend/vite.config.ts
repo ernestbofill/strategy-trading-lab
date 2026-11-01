@@ -19,7 +19,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       // Opening the API in a tab must reach the server, not the app shell; admin chunks load only on /admin.
-      workbox: { navigateFallbackDenylist: [/^\/api\//], globIgnores: ['**/Admin*'] },
+      // push-sw.js shows the web push notifications and opens the app on a tap.
+      workbox: { navigateFallbackDenylist: [/^\/api\//], globIgnores: ['**/Admin*'], importScripts: ['push-sw.js'] },
       manifest: {
         name: 'Strategy Trading Lab',
         short_name: 'STL',

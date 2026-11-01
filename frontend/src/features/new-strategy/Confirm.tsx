@@ -63,6 +63,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Ticked in Choose the mode's Alerts box (shown only where the app offers push), for strategies that alert.
+  const push = draft.push && (isLive || template.aiRound !== null)
 
   // Numbered against the user's strategies once they are loaded; only queried for logged-in accounts.
   const dashboard = useDashboard(Boolean(account))
@@ -82,7 +84,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     setStarting(true)
     setError(null)
     try {
-      await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
+      await api.startStrategy({ ...newStrategyFrom(draft, template, shownName, currency), push })
     } catch (e) {
       setError(
         e instanceof NameTakenError
@@ -100,7 +102,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     invalidate(dashboardCacheKey)
     // Replace this screen in the history: going back must not reopen Confirm with the reset draft, which would
     // start a second strategy from the default template. An AI strategy's first round waits on the dashboard.
-    navigate(dashboardPath, { replace: true })
+    // With push chosen, the dashboard asks to allow notifications on this device (spec: Choose the mode, Alerts).
+    navigate(dashboardPath, { replace: true, state: push ? { askPush: true } : null })
     reset()
   }
 
@@ -140,7 +143,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       to: budgetPath,
     },
     { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: isGuest ? undefined : accountEmailsPath },
-    ...(isLive ? [{ label: t('newStrategy.confirm.row.alerts'), value: t('newStrategy.confirm.alerts'), to: modePath }] : []),
+    ...(isLive || template.aiRound
+      ? [{ label: t('newStrategy.confirm.row.alerts'), value: t(push ? 'newStrategy.confirm.alertsPush' : 'newStrategy.confirm.alerts'), to: modePath }]
+      : []),
     ...(template.aiRound
       ? [
           {

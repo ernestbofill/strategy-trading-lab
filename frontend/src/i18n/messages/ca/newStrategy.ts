@@ -125,6 +125,10 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.mode.listLabel': 'Mode',
   'newStrategy.mode.continue': 'Continua',
   'newStrategy.mode.liveNote': "L'app mai no opera per tu ni es connecta al teu broker. Només registra el que confirmes.",
+  'newStrategy.mode.alerts': 'Avisos',
+  'newStrategy.mode.push': 'Notifica-m’ho també als meus dispositius',
+  'newStrategy.mode.pushHint': "Just després del tancament del mercat. Els avisos per correu continuen activats com a alternativa. Ho pots canviar més endavant a la pàgina de l'estratègia.",
+  'newStrategy.mode.pushHomeScreen': "A l'iPhone, primer afegeix l'app a la pantalla d'inici.",
   'newStrategy.mode.noBacktest':
     "{name} no té backtest, en cap dels dos modes: els resultats comencen el dia que s'inicia l'estratègia.",
   'newStrategy.mode.tagSim': 'SIM',
@@ -201,6 +205,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.confirm.budgetStepsStock': '{budget} · passos de {step} · fins a {max} per acció',
   'newStrategy.confirm.overview': 'Per correu, després del tancament del mercat dels EUA',
   'newStrategy.confirm.alerts': 'Per correu',
+  'newStrategy.confirm.alertsPush': 'App i correu',
   'newStrategy.confirm.prompt': 'Suggerit',
   'newStrategy.confirm.promptEdited': 'Editat',
   'newStrategy.confirm.next': 'Què passa després',

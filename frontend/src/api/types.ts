@@ -358,6 +358,8 @@ export interface StrategyDetail {
   endedOn: string | null
   /** Emails for its signals and AI rounds (the alerts switch). */
   notifications: boolean
+  /** Its alerts also go to the user's devices by web push (the push switch). */
+  push: boolean
   startedOn: string
   /** The user's local date. */
   today: string
@@ -669,6 +671,14 @@ export interface NewStrategy {
   ai?: AiSetup
   /** A live strategy copied from one of the user's simulations ("Go live with these settings"). */
   sourceStrategyId?: string
+  /** Its alerts also go to the user's devices (Choose the mode's Alerts box). */
+  push?: boolean
+}
+
+/** What the browser's `PushSubscription.toJSON()` gives: backend Notifications/WebPushEndpoints.cs. */
+export interface PushSubscriptionJson {
+  endpoint: string
+  keys: { p256dh: string; auth: string }
 }
 
 /** A setting on the admin page. A secret's `value` is never sent: only whether it is set. */
@@ -1038,6 +1048,14 @@ export interface Api {
   renameStrategy(id: string, name: string): Promise<void>
   /** The alerts switch of a running strategy. Rejects with `InvalidValueError` once it has ended. */
   setStrategyNotifications(id: string, enabled: boolean): Promise<void>
+  /** Turns a running strategy's push notifications on or off. */
+  setStrategyPush(id: string, enabled: boolean): Promise<void>
+  /** The VAPID key to subscribe with; null when the server doesn't send push. */
+  getPushKey(): Promise<string | null>
+  /** Saves this device's push subscription for the logged-in user. */
+  savePushSubscription(subscription: PushSubscriptionJson): Promise<void>
+  /** Forgets this device's push subscription. */
+  removePushSubscription(endpoint: string): Promise<void>
   /** Archives a running strategy: the daily check stops, its waiting signals become missed and its name is free. Rejects with `InvalidValueError` when it is archived already. */
   archiveStrategy(id: string): Promise<void>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */

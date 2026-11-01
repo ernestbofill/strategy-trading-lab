@@ -7,6 +7,9 @@ import { invalidateAll } from '../../lib/useLoadable'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { StrategyPage } from './StrategyPage'
 
+// No push on this device: the push switch stays hidden (it has its own tests through Confirm and lib/push).
+vi.mock('../account/usePushOffered', () => ({ usePushOffered: () => false }))
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
@@ -23,6 +26,7 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   status: 'running',
   endedOn: null,
   notifications: true,
+  push: false,
   startedOn: '2026-10-13',
   today: '2026-10-24',
   currency: 'EUR',

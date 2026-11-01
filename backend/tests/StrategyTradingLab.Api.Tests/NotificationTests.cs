@@ -236,6 +236,119 @@ public class NotificationTests
     static NotificationService Service(IServiceScope scope, IEmailSender sender) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
 
+    static NotificationService Service(IServiceScope scope, IPushSender push) =>
+        ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)new Captured(), push);
+
+    /// <summary>Delivers to every device but those whose endpoint says "gone".</summary>
+    sealed class FakePush : IPushSender
+    {
+        public string? PublicKey => "key";
+        public List<(string Endpoint, string Payload)> Sent { get; } = [];
+        public Task<PushOutcome> SendAsync(PushSubscription subscription, string payload, CancellationToken cancellationToken)
+        {
+            if (subscription.Endpoint.Contains("gone")) return Task.FromResult(PushOutcome.Gone);
+            Sent.Add((subscription.Endpoint, payload));
+            return Task.FromResult(PushOutcome.Sent);
+        }
+    }
+
+    /// <summary>Fails while <see cref="Down"/> is set, as a push service that is down does.</summary>
+    sealed class FlakyPush : IPushSender
+    {
+        public bool Down { get; set; } = true;
+        public bool Refuse { get; set; }
+        public string? PublicKey => "key";
+        public Task<PushOutcome> SendAsync(PushSubscription subscription, string payload, CancellationToken cancellationToken) =>
+            Task.FromResult(Refuse ? PushOutcome.Refused : Down ? PushOutcome.Failed : PushOutcome.Sent);
+    }
+
+    [NeonFact]
+    public async Task A_push_that_failed_is_tried_again_and_a_device_failing_for_a_week_is_dropped()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId, _, _) = await SeedAsync(db);
+        try
+        {
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Push, true));
+            var device = new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{Guid.NewGuid():N}", P256dh = "p", Auth = "a" };
+            db.PushSubscriptions.Add(device);
+            await db.SaveChangesAsync();
+            var push = new FlakyPush();
+
+            // Down: nothing sent, the claim given back and the device marked as failing since now.
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.False(await db.Notifications.AnyAsync(n => n.UserId == userId));
+            Assert.NotNull(await db.PushSubscriptions.Where(p => p.Id == device.Id).Select(p => p.LastFailedAt).SingleAsync());
+
+            // Back up: the next run sends it and clears the mark.
+            push.Down = false;
+            Assert.Equal(1, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Null(await db.PushSubscriptions.Where(p => p.Id == device.Id).Select(p => p.LastFailedAt).SingleAsync());
+
+            // A refusal (a key the device no longer matches) isn't tried again every hour: the claim stays, as failed.
+            await db.Notifications.Where(n => n.UserId == userId).ExecuteDeleteAsync();
+            push.Refuse = true;
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.NotNull(await db.Notifications.Where(n => n.UserId == userId).Select(n => n.FailedAt).SingleAsync());
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            push.Refuse = false;
+
+            // A device failing for over a week is forgotten on its next failure.
+            await db.Notifications.Where(n => n.UserId == userId).ExecuteDeleteAsync();
+            await db.PushSubscriptions.Where(p => p.Id == device.Id).ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, DateTimeOffset.UtcNow.AddDays(-8)));
+            push.Down = true;
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.False(await db.PushSubscriptions.AnyAsync(p => p.Id == device.Id));
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_live_signal_is_pushed_once_to_each_device_when_its_strategy_has_push_on()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId, signalId, _) = await SeedAsync(db);
+        try
+        {
+            var tag = Guid.NewGuid().ToString("N");
+            db.PushSubscriptions.AddRange(
+                new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{tag}", P256dh = "p", Auth = "a" },
+                new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/gone-{tag}", P256dh = "p", Auth = "a" });
+            await db.SaveChangesAsync();
+            var push = new FakePush();
+
+            // Push is off on the strategy by default: nothing goes out and nothing is claimed.
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Push, true));
+
+            var first = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var second = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+
+            Assert.Equal((1, 0), (first, second));
+            var (endpoint, payload) = Assert.Single(push.Sent);
+            Assert.EndsWith(tag, endpoint);
+            using var message = JsonDocument.Parse(payload);
+            Assert.Equal($"/strategies/{strategyId}/signals/{signalId}", message.RootElement.GetProperty("url").GetString());
+            Assert.StartsWith("Your rules for Notify", message.RootElement.GetProperty("body").GetString());
+            // The device the push service called gone is forgotten.
+            Assert.Equal(1, await db.PushSubscriptions.CountAsync(p => p.UserId == userId));
+            var row = await db.Notifications.SingleAsync(n => n.UserId == userId);
+            Assert.Equal((NotificationKind.Signal, NotificationChannel.Push), (row.Kind, row.Channel));
+            Assert.NotNull(row.SentAt);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
     [NeonFact]
     public async Task A_live_signal_is_alerted_once_and_recorded()
     {

@@ -15,7 +15,7 @@ namespace StrategyTradingLab.Api.Strategies;
 /// one of the user's simulations, kept for a live strategy only.
 /// </summary>
 public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, Budget Budget, IReadOnlyList<Guid> AssetIds,
-    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null);
+    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null, bool Push = false);
 
 /// <summary>New settings (rules) for a running strategy.</summary>
 public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
@@ -187,6 +187,7 @@ public record StrategyDetail(
     StrategyStatus Status,
     DateOnly? EndedOn,
     bool Notifications,
+    bool Push,
     DateOnly StartedOn,
     DateOnly Today,
     string Currency,

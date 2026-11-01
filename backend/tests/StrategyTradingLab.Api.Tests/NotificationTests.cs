@@ -123,7 +123,6 @@ public class NotificationTests
     sealed class Captured : IEmailSender
     {
         public List<(string To, string Subject, string Body)> Sent { get; } = [];
-        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
             Sent.Add((email.To, email.Subject, email.Body));
@@ -135,7 +134,6 @@ public class NotificationTests
     {
         public bool SetUp { get; set; }
         public int Sent { get; private set; }
-        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
             if (!SetUp) throw new EmailNotSetUpException();

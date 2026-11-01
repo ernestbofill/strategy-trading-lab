@@ -136,7 +136,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
     signalHistory: s.signalHistory.filter((x) => x.assetId === assetId),
   }
   return (
-    <Screen top={top} action={answer} note={t('common.disclaimer')}>
+    <Screen top={top} action={answer}>
       <div className={styles.header}>
         <h1 className={styles.symbol}>{row.symbol}</h1>
         <div className={styles.name}>

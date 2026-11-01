@@ -13,7 +13,6 @@ export function TestedBox({ backtest, howTestedTo }: { backtest: Backtest; howTe
       <div className={`well ${styles.box}`}>
         <p className={styles.scope}>{backtest.scope}</p>
         <ResultFigures result={backtest.periods[backtest.periods.length - 1]} />
-        <p className="caption">{t('common.pastResults')}</p>
         <Link to={howTestedTo} className={styles.link}>
           {t('newStrategy.tested.howLink')}
         </Link>

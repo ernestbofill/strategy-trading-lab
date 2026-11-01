@@ -26,7 +26,7 @@ afterEach(() => {
 })
 
 describe('WelcomePage', () => {
-  it('renders hero title, lead, and guest/account actions', () => {
+  it('renders hero title, lead, top bar login, and bottom CTA actions', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { level: 1, name: 'Trade rules, not emotions.' })).toBeTruthy()

@@ -14,19 +14,6 @@ const TRUST_CARDS: Array<{ title: MessageKey; text: MessageKey }> = [
   { title: 'welcome.trust.card3Title', text: 'welcome.trust.card3Text' },
 ]
 
-function ActionRow({ guestLabel, registerLabel }: { guestLabel: string; registerLabel: string }) {
-  return (
-    <div className={styles.actionRow}>
-      <Link to={pickPath} className={styles.primaryBtn}>
-        {guestLabel}
-      </Link>
-      <Link to={signUpPath} className={styles.secondaryBtn}>
-        {registerLabel}
-      </Link>
-    </div>
-  )
-}
-
 export function WelcomePage() {
   const t = useT()
 
@@ -86,10 +73,14 @@ export function WelcomePage() {
           </h2>
           <p className={styles.bottomLead}>{t('welcome.bottom.lead')}</p>
 
-          <ActionRow
-            guestLabel={t('welcome.bottom.tryGuest')}
-            registerLabel={t('welcome.bottom.register')}
-          />
+          <div className={styles.actionRow}>
+            <Link to={pickPath} className={styles.primaryBtn}>
+              {t('welcome.bottom.tryGuest')}
+            </Link>
+            <Link to={signUpPath} className={styles.secondaryBtn}>
+              {t('welcome.bottom.register')}
+            </Link>
+          </div>
         </section>
       </div>
     </Screen>

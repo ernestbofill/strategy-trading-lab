@@ -134,6 +134,8 @@ export const account: Record<keyof typeof en, string> = {
   'account.page.currencySaved': 'Desat. Les estratègies noves la faran servir; les que ja funcionen mantenen la seva.',
   'account.page.reloadFailed': 'No s’ha pogut tornar a carregar el compte.',
   'account.page.emails': 'Correus',
+  'account.stockChanges.title': 'Canvis de les accions al resum',
+  'account.stockChanges.lead': 'Una línia quan una acció passa a ser candidata o deixa de ser-ho, o queda a menys d’un 3% del seu senyal.',
   'account.page.admin': 'Administració',
   'account.page.adminLine': 'Configuració, base de dades, preus i revisió de comentaris.',
   'account.page.adminLink': 'Configuració d\'administració →',

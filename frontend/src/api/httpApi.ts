@@ -261,6 +261,8 @@ export const httpApi: Api = {
   setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
   setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
+  getStockChangeEmails: () => getRequired('/account/stock-change-emails'),
+  setStockChangeEmails: async (strategyId, enabled) => void (await account('/stock-change-emails', { strategyId, enabled }, { session: true })),
   unsubscribe: async (token, kind) => {
     const response = await fetch(`${BASE_URL}/email/unsubscribe/${encodeURIComponent(token)}/${kind}`, { method: 'POST', headers: APP_HEADER })
     if (response.status === 404) throw new ExpiredLinkError()

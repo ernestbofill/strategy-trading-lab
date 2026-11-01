@@ -1674,6 +1674,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
+                    b.Property<bool>("StockChangeEmails")
+                        .HasColumnType("boolean")
+                        .HasColumnName("stock_change_emails");
+
                     b.Property<string>("TemplateKey")
                         .IsRequired()
                         .HasColumnType("text")

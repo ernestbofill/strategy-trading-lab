@@ -183,12 +183,24 @@ public static class EmailTexts
             .Build(ca ? $"És l'hora de la ronda d'IA de {names}" : $"Time for the AI round of {names}");
     }
 
-    /// <summary>The daily overview: what waits, what changed, what is close, and one line per strategy.</summary>
+    /// <summary>What a template's distance measures to: "below the buy line".</summary>
+    static string LineName(string templateKey, string locale) => (templateKey, locale == "ca") switch
+    {
+        ("dip", true) => "per sobre de la zona de descompte",
+        ("dip", false) => "above the discount zone",
+        ("bear", true) => "per sota de la línia de rebot",
+        ("bear", false) => "below the bounce line",
+        (_, true) => "per sota de la línia de compra",
+        _ => "below the buy line",
+    };
+
+    /// <summary>The daily overview: what waits, what changed, the stock changes asked for, what is close, and one line per strategy.</summary>
     public static EmailContent Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
         IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en",
-        IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null, string? unsubscribeToken = null)
+        IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null, string? unsubscribeToken = null, IReadOnlyList<StockChangeLine>? stockChanges = null)
     {
         aiRoundsDue ??= [];
+        stockChanges ??= [];
         var ca = locale == "ca";
         var title = ca ? $"El teu resum diari, {Date(day, locale)}" : $"Your daily overview, {Date(day)}";
         var email = new EmailDocument(locale, appUrl).Eyebrow(ca ? "Resum diari" : "Daily overview").Heading(title + ".");
@@ -208,17 +220,21 @@ public static class EmailTexts
             ? [new EmailItem(ca ? "No s'ha complert cap regla nova." : "No rules were newly met.")]
             : changed.Select(s => new EmailItem(SignalText(s, locale).Replace("\n", " "), Tag: ModeName(s.Mode, locale), Live: s.Mode == StrategyMode.Live)));
 
+        if (stockChanges.Count > 0)
+            email.Section(ca ? "Canvis de les teves accions" : "Stock changes", stockChanges.Select(c =>
+            {
+                var change = c.Kind switch
+                {
+                    StockChangeKind.BecameCandidate => ca ? "ara és candidata, les regles la vigilen" : "now a candidate, the rules watch it",
+                    StockChangeKind.NoLongerCandidate => ca ? "ja no és candidata" : "no longer a candidate",
+                    _ => ca ? $"ara un {Pct(c.DistancePct ?? 0)}% {LineName(c.TemplateKey, locale)}" : $"now {Pct(c.DistancePct ?? 0)}% {LineName(c.TemplateKey, locale)}",
+                };
+                return new EmailItem($"{c.StockName}, {c.StrategyName}: {change}.", Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live);
+            }));
+
         if (close.Count > 0)
             email.Section(ca ? "A prop de la línia" : "Close to the line", close.Select(c =>
-            {
-                var line = c.TemplateKey switch
-                {
-                    "dip" => ca ? "per sobre de la zona de descompte" : "above the discount zone",
-                    "bear" => ca ? "per sota de la línia de rebot" : "below the bounce line",
-                    _ => ca ? "per sota de la línia de compra" : "below the buy line",
-                };
-                return new EmailItem($"{c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {line}", Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live);
-            }));
+                new EmailItem($"{c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {LineName(c.TemplateKey, locale)}", Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live)));
 
         email.Section(ca ? "Les teves estratègies" : "Your strategies", scoreboard.Select(s => new EmailItem(ca
             ? $"{s.Name} ({ModeName(s.Mode, locale)}): des del {Date(s.StartedOn, locale)}, {s.Signals} {(s.Signals == 1 ? "senyal" : "senyals")}"

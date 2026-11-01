@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using StrategyTradingLab.Api.Admin;
@@ -179,9 +178,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
                             select new { eval, asset.Name }).ToListAsync(cancellationToken);
         var watching = recent.GroupBy(x => (x.eval.StrategyId, x.eval.AssetId)).Select(g => g.OrderByDescending(x => x.eval.Date).First())
             .Where(x => x.eval.Status == EvaluationStatus.Watching);
+        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId);
         var close = watching
-            .Select(x => (x.eval.StrategyId, x.Name, Distance: x.eval.Facts.RootElement.TryGetProperty("distancePct", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetDecimal() : (decimal?)null))
-            .Where(x => x.Distance is > 0)
+            // A stock that just came close is said once; one that just became a candidate keeps its distance here.
+            .Where(x => !stockChanges.Any(c => c.Kind == StockChangeKind.CameClose && c.StrategyId == x.eval.StrategyId && c.AssetId == x.eval.AssetId))
+            .Select(x => (x.eval.StrategyId, x.Name, Distance: StockChanges.Distance(x.eval.Facts.RootElement)))
+            .Where(x => x.Distance is not null)
             .OrderBy(x => x.Distance).Take(5)
             .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].Mode, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
 
@@ -190,8 +192,26 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id))).ToList();
-        return EmailTexts.Overview(lastSession, waiting, changed, close, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))], unsubscribeToken);
+        return EmailTexts.Overview(lastSession, waiting, changed, close, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))], unsubscribeToken, stockChanges);
     }
+
+    /// <summary>
+    /// The stock changes of the strategies that asked for them: each stock evaluated on the last session against its latest
+    /// earlier evaluation of the recent days (see <see cref="StockChanges.Latest"/>). A stock without an earlier day (just added) has nothing to compare.
+    /// </summary>
+    static List<StockChangeLine> StockChangeLines(IEnumerable<(DailyEvaluation Eval, string Name)> recent, DateOnly lastSession, Dictionary<Guid, Strategy> strategies) =>
+        recent.Where(x => strategies[x.Eval.StrategyId].StockChangeEmails)
+            .GroupBy(x => (x.Eval.StrategyId, x.Eval.AssetId))
+            .Select(g => g.OrderByDescending(x => x.Eval.Date).ToList())
+            .Where(days => days[0].Eval.Date == lastSession)
+            .Select(days => (days, change: StockChanges.Latest([.. days.Select(d => (d.Eval.Status, d.Eval.Facts.RootElement))])))
+            .Where(x => x.change is not null)
+            .Select(x =>
+            {
+                var strategy = strategies[x.days[0].Eval.StrategyId];
+                return new StockChangeLine(strategy.Id, x.days[0].Eval.AssetId, strategy.Name, strategy.Mode, strategy.TemplateKey, x.days[0].Name, x.change!.Value.Kind, x.change.Value.DistancePct);
+            })
+            .OrderBy(c => c.StrategyName).ThenBy(c => c.StockName).ToList();
 
     static SignalLine Line(Signal signal, Strategy strategy, Asset asset) => SignalLine.From(signal, strategy, asset);
 

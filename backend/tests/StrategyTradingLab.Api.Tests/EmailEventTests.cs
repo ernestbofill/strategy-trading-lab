@@ -39,14 +39,14 @@ public class EmailEventTests
         try
         {
             using var brevo = WithKey(api).CreateClient(); // No cookie and no X-Requested-With header, as Brevo calls it.
-            foreach (var (kind, email) in new[] { ("hard_bounce", emails[0]), ("invalid_email", emails[1]), ("spam", emails[2]), ("delivered", emails[3]), ("soft_bounce", emails[3]) })
+            foreach (var (kind, email) in new[] { ("hard_bounce", emails[0]), ("invalid_email", emails[1]), ("spam", emails[2]), ("complaint", emails[3]), ("delivered", emails[3]), ("soft_bounce", emails[3]) })
                 Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"{{kind}}","email":"{{email}}","id":1}"""))).StatusCode);
 
             var rows = (await Rows(api, emails)).ToDictionary(r => r.Email, r => r.Reason);
             Assert.Equal(SuppressionReason.Bounced, rows[emails[0]]);
             Assert.Equal(SuppressionReason.Invalid, rows[emails[1]]);
             Assert.Equal(SuppressionReason.Complaint, rows[emails[2]]);
-            Assert.False(rows.ContainsKey(emails[3]));
+            Assert.Equal(SuppressionReason.Complaint, rows[emails[3]]); // Brevo may name it spam or complaint.
         }
         finally
         {

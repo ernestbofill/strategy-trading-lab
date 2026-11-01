@@ -78,7 +78,7 @@ function Summary({ s }: { s: StrategyDetail }) {
               <span className={styles.mono}>{signedPct(pastResult.template)}</span> {t('strategy.pastSummary.vs')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.index)}</span> {t('strategy.pastSummary.after')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>.
-              {s.templateKey === 'bear' && ' Big drops are rare: it may not signal for years.'}
+              {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
             </>
           )}
         </p>

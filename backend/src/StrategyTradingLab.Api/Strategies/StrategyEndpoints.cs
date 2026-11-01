@@ -291,7 +291,7 @@ public static class StrategyEndpoints
             ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear, IsCustomized(strategy, template, activeAssetIds))
             : null;
 
-    static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds)
+    internal static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds = null)
     {
         if (template.Settings.Count > 0)
         {
@@ -315,6 +315,15 @@ public static class StrategyEndpoints
                 ? []
                 : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
             if (activeIds.Any(id => !starterIds.Contains(id)))
+                return true;
+        }
+
+        if (template.Watches is DefaultFund defaultFund)
+        {
+            var activeIds = activeAssetIds ?? (strategy.Assets is null
+                ? []
+                : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
+            if (activeIds.Any(id => id != defaultFund.Fund.Id))
                 return true;
         }
 

@@ -11,7 +11,7 @@ import { NewStrategyDraftProvider, useNewStrategyDraft } from './NewStrategyDraf
 
 // Whether the app offers push on this device (the server's key and the browser).
 const push = vi.hoisted(() => ({ offered: false }))
-vi.mock('../../lib/usePushOffered', () => ({ usePushOffered: () => push.offered }))
+vi.mock('../account/usePushOffered', () => ({ usePushOffered: () => push.offered }))
 
 afterEach(() => {
   push.offered = false
@@ -30,10 +30,13 @@ const ai = {
   aiRound: { everyDays: 14, topN: 1 },
 } as unknown as TemplateDetail
 
-/** Sets the draft to the AI template, as the earlier screens do. */
+/** Sets the draft to the AI template, as the earlier screens do, with push ticked on Choose the mode where it is offered. */
 function ChooseAi() {
-  const { switchTemplate } = useNewStrategyDraft()
-  useEffect(() => switchTemplate('ai'), [switchTemplate])
+  const { switchTemplate, update } = useNewStrategyDraft()
+  useEffect(() => {
+    switchTemplate('ai')
+    update({ push: push.offered })
+  }, [switchTemplate, update])
   return null
 }
 

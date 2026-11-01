@@ -34,7 +34,7 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     if (reminders > 0) logger.LogInformation("Sent {Count} snooze reminders.", reminders);
                     var rounds = await service.SendAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
                     if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
-                    // Push after email: a signal alert a run couldn't push is retried here, every hour, as the emails are.
+                    // Push after email. A signal alert a run couldn't push (a push service down) is retried here, every hour.
                     var pushed = await service.PushSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken)
                         + await service.PushSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken)
                         + await service.PushAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);

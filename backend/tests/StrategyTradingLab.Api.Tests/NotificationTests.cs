@@ -256,9 +256,10 @@ public class NotificationTests
     sealed class FlakyPush : IPushSender
     {
         public bool Down { get; set; } = true;
+        public bool Refuse { get; set; }
         public string? PublicKey => "key";
         public Task<PushOutcome> SendAsync(PushSubscription subscription, string payload, CancellationToken cancellationToken) =>
-            Task.FromResult(Down ? PushOutcome.Failed : PushOutcome.Sent);
+            Task.FromResult(Refuse ? PushOutcome.Refused : Down ? PushOutcome.Failed : PushOutcome.Sent);
     }
 
     [NeonFact]
@@ -285,6 +286,14 @@ public class NotificationTests
             push.Down = false;
             Assert.Equal(1, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
             Assert.Null(await db.PushSubscriptions.Where(p => p.Id == device.Id).Select(p => p.LastFailedAt).SingleAsync());
+
+            // A refusal (a key the device no longer matches) isn't tried again every hour: the claim stays, as failed.
+            await db.Notifications.Where(n => n.UserId == userId).ExecuteDeleteAsync();
+            push.Refuse = true;
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.NotNull(await db.Notifications.Where(n => n.UserId == userId).Select(n => n.FailedAt).SingleAsync());
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            push.Refuse = false;
 
             // A device failing for over a week is forgotten on its next failure.
             await db.Notifications.Where(n => n.UserId == userId).ExecuteDeleteAsync();

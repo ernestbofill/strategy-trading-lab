@@ -310,7 +310,7 @@ export const httpApi: Api = {
   removePushSubscription: async (endpoint) => {
     const response = await fetch(`${BASE_URL}/push/unsubscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...APP_HEADER },
+      headers: { 'Content-Type': 'application/json', ...APP_HEADER, ...langHeader() },
       body: JSON.stringify({ endpoint }),
     })
     if (response.status === 401) endedSession()

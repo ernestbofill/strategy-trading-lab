@@ -9,8 +9,11 @@ using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Notifications;
 
-/// <summary>What a push service answered: delivered, the subscription is gone for good (404, 410), or it failed this time.</summary>
-public enum PushOutcome { Sent, Gone, Failed }
+/// <summary>
+/// What a push service answered: delivered, the subscription is gone for good (404, 410), refused for good for this message
+/// (400, 403 such as a key it no longer matches, 413), or it failed this time (5xx, 429, a timeout).
+/// </summary>
+public enum PushOutcome { Sent, Gone, Refused, Failed }
 
 /// <summary>Sends web push messages (spec: Notifications). A fake replaces it in tests.</summary>
 public interface IPushSender
@@ -52,6 +55,12 @@ public class WebPushSender(HttpClient http, IConfiguration configuration, ILogge
         using var response = await http.SendAsync(request, cancellationToken);
         if (response.IsSuccessStatusCode) return PushOutcome.Sent;
         if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone) return PushOutcome.Gone;
+        // Not dropped at once: a 403 is also what our own wrong token would get. The device goes after a week of them.
+        if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Forbidden or HttpStatusCode.RequestEntityTooLarge)
+        {
+            logger.LogWarning("A push service refused a message for good: {Status}", (int)response.StatusCode);
+            return PushOutcome.Refused;
+        }
         // Not the endpoint: it identifies the device.
         logger.LogWarning("A push service refused a message: {Status}", (int)response.StatusCode);
         return PushOutcome.Failed;

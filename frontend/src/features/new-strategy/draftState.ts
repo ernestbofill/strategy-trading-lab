@@ -40,7 +40,7 @@ export interface DraftState {
   currency: Currency | null
   /** The simulation a live copy came from ("Go live with these settings"); null for a new strategy. */
   sourceStrategyId: string | null
-  /** Its alerts also go to the user's devices (Choose the mode's Alerts box), where the app offers push. */
+  /** Its alerts also go to the user's devices: only when ticked in Choose the mode's Alerts box (opt in, Ernest). */
   push: boolean
 }
 
@@ -63,7 +63,7 @@ export const initialDraft: DraftState = {
   name: null,
   currency: null,
   sourceStrategyId: null,
-  push: true,
+  push: false,
 }
 
 /** Another template starts over, and so does picking one after a "Go live" copy: the copy is never reused for a new strategy. */

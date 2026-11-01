@@ -1,4 +1,6 @@
 using System.Threading.Channels;
+using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Email;
 
@@ -56,23 +58,23 @@ public class EmailWorker(EmailQueue queue, IServiceScopeFactory scopes, IHostEnv
                 // Never the body: it holds single-use links.
                 logger.LogWarning("Couldn't send \"{Subject}\": {Reason}", email.Subject, error.Message);
                 failing = true;
-                await Alerts(scope).RaiseAsync(Data.Entities.AlertSource.Email, Alert(email, error is EmailNotSetUpException
+                await Alerts(scope).RaiseAsync(AlertSource.Email, Alert(email, error is EmailNotSetUpException
                     ? error.Message : "The mail server refused or couldn't send it."), stoppingToken);
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {
                 logger.LogError(error, "Sending \"{Subject}\" failed.", email.Subject);
                 failing = true;
-                await Alerts(scope).RaiseAsync(Data.Entities.AlertSource.Email, Alert(email, "The email couldn't be written or sent."), stoppingToken);
+                await Alerts(scope).RaiseAsync(AlertSource.Email, Alert(email, "The email couldn't be written or sent."), stoppingToken);
             }
         }
     }
 
     const string AlertKey = "email:account";
 
-    static Admin.AdminAlerts Alerts(IServiceScope scope) => scope.ServiceProvider.GetRequiredService<Admin.AdminAlerts>();
+    static AdminAlerts Alerts(IServiceScope scope) => scope.ServiceProvider.GetRequiredService<AdminAlerts>();
 
     /// <summary>Never the address or the body (single-use links): the subject says which kind of email it was.</summary>
-    static Admin.NewAlert Alert(OutgoingEmail email, string problem) => new(AlertKey, "Account emails failed",
+    static NewAlert Alert(OutgoingEmail email, string problem) => new(AlertKey, "Account emails failed",
         $"The last one: \"{email.Subject}\". {problem} The count is the emails that failed since the last one that went out.");
 }

@@ -55,14 +55,19 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
       )}
       <div className={styles.version}>
         {isOwner && (
-          <>
+          <Link
+            to="/admin"
+            className={styles.versionLink}
+            aria-label={`v${__APP_VERSION__}${onDevDatabase ? ' DEV' : ''}, ${t('common.admin')}`}
+            title={t('common.admin')}
+          >
             v{__APP_VERSION__}
             {onDevDatabase && (
               <Tag tone="dev" title={t('common.devDatabase')}>
                 DEV
               </Tag>
             )}
-          </>
+          </Link>
         )}
       </div>
       {(step || aside) && <div className={styles.step}>{step ?? aside}</div>}

@@ -45,21 +45,22 @@ describe('TopBar', () => {
     expect(screen.getByText('STL // LOG IN')).toBeDefined()
   })
 
-  it('shows FE version only when user is an owner', async () => {
+  it('shows FE version as a link to /admin only when user is an owner', async () => {
     vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('owner'))
 
     render(
       <MemoryRouter>
         <AccountProvider>
-          <TopBar title="STL // ADMIN" />
+          <TopBar title="STL // DASHBOARD" />
         </AccountProvider>
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText(new RegExp(`v${__APP_VERSION__}`))).toBeDefined()
+    const versionLink = await screen.findByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })
+    expect(versionLink.getAttribute('href')).toBe('/admin')
   })
 
-  it('does not show FE version when user is not an owner', async () => {
+  it('does not show FE version link when user is not an owner', async () => {
     const getAccountSpy = vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
 
     render(
@@ -71,6 +72,7 @@ describe('TopBar', () => {
     )
 
     await waitFor(() => expect(getAccountSpy).toHaveBeenCalled())
+    expect(screen.queryByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })).toBeNull()
     expect(screen.queryByText(new RegExp(`v${__APP_VERSION__}`))).toBeNull()
   })
 })

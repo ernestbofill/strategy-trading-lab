@@ -78,7 +78,6 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
           {saving ? t('strategy.settings.saving') : t('newStrategy.advanced.save')}
         </PrimaryAction>
       }
-     
     >
       <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
       {error && (

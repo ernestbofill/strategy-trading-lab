@@ -183,7 +183,6 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   return (
     <Screen
       top={top}
-     
       action={
         <PrimaryAction form={FORM_ID} disabled={saving}>
           {answer === 'did' ? t('signal.save.did') : t('signal.save.skip')}

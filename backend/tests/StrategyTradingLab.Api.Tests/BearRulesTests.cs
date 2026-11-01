@@ -30,13 +30,15 @@ public class BearRulesTests
     [Fact]
     public void Each_cycle_records_when_its_first_step_signalled_and_clears_it_between_drops()
     {
-        var closes = new List<decimal>();
-        for (var i = 0; i < 126; i++) closes.Add(100m); // 126-day high at 100.
-        closes.Add(75m); // Drop 1: 25% below 100 (Watching).
-        for (var i = 0; i < 25; i++) closes.Add(80m); // +6.67% bounce: 3 steps (days 0, 10, 20), then Holding.
-        closes.Add(100m); // Recovers old peak (100): back to NotCandidate.
-        closes.Add(75m); // Drop 2: 25% below 100 (Watching).
-        for (var i = 0; i < 15; i++) closes.Add(80m); // +6.67% bounce: new cycle starts on this day.
+        decimal[] closes =
+        [
+            .. Enumerable.Repeat(100m, 126), // 126-day high at 100.
+            75m, // Drop 1: 25% below 100 (Watching).
+            .. Enumerable.Repeat(80m, 25), // +6.67% bounce: 3 steps (days 0, 10, 20), then Holding.
+            100m, // Recovers old peak (100): back to NotCandidate.
+            75m, // Drop 2: 25% below 100 (Watching).
+            .. Enumerable.Repeat(80m, 15), // +6.67% bounce: new cycle starts on this day.
+        ];
 
         var first = new DateOnly(2024, 1, 1);
         var bars = closes.Select((c, i) => new PriceBar(first.AddDays(i), c, c, c, c, 0)).ToList();

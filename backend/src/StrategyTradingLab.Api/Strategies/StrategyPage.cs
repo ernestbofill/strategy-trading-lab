@@ -16,13 +16,12 @@ public static class StrategyPage
     {
         if (facts is not { ValueKind: JsonValueKind.Object } root
             || !root.TryGetProperty("doneSteps", out var ds) || ds.ValueKind != JsonValueKind.Number)
-            return (null, null);
-        var done = ds.GetInt32();
-        var start = root.TryGetProperty("cycleStart", out var cs) && cs.ValueKind == JsonValueKind.String
+            return default;
+        DateOnly? start = root.TryGetProperty("cycleStart", out var cs) && cs.ValueKind == JsonValueKind.String
             && DateOnly.TryParseExact(cs.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
             ? date
-            : (DateOnly?)null;
-        return (done, start);
+            : null;
+        return (ds.GetInt32(), start);
     }
     /// <summary>
     /// A live signal waiting for an answer comes first; then a simulation's signal of the latest evaluated day. A stock

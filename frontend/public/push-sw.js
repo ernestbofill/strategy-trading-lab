@@ -26,10 +26,14 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const url = new URL(event.notification.data?.url || '/', self.location.origin).href
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+    // Only windows this worker controls can be navigated; any other gets a new window.
+    self.clients.matchAll({ type: 'window' }).then((windows) => {
       const open = windows.find((client) => new URL(client.url).origin === self.location.origin)
-      if (open) return open.focus().then((client) => client.navigate(url))
-      return self.clients.openWindow(url)
+      if (!open) return self.clients.openWindow(url)
+      return open
+        .focus()
+        .then((client) => client.navigate(url))
+        .catch(() => self.clients.openWindow(url))
     }),
   )
 })

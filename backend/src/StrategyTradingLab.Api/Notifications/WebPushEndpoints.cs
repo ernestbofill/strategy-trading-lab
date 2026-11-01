@@ -57,17 +57,22 @@ public static class WebPushEndpoints
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["endpoint"] = [Messages.PushNotSupported.In(RequestLocale.From(context.Request))] });
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             // One row per device: a device someone else used before (logged out, then this user logged in) now notifies this user only.
-            var row = await db.PushSubscriptions.SingleOrDefaultAsync(s => s.Endpoint == request.Endpoint, cancellationToken);
-            if (row is null)
-                db.PushSubscriptions.Add(new PushSubscription { UserId = user.Id, Endpoint = request.Endpoint!, P256dh = request.Keys!.P256dh!, Auth = request.Keys.Auth! });
-            else
+            string endpoint = request.Endpoint!, p256dh = request.Keys!.P256dh!, auth = request.Keys.Auth!;
+            Task<int> Update() => db.PushSubscriptions.Where(s => s.Endpoint == endpoint).ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.UserId, user.Id).SetProperty(x => x.P256dh, p256dh).SetProperty(x => x.Auth, auth)
+                .SetProperty(x => x.LastFailedAt, (DateTimeOffset?)null), cancellationToken);
+            if (await Update() > 0) return TypedResults.NoContent();
+            db.PushSubscriptions.Add(new PushSubscription { UserId = user.Id, Endpoint = endpoint, P256dh = p256dh, Auth = auth });
+            try
             {
-                row.UserId = user.Id;
-                row.P256dh = request.Keys!.P256dh!;
-                row.Auth = request.Keys.Auth!;
-                row.LastFailedAt = null;
+                await db.SaveChangesAsync(cancellationToken);
             }
-            await db.SaveChangesAsync(cancellationToken);
+            // Saved at the same moment by another request (the dashboard prompt and the account page, two tabs): update that row instead.
+            catch (DbUpdateException error) when (error.InnerException is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.UniqueViolation })
+            {
+                db.ChangeTracker.Clear();
+                await Update();
+            }
             return TypedResults.NoContent();
         })
         .WithSummary("Saves this device's push subscription for the logged-in user (idempotent).");

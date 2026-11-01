@@ -18,6 +18,7 @@ import { EMAILS_HASH, logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
 import { DevicePush } from './DevicePush'
+import { unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SendFeedback } from '../feedback/SendFeedback'
 
@@ -40,6 +41,8 @@ export function AccountPage() {
     setLoggingOut(true)
     setLogOutError(null)
     try {
+      // The next person on this device mustn't get this account's alerts: the device stops first (best effort).
+      await unsubscribeDevice().catch(() => {})
       await api.logOut()
     } catch (err) {
       // Only a session that is already gone counts as logged out: otherwise the cookie still works, so say so.

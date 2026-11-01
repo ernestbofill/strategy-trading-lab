@@ -233,15 +233,19 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         return !(localDay < day || (localDay == day && local.Hour < MorningHour) || localDay > day.AddDays(1));
     }
 
+    static readonly TimeSpan FailingDeviceDays = TimeSpan.FromDays(7);
+
     /// <summary>
     /// Sends a claimed push notification to every device of the user and records the result: sent if one device got it. A device
-    /// the push service says is gone is forgotten; one that failed is marked. No admin alert: devices come and go.
+    /// the push service says is gone, or that has failed for a week, is forgotten. When none got it but one only failed this time,
+    /// the claim is given back for the hourly check to retry. No admin alert: devices come and go.
     /// </summary>
     async Task<bool> PushAsync(Guid notificationId, Guid userId, PushMessage message, CancellationToken cancellationToken)
     {
         var devices = await db.PushSubscriptions.AsNoTracking().Where(p => p.UserId == userId).ToListAsync(cancellationToken);
         var payload = message.ToJson();
-        var delivered = false;
+        var now = DateTimeOffset.UtcNow;
+        bool delivered = false, retry = false;
         foreach (var device in devices)
         {
             PushOutcome outcome;
@@ -251,14 +255,24 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                 logger.LogWarning("Couldn't push notification {Id}: {Kind}", notificationId, error.GetType().Name);
                 outcome = PushOutcome.Failed;
             }
+            // A device failing for a week (a key it no longer matches, a push service that keeps refusing it) is gone too.
+            if (outcome == PushOutcome.Failed && device.LastFailedAt < now - FailingDeviceDays) outcome = PushOutcome.Gone;
             delivered |= outcome == PushOutcome.Sent;
-            if (outcome == PushOutcome.Gone)
-                await db.PushSubscriptions.Where(p => p.Id == device.Id).ExecuteDeleteAsync(CancellationToken.None);
-            else if (outcome == PushOutcome.Failed)
-                await db.PushSubscriptions.Where(p => p.Id == device.Id)
-                    .ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, DateTimeOffset.UtcNow), CancellationToken.None);
+            retry |= outcome == PushOutcome.Failed;
+            var deviceRow = db.PushSubscriptions.Where(p => p.Id == device.Id);
+            if (outcome == PushOutcome.Gone) await deviceRow.ExecuteDeleteAsync(CancellationToken.None);
+            // LastFailedAt is when it started failing, so it is only set once and cleared by a delivery.
+            else if (outcome == PushOutcome.Failed && device.LastFailedAt is null)
+                await deviceRow.ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, now), CancellationToken.None);
+            else if (outcome == PushOutcome.Sent && device.LastFailedAt is not null)
+                await deviceRow.ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, (DateTimeOffset?)null), CancellationToken.None);
         }
-        var now = DateTimeOffset.UtcNow;
+        // None got it but one may later (a push service down, a timeout): give the claim back, so the hourly check tries again.
+        if (!delivered && retry)
+        {
+            await ReleaseAsync(notificationId);
+            return false;
+        }
         await db.Notifications.Where(n => n.Id == notificationId)
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, delivered ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, delivered ? (DateTimeOffset?)null : now)

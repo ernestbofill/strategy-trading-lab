@@ -252,6 +252,53 @@ public class NotificationTests
         }
     }
 
+    /// <summary>Fails while <see cref="Down"/> is set, as a push service that is down does.</summary>
+    sealed class FlakyPush : IPushSender
+    {
+        public bool Down { get; set; } = true;
+        public string? PublicKey => "key";
+        public Task<PushOutcome> SendAsync(PushSubscription subscription, string payload, CancellationToken cancellationToken) =>
+            Task.FromResult(Down ? PushOutcome.Failed : PushOutcome.Sent);
+    }
+
+    [NeonFact]
+    public async Task A_push_that_failed_is_tried_again_and_a_device_failing_for_a_week_is_dropped()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId, _, _) = await SeedAsync(db);
+        try
+        {
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Push, true));
+            var device = new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{Guid.NewGuid():N}", P256dh = "p", Auth = "a" };
+            db.PushSubscriptions.Add(device);
+            await db.SaveChangesAsync();
+            var push = new FlakyPush();
+
+            // Down: nothing sent, the claim given back and the device marked as failing since now.
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.False(await db.Notifications.AnyAsync(n => n.UserId == userId));
+            Assert.NotNull(await db.PushSubscriptions.Where(p => p.Id == device.Id).Select(p => p.LastFailedAt).SingleAsync());
+
+            // Back up: the next run sends it and clears the mark.
+            push.Down = false;
+            Assert.Equal(1, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Null(await db.PushSubscriptions.Where(p => p.Id == device.Id).Select(p => p.LastFailedAt).SingleAsync());
+
+            // A device failing for over a week is forgotten on its next failure.
+            await db.Notifications.Where(n => n.UserId == userId).ExecuteDeleteAsync();
+            await db.PushSubscriptions.Where(p => p.Id == device.Id).ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, DateTimeOffset.UtcNow.AddDays(-8)));
+            push.Down = true;
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.False(await db.PushSubscriptions.AnyAsync(p => p.Id == device.Id));
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
     [NeonFact]
     public async Task A_live_signal_is_pushed_once_to_each_device_when_its_strategy_has_push_on()
     {

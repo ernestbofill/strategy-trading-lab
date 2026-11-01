@@ -20,10 +20,14 @@ export function DevicePush() {
   useEffect(() => {
     let live = true
     if (support !== 'ready') return
-    Promise.all([pushKey(), deviceSubscription()]).then(
-      ([key, subscription]) => live && setState(key === null ? 'none' : subscription ? 'on' : 'off'),
-      () => live && setState('off'),
-    )
+    // A subscription the browser has is saved again (it is idempotent): the server may have dropped it, given the device to
+    // another account, or changed its key, and the page must not say On while nothing would arrive.
+    Promise.all([pushKey(), deviceSubscription()])
+      .then(async ([key, subscription]) => (key === null ? 'none' : subscription && (await subscribeDevice()) ? 'on' : 'off'))
+      .then(
+        (next) => live && setState(next),
+        () => live && setState('off'),
+      )
     return () => {
       live = false
     }

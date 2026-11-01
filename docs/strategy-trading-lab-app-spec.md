@@ -311,7 +311,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   2. "**The first bounce:** it climbs 5% off its low. That's the first step."
   3. "**Then in steps:** one more step every 2 weeks, until the budget is used."
 - Fund: "[S&P 500 fund name]" / "Tracks the 500 largest US companies" / "Change".
-- Tested: "[N] big drops, [year]-[year]. Big drops are rare: it may not signal for years." (Also added on the dashboard card and strategy page while there are no trades yet.)
+- Tested: "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years." (Also added on the dashboard card and strategy page while there are no trades yet.)
 - What can go wrong: "the market can keep falling after the first bounce, and stay low for years."
 
 *Index trend* (`ReviewTrend`)

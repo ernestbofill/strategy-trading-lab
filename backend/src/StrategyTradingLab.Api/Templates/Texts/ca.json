@@ -318,7 +318,7 @@
       }
     ],
     "backtest": {
-      "scope": "Principals índexs i fons sectorials, 2000-2024.",
+      "scope": "Principals índexs i fons sectorials, 2000-2024. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
       "years": "2000-2024",
       "universe": "Principals índexs i 30 ETF sectorials en 134 mercats baixistes",
       "testedDefaults": "Els valors provats: pressupost de €3,000, 5 passos de €600."

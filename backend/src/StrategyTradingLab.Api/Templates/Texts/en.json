@@ -318,7 +318,7 @@
       }
     ],
     "backtest": {
-      "scope": "Major indexes and sector funds, 2000-2024.",
+      "scope": "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years.",
       "years": "2000-2024",
       "universe": "Major equity indexes and 30 sector ETFs across 134 bear markets",
       "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."

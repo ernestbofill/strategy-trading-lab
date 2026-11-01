@@ -29,17 +29,19 @@ export const welcome = {
   // Mock interactive builder widget
   'welcome.builder.mock.templateLabel': 'Pick template',
   'welcome.builder.mock.t1Name': 'Winners at a discount',
-  'welcome.builder.mock.t1Rule': 'SMA 200 + 5%–15% discount zone',
+  'welcome.builder.mock.t1Rule': 'SMA 50 > 150 > 200 · 5%–15% discount zone',
   'welcome.builder.mock.t1Budget': '€100 / step · max 3 steps',
   'welcome.builder.mock.t2Name': 'The comeback',
-  'welcome.builder.mock.t2Rule': 'Breakout above 50-day moving average',
+  'welcome.builder.mock.t2Rule': '≥ 30% below 52w high · +15% above SMA 50 + volume',
   'welcome.builder.mock.t2Budget': '€150 / step · max 2 steps',
   'welcome.builder.mock.t3Name': 'Bear markets',
-  'welcome.builder.mock.t3Rule': 'S&P 500 drop ≥ 20% accumulation',
+  'welcome.builder.mock.t3Rule': 'S&P 500 drop ≥ 20% · +5% bounce off low',
   'welcome.builder.mock.t3Budget': '€200 / step · max 5 steps',
   'welcome.builder.mock.ruleLabel': 'Trigger rules',
   'welcome.builder.mock.budgetLabel': 'Step budget',
   'welcome.builder.mock.stocksLabel': 'Watched stocks',
+  'welcome.builder.mock.fundLabel': 'The fund it watches',
+  'welcome.builder.mock.bearFund': 'SPY · S&P 500 ETF \u2713',
 
   // Pillar 2: Simulation
   'welcome.sim.tag': '02 // SIMULATE',
@@ -72,7 +74,7 @@ export const welcome = {
   'welcome.tracker.summary':
     'Receive daily alerts when your rules match. Confirm, snooze, or skip steps in seconds. We never ask for broker passwords or API keys.',
   'welcome.tracker.point1': 'Zero broker sync: no passwords, no OAuth, no API keys, and no access to your money.',
-  'welcome.tracker.point2': 'Daily signal alerts tell you exactly which rule triggered and which step to execute.',
+  'welcome.tracker.point2': 'Daily signal alerts report which rule was met and which step it represents under your settings.',
   'welcome.tracker.point3': 'Log trades with actual broker fill prices or skip signals with a quick reason.',
   'welcome.tracker.cta': 'Explore live tracking flow \u203A',
 

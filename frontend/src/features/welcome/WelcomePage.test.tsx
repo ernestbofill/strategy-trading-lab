@@ -42,56 +42,87 @@ describe('WelcomePage', () => {
     expect(loginLink.getAttribute('href')).toBe('/log-in')
   })
 
-  it('renders all 3 core features: strategy builder, simulation, and trading tracker', () => {
-    renderPage()
-
-    expect(screen.getByRole('tab', { name: /Strategy builder/ })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: /Real-time simulation/ })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: /Trading tracker/ })).toBeTruthy()
-  })
-
-  it('supports arrow key navigation between feature pillar tabs', () => {
+  it('renders all 3 core features with roving tabindex and supports collapsing/expanding', () => {
     renderPage()
 
     const builderTab = screen.getByRole('tab', { name: /Strategy builder/ })
     const simTab = screen.getByRole('tab', { name: /Real-time simulation/ })
+    const trackerTab = screen.getByRole('tab', { name: /Trading tracker/ })
 
     expect(builderTab.getAttribute('aria-selected')).toBe('true')
-    expect(simTab.getAttribute('aria-selected')).toBe('false')
+    expect(builderTab.getAttribute('tabIndex')).toBe('0')
+    expect(simTab.getAttribute('tabIndex')).toBe('-1')
+    expect(trackerTab.getAttribute('tabIndex')).toBe('-1')
+
+    // Clicking the already-active tab collapses the detail panel
+    fireEvent.click(builderTab)
+    expect(builderTab.getAttribute('aria-selected')).toBe('false')
+    expect(builderTab.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('tabpanel')).toBeNull()
+    // First tab remains tabbable when all panels are collapsed
+    expect(builderTab.getAttribute('tabIndex')).toBe('0')
+
+    // Clicking it again re-expands the detail panel
+    fireEvent.click(builderTab)
+    expect(builderTab.getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tabpanel')).toBeTruthy()
+  })
+
+  it('supports arrow, Home, and End key navigation with focus management between feature pillar tabs', () => {
+    renderPage()
+
+    const builderTab = screen.getByRole('tab', { name: /Strategy builder/ })
+    const simTab = screen.getByRole('tab', { name: /Real-time simulation/ })
+    const trackerTab = screen.getByRole('tab', { name: /Trading tracker/ })
 
     fireEvent.keyDown(builderTab, { key: 'ArrowRight' })
     expect(simTab.getAttribute('aria-selected')).toBe('true')
+    expect(simTab.getAttribute('tabIndex')).toBe('0')
+    expect(builderTab.getAttribute('tabIndex')).toBe('-1')
+    expect(document.activeElement).toBe(simTab)
     expect(screen.getByText('+14.2%')).toBeTruthy()
 
-    fireEvent.keyDown(simTab, { key: 'ArrowLeft' })
+    fireEvent.keyDown(simTab, { key: 'End' })
+    expect(trackerTab.getAttribute('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(trackerTab)
+
+    fireEvent.keyDown(trackerTab, { key: 'Home' })
     expect(builderTab.getAttribute('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(builderTab)
   })
 
-  it('interactively switches template details inside strategy builder with accessible states', () => {
+  it('interactively switches template rules and watched assets (stocks vs S&P 500 fund)', () => {
     renderPage()
 
-    // Builder tab is active by default
-    expect(screen.getByText('SMA 200 + 5%–15% discount zone')).toBeTruthy()
+    // Builder tab is active by default with "Winners at a discount"
+    expect(screen.getByText('SMA 50 > 150 > 200 · 5%–15% discount zone')).toBeTruthy()
+    expect(screen.getByText('Watched stocks:')).toBeTruthy()
+    expect(screen.getByText('ZS ✓')).toBeTruthy()
+    expect(screen.getByText('AAPL ✓')).toBeTruthy()
     const discountPill = screen.getByRole('button', { name: 'Winners at a discount' })
     expect(discountPill.getAttribute('aria-pressed')).toBe('true')
 
-    // Click "The comeback" template pill
+    // Click "The comeback" template pill (stock template)
     const comebackPill = screen.getByRole('button', { name: 'The comeback' })
     expect(comebackPill.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(comebackPill)
     expect(comebackPill.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByText('Breakout above 50-day moving average')).toBeTruthy()
+    expect(screen.getByText('≥ 30% below 52w high · +15% above SMA 50 + volume')).toBeTruthy()
     expect(screen.getByText('€150 / step · max 2 steps')).toBeTruthy()
+    expect(screen.getByText('Watched stocks:')).toBeTruthy()
 
-    // Click "Bear markets" template pill
+    // Click "Bear markets" template pill (fund template: watches SPY, not individual stocks)
     const bearPill = screen.getByRole('button', { name: 'Bear markets' })
     fireEvent.click(bearPill)
     expect(bearPill.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByText(/S&P 500 drop/)).toBeTruthy()
+    expect(screen.getByText('S&P 500 drop ≥ 20% · +5% bounce off low')).toBeTruthy()
     expect(screen.getByText('€200 / step · max 5 steps')).toBeTruthy()
+    expect(screen.getByText('The fund it watches:')).toBeTruthy()
+    expect(screen.getByText('SPY · S&P 500 ETF ✓')).toBeTruthy()
+    expect(screen.queryByText('AAPL ✓')).toBeNull()
   })
 
-  it('expands simulation feature and toggles sub-tabs with accessible role="tab"', () => {
+  it('expands simulation feature with true minus sign, S&P 500 fund InfoTip, and sub-tab keyboard navigation', () => {
     renderPage()
 
     // Switch to simulation tab
@@ -99,17 +130,27 @@ describe('WelcomePage', () => {
 
     expect(screen.getByText('+14.2%')).toBeTruthy()
     expect(screen.getByText('+8.1%')).toBeTruthy()
-    expect(screen.getByText('-12.4%')).toBeTruthy()
+    // True Unicode minus sign (\u2212), not ASCII hyphen
+    expect(screen.getByText('−12.4%')).toBeTruthy()
+
+    // InfoTip on S&P 500 fund
+    const infoTipBtn = screen.getByRole('button', { name: 'What is the S&P 500 fund?' })
+    fireEvent.click(infoTipBtn)
+    expect(
+      screen.getByText('Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold.')
+    ).toBeTruthy()
 
     const perfTab = screen.getByRole('tab', { name: 'Performance comparison' })
     const tradesTab = screen.getByRole('tab', { name: 'Paper trade log' })
     expect(perfTab.getAttribute('aria-selected')).toBe('true')
+    expect(perfTab.getAttribute('tabIndex')).toBe('0')
     expect(tradesTab.getAttribute('aria-selected')).toBe('false')
+    expect(tradesTab.getAttribute('tabIndex')).toBe('-1')
 
-    // Toggle sub-tab to paper trades log
-    fireEvent.click(tradesTab)
+    // Arrow key navigation on simulation sub-tabs
+    fireEvent.keyDown(perfTab, { key: 'ArrowRight' })
     expect(tradesTab.getAttribute('aria-selected')).toBe('true')
-    expect(perfTab.getAttribute('aria-selected')).toBe('false')
+    expect(document.activeElement).toBe(tradesTab)
     expect(screen.getByText(/Bought 1 step · AAPL/)).toBeTruthy()
     expect(screen.getByText(/Bought 1 step · MSFT/)).toBeTruthy()
   })
@@ -146,17 +187,23 @@ describe('WelcomePage', () => {
     expect(screen.getByRole('status').textContent).toMatch(/Snoozed/)
   })
 
-  it('renders fully in Catalan with localized rules and budgets', () => {
+  it('renders fully in Catalan with glossary-compliant rules, funds, and budgets', () => {
     renderPage('ca')
 
     expect(screen.getByRole('heading', { level: 1, name: 'Opera segons regles, no per emocions.' })).toBeTruthy()
-    expect(screen.getByText(/SMA 200 \+ zona de descompte/)).toBeTruthy()
-    expect(screen.getByText(/100 € \/ pas · màx\. 3 passos/)).toBeTruthy()
+    expect(screen.getByText('SMA 50 > 150 > 200 · zona de descompte 5%–15%')).toBeTruthy()
+    expect(screen.getByText('100 € / pas · màx. 3 passos')).toBeTruthy()
+    expect(screen.getByText('Accions a vigilar:')).toBeTruthy()
 
-    // Switch template in Catalan
+    // Switch template in Catalan to "La remuntada"
     fireEvent.click(screen.getByRole('button', { name: 'La remuntada' }))
-    expect(screen.getByText('Ruptura per sobre de la mitjana de 50 dies')).toBeTruthy()
+    expect(screen.getByText('≥ 30% sota el màxim anual · +15% sobre SMA 50 + volum')).toBeTruthy()
     expect(screen.getByText('150 € / pas · màx. 2 passos')).toBeTruthy()
+
+    // Switch template in Catalan to "Mercats baixistes"
+    fireEvent.click(screen.getByRole('button', { name: 'Mercats baixistes' }))
+    expect(screen.getByText('El fons que vigila:')).toBeTruthy()
+    expect(screen.getByText('SPY · Fons S&P 500 ✓')).toBeTruthy()
   })
 
   it('renders trust pillars, bottom call to action, and full legal disclaimer', () => {

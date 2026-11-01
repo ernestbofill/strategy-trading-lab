@@ -162,16 +162,16 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   - Primary CTA: "TRY AS GUEST ›" → `/new` (Pick a template), opening the in-memory draft flow with zero friction.
   - Secondary CTA: "Create an account" → `/sign-up`.
   - Micro-link: "Already have an account? Log in" → `/log-in`.
-- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile). Clicking any card expands its full details and interactive simulated widget (no carousel):
+- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile, where the expanded detail panel renders inline directly below the active card). Clicking any card expands its full details and interactive simulated widget (clicking an expanded card collapses it; no carousel):
   - **01 Strategy builder:**
     - Tagline: "Define your rules before the market opens"
     - Points: Tested mathematical templates with transparent logic (moving averages, pullbacks, turnarounds); user-controlled stock universes and step budgets; plain language rules with no black-box algorithms.
-    - Interactive widget: Template switcher (*Winners at a discount*, *The comeback*, *Bear markets*) updating live trigger criteria and step plans, with watched stock badges.
+    - Interactive widget: Template switcher (*Winners at a discount*, *The comeback*, *Bear markets*) updating live trigger criteria and step plans, with watched stock badges (`ZS`, `AAPL`, `MSFT`, `NVDA`) for stock templates and watched fund (`SPY · S&P 500 ETF`) for *Bear markets*.
     - CTA link: "Try building a strategy as guest ›" (`/new`).
   - **02 Real-time simulation:**
     - Tagline: "Forward-test on real prices with zero financial risk"
     - Points: Closing prices refreshed daily after US market close; automated simulated trade logging following exact rules; honest metrics next to S&P 500 fund and worst-year benchmarks.
-    - Interactive widget: Forward-testing stats (`+14.2%` vs `+8.1%` index vs `-12.4%` worst year) with toggle between performance comparison and paper trade log.
+    - Interactive widget: Forward-testing stats (`+14.2%` vs `+8.1%` S&P 500 fund with `InfoTip` vs `−12.4%` worst year) with toggle between performance comparison and paper trade log.
     - CTA link: "Test in simulation mode ›" (`/new`).
   - **03 Trading tracker:**
     - Tagline: "Execute at your broker. 100% private & non-custodial"

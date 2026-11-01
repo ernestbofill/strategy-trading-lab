@@ -1,101 +1,162 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n/I18n'
+import type { MessageKey } from '../../i18n/messages/en'
 import { pickPath } from '../new-strategy/paths'
 import styles from './InteractiveFeatures.module.css'
 
 type FeatureKey = 'builder' | 'simulation' | 'tracker'
+type BuilderTemplateKey = 'discount' | 'comeback' | 'bear'
+type TrackerActionKey = 'didIt' | 'skipped' | 'snooze'
+
+interface Pillar {
+  key: FeatureKey
+  tagKey: MessageKey
+  badgeKey: MessageKey
+  badgeTone?: 'live'
+  titleKey: MessageKey
+  taglineKey: MessageKey
+  summaryKey: MessageKey
+  points: [MessageKey, MessageKey, MessageKey]
+  ctaKey: MessageKey
+}
+
+const PILLARS: readonly Pillar[] = [
+  {
+    key: 'builder',
+    tagKey: 'welcome.builder.tag',
+    badgeKey: 'welcome.builder.badge',
+    titleKey: 'welcome.builder.title',
+    taglineKey: 'welcome.builder.tagline',
+    summaryKey: 'welcome.builder.summary',
+    points: ['welcome.builder.point1', 'welcome.builder.point2', 'welcome.builder.point3'],
+    ctaKey: 'welcome.builder.cta',
+  },
+  {
+    key: 'simulation',
+    tagKey: 'welcome.sim.tag',
+    badgeKey: 'welcome.sim.badge',
+    titleKey: 'welcome.sim.title',
+    taglineKey: 'welcome.sim.tagline',
+    summaryKey: 'welcome.sim.summary',
+    points: ['welcome.sim.point1', 'welcome.sim.point2', 'welcome.sim.point3'],
+    ctaKey: 'welcome.sim.cta',
+  },
+  {
+    key: 'tracker',
+    tagKey: 'welcome.tracker.tag',
+    badgeKey: 'welcome.tracker.badge',
+    badgeTone: 'live',
+    titleKey: 'welcome.tracker.title',
+    taglineKey: 'welcome.tracker.tagline',
+    summaryKey: 'welcome.tracker.summary',
+    points: ['welcome.tracker.point1', 'welcome.tracker.point2', 'welcome.tracker.point3'],
+    ctaKey: 'welcome.tracker.cta',
+  },
+] as const
+
+const BUILDER_TEMPLATES: Record<
+  BuilderTemplateKey,
+  { nameKey: MessageKey; rule: string; budget: string }
+> = {
+  discount: {
+    nameKey: 'welcome.builder.mock.t1Name',
+    rule: 'SMA 200 + 5%–15% discount zone',
+    budget: '€100 / step · max 3 steps',
+  },
+  comeback: {
+    nameKey: 'welcome.builder.mock.t2Name',
+    rule: 'Breakout above 50-day moving average',
+    budget: '€150 / step · max 2 steps',
+  },
+  bear: {
+    nameKey: 'welcome.builder.mock.t3Name',
+    rule: 'S&P 500 drop ≥ 20% accumulation',
+    budget: '€200 / step · max 5 steps',
+  },
+}
+
+const WATCHED_STOCKS = ['AAPL ✓', 'MSFT ✓', 'NVDA ✓', 'AMZN ✓']
+
+const SIM_STATS: Array<{
+  labelKey: MessageKey
+  value: string
+  valueClass: string
+}> = [
+  { labelKey: 'welcome.sim.mock.returnLabel', value: '+14.2%', valueClass: styles.statPositive },
+  { labelKey: 'welcome.sim.mock.indexLabel', value: '+8.1%', valueClass: styles.statIndex },
+  { labelKey: 'welcome.sim.mock.worstLabel', value: '-12.4%', valueClass: styles.statNegative },
+]
+
+const PAPER_LOGS: MessageKey[] = ['welcome.sim.mock.log1', 'welcome.sim.mock.log2']
+
+const TRACKER_ACTIONS: Array<{
+  key: TrackerActionKey
+  labelKey: MessageKey
+  className: string
+  statusKey: MessageKey
+}> = [
+  {
+    key: 'didIt',
+    labelKey: 'welcome.tracker.mock.btnDidIt',
+    className: styles.signalBtnDidIt,
+    statusKey: 'welcome.tracker.mock.statusDidIt',
+  },
+  {
+    key: 'skipped',
+    labelKey: 'welcome.tracker.mock.btnSkipped',
+    className: styles.signalBtnSkipped,
+    statusKey: 'welcome.tracker.mock.statusSkipped',
+  },
+  {
+    key: 'snooze',
+    labelKey: 'welcome.tracker.mock.btnSnooze',
+    className: styles.signalBtnSnooze,
+    statusKey: 'welcome.tracker.mock.statusSnooze',
+  },
+]
 
 export function InteractiveFeatures() {
   const t = useT()
   const [activeFeature, setActiveFeature] = useState<FeatureKey>('builder')
-
-  // Builder mock state
-  const [builderTemplate, setBuilderTemplate] = useState<'discount' | 'comeback' | 'bear'>('discount')
-
-  // Simulation mock state
+  const [builderTemplate, setBuilderTemplate] = useState<BuilderTemplateKey>('discount')
   const [simTab, setSimTab] = useState<'perf' | 'trades'>('perf')
+  const [trackerState, setTrackerState] = useState<TrackerActionKey | null>(null)
 
-  // Tracker mock state
-  const [trackerState, setTrackerState] = useState<'none' | 'didIt' | 'skipped' | 'snooze'>('none')
-
-  const toggleFeature = (key: FeatureKey) => {
-    setActiveFeature((current) => (current === key ? current : key))
-  }
+  const activePillar = PILLARS.find((p) => p.key === activeFeature) ?? PILLARS[0]
 
   return (
     <section className={styles.container} aria-labelledby="features-heading">
       <div className={styles.cardList} role="tablist" aria-label={t('welcome.features.title')}>
-        {/* Pillar 1: Strategy Builder */}
-        <button
-          type="button"
-          role="tab"
-          id="tab-builder"
-          aria-selected={activeFeature === 'builder'}
-          aria-controls="panel-feature-detail"
-          className={styles.featureCard}
-          data-active={activeFeature === 'builder'}
-          onClick={() => toggleFeature('builder')}
-        >
-          <div className={styles.cardTop}>
-            <span className={styles.tag}>{t('welcome.builder.tag')}</span>
-            <span className={styles.badge}>{t('welcome.builder.badge')}</span>
-          </div>
-          <h3 className={styles.cardTitle}>{t('welcome.builder.title')}</h3>
-          <p className={styles.tagline}>"{t('welcome.builder.tagline')}"</p>
-          <p className={styles.summary}>{t('welcome.builder.summary')}</p>
-          <div className={styles.expandToggle}>
-            <span>{activeFeature === 'builder' ? t('welcome.collapse') : t('welcome.expand')}</span>
-          </div>
-        </button>
-
-        {/* Pillar 2: Simulation */}
-        <button
-          type="button"
-          role="tab"
-          id="tab-simulation"
-          aria-selected={activeFeature === 'simulation'}
-          aria-controls="panel-feature-detail"
-          className={styles.featureCard}
-          data-active={activeFeature === 'simulation'}
-          onClick={() => toggleFeature('simulation')}
-        >
-          <div className={styles.cardTop}>
-            <span className={styles.tag}>{t('welcome.sim.tag')}</span>
-            <span className={styles.badge}>{t('welcome.sim.badge')}</span>
-          </div>
-          <h3 className={styles.cardTitle}>{t('welcome.sim.title')}</h3>
-          <p className={styles.tagline}>"{t('welcome.sim.tagline')}"</p>
-          <p className={styles.summary}>{t('welcome.sim.summary')}</p>
-          <div className={styles.expandToggle}>
-            <span>{activeFeature === 'simulation' ? t('welcome.collapse') : t('welcome.expand')}</span>
-          </div>
-        </button>
-
-        {/* Pillar 3: Trading Tracker */}
-        <button
-          type="button"
-          role="tab"
-          id="tab-tracker"
-          aria-selected={activeFeature === 'tracker'}
-          aria-controls="panel-feature-detail"
-          className={styles.featureCard}
-          data-active={activeFeature === 'tracker'}
-          onClick={() => toggleFeature('tracker')}
-        >
-          <div className={styles.cardTop}>
-            <span className={styles.tag}>{t('welcome.tracker.tag')}</span>
-            <span className={styles.badge} data-tone="live">
-              {t('welcome.tracker.badge')}
-            </span>
-          </div>
-          <h3 className={styles.cardTitle}>{t('welcome.tracker.title')}</h3>
-          <p className={styles.tagline}>"{t('welcome.tracker.tagline')}"</p>
-          <p className={styles.summary}>{t('welcome.tracker.summary')}</p>
-          <div className={styles.expandToggle}>
-            <span>{activeFeature === 'tracker' ? t('welcome.collapse') : t('welcome.expand')}</span>
-          </div>
-        </button>
+        {PILLARS.map((pillar) => {
+          const isActive = activeFeature === pillar.key
+          return (
+            <button
+              key={pillar.key}
+              type="button"
+              role="tab"
+              id={`tab-${pillar.key}`}
+              aria-selected={isActive}
+              aria-controls="panel-feature-detail"
+              className={styles.featureCard}
+              data-active={isActive}
+              onClick={() => setActiveFeature(pillar.key)}
+            >
+              <div className={styles.cardTop}>
+                <span className={styles.tag}>{t(pillar.tagKey)}</span>
+                <span className={styles.badge} data-tone={pillar.badgeTone}>
+                  {t(pillar.badgeKey)}
+                </span>
+              </div>
+              <h3 className={styles.cardTitle}>{t(pillar.titleKey)}</h3>
+              <p className={styles.tagline}>"{t(pillar.taglineKey)}"</p>
+              <p className={styles.summary}>{t(pillar.summaryKey)}</p>
+              <div className={styles.expandToggle}>
+                <span>{isActive ? t('welcome.collapse') : t('welcome.expand')}</span>
+              </div>
+            </button>
+          )
+        })}
       </div>
 
       {/* Expanded Interactive Detail Panel */}
@@ -105,221 +166,148 @@ export function InteractiveFeatures() {
         aria-labelledby={`tab-${activeFeature}`}
         className={styles.detailPanel}
       >
+        <ul className={styles.pointsList}>
+          {activePillar.points.map((pointKey) => (
+            <li key={pointKey}>{t(pointKey)}</li>
+          ))}
+        </ul>
+
         {activeFeature === 'builder' && (
-          <>
-            <ul className={styles.pointsList}>
-              <li>{t('welcome.builder.point1')}</li>
-              <li>{t('welcome.builder.point2')}</li>
-              <li>{t('welcome.builder.point3')}</li>
-            </ul>
+          <div className={styles.mockWidget} aria-label="Interactive strategy builder preview">
+            <div className={styles.mockHeader}>
+              <span className={styles.mockLabel}>{t('welcome.builder.mock.templateLabel')}</span>
+              <span className={styles.tag}>STL // TEMPLATE_ENGINE</span>
+            </div>
 
-            {/* Interactive Builder Mock Widget */}
-            <div className={styles.mockWidget} aria-label="Interactive strategy builder preview">
-              <div className={styles.mockHeader}>
-                <span className={styles.mockLabel}>{t('welcome.builder.mock.templateLabel')}</span>
-                <span className={styles.tag}>STL // TEMPLATE_ENGINE</span>
-              </div>
-
-              <div className={styles.templatePills}>
+            <div className={styles.templatePills}>
+              {(Object.keys(BUILDER_TEMPLATES) as BuilderTemplateKey[]).map((key) => (
                 <button
+                  key={key}
                   type="button"
                   className={styles.templatePill}
-                  data-active={builderTemplate === 'discount'}
-                  onClick={() => setBuilderTemplate('discount')}
+                  data-active={builderTemplate === key}
+                  onClick={() => setBuilderTemplate(key)}
                 >
-                  {t('welcome.builder.mock.t1Name')}
+                  {t(BUILDER_TEMPLATES[key].nameKey)}
                 </button>
-                <button
-                  type="button"
-                  className={styles.templatePill}
-                  data-active={builderTemplate === 'comeback'}
-                  onClick={() => setBuilderTemplate('comeback')}
-                >
-                  {t('welcome.builder.mock.t2Name')}
-                </button>
-                <button
-                  type="button"
-                  className={styles.templatePill}
-                  data-active={builderTemplate === 'bear'}
-                  onClick={() => setBuilderTemplate('bear')}
-                >
-                  {t('welcome.builder.mock.t3Name')}
-                </button>
-              </div>
+              ))}
+            </div>
 
-              <div className={styles.ruleParams}>
-                <div className={styles.paramBlock}>
-                  <span className={styles.paramLabel}>{t('welcome.builder.mock.ruleLabel')}</span>
-                  <span className={styles.paramValue}>
-                    {builderTemplate === 'discount' && 'SMA 200 + 5%–15% discount zone'}
-                    {builderTemplate === 'comeback' && 'Breakout above 50-day moving average'}
-                    {builderTemplate === 'bear' && 'S&P 500 drop \u2265 20% accumulation'}
-                  </span>
-                </div>
-                <div className={styles.paramBlock}>
-                  <span className={styles.paramLabel}>{t('welcome.builder.mock.budgetLabel')}</span>
-                  <span className={styles.paramValue}>
-                    {builderTemplate === 'discount' && '\u20AC100 / step \u00B7 max 3 steps'}
-                    {builderTemplate === 'comeback' && '\u20AC150 / step \u00B7 max 2 steps'}
-                    {builderTemplate === 'bear' && '\u20AC200 / step \u00B7 max 5 steps'}
-                  </span>
-                </div>
+            <div className={styles.ruleParams}>
+              <div className={styles.paramBlock}>
+                <span className={styles.paramLabel}>{t('welcome.builder.mock.ruleLabel')}</span>
+                <span className={styles.paramValue}>{BUILDER_TEMPLATES[builderTemplate].rule}</span>
               </div>
-
-              <div className={styles.stockRow}>
-                <span className={styles.paramLabel}>{t('welcome.builder.mock.stocksLabel')}:</span>
-                <span className={styles.stockBadge}>AAPL \u2713</span>
-                <span className={styles.stockBadge}>MSFT \u2713</span>
-                <span className={styles.stockBadge}>NVDA \u2713</span>
-                <span className={styles.stockBadge}>AMZN \u2713</span>
+              <div className={styles.paramBlock}>
+                <span className={styles.paramLabel}>{t('welcome.builder.mock.budgetLabel')}</span>
+                <span className={styles.paramValue}>{BUILDER_TEMPLATES[builderTemplate].budget}</span>
               </div>
             </div>
 
-            <Link to={pickPath} className={styles.ctaLink}>
-              {t('welcome.builder.cta')}
-            </Link>
-          </>
+            <div className={styles.stockRow}>
+              <span className={styles.paramLabel}>{t('welcome.builder.mock.stocksLabel')}:</span>
+              {WATCHED_STOCKS.map((stock) => (
+                <span key={stock} className={styles.stockBadge}>
+                  {stock}
+                </span>
+              ))}
+            </div>
+          </div>
         )}
 
         {activeFeature === 'simulation' && (
-          <>
-            <ul className={styles.pointsList}>
-              <li>{t('welcome.sim.point1')}</li>
-              <li>{t('welcome.sim.point2')}</li>
-              <li>{t('welcome.sim.point3')}</li>
-            </ul>
-
-            {/* Interactive Simulation Mock Widget */}
-            <div className={styles.mockWidget} aria-label="Interactive paper trading simulation preview">
-              <div className={styles.mockHeader}>
-                <span className={styles.badge}>{t('welcome.sim.mock.mode')}</span>
-                <span className={styles.tag}>STL // FORWARD_TEST</span>
-              </div>
-
-              <div className={styles.simStats}>
-                <div className={styles.statBox}>
-                  <span className={styles.statLabel}>{t('welcome.sim.mock.returnLabel')}</span>
-                  <span className={`${styles.statValue} ${styles.statPositive}`}>+14.2%</span>
-                </div>
-                <div className={styles.statBox}>
-                  <span className={styles.statLabel}>{t('welcome.sim.mock.indexLabel')}</span>
-                  <span className={`${styles.statValue} ${styles.statIndex}`}>+8.1%</span>
-                </div>
-                <div className={styles.statBox}>
-                  <span className={styles.statLabel}>{t('welcome.sim.mock.worstLabel')}</span>
-                  <span className={`${styles.statValue} ${styles.statNegative}`}>-12.4%</span>
-                </div>
-              </div>
-
-              <div className={styles.simSubTabs}>
-                <button
-                  type="button"
-                  className={styles.simSubTab}
-                  data-active={simTab === 'perf'}
-                  onClick={() => setSimTab('perf')}
-                >
-                  {t('welcome.sim.mock.tabPerf')}
-                </button>
-                <button
-                  type="button"
-                  className={styles.simSubTab}
-                  data-active={simTab === 'trades'}
-                  onClick={() => setSimTab('trades')}
-                >
-                  {t('welcome.sim.mock.tabTrades')}
-                </button>
-              </div>
-
-              {simTab === 'perf' ? (
-                <p className="caption">{t('welcome.sim.mock.note')}</p>
-              ) : (
-                <div className={styles.logList}>
-                  <div className={styles.logItem}>{t('welcome.sim.mock.log1')}</div>
-                  <div className={styles.logItem}>{t('welcome.sim.mock.log2')}</div>
-                </div>
-              )}
+          <div className={styles.mockWidget} aria-label="Interactive paper trading simulation preview">
+            <div className={styles.mockHeader}>
+              <span className={styles.badge}>{t('welcome.sim.mock.mode')}</span>
+              <span className={styles.tag}>STL // FORWARD_TEST</span>
             </div>
 
-            <Link to={pickPath} className={styles.ctaLink}>
-              {t('welcome.sim.cta')}
-            </Link>
-          </>
+            <div className={styles.simStats}>
+              {SIM_STATS.map(({ labelKey, value, valueClass }) => (
+                <div key={labelKey} className={styles.statBox}>
+                  <span className={styles.statLabel}>{t(labelKey)}</span>
+                  <span className={`${styles.statValue} ${valueClass}`}>{value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.simSubTabs}>
+              <button
+                type="button"
+                className={styles.simSubTab}
+                data-active={simTab === 'perf'}
+                onClick={() => setSimTab('perf')}
+              >
+                {t('welcome.sim.mock.tabPerf')}
+              </button>
+              <button
+                type="button"
+                className={styles.simSubTab}
+                data-active={simTab === 'trades'}
+                onClick={() => setSimTab('trades')}
+              >
+                {t('welcome.sim.mock.tabTrades')}
+              </button>
+            </div>
+
+            {simTab === 'perf' ? (
+              <p className="caption">{t('welcome.sim.mock.note')}</p>
+            ) : (
+              <div className={styles.logList}>
+                {PAPER_LOGS.map((logKey) => (
+                  <div key={logKey} className={styles.logItem}>
+                    {t(logKey)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {activeFeature === 'tracker' && (
-          <>
-            <ul className={styles.pointsList}>
-              <li>{t('welcome.tracker.point1')}</li>
-              <li>{t('welcome.tracker.point2')}</li>
-              <li>{t('welcome.tracker.point3')}</li>
-            </ul>
-
-            {/* Interactive Tracker Mock Widget */}
-            <div className={styles.mockWidget} aria-label="Interactive live trade tracking preview">
-              <div className={styles.mockHeader}>
-                <div className={styles.liveBanner}>
-                  <span className={styles.pulseDot} aria-hidden="true" />
-                  <span>{t('welcome.tracker.mock.signalWaiting')}</span>
-                </div>
-                <span className={styles.badge} data-tone="live">
-                  {t('welcome.tracker.mock.mode')}
-                </span>
+          <div className={styles.mockWidget} aria-label="Interactive live trade tracking preview">
+            <div className={styles.mockHeader}>
+              <div className={styles.liveBanner}>
+                <span className={styles.pulseDot} aria-hidden="true" />
+                <span>{t('welcome.tracker.mock.signalWaiting')}</span>
               </div>
-
-              <div>
-                <div className={styles.signalStock}>{t('welcome.tracker.mock.signalStock')}</div>
-                <div className={styles.signalDetail}>{t('welcome.tracker.mock.signalDetail')}</div>
-              </div>
-
-              <div className={styles.signalActionCluster}>
-                <span className={styles.paramLabel}>{t('welcome.tracker.mock.prompt')}</span>
-                <button
-                  type="button"
-                  className={`${styles.signalBtn} ${styles.signalBtnDidIt}`}
-                  onClick={() => setTrackerState('didIt')}
-                >
-                  {t('welcome.tracker.mock.btnDidIt')}
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.signalBtn} ${styles.signalBtnSkipped}`}
-                  onClick={() => setTrackerState('skipped')}
-                >
-                  {t('welcome.tracker.mock.btnSkipped')}
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.signalBtn} ${styles.signalBtnSnooze}`}
-                  onClick={() => setTrackerState('snooze')}
-                >
-                  {t('welcome.tracker.mock.btnSnooze')}
-                </button>
-              </div>
-
-              {trackerState === 'didIt' && (
-                <div className={styles.trackerStatus} role="status">
-                  {t('welcome.tracker.mock.statusDidIt')}
-                </div>
-              )}
-              {trackerState === 'skipped' && (
-                <div className={styles.trackerStatus} role="status">
-                  {t('welcome.tracker.mock.statusSkipped')}
-                </div>
-              )}
-              {trackerState === 'snooze' && (
-                <div className={styles.trackerStatus} role="status">
-                  {t('welcome.tracker.mock.statusSnooze')}
-                </div>
-              )}
-
-              <p className={styles.privacyCallout}>{t('welcome.tracker.mock.privacyCallout')}</p>
+              <span className={styles.badge} data-tone="live">
+                {t('welcome.tracker.mock.mode')}
+              </span>
             </div>
 
-            <Link to={pickPath} className={styles.ctaLink}>
-              {t('welcome.tracker.cta')}
-            </Link>
-          </>
+            <div>
+              <div className={styles.signalStock}>{t('welcome.tracker.mock.signalStock')}</div>
+              <div className={styles.signalDetail}>{t('welcome.tracker.mock.signalDetail')}</div>
+            </div>
+
+            <div className={styles.signalActionCluster}>
+              <span className={styles.paramLabel}>{t('welcome.tracker.mock.prompt')}</span>
+              {TRACKER_ACTIONS.map(({ key, labelKey, className }) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`${styles.signalBtn} ${className}`}
+                  onClick={() => setTrackerState(key)}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+
+            {trackerState && (
+              <div className={styles.trackerStatus} role="status">
+                {t(TRACKER_ACTIONS.find((a) => a.key === trackerState)!.statusKey)}
+              </div>
+            )}
+
+            <p className={styles.privacyCallout}>{t('welcome.tracker.mock.privacyCallout')}</p>
+          </div>
         )}
+
+        <Link to={pickPath} className={styles.ctaLink}>
+          {t(activePillar.ctaKey)}
+        </Link>
       </div>
     </section>
   )

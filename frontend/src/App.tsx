@@ -113,10 +113,7 @@ function HomeRoute() {
       </Screen>
     )
   }
-  if (state.account) {
-    return <Dashboard />
-  }
-  return <WelcomePage />
+  return state.account ? <Dashboard /> : <WelcomePage />
 }
 
 /** Root layout providing in-app feedback capture across all screens for logged-in users with verified email. */

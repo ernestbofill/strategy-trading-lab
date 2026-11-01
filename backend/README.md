@@ -44,7 +44,7 @@ neon login
 neon link --branch dev
 ```
 
-`neon link` asks for the project, writes `.neon` and pulls the dev branch's variables into `.env.local`. Later, `neon env pull` refreshes them (it only rewrites the Neon lines). For the server's environment, copy [production.env.example](../deploy/backend/production.env.example) to `deploy/backend/production.env` (gitignored) and fill its Neon lines with `neon env pull --branch production --file deploy/backend/production.env`; the rest of that file (`ADMIN_PASSWORD`, `DATABASE_URL_DEV`) is yours to fill ([deploy/backend](../deploy/backend/README.md)).
+`neon link` asks for the project, writes `.neon` and pulls the dev branch's variables into `.env.local`. Later, `neon env pull` refreshes them (it only rewrites the Neon lines). For the server's environment, copy [production.env.example](../deploy/backend/production.env.example) to `deploy/backend/production.env` (gitignored) and fill its Neon lines with `neon env pull --branch production --file deploy/backend/production.env`; the rest of that file (`DATABASE_URL_DEV`, `OWNER_EMAIL`, `BREVO_WEBHOOK_KEY`) is yours to fill ([deploy/backend](../deploy/backend/README.md)).
 
 Neon doesn't write the other lines in `.env.local`. Copy them from the other computer or a password manager:
 

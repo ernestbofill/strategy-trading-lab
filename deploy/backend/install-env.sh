@@ -31,7 +31,6 @@ keys() { grep -oE '^[A-Z][A-Z0-9_]*' "$1" | sort -u; }
 for key in "${required[@]}"; do
   grep -qE "^$key=.+" "$new" || { echo "$key is missing or empty." >&2; exit 1; }
 done
-grep -qE '^ADMIN_PASSWORD=.+' "$new" || echo "Warning: no ADMIN_PASSWORD, so the admin page can't switch the database." >&2
 
 install -d -m 755 /etc/strategy-trading-lab
 if [ -f "$env_file" ] && cmp -s "$new" "$env_file"; then

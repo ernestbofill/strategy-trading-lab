@@ -24,6 +24,10 @@ public class Asset
     public string? Industry { get; set; }
     /// <summary>Who added it at run time; null for a seeded asset (or once that account is deleted).</summary>
     public Guid? AddedBy { get; set; }
+    /// <summary>Why the last price fetch couldn't be used (Yahoo's error, bars that aren't daily); null when it worked or before the first one.</summary>
+    public string? PricesProblem { get; set; }
+    /// <summary>When its prices were last fetched successfully; null before the first such fetch.</summary>
+    public DateTimeOffset? PricesCheckedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
     public List<AssetText> Texts { get; set; } = [];

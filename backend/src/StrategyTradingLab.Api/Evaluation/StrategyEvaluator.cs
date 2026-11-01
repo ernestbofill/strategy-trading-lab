@@ -141,10 +141,16 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     /// old signals. Later runs replay from that first day, or from an earlier signal's day (a strategy that got a backlog before
     /// this rule keeps counting those steps).
     /// </summary>
+    /// <summary>
+    /// The days the rules really checked for this stock. A day checked with too short a price history doesn't count: the rules
+    /// couldn't run, so once the history is there the stock starts fresh and that day can still get its signal.
+    /// </summary>
+    IQueryable<DailyEvaluation> Evaluated(Guid strategyId, Guid assetId) =>
+        db.DailyEvaluations.Where(r => r.StrategyId == strategyId && r.AssetId == assetId && r.Status != EvaluationStatus.NotEnoughData);
+
     async Task<DateOnly> ReplayFromAsync(Guid strategyId, Guid assetId, DateOnly latest, CancellationToken cancellationToken)
     {
-        var firstEvaluated = await db.DailyEvaluations.Where(r => r.StrategyId == strategyId && r.AssetId == assetId)
-            .MinAsync(r => (DateOnly?)r.Date, cancellationToken);
+        var firstEvaluated = await Evaluated(strategyId, assetId).MinAsync(r => (DateOnly?)r.Date, cancellationToken);
         if (firstEvaluated is null) return latest;
         var firstSignal = await db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId)
             .MinAsync(s => (DateOnly?)s.SignalDate, cancellationToken);
@@ -158,8 +164,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
 
         // Days up to the last one evaluated before are never given new signals: a changed setting or a revised price
         // history must not back-date signals and trades.
-        var evaluatedUntil = await db.DailyEvaluations.Where(r => r.StrategyId == strategy.Id && r.AssetId == asset.Id)
-            .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
+        var evaluatedUntil = await Evaluated(strategy.Id, asset.Id).MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
 
         // Where it stands today.
         var latest = days[^1];

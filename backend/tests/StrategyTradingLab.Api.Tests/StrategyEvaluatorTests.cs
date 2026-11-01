@@ -110,7 +110,7 @@ public class StrategyEvaluatorTests
     internal static async Task CheckedBeforeAsync(AppDbContext db, Guid strategyId, Guid assetId, DateOnly start)
     {
         db.DailyEvaluations.Add(new DailyEvaluation
-            { StrategyId = strategyId, AssetId = assetId, Date = start.AddDays(-1), Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            { StrategyId = strategyId, AssetId = assetId, Date = start.AddDays(-1), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
         await db.SaveChangesAsync();
     }
 
@@ -264,6 +264,34 @@ public class StrategyEvaluatorTests
             Assert.Equal((SignalStatus.Missed, day302), (signal.Status, signal.EndedOn));
             Assert.Equal([new DateOnly(2024, 1, 1).AddDays(301), day302],
                 await db.DailyEvaluations.Where(e => e.StrategyId == strategyId).OrderBy(e => e.Date).Select(e => e.Date).ToListAsync());
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task Days_checked_before_the_price_history_was_long_enough_dont_stop_the_first_real_check_from_signalling()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
+        try
+        {
+            // Days 300 and 301 were checked while only a short history was stored; the full history came later.
+            var day300 = new DateOnly(2024, 1, 1).AddDays(300);
+            foreach (var day in new[] { day300, day300.AddDays(1) })
+                db.DailyEvaluations.Add(new DailyEvaluation
+                    { StrategyId = strategyId, AssetId = assetId, Date = day, Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+
+            await Evaluator(db).RunAsync(default);
+
+            // As a first check: the latest day, still in the zone, gets its signal.
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal((day300.AddDays(1), 1), (signal.SignalDate, signal.StepNo));
         }
         finally
         {

@@ -17,13 +17,15 @@ public class PriceRefresherTests
     sealed class FakeSource(Func<int, decimal> close) : IMarketDataSource
     {
         public int FullRequests { get; private set; }
+        /// <summary>The first day the last whole-history request asked for.</summary>
+        public DateOnly? Since { get; private set; }
         public bool Fails { get; set; }
 
-        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, bool fullHistory, bool adjusted, CancellationToken cancellationToken)
+        public Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken)
         {
             if (Fails) throw new MarketDataException("down");
-            if (fullHistory) FullRequests++;
-            IReadOnlyList<Candle> days = [.. Enumerable.Range(fullHistory ? 0 : 20, fullHistory ? 30 : 10).Select(d => Day(d, close(d)))];
+            if (since is not null) (FullRequests, Since) = (FullRequests + 1, since);
+            IReadOnlyList<Candle> days = [.. Enumerable.Range(since is not null ? 0 : 20, since is not null ? 30 : 10).Select(d => Day(d, close(d)))];
             return Task.FromResult(days);
         }
 
@@ -59,6 +61,21 @@ public class PriceRefresherTests
     [Fact]
     public void A_gap_with_no_shared_day_needs_the_full_history() =>
         Assert.True(PriceRefresher.NeedsFullHistory(Recent((20, 10), (21, 11)), new Dictionary<DateOnly, decimal> { [Day(1, 0).Date] = 9 }));
+
+    [Fact]
+    public void The_history_starts_two_years_before_today_or_the_earliest_strategy()
+    {
+        var today = new DateOnly(2026, 10, 31);
+
+        Assert.Equal(new DateOnly(2024, 10, 31), PriceRefresher.HistoryStart(null, today));
+        Assert.Equal(new DateOnly(2023, 3, 1), PriceRefresher.HistoryStart(new DateOnly(2025, 3, 1), today));
+        Assert.Equal(new DateOnly(2024, 10, 31), PriceRefresher.HistoryStart(new DateOnly(2026, 11, 2), today)); // Starts later: today.
+    }
+
+    sealed class FixedTime(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
 
     static async Task<(Asset Asset, AppDbContext Db, IServiceScope Scope)> NewAssetAsync(AccountsApi api)
     {
@@ -136,9 +153,91 @@ public class PriceRefresherTests
             await Assert.ThrowsAsync<MarketDataException>(() => refresher.RefreshAssetAsync(asset, default));
 
             Assert.Equal(30, await db.Prices.CountAsync(p => p.AssetId == asset.Id));
+            var failed = await db.Assets.AsNoTracking().SingleAsync(a => a.Id == asset.Id);
+            Assert.Equal("down", failed.PricesProblem);
+            Assert.NotNull(failed.PricesCheckedAt);
+
+            source.Fails = false;
+            await refresher.RefreshAssetAsync(asset, default);
+
+            Assert.Null((await db.Assets.AsNoTracking().SingleAsync(a => a.Id == asset.Id)).PricesProblem);
         }
         finally
         {
+            await db.Assets.Where(a => a.Id == asset.Id).ExecuteDeleteAsync();
+        }
+    }
+
+    [NeonFact]
+    public async Task A_re_adjusted_history_is_fetched_from_two_years_back_or_over_the_span_already_stored()
+    {
+        using var api = new AccountsApi();
+        var (asset, db, scope) = await NewAssetAsync(api);
+        using var _ = scope;
+        try
+        {
+            var time = new FixedTime(new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero));
+            var source = new FakeSource(d => 100 + d);
+            await new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance) { Time = time }.RefreshAssetAsync(asset, default);
+            Assert.Equal(new DateOnly(2024, 10, 31), source.Since); // No strategy lists it: two years before today.
+
+            // A longer history downloaded by hand: a re-adjusting dividend fetches it all again, not only two years.
+            db.Prices.Add(new PriceDaily { AssetId = asset.Id, Date = new DateOnly(2020, 1, 2), Open = 50, High = 51, Low = 49, Close = 50, Volume = 1 });
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            var halved = new FakeSource(d => (100 + d) / 2m);
+
+            var result = await new PriceRefresher(db, halved, NullLogger<PriceRefresher>.Instance) { Time = time }.RefreshAssetAsync(asset, default);
+
+            Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
+            Assert.Equal(new DateOnly(2020, 1, 2), halved.Since);
+        }
+        finally
+        {
+            await db.Assets.Where(a => a.Id == asset.Id).ExecuteDeleteAsync();
+        }
+    }
+
+    [NeonFact]
+    public async Task A_trade_recorded_before_the_stored_days_fetches_two_years_before_it()
+    {
+        using var api = new AccountsApi();
+        var (asset, db, scope) = await NewAssetAsync(api);
+        using var _ = scope;
+        var user = new User { Email = $"held-{Guid.NewGuid():N}@example.com", TimeZone = "UTC", Locale = "en" };
+        try
+        {
+            var time = new FixedTime(new DateTimeOffset(2026, 10, 31, 12, 0, 0, TimeSpan.Zero));
+            var source = new FakeSource(d => 100 + d);
+            var refresher = new PriceRefresher(db, source, NullLogger<PriceRefresher>.Instance) { Time = time };
+            await refresher.RefreshAssetAsync(asset, default);
+            // A holding bought long before the strategy and the stored days (2026-09-01 on).
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+            var strategy = new Strategy
+            {
+                UserId = user.Id, TemplateKey = "dip", Name = "Held", Mode = StrategyMode.Live, Status = StrategyStatus.Running,
+                StartedOn = new DateOnly(2026, 10, 1), Currency = "USD", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+                Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            };
+            db.Strategies.Add(strategy);
+            await db.SaveChangesAsync();
+            db.UserTrades.Add(new UserTrade
+            {
+                StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = new DateOnly(2025, 1, 15), Side = TradeSide.Buy, Price = 100,
+                EnteredAs = EnteredAs.Amount, Amount = 99, Shares = 0.99m, Fee = 1, FxRate = 1, FxSource = FxSource.User, Source = TradeSource.Manual,
+            });
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+
+            var result = await refresher.RefreshAssetAsync(asset, default);
+
+            Assert.Equal(RefreshOutcome.FullHistory, result.Outcome);
+            Assert.Equal(new DateOnly(2023, 1, 15), source.Since);
+        }
+        finally
+        {
+            await db.Users.Where(u => u.Id == user.Id).ExecuteDeleteAsync();
             await db.Assets.Where(a => a.Id == asset.Id).ExecuteDeleteAsync();
         }
     }

@@ -580,7 +580,7 @@ The same three settings can be changed later from the strategy page (not drawn).
     - "CANDIDATE" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
     - Every row opens the stock's page; a waiting signal is answered from there ("Answer the signal").
-    - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought.
+    - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought. Each drop counts only the signals and buys from that drop's first step (`cycleStart`), so a later drop after the budget is used up shows "CANDIDATE" with "No budget left for its steps".
     - *Index trend* shows "OUT OF THE MARKET" ("−[n]% vs the buy line", or "Below its long trend" before the checks are stored) when not holding, and "HOLDING" ("In the market") when holding.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."

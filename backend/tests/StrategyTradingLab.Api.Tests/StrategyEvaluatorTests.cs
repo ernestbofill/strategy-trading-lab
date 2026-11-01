@@ -453,4 +453,62 @@ public class StrategyEvaluatorTests
         }
     }
 
+    [NeonFact]
+    public async Task A_second_bear_drop_after_the_budget_is_used_up_makes_no_new_signals_and_records_the_new_cycle_start()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var tag = Guid.NewGuid().ToString("N")[..10];
+        var asset = new Asset { Symbol = $"B{tag}", Exchange = "TEST", Name = "Bear asset", Currency = "USD", Kind = AssetKind.Fund };
+        var user = new User { Email = $"bear-{tag}@example.com", TimeZone = "UTC", Locale = "en" };
+        db.Assets.Add(asset);
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var first = new DateOnly(2024, 1, 1);
+        var closes = new List<decimal>();
+        for (var i = 0; i < 126; i++) closes.Add(100m);
+        closes.Add(75m); // Day 126: drop 1 (-25%).
+        closes.Add(80m); // Day 127: bounce (+6.67%) -> step 1 of 1, fills the 600 budget.
+        closes.Add(100m); // Day 128: recovers peak.
+        closes.Add(75m); // Day 129: drop 2 (-25%).
+        closes.Add(80m); // Day 130: bounce (+6.67%) -> rules want step 1 of drop 2, but budget is used up.
+        closes.Add(80m); // Day 131: holding in drop 2.
+        db.Prices.AddRange(closes.Select((c, i) => new PriceDaily
+            { AssetId = asset.Id, Date = first.AddDays(i), Open = c, High = c, Low = c, Close = c, Volume = 1000 }));
+
+        var start = first.AddDays(125);
+        var strategy = new Strategy
+        {
+            UserId = user.Id, TemplateKey = "bear", Name = $"Bear {tag}", Mode = StrategyMode.Simulation, Status = StrategyStatus.Running, StartedOn = start,
+            Currency = "USD", Budget = new Budget(600, 600, 1), Params = TemplateCatalog.Bear.ParamsJson(),
+            Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero) }],
+        };
+        db.Strategies.Add(strategy);
+        await db.SaveChangesAsync();
+        await CheckedBeforeAsync(db, strategy.Id, asset.Id, start);
+        try
+        {
+            await Evaluator(db).RunAsync(default);
+
+            var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id).ToListAsync();
+            var only = Assert.Single(signals);
+            Assert.Equal(first.AddDays(127), only.SignalDate);
+
+            var latest = await db.DailyEvaluations.Where(e => e.StrategyId == strategy.Id).OrderByDescending(e => e.Date).FirstAsync();
+            Assert.Equal(EvaluationStatus.Holding, latest.Status);
+            var cycle = StrategyTradingLab.Api.Strategies.StrategyPage.BearCycle(latest.Facts.RootElement);
+            Assert.Equal((1, first.AddDays(130)), cycle);
+            var cycleBuys = signals.Count(s => s.Side == TradeSide.Buy && s.SignalDate >= cycle.CycleStart);
+            Assert.Equal(0, cycleBuys);
+            Assert.Equal(StrategyTradingLab.Api.Strategies.StockStatus.NoBudget,
+                StrategyTradingLab.Api.Strategies.StrategyPage.Status(StrategyMode.Simulation, latest.Status, false, false, Math.Min(cycle.DoneSteps ?? 0, cycleBuys), 1, "bear"));
+        }
+        finally
+        {
+            await CleanAsync(db, user.Id, asset.Id);
+        }
+    }
+
 }

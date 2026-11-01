@@ -139,10 +139,10 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     /// <summary>
     /// The first day the rules replay for this strategy and stock, and the last day checked before (ROADMAP item 7, decided in #58).
     /// The first run evaluates the latest finished day only, as for a stock just added, so a strategy that existed before its
-    /// engine ran gets no backlog of old signals (both are null then). Later runs replay from that first day, or from an earlier
+    /// engine ran gets no backlog of old signals (the first day is null then). Later runs replay from that first day, or from an earlier
     /// signal's day (a strategy that got a backlog before this rule keeps counting those steps). Days checked before the price
     /// history was long enough don't count: the rules couldn't run, so once the history is there the stock starts fresh and the
-    /// latest day can still get its signal. After the first real check or the first signal every day counts, so a later short
+    /// latest day checked can still get its signal (none before it). After the first real check or the first signal every day counts, so a later short
     /// history never opens the past to new signals or restarts the steps.
     /// </summary>
     async Task<(DateOnly? First, DateOnly? Until)> CheckedDaysAsync(Guid strategyId, Guid assetId, CancellationToken cancellationToken)
@@ -153,8 +153,13 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             .SingleOrDefaultAsync(cancellationToken);
         var firstSignal = await db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId)
             .MinAsync(s => (DateOnly?)s.SignalDate, cancellationToken);
-        var first = firstSignal < days?.First || days?.First is null ? firstSignal : days.First;
-        return first is null ? (null, null) : (first, days?.Until);
+        DateOnly? first = (days?.First, firstSignal) switch
+        {
+            ({ } check, { } signal) => check < signal ? check : signal,
+            (var check, var signal) => check ?? signal,
+        };
+        // Only short-of-history days so far: a first run, but no day before the last one checked gets a signal.
+        return first is null ? (null, days?.Until?.AddDays(-1)) : (first, days?.Until);
     }
 
     /// <param name="evaluatedUntil">The last day checked before (<see cref="CheckedDaysAsync"/>).</param>

@@ -308,26 +308,15 @@ public static class StrategyEndpoints
             }
         }
 
-        if (template.Watches is StarterList starter)
+        var activeIds = activeAssetIds ?? (strategy.Assets is null
+            ? []
+            : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
+        return template.Watches switch
         {
-            var starterIds = starter.Stocks.Select(s => s.Id).ToHashSet();
-            var activeIds = activeAssetIds ?? (strategy.Assets is null
-                ? []
-                : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
-            if (activeIds.Any(id => !starterIds.Contains(id)))
-                return true;
-        }
-
-        if (template.Watches is DefaultFund defaultFund)
-        {
-            var activeIds = activeAssetIds ?? (strategy.Assets is null
-                ? []
-                : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
-            if (activeIds.Any(id => id != defaultFund.Fund.Id))
-                return true;
-        }
-
-        return false;
+            StarterList starter => activeIds.Any(id => !starter.Stocks.Any(stock => stock.Id == id)),
+            DefaultFund defaultFund => activeIds.Any(id => id != defaultFund.Fund.Id),
+            _ => false,
+        };
     }
 
     static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, User user, DateOnly today, CancellationToken cancellationToken,

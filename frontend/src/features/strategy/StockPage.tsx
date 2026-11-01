@@ -22,6 +22,7 @@ const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high',
 /** Visual gauge for a rule check: threshold bar (with >100% overflow), 3-zone window band, or moving-average comparison. */
 function CheckGauge({ check, currency }: { check: RuleCheck; currency: string }) {
   const t = useT()
+  if (check.met === null && !check.used) return null
   const past = isPastMax(check)
   const state = check.used ? 'used' : past ? 'past' : check.met ? 'met' : 'notMet'
 

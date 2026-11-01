@@ -68,8 +68,8 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
     },
     zone: {
       label: 'In the discount zone',
-      detail: '{value}% below the recent peak ({level}). The zone is {min}–{max}% below ({midLevel} to {endLevel}).',
-      past: 'Fell past the discount zone: {value}% below the peak ({level}); the zone stops at {max}% ({endLevel}).',
+      detail: '{value}% below the recent peak. The zone is {min}–{max}% below ({level} to {endLevel}).',
+      past: 'Fell past the discount zone: {value}% below the peak; the zone is {min}–{max}% ({level} to {endLevel}).',
       short: '{value}% below its peak (zone {min}–{max}%)',
       pastShort: '{value}% below peak (past {max}% zone)',
     },
@@ -122,8 +122,8 @@ describe('StockPage', () => {
       checks: [
         check({ key: 'beaten', group: 'candidate', met: false, value: 74, min: 30, max: 60, date: '2026-07-15' }),
         check({ key: 'gain', group: 'candidate', met: true, value: 118.9, min: 50, progress: 2.38 }),
-        check({ key: 'stacked', group: 'candidate', met: true, level: 41.2, midLevel: 38.5, endLevel: 31.1 }),
-        check({ key: 'zone', group: 'buy', met: false, value: 26.7, min: 5, max: 15, level: 44.95, midLevel: 42.7, endLevel: 38.21 }),
+        check({ key: 'stacked', group: 'candidate', met: true, value: 32.5, level: 41.2, midLevel: 38.5, endLevel: 31.1 }),
+        check({ key: 'zone', group: 'buy', met: false, value: 26.7, min: 5, max: 15, level: 42.7, endLevel: 38.21 }),
       ],
     }
     open(strategy([expiredAndDip]))
@@ -135,7 +135,7 @@ describe('StockPage', () => {
     expect(screen.getByText('Mid $38.50')).toBeTruthy()
     expect(screen.getByText('Long $31.10')).toBeTruthy()
     expect(screen.getByText('Past zone')).toBeTruthy()
-    expect(screen.getByText('Fell past the discount zone: 26.7% below the peak ($44.95); the zone stops at 15% ($38.21).')).toBeTruthy()
+    expect(screen.getByText('Fell past the discount zone: 26.7% below the peak; the zone is 5–15% ($42.70 to $38.21).')).toBeTruthy()
   })
 
   it('says a stock that is not a candidate gets no signal, and leads a waiting signal to Confirm', async () => {

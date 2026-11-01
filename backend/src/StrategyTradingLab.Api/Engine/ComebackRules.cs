@@ -164,7 +164,11 @@ public class ComebackRules : IBuyRules
     {
         var s50 = sma50[i];
         var s200 = sma200[i];
-        var goldenSpread = s50 is { } shortAvg && s200 is { } longAvg ? Math.Round(Indicators.PctFrom(shortAvg, longAvg), 1) : (decimal?)null;
+        var goldenSpread = s50 is { } shortAvg && s200 is { } longAvg
+            ? (shortAvg > longAvg
+                ? Math.Max(0.1m, Math.Round(Indicators.PctFrom(shortAvg, longAvg), 1))
+                : Math.Min(0m, Math.Round(Indicators.PctFrom(shortAvg, longAvg), 1)))
+            : (decimal?)null;
         return [.. milestones.Select(m =>
         {
             var isUsed = !preview && used.Contains(m.Key);

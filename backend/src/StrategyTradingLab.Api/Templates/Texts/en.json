@@ -229,13 +229,13 @@
       "drop": {
         "label": "Drop from the 52-week high",
         "detail": "{+value}% from the 52-week high ({level}, needs −{min}% or lower).",
-        "short": "{+value}% from its high",
+        "short": "{+value}% from its high (needs −{min}%)",
         "info": "To become beaten down, the close must fall at least {min}% below the highest close of the last 52 weeks."
       },
       "vsSma200": {
         "label": "Price vs SMA 200",
         "detail": "{+value}% vs the SMA 200 ({level}, needs below 0% when beaten down).",
-        "short": "{+value}% vs SMA 200",
+        "short": "{+value}% vs SMA 200 (needs below)",
         "info": "The average close of the last 200 days, the long trend. A stock must fall below it (while at least {min}% off its 52-week high) to count as beaten down."
       },
       "buyLine": {

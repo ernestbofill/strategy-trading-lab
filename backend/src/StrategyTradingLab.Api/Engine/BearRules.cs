@@ -156,14 +156,16 @@ public class BearRules : IBuyRules
         var dropPct = inDrop ? belowDropPeakPct : belowHighPct;
         var dropLevel = Math.Round(inDrop ? peak : high, 2);
         var bounced = inDrop && phase != "drawdown";
+        var dropProgress = RuleCheck.ProgressOf(dropPct, p.DrawdownPct);
+        var bounceProgress = RuleCheck.ProgressOf(aboveLowPct, p.ReboundPct);
         List<RuleCheck> checks =
         [
             new("drop", CheckGroup.Candidate, inDrop, dropPct, p.DrawdownPct, Level: dropLevel,
-                Progress: RuleCheck.ProgressOf(dropPct, p.DrawdownPct), Date: inDrop ? dropSince : null),
+                Progress: inDrop ? Math.Max(1m, dropProgress ?? 1m) : dropProgress, Date: inDrop ? dropSince : null),
             inDrop
                 ? new("bounce", CheckGroup.Buy, bounced, aboveLowPct, p.ReboundPct,
                     Level: Math.Round(bounceLine, 2), EndLevel: Math.Round(low, 2),
-                    Progress: RuleCheck.ProgressOf(aboveLowPct, p.ReboundPct))
+                    Progress: bounced ? Math.Max(1m, bounceProgress ?? 1m) : bounceProgress)
                 : new("bounce", CheckGroup.Buy, false, null, p.ReboundPct),
             phase == "accumulating" && status != RuleStatus.BuySignal
                 ? new("pace", CheckGroup.Next, false, sinceLast, p.StepEveryDays,

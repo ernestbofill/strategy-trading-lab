@@ -12,7 +12,7 @@ using StrategyTradingLab.Api.Templates;
 namespace StrategyTradingLab.Api.Tests;
 
 /// <summary>
-/// Your trades: see, fix and log them (Roadmap item 10).
+/// Your trades: see, fix and log them (Roadmap item 9).
 /// Tests for logging manual trades, editing trades, deleting trades, and viewing signals/trades on the strategy page.
 /// </summary>
 public class TradeEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi>

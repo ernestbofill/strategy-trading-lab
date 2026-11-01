@@ -1,6 +1,6 @@
 # Backtest Research Findings & Template Harmonization
 
-This document records the research findings from the Proof of Concept (POC) repository (`ernestbofill/trading-strategies-bot/backend/research` and `docs/strategy-review-*.md`) and how they were applied to establish honest, standardized backtest figures for Strategy Trading Lab (Roadmap Item 17, PR #119).
+This document records the research findings from the Proof of Concept (POC) repository (`ernestbofill/trading-strategies-bot/backend/research` and `docs/strategy-review-*.md`) and how they were applied to establish honest, standardized backtest figures for Strategy Trading Lab (Roadmap Item 15, PR #119).
 
 ---
 

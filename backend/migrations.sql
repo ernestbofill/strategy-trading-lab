@@ -1970,3 +1970,21 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101135757_AddStockChangeEmails') THEN
+    ALTER TABLE strategies ADD stock_change_emails boolean NOT NULL DEFAULT FALSE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101135757_AddStockChangeEmails') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101135757_AddStockChangeEmails', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

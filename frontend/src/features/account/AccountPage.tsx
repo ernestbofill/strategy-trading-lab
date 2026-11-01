@@ -1,12 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, UnauthorizedError, type Currency, type Locale } from '../../api'
 import { Checkbox, FormMessage, PasswordField, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
+import { Tag } from '../../components/Tag'
 import { useI18n, useT } from '../../i18n/I18n'
 import { LOCALES } from '../../i18n/locale'
+import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
@@ -94,6 +96,7 @@ export function AccountPage() {
       <Section id={EMAILS_HASH.slice(1)} title={t('account.page.emails')}>
         <EmailSwitch current={account.overviewEmail} label={t('account.overviewEmail')} save={api.setOverviewEmail} onSaved={refresh} />
         <EmailSwitch current={account.alertEmails} label={t('account.alertEmails')} save={api.setAlertEmails} onSaved={refresh} />
+        {account.overviewEmail && <StockChangeEmailList />}
       </Section>
 
       <Section title={t('account.page.dataPrivacy')}>
@@ -305,9 +308,36 @@ function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Prom
   )
 }
 
+const stockChangeEmailsKey = 'account:stock-change-emails'
+
+/** Item 29: per running strategy, whether the daily overview tells its stock changes. Hidden with no running strategy. */
+function StockChangeEmailList() {
+  const t = useT()
+  const list = useLoadable(stockChangeEmailsKey, api.getStockChangeEmails)
+  if (list.status !== 'ready' || list.data.length === 0) return null
+  const reload = async () => invalidate(stockChangeEmailsKey)
+  return (
+    <div className={styles.form}>
+      <div>
+        <h3 className={`ui-strong ${styles.subTitle}`}>{t('account.stockChanges.title')}</h3>
+        <p className={styles.line}>{t('account.stockChanges.lead')}</p>
+      </div>
+      {list.data.map((s) => (
+        <EmailSwitch
+          key={s.strategyId}
+          current={s.enabled}
+          label={<>{s.name} <Tag tone={s.mode === 'live' ? 'live' : 'sim'}>{s.mode === 'live' ? 'LIVE' : 'SIM'}</Tag></>}
+          save={(enabled) => api.setStockChangeEmails(s.strategyId, enabled)}
+          onSaved={reload}
+        />
+      ))}
+    </div>
+  )
+}
+
 function EmailSwitch({ current, label, save, onSaved }: {
   current: boolean
-  label: string
+  label: ReactNode
   save: (enabled: boolean) => Promise<void>
   onSaved: () => Promise<unknown>
 }) {

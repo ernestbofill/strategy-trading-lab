@@ -229,7 +229,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### Account (first version, not drawn)
 
-- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch), "Currency" (three buttons, "€ EUR" over "Euro" and so on, and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Language" (two buttons, English and Català, and "Save language"; "Saved."), "Send feedback" (see *Feedback* under Admin), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (time zone, Data and privacy) stays in *Not designed yet*.
+- Reached from "ACCOUNT" on the dashboard's top bar. Shows the email (with "Not verified yet" and "Send the link again" when it applies), "App" ("Install the app", which opens the browser's install prompt when available; otherwise it explains how to add the app from the browser menu, including on iPhone; the PWA includes Android and iPhone home-screen icons), "Emails" (the daily overview switch, the alerts switch and, while the overview is on, *Stock changes* per running strategy: see Notifications), "Currency" (three buttons, "€ EUR" over "Euro" and so on, and "Save currency"; "Saved. New strategies use it; running ones keep theirs."), "Language" (two buttons, English and Català, and "Save language"; "Saved."), "Send feedback" (see *Feedback* under Admin), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. The rest of the account (time zone, Data and privacy) stays in *Not designed yet*.
 
 ### 1 · Pick a strategy template (`Main`)
 
@@ -758,9 +758,17 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 **Daily overview** (email, not drawn), once per US session, right after the daily check has evaluated it (around 22:30 in Madrid), titled with the session's date; whoever wasn't sent it then (email not set up yet, a restart, an address just confirmed) gets it from the hourly check, but never between 00:00 and 07:00 in their time zone: it waits for the morning. A time of the user's choice comes with the overview settings (after launch). Reads like a briefing; never uses buy or sell as an instruction.
 1. **Waiting for you**: unanswered live signals and AI rounds due, each with a link.
 2. **What changed today**: e.g. "ZS fell 8% from its recent peak and is still above its 50-day average (average price over 50 days). That meets the rules of your strategy *Zscaler & friends*." For simulations, also today's signal trades.
-3. **Close to the line**: the stocks nearest to each strategy's rules, with the distance.
-4. **The scoreboard**: one line per strategy, with its name, mode and result so far.
-5. Every item links to its page. The disclaimer at the bottom.
+3. **Stock changes** (only for the strategies that asked for them, see below; left out when there are none).
+4. **Close to the line**: the stocks nearest to each strategy's rules, with the distance (at most five; a stock already under *Stock changes* isn't repeated).
+5. **The scoreboard**: one line per strategy, with its name, mode and result so far.
+6. Every item links to its page. The disclaimer at the bottom.
+
+**Stock changes** (item 29, built): opt in per strategy, on the account page's Emails section under the overview switch: "Stock changes in the overview", with the lead "A line when a stock becomes or stops being a candidate, or comes within 3% of its signal." and a checkbox per running strategy (its name and SIM or LIVE tag), all off by default. The list shows only while the daily overview is on and the user has a running strategy. A ticked strategy's overview compares each stock's daily check on the session with the trading day before it (the stored verdicts and distance) and adds one line per change, with its mode tag:
+- becomes a candidate: "[stock], [strategy]: now a candidate, the rules watch it." (Catalan: "ara és candidata, les regles la vigilen.");
+- stops being one: "[stock], [strategy]: no longer a candidate." ("ja no és candidata.");
+- comes close: "[stock], [strategy]: now 2.4% below the buy line." (the template's line, as in *Close to the line*), when it is a candidate within 3% and wasn't within 3% the day before. Becoming a candidate wins over coming close.
+
+A signal, steps held or too little history aren't changes (the signal has its own lines), nor is a stock without an earlier day (just added). These are lines in the overview only: no separate email, so a long list doesn't flood the inbox; separate emails only if the lines turn out not to be enough, and web push with item 30. The distance is fixed at 3% for every strategy and user for now; a setting of its own can come with the overview settings.
 
 **Live signal alert**: web push and email, right after the daily check that found it (or after an AI round). Same text as the signal box. Sent once per channel; a snoozed signal is notified again the next day, once per channel.
 

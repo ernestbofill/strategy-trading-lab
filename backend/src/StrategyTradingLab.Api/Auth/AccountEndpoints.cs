@@ -20,6 +20,9 @@ public record CurrencyRequest(string? Currency);
 public record LocaleRequest(string? Locale);
 public record OverviewEmailRequest(bool? Enabled);
 public record AlertEmailsRequest(bool? Enabled);
+public record StockChangeEmailsRequest(Guid? StrategyId, bool? Enabled);
+/// <summary>A running strategy and whether the daily overview tells its stock changes.</summary>
+public record StockChangeEmailsDto(Guid StrategyId, string Name, StrategyMode Mode, bool Enabled);
 public record NameRequest(string? FirstName, string? LastName);
 
 /// <summary>
@@ -250,6 +253,29 @@ public static class AccountEndpoints
         })
         .RequireUser()
         .WithSummary("Turns the signal alerts and reminders on or off for the logged-in user.");
+
+        group.MapGet("/stock-change-emails", async (AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            return TypedResults.Ok(await db.Strategies.AsNoTracking().Where(s => s.UserId == user.Id && s.Status == StrategyStatus.Running)
+                .OrderBy(s => s.Name).Select(s => new StockChangeEmailsDto(s.Id, s.Name, s.Mode, s.StockChangeEmails)).ToListAsync(cancellationToken));
+        })
+        .RequireUser()
+        .WithSummary("Lists the user's running strategies and whether the daily overview tells their stock changes.");
+
+        group.MapPost("/stock-change-emails", async Task<Results<NoContent, NotFound, ValidationProblem>> (StockChangeEmailsRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
+            if (request.Enabled is not { } enabled)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var updated = await db.Strategies.Where(s => s.Id == request.StrategyId && s.UserId == user.Id && s.Status == StrategyStatus.Running)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.StockChangeEmails, enabled), cancellationToken);
+            return updated == 0 ? TypedResults.NotFound() : TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Turns a running strategy's stock changes in the daily overview on or off (404 for any other).");
 
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.

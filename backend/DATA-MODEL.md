@@ -207,6 +207,7 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | started_on | date, not null | "since [date]" |
 | ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. When it was archived (the screens' word for `ended`, #96): archiving closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
 | notifications | bool, not null, default true | Signal notifications for this strategy, on every channel. Off = it keeps running quietly |
+| stock_change_emails | bool, not null, default false | Whether the daily overview tells this strategy's stock changes (a stock becomes or stops being a candidate, or comes within 3% of its signal). Opt in, on the account page |
 | currency | char(3), not null | Fixed at creation. Budget, trade amounts and results are in it |
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |

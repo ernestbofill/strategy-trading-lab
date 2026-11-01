@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Account, Role } from '../../api'
+import { api, type Account, type Role } from '../../api'
 import { AccountPage } from './AccountPage'
 
 let currentRole: Role = 'user'
@@ -53,5 +53,23 @@ describe('AccountPage', () => {
     )
 
     expect(screen.queryByRole('link', { name: /Admin settings/i })).toBeNull()
+  })
+
+  it('lists running strategies for stock changes and turns one on', async () => {
+    currentRole = 'user'
+    vi.spyOn(api, 'getStockChangeEmails').mockResolvedValue([
+      { strategyId: 's1', name: 'Index trend', mode: 'live', enabled: false },
+    ])
+    const set = vi.spyOn(api, 'setStockChangeEmails').mockResolvedValue()
+    render(
+      <MemoryRouter>
+        <AccountPage />
+      </MemoryRouter>,
+    )
+
+    const box = await screen.findByRole('checkbox', { name: /Index trend/ })
+    expect(screen.getByText('Stock changes in the overview')).toBeTruthy()
+    fireEvent.click(box)
+    await waitFor(() => expect(set).toHaveBeenCalledWith('s1', true))
   })
 })

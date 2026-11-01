@@ -300,6 +300,32 @@ public class StrategyEvaluatorTests
     }
 
     [NeonFact]
+    public async Task Days_short_of_history_after_a_real_check_still_get_no_back_dated_signal()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // A real check the day before the start, then days 300 and 301 short of history (say a longer average was set).
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            var day300 = new DateOnly(2024, 1, 1).AddDays(300);
+            foreach (var day in new[] { day300, day300.AddDays(1) })
+                db.DailyEvaluations.Add(new DailyEvaluation
+                    { StrategyId = strategyId, AssetId = assetId, Date = day, Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+
+            await Evaluator(db).RunAsync(default);
+
+            Assert.Equal(0, await SignalCount(db, strategyId)); // Day 300's dip came after the real check, but those days were checked.
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_strategy_that_started_after_the_last_price_is_left_alone()
     {
         using var api = new AccountsApi();

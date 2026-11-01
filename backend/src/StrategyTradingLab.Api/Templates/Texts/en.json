@@ -19,9 +19,9 @@
       }
     ],
     "backtest": {
-      "scope": "9 stocks, 2010-2024.",
-      "years": "2010-2024",
-      "universe": "9, the starter list",
+      "scope": "1,146 stocks, 2000-2024.",
+      "years": "2000-2024",
+      "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     },
     "stockStatus": {
@@ -147,9 +147,9 @@
       }
     ],
     "backtest": {
-      "scope": "16 stocks, 2010-2024.",
-      "years": "2010-2024",
-      "universe": "16, the starter list",
+      "scope": "1,146 stocks, 2000-2024.",
+      "years": "2000-2024",
+      "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     },
     "stockStatus": {
@@ -318,9 +318,9 @@
       }
     ],
     "backtest": {
-      "scope": "3 big drops, 2000-2024. Big drops are rare: it may not signal for years.",
+      "scope": "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years.",
       "years": "2000-2024",
-      "universe": "The S&P 500 fund",
+      "universe": "Major equity indexes and 30 sector ETFs across 134 bear markets",
       "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."
     },
     "stockStatus": {
@@ -427,9 +427,9 @@
       }
     ],
     "backtest": {
-      "scope": "2000-2024, 23 buys and sells.",
+      "scope": "6 major indexes, 2000-2024.",
       "years": "2000-2024",
-      "universe": "The index fund",
+      "universe": "6 major global indexes (S&P 500, Nasdaq-100, EFA, DAX, Nikkei)",
       "testedDefaults": "The whole €3,000 budget, all in, all out."
     },
     "stockStatus": {

@@ -26,6 +26,7 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.ai.picksVsRest': 'Triades vs la resta',
   'strategy.ai.vs': 'enfront del',
   'strategy.pastSummary.before': 'En el passat, {years}, la plantilla va fer un',
+  'strategy.pastSummary.custom': 'Amb la configuració i els valors provats, la plantilla va fer un',
   'strategy.pastSummary.vs': 'enfront del',
   'strategy.pastSummary.after': 'd’un fons de l’S&P 500. El seu pitjor any va ser del',
   'strategy.budgetUsed': 'Pressupost utilitzat',

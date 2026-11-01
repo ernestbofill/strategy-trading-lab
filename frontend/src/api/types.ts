@@ -157,12 +157,13 @@ export interface StrategyResults {
 
 /** How the template did in the past, shown while a strategy has no results of its own. */
 export interface PastResult {
-  /** "2010-2024". */
+  /** "2000-2024". */
   years: string
   template: number
   index: number
   /** Percent return of the template's worst calendar year in that time. */
   worstYear: number
+  isCustomized?: boolean
 }
 
 /** A strategy as shown on the dashboard. */

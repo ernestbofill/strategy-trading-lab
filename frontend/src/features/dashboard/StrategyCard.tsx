@@ -38,9 +38,12 @@ function Body({ s }: { s: StrategySummary }) {
   if (s.used > 0) return <p className={styles.text}>{t('dashboard.card.noResultsBudget')}</p>
   if (pastResult) {
     const noTrades = s.mode === 'live' ? t('dashboard.card.noTradesLive') : t('dashboard.card.noTradesSim')
+    const intro = pastResult.isCustomized
+      ? t('dashboard.card.pastCustom')
+      : t('dashboard.card.pastBefore', { years: pastResult.years })
     return (
       <p className={styles.text}>
-        {noTrades} {t('dashboard.card.pastBefore', { years: pastResult.years })}{' '}
+        {noTrades} {intro}{' '}
         <span className={styles.figure} data-tone={pctTone(pastResult.template)}>
           {signedPct(pastResult.template)}
         </span>{' '}

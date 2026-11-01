@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
@@ -131,4 +133,100 @@ public class TemplateTests
     [InlineData(1.01)]
     public void A_step_that_leaves_nothing_to_buy_with_is_refused(decimal step) =>
         Assert.Throws<ArgumentOutOfRangeException>(() => TemplateCatalog.Fee.Split(step));
+
+    [Fact]
+    public void Templates_with_backtest_have_standardized_periods()
+    {
+        string[] expectedPeriods = ["2000-09", "2010-19", "2020-24", "All"];
+        foreach (var template in TemplateCatalog.All.Where(t => t.Backtest is not null))
+        {
+            var periods = template.Backtest!.Select(p => p.Period).ToArray();
+            Assert.Equal(expectedPeriods, periods);
+        }
+    }
+
+    [Fact]
+    public void IsCustomized_is_false_for_template_defaults_and_starter_stocks()
+    {
+        var dip = TemplateCatalog.Dip;
+        var starter = (StarterList)dip.Watches;
+        var strategy = new Strategy
+        {
+            TemplateKey = dip.Key,
+            Name = "Dip Default",
+            Currency = "EUR",
+            Budget = dip.Budget,
+            Params = dip.ParamsJson(),
+            Assets = starter.Stocks.Select(s => new StrategyAsset { AssetId = s.Id, Active = true }).ToList(),
+        };
+
+        Assert.False(StrategyEndpoints.IsCustomized(strategy, dip));
+    }
+
+    [Fact]
+    public void IsCustomized_is_true_when_settings_differ_from_defaults()
+    {
+        var dip = TemplateCatalog.Dip;
+        var starter = (StarterList)dip.Watches;
+        var customParams = JsonDocument.Parse("{\"peakDays\": 90, \"zoneStartPct\": 5, \"zoneEndPct\": 15, \"reboundPct\": 2, \"cooldownDays\": 5}");
+        var strategy = new Strategy
+        {
+            TemplateKey = dip.Key,
+            Name = "Dip Custom Settings",
+            Currency = "EUR",
+            Budget = dip.Budget,
+            Params = customParams,
+            Assets = starter.Stocks.Select(s => new StrategyAsset { AssetId = s.Id, Active = true }).ToList(),
+        };
+
+        Assert.True(StrategyEndpoints.IsCustomized(strategy, dip));
+    }
+
+    [Fact]
+    public void IsCustomized_is_true_when_stocks_outside_starter_list_are_active()
+    {
+        var dip = TemplateCatalog.Dip;
+        var starter = (StarterList)dip.Watches;
+        var assets = starter.Stocks.Select(s => new StrategyAsset { AssetId = s.Id, Active = true }).ToList();
+        assets.Add(new StrategyAsset { AssetId = Guid.NewGuid(), Active = true });
+        var strategy = new Strategy
+        {
+            TemplateKey = dip.Key,
+            Name = "Dip Extra Stock",
+            Currency = "EUR",
+            Budget = dip.Budget,
+            Params = dip.ParamsJson(),
+            Assets = assets,
+        };
+
+        Assert.True(StrategyEndpoints.IsCustomized(strategy, dip));
+    }
+
+    [Fact]
+    public void IsCustomized_handles_fund_templates()
+    {
+        var trend = TemplateCatalog.Trend;
+        var defaultFund = (DefaultFund)trend.Watches;
+        var defaultStrategy = new Strategy
+        {
+            TemplateKey = trend.Key,
+            Name = "Trend Default",
+            Currency = "EUR",
+            Budget = trend.Budget,
+            Params = trend.ParamsJson(),
+            Assets = [new StrategyAsset { AssetId = defaultFund.Fund.Id, Active = true }],
+        };
+        Assert.False(StrategyEndpoints.IsCustomized(defaultStrategy, trend));
+
+        var customFundStrategy = new Strategy
+        {
+            TemplateKey = trend.Key,
+            Name = "Trend Custom Fund",
+            Currency = "EUR",
+            Budget = trend.Budget,
+            Params = trend.ParamsJson(),
+            Assets = [new StrategyAsset { AssetId = Guid.NewGuid(), Active = true }],
+        };
+        Assert.True(StrategyEndpoints.IsCustomized(customFundStrategy, trend));
+    }
 }

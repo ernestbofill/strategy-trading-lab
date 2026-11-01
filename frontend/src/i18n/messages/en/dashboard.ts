@@ -14,6 +14,7 @@ export const dashboard = {
   'dashboard.card.noTradesLive': 'No trades yet.',
   'dashboard.card.noTradesSim': 'No paper trades yet.',
   'dashboard.card.pastBefore': 'In the past, {years}, the template did',
+  'dashboard.card.pastCustom': 'With the tested settings and stocks, the template did',
   'dashboard.card.pastVs': 'vs',
   'dashboard.card.pastAfter': 'for an S&P 500 fund. Its worst year was',
   'dashboard.card.bearRare': 'Big drops are rare: it may not signal for years.',

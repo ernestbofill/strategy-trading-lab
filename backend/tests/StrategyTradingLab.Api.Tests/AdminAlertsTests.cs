@@ -87,6 +87,12 @@ public class AdminAlertsTests(AdminFixture fixture) : IClassFixture<AdminFixture
             await Alerts(db).RaiseAsync(AlertSource.DailyCheck, new NewAlert(key, new string('t', 500), new string('d', 5000)));
             var alert = await db.AdminAlerts.AsNoTracking().SingleAsync(a => a.Key == key);
             Assert.Equal((AdminAlerts.TitleMax, AdminAlerts.DetailMax), (alert.Title.Length, alert.Detail!.Length));
+
+            // An emoji across the cut is dropped whole: half of one would make the write fail and the alert be lost.
+            var title = new string('t', AdminAlerts.TitleMax - 2) + "😀😀";
+            await Alerts(db).RaiseAsync(AlertSource.DailyCheck, new NewAlert(key, title));
+            Assert.Equal(new string('t', AdminAlerts.TitleMax - 2) + "…",
+                (await db.AdminAlerts.AsNoTracking().SingleAsync(a => a.Key == key)).Title);
         }
         finally
         {

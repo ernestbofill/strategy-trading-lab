@@ -165,8 +165,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             logger.LogInformation("Prices refreshed: {Updated} updated, {Full} in full, {Failed} failed.",
                 results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory),
                 results.Count(r => r.Outcome == RefreshOutcome.Failed));
-            await scope.ServiceProvider.GetRequiredService<AdminAlerts>().SyncAsync(AlertSource.Prices,
-                await PriceAlertsAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>(), results, time.GetUtcNow(), stoppingToken), stoppingToken);
+            await SyncPriceAlertsAsync(scope, results, stoppingToken);
             // The rules read the prices just stored.
             var evaluator = scope.ServiceProvider.GetRequiredService<StrategyEvaluator>();
             evaluation = await evaluator.RunAsync(stoppingToken);
@@ -209,6 +208,22 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             found.Add(new NewAlert("prices:behind", "Prices are behind",
                 $"The index fund's newest price is from {(index is { } day ? day.ToString("yyyy-MM-dd") : "no day")}; the last US session was {lastSession:yyyy-MM-dd}."));
         return found;
+    }
+
+    /// <summary>The refresh's alerts, never failing the run: if the check itself fails, the alerts stay as they were.</summary>
+    async Task SyncPriceAlertsAsync(IServiceScope scope, IReadOnlyList<RefreshResult> results, CancellationToken stoppingToken)
+    {
+        List<NewAlert> found;
+        try
+        {
+            found = await PriceAlertsAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>(), results, time.GetUtcNow(), stoppingToken);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The price alerts couldn't be checked: {Reason}", error.Message);
+            return;
+        }
+        await scope.ServiceProvider.GetRequiredService<AdminAlerts>().SyncAsync(AlertSource.Prices, found, stoppingToken);
     }
 
     /// <summary>Raises an alert in a scope of its own, for when the run's scope failed.</summary>

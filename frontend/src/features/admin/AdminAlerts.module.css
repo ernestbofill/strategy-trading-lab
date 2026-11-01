@@ -65,7 +65,11 @@
   color: var(--primary);
   cursor: pointer;
 }
-.dismiss:hover {
+.dismiss:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.dismiss:hover:not(:disabled) {
   background: var(--surface-hover);
 }
 .dismiss:focus-visible {

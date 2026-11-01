@@ -52,7 +52,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
@@ -81,7 +81,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var today = DateOnly.FromDateTime(local.DateTime);
             if (await SendAsync(claimed, user.Email, () => ComposeOverviewAsync(user.Id, today, lastSession, user.Locale, cancellationToken), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
@@ -150,7 +150,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
             if (await SendAsync(claimed, first.Email, () => Task.FromResult(EmailTexts.AiRoundDue(strategies, AppUrl, first.Locale)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     static DateTimeOffset LocalTime(DateTimeOffset now, string timeZone)
@@ -224,9 +224,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         {
             await sender.SendAsync(new OutgoingEmail(to, await compose()), cancellationToken);
         }
-        catch (EmailNotSetUpException)
+        catch (EmailNotSetUpException notSetUp)
         {
             await ReleaseAsync(notificationId);
+            await EmailFailedAsync(notSetUp.Message);
             return false;
         }
         // A shutdown keeps the claim: the mail server may have accepted the email already, and losing one is better than sending it twice.
@@ -241,13 +242,30 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, error is null ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, error is null ? (DateTimeOffset?)null : now).SetProperty(x => x.Error, error), CancellationToken.None);
         db.ChangeTracker.Clear();
-        if (error is null) await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
-        else await alerts.RaiseAsync(AlertSource.Email, new NewAlert(EmailAlertKey, "Emails to users failed",
-            $"The last one: {error} The count is the emails that failed since the last one that went out."), CancellationToken.None);
+        if (error is null) anySent = true;
+        else await EmailFailedAsync(error);
         return error is null;
     }
 
     const string EmailAlertKey = "email:notifications";
+
+    // What this scope's sends did, so the alert clears once, after a batch where every email went out (not per email, which
+    // would reopen a dismissed alert whenever one address fails among working ones).
+    bool anySent, anyFailed;
+
+    async Task EmailFailedAsync(string problem)
+    {
+        anyFailed = true;
+        await alerts.RaiseAsync(AlertSource.Email, new NewAlert(EmailAlertKey, "Emails to users failed",
+            $"The last one: {problem} The count is the failures since every email of a run last went out."), CancellationToken.None);
+    }
+
+    /// <summary>The end of a batch: clears the email alert if emails went out and none failed. Returns how many were sent.</summary>
+    async Task<int> SettledAsync(int sent)
+    {
+        if (anySent && !anyFailed) await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
+        return sent;
+    }
 
     /// <summary>Gives the claim back: nothing was sent, so the next run may send it.</summary>
     async Task ReleaseAsync(Guid notificationId)

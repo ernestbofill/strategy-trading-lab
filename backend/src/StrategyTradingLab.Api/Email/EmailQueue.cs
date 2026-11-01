@@ -46,8 +46,8 @@ public class EmailWorker(EmailQueue queue, IServiceScopeFactory scopes, IHostEnv
             try
             {
                 await scope.ServiceProvider.GetRequiredService<IEmailSender>().SendAsync(email, stoppingToken);
-                if (failing) await Alerts(scope).ClearAsync(AlertKey, stoppingToken);
-                failing = false;
+                // Still failing if the alert couldn't be cleared, so the next email tries again.
+                if (failing) failing = !await Alerts(scope).ClearAsync(AlertKey, stoppingToken);
             }
             catch (EmailNotSetUpException) when (environment.IsDevelopment())
             {

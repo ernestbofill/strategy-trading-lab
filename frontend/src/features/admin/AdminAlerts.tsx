@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, type AdminAlert, type AlertSource } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -30,7 +30,7 @@ async function fetchAlerts(): Promise<State> {
   }
 }
 
-function AlertCard({ alert, onDismiss }: { alert: AdminAlert; onDismiss?: () => void }) {
+function AlertCard({ alert, onDismiss, busy }: { alert: AdminAlert; onDismiss?: () => void; busy?: boolean }) {
   return (
     <li className={`well ${styles.alert}`} data-status={alert.status}>
       <div className={styles.head}>
@@ -44,7 +44,7 @@ function AlertCard({ alert, onDismiss }: { alert: AdminAlert; onDismiss?: () => 
           : `Since ${at(alert.firstSeenAt)} · last seen ${at(alert.lastSeenAt)} · ${alert.count}×`}
       </p>
       {onDismiss && (
-        <button type="button" className={styles.dismiss} onClick={onDismiss}>
+        <button type="button" className={styles.dismiss} onClick={onDismiss} disabled={busy}>
           Dismiss
         </button>
       )}
@@ -59,8 +59,7 @@ function AlertCard({ alert, onDismiss }: { alert: AdminAlert; onDismiss?: () => 
 export function AdminAlerts() {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [failed, setFailed] = useState(false)
-
-  const load = useCallback(async () => setState(await fetchAlerts()), [])
+  const [busy, setBusy] = useState<string | null>(null)
 
   useEffect(() => {
     let live = true
@@ -71,13 +70,19 @@ export function AdminAlerts() {
   }, [])
 
   const dismiss = async (id: string) => {
+    setBusy(id)
     setFailed(false)
+    let refused = false
     try {
       await api.dismissAdminAlert(id)
     } catch {
-      setFailed(true)
+      refused = true
     }
-    await load()
+    const next = await fetchAlerts()
+    setState(next)
+    // A refusal is only a failure if it is still open: a double tap, or a run that cleared it meanwhile, answers 404.
+    setFailed(refused && next.status === 'ready' && next.alerts.some((a) => a.id === id && a.status === 'open'))
+    setBusy(null)
   }
 
   const of = (status: AdminAlert['status']) => (state.status === 'ready' ? state.alerts.filter((a) => a.status === status) : [])
@@ -99,7 +104,7 @@ export function AdminAlerts() {
             ) : (
               <ul className={styles.list}>
                 {open.map((a) => (
-                  <AlertCard key={a.id} alert={a} onDismiss={() => void dismiss(a.id)} />
+                  <AlertCard key={a.id} alert={a} busy={busy === a.id} onDismiss={() => void dismiss(a.id)} />
                 ))}
               </ul>
             )}

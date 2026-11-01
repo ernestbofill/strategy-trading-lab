@@ -80,8 +80,18 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     internal static async Task<List<NewAlert>> StrategyAlertsAsync(AppDbContext db, IReadOnlyList<(Strategy Strategy, string Title, string Detail)> problems,
         CancellationToken cancellationToken)
     {
+        if (problems.Count == 0) return [];
         var userIds = problems.Select(p => p.Strategy.UserId).Distinct().ToList();
-        var emails = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Email, cancellationToken);
+        Dictionary<Guid, string> emails;
+        try
+        {
+            emails = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Email, cancellationToken);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // An alert never fails the check: without the emails it still names the strategy.
+            emails = [];
+        }
         return [.. problems.Select(p => new NewAlert($"strategy:{p.Strategy.Id}", p.Title,
             $"{emails.GetValueOrDefault(p.Strategy.UserId, "?")} · {p.Strategy.TemplateKey} · {p.Strategy.Mode.ToString().ToLowerInvariant()}\n{p.Detail}",
             p.Strategy.Id))];

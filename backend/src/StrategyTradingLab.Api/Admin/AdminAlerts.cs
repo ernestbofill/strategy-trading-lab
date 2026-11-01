@@ -54,8 +54,8 @@ public class AdminAlerts(AppDbContext db, TimeProvider time, ILogger<AdminAlerts
                 """, cancellationToken);
         });
 
-    /// <summary>The problem is gone: its alert, open or dismissed, is cleared.</summary>
-    public Task ClearAsync(string key, CancellationToken cancellationToken = default) =>
+    /// <summary>The problem is gone: its alert, open or dismissed, is cleared. False when the database couldn't be written.</summary>
+    public Task<bool> ClearAsync(string key, CancellationToken cancellationToken = default) =>
         Guarded("clear", key, () => Close(db.AdminAlerts.Where(a => a.Key == key), cancellationToken));
 
     /// <summary>
@@ -85,21 +85,30 @@ public class AdminAlerts(AppDbContext db, TimeProvider time, ILogger<AdminAlerts
             .ExecuteUpdateAsync(s => s.SetProperty(a => a.Status, AlertStatus.Cleared).SetProperty(a => a.ClosedAt, now), cancellationToken);
     }
 
-    async Task Guarded(string action, string what, Func<Task> write)
+    async Task<bool> Guarded(string action, string what, Func<Task> write)
     {
         try
         {
             await write();
+            return true;
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
             logger.LogWarning("Couldn't {Action} the admin alert {Key}: {Reason}", action, what, error.Message);
+            return false;
         }
     }
 
     static string Stored(AlertSource source) => JsonNamingPolicy.SnakeCaseLower.ConvertName(source.ToString());
 
-    static string Cut(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
+    /// <summary>At most <paramref name="max"/> characters, never splitting an emoji's surrogate pair (Npgsql refuses half of one).</summary>
+    static string Cut(string text, int max)
+    {
+        if (text.Length <= max) return text;
+        var keep = max - 1;
+        if (char.IsHighSurrogate(text[keep - 1])) keep--;
+        return text[..keep] + "…";
+    }
 
     /// <summary><c>GET /admin/alerts</c> and dismissing one, for the owner (inside the admin group).</summary>
     public static void MapAlerts(RouteGroupBuilder group)

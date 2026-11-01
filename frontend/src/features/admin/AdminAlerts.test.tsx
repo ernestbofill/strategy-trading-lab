@@ -55,6 +55,16 @@ describe('AdminAlerts', () => {
     expect(screen.getByRole('heading', { name: 'Dismissed · 2' })).toBeTruthy()
   })
 
+  it('shows no error when a dismiss is refused because the alert is no longer open', async () => {
+    vi.spyOn(api, 'getAdminAlerts').mockResolvedValueOnce([alert({})]).mockResolvedValueOnce([alert({ status: 'cleared', closedAt: '2026-11-01T08:00:00Z' })])
+    vi.spyOn(api, 'dismissAdminAlert').mockRejectedValue(new Error('HTTP 404'))
+    show()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dismiss' }))
+    expect(await screen.findByRole('heading', { name: 'Open · 0' })).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it('says so when the alerts do not load', async () => {
     vi.spyOn(api, 'getAdminAlerts').mockRejectedValue(new Error('HTTP 500'))
     show()

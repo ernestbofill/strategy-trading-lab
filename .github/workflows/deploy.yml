@@ -49,4 +49,4 @@ jobs:
 
       - name: Check the live site
         run: |
-          curl -fsS -o /dev/null -w 'Live: HTTP %{http_code}\n' https://140-238-209-178.sslip.io/
+          curl -fsS -o /dev/null -w 'Live: HTTP %{http_code}\n' https://strategytradinglab.com/

@@ -50,5 +50,5 @@ finally {
     ssh $SshHost "rm -rf $remote"
 }
 
-$health = Invoke-RestMethod 'https://140-238-209-178.sslip.io/api/health'
+$health = Invoke-RestMethod 'https://strategytradinglab.com/api/health'
 Write-Host "Live: $($health | ConvertTo-Json -Compress)"

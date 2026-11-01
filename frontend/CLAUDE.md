@@ -15,7 +15,7 @@
   - Screens talk only to `api`.
   - DTO shapes mirror the .NET API (camelCase JSON). Change them deliberately, together with the backend.
 - `src/components/`: shared, screen-agnostic UI. Reuse these before writing new markup:
-  - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and the hint or disclaimer as `note`. A form's action is `PrimaryAction form="<form id>"`, a real submit button, so Enter and password managers work.
+  - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and a short hint as `note`, never a disclaimer; they close the content, above the site footer, which is the only place the disclaimer shows. A form's action is `PrimaryAction form="<form id>"`, a real submit button, so Enter and password managers work.
   - `Field`: `TextField`, `PasswordField` (show/hide), `SelectField` (long lists), `SegmentedField` (two to four short choices, as buttons), `Checkbox` and `FormMessage`, with the error under the field.
   - `LoadableScreen`: renders the loading, error and not-found states for screens that load data.
   - `PageHeader`, `Section`, `Columns` (main + aside from 1024px), `Tag`, `Tagline`.
@@ -41,7 +41,7 @@
   - Use native inputs (radio, checkbox), visually hidden, inside a `<label>`.
   - Show visible focus with the `--border-focus` outline.
   - Make sure each control has a name a screen reader can announce.
-- **Responsive:** design at 390px first, then check at 768px and 1280px+. Wider layouts use `Columns` and grid; the footer action moves to the right.
+- **Responsive:** design at 390px first, then check at 768px and 1280px+. Wider layouts use `Columns` and grid; the primary action moves to the right of its note.
 - **Back:** `TopBar` goes one step back in the browser history, whichever page you came from. Its `back` is only where it goes when the screen was opened directly.
 - **Not built yet:** hide the control until the item that builds its screen brings it back (ROADMAP item 5). Never leave a dead link or button.
 - Keep components small and typed. Don't add a dependency without a clear need.

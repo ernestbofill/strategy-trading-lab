@@ -168,7 +168,7 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
           {t('newStrategy.review.useTemplate')}
         </PrimaryAction>
       }
-      note={canContinue ? t('common.disclaimer') : t('newStrategy.review.tickOne')}
+      note={canContinue ? undefined : t('newStrategy.review.tickOne')}
     >
       <PageHeader
         eyebrow={

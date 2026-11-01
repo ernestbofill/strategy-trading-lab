@@ -174,8 +174,6 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           </PrimaryAction>
         )
       }
-      note={t('common.disclaimerFull')}
-      noteAbove
     >
       <PageHeader title={t('newStrategy.confirm.title')} />
 

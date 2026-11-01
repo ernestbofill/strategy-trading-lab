@@ -72,30 +72,30 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
 
 interface ScreenProps {
   top: ReactNode
-  /** The one primary action, in the bottom bar. */
+  /** The one primary action, at the end of the content. */
   action?: ReactNode
-  /** Small line in the bottom bar: a hint or the disclaimer. Left of the action on wide screens. */
+  /** Small line next to the action: a hint, or the full disclaimer where the user commits. Left of the action on wide screens. */
   note?: ReactNode
   /** On phones the note sits under the action unless this is set. */
   noteAbove?: boolean
   children: ReactNode
 }
 
-/** Mobile-first screen shell: top bar, scrolling content and a bottom bar for the one primary action. */
+/** Mobile-first screen shell: top bar, then the content, ending with the one primary action and the site footer. */
 export function Screen({ top, action, note, noteAbove, children }: ScreenProps) {
   return (
     <div className={styles.screen}>
       {top}
       <main className={styles.content}>
         {children}
+        {(action || note) && (
+          <div className={styles.actions} data-note-above={noteAbove || undefined}>
+            {action && <div className={styles.action}>{action}</div>}
+            {note && <p className={`caption ${styles.note}`}>{note}</p>}
+          </div>
+        )}
         <Footer />
       </main>
-      {(action || note) && (
-        <div className={styles.footer} data-note-above={noteAbove || undefined}>
-          {action && <div className={styles.action}>{action}</div>}
-          {note && <p className={`caption ${styles.note}`}>{note}</p>}
-        </div>
-      )}
     </div>
   )
 }
@@ -105,7 +105,7 @@ interface PrimaryActionProps {
   to?: string
   onClick?: () => void
   disabled?: boolean
-  /** The id of the form it submits (the bar sits outside the form), so Enter and password managers work. */
+  /** The id of the form it submits (the action sits outside the form), so Enter and password managers work. */
   form?: string
 }
 

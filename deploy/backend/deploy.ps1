@@ -47,6 +47,6 @@ Invoke-Native { scp $package "${SshHost}:$remote/package.tar.gz" }
 $install = 'tar -xzf {0}/package.tar.gz -C {0} && sudo bash {0}/install.sh {1}; status=$?; rm -rf {0}; exit $status' -f $remote, $version
 Invoke-Native { ssh $SshHost $install }
 
-$live = Invoke-RestMethod 'https://140-238-209-178.sslip.io/api/version'
-if ($live.version -ne $version) { throw "https://140-238-209-178.sslip.io/api/version doesn't report ${version}: $($live | ConvertTo-Json -Compress)" }
+$live = Invoke-RestMethod 'https://strategytradinglab.com/api/version'
+if ($live.version -ne $version) { throw "https://strategytradinglab.com/api/version doesn't report ${version}: $($live | ConvertTo-Json -Compress)" }
 Write-Host "Live: $($live.version) ($($live.commit)), built $($live.builtAt)"

@@ -1,6 +1,6 @@
 # Backend deploy
 
-The API runs on the Oracle server (Ubuntu 24.04, arm64) as the systemd service `strategy-trading-lab-api`, on `127.0.0.1:5080`. nginx serves it at `https://140-238-209-178.sslip.io/api/` (`/api/health`, `/api/version`).
+The API runs on the Oracle server (Ubuntu 24.04, arm64) as the systemd service `strategy-trading-lab-api`, on `127.0.0.1:5080`. nginx serves it at `https://strategytradinglab.com/api/` (`/api/health`, `/api/version`).
 
 - **On merge to `main`**: the [Deploy backend](../../.github/workflows/deploy-backend.yml) workflow runs when `backend/` (not its tests or Markdown) or `deploy/backend/` changes, after building and testing it, then tags the commit `backend-v<version>`. It can also be run by hand from the Actions tab.
 - **From VS Code**: *Terminal → Run Task → Deploy backend to Oracle*. It deploys your working copy, so use it for hotfixes and checks, not instead of a PR. It doesn't tag.

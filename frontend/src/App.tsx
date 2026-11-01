@@ -39,10 +39,14 @@ import { AiRoundsPage } from './features/ai-round/AiRoundsPage'
 import { StrategyPromptEditor } from './features/ai-round/StrategyPromptEditor'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 import { LazyPage } from './components/LazyPage'
+import { Screen, ScreenMessage, TopBar } from './components/Screen'
+import { TextAction } from './components/TextAction'
 import { useTemplates } from './features/new-strategy/useTemplate'
 import { lazyPage } from './lib/lazyPage'
 import { LegalPage } from './features/legal/LegalPage'
 import { aboutPath, disclaimerPath, legalNoticePath, privacyPath, termsPath } from './features/legal/paths'
+import { WelcomePage } from './features/welcome/WelcomePage'
+import { welcomePath } from './features/welcome/paths'
 
 // Loaded only when an owner opens /admin, so users never download the admin pages or TanStack Table.
 const AdminSettings = lazyPage(() => import('./features/admin/AdminSettings').then((m) => m.AdminSettings))
@@ -86,6 +90,33 @@ function FeedbackCaptureIfLoggedIn() {
   return useOptionalAccount() ? <FeedbackCapture /> : null
 }
 
+/**
+ * Root route ('/'):
+ * - Authenticated users see the Dashboard.
+ * - Guests see the WelcomePage highlighting the core features (Builder, Simulation, Tracker).
+ */
+function HomeRoute() {
+  const { state, refresh } = useAccount()
+  if (state.status === 'loading') {
+    return (
+      <Screen top={<TopBar title="STL" />}>
+        <ScreenMessage>Loading…</ScreenMessage>
+      </Screen>
+    )
+  }
+  if (state.status === 'error') {
+    return (
+      <Screen top={<TopBar title="STL" />}>
+        <ScreenMessage>
+          Could not reach Strategy Trading Lab.{' '}
+          <TextAction onClick={() => void refresh()}>Try again</TextAction>
+        </ScreenMessage>
+      </Screen>
+    )
+  }
+  return state.account ? <Dashboard /> : <WelcomePage />
+}
+
 /** Root layout providing in-app feedback capture across all screens for logged-in users with verified email. */
 function AppLayout() {
   const { pathname } = useLocation()
@@ -120,6 +151,10 @@ export default function App() {
                 <Route path={disclaimerPath} element={<LegalPage section="disclaimer" />} />
                 <Route path={aboutPath} element={<LegalPage section="about" />} />
 
+                {/* Root route: Dashboard for authenticated users, Welcome highlight page for guests */}
+                <Route path={homePath} element={<HomeRoute />} />
+                <Route path={welcomePath} element={<WelcomePage />} />
+
                 {/* Public new-strategy flow: guests can look around and configure a draft without an account */}
                 <Route path={pickPath} element={<PickTemplate />} />
                 <Route path="/new/templates/:key" element={<ReviewTemplate />} />
@@ -132,7 +167,6 @@ export default function App() {
 
                 {/* Routes requiring an authenticated account */}
                 <Route element={<RequireAccount />}>
-                  <Route path={homePath} element={<Dashboard />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path={accountPath} element={<AccountPage />} />
                   <Route element={<RequireOwner />}>

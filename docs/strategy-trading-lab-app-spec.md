@@ -63,7 +63,8 @@ These apply to every screen, email and alert.
 
 | Screen | Wireframe file | Reached from | Goes to |
 | --- | --- | --- | --- |
-| Sign-up (not drawn) | – | App start for new users; "Create an account" on Log-in | Check your email, then Pick a template |
+| Welcome (marketing highlights) (not drawn) | – | App start (`/`) for unauthenticated guests; `/welcome` | Pick a template ("Try as guest"), Sign-up ("Create an account"), Log-in |
+| Sign-up (not drawn) | – | App start for new users; "Create an account" on Log-in or Welcome | Check your email, then Pick a template |
 | Log-in (not drawn) | – | App start for returning users; any screen when the session has ended | Dashboard |
 | Forgot and reset password (not drawn) | – | "Forgot your password?" on Log-in; the link in the email | Log-in |
 | 1 · Pick a strategy template | `Main` | Sign-up; "+ New strategy" on the dashboard | The picked template's review |
@@ -77,6 +78,8 @@ These apply to every screen, email and alert.
 | Strategy page | `StrategyDetail` | A strategy card on the dashboard | Stock page (not drawn), stock list editor, Advanced settings, Backtest (not drawn), Confirm a signal |
 | Confirm a signal (live) | `Signal` | Waiting for you on the dashboard; a stock row; a signal alert or the daily overview | Strategy page |
 | AI round | `AIRound` | Waiting for you on the dashboard; the AI-round notification | Dashboard (simulation); Confirm a signal (live) |
+
+**Guest / Unauthenticated visitor:** `/` opens the Welcome page, introducing Strategy builder, Simulation, and Trading tracker with interactive expandable preview decks. Guests can explore the new-strategy flow without an account (`/new`), register (`/sign-up`), or log in (`/log-in`).
 
 **New user:** sign-up → pick → review → (advanced settings, how we tested) → mode → budget → confirm → dashboard.
 
@@ -147,6 +150,40 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - **Budget and settings can change while a strategy runs** (strategy page). The new values apply from then on. Lowering the budget below what is already used, or the max steps below a stock's current step, stops further buys; nothing is sold.
 
 ## 6. Screen by screen
+
+### Welcome (marketing highlights) (not drawn)
+
+- **Entry point:** `/` for unauthenticated visitors, and `/welcome`. Authenticated visitors navigating to `/` continue directly to the Dashboard.
+- **Top bar:** "STL // STRATEGY TRADING LAB" on the left; "LOG IN" text action on the right.
+- **Hero:**
+  - Eyebrow: "SYSTEM READY // RULES-BASED LAB"
+  - Headline: "Trade rules, not emotions."
+  - Lead: "A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access."
+  - Primary CTA: "TRY AS GUEST ›" → `/new` (Pick a template), opening the in-memory draft flow with zero friction.
+  - Secondary CTA: "Create an account" → `/sign-up`.
+  - Micro-link: "Already have an account? Log in" → `/log-in`.
+- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile, where the expanded detail panel renders inline directly below the active card). Clicking any card expands its full details and interactive simulated widget (clicking an expanded card collapses it; no carousel):
+  - **01 Strategy builder:**
+    - Tagline: "Define your rules before the market opens"
+    - Points: Tested mathematical templates with transparent logic (moving averages, pullbacks, turnarounds); user-controlled stock universes and step budgets; plain language rules with no black-box algorithms.
+    - Interactive widget: Template switcher (*Winners at a discount*, *The comeback*, *Bear markets*) updating live trigger criteria and step plans, with watched stock badges (`ZS`, `AAPL`, `MSFT`, `NVDA`) for stock templates and watched fund (`SPY · S&P 500 ETF`) for *Bear markets*.
+    - CTA link: "Try building a strategy as guest ›" (`/new`).
+  - **02 Real-time simulation:**
+    - Tagline: "Forward-test on real prices with zero financial risk"
+    - Points: Closing prices refreshed daily after US market close; automated simulated trade logging following exact rules; honest metrics next to S&P 500 fund and worst-year benchmarks.
+    - Interactive widget: Forward-testing stats (`+14.2%` vs `+8.1%` S&P 500 fund with `InfoTip` vs `−12.4%` worst year) with toggle between performance comparison and paper trade log.
+    - CTA link: "Test in simulation mode ›" (`/new`).
+  - **03 Trading tracker:**
+    - Tagline: "Execute at your broker. 100% private & non-custodial"
+    - Points: Zero broker sync (no OAuth, passwords, or API access); daily actionable signal alerts; confirm steps with broker fill prices or skip with reasons.
+    - Interactive widget: Live signal prompt for Zscaler with interactive action buttons (*I did it*, *I skipped it*, *Remind me tomorrow*) showing immediate tactile feedback and privacy callout.
+    - CTA link: "Explore live tracking flow ›" (`/new`).
+- **Trust & Architecture section:**
+  - Three cards: Zero broker access, Uncompromising benchmark honesty, and Disciplined systematic rules.
+- **Bottom CTA banner:**
+  - "Ready to test your first strategy? Explore all templates, customize settings, and run paper simulations with zero commitment. No credit card required."
+  - Dual action buttons: "TRY AS GUEST ›" and "Create an account".
+- **Footer:** Ends with the standard site footer ("Not financial advice. Signals follow your rules." and the legal links).
 
 ### Sign-up (not drawn)
 

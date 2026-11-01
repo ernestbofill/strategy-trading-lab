@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-01 · Welcome highlight page and guest entry: Root (`/`) for unauthenticated visitors opens the Welcome page (also at `/welcome`), while authenticated users go directly to the dashboard. The page highlights the three core capabilities (Strategy builder, Simulation, Trading tracker) using an interactive expandable tactical deck (no carousel) with live parameter, paper performance, and signal execution test widgets. "Try as guest" is the prominent primary action to jump into `/new` with zero friction; "Create an account" and "Log in" provide clear secondary paths. (Ernest, #112)
 - 2026-11-01 · *Bear markets* keeps one total budget across the strategy's life, like the other templates (not a fresh target per bear market as in the POC). Each drop counts only the signals and buys from that drop's first step (`cycleStart`), so a later drop after the budget is used up shows "No budget left for its steps" rather than counting the previous drop's signals. (Ernest, #108, #114)
 - 2026-11-01 · The admin page's test email goes to the signed-in owner's address, not the SMTP login: with Brevo the login is not a mailbox. Still never to a typed address. (Ernest)
 - 2026-11-01 · The app's own domain is `strategytradinglab.com` (bought at Spaceship, DNS managed there). The bare name is the app; `www` and the old `sslip.io` address redirect to it with a 301. (Ernest, item 22)

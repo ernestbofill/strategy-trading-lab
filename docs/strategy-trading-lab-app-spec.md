@@ -618,13 +618,20 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 
 - Top bar: "← BACK" to the strategy page.
 - H1: the symbol; under it the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
-- **Status box:** the same pill and line as its row on the strategy page, and "Close [price] on [date]": the close the rules looked at.
+- **Status box:** the same pill and line as its row on the strategy page, "Close [price] on [date]" (the close the rules looked at), and when the stock is a candidate, "Candidate since [date]".
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
-  - "Is it a candidate?", with "Yes: the rules watch it for a buy signal." or "No: it gets no signal, however the price moves."
+  - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."
   - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).
-  - "Next step" (*The comeback*'s milestones once it holds steps, *Bear markets*' pace): "Each new sign earns one more step." A used milestone reads "Step bought".
+  - "Next step" (*The comeback*'s milestones, *Bear markets*' pace): when the strategy already holds 1+ steps, shown open with "Each new sign earns one more step."; before the first step is bought (`preview: true`), collapsed behind a **"Show next steps"** `<details>` disclosure ("Unlocks after the first step is bought. Each new sign earns one more step."). A used milestone reads "Step bought".
   - "Sell signal" (*Index trend* in the market): "Met: a sell signal for the whole position."
-  - Each rule: its name with an "i" when it has an explanation, where the stock stands with the numbers ("0.84× its 50-day average (needs 1.2×)"), a mark on the right (✓ met, ○ not met, none for a figure shown for context, such as *The comeback*'s drop from the 52-week high), and for a figure that must still grow, a bar with its percentage.
+  - **Every rule row has a status badge and a visual representation** (no tickless rows):
+    - Status badge on the right: `✓ Met`, `○ Not met`, `✓ Step bought`, `✕ Window closed` (when *The comeback*'s candidate window of 60 trading days has expired), `✕ Past zone` (when a *Winners at a discount* pullback fell past the discount zone's max %), or `✕ Past limit` (when price climbed past the chase limit).
+    - In *The comeback*, while the stock is a candidate (`beaten` met), today's recovery figures from the 52-week high and vs the SMA 200 are folded into the `Beaten down lately` sentence rather than shown as separate tickless rows; when not a candidate, `Drop from the 52-week high` and `Below SMA 200 at the drop` are shown as ticked candidate checks with threshold bars.
+    - Visual gauges per rule type:
+      - **Threshold bar (with `> 100%` overflow):** shown whether met or not, with a `100%` target tick at 75% of the bar width so values that exceed the threshold (e.g. `238%` on *Proven growth*) visibly pass the target tick.
+      - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`) and *The comeback*'s buy line and milestones (`0% to +8%`), showing both the entry threshold and the upper limit past which the signal is cancelled.
+      - **Candidate window bar:** for *Beaten down lately* (`Day [value] of [max]`), overflowing into `Window closed` past `[max]` days.
+      - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Mid $Y > Long $Z`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* (`Sell $X · SMA $Y · Buy $Z`).
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
   - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.
 - **"Your position"** (simulation: "Paper trades"), once it has buys: steps, invested, result.

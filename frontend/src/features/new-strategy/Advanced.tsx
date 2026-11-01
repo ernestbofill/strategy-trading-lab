@@ -57,7 +57,7 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   }
 
   return (
-    <Screen top={top} action={<PrimaryAction onClick={save}>{t('newStrategy.advanced.save')}</PrimaryAction>} note={t('common.disclaimer')}>
+    <Screen top={top} action={<PrimaryAction onClick={save}>{t('newStrategy.advanced.save')}</PrimaryAction>}>
       <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
       <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
     </Screen>

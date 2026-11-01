@@ -25,7 +25,6 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
     sealed class Captured : IEmailSender
     {
         public List<(string To, string Subject, string Body)> Sent { get; } = [];
-        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
             Sent.Add((email.To, email.Subject, email.Body));
@@ -88,8 +87,12 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         | BE{s.Tag} | 60 | 62 | {beta} | Quiet quarter |
         """;
 
-    AiRounds Rounds(IServiceScope scope, DateTimeOffset now) =>
-        new(scope.ServiceProvider.GetRequiredService<AppDbContext>(), new Clock(now), NullLogger<AiRounds>.Instance);
+    AiRounds Rounds(IServiceScope scope, DateTimeOffset now)
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return new(db, new Api.Admin.AdminAlerts(db, new Clock(now), NullLogger<Api.Admin.AdminAlerts>.Instance), new Clock(now),
+            NullLogger<AiRounds>.Instance);
+    }
 
     [NeonFact]
     public async Task A_simulation_round_gives_the_top_score_a_step_and_buys_it_at_once_at_the_latest_price()

@@ -33,4 +33,4 @@ scp -q "$env_file" "$ssh_host:$remote/api.env"
 scp -q "$here/install-env.sh" "$ssh_host:$remote/install-env.sh"
 ssh "$ssh_host" "sudo bash $remote/install-env.sh $remote/api.env"
 
-echo "Live: $(curl -fsS https://140-238-209-178.sslip.io/api/health)"
+echo "Live: $(curl -fsS https://strategytradinglab.com/api/health)"

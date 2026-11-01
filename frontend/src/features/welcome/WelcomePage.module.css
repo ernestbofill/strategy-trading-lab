@@ -246,8 +246,3 @@
   color: var(--ink);
   max-width: 600px;
 }
-
-.disclaimerBox {
-  padding: var(--space-2) 0;
-  border-top: 1px solid var(--border-hairline);
-}

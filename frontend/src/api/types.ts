@@ -889,6 +889,25 @@ export interface AdminUsers {
   users: AdminUser[]
 }
 
+/** What raised an admin alert. */
+export type AlertSource = 'dailyCheck' | 'prices' | 'strategies' | 'aiStrategies' | 'email'
+
+/** Open; dismissed (quiet while the problem lasts); or cleared, when a later run found the problem gone. */
+export type AlertStatus = 'open' | 'dismissed' | 'cleared'
+
+/** A problem the background jobs found: backend Admin/AdminAlerts.cs (AdminAlertDto). `count`: times seen since it opened. */
+export interface AdminAlert {
+  id: string
+  source: AlertSource
+  status: AlertStatus
+  title: string
+  detail: string | null
+  count: number
+  firstSeenAt: string
+  lastSeenAt: string
+  closedAt: string | null
+}
+
 /** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
 export interface AdminAsset {
   id: string
@@ -903,6 +922,21 @@ export interface AdminAsset {
   strategies: number
   /** Newest stored price day ("2026-10-22"), or null if none is stored yet. */
   latestPriceDate: string | null
+  /** Why the last price fetch couldn't be used (Yahoo's error, bars that aren't daily), or null when it worked. */
+  pricesProblem: string | null
+}
+
+/** What deleting every price did: backend Admin/AdminEndpoints.cs (PricesFlushed). */
+export interface PricesFlushed {
+  prices: number
+  rates: number
+}
+
+/** What downloading the exchange rates did: backend Admin/AdminEndpoints.cs (RatesDownloaded). */
+export interface RatesDownloaded {
+  rows: number
+  /** The currencies that failed, with why. */
+  problems: PriceProblem[]
 }
 
 /** What adding a symbol did: backend Admin/AdminEndpoints.cs (AdminAddedAsset). */
@@ -1006,12 +1040,27 @@ export interface Api {
 /** All assets, for the admin assets page. */
   getAdminAssets(): Promise<AdminAsset[]>
   getAdminUsers(): Promise<AdminUsers>
+  /** The open and dismissed alerts, and those cleared in the last 7 days, last seen first. */
+  getAdminAlerts(): Promise<AdminAlert[]>
+  /** Dismisses an open alert: it stays quiet while its problem lasts. */
+  dismissAdminAlert(id: string): Promise<void>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */
   addAdminAsset(symbol: string): Promise<AdminAddedAsset>
   /** Changes an asset's name and English description. Rejects with `InvalidFieldsError` (`name`, `what`). */
   updateAdminAsset(id: string, edit: { name: string; what: string }): Promise<void>
+  /** Deletes every stored price and exchange rate. */
+  flushAdminPrices(): Promise<PricesFlushed>
+  /** Deletes one asset's stored prices. */
+  flushAdminAssetPrices(id: string): Promise<void>
+  /**
+   * Replaces one asset's prices with the daily prices of the last `years` years and returns its row. Rejects with
+   * `InvalidFieldsError` (`years`), or `InvalidValueError` when Yahoo fails or the daily refresh is running.
+   */
+  downloadAdminAssetPrices(id: string, years: number): Promise<AdminAsset>
+  /** Replaces the exchange rates of every currency in use with the last `years` years. */
+  downloadAdminRates(years: number): Promise<RatesDownloaded>
 /** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidValueError` or `TooManyTriesError`. */
   submitFeedback(feedback: NewFeedback): Promise<FeedbackItem>
   /** Owner only: lists, edits, closes/reopens or deletes feedback comments. */

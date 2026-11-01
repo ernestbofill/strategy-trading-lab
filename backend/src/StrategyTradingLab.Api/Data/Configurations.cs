@@ -340,6 +340,26 @@ class FeedbackItemConfiguration : IEntityTypeConfiguration<FeedbackItem>
     }
 }
 
+class AdminAlertConfiguration : IEntityTypeConfiguration<AdminAlert>
+{
+    public void Configure(EntityTypeBuilder<AdminAlert> entity)
+    {
+        entity.ToTable("admin_alerts", table =>
+        {
+            table.HasCheckConstraint("ck_admin_alerts_closed_at", "(status = 'open') = (closed_at IS NULL)");
+            table.HasCheckConstraint("ck_admin_alerts_count", "count >= 1");
+        });
+        entity.HasIndex(alert => alert.Key).IsUnique();
+        entity.HasIndex(alert => new { alert.Status, alert.LastSeenAt });
+        entity.HasIndex(alert => alert.StrategyId);
+        entity.Property(alert => alert.Key).HasMaxLength(Admin.AdminAlerts.KeyMax);
+        entity.Property(alert => alert.Title).HasMaxLength(Admin.AdminAlerts.TitleMax);
+        entity.Property(alert => alert.Detail).HasMaxLength(Admin.AdminAlerts.DetailMax);
+        entity.Property(alert => alert.Status).HasColumnDefault(AlertStatus.Open);
+        entity.HasOne<Strategy>().WithMany().HasForeignKey(alert => alert.StrategyId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 class AiRoundConfiguration : IEntityTypeConfiguration<AiRound>
 {
     public void Configure(EntityTypeBuilder<AiRound> entity)

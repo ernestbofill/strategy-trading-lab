@@ -66,7 +66,7 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   'welcome.sim.mock.tabTrades': 'Registre d\u2019operacions sobre el paper',
   'welcome.sim.mock.log1': 'Comprat 1 pas \u00B7 AAPL a 178,40 $',
   'welcome.sim.mock.log2': 'Comprat 1 pas \u00B7 MSFT a 412,10 $',
-  'welcome.sim.mock.note': 'El seguiment de refer\u00E8ncia utilitza preus de tancament. Els resultats passats no garanteixen els futurs.',
+  'welcome.sim.mock.note': 'El seguiment de refer\u00E8ncia utilitza preus de tancament diaris.',
 
   // Pillar 3: Trading tracker
   'welcome.tracker.tag': '03 // SEGUIMENT',

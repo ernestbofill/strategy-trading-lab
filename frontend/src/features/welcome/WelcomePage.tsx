@@ -101,11 +101,6 @@ export function WelcomePage() {
             registerLabel={t('welcome.bottom.register')}
           />
         </section>
-
-        {/* Disclaimer */}
-        <div className={styles.disclaimerBox}>
-          <p className="caption">{t('common.disclaimerFull')}</p>
-        </div>
       </div>
     </Screen>
   )

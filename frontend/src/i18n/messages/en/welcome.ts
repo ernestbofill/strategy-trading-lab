@@ -64,7 +64,7 @@ export const welcome = {
   'welcome.sim.mock.tabTrades': 'Paper trade log',
   'welcome.sim.mock.log1': 'Bought 1 step \u00B7 AAPL @ $178.40',
   'welcome.sim.mock.log2': 'Bought 1 step \u00B7 MSFT @ $412.10',
-  'welcome.sim.mock.note': "Benchmark tracking uses closing prices. Past results don't promise future ones.",
+  'welcome.sim.mock.note': 'Benchmark tracking uses daily closing prices.',
 
   // Pillar 3: Trading tracker
   'welcome.tracker.tag': '03 // TRACK',

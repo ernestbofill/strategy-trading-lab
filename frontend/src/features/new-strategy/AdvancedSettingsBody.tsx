@@ -70,10 +70,7 @@ export function AdvancedSettingsBody({ template, values, onChange }: AdvancedSet
           {anyChanged ? (
             <>
               <PeriodTable periods={template.backtest.periods} />
-              <p className="caption">
-                {t('newStrategy.advanced.defaultsResults')}{' '}
-                {t('common.pastResults')}
-              </p>
+              <p className="caption">{t('newStrategy.advanced.defaultsResults')}</p>
             </>
           ) : (
             <p className={`well ${styles.message}`}>{t('newStrategy.advanced.onDefaults')}</p>

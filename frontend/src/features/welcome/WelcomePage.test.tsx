@@ -206,7 +206,7 @@ describe('WelcomePage', () => {
     expect(screen.getByText('SPY · Fons S&P 500 ✓')).toBeTruthy()
   })
 
-  it('renders trust pillars, bottom call to action, and full legal disclaimer', () => {
+  it('renders trust pillars, bottom call to action, and site footer disclaimer', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { level: 2, name: 'Built for transparency and control' })).toBeTruthy()
@@ -215,6 +215,6 @@ describe('WelcomePage', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Disciplined systematic rules' })).toBeTruthy()
 
     expect(screen.getByRole('heading', { level: 2, name: 'Ready to test your first strategy?' })).toBeTruthy()
-    expect(screen.getByText(/you decide and trade at your own broker/)).toBeTruthy()
+    expect(screen.getByText('Not financial advice. Signals follow your rules.')).toBeTruthy()
   })
 })

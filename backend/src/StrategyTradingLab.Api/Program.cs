@@ -52,6 +52,7 @@ else if (!builder.Environment.IsDevelopment())
     // every restart would lose the saved secrets. Fail the deploy's health check instead.
     throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");
 builder.Services.AddScoped<SettingsStore>();
+builder.Services.AddScoped<AdminAlerts>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailWorker>();
@@ -104,7 +105,11 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.LogInLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
+    PerClient(AccountEndpoints.LogOutLimit, 30, TimeSpan.FromMinutes(1));
     PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
+    PerClient(TemplateEndpoints.TemplatesLimit, 60, TimeSpan.FromMinutes(1));
+    PerClient(Program.HealthLimit, 120, TimeSpan.FromMinutes(1));
+    PerClient(Program.VersionLimit, 60, TimeSpan.FromMinutes(1));
     // A look-up with a code tells whether it works, so it is limited like a guess; one without a code (every Sign-up
     // load, many visitors behind one address) only says whether sign-ups are invite only, and isn't limited.
     options.AddPolicy(AccountEndpoints.InviteLimit, http => string.IsNullOrEmpty(http.Request.Query["invite"])
@@ -124,6 +129,7 @@ builder.Services.AddRateLimiter(options =>
     PerUser(AssetEndpoints.SearchLimit, 100, TimeSpan.FromHours(1));
     PerUser(AssetEndpoints.AddLimit, 10, TimeSpan.FromHours(1));
 });
+builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
@@ -137,6 +143,21 @@ if (ObjectStorage.IsConfigured(builder.Configuration))
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler();
+}
+
+// Security headers (defense in depth on every API response).
+app.Use(async (http, next) =>
+{
+    http.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    http.Response.Headers.Append("X-Frame-Options", "DENY");
+    http.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    http.Response.Headers.Append("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    await next(http);
+});
 
 // CSRF (backend/AUTH.md): every state-changing request must carry X-Requested-With: stl, which the app always sends
 // and a form or image on another site can't. With SameSite=Lax cookies and JSON-only bodies, that closes CSRF.
@@ -205,6 +226,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
         : $"ok: bucket {bucket} ({listing.Result.KeyCount ?? 0} key(s) in the first page)";
     return TypedResults.Ok(new HealthResponse(postgres.Result, objectStorage));
 })
+.RequireRateLimiting(Program.HealthLimit)
 .WithName("Health")
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
@@ -221,6 +243,7 @@ app.MapAssets();
 
 // For the client to show which API it talks to, and a DEV tag while it uses the dev database.
 app.MapGet("/version", (DatabaseSwitch databases) => TypedResults.Ok(VersionResponse.Current with { Database = databases.Active }))
+.RequireRateLimiting(Program.VersionLimit)
 .WithName("Version")
 .WithSummary("The API's version, the commit it was built from, when it was built (Release builds) and which database it uses.");
 
@@ -247,4 +270,8 @@ record VersionResponse(string Version, string? Commit, DateTimeOffset? BuiltAt, 
 }
 
 /// <summary>Visible to integration tests.</summary>
-public partial class Program;
+public partial class Program
+{
+    public const string HealthLimit = "health";
+    public const string VersionLimit = "version";
+}

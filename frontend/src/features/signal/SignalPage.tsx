@@ -81,7 +81,7 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
 
   if (s.answer) {
     return (
-      <Screen top={top} note={t('common.disclaimer')} action={<PrimaryAction to={strategyPath(s.strategyId)}>{t('signal.back')}</PrimaryAction>}>
+      <Screen top={top} action={<PrimaryAction to={strategyPath(s.strategyId)}>{t('signal.back')}</PrimaryAction>}>
         {header}
         {box}
         <Callout tone="info" title={t('signal.answered')}>
@@ -183,7 +183,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   return (
     <Screen
       top={top}
-      note={t('common.disclaimer')}
+     
       action={
         <PrimaryAction form={FORM_ID} disabled={saving}>
           {answer === 'did' ? t('signal.save.did') : t('signal.save.skip')}

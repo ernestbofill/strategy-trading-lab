@@ -45,7 +45,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
 
   if (template.settings.length === 0) {
     return (
-      <Screen top={top} note={t('common.disclaimer')}>
+      <Screen top={top}>
         <PageHeader title={t('newStrategy.advanced.title')} />
         <ScreenMessage>{t('newStrategy.advanced.later')}</ScreenMessage>
       </Screen>
@@ -78,7 +78,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
           {saving ? t('strategy.settings.saving') : t('newStrategy.advanced.save')}
         </PrimaryAction>
       }
-      note={t('common.disclaimer')}
+     
     >
       <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
       {error && (

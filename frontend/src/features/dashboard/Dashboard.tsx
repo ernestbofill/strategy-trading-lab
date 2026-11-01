@@ -33,7 +33,7 @@ export function Dashboard() {
         )
         const archived = strategies.filter((s) => s.status === 'ended')
         return (
-          <Screen top={top} note={`${t('common.disclaimer')} ${t('common.pastResults')}`}>
+          <Screen top={top} note={t('common.pastResults')}>
             <VerifyNotice />
             <PageHeader title={t('dashboard.heading')} />
             <WaitingList items={waiting} />

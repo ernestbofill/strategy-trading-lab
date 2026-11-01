@@ -59,7 +59,6 @@ export function PromptEditor({ top, initial, everyDays, assetIds, onSave }: Prom
           {t(saving ? 'aiRound.saving' : 'aiRound.editor.save')}
         </PrimaryAction>
       }
-      note={t('common.disclaimer')}
     >
       <PageHeader title={t('aiRound.editor.title')} />
       <p className={styles.plain}>{t('aiRound.editor.intro')}</p>

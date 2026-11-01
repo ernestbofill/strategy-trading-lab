@@ -39,7 +39,7 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
   const feeText = `${b.feePercent ? `${b.feePercent}% + ` : ''}${eur(b.feePerTrade)}`
 
   return (
-    <Screen top={top} note={t('common.disclaimer')}>
+    <Screen top={top}>
       <PageHeader
         title={t('newStrategy.how.title')}
         lead={t('newStrategy.how.lead')}

@@ -23,7 +23,7 @@ export function AiRoundsPage() {
   return (
     <LoadableScreen state={history} top={top} what={t('aiRound.historyWhat')}>
       {(h) => (
-        <Screen top={top} note={`${t('common.disclaimer')} ${t('common.pastResults')}`}>
+        <Screen top={top} note={t('common.pastResults')}>
           <PageHeader title={t('aiRound.history.title')} />
           <p className={styles.eyebrow}>
             <Tag tone={h.mode === 'live' ? 'live' : 'sim'}>{h.mode === 'live' ? 'LIVE' : 'SIM'}</Tag>

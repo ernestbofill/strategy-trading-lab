@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] On the Mac and the PC: make sure `.env.local` has `DATABASE_URL_PRODUCTION` (the production branch's URL, the same one the admin page's database switch uses). Without it, a local `dotnet test` doesn't bring the dev database up to date: it can't tell dev from production. Skip it if you'd rather not keep the production URL on a computer; the tests then work as before. (#129)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
 - [x] After #103 deploys: on production `/admin/assets`, press *Delete all* (then *Sure? Delete all*), then *Download all* with 2 years. The prices stored before were weekly, monthly or quarterly bars, and nothing repairs them on its own. Check the summary, and that a stock no longer says "Not enough price history yet". (#103)
 - [x] After #99 deploys: add your first name on the account page, so invites say "Ernest invited you" and are signed. Then send yourself a test invite in English and in Catalan, and open the link logged out on the phone (Sign-up with an invite wasn't checked by eye). (#99)

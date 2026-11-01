@@ -12,7 +12,8 @@ namespace StrategyTradingLab.Api.Tests;
 /// <summary>
 /// Brings the dev database up to date before the first test of a local run, so a test never fails only because nobody has
 /// started the API since the last merge. It applies this checkout's migrations, a branch's too, as <c>dotnet run</c> does.
-/// Not in CI, whose throwaway database gets <c>migrations.sql</c> first, and never on the production database.
+/// Not in CI, whose throwaway database gets <c>migrations.sql</c> first. It fails closed: it migrates only a database it can tell
+/// isn't production, by its host differing from <c>DATABASE_URL_PRODUCTION</c>'s; without that variable it migrates nothing.
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly)]
 public sealed class MigrateDevDatabaseAttribute : BeforeAfterTestAttribute
@@ -28,7 +29,12 @@ public sealed class MigrateDevDatabaseAttribute : BeforeAfterTestAttribute
         var configuration = NeonFactAttribute.Configuration;
         var connectionString = NeonEnvironment.ConnectionString(configuration, direct: true)!;
         var host = BranchHost(new NpgsqlConnectionStringBuilder(connectionString).Host);
-        if (configuration["DATABASE_URL_PRODUCTION"] is { Length: > 0 } production && BranchHost(new Uri(production).Host) == host)
+        if (!Uri.TryCreate(configuration["DATABASE_URL_PRODUCTION"], UriKind.Absolute, out var production))
+        {
+            Console.WriteLine("The dev database wasn't migrated: add DATABASE_URL_PRODUCTION to .env.local so the tests can tell it from production.");
+            return false;
+        }
+        if (BranchHost(production.Host) == host)
             throw new InvalidOperationException("The tests' database is the production one: fix DATABASE_URL in .env.local. Nothing was migrated.");
 
         var options = new DbContextOptionsBuilder<AppDbContext>();

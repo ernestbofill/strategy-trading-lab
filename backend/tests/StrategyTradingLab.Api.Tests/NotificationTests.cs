@@ -79,6 +79,37 @@ public class NotificationTests
     }
 
     [Fact]
+    public void The_catalan_overview_uses_straight_apostrophe_and_catalan_sections()
+    {
+        var waiting = new[] { Dip() };
+        var close = new[]
+        {
+            new CloseLine("Zscaler & friends", StrategyMode.Live, "dip", "Palantir", 3.2m),
+            new CloseLine("The comeback", StrategyMode.Simulation, "comeback", "Intel", 4.5m),
+            new CloseLine("Bear markets", StrategyMode.Live, "bear", "S&P 500", 1.8m),
+        };
+        var score = new[]
+        {
+            new ScoreLine("Zscaler & friends", StrategyMode.Live, new DateOnly(2026, 10, 1), 1),
+            new ScoreLine("The comeback", StrategyMode.Simulation, new DateOnly(2026, 10, 5), 0),
+        };
+
+        var (subject, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, [], close, score, "https://app.example", "ca");
+
+        Assert.Equal("El teu resum diari, 23 oct. 2026", subject);
+        Assert.Contains("T'espera a tu", body);
+        Assert.DoesNotContain("T’espera a tu", body);
+        foreach (var section in new[] { "T'espera a tu", "Què ha canviat avui", "A prop de la línia", "Les teves estratègies" }) Assert.Contains(section, body);
+        Assert.Contains("- No s'ha complert cap regla nova.", body);
+        Assert.Contains("(En directe) Palantir, Zscaler & friends: 3.2% per sobre de la zona de descompte", body);
+        Assert.Contains("(Simulació) Intel, The comeback: 4.5% per sota de la línia de compra", body);
+        Assert.Contains("(En directe) S&P 500, Bear markets: 1.8% per sota de la línia de rebot", body);
+        Assert.Contains("Zscaler & friends (En directe): des del 1 oct. 2026, 1 senyal", body);
+        Assert.Contains("The comeback (Simulació): des del 5 oct. 2026, 0 senyals", body);
+        Assert.EndsWith(EmailTexts.DisclaimerCa, body);
+    }
+
+    [Fact]
     public void An_email_with_a_token_has_an_unsubscribe_link_and_the_one_click_address()
     {
         var alert = EmailTexts.SignalAlert(Dip(), "https://app.example", "en", "tok3n");

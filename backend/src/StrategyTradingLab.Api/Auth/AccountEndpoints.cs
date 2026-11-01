@@ -42,7 +42,7 @@ public record AccountMessage(string Message);
 public static class AccountEndpoints
 {
     public const string SignUpLimit = "account-sign-up", LogInLimit = "account-log-in", EmailLimit = "account-email",
-        PasswordLimit = "account-password", InviteLimit = "account-invite";
+        PasswordLimit = "account-password", InviteLimit = "account-invite", LogOutLimit = "account-log-out";
     static readonly TimeSpan VerifyFor = TimeSpan.FromHours(24), ResetFor = TimeSpan.FromHours(1);
 
     /// <summary>Checked when the email has no account, so a wrong email takes as long as a wrong password.</summary>
@@ -171,6 +171,7 @@ public static class AccountEndpoints
             await sessions.EndAsync(cancellationToken);
             return TypedResults.NoContent();
         })
+        .RequireRateLimiting(LogOutLimit)
         .WithSummary("Ends this device's session.");
 
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>

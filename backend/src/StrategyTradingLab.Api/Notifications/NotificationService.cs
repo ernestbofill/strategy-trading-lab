@@ -239,13 +239,15 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             logger.LogWarning("Couldn't send notification {Id}: {Kind}", notificationId, problem.GetType().Name);
             shutDown = problem is OperationCanceledException && cancellationToken.IsCancellationRequested;
         }
+        // A shutdown isn't an email problem: the claim stays as it is, neither sent nor failed, and raises no alert.
+        if (shutDown) return false;
         var now = DateTimeOffset.UtcNow;
         await db.Notifications.Where(n => n.Id == notificationId)
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, error is null ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, error is null ? (DateTimeOffset?)null : now).SetProperty(x => x.Error, error), CancellationToken.None);
         db.ChangeTracker.Clear();
         if (error is null) anySent = true;
-        else if (!shutDown) await EmailFailedAsync(error); // A shutdown isn't an email problem.
+        else await EmailFailedAsync(error);
         return error is null;
     }
 
@@ -254,8 +256,11 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     // What this scope's sends did, so the alert clears once, after a batch where every email went out (not per email).
     bool anySent, anyFailed;
 
-    /// <summary>How long a failure keeps the alert from clearing: a day, so an address failing daily keeps it open (and dismissed).</summary>
-    static readonly TimeSpan FailureMemory = TimeSpan.FromDays(1);
+    /// <summary>
+    /// How long a failure keeps the alert from clearing: a week, so an address that fails whenever it is sent to (a weekend or a
+    /// clock change in between) keeps the alert open, and dismissed if it was.
+    /// </summary>
+    static readonly TimeSpan FailureMemory = TimeSpan.FromDays(7);
 
     async Task EmailFailedAsync(string problem)
     {

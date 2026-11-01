@@ -124,14 +124,8 @@ public class EmailEventTests
     {
         using var api = new AccountsApi();
         var blocked = api.NewEmail();
-        // A mail server that refuses the connection: sending to anyone not on the list fails, so a skip can't be mistaken for a send.
-        using var configured = api.WithWebHostBuilder(b =>
-        {
-            b.UseSetting("SMTP_HOST", "127.0.0.1");
-            b.UseSetting("SMTP_PORT", "1");
-            b.UseSetting("SMTP_USER", "sender@example.com");
-            b.UseSetting("SMTP_PASSWORD", "password");
-        });
+        // Email isn't set up in this test, so anything that is not skipped says so: a skip can't be mistaken for a send.
+        using var configured = api.WithWebHostBuilder(_ => { });
         try
         {
             using (var scope = api.Services.CreateScope())
@@ -147,11 +141,9 @@ public class EmailEventTests
             const string Unsubscribe = "https://app.example/api/email/unsubscribe/tok3n/alerts";
             // Bulk mail (it has an unsubscribe address) is skipped for a suppressed address, and says so.
             await Assert.ThrowsAsync<EmailSuppressedException>(() => sender.SendAsync(new OutgoingEmail(blocked, "Subject", "Body", UnsubscribeUrl: Unsubscribe), default));
-            // An email someone just asked for still goes (it reaches the refusing server), and so does bulk mail to anyone else.
-            var refused = await Assert.ThrowsAsync<EmailException>(() => sender.SendAsync(new OutgoingEmail(blocked, "Subject", "Body"), default));
-            Assert.IsNotType<EmailSuppressedException>(refused);
-            var other = await Assert.ThrowsAsync<EmailException>(() => sender.SendAsync(new OutgoingEmail(api.NewEmail(), "Subject", "Body", UnsubscribeUrl: Unsubscribe), default));
-            Assert.IsNotType<EmailSuppressedException>(other);
+            // An email someone just asked for still goes on, and so does bulk mail to anyone else.
+            await Assert.ThrowsAsync<EmailNotSetUpException>(() => sender.SendAsync(new OutgoingEmail(blocked, "Subject", "Body"), default));
+            await Assert.ThrowsAsync<EmailNotSetUpException>(() => sender.SendAsync(new OutgoingEmail(api.NewEmail(), "Subject", "Body", UnsubscribeUrl: Unsubscribe), default));
         }
         finally
         {

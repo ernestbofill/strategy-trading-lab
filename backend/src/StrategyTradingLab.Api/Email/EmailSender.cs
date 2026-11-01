@@ -59,9 +59,6 @@ public class SmtpEmailSender(SettingsStore settings, AppDbContext db, ILogger<Sm
     /// <summary>Sends to <paramref name="email"/>'s address with the admin page's settings.</summary>
     public async Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
     {
-        var values = await settings.ValuesAsync(cancellationToken);
-        if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
-            throw new EmailNotSetUpException();
         // Bulk mail (the overview and the alerts, which carry an unsubscribe address) never goes to an address the mail service reported as bounced,
         // invalid or complaining (the webhook): each one hurts the domain's name. Emails someone just asked for (a confirmation, a password
         // link) still go, so a person who later owns the address isn't locked out by an old bounce.
@@ -70,6 +67,9 @@ public class SmtpEmailSender(SettingsStore settings, AppDbContext db, ILogger<Sm
             logger.LogInformation("Not sending \"{Subject}\": its address is on the suppression list.", email.Subject);
             throw new EmailSuppressedException();
         }
+        var values = await settings.ValuesAsync(cancellationToken);
+        if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
+            throw new EmailNotSetUpException();
         await EmailRetry.OnceAsync(() => SendAsync(values, user, password, host, email, cancellationToken), EmailRetry.Wait, logger, cancellationToken);
     }
 

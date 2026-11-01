@@ -248,7 +248,6 @@ function StrategyView({ s }: { s: StrategyDetail }) {
           )}
         </div>
       )}
-      {/* Only strategies that email have alerts: live ones (signals) and AI ones (rounds due). */}
       {/* One way out of each state: a running strategy is archived, and only an archived one can be deleted. */}
       {running ? <ArchiveStrategy s={s} /> : <DeleteStrategy id={s.id} name={s.name} />}
     </Screen>

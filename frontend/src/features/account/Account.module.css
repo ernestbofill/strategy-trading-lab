@@ -79,7 +79,6 @@
   margin: 0;
 }
 
-/* A titled group inside a section (the stock changes under Emails). */
 /* Notifications: a kind (its title and hint) with its channels side by side. */
 .kind {
   display: flex;
@@ -92,6 +91,7 @@
   column-gap: var(--space-4);
 }
 
+/* A titled group inside a section (a Notifications kind, this device). */
 .subTitle {
   margin: 0 0 var(--space-1);
   color: var(--ink);

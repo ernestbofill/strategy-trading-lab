@@ -11,7 +11,7 @@ import { accountNotificationsPath } from './paths'
 type State = 'ask' | 'busy' | 'done' | 'invalid' | 'failed'
 
 /**
- * The link in the emails ("Turn off the daily overview"). Opening it changes nothing, because mail scanners open every link:
+ * The link in the emails ("Turn off summary emails"). Opening it changes nothing, because mail scanners open every link:
  * the one button does it. It needs no log-in; the token in the address is the whole credential, and it can only turn emails off.
  */
 export function Unsubscribe() {

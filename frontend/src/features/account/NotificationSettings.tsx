@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { api, type Account } from '../../api'
 import { Checkbox, FormMessage, type FormMessageState } from '../../components/Field'
 import { useT } from '../../i18n/I18n'
@@ -33,7 +33,7 @@ export function NotificationSettings({ account, onSaved }: { account: Account; o
   )
 }
 
-function Kind({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+function Kind({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   const id = useId()
   return (
     <div className={styles.kind} role="group" aria-labelledby={id}>

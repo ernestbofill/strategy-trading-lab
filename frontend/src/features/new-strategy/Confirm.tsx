@@ -70,6 +70,12 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const pushOffered = usePushOffered()
   const byApp = alerts && pushOffered && (account?.alertPush ?? true)
   const byEmail = account?.alertEmails ?? true
+  const notifyKey = !alerts
+    ? account?.overviewEmail === false ? 'newStrategy.confirm.notify.off' : 'newStrategy.confirm.notify.summary'
+    : byApp && byEmail ? 'newStrategy.confirm.notify.appEmail'
+    : byApp ? 'newStrategy.confirm.notify.app'
+    : byEmail ? 'newStrategy.confirm.notify.email'
+    : 'newStrategy.confirm.notify.off'
 
   // Numbered against the user's strategies once they are loaded; only queried for logged-in accounts.
   const dashboard = useDashboard(Boolean(account))
@@ -149,19 +155,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     },
     {
       label: t('newStrategy.confirm.row.notifications'),
-      value: t(
-        !alerts
-          ? account?.overviewEmail === false
-            ? 'newStrategy.confirm.notify.off'
-            : 'newStrategy.confirm.notify.summary'
-          : byApp && byEmail
-            ? 'newStrategy.confirm.notify.appEmail'
-            : byApp
-              ? 'newStrategy.confirm.notify.app'
-              : byEmail
-                ? 'newStrategy.confirm.notify.email'
-                : 'newStrategy.confirm.notify.off',
-      ),
+      value: t(notifyKey),
       to: isGuest ? undefined : accountNotificationsPath,
     },
     ...(template.aiRound

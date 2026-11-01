@@ -30,7 +30,7 @@ export function AccountPage() {
   const [logOutError, setLogOutError] = useState<string | null>(null)
   const { hash } = useLocation()
 
-  // Confirm's "Edit" on Daily overview opens the page at its Emails section.
+  // Confirm's "Edit" on Notifications opens the page at its Notifications section.
   useEffect(() => {
     if (hash === NOTIFICATIONS_HASH) document.getElementById(NOTIFICATIONS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
   }, [hash])

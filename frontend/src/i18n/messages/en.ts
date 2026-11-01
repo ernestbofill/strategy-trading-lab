@@ -9,6 +9,7 @@ import { signal } from './en/signal'
 import { stock } from './en/stock'
 import { strategy } from './en/strategy'
 import { trades } from './en/trades'
+import { welcome } from './en/welcome'
 
 /** Every English message. The other languages must have the same keys (the types check it). */
 export const en = {
@@ -23,6 +24,7 @@ export const en = {
   ...stock,
   ...strategy,
   ...trades,
+  ...welcome,
 }
 
 export type MessageKey = keyof typeof en

@@ -63,7 +63,8 @@ These apply to every screen, email and alert.
 
 | Screen | Wireframe file | Reached from | Goes to |
 | --- | --- | --- | --- |
-| Sign-up (not drawn) | – | App start for new users; "Create an account" on Log-in | Check your email, then Pick a template |
+| Welcome (marketing highlights) (not drawn) | – | App start (`/`) for unauthenticated guests; `/welcome` | Pick a template ("Try as guest"), Sign-up ("Create an account"), Log-in |
+| Sign-up (not drawn) | – | App start for new users; "Create an account" on Log-in or Welcome | Check your email, then Pick a template |
 | Log-in (not drawn) | – | App start for returning users; any screen when the session has ended | Dashboard |
 | Forgot and reset password (not drawn) | – | "Forgot your password?" on Log-in; the link in the email | Log-in |
 | 1 · Pick a strategy template | `Main` | Sign-up; "+ New strategy" on the dashboard | The picked template's review |
@@ -77,6 +78,8 @@ These apply to every screen, email and alert.
 | Strategy page | `StrategyDetail` | A strategy card on the dashboard | Stock page (not drawn), stock list editor, Advanced settings, Backtest (not drawn), Confirm a signal |
 | Confirm a signal (live) | `Signal` | Waiting for you on the dashboard; a stock row; a signal alert or the daily overview | Strategy page |
 | AI round | `AIRound` | Waiting for you on the dashboard; the AI-round notification | Dashboard (simulation); Confirm a signal (live) |
+
+**Guest / Unauthenticated visitor:** `/` opens the Welcome page, introducing Strategy builder, Simulation, and Trading tracker with interactive expandable preview decks. Guests can explore the new-strategy flow without an account (`/new`), register (`/sign-up`), or log in (`/log-in`).
 
 **New user:** sign-up → pick → review → (advanced settings, how we tested) → mode → budget → confirm → dashboard.
 

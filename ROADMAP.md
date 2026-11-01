@@ -56,6 +56,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Fixes from user feedback (#77): shares shown to at most 3 decimals, the template list loaded in the background from the dashboard so Pick a template opens at once, currency and language as buttons instead of a select, and the controls of unbuilt screens hidden (item 5).
 - Fixes from user feedback (#95): every number other than a price or amount to at most 3 decimals (exchange rates, percentages), "Funds · [n]" on the strategy page of a fund template, the index fund named "S&P 500 fund" with a hidden "i" explanation, and the template list loaded in the background on every signed-in screen (not only the dashboard).
 - Catalan: English and Catalan catalogs in the frontend with language selection on sign-up and the account page (per-device storage, synced via `POST /account/locale`), embedded template texts (`Texts/ca.json`), localized backend error and validation messages, account emails, and signal alerts. Standard terminology in `docs/glossary-ca.md`.
+- Welcome highlight page: Root page (`/`) for unauthenticated guests introduces the three core pillars (Strategy builder, Simulation, Trading tracker) with interactive expandable preview decks, zero broker sync trust callout, and direct guest (`/new`), register (`/sign-up`), and log-in (`/log-in`) pathways; authenticated users continue directly to the dashboard.
 
 ## Next
 

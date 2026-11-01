@@ -2,7 +2,9 @@ using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Data;
 
 namespace StrategyTradingLab.Api.Email;
 
@@ -36,6 +38,9 @@ public static class EmailRetry
 /// <summary>Email isn't set up yet (no account, server or password): nothing was sent and no server was contacted.</summary>
 public class EmailNotSetUpException() : EmailException("Email isn't set up: set the account, the server and the password first.");
 
+/// <summary>Nothing was sent: the address is on the suppression list (the mail service reported it as bounced, invalid or complaining). Not a problem to alert on.</summary>
+public class EmailSuppressedException() : EmailException("The address is on the suppression list.");
+
 /// <summary>Sends the app's emails.</summary>
 public interface IEmailSender
 {
@@ -47,13 +52,21 @@ public interface IEmailSender
 /// SMTP with STARTTLS, set on the admin page (Gmail with an app password, as in the POC). Each send reads all the
 /// settings, the password included, in one <see cref="SettingsStore.ValuesAsync"/> call, so they always belong together.
 /// </summary>
-public class SmtpEmailSender(SettingsStore settings, ILogger<SmtpEmailSender> logger) : IEmailSender
+public class SmtpEmailSender(SettingsStore settings, AppDbContext db, ILogger<SmtpEmailSender> logger) : IEmailSender
 {
     static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
     /// <summary>Sends to <paramref name="email"/>'s address with the admin page's settings.</summary>
     public async Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
     {
+        // Bulk mail (the overview and the alerts, which carry an unsubscribe address) never goes to an address the mail service reported as bounced,
+        // invalid or complaining (the webhook): each one hurts the domain's name. Emails someone just asked for (a confirmation, a password
+        // link) still go, so a person who later owns the address isn't locked out by an old bounce.
+        if (email.UnsubscribeUrl is not null && await db.EmailSuppressions.AnyAsync(s => s.Email == email.To, cancellationToken))
+        {
+            logger.LogInformation("Not sending \"{Subject}\": its address is on the suppression list.", email.Subject);
+            throw new EmailSuppressedException();
+        }
         var values = await settings.ValuesAsync(cancellationToken);
         if (values["SMTP_USER"] is not { } user || values["SMTP_HOST"] is not { } host || values["SMTP_PASSWORD"] is not { } password)
             throw new EmailNotSetUpException();

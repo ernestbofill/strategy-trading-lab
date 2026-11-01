@@ -51,6 +51,10 @@ public class EmailWorker(EmailQueue queue, IServiceScopeFactory scopes, IHostEnv
                 // Still failing if the alert couldn't be cleared, so the next email tries again.
                 if (failing) failing = !await Alerts(scope).ClearAsync(AlertKey, stoppingToken);
             }
+            catch (EmailSuppressedException)
+            {
+                // Already logged by the sender; not a problem with email.
+            }
             catch (EmailNotSetUpException) when (environment.IsDevelopment())
             {
                 logger.LogInformation("Email isn't set up, so here it is instead.\nTo: {To}\nSubject: {Subject}\n\n{Body}", email.To, email.Subject, email.Body);

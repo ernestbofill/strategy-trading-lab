@@ -290,6 +290,18 @@ public class DailyEvaluation
 }
 
 /// <summary>
+/// An address the mail service reported as bounced, invalid or complaining (Brevo's webhook): the sender skips it, so the
+/// app stops mailing an address that can't or won't get its emails, which protects the sending domain's reputation.
+/// </summary>
+public class EmailSuppression
+{
+    public Guid Id { get; set; }
+    public required string Email { get; set; }
+    public SuppressionReason Reason { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>
 /// A problem the background jobs found, for the owner's Alerts page (spec: Admin alerts) instead of an email. One row per
 /// problem (<c>Key</c>, such as <c>prices:SAP.DE</c> or <c>strategy:{id}</c>): seen again, it counts up rather than adding a row.
 /// </summary>

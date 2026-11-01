@@ -9,6 +9,7 @@ import styles from './AdminUsers.module.css'
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; page: AdminUsersPage }
 
 const roleText: Record<Role, string> = { user: 'User', vip: 'VIP', owner: 'Owner' }
+const blockedText = { bounced: 'Blocked: bounced', invalid: 'Blocked: invalid address', complaint: 'Blocked: reported spam' }
 
 /** "2026-10-30" in the owner's time zone, or "–". */
 const day = (at: string | null) => (at ? isoDate(new Date(at)) : '–')
@@ -21,7 +22,9 @@ const columns: DataTableColumn<AdminUser>[] = [
     id: 'confirmed',
     header: 'Email confirmed',
     accessorFn: (u) => (u.confirmed ? 'yes' : 'no'),
-    cell: (u) => <span className={u.confirmed ? styles.yes : styles.no}>{u.confirmed ? 'Yes' : 'No'}</span>,
+    cell: (u) => (
+      <span className={u.confirmed && !u.emailBlocked ? styles.yes : styles.no}>{u.emailBlocked ? blockedText[u.emailBlocked] : u.confirmed ? 'Yes' : 'No'}</span>
+    ),
   },
   { id: 'invitedBy', header: 'Invited by', accessorFn: (u) => u.invitedBy ?? '', cell: (u) => u.invitedBy ?? '–' },
   { id: 'joined', header: 'Joined', accessorFn: (u) => u.joined, cell: (u) => day(u.joined), mono: true },

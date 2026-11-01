@@ -51,6 +51,7 @@ Neon doesn't write the other lines in `.env.local`. Copy them from the other com
 | Variable | Used for |
 | --- | --- |
 | `OWNER_EMAIL` | The account that gets the owner role on log-in |
+| `BREVO_WEBHOOK_KEY` | The key in the address of Brevo's webhook (`/api/email/events?key=…`), at least 16 characters. Without it the endpoint answers 404 and bounces aren't recorded |
 | `STL_BROWSER_TEST_EMAIL`, `STL_BROWSER_TEST_PASSWORD` | The older fixed browser test account ([docs/dev-browser-test-account.md](../docs/dev-browser-test-account.md)) |
 
 ## Run

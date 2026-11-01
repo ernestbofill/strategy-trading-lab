@@ -1938,3 +1938,35 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101121233_AddEmailSuppressions') THEN
+    CREATE TABLE email_suppressions (
+        id uuid NOT NULL,
+        email citext NOT NULL,
+        reason text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_email_suppressions PRIMARY KEY (id),
+        CONSTRAINT ck_email_suppressions_reason CHECK (reason IN ('bounced', 'invalid', 'complaint'))
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101121233_AddEmailSuppressions') THEN
+    CREATE UNIQUE INDEX ix_email_suppressions_email ON email_suppressions (email);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101121233_AddEmailSuppressions') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101121233_AddEmailSuppressions', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

@@ -108,6 +108,7 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.LogOutLimit, 30, TimeSpan.FromMinutes(1));
     PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
     PerClient(UnsubscribeEndpoints.UnsubscribeLimit, 120, TimeSpan.FromMinutes(1));
+    PerClient(EmailEventEndpoints.EventsLimit, 600, TimeSpan.FromMinutes(1));
     PerClient(TemplateEndpoints.TemplatesLimit, 60, TimeSpan.FromMinutes(1));
     PerClient(Program.HealthLimit, 120, TimeSpan.FromMinutes(1));
     PerClient(Program.VersionLimit, 60, TimeSpan.FromMinutes(1));
@@ -244,6 +245,7 @@ app.MapInvites();
 app.MapAccount();
 app.MapFeedback();
 app.MapUnsubscribe();
+app.MapEmailEvents();
 app.MapAssets();
 
 // For the client to show which API it talks to, and a DEV tag while it uses the dev database.

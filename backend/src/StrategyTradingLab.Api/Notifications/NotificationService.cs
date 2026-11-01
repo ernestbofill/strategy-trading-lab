@@ -231,6 +231,14 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             await EmailFailedAsync(notSetUp.Message);
             return false;
         }
+        catch (EmailSuppressedException)
+        {
+            // Skipped, not sent and not failed: the row says why, and no alert opens for an address the mail service already told us about.
+            await db.Notifications.Where(n => n.Id == notificationId)
+                .ExecuteUpdateAsync(n => n.SetProperty(x => x.Error, "Not sent: the address is on the suppression list."), CancellationToken.None);
+            db.ChangeTracker.Clear();
+            return false;
+        }
         // A shutdown keeps the claim: the mail server may have accepted the email already, and losing one is better than sending it twice.
         catch (Exception problem)
         {

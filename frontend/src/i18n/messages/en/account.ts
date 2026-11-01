@@ -132,6 +132,8 @@ export const account = {
   'account.page.currencySaved': 'Saved. New strategies use it; running ones keep theirs.',
   'account.page.reloadFailed': 'Could not reload the account.',
   'account.page.emails': 'Emails',
+  'account.stockChanges.title': 'Stock changes in the overview',
+  'account.stockChanges.lead': 'A line when a stock becomes or stops being a candidate, or comes within 3% of its signal.',
   'account.page.admin': 'Admin',
   'account.page.adminLine': 'Settings, database, prices and feedback review.',
   'account.page.adminLink': 'Admin settings →',

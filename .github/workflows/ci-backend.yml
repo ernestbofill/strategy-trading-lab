@@ -77,7 +77,11 @@ jobs:
           echo "Backend version: ${old:-none} -> $new"
 
       - run: dotnet restore
-      - run: dotnet list package --vulnerable --include-transitive
+      # It exits 0 even when it finds something, so the step fails on its report instead.
+      - name: Audit packages
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee audit.txt
+          if grep -q "has the following vulnerable packages" audit.txt; then exit 1; fi
       - run: dotnet build --no-restore --configuration Release
       # The schema from migrations.sql, as the deploy applies it, and the bucket neon.ts declares.
       - name: Prepare the test database and bucket

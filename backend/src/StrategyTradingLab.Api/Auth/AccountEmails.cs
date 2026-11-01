@@ -12,17 +12,21 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
     public void Verify(string to, string token, string locale = "en")
     {
         var url = $"{AppUrl}/verify-email?token={token}";
-        var reclaimUrl = $"{AppUrl}/forgot-password";
+        var reset = $"{AppUrl}/forgot-password";
+        // A stranger may have signed up with this email first (backend/AUTH.md): the owner can ignore it, or take the
+        // account back with a reset, which ends every other session.
         queue.Enqueue(new(to, locale == "ca"
             ? Email(locale)
                 .Action("Confirma el teu correu obrint aquest enllaç:", "Confirma el correu", url)
-                .Paragraph("Funciona durant 24 hores. Si no t'has registrat a Strategy Trading Lab, ignora aquest correu: el compte quedarà sense confirmar.")
-                .Paragraph($"Per prendre el control del compte, restableix la contrasenya a {reclaimUrl}.")
+                .Paragraph("Funciona durant 24 hores. Si no t'has registrat a Strategy Trading Lab, ignora aquest correu: el compte queda sense confirmar.")
+                .Paragraph("Si algú altre s'ha registrat amb el teu correu, pots recuperar el compte: una contrasenya nova tanca totes les altres sessions.")
+                .Links([("Has oblidat la contrasenya?", reset)])
                 .Build("Confirma el teu correu per a Strategy Trading Lab")
             : Email(locale)
                 .Action("Confirm your email by opening this link:", "Confirm my email", url)
-                .Paragraph("It works for 24 hours. If you didn't sign up for Strategy Trading Lab, ignore this email: the account will stay unconfirmed.")
-                .Paragraph($"To take control of the account, reset its password at {reclaimUrl}.")
+                .Paragraph("It works for 24 hours. If you didn't sign up for Strategy Trading Lab, ignore this email: the account stays unconfirmed.")
+                .Paragraph("If someone else signed up with your email, you can take the account back: a new password ends every other session.")
+                .Links([("Forgot your password?", reset)])
                 .Build("Confirm your email for Strategy Trading Lab")));
     }
 

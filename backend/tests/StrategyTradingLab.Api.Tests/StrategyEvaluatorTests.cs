@@ -326,6 +326,37 @@ public class StrategyEvaluatorTests
     }
 
     [NeonFact]
+    public async Task A_stock_with_a_signal_doesnt_start_its_steps_again_when_its_checks_were_short_of_history()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
+        try
+        {
+            // Day 300 got its step-1 signal; then the history was cut short and the rows rewritten as not enough data.
+            var day300 = new DateOnly(2024, 1, 1).AddDays(300);
+            db.Signals.Add(new Signal
+            {
+                StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, StepNo = 1, MaxSteps = 5, StepAmount = 100, SignalDate = day300,
+                ClosePrice = 1, Facts = JsonDocument.Parse("{}"), Status = SignalStatus.Waiting,
+            });
+            foreach (var day in new[] { day300, day300.AddDays(1) })
+                db.DailyEvaluations.Add(new DailyEvaluation
+                    { StrategyId = strategyId, AssetId = assetId, Date = day, Status = EvaluationStatus.NotEnoughData, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+
+            await Evaluator(db).RunAsync(default);
+
+            Assert.Equal(1, await SignalCount(db, strategyId)); // Not a second step 1 on day 301.
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_strategy_that_started_after_the_last_price_is_left_alone()
     {
         using var api = new AccountsApi();

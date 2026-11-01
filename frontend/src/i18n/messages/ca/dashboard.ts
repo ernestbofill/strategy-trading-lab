@@ -6,6 +6,7 @@ export const dashboard: Record<keyof typeof en, string> = {
   'dashboard.account': 'Compte',
   'dashboard.heading': 'Les teves estratègies',
   'dashboard.newStrategy': '+ Nova estratègia',
+  'dashboard.strategiesFull': 'Tens {max} estratègies en marxa, el màxim per ara. Arxiva\'n una per començar-ne una altra.',
   'dashboard.waitingTitle': 'T’espera a tu',
   'dashboard.waitingHidden': ' en espera',
   'dashboard.dot.aiRound': 'Ronda d’IA pendent',

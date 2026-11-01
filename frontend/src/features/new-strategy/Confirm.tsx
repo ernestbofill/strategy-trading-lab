@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, NameTakenError, type TemplateDetail } from '../../api'
+import { api, InvalidFieldsError, NameTakenError, type TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { BulletList } from '../../components/Lists'
 import { PageHeader } from '../../components/PageHeader'
@@ -15,7 +15,7 @@ import { accountEmailsPath, signUpPathFor } from '../account/paths'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
-import { fundOf, tickedStocks } from './draftState'
+import { fundOf, MAX_RUNNING_STRATEGIES, tickedStocks } from './draftState'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { settingsSummary } from './settings'
 import { defaultName, NAME_MAX_LENGTH, newStrategyFrom } from './newStrategy'
@@ -66,6 +66,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
 
   // Numbered against the user's strategies once they are loaded; only queried for logged-in accounts.
   const dashboard = useDashboard(Boolean(account))
+  const runningCount = dashboard.status === 'ready' ? dashboard.data.strategies.filter((s) => s.status === 'running').length : 0
+  const atLimit = runningCount >= MAX_RUNNING_STRATEGIES
   const taken = dashboard.status === 'ready' ? dashboard.data.strategies.map((s) => s.name) : []
   const fallback = defaultName(template.name, taken)
   const name = draft.name ?? fallback
@@ -76,6 +78,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     .join(' · ')
 
   const start = async () => {
+    if (atLimit) return
     setStarting(true)
     setError(null)
     try {
@@ -84,9 +87,11 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       setError(
         e instanceof NameTakenError
           ? t('newStrategy.confirm.nameTaken')
-          : isLive && !emailVerified
-            ? t('newStrategy.mode.live.confirmFirst')
-            : t('newStrategy.confirm.startFailed'),
+          : e instanceof InvalidFieldsError
+            ? e.message
+            : isLive && !emailVerified
+              ? t('newStrategy.mode.live.confirmFirst')
+              : t('newStrategy.confirm.startFailed'),
       )
       setStarting(false)
       return
@@ -169,7 +174,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
         isGuest ? (
           <PrimaryAction to={signUpPathFor(confirmPath)}>{t('newStrategy.confirm.createAccountToStart')}</PrimaryAction>
         ) : (
-          <PrimaryAction onClick={start} disabled={starting}>
+          <PrimaryAction onClick={start} disabled={starting || atLimit}>
             {starting ? t('newStrategy.confirm.starting') : isLive ? t('newStrategy.confirm.startLive') : t('newStrategy.confirm.startSim')}
           </PrimaryAction>
         )
@@ -192,9 +197,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           onBlur={() => !name.trim() && update({ name: null })}
         />
         <p className={styles.preview}>{preview}</p>
-        {error && (
+        {(error || atLimit) && (
           <p role="alert" className={styles.error}>
-            {error}
+            {error ?? t('dashboard.strategiesFull', { max: MAX_RUNNING_STRATEGIES })}
           </p>
         )}
       </div>

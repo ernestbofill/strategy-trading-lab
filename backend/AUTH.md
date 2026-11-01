@@ -27,7 +27,7 @@ email_tokens  id uuid PK · user_id FK → users (cascade) · purpose ('verify_e
               token_hash bytea unique · created_at · expires_at (verify 24 h, reset 1 h) · used_at null
 ```
 
-Both are new tables, so the migration changes no existing data. Expired rows are deleted by a daily clean-up (later, with the other scheduled jobs). `last_used_at` is written at most once a minute per session. IP addresses are not stored (privacy).
+Both are new tables, so the migration changes no existing data. Expired rows are deleted by the daily housekeeping clean-up (`Auth/HousekeepingService.cs`), which also deletes accounts never confirmed after 30 days (with a warning email at 23). `last_used_at` is written at most once a minute per session. IP addresses are not stored (privacy).
 
 ## How it is built
 

@@ -76,6 +76,9 @@ public static class Messages
     public static readonly Message TradeTooBig = new("That is more than one trade can be.", "Això és més del que pot ser una operació.");
 
     // Strategies
+    public static readonly Message StrategyLimit = new(
+        "You run {0} strategies, the most for now. Archive one to start another.",
+        "Tens {0} estratègies en marxa, el màxim per ara. Arxiva'n una per començar-ne una altra.");
     public static readonly Message StrategyIsEnded = new("This strategy is archived, so it can't change.", "Aquesta estratègia està arxivada, així que no pot canviar.");
     public static readonly Message ArchiveBeforeDelete = new("Archive the strategy before deleting it.", "Arxiva l’estratègia abans d’esborrar-la.");
     public static readonly Message NameTaken = new("You already have a running strategy with that name.", "Ja tens una estratègia en marxa amb aquest nom.");

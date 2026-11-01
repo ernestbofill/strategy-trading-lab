@@ -85,6 +85,7 @@ builder.Services.AddSingleton<InviteEmailLimit>();
 builder.Services.AddSingleton<InviteTexts>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AccountEmails>();
+builder.Services.AddScoped<HousekeepingService>();
 
 // nginx (on the same machine) passes the client's address and https on. Only loopback proxies are trusted
 // (ForwardedHeadersOptions' default), so a client can't fake its address to dodge the log-in rate limit.

@@ -178,6 +178,8 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             var alerts = scope.ServiceProvider.GetRequiredService<AdminAlerts>();
             await alerts.ClearAsync(DailyCheckKey, stoppingToken);
             await alerts.ForgetOldAsync(stoppingToken);
+            var housekeeping = scope.ServiceProvider.GetRequiredService<Auth.HousekeepingService>();
+            await housekeeping.RunAsync(stoppingToken);
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

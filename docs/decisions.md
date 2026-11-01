@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-01 · The admin page's test email goes to the signed-in owner's address, not the SMTP login: with Brevo the login is not a mailbox. Still never to a typed address. (Ernest)
 - 2026-11-01 · The app's own domain is `strategytradinglab.com` (bought at Spaceship, DNS managed there). The bare name is the app; `www` and the old `sslip.io` address redirect to it with a 301. (Ernest, item 22)
 - 2026-11-01 · CI audits only the backend's packages (`dotnet list package --vulnerable`); `npm audit` isn't run, so an advisory in a frontend build tool doesn't block unrelated PRs. (Ernest, #106)
 - 2026-10-31 · Pre-registered accounts (someone signs up with another person's email first): keep today's behaviour, where the confirmation link confirms without logging anyone in and the email's owner takes the account back with a password reset, which ends every other session. The confirmation email now says so and links *Forgot your password?*. Not chosen: the confirmation link choosing the password, always or only on another device, which closes the gap but adds a step. (Ernest, #28, #106)

@@ -31,9 +31,6 @@ public sealed class CapturedEmails : IEmailSender
 {
     readonly ConcurrentQueue<OutgoingEmail> sent = new();
 
-    public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
-
     public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
     {
         sent.Enqueue(email);

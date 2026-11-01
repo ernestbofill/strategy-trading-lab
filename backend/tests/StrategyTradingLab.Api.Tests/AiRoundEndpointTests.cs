@@ -25,7 +25,6 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
     sealed class Captured : IEmailSender
     {
         public List<(string To, string Subject, string Body)> Sent { get; } = [];
-        public Task<string> SendToAccountAsync(EmailContent email, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task SendAsync(OutgoingEmail email, CancellationToken cancellationToken)
         {
             Sent.Add((email.To, email.Subject, email.Body));

@@ -548,8 +548,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an S&P 500 fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
 - A running strategy's own figures are since its start, so they have no worst year yet: until it has a year of its own, the card adds "Template's worst year: [−X%]" under the index fund (product rule: results next to the worst year). The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
 - AI strategy with no results: "No results yet. They start after your first AI round."
-- **Archived** (#91, merged with ending in #96): the archived strategies, last archived first, in a collapsed "Archived ([n])" section at the bottom (closed by default), after the running ones and the "+ New strategy" button. Each card carries an "ARCHIVED" tag before the mode tag, "*[template]* · archived [date]" under the name, and its results as they stood on that date. Only running strategies appear in *Waiting for you*.
-- Below the running cards: a dashed button "+ New strategy" → Pick a template. A user runs at most 10 strategies at once: at 10, the button is off and reads "You run 10 strategies, the most for now. Archive one to start another." (assumed copy)
+- **Archived** (#91, merged with ending in #96): the archived strategies, last archived first, in a collapsed "Archived ([n])" section at the bottom (closed by default), after the running ones and the "+ New strategy" card. Each card carries an "ARCHIVED" tag before the mode tag, "*[template]* · archived [date]" under the name, and its results as they stood on that date. Only running strategies appear in *Waiting for you*.
+- Next to the running cards: a dashed placeholder card "+ New strategy" → Pick a template. A user runs at most 10 strategies at once: at 10, the card is off and reads "You run 10 strategies, the most for now. Archive one to start another." (assumed copy)
 
 ### Strategy page (`StrategyDetail`, drawn in its Live variant)
 

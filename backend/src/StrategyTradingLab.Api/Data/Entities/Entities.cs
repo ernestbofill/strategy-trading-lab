@@ -286,6 +286,28 @@ public class DailyEvaluation
 }
 
 /// <summary>
+/// A problem the background jobs found, for the owner's Alerts page (spec: Admin alerts) instead of an email. One row per
+/// problem (<c>Key</c>, such as <c>prices:SAP.DE</c> or <c>strategy:{id}</c>): seen again, it counts up rather than adding a row.
+/// </summary>
+public class AdminAlert
+{
+    public Guid Id { get; set; }
+    public required string Key { get; set; }
+    public AlertSource Source { get; set; }
+    public AlertStatus Status { get; set; } = AlertStatus.Open;
+    public required string Title { get; set; }
+    public string? Detail { get; set; }
+    /// <summary>The strategy it is about, if any: deleting the strategy deletes its alerts.</summary>
+    public Guid? StrategyId { get; set; }
+    /// <summary>How many times it was seen since it opened.</summary>
+    public int Count { get; set; } = 1;
+    public DateTimeOffset FirstSeenAt { get; set; }
+    public DateTimeOffset LastSeenAt { get; set; }
+    /// <summary>When it was dismissed or cleared.</summary>
+    public DateTimeOffset? ClosedAt { get; set; }
+}
+
+/// <summary>
 /// A comment or issue about the app, submitted by a user with a confirmed email (from selected text on a screen,
 /// or by the owner from the feedback box) and reviewed by the owner.
 /// </summary>

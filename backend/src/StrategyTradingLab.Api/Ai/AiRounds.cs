@@ -24,7 +24,7 @@ public record AiPlan(string Answer, AiReading Reading, IReadOnlyList<AiStock> St
 /// into steps, turns a round into signals, and once a day makes their signal trades and closes the signals whose time is up.
 /// The app runs no AI: the user's own AI writes the answer, and the app applies the strategy's rule to its scores.
 /// </summary>
-public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logger)
+public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider time, ILogger<AiRounds> logger)
 {
     /// <summary>The longest AI model name kept.</summary>
     public const int MaxModel = 60;
@@ -350,6 +350,7 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
                           select new { strategy, user.TimeZone }).ToListAsync(cancellationToken);
         var rates = await ExchangeRates.LoadAsync(db, null, cancellationToken);
         int trades = 0, missed = 0, failed = 0;
+        var problems = new List<(Strategy Strategy, string Title, string Detail)>();
         foreach (var row in rows)
         {
             var today = StrategyEndpoints.Today(row.TimeZone, now);
@@ -365,8 +366,10 @@ public class AiRounds(AppDbContext db, TimeProvider time, ILogger<AiRounds> logg
                 db.ChangeTracker.Clear();
                 failed++;
                 logger.LogError(error, "The AI check of strategy {Strategy} failed.", row.strategy.Id);
+                problems.Add((row.strategy, $"\"{row.strategy.Name}\" couldn't be checked", error.Message));
             }
         }
+        await alerts.SyncAsync(AlertSource.AiStrategies, await StrategyEvaluator.StrategyAlertsAsync(db, problems, cancellationToken), cancellationToken);
         return new AiDailySummary(rows.Count, trades, missed, failed);
     }
 

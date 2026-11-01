@@ -94,6 +94,7 @@ public static class AdminEndpoints
         MapPrices(group);
         MapAssets(group);
         AdminUsersEndpoints.MapUsers(group);
+        AdminAlerts.MapAlerts(group);
 
         // Only ever to the account itself, so the page can't be used to send mail from it to anyone.
         group.MapPost("/test-email", async Task<Results<Ok<TestEmailSent>, ProblemHttpResult>> (IEmailSender email,

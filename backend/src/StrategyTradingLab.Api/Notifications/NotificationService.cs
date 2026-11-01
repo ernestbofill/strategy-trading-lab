@@ -14,7 +14,8 @@ namespace StrategyTradingLab.Api.Notifications;
 /// the daily overview right after the daily check that evaluated the session. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
 /// key is the dedupe contract), then the email is sent and the row says whether it worked. Only to verified addresses.
 /// </summary>
-public class NotificationService(AppDbContext db, IEmailSender sender, SettingsStore settings, IConfiguration configuration, ILogger<NotificationService> logger)
+public class NotificationService(AppDbContext db, IEmailSender sender, SettingsStore settings, IConfiguration configuration, AdminAlerts alerts,
+    ILogger<NotificationService> logger)
 {
     /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder), and no overview goes out before it.</summary>
     public const int MorningHour = 7;
@@ -240,8 +241,13 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, error is null ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, error is null ? (DateTimeOffset?)null : now).SetProperty(x => x.Error, error), CancellationToken.None);
         db.ChangeTracker.Clear();
+        if (error is null) await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
+        else await alerts.RaiseAsync(AlertSource.Email, new NewAlert(EmailAlertKey, "Emails to users failed",
+            $"The last one: {error} The count is the emails that failed since the last one that went out."), CancellationToken.None);
         return error is null;
     }
+
+    const string EmailAlertKey = "email:notifications";
 
     /// <summary>Gives the claim back: nothing was sent, so the next run may send it.</summary>
     async Task ReleaseAsync(Guid notificationId)

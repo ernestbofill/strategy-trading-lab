@@ -1,5 +1,8 @@
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Data;
+using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
 
 namespace StrategyTradingLab.Api.MarketData;
@@ -162,6 +165,8 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             logger.LogInformation("Prices refreshed: {Updated} updated, {Full} in full, {Failed} failed.",
                 results.Count(r => r.Outcome == RefreshOutcome.Updated), results.Count(r => r.Outcome == RefreshOutcome.FullHistory),
                 results.Count(r => r.Outcome == RefreshOutcome.Failed));
+            await scope.ServiceProvider.GetRequiredService<AdminAlerts>().SyncAsync(AlertSource.Prices,
+                await PriceAlertsAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>(), results, time.GetUtcNow(), stoppingToken), stoppingToken);
             // The rules read the prices just stored.
             var evaluator = scope.ServiceProvider.GetRequiredService<StrategyEvaluator>();
             evaluation = await evaluator.RunAsync(stoppingToken);
@@ -171,16 +176,53 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             var ai = await scope.ServiceProvider.GetRequiredService<Ai.AiRounds>().RunDailyAsync(stoppingToken);
             logger.LogInformation("AI strategies checked: {Strategies}, {Trades} new trades, {Missed} missed, {Failed} failed.",
                 ai.Strategies, ai.NewTrades, ai.Missed, ai.Failed);
+            var alerts = scope.ServiceProvider.GetRequiredService<AdminAlerts>();
+            await alerts.ClearAsync(DailyCheckKey, stoppingToken);
+            await alerts.ForgetOldAsync(stoppingToken);
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
             logger.LogError(error, "The price refresh or the evaluation failed.");
+            await RaiseAsync(new NewAlert(DailyCheckKey, "The daily check failed", error.Message), stoppingToken);
         }
         finally
         {
             state.Finished(time.GetUtcNow(), results, evaluation);
         }
         await SendNotificationsAsync(stoppingToken);
+    }
+
+    const string DailyCheckKey = "daily-check";
+
+    /// <summary>
+    /// The refresh's alerts: each asset or exchange rate that failed, and the index fund's prices more than one session behind
+    /// (a holiday leaves them one behind).
+    /// </summary>
+    internal static async Task<List<NewAlert>> PriceAlertsAsync(AppDbContext db, IReadOnlyList<RefreshResult> results, DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var found = results.Where(r => r.Outcome == RefreshOutcome.Failed)
+            .Select(r => new NewAlert($"prices:{r.Name}", $"{r.Name}: prices weren't updated", r.Problem)).ToList();
+        var lastSession = UsSession.LastComplete(now);
+        var index = await db.Prices.Where(p => p.AssetId == Strategies.StrategyBook.IndexFundId).MaxAsync(p => (DateOnly?)p.Date, cancellationToken);
+        if (index is null || UsSession.WeekdaysBetween(index.Value, lastSession) > 1)
+            found.Add(new NewAlert("prices:behind", "Prices are behind",
+                $"The index fund's newest price is from {(index is { } day ? day.ToString("yyyy-MM-dd") : "no day")}; the last US session was {lastSession:yyyy-MM-dd}."));
+        return found;
+    }
+
+    /// <summary>Raises an alert in a scope of its own, for when the run's scope failed.</summary>
+    async Task RaiseAsync(NewAlert alert, CancellationToken stoppingToken)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<AdminAlerts>().RaiseAsync(AlertSource.DailyCheck, alert, stoppingToken);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The admin alert couldn't be raised: {Reason}", error.Message);
+        }
     }
 
     /// <summary>

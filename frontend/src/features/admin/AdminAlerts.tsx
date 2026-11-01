@@ -1,0 +1,130 @@
+import { useCallback, useEffect, useState } from 'react'
+import { api, type AdminAlert, type AlertSource } from '../../api'
+import { PageHeader } from '../../components/PageHeader'
+import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { Section } from '../../components/Section'
+import { isoDate } from '../../lib/format'
+import styles from './AdminAlerts.module.css'
+
+type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; alerts: AdminAlert[] }
+
+const sourceText: Record<AlertSource, string> = {
+  dailyCheck: 'Daily check',
+  prices: 'Prices',
+  strategies: 'Strategy',
+  aiStrategies: 'AI strategy',
+  email: 'Email',
+}
+
+/** "2026-10-30 08:12" in the owner's time zone. */
+const at = (iso: string) => {
+  const d = new Date(iso)
+  return `${isoDate(d)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+async function fetchAlerts(): Promise<State> {
+  try {
+    return { status: 'ready', alerts: await api.getAdminAlerts() }
+  } catch {
+    return { status: 'error' }
+  }
+}
+
+function AlertCard({ alert, onDismiss }: { alert: AdminAlert; onDismiss?: () => void }) {
+  return (
+    <li className={`well ${styles.alert}`} data-status={alert.status}>
+      <div className={styles.head}>
+        <h3 className={styles.title}>{alert.title}</h3>
+        <span className={styles.source}>{sourceText[alert.source]}</span>
+      </div>
+      {alert.detail && <p className={styles.detail}>{alert.detail}</p>}
+      <p className={styles.meta}>
+        {alert.status === 'cleared' && alert.closedAt
+          ? `Cleared ${at(alert.closedAt)} · last seen ${at(alert.lastSeenAt)}`
+          : `Since ${at(alert.firstSeenAt)} · last seen ${at(alert.lastSeenAt)} · ${alert.count}×`}
+      </p>
+      {onDismiss && (
+        <button type="button" className={styles.dismiss} onClick={onDismiss}>
+          Dismiss
+        </button>
+      )}
+    </li>
+  )
+}
+
+/**
+ * Admin alerts (/admin/alerts): what the background jobs found wrong (a failed daily check or price fetch, a strategy missing
+ * data, emails that didn't go out), instead of emails to the owner. Alerts clear themselves once a later run finds them fixed.
+ */
+export function AdminAlerts() {
+  const [state, setState] = useState<State>({ status: 'loading' })
+  const [failed, setFailed] = useState(false)
+
+  const load = useCallback(async () => setState(await fetchAlerts()), [])
+
+  useEffect(() => {
+    let live = true
+    void fetchAlerts().then((next) => live && setState(next))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  const dismiss = async (id: string) => {
+    setFailed(false)
+    try {
+      await api.dismissAdminAlert(id)
+    } catch {
+      setFailed(true)
+    }
+    await load()
+  }
+
+  const of = (status: AdminAlert['status']) => (state.status === 'ready' ? state.alerts.filter((a) => a.status === status) : [])
+  const open = of('open')
+  const dismissed = of('dismissed')
+  const cleared = of('cleared')
+
+  return (
+    <Screen top={<TopBar back="/admin" step="ADMIN" />}>
+      <PageHeader title="Alerts" lead="Problems the daily jobs found. Each clears itself once a later run finds it fixed." />
+      {state.status === 'loading' && <ScreenMessage>Loading the alerts…</ScreenMessage>}
+      {state.status === 'error' && <ScreenMessage>Could not load the alerts. Try again later.</ScreenMessage>}
+      {state.status === 'ready' && (
+        <>
+          {failed && <p className={styles.error} role="alert">Could not dismiss it. Try again.</p>}
+          <Section title={`Open · ${open.length}`}>
+            {open.length === 0 ? (
+              <p className={styles.muted}>Nothing open.</p>
+            ) : (
+              <ul className={styles.list}>
+                {open.map((a) => (
+                  <AlertCard key={a.id} alert={a} onDismiss={() => void dismiss(a.id)} />
+                ))}
+              </ul>
+            )}
+          </Section>
+          {dismissed.length > 0 && (
+            <Section title={`Dismissed · ${dismissed.length}`}>
+              <p className={styles.muted}>Quiet while the problem lasts. Back only if it clears and happens again.</p>
+              <ul className={styles.list}>
+                {dismissed.map((a) => (
+                  <AlertCard key={a.id} alert={a} />
+                ))}
+              </ul>
+            </Section>
+          )}
+          {cleared.length > 0 && (
+            <Section title="Cleared this week">
+              <ul className={styles.list}>
+                {cleared.map((a) => (
+                  <AlertCard key={a.id} alert={a} />
+                ))}
+              </ul>
+            </Section>
+          )}
+        </>
+      )}
+    </Screen>
+  )
+}

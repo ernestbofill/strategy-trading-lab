@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] After #128 deploys: delete the two stuck Index trend strategies (the one since Oct 25 and the one since Oct 30) and create them again. The full price history is there now, so the new ones' first check signals and the simulation buys at the next open. (#128)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
 - [x] After #103 deploys: on production `/admin/assets`, press *Delete all* (then *Sure? Delete all*), then *Download all* with 2 years. The prices stored before were weekly, monthly or quarterly bars, and nothing repairs them on its own. Check the summary, and that a stock no longer says "Not enough price history yet". (#103)
 - [x] After #99 deploys: add your first name on the account page, so invites say "Ernest invited you" and are signed. Then send yourself a test invite in English and in Catalan, and open the link logged out on the phone (Sign-up with an invite wasn't checked by eye). (#99)

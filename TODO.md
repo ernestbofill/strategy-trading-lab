@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] Decide on the production data fix for the two Index trend strategies stuck without a signal: after #128 deploys, set their 2026-10-30 `daily_evaluations` rows to `not_enough_data` (what the first check saw), so the next daily check signals the buy. Claude can run it on your yes. (#128)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
 - [x] After #103 deploys: on production `/admin/assets`, press *Delete all* (then *Sure? Delete all*), then *Download all* with 2 years. The prices stored before were weekly, monthly or quarterly bars, and nothing repairs them on its own. Check the summary, and that a stock no longer says "Not enough price history yet". (#103)
 - [x] After #99 deploys: add your first name on the account page, so invites say "Ernest invited you" and are signed. Then send yourself a test invite in English and in Catalan, and open the link logged out on the phone (Sign-up with an invite wasn't checked by eye). (#99)

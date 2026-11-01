@@ -142,7 +142,8 @@ public class EmailEventTests
             }
 
             using var send = configured.Services.CreateScope();
-            var sender = send.ServiceProvider.GetRequiredService<IEmailSender>();
+            // The real sender: the test API replaces IEmailSender with one that captures emails.
+            var sender = ActivatorUtilities.CreateInstance<SmtpEmailSender>(send.ServiceProvider);
             const string Unsubscribe = "https://app.example/api/email/unsubscribe/tok3n/alerts";
             // Bulk mail (it has an unsubscribe address) is skipped for a suppressed address, and says so.
             await Assert.ThrowsAsync<EmailSuppressedException>(() => sender.SendAsync(new OutgoingEmail(blocked, "Subject", "Body", UnsubscribeUrl: Unsubscribe), default));

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
@@ -467,14 +468,16 @@ public class StrategyEvaluatorTests
         await db.SaveChangesAsync();
 
         var first = new DateOnly(2024, 1, 1);
-        var closes = new List<decimal>();
-        for (var i = 0; i < 126; i++) closes.Add(100m);
-        closes.Add(75m); // Day 126: drop 1 (-25%).
-        closes.Add(80m); // Day 127: bounce (+6.67%) -> step 1 of 1, fills the 600 budget.
-        closes.Add(100m); // Day 128: recovers peak.
-        closes.Add(75m); // Day 129: drop 2 (-25%).
-        closes.Add(80m); // Day 130: bounce (+6.67%) -> rules want step 1 of drop 2, but budget is used up.
-        closes.Add(80m); // Day 131: holding in drop 2.
+        decimal[] closes =
+        [
+            .. Enumerable.Repeat(100m, 126),
+            75m, // Day 126: drop 1 (-25%).
+            80m, // Day 127: bounce (+6.67%) -> step 1 of 1, fills the 600 budget.
+            100m, // Day 128: recovers peak.
+            75m, // Day 129: drop 2 (-25%).
+            80m, // Day 130: bounce (+6.67%) -> rules want step 1 of drop 2, but budget is used up.
+            80m, // Day 131: holding in drop 2.
+        ];
         db.Prices.AddRange(closes.Select((c, i) => new PriceDaily
             { AssetId = asset.Id, Date = first.AddDays(i), Open = c, High = c, Low = c, Close = c, Volume = 1000 }));
 
@@ -498,12 +501,12 @@ public class StrategyEvaluatorTests
 
             var latest = await db.DailyEvaluations.Where(e => e.StrategyId == strategy.Id).OrderByDescending(e => e.Date).FirstAsync();
             Assert.Equal(EvaluationStatus.Holding, latest.Status);
-            var cycle = StrategyTradingLab.Api.Strategies.StrategyPage.BearCycle(latest.Facts.RootElement);
+            var cycle = StrategyPage.BearCycle(latest.Facts.RootElement);
             Assert.Equal((1, first.AddDays(130)), cycle);
             var cycleBuys = signals.Count(s => s.Side == TradeSide.Buy && s.SignalDate >= cycle.CycleStart);
             Assert.Equal(0, cycleBuys);
-            Assert.Equal(StrategyTradingLab.Api.Strategies.StockStatus.NoBudget,
-                StrategyTradingLab.Api.Strategies.StrategyPage.Status(StrategyMode.Simulation, latest.Status, false, false, Math.Min(cycle.DoneSteps ?? 0, cycleBuys), 1, "bear"));
+            Assert.Equal(StockStatus.NoBudget,
+                StrategyPage.Status(StrategyMode.Simulation, latest.Status, false, false, Math.Min(cycle.DoneSteps ?? 0, cycleBuys), 1, "bear"));
         }
         finally
         {

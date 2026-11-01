@@ -1,3 +1,4 @@
+using System.Text.Json;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
 using StrategyTradingLab.Api.Strategies;
@@ -131,10 +132,10 @@ public class PerformanceTests
     [Fact]
     public void Bear_cycle_reads_the_current_drops_steps_and_start_date()
     {
-        using var active = System.Text.Json.JsonDocument.Parse("""{"doneSteps":3,"cycleStart":"2025-06-10"}""");
+        using var active = JsonDocument.Parse("""{"doneSteps":3,"cycleStart":"2025-06-10"}""");
         Assert.Equal((3, new DateOnly(2025, 6, 10)), StrategyPage.BearCycle(active.RootElement));
 
-        using var idle = System.Text.Json.JsonDocument.Parse("""{"doneSteps":0}""");
+        using var idle = JsonDocument.Parse("""{"doneSteps":0}""");
         Assert.Equal((0, (DateOnly?)null), StrategyPage.BearCycle(idle.RootElement));
 
         Assert.Equal(((int?)null, (DateOnly?)null), StrategyPage.BearCycle(null));

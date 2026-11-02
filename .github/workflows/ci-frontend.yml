@@ -36,6 +36,26 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # As the backend's: against main as it is now, so two PRs can't both ship the same version (#142 and #140 did).
+      - if: steps.changed.outputs.run == 'true'
+        name: Check the version was bumped
+        working-directory: .
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin main
+          if git diff --quiet FETCH_HEAD HEAD -- frontend ':(exclude,glob)frontend/**/*.md' ':(exclude,glob)frontend/**/*.test.ts' ':(exclude,glob)frontend/**/*.test.tsx'; then
+            echo "No frontend code changed."
+            exit 0
+          fi
+          version() { node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version'; }
+          old=$(git show FETCH_HEAD:frontend/package.json 2>/dev/null | version || true)
+          new=$(version < frontend/package.json)
+          # sort -V orders 0.9.0-alpha < 0.10.0-alpha (but would put 1.0.0 before 1.0.0-alpha: revisit when leaving alpha).
+          if [ "$old" = "$new" ] || [ "$(printf '%s\n' "$old" "$new" | sort -V | tail -n 1)" != "$new" ]; then
+            echo "::error file=frontend/package.json::The frontend changed: bump its version above main's $old (it's $new), in package.json and package-lock.json."
+            exit 1
+          fi
+          echo "Frontend version: ${old:-none} -> $new"
+
       - if: steps.changed.outputs.run == 'true'
         uses: actions/setup-node@v6
         with:

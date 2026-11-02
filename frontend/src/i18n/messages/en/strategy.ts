@@ -40,6 +40,8 @@ export const strategy = {
   'strategy.list.lead': 'Unticking a stock stops its signals; waiting ones close as missed. Its trades stay in the results. A stock ticked again starts from today.',
   'strategy.list.save': 'Save the list',
   'strategy.list.saveFailed': 'Could not save the list. Please try again.',
+  'strategy.list.archived': 'This strategy is archived, so its list can’t change.',
+  'strategy.list.fund': 'This strategy’s fund can’t change while it runs.',
   'strategy.tile.tuneTitle': 'Tune the settings',
   'strategy.tile.tuneSub': 'Change its rules',
   'strategy.tile.aiRoundsTitle': 'AI rounds',

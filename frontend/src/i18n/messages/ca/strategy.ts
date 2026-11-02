@@ -42,6 +42,8 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.list.lead': 'Desmarcar una acció n’atura els senyals; els pendents es tanquen com a perduts. Les seves operacions romanen als resultats. Una acció que tornes a marcar comença des d’avui.',
   'strategy.list.save': 'Desa la llista',
   'strategy.list.saveFailed': 'No s’ha pogut desar la llista. Torna-ho a provar.',
+  'strategy.list.archived': 'Aquesta estratègia està arxivada, així que la seva llista no pot canviar.',
+  'strategy.list.fund': 'El fons d’aquesta estratègia no pot canviar mentre funciona.',
   'strategy.tile.tuneTitle': 'Ajusta la configuració',
   'strategy.tile.tuneSub': 'Canvia les seves regles',
   'strategy.tile.aiRoundsTitle': 'Rondes d’IA',

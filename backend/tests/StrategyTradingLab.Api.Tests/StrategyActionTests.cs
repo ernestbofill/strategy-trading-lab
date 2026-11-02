@@ -291,6 +291,10 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
             Assert.NotEqual("removed", rows[b]);
             Assert.NotEqual("removed", rows[c]);
             Assert.Equal(3, rows.Count);
+            // The user may still sell what they hold of an unticked stock.
+            var sale = await client.PostAsJsonAsync($"/strategies/{id}/trades", new
+                { assetId = a, side = "sell", date = new DateOnly(2026, 9, 23), price = 100m, enteredAs = "shares", shares = 0.99m, fee = 1m });
+            Assert.Equal(HttpStatusCode.Created, sale.StatusCode);
             DateTimeOffset removedAt;
             using (var scope = factory.Services.CreateScope())
             {
@@ -302,7 +306,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
                 var listed = await db.StrategyAssets.AsNoTracking().SingleAsync(sa => sa.StrategyId == id && sa.AssetId == a);
                 Assert.False(listed.Active);
                 removedAt = listed.RemovedAt!.Value;
-                Assert.Equal(1, await db.UserTrades.CountAsync(t => t.StrategyId == id && t.AssetId == a && t.DeletedAt == null));
+                Assert.Equal(2, await db.UserTrades.CountAsync(t => t.StrategyId == id && t.AssetId == a && t.DeletedAt == null));
             }
 
             // Ticked again: followed from now on, and B unticked with no trades leaves the page.

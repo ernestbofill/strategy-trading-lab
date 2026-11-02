@@ -56,7 +56,12 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var missing = new List<string>();
             try
             {
+                // Locked while it is checked, with its list read under the lock: Edit list waits, so an unticked stock gets no new signal.
+                await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+                await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM strategies WHERE id = {strategy.Id} FOR NO KEY UPDATE", cancellationToken);
+                strategy.Assets = await db.StrategyAssets.AsNoTracking().Where(a => a.StrategyId == strategy.Id).ToListAsync(cancellationToken);
                 var run = await EvaluateAsync(strategy, lastSession, now, rates, missing, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
                 signals += run.NewSignals;
                 trades += run.NewTrades;
                 missed += run.Missed;

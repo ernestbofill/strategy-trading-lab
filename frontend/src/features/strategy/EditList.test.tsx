@@ -26,9 +26,9 @@ const strategy = {
   stocks: [row('a', 'Apple'), row('z', 'Zscaler'), row('o', 'Old Co', 'removed')],
 } as StrategyDetail
 
-function renderList() {
+function renderList(s: StrategyDetail = strategy) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
-  vi.spyOn(api, 'getStrategy').mockResolvedValue(strategy)
+  vi.spyOn(api, 'getStrategy').mockResolvedValue(s)
   render(
     <MemoryRouter initialEntries={['/strategies/s1/list']}>
       <Routes>
@@ -55,6 +55,12 @@ describe('EditList', () => {
 
     await screen.findByText('Strategy page')
     expect(save).toHaveBeenCalledWith('s1', ['z', 'o'])
+  })
+
+  it('has nothing to edit on an archived strategy', async () => {
+    renderList({ ...strategy, status: 'ended', endedOn: '2026-10-20' })
+    expect(await screen.findByText('This strategy is archived, so its list can’t change.')).toBeDefined()
+    expect(screen.queryByRole('checkbox')).toBeNull()
   })
 
   it("can't save an empty list, and shows the server's reason", async () => {

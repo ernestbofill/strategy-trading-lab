@@ -20,6 +20,15 @@ public class NewStrategyValidationTests
             new NewStrategy(template.Key, name, StrategyMode.Simulation, budget, [.. assets.Select(a => a.Id)]), template, assets);
 
     [Fact]
+    public void A_delisted_stock_is_refused_unless_the_strategy_already_lists_it()
+    {
+        var (listed, other) = (Stock(active: false), Stock(active: false));
+        Assert.Null(NewStrategyValidation.AssetsError([listed.Id], TemplateCatalog.Dip, [listed], "en", [listed.Id]));
+        Assert.NotNull(NewStrategyValidation.AssetsError([listed.Id, other.Id], TemplateCatalog.Dip, [listed, other], "en", [listed.Id]));
+        Assert.NotNull(NewStrategyValidation.AssetsError([listed.Id], TemplateCatalog.Dip, [listed], "en"));
+    }
+
+    [Fact]
     public void The_tested_defaults_with_a_stock_are_valid()
     {
         Assert.Empty(Check(TemplateCatalog.Dip, TemplateCatalog.Dip.Budget, assets: Stock()));

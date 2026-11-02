@@ -174,10 +174,12 @@ public static class StrategyEndpoints
             var strategy = await db.Strategies.Include(s => s.Assets).SingleAsync(s => s.Id == id, cancellationToken);
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
             if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
+            // A fund template's fund doesn't change while it runs (not designed): Edit list is for stock lists.
+            if (template.Watches is DefaultFund) return TypedResults.Conflict(Messages.FundCantChange.In(user.Locale));
 
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
-            if (NewStrategyValidation.AssetsError(ids, template, assets, user.Locale) is { } invalid)
+            if (NewStrategyValidation.AssetsError(ids, template, assets, user.Locale, [.. strategy.Assets.Select(a => a.AssetId)]) is { } invalid)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetIds"] = [invalid] });
 
             var now = time.GetUtcNow();
@@ -383,8 +385,9 @@ public static class StrategyEndpoints
 
         var shown = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
         var you = book.You(strategy);
-        // A stock unticked with Edit list keeps its row, dimmed, while it has trades in the results (spec: strategy page).
-        var removed = strategy.Assets.Where(a => !shown.Contains(a.AssetId) && you.Any(t => t.AssetId == a.AssetId)).Select(a => a.AssetId).ToList();
+        // A stock unticked with Edit list keeps its row, dimmed, while it has trades in the results, the user's or (live) the rules' (spec: strategy page).
+        var traded = you.Concat(book.Rules(strategy) ?? []).Select(t => t.AssetId).ToHashSet();
+        var removed = strategy.Assets.Where(a => !shown.Contains(a.AssetId) && traded.Contains(a.AssetId)).Select(a => a.AssetId).ToList();
 
         // Assets referenced by the strategy, its signals, or its trades.
         var allAssetIds = shown.Concat(removed).Concat(signalEntities.Select(s => s.AssetId)).Distinct().ToList();

@@ -44,6 +44,16 @@ function EditListContent({ s }: { s: StrategyDetail }) {
   const top = <TopBar back={strategyPath(s.id)} step={s.name} />
   const full = ticked.length >= MAX_STOCKS
 
+  // Opened directly on an archived strategy or a fund template's: nothing to edit (the page shows no link).
+  if (s.status !== 'running' || s.investsIn !== 'stockList') {
+    return (
+      <Screen top={top}>
+        <PageHeader title={t('strategy.list.title')} />
+        <ScreenMessage>{t(s.status !== 'running' ? 'strategy.list.archived' : 'strategy.list.fund')}</ScreenMessage>
+      </Screen>
+    )
+  }
+
   const toggle = (id: string) => setTicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]))
 
   // As on the review: a picked stock goes to the end, ticked; one already listed is only ticked.

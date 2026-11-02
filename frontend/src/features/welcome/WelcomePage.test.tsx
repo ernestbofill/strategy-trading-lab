@@ -219,3 +219,14 @@ describe('WelcomePage', () => {
     expect(screen.getByText('Not financial advice. Signals follow your rules.')).toBeTruthy()
   })
 })
+
+describe('WelcomePage language switch', () => {
+  it('switches to the other language and back', () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Català' }))
+    expect(localStorage.getItem('stl.locale')).toBe('ca')
+    fireEvent.click(screen.getByRole('button', { name: 'English' }))
+    expect(localStorage.getItem('stl.locale')).toBe('en')
+  })
+})

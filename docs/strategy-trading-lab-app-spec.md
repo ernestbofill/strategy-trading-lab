@@ -53,7 +53,7 @@ These apply to every screen, email and alert.
 - **No broker sync.** No broker links, no prefilled orders, no reading of the user's account.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
 - **Mostly US markets, euro results.** v1 covers the POC's stocks and funds (mostly US-listed, a few listed in Europe and Hong Kong), plus any stock or fund a user adds from the same exchanges. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
-- **English and Catalan.** v1 ships in both. The user picks the language (nothing is guessed from the browser) and can change it in the account. Emails and notifications follow it. Quoted copy in this spec is the English; the Catalan copy is still to be written.
+- **English and Catalan.** v1 ships in both. The user picks the language (nothing is guessed from the browser) and can change it in the account. Before log-in, the Welcome and Pick a template screens show the other language in the top bar ("Català" or "English"), one tap to switch. Emails and notifications follow it. Quoted copy in this spec is the English; the Catalan copy is still to be written.
 - **Mode always labelled.** Every strategy shows *Simulation* or *Live*; results of different modes are never mixed.
 - **Free for now.** No paywall, plans or pricing.
 - **Mobile first.** The wireframes are 390 px wide. Every screen must also work on desktop, with no horizontal scrolling at any width.

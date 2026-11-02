@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { LanguageSwitch } from '../../components/LanguageSwitch'
 import { Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
@@ -23,7 +24,12 @@ export function WelcomePage() {
         <TopBar
           title={t('welcome.topBar')}
           titleLink="/"
-          aside={<TextAction to={logInPath}>{t('welcome.logIn')}</TextAction>}
+          aside={
+            <>
+              <LanguageSwitch />
+              <TextAction to={logInPath}>{t('welcome.logIn')}</TextAction>
+            </>
+          }
         />
       }
     >

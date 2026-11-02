@@ -1,6 +1,6 @@
 
 ## Todos from Claude to Ernest
-- [ ] GitHub, Settings → Branches (or Rules) for `main`: require the status checks `backend` and `frontend`, with "Require branches to be up to date before merging". That is what stops a stale branch from merging (the version clash of #142 and #140); "Always suggest updating" only shows the button, and auto-merge waits only for required checks. (#144)
+- [x] GitHub, Settings → Branches for `main`: require the status checks `backend` and `frontend`, with "Require branches to be up to date before merging" (done by Ernest, 2026-11-02). (#144)
 - [ ] After #134 deploys: start a live strategy on the phone with "Allow notifications on this device" ticked on Confirm (since #135), allow notifications, and check a signal or reminder arrives and opens the signal. On iPhone, from the home-screen app (not checked by eye: no real push in the dev browser). (#134)
 - [ ] Review the Catalan template names (Guanyadores amb descompte, Mercats baixistes, Tendència de l'índex, tagline "Compra la baixada") and check "Winners at a discount" fits one line on a template card at 390px. (#75)
 - [x] On the Mac and the PC, after #129 merges: add the line `TESTS_MIGRATE_DEV=true` to the repo's `.env.local` (only where it points at the Neon dev branch), so a local `dotnet test` brings the dev database up to date first. Add it again if `neon env pull` rewrites the file. PC: done 2026-11-01 (the first run applied #127's migration to dev); Mac: still to do. (#129)

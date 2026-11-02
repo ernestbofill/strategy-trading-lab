@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Configuration;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.Invites;
 
 namespace StrategyTradingLab.Api.Tests;
 
@@ -48,6 +50,8 @@ public class EmailDocumentTests
         Assert.Contains("Your code", email.Html);
         Assert.Contains("DVN6-2PTF", email.Html);
         Assert.Contains("Or enter this code on sign-up.", email.Html);
+        Assert.Contains("bgcolor=\"#100d23\"", email.Html);
+        Assert.Contains("white-space:nowrap", email.Html);
 
         var withoutHint = new EmailDocument("en", "https://app.example")
             .Code("Your code", "DVN6-2PTF")
@@ -56,6 +60,44 @@ public class EmailDocumentTests
         Assert.Equal("Your code: DVN6-2PTF", withoutHint.Text);
         Assert.Contains("Your code", withoutHint.Html);
         Assert.Contains("DVN6-2PTF", withoutHint.Html);
+    }
+
+    [Fact]
+    public void Code_values_are_encoded_in_the_html()
+    {
+        var email = new EmailDocument().Code("Label <tag>", "CODE & 123", "Hint \"safe\" <alert>").Build("Code");
+
+        Assert.DoesNotContain("<tag>", email.Html);
+        Assert.DoesNotContain("<alert>", email.Html);
+        Assert.Contains("Label &lt;tag&gt;", email.Html);
+        Assert.Contains("CODE &amp; 123", email.Html);
+        Assert.Contains("Hint &quot;safe&quot; &lt;alert&gt;", email.Html);
+        Assert.Equal("Label <tag>: CODE & 123\nHint \"safe\" <alert>", email.Text);
+    }
+
+    [Fact]
+    public void Invite_email_is_formatted_in_english_and_catalan_with_or_without_from()
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["PublicUrl"] = "https://app.example" }).Build();
+        var texts = new InviteTexts(config);
+
+        var enAnon = texts.Email("ABCD-EFGH", "en", "Alice", null);
+        Assert.Equal("You're invited to Strategy Trading Lab", enAnon.Subject);
+        Assert.Contains("Hi Alice!", enAnon.Text);
+        Assert.Contains("Accept the invite", enAnon.Html);
+        Assert.Contains("https://app.example/sign-up?invite=ABCD-EFGH", enAnon.Html);
+        Assert.Contains("Your code", enAnon.Html);
+        Assert.Contains("ABCD-EFGH", enAnon.Html);
+        Assert.Contains("Or enter this code on sign-up.", enAnon.Html);
+
+        var caNamed = texts.Email("ABCD-EFGH", "ca", "Jordi", "Ernest");
+        Assert.Equal("Ernest t'ha convidat a Strategy Trading Lab", caNamed.Subject);
+        Assert.Contains("Hola, Jordi!", caNamed.Text);
+        Assert.Contains("https://app.example/sign-up?invite=ABCD-EFGH", caNamed.Text);
+        Assert.Contains("Accepta la invitaci&#243;", caNamed.Html);
+        Assert.Contains("El teu codi", caNamed.Html);
+        Assert.Contains("ABCD-EFGH", caNamed.Html);
+        Assert.Contains("O escriu aquest codi en registrar-te.", caNamed.Html);
     }
 
     [Fact]

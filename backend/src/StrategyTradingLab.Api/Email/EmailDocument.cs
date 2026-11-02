@@ -97,10 +97,10 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         var text = hint is null ? $"{label}: {code}" : $"{label}: {code}\n{hint}";
         var hintHtml = hint is null ? "" : $"<div style=\"margin-top:6px;font-family:{Ui};font-size:12px;line-height:18px;color:{InkSoft};\">{Encode(hint)}</div>";
         var html =
-            $"<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 20px;background:{Ground};border:1px dashed {Hairline};border-radius:3px;\">" +
-            "<tr><td style=\"padding:14px 18px;\">" +
+            $"<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" bgcolor=\"{Ground}\" style=\"margin:0 0 20px;background:{Ground};border:1px dashed {Hairline};border-radius:3px;\">" +
+            $"<tr><td bgcolor=\"{Ground}\" style=\"padding:14px 18px;\">" +
             $"<div style=\"font-family:{Ui};font-size:11px;line-height:16px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:{InkSoft};\">{Encode(label)}</div>" +
-            $"<div style=\"margin-top:4px;font-family:{Mono};font-size:20px;line-height:26px;font-weight:700;letter-spacing:2px;color:{Primary};\">{Encode(code)}</div>" +
+            $"<div style=\"margin-top:4px;font-family:{Mono};font-size:20px;line-height:26px;font-weight:700;letter-spacing:2px;white-space:nowrap;color:{Primary};\">{Encode(code)}</div>" +
             hintHtml +
             "</td></tr></table>";
         return Add(text, html);

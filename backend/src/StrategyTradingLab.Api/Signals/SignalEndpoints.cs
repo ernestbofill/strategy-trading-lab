@@ -21,8 +21,6 @@ public static class SignalEndpoints
     /// <summary>The unique index on user_trades (signal_id) WHERE deleted_at IS NULL: one trade per signal, also when two saves race.</summary>
     const string OneTradeIndex = "ix_user_trades_signal_id";
 
-    const string AlreadyAnswered = "This signal is already answered.";
-
     public static void MapSignals(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/signals").WithTags("Signals").RequireUser();
@@ -43,7 +41,7 @@ public static class SignalEndpoints
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var (signal, strategy, asset) = found;
-            if (!Answerable(signal)) return TypedResults.Conflict(AlreadyAnswered);
+            if (!Answerable(signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
             // An ended strategy's history is final: its missed signals stay missed.
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
@@ -60,7 +58,7 @@ public static class SignalEndpoints
                 Source = TradeSource.Signal, SignalId = signal.Id,
             };
             return await AnswerAsync(db, signal.Id, SignalStatus.Confirmed, null, userTrade, time, cancellationToken)
-                ? TypedResults.NoContent() : TypedResults.Conflict(AlreadyAnswered);
+                ? TypedResults.NoContent() : TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
         })
         .WithName("ConfirmSignal")
         .WithSummary("\"I did it\": records the user's trade for the signal.");
@@ -70,10 +68,10 @@ public static class SignalEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
-            if (!Answerable(found.Signal)) return TypedResults.Conflict(AlreadyAnswered);
+            if (!Answerable(found.Signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
             return await AnswerAsync(db, id, SignalStatus.Skipped, request.Reason, null, time, cancellationToken)
-                ? TypedResults.NoContent() : TypedResults.Conflict(AlreadyAnswered);
+                ? TypedResults.NoContent() : TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
         })
         .WithName("SkipSignal")
         .WithSummary("\"I skipped it\": uses no budget; the rules carry on as if the step was bought.");

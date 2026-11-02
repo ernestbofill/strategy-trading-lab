@@ -145,14 +145,6 @@ export interface SettingGroup {
 
 export type StrategyMode = 'simulation' | 'live'
 
-/** A running strategy on the account page's Emails section: whether the daily overview tells its stock changes. */
-export interface StockChangeEmails {
-  strategyId: string
-  name: string
-  mode: StrategyMode
-  enabled: boolean
-}
-
 /** What a strategy has earned since it started, next to the index fund. */
 export interface StrategyResults {
   /** Percent return, to one decimal. */
@@ -356,10 +348,6 @@ export interface StrategyDetail {
   status: StrategyStatus
   /** The local date it was archived; its results stop there. Null while it runs. */
   endedOn: string | null
-  /** Emails for its signals and AI rounds (the alerts switch). */
-  notifications: boolean
-  /** Its alerts also go to the user's devices by web push (the push switch). */
-  push: boolean
   startedOn: string
   /** The user's local date. */
   today: string
@@ -671,8 +659,6 @@ export interface NewStrategy {
   ai?: AiSetup
   /** A live strategy copied from one of the user's simulations ("Go live with these settings"). */
   sourceStrategyId?: string
-  /** Its alerts also go to the user's devices (Choose the mode's Alerts box). */
-  push?: boolean
 }
 
 /** What the browser's `PushSubscription.toJSON()` gives: backend Notifications/WebPushEndpoints.cs. */
@@ -744,9 +730,12 @@ export interface Account {
   emailVerified: boolean
   locale: Locale
   timeZone: string
+  /** The summary by email, after the US market close on days something changed. */
   overviewEmail: boolean
-  /** Signal alerts and reminders (a strategy's own notifications switch still applies). */
+  /** Signal alerts and reminders by email. */
   alertEmails: boolean
+  /** Signal alerts and reminders by web push, on the devices the user turned on. */
+  alertPush: boolean
   /** Of the user's new strategies; running ones keep theirs. */
   currency: Currency
   role: Role
@@ -765,7 +754,6 @@ export interface SignUp {
   locale: Locale
   /** IANA, e.g. "Europe/Madrid". */
   timeZone: string
-  overviewEmail: boolean
   currency: Currency
   disclaimerAccepted: boolean
   /** The accepted legal terms version. */
@@ -1006,13 +994,10 @@ export interface Api {
   setCurrency(currency: Currency): Promise<void>
   /** Sets the language of the user's account and emails. Rejects with `InvalidFieldsError`. */
   setLocale(locale: Locale): Promise<void>
-  /** Turns the daily overview email on or off. */
+  /** Turns the summary email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
   setAlertEmails(enabled: boolean): Promise<void>
-  /** The user's running strategies and whether the daily overview tells their stock changes. */
-  getStockChangeEmails(): Promise<StockChangeEmails[]>
-  /** Turns a strategy's stock changes in the daily overview on or off. */
-  setStockChangeEmails(strategyId: string, enabled: boolean): Promise<void>
+  setAlertPush(enabled: boolean): Promise<void>
   /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */
   unsubscribe(token: string, kind: 'overview' | 'alerts'): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>
@@ -1046,10 +1031,6 @@ export interface Api {
   deleteStrategy(id: string): Promise<void>
   /** Rejects with `NameTakenError` when another running strategy has the name, `InvalidFieldsError` for a wrong length. */
   renameStrategy(id: string, name: string): Promise<void>
-  /** The alerts switch of a running strategy. Rejects with `InvalidValueError` once it has ended. */
-  setStrategyNotifications(id: string, enabled: boolean): Promise<void>
-  /** Turns a running strategy's push notifications on or off. */
-  setStrategyPush(id: string, enabled: boolean): Promise<void>
   /** The VAPID key to subscribe with; null when the server doesn't send push. */
   getPushKey(): Promise<string | null>
   /** Saves this device's push subscription for the logged-in user. */

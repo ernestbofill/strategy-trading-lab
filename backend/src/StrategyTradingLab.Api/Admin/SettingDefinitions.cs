@@ -31,8 +31,8 @@ public static class SettingDefinitions
             "The account's password: for Gmail, an app password. It only counts while the settings above stay as they were when it was saved.",
             Secret: true, BoundTo: ["SMTP_USER", "SMTP_HOST", "SMTP_PORT", "SMTP_FROM"]),
 
-        // Signal alerts and the daily overview (Notifications/NotificationWorker).
-        new("EMAILS_ENABLED", "Notifications", "Send the signal alerts (email and web push) and the daily overviews. Only one running copy may: the server. Off on a development computer.",
+        // Signals and reminders, and the summary (Notifications/NotificationWorker).
+        new("EMAILS_ENABLED", "Notifications", "Send the signals and reminders (email and web push) and the summaries. Only one running copy may: the server. Off on a development computer.",
             Default: "true", Validate: Bool),
 
         // The daily price refresh (MarketData/PriceRefreshWorker). The first value is what it uses until someone sets one here.

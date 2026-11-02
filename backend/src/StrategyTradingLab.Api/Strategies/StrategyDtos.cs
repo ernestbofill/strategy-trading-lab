@@ -15,16 +15,13 @@ namespace StrategyTradingLab.Api.Strategies;
 /// one of the user's simulations, kept for a live strategy only.
 /// </summary>
 public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, Budget Budget, IReadOnlyList<Guid> AssetIds,
-    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null, bool Push = false);
+    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null);
 
 /// <summary>New settings (rules) for a running strategy.</summary>
 public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
 
 /// <summary>A new name for a strategy (Rename): the same rules as Confirm's.</summary>
 public record RenameStrategy(string? Name);
-
-/// <summary>The strategy's alerts switch.</summary>
-public record StrategyNotifications(bool? Enabled);
 
 /// <summary>
 /// A strategy as shown on the dashboard. <c>EndedOn</c> is the user's local date it was archived (status <c>Ended</c>, null
@@ -186,8 +183,6 @@ public record StrategyDetail(
     StrategyMode Mode,
     StrategyStatus Status,
     DateOnly? EndedOn,
-    bool Notifications,
-    bool Push,
     DateOnly StartedOn,
     DateOnly Today,
     string Currency,

@@ -38,7 +38,6 @@ export function SignUp() {
   const [locale, setLocale] = useState<Locale>(currentAppLocale)
   const [currency, setCurrency] = useState<Currency>('EUR')
   const [timeZone, setTimeZone] = useState(guessTimeZone)
-  const [overviewEmail, setOverviewEmail] = useState(true)
   const [accepted, setAccepted] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<FormMessageState>(null)
@@ -87,7 +86,7 @@ export function SignUp() {
     setMessage(null)
     try {
       await api.signUp({
-        firstName, lastName, email, password, locale, timeZone, currency, overviewEmail, disclaimerAccepted: accepted,
+        firstName, lastName, email, password, locale, timeZone, currency, disclaimerAccepted: accepted,
         termsVersion: TERMS_VERSION,
         inviteCode: inviteCode.trim() || undefined,
       })
@@ -182,9 +181,6 @@ export function SignUp() {
           error={errors.currency}
         />
         <SelectField label={t('account.signUp.timeZone')} value={timeZone} onChange={setTimeZone} options={zones} error={errors.timeZone} />
-        <Checkbox checked={overviewEmail} onChange={setOverviewEmail}>
-          {t('account.overviewEmail')}
-        </Checkbox>
         <Checkbox checked={accepted} onChange={setAccepted} error={errors.disclaimerAccepted || errors.termsVersion}>
           <span>
             {t('account.signUp.accept', { disclaimer: t('common.disclaimerFull') })}{' '}

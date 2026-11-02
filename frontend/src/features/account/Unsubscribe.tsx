@@ -6,12 +6,12 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { useT } from '../../i18n/I18n'
 import { homePath } from '../new-strategy/paths'
-import { accountEmailsPath } from './paths'
+import { accountNotificationsPath } from './paths'
 
 type State = 'ask' | 'busy' | 'done' | 'invalid' | 'failed'
 
 /**
- * The link in the emails ("Turn off the daily overview"). Opening it changes nothing, because mail scanners open every link:
+ * The link in the emails ("Turn off summary emails"). Opening it changes nothing, because mail scanners open every link:
  * the one button does it. It needs no log-in; the token in the address is the whole credential, and it can only turn emails off.
  */
 export function Unsubscribe() {
@@ -38,7 +38,7 @@ export function Unsubscribe() {
         {t('account.unsubscribe.button')}
       </PrimaryAction>
     ) : (
-      <PrimaryAction to={result === 'done' ? accountEmailsPath : homePath}>
+      <PrimaryAction to={result === 'done' ? accountNotificationsPath : homePath}>
         {result === 'done' ? t('account.unsubscribe.goAccount') : t('account.unsubscribe.goApp')}
       </PrimaryAction>
     )

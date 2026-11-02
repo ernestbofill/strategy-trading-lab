@@ -1,5 +1,4 @@
-import { useCallback } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import type { StrategySummary } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
@@ -10,7 +9,6 @@ import { MAX_RUNNING_STRATEGIES } from '../new-strategy/draftState'
 import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { pickPath } from '../new-strategy/paths'
 import { useCurrentAccount } from '../account/AccountContext'
-import { PushPrompt } from '../account/DevicePush'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
 import { accountPath } from './paths'
@@ -25,11 +23,6 @@ export function Dashboard() {
   const dashboard = useDashboard()
   const { emailVerified } = useCurrentAccount()
   const draft = useNewStrategyDraft()
-  // Confirm sends here with askPush when the new strategy notifies devices; done or dismissed, it leaves the history entry.
-  const location = useLocation()
-  const navigate = useNavigate()
-  const askPush = (location.state as { askPush?: boolean } | null)?.askPush === true
-  const pushDone = useCallback(() => navigate(location.pathname, { replace: true, state: null }), [navigate, location.pathname])
   const top = <TopBar title={t('dashboard.title')} aside={<TextAction to={accountPath}>{t('dashboard.account')}</TextAction>} />
 
   return (
@@ -45,7 +38,6 @@ export function Dashboard() {
           <Screen top={top}>
             <VerifyNotice />
             <PageHeader title={t('dashboard.heading')} />
-            {askPush && <PushPrompt onDone={pushDone} />}
             <WaitingList items={waiting} />
             <div className={styles.cards}>
               {running.map(card)}

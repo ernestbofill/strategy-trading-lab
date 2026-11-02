@@ -16,9 +16,6 @@ public record SignalLine(Guid StrategyId, Guid SignalId, string StrategyName, St
             signal.ClosePrice, signal.StepNo, signal.MaxSteps, signal.StepAmount, signal.Facts.RootElement.Clone(), signal.Side);
 }
 
-/// <summary>A stock a strategy is watching and how far it is from the rules.</summary>
-public record CloseLine(string StrategyName, StrategyMode Mode, string TemplateKey, string StockName, decimal DistancePct);
-
 /// <summary>One strategy in the scoreboard.</summary>
 public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals);
 
@@ -79,20 +76,18 @@ public static class EmailTexts
     static readonly Message AiRoundNoConnect = new("The app doesn't connect to your AI. If you skip a round, there's no signal that round.", "L'aplicació no es connecta a la teva IA. Si omets una ronda, aquella ronda no té senyal.");
 
     // Overview entries
-    static readonly Message OverviewTitle = new("Your daily overview, {0}", "El teu resum diari, {0}");
-    static readonly Message OverviewEyebrow = new("Daily overview", "Resum diari");
+    static readonly Message OverviewTitle = new("Your summary, {0}", "El teu resum, {0}");
+    static readonly Message OverviewEyebrow = new("Summary", "Resum");
     static readonly Message OverviewWaitingSection = new("Waiting for you", "T'espera a tu");
     static readonly Message OverviewAiRoundItem = new("Time for the AI round of {0}.", "És l'hora de la ronda d'IA de {0}.");
     static readonly Message OverviewSaleDetail = new(": sale", ": venda");
     static readonly Message OverviewStepDetail = new(": step {0} of {1}", ": pas {0} de {1}");
     static readonly Message OverviewWaitingSignal = new("{0}, {1}{2}, close on {3}.", "{0}, {1}{2}, tancament del {3}.");
     static readonly Message OverviewWhatChangedSection = new("What changed today", "Què ha canviat avui");
-    static readonly Message OverviewNoRulesNewlyMet = new("No rules were newly met.", "No s'ha complert cap regla nova.");
     static readonly Message OverviewStockChangesSection = new("Stock changes", "Canvis de les teves accions");
     static readonly Message StockBecameCandidate = new("now a candidate, the rules watch it", "ara és candidata, les regles la vigilen");
     static readonly Message StockNoLongerCandidate = new("no longer a candidate", "ja no és candidata");
     static readonly Message StockCloseDistance = new("now {0}% {1}", "ara un {0}% {1}");
-    static readonly Message OverviewCloseSection = new("Close to the line", "A prop de la línia");
     static readonly Message LineAboveDiscount = new("above the discount zone", "per sobre de la zona de descompte");
     static readonly Message LineBelowBounce = new("below the bounce line", "per sota de la línia de rebot");
     static readonly Message LineBelowBuy = new("below the buy line", "per sota de la línia de compra");
@@ -245,9 +240,9 @@ public static class EmailTexts
             _ => LineBelowBuy,
         }).In(locale);
 
-    /// <summary>The daily overview: what waits, what changed, the stock changes asked for, what is close, and one line per strategy.</summary>
+    /// <summary>The summary: what waits, what changed, the stock changes, and one line per strategy. Sent only on days something changed.</summary>
     public static EmailContent Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
-        IReadOnlyList<CloseLine> close, IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en",
+        IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en",
         IReadOnlyList<(Guid StrategyId, string Name)>? aiRoundsDue = null, string? unsubscribeToken = null, IReadOnlyList<StockChangeLine>? stockChanges = null)
     {
         aiRoundsDue ??= [];
@@ -265,9 +260,8 @@ public static class EmailTexts
                     return new EmailItem(OverviewWaitingSignal.In(locale, s.StockName, s.StrategyName, detail, Date(s.Date, locale)), SignalUrl(s, appUrl));
                 })));
 
-        email.Section(OverviewWhatChangedSection.In(locale), changed.Count == 0
-            ? [new EmailItem(OverviewNoRulesNewlyMet.In(locale))]
-            : changed.Select(s => new EmailItem(SignalText(s, locale).Replace("\n", " "), Tag: ModeName(s.Mode, locale), Live: s.Mode == StrategyMode.Live)));
+        if (changed.Count > 0)
+            email.Section(OverviewWhatChangedSection.In(locale), changed.Select(s => new EmailItem(SignalText(s, locale).Replace("\n", " "), Tag: ModeName(s.Mode, locale), Live: s.Mode == StrategyMode.Live)));
 
         if (stockChanges.Count > 0)
             email.Section(OverviewStockChangesSection.In(locale), stockChanges.Select(c =>
@@ -280,10 +274,6 @@ public static class EmailTexts
                 };
                 return new EmailItem($"{c.StockName}, {c.StrategyName}: {change}.", Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live);
             }));
-
-        if (close.Count > 0)
-            email.Section(OverviewCloseSection.In(locale), close.Select(c =>
-                new EmailItem($"{c.StockName}, {c.StrategyName}: {Pct(c.DistancePct)}% {LineName(c.TemplateKey, locale)}", Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live)));
 
         email.Section(OverviewYourStrategiesSection.In(locale), scoreboard.Select(s => new EmailItem(
             (s.Signals == 1 ? OverviewStrategyScoreOne : OverviewStrategyScoreMany)

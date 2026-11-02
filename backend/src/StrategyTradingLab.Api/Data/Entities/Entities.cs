@@ -54,9 +54,12 @@ public class User : IHasUpdatedAt
     public required string Locale { get; set; }
     public string Currency { get; set; } = "EUR";
     public UserRole Role { get; set; } = UserRole.User;
+    /// <summary>The summary by email (spec: Notifications), sent after the US market close on days something changed.</summary>
     public bool OverviewEmail { get; set; } = true;
-    /// <summary>Signal alerts, snooze reminders and AI round reminders (the daily overview has its own switch).</summary>
+    /// <summary>Signal alerts and reminders (snoozed signals, AI rounds due) by email.</summary>
     public bool AlertEmails { get; set; } = true;
+    /// <summary>Signal alerts and reminders by web push, to every device the user turned on (the account page's "App" box).</summary>
+    public bool AlertPush { get; set; } = true;
     /// <summary>Private: it is the whole credential of the unsubscribe links in this user's emails, which can only turn emails off.</summary>
     public string UnsubscribeToken { get; set; } = null!; // Given on add by the model (UnsubscribeTokenGenerator), so reading a user draws nothing.
     public DateTimeOffset? DisclaimerAcceptedAt { get; set; }
@@ -149,11 +152,6 @@ public class Strategy : IHasUpdatedAt
     public DateOnly StartedOn { get; set; }
     /// <summary>When the user archived it (status <c>Ended</c>): it stops, and shows in the dashboard's collapsed Archived section.</summary>
     public DateTimeOffset? EndedAt { get; set; }
-    public bool Notifications { get; set; } = true;
-    /// <summary>Its alerts also go to the user's devices by web push (Choose the mode's Alerts box, the strategy page). Off by default.</summary>
-    public bool Push { get; set; }
-    /// <summary>Whether the daily overview says when a stock becomes or stops being a candidate, or comes close to its signal (opt in, on the account page).</summary>
-    public bool StockChangeEmails { get; set; }
     public required string Currency { get; set; }
     public required Budget Budget { get; set; }
     public required JsonDocument Params { get; set; }

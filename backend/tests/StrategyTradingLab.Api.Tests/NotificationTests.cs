@@ -52,58 +52,47 @@ public class NotificationTests
     }
 
     [Fact]
-    public void The_overview_has_its_sections_describes_and_never_instructs()
+    public void The_summary_has_its_sections_describes_and_never_instructs()
     {
         var waiting = new[] { Dip() };
-        var close = new[]
-        {
-            new CloseLine("Zscaler & friends", StrategyMode.Live, "dip", "Palantir", 3.2m),
-            new CloseLine("The comeback", StrategyMode.Simulation, "comeback", "Intel", 4.5m),
-            new CloseLine("Bear markets", StrategyMode.Live, "bear", "S&P 500", 1.8m),
-            new CloseLine("Index trend", StrategyMode.Live, "trend", "S&P 500", 1.2m),
-        };
+        var changed = new[] { Dip() with { Mode = StrategyMode.Simulation, StrategyName = "The comeback" } };
         var score = new[] { new ScoreLine("Zscaler & friends", StrategyMode.Live, new DateOnly(2026, 10, 1), 1), new ScoreLine("The comeback", StrategyMode.Simulation, new DateOnly(2026, 10, 5), 0) };
 
-        var (subject, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, [], close, score, "https://app.example");
+        var (subject, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, changed, score, "https://app.example");
 
-        Assert.Equal("Your daily overview, 23 Oct 2026", subject);
-        foreach (var section in new[] { "Waiting for you", "What changed today", "Close to the line", "Your strategies" }) Assert.Contains(section, body);
-        Assert.Contains("- No rules were newly met.", body);
-        Assert.Contains("(Live) Palantir, Zscaler & friends: 3.2% above the discount zone", body);
-        Assert.Contains("(Simulation) Intel, The comeback: 4.5% below the buy line", body);
-        Assert.Contains("(Live) S&P 500, Bear markets: 1.8% below the bounce line", body);
-        Assert.Contains("(Live) S&P 500, Index trend: 1.2% below the buy line", body);
+        Assert.Equal("Your summary, 23 Oct 2026", subject);
+        foreach (var section in new[] { "Waiting for you", "What changed today", "Your strategies" }) Assert.Contains(section, body);
+        Assert.DoesNotContain("Close to the line", body);
+        Assert.Contains("(Simulation) Your rules for The comeback", body);
         Assert.Contains("The comeback (Simulation): since 5 Oct 2026, 0 signals", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
         Assert.DoesNotContain("buy now", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void The_catalan_overview_uses_straight_apostrophe_and_catalan_sections()
+    public void A_summary_without_changes_leaves_what_changed_out()
+    {
+        var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [Dip()], [], [], "https://app.example");
+
+        Assert.DoesNotContain("What changed today", body);
+    }
+
+    [Fact]
+    public void The_catalan_summary_uses_straight_apostrophe_and_catalan_sections()
     {
         var waiting = new[] { Dip() };
-        var close = new[]
-        {
-            new CloseLine("Zscaler & friends", StrategyMode.Live, "dip", "Palantir", 3.2m),
-            new CloseLine("The comeback", StrategyMode.Simulation, "comeback", "Intel", 4.5m),
-            new CloseLine("Bear markets", StrategyMode.Live, "bear", "S&P 500", 1.8m),
-        };
+        var changed = new[] { Dip() with { Mode = StrategyMode.Simulation, StrategyName = "The comeback" } };
         var score = new[]
         {
             new ScoreLine("Zscaler & friends", StrategyMode.Live, new DateOnly(2026, 10, 1), 1),
             new ScoreLine("The comeback", StrategyMode.Simulation, new DateOnly(2026, 10, 5), 0),
         };
 
-        var (subject, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, [], close, score, "https://app.example", "ca");
+        var (subject, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), waiting, changed, score, "https://app.example", "ca");
 
-        Assert.Equal("El teu resum diari, 23 oct. 2026", subject);
-        Assert.Contains("T'espera a tu", body);
+        Assert.Equal("El teu resum, 23 oct. 2026", subject);
         Assert.DoesNotContain("T’espera a tu", body);
-        foreach (var section in new[] { "T'espera a tu", "Què ha canviat avui", "A prop de la línia", "Les teves estratègies" }) Assert.Contains(section, body);
-        Assert.Contains("- No s'ha complert cap regla nova.", body);
-        Assert.Contains("(En directe) Palantir, Zscaler & friends: 3.2% per sobre de la zona de descompte", body);
-        Assert.Contains("(Simulació) Intel, The comeback: 4.5% per sota de la línia de compra", body);
-        Assert.Contains("(En directe) S&P 500, Bear markets: 1.8% per sota de la línia de rebot", body);
+        foreach (var section in new[] { "T'espera a tu", "Què ha canviat avui", "Les teves estratègies" }) Assert.Contains(section, body);
         Assert.Contains("Zscaler & friends (En directe): des del 1 oct. 2026, 1 senyal", body);
         Assert.Contains("The comeback (Simulació): des del 5 oct. 2026, 0 senyals", body);
         Assert.EndsWith(EmailTexts.DisclaimerCa, body);
@@ -113,13 +102,13 @@ public class NotificationTests
     public void An_email_with_a_token_has_an_unsubscribe_link_and_the_one_click_address()
     {
         var alert = EmailTexts.SignalAlert(Dip(), "https://app.example", "en", "tok3n");
-        var overview = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "ca", unsubscribeToken: "tok3n");
+        var overview = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example", "ca", unsubscribeToken: "tok3n");
         var none = EmailTexts.SignalAlert(Dip(), "https://app.example");
 
         Assert.Contains("Turn off signal and reminder emails: https://app.example/unsubscribe/tok3n/alerts", alert.Text);
         Assert.Contains("href=\"https://app.example/unsubscribe/tok3n/alerts\"", alert.Html);
         Assert.Equal("https://app.example/api/email/unsubscribe/tok3n/alerts", alert.OneClickUnsubscribe);
-        Assert.Contains("Desactiva el resum diari: https://app.example/unsubscribe/tok3n/overview", overview.Text);
+        Assert.Contains("Desactiva els correus de resum: https://app.example/unsubscribe/tok3n/overview", overview.Text);
         Assert.EndsWith(EmailTexts.DisclaimerCa, overview.Text);
         Assert.Null(none.OneClickUnsubscribe);
         Assert.DoesNotContain("unsubscribe", none.Text);
@@ -129,7 +118,7 @@ public class NotificationTests
     [Fact]
     public void An_empty_waiting_list_leaves_that_section_out()
     {
-        var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example");
+        var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example");
 
         Assert.DoesNotContain("Waiting for you", body);
     }
@@ -162,7 +151,7 @@ public class NotificationTests
     [Fact]
     public void The_overview_lists_ai_rounds_due_with_the_signals_waiting()
     {
-        var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "en",
+        var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example", "en",
             [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks")]);
 
         Assert.Contains("Waiting for you\n- Time for the AI round of My AI picks. https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
@@ -271,7 +260,6 @@ public class NotificationTests
         var (userId, strategyId, assetId, _, _) = await SeedAsync(db);
         try
         {
-            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Push, true));
             var device = new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{Guid.NewGuid():N}", P256dh = "p", Auth = "a" };
             db.PushSubscriptions.Add(device);
             await db.SaveChangesAsync();
@@ -309,7 +297,7 @@ public class NotificationTests
     }
 
     [NeonFact]
-    public async Task A_live_signal_is_pushed_once_to_each_device_when_its_strategy_has_push_on()
+    public async Task A_live_signal_is_pushed_once_to_each_device_when_the_user_has_push_on()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
@@ -324,9 +312,10 @@ public class NotificationTests
             await db.SaveChangesAsync();
             var push = new FakePush();
 
-            // Push is off on the strategy by default: nothing goes out and nothing is claimed.
+            // With the user's App box off, nothing goes out and nothing is claimed.
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, false));
             Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
-            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Push, true));
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, true));
 
             var first = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
             var second = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
@@ -424,17 +413,16 @@ public class NotificationTests
     }
 
     [NeonFact]
-    public async Task No_alert_for_an_unverified_address_a_simulation_or_a_strategy_with_notifications_off()
+    public async Task No_alert_for_an_unverified_address_a_simulation_or_a_user_with_alert_emails_off()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var unverified = await SeedAsync(db, verified: false);
         var simulation = await SeedAsync(db, mode: StrategyMode.Simulation);
-        var off = await SeedAsync(db);
+        var off = await SeedAsync(db, alerts: false);
         try
         {
-            await db.Strategies.Where(s => s.Id == off.StrategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, false));
             var sender = new Captured();
 
             var sent = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
@@ -449,7 +437,7 @@ public class NotificationTests
     }
 
     [NeonFact]
-    public async Task The_overview_goes_out_once_a_session_right_after_the_check_but_not_in_the_users_night()
+    public async Task The_summary_goes_out_once_a_session_right_after_the_check_not_in_the_users_night_and_not_on_a_quiet_day()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
@@ -469,26 +457,120 @@ public class NotificationTests
             await Service(scope, tokyoMorning).SendOverviewsAsync(new DateTimeOffset(2026, 10, 22, 22, 30, 0, TimeSpan.Zero), default);
             Assert.Single(tokyoMorning.Sent, m => m.To == tokyo.Email);
             var morning = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero), default);
-            // Friday evening: Friday's session (Tokyo's waits for its Saturday morning). Monday morning adds nothing: still Friday's.
+            // Friday evening: Friday's session had no signal and no stock change, so nobody gets a summary; its claim says why.
             var friday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default);
             var saturday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 24, 6, 0, 0, TimeSpan.Zero), default);
             var monday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 26, 6, 0, 0, TimeSpan.Zero), default);
 
             Assert.True(thursday >= 1);
-            Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your daily overview, 22 Oct 2026");
-            Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your daily overview, 23 Oct 2026");
+            Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your summary, 22 Oct 2026");
+            Assert.DoesNotContain(sender.Sent, m => m.Subject.EndsWith("23 Oct 2026"));
             Assert.DoesNotContain(sender.Sent, m => m.To == off.Email || m.To == unverified.Email);
             Assert.Equal(0, morning);
-            Assert.True(friday >= 1);
-            Assert.Equal((1, 0), (saturday, monday)); // Saturday: only Tokyo's Friday overview, which waited for its morning.
-            Assert.Contains(sender.Sent, m => m.To == tokyo.Email && m.Subject.EndsWith("23 Oct 2026"));
+            Assert.Equal((0, 0, 0), (friday, saturday, monday));
             var mail = sender.Sent.First(m => m.To == wanted.Email);
             Assert.Contains("Waiting for you", mail.Body); // The seeded live signal is still waiting.
             Assert.Equal(2, await db.Notifications.CountAsync(n => n.UserId == wanted.UserId && n.Kind == NotificationKind.Overview));
+            var quiet = await db.Notifications.SingleAsync(n => n.UserId == wanted.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));
+            Assert.Equal((null, "Not sent: nothing changed."), (quiet.SentAt, quiet.Error));
         }
         finally
         {
             foreach (var seeded in new[] { wanted, off, unverified, tokyo }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_quiet_day_is_only_final_once_every_strategy_was_checked_for_the_session()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seeded = await SeedAsync(db);
+        try
+        {
+            // A second strategy the daily check hasn't reached yet for Friday 23 October. (One it never checks, with nothing to
+            // check, doesn't count: it would hold the verdict forever.)
+            var late = new Strategy
+            {
+                UserId = seeded.UserId, TemplateKey = "dip", Name = $"Late {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Live, Status = StrategyStatus.Running,
+                StartedOn = new DateOnly(2026, 10, 1), Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+                Assets = [new StrategyAsset { AssetId = seeded.AssetId, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            };
+            db.Strategies.Add(late);
+            // Checked on Thursday, so the check is still due to reach it for Friday.
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = late.Id, AssetId = seeded.AssetId, Date = new DateOnly(2026, 10, 22), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+            var friday = new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero);
+            bool Claimed() => db.Notifications.Any(n => n.UserId == seeded.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));
+
+            // Quiet so far, but not every strategy was checked: the claim is given back, nothing is sent.
+            Assert.Equal(0, await Service(scope, new Captured()).SendOverviewsAsync(friday, default));
+            Assert.False(Claimed());
+
+            // Once checked (still quiet), the verdict is final and kept.
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = late.Id, AssetId = seeded.AssetId, Date = new DateOnly(2026, 10, 23), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+            Assert.Equal(0, await Service(scope, new Captured()).SendOverviewsAsync(friday, default));
+            Assert.True(Claimed());
+        }
+        finally
+        {
+            await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_strategy_the_check_never_reaches_does_not_hold_a_quiet_day()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seeded = await SeedAsync(db);
+        try
+        {
+            // Running for weeks with nothing checked (every stock unticked): no evaluation in the recent days.
+            db.Strategies.Add(new Strategy
+            {
+                UserId = seeded.UserId, TemplateKey = "dip", Name = $"Empty {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Simulation, Status = StrategyStatus.Running,
+                StartedOn = new DateOnly(2026, 10, 1), Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+            });
+            await db.SaveChangesAsync();
+
+            await Service(scope, new Captured()).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default);
+            var quiet = await db.Notifications.SingleAsync(n => n.UserId == seeded.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));
+            Assert.Equal("Not sent: nothing changed.", quiet.Error);
+        }
+        finally
+        {
+            await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_quiet_day_waits_for_a_strategy_started_that_day_to_be_checked()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seeded = await SeedAsync(db);
+        try
+        {
+            var friday = new DateOnly(2026, 10, 23);
+            db.Strategies.Add(new Strategy
+            {
+                UserId = seeded.UserId, TemplateKey = "dip", Name = $"New {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Simulation, Status = StrategyStatus.Running,
+                StartedOn = friday, Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+                Assets = [new StrategyAsset { AssetId = seeded.AssetId, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            });
+            await db.SaveChangesAsync();
+
+            Assert.Equal(0, await Service(scope, new Captured()).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default));
+            Assert.False(db.Notifications.Any(n => n.UserId == seeded.UserId && n.Kind == NotificationKind.Overview && n.ForDate == friday));
+        }
+        finally
+        {
+            await CleanAsync(db, seeded.UserId, seeded.AssetId);
         }
     }
 
@@ -576,7 +658,7 @@ public class NotificationTests
 
             Assert.Equal(0, before);
             Assert.True(after >= 1);
-            Assert.Contains("(Live)", sender.Sent.Single(m => m.Subject.StartsWith("Your daily overview")).Body.Replace("Waiting for you", ""));
+            Assert.Contains("(Live)", sender.Sent.Single(m => m.Subject.StartsWith("Your summary")).Body.Replace("Waiting for you", ""));
         }
         finally
         {

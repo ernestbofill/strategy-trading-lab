@@ -79,7 +79,7 @@ public static class SignalEndpoints
         .WithSummary("\"I skipped it\": uses no budget; the rules carry on as if the step was bought.");
 
         group.MapPost("/{id:guid}/snooze", async Task<Results<Ok<SnoozeResult>, NotFound, Conflict<string>>> (
-            Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, AppDbContext db, Sessions sessions, TimeProvider time, IPushSender push, CancellationToken cancellationToken) =>
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
@@ -87,8 +87,13 @@ public static class SignalEndpoints
             if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict(Messages.OnlyWaitingCanSnooze.In(user.Locale));
             // A snooze promises a reminder: refuse it when none could be sent.
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyEnded.In(user.Locale));
-            if (!found.Strategy.Notifications) return TypedResults.Conflict(Messages.NotificationsOff.In(user.Locale));
-            if (user.EmailVerifiedAt is null) return TypedResults.Conflict(Messages.ConfirmEmailForReminders.In(user.Locale));
+            // By email (switched on and confirmed) or by push (switched on, sent by this server, with a device that gets it).
+            var byEmail = user.AlertEmails && user.EmailVerifiedAt is not null;
+            var byPush = user.AlertPush && push.PublicKey is not null && await db.PushSubscriptions.AnyAsync(p => p.UserId == user.Id, cancellationToken);
+            if (!byEmail && !byPush)
+                return TypedResults.Conflict((user.AlertEmails ? Messages.ConfirmEmailForReminders
+                    // Without push on this server, the device isn't a way to offer.
+                    : push.PublicKey is null ? Messages.ReminderEmailsOff : Messages.NotificationsOff).In(user.Locale));
             // The next US market day (spec: a day is a US market day), counted from the later of New York's date and the user's,
             // so it is always after the user's own today: the reminder goes out from 07:00 of that day in their time zone.
             var newYork = UsSession.Today(time.GetUtcNow());

@@ -66,8 +66,8 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
     public void The_overview_words_the_changes_in_english_and_catalan_and_describes()
     {
         StockChangeLine[] changes = [Change(StockChangeKind.BecameCandidate), Change(StockChangeKind.NoLongerCandidate), Change(StockChangeKind.CameClose, 2.5m, "dip")];
-        var (_, en, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", stockChanges: changes);
-        var (_, ca, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "ca", stockChanges: changes);
+        var (_, en, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example", stockChanges: changes);
+        var (_, ca, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example", "ca", stockChanges: changes);
 
         Assert.Contains("Stock changes", en);
         Assert.Contains("(Live) S&P 500, Index trend: now a candidate, the rules watch it.", en);
@@ -79,33 +79,11 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Contains("S&P 500, Index trend: ara un 2.5% per sobre de la zona de descompte.", ca);
         Assert.DoesNotContain("buy now", en, StringComparison.OrdinalIgnoreCase);
         // Without changes the section isn't there.
-        Assert.DoesNotContain("Stock changes", EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example").Text);
+        Assert.DoesNotContain("Stock changes", EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example").Text);
     }
 
     [NeonFact]
-    public async Task The_account_page_lists_running_strategies_and_turns_their_changes_on_for_the_owner_only()
-    {
-        var (client, email) = await api.SignedUpAsync();
-        var (stranger, _) = await api.SignedUpAsync();
-        using var scope = api.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var user = await db.Users.SingleAsync(u => (string)u.Email == email);
-        var strategy = NewStrategy(user.Id, "Changes");
-        db.Strategies.Add(strategy);
-        await db.SaveChangesAsync();
-
-        var before = await client.GetFromJsonAsync<JsonElement>("/account/stock-change-emails");
-        Assert.False(before.EnumerateArray().Single().GetProperty("enabled").GetBoolean());
-        Assert.Equal(HttpStatusCode.NotFound, (await stranger.PostAsJsonAsync("/account/stock-change-emails", new { strategyId = strategy.Id, enabled = true })).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/stock-change-emails", new { strategyId = strategy.Id })).StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/stock-change-emails", new { strategyId = strategy.Id, enabled = true })).StatusCode);
-        var after = await client.GetFromJsonAsync<JsonElement>("/account/stock-change-emails");
-        Assert.True(after.EnumerateArray().Single().GetProperty("enabled").GetBoolean());
-        Assert.Empty((await stranger.GetFromJsonAsync<JsonElement>("/account/stock-change-emails")).EnumerateArray());
-    }
-
-    [NeonFact]
-    public async Task The_overview_has_the_changes_of_the_strategies_that_asked_for_them()
+    public async Task The_summary_has_the_changes_of_every_running_strategy()
     {
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -115,7 +93,7 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
         db.Assets.Add(asset);
         db.Users.Add(user);
         await db.SaveChangesAsync();
-        var asked = NewStrategy(user.Id, $"Asked {tag}", asset.Id, stockChanges: true);
+        var asked = NewStrategy(user.Id, $"Asked {tag}", asset.Id);
         var quiet = NewStrategy(user.Id, $"Quiet {tag}", asset.Id);
         db.Strategies.AddRange(asked, quiet);
         foreach (var strategy in new[] { asked, quiet })
@@ -132,11 +110,10 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
                 .SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default);
 
             var body = Assert.Single(sender.Sent, m => m.To == user.Email).Body;
+            // Every strategy's changes, with no opt-in; there is no Close to the line section any more.
             Assert.Contains($"Change asset, Asked {tag}: now a candidate, the rules watch it.", body);
-            Assert.DoesNotContain($"Quiet {tag}: now a candidate", body);
-            // A stock that just became a candidate keeps its distance under Close to the line.
-            Assert.Contains($"Change asset, Asked {tag}: 6%", body);
-            Assert.Contains($"Change asset, Quiet {tag}: 6%", body);
+            Assert.Contains($"Change asset, Quiet {tag}: now a candidate, the rules watch it.", body);
+            Assert.DoesNotContain("Close to the line", body);
         }
         finally
         {
@@ -145,10 +122,10 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
         }
     }
 
-    static Strategy NewStrategy(Guid userId, string name, Guid? assetId = null, bool stockChanges = false) => new()
+    static Strategy NewStrategy(Guid userId, string name, Guid? assetId = null) => new()
     {
         UserId = userId, TemplateKey = "dip", Name = name, Mode = StrategyMode.Simulation, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 10, 1),
-        Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(), StockChangeEmails = stockChanges,
+        Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
         Assets = assetId is { } id ? [new StrategyAsset { AssetId = id, Active = true, AddedAt = DateTimeOffset.UtcNow }] : [],
     };
 

@@ -153,7 +153,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s =>
-                    s.SetProperty(x => x.TemplateKey, "trend").SetProperty(x => x.Budget, new Budget(1000, null, null)).SetProperty(x => x.Notifications, false));
+                    s.SetProperty(x => x.TemplateKey, "trend").SetProperty(x => x.Budget, new Budget(1000, null, null)));
                 db.UserTrades.Add(new UserTrade
                 {
                     StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, TradeDate = SignalDay.AddDays(-5),
@@ -204,13 +204,10 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{second}/trade", Trade())).StatusCode);
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{second}/snooze", null)).StatusCode);
 
-            using (var setup = factory.Services.CreateScope())
-            {
-                var setupDb = setup.ServiceProvider.GetRequiredService<AppDbContext>();
-                await setupDb.Strategies.Where(s => s.Assets.Any(a => a.AssetId == assetId)).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, false));
-                Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{first}/snooze", null)).StatusCode); // No reminder could be sent.
-                await setupDb.Strategies.Where(s => s.Assets.Any(a => a.AssetId == assetId)).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, true));
-            }
+            // Reminder emails off and no device: no reminder could be sent.
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-emails", new { enabled = false })).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{first}/snooze", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-emails", new { enabled = true })).StatusCode);
 
             var snooze = await client.PostAsync($"/signals/{first}/snooze", null);
             Assert.Equal(HttpStatusCode.OK, snooze.StatusCode);

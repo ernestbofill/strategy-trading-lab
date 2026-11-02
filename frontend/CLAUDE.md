@@ -50,7 +50,7 @@
 
 ## Versioning
 
-- Bump the version in `frontend/package.json` (and `package-lock.json`) in every PR that changes the app. It is shown in the app's top bar and nothing bumps it automatically.
+- Bump the version in `frontend/package.json` (and `package-lock.json`) in every PR that changes the app, above `main`'s. CI fails without it. It is shown in the app's top bar and nothing bumps it automatically.
 - Bump the minor number for a new screen or feature (`0.1.0-alpha` → `0.2.0-alpha`) and the patch number for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`). Keep the `-alpha` suffix.
 
 ## Testing (Vitest + Testing Library)

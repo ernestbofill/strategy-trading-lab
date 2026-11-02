@@ -88,8 +88,9 @@ Ask for a credential when you need one.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
 - Changes Ernest has staged go into your next commit, together with yours. Don't unstage or stash them.
 - Merge PRs with **squash merge** (`gh pr merge --squash --delete-branch`), so `main` stays linear with one commit per PR. Write the PR title as the final commit subject (imperative, with `(#number)`), because the squash uses it. Merge only when asked, or in a loop (see *Iterating*).
-- **`main` is protected** (Ernest, 2026-11-02): a PR merges only when the `backend` and `frontend` checks pass and the branch is up to date with `main`. Both checks run on every PR and skip their steps when their folder didn't change, so a docs-only PR passes them in seconds. When GitHub says the branch is out of date, merge `origin/main` into it (never rebase), fix any clash, and check the versions are still above `main`'s, then push. The backend's CI refuses a version that isn't above `main`'s, but nothing checks the frontend's (#142 and #140 both took backend `0.54.0-alpha` and frontend `0.49.0-alpha`; #143 bumped again).
-- **Auto-merge** is allowed (Ernest, 2026-11-02): when a merge is due (asked, or in a loop), `gh pr merge <PR> --auto --squash --delete-branch` merges once the required checks pass, instead of waiting by hand.
+- **`main` is protected** (Ernest, 2026-11-02): GitHub merges a PR only when the `backend` and `frontend` checks pass and the branch is up to date with `main`. Each check skips its steps when its folder didn't change, and fails when that folder's version isn't above `main`'s: bump it and push.
+- **A branch behind `main`:** `gh pr update-branch <PR>` merges `main` into it on GitHub (never rebase). Only on a conflict, merge `origin/main` locally, fix it and push.
+- **Merge with auto-merge:** when a merge is due (Ernest said yes, or in a loop), `gh pr merge <PR> --auto --squash --delete-branch`. GitHub merges once CI is green, so don't watch CI. Never turn it on before the reviews are done: CI passes in minutes and would merge first.
 
 ## Feature, fixes and agentic workflow
 
@@ -118,7 +119,7 @@ Defaults:
 4. **PR.** Run the checks in the frontend and backend instructions, then commit, push, and open a pull request into `main`. Don't wait to be asked. Fill in the PR template. If step 3 ran, post a PR comment listing what simplify changed, what was left out, and why.
 5. **Code review.** Run `/code-review <PR> --comment` in a subagent, so the findings land as inline PR comments. Fix the real ones, run the checks again, and push all of the round's fixes at once. Reply on each finding's thread with the fixing commit, or with why it stays as is, then resolve it. It runs after simplify, so it reviews the final code.
 6. **More review rounds (only when they pay off).** Run `/code-review <PR> --comment` again on the new head when the PR is large (roughly 400+ changed lines or 10+ files), high risk, or the last round found a real bug (not nits). Stop when a round finds nothing serious, or after 3 rounds in total; then list what is still open in the closing comment.
-7. **Report and stop.** Post a closing PR comment: what changed, what the reviews found and fixed, and the CI state. Then ask Ernest before merging (in a loop, see below).
+7. **Report and stop.** Post a closing PR comment: what changed, what the reviews found and fixed, and the CI state. Then ask Ernest before merging (in a loop, see below); on his yes, turn on auto-merge.
 
 **Push in batches.** Every push re-runs CI on the whole PR (about two minutes), even a commit that only touches docs, because each check looks at the PR's whole diff. So push once per step, not once per commit: commit the `ROADMAP.md`, spec, `TODO.md` and memory edits together with the code they go with, and push a step's commits together. Never push a docs-only commit on its own while a code push is still to come in the same step.
 
@@ -130,7 +131,7 @@ When the goal needs several features, decide how to split it into PRs and run th
 
 **In a loop, work on your own.** Ernest does not approve each step: don't ask "shall I merge?", don't stop to report between PRs, and don't wait for a go-ahead. Do the whole cycle for each item (plan, build, PR, simplify, reviews, fixes, merge, deploy check) and start the next one.
 
-- Merge your own PRs yourself once they meet *Feature acceptance*: reviews done as the kind of change requires, CI green. This includes high-risk PRs, docs-only PRs and backend PRs, which deploy to production. After a backend merge, check that the deploy workflow passed and `/api/health` answers before starting the next item.
+- Merge your own PRs yourself: once the reviews the kind of change requires are done and their fixes pushed, turn on auto-merge. This includes high-risk PRs, docs-only PRs and backend PRs, which deploy to production. After a backend merge, check that the deploy workflow passed and `/api/health` answers before starting the next item.
 - Stop only for a decision that is Ernest's (a product or money choice, a secret, a setting only he can change, something the PR couldn't verify that he must check), when you are stuck, or when the goal is reached. Say what the decision is and what you recommend, in the PR and in the chat, and keep working on anything that doesn't depend on it. A PR waiting on such a decision stays open; every other PR is merged.
 - If the tool refuses a step the loop needs (for example a permission check blocks `gh pr merge`), that is a settings problem, not a decision: say which permission rule to add, and carry on with whatever doesn't need it. Never work around a refusal.
 
@@ -139,7 +140,7 @@ When the goal needs several features, decide how to split it into PRs and run th
 - The spec, `ROADMAP.md`, `docs/decisions.md` and other docs are updated.
 - The code follows these instructions and the frontend or backend ones.
 - It has meaningful tests, or needs none (avoid overly adding tests; keep suites lean and fast).
-- The PR is open and CI passes.
+- The PR is open and CI passes (GitHub won't merge it otherwise).
 - It was reviewed as its kind of change requires.
 
 ## Claude Code: tools for STL work

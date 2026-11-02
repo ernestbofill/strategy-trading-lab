@@ -166,10 +166,11 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
 
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        // The stocks it follows, read under the strategy's lock as the daily check does: a stock unticked with Edit list meanwhile gets no signal.
+        // The stocks it follows, read under the strategy's lock as the daily check does: a stock unticked with Edit list meanwhile, or
+        // every stock of a strategy archived meanwhile, gets no signal.
         var following = await db.Database.SqlQuery<Guid>($"""
             SELECT a.asset_id AS "Value" FROM strategies s JOIN strategy_assets a ON a.strategy_id = s.id
-            WHERE s.id = {strategy.Id} AND a.active AND a.removed_at IS NULL FOR NO KEY UPDATE OF s
+            WHERE s.id = {strategy.Id} AND s.status = 'running' AND a.active AND a.removed_at IS NULL FOR NO KEY UPDATE OF s
             """).ToListAsync(cancellationToken);
         var scoresJson = JsonSerializer.SerializeToDocument(scores, JsonSerializerOptions.Web);
         var roundId = round.Id;

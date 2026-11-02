@@ -336,4 +336,42 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
             await RemoveAsync(otherEmail);
         }
     }
+
+    [NeonFact]
+    public async Task Edit_list_misses_a_simulation_buy_still_waiting_for_its_trade_so_it_frees_its_budget()
+    {
+        var (client, email) = await factory.VerifiedAsync();
+        try
+        {
+            var id = await StartAsync(client, $"Sim list {Tag()}", mode: "simulation");
+            var dip = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).ToList();
+            Guid signalId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var signal = new Signal
+                {
+                    StrategyId = id, AssetId = dip[0], Side = TradeSide.Buy, StepNo = 1, MaxSteps = 5, StepAmount = 100,
+                    SignalDate = new DateOnly(2026, 9, 22), ClosePrice = 100, Facts = JsonDocument.Parse("{}"),
+                    Status = SignalStatus.Confirmed, AnsweredAt = DateTimeOffset.UtcNow,
+                };
+                db.Signals.Add(signal);
+                await db.SaveChangesAsync();
+                signalId = signal.Id;
+            }
+
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = new[] { dip[1] } })).StatusCode);
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.Id == signalId);
+                Assert.Equal((SignalStatus.Missed, (DateTimeOffset?)null), (signal.Status, signal.AnsweredAt));
+            }
+        }
+        finally
+        {
+            await RemoveAsync(email);
+        }
+    }
 }

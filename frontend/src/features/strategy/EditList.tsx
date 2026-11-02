@@ -54,7 +54,9 @@ function EditListContent({ s }: { s: StrategyDetail }) {
     )
   }
 
-  const toggle = (id: string) => setTicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]))
+  // At 60 ticked, a stock can only be unticked.
+  const toggle = (id: string) =>
+    setTicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : list.length >= MAX_STOCKS ? list : [...list, id]))
 
   // As on the review: a picked stock goes to the end, ticked; one already listed is only ticked.
   const add = (picked: Security, pricesIn: boolean) => {

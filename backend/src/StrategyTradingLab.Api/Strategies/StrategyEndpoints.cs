@@ -213,6 +213,14 @@ public static class StrategyEndpoints
                     .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
                         .SetProperty(x => x.EndedOn, x => x.EndedOn ?? today)
                         .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+            // A simulation's buy still waiting for its trade at the next open won't get one now (the daily check no longer visits the
+            // stock): missed too, so it doesn't hold its step of the budget.
+            if (removed.Count > 0 && strategy.Mode == StrategyMode.Simulation)
+                await db.Signals.Where(s => s.StrategyId == id && s.Status == SignalStatus.Confirmed && removed.Contains(s.AssetId)
+                        && !db.SignalTrades.Any(t => t.SignalId == s.Id))
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
+                        .SetProperty(x => x.AnsweredAt, (DateTimeOffset?)null)
+                        .SetProperty(x => x.EndedOn, x => x.EndedOn ?? today), cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return TypedResults.NoContent();
         })

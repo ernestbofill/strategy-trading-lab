@@ -465,7 +465,7 @@ Content is per template (period, scope, figures). *Index trend* is all in, all o
 **When Live is selected**
 - Above the button: "The app never trades for you or connects to your broker. It records only what you confirm."
 
-**No Alerts box** (removed 2026-11-01): notifications are set only in the account. The permission isn't asked here but right after a live or AI strategy starts, when the account's App box is on and the app offers push (Ernest): the dashboard opens with a "Notifications" box (the first of at most two asks per device; the second is on Confirm, see Notifications), "Allow notifications so its alerts reach this device right after the market close. Email is the fallback.", an "Allow notifications" button (the browser's prompt, from the tap) and "Not now". Allowed: "Notifications are on for this device."; refused: "Not allowed. Alerts come by email; you can turn notifications on later in Account." Already allowed on this device, it subscribes without asking and shows nothing. On iPhone in Safari it explains the home-screen step; blocked in the browser, it says so.
+**No Alerts box** (removed 2026-11-01): notifications are set only in the account, and app notifications are asked for on Confirm (see Notifications).
 
 For *Your AI's top picks*, restate under the cards that it has no backtest (not drawn).
 
@@ -760,11 +760,13 @@ Like the POC's settings page. Not linked from the app; reached by its address. O
 
 Both are set only on the account page's **Notifications** section, for every strategy at once: there is no switch on Choose the mode, on the strategy page or per strategy. A strategy that shouldn't bother the user runs as a simulation, or is archived. With every box off nothing is lost: what waits is still on the dashboard. Everything is on by default, to keep users engaged (Ernest, 2026-11-02): signals and reminders by app and email, the summary by email. Sign-up has no notification choice; the user changes them later in Account or with an email's unsubscribe link.
 
-**Asking for app notifications** (the browser's permission, needed once per device, and only from a tap): at most twice per device (Ernest, 2026-11-02), counted in the browser's storage.
-1. On the dashboard right after a live or AI strategy starts (with App on and where the app offers push): the "Notifications" box with "Allow notifications" and "Not now" (see *Choose the mode*).
-2. If that one was put off, on Confirm (step 5) of the next live or AI strategy: the same box right above the start button, without "Not now" (starting the strategy moves on).
+**Asking for app notifications** (the browser's permission, needed once per device, and only from a tap): only on Confirm (step 5), for every strategy, simulations too, so the permission is there when the summary comes by app (Ernest, 2026-11-02). Right above the start button, for a signed-in user where the app offers push:
+- the browser hasn't been asked: a checkbox "Allow notifications on this device", **ticked the first time on this device** and unticked once it was put off (remembered in the browser's storage). Start with it ticked opens the browser's prompt first, then starts the strategy whatever the answer. Ticking it also turns the account's App box back on;
+- already allowed: no checkbox; Start subscribes the device quietly;
+- blocked in the browser: "Notifications are blocked for this app in your browser settings. Alerts still come by email." instead;
+- iPhone in Safari, not on the home screen: the home-screen line instead.
 
-After that, only Account → Notifications → *This device*. A device that already allowed notifications is subscribed quietly after any live or AI strategy starts. A browser that blocked them isn't asked on Confirm. The two unsubscribe links in the emails match the two email boxes ("Turn off signal and reminder emails", "Turn off summary emails").
+There is no ask on the dashboard. Afterwards, Account → Notifications → *This device*.
 
 **Summary** (email, not drawn; the daily overview before 2026-11-01), "Your summary, [date]", sent right after the daily check has evaluated the session (around 22:30 in Madrid), **only on days something changed**: a signal on the session (live or simulated) or a stock change. A quiet day sends nothing (its claim is kept, with "Not sent: nothing changed.", so later runs don't look again). Whoever wasn't sent it then (email not set up yet, a restart, an address just confirmed) gets it from the hourly check, but never between 00:00 and 07:00 in their time zone: it waits for the morning. Reads like a briefing; never uses buy or sell as an instruction.
 1. **Waiting for you**: unanswered live signals and AI rounds due, each with a link.

@@ -197,6 +197,7 @@ export const newStrategy = {
   'newStrategy.confirm.row.settings': 'Settings',
   'newStrategy.confirm.row.budget': 'Budget',
   'newStrategy.confirm.row.notifications': 'Notifications',
+  'newStrategy.confirm.allowPush': 'Allow notifications on this device',
   'newStrategy.confirm.notify.appEmail': 'App and email',
   'newStrategy.confirm.notify.app': 'App',
   'newStrategy.confirm.notify.email': 'Email',

@@ -66,19 +66,6 @@
   text-decoration: none;
 }
 
-/* Right after a strategy starts with push on: the ask to allow notifications on this device. */
-.pushPrompt {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-sm);
-}
-.pushPrompt p {
-  margin: 0;
-}
-
 /* Notifications: a kind (its title and hint) with its channels side by side. */
 .kind {
   display: flex;

@@ -88,24 +88,24 @@ export async function unsubscribeDevice(): Promise<void> {
   await subscription.unsubscribe()
 }
 
-const ASKS_KEY = 'stl.pushAsks'
+const ASKED_KEY = 'stl.pushAsked'
 
 /**
- * How many times this device was asked to allow notifications (spec: Notifications): at most twice, on the dashboard after
- * the first live or AI strategy starts, then on Confirm of the next one. Per device, since the permission is; 0 without storage.
+ * Whether Confirm already offered "Allow notifications on this device" here (spec: Notifications): ticked the first time,
+ * unticked from then on. Per device, since the permission is; false without storage.
  */
-export function pushAsks(): number {
+export function pushAsked(): boolean {
   try {
-    return Number(localStorage.getItem(ASKS_KEY)) || 0
+    return localStorage.getItem(ASKED_KEY) === 'true'
   } catch {
-    return 0
+    return false
   }
 }
 
-export function notePushAsk(): void {
+export function notePushAsked(): void {
   try {
-    localStorage.setItem(ASKS_KEY, String(pushAsks() + 1))
+    localStorage.setItem(ASKED_KEY, 'true')
   } catch {
-    // No storage: the device may be asked again, which is harmless.
+    // No storage: the box is ticked again next time, which is harmless.
   }
 }

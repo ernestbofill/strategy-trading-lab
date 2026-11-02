@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
-import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api, type Dashboard, type StrategySummary, type TemplateDetail } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
 import { AccountProvider } from '../account/AccountContext'
@@ -12,9 +12,23 @@ import { NewStrategyDraftProvider, useNewStrategyDraft } from './NewStrategyDraf
 // Whether the app offers push on this device (the server's key and the browser).
 const push = vi.hoisted(() => ({ offered: false }))
 vi.mock('../account/usePushOffered', () => ({ usePushOffered: () => push.offered }))
+// A browser that can ask: the permission prompt itself is the browser's.
+const pushLib = vi.hoisted(() => ({ subscribeDevice: vi.fn() }))
+vi.mock('../../lib/push', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/push')>()),
+  pushSupport: () => 'ready',
+  subscribeDevice: pushLib.subscribeDevice,
+}))
+
+beforeEach(() => {
+  vi.stubGlobal('Notification', { permission: 'default' })
+  pushLib.subscribeDevice.mockReset().mockResolvedValue(true)
+})
 
 afterEach(() => {
   push.offered = false
+  localStorage.clear()
+  vi.unstubAllGlobals()
   cleanup()
   vi.restoreAllMocks()
   invalidateAll()
@@ -41,19 +55,17 @@ function ChooseAi() {
 
 function DashboardStub() {
   const navigate = useNavigate()
-  const askPush = (useLocation().state as { askPush?: boolean } | null)?.askPush
   return (
     <>
       <button onClick={() => navigate(-1)}>Dashboard back</button>
-      {askPush && <p>Asks to allow notifications</p>}
     </>
   )
 }
 
-function open() {
+function open(account: { alertPush?: boolean } = {}) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getAccount').mockResolvedValue({
-    email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false,
+    email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false, ...account,
   })
   vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
   vi.spyOn(api, 'getDashboard').mockResolvedValue({ strategies: [], waiting: [] } as unknown as Dashboard)
@@ -88,28 +100,56 @@ describe('Confirm', () => {
     expect(start.mock.calls[0][0]).toMatchObject({ templateKey: 'ai' })
   })
 
-  it('asks to allow notifications on the dashboard where push is offered, with alerts by app on', async () => {
+  it('ticks Allow notifications the first time and asks the browser on Start', async () => {
     push.offered = true
     open()
     const start = vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
 
     expect(await screen.findByText('App and email')).toBeTruthy()
-    fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
-
-    expect(await screen.findByText('Asks to allow notifications')).toBeTruthy()
-    expect(start.mock.calls[0][0]).not.toHaveProperty('push')
-  })
-
-  it('asks nothing where push is not offered', async () => {
-    open()
-    const start = vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
-
-    expect(await screen.findByText('Email')).toBeTruthy()
+    const box = await screen.findByRole('checkbox', { name: 'Allow notifications on this device' })
+    expect((box as HTMLInputElement).checked).toBe(true)
     fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
 
     expect(await screen.findByRole('button', { name: 'Dashboard back' })).toBeTruthy()
-    expect(screen.queryByText('Asks to allow notifications')).toBeNull()
+    expect(pushLib.subscribeDevice).toHaveBeenCalledTimes(1)
     expect(start).toHaveBeenCalledTimes(1)
+  })
+
+  it('turns App back on in the account when the box is ticked and the device allowed', async () => {
+    push.offered = true
+    open({ alertPush: false })
+    vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
+    const setPush = vi.spyOn(api, 'setAlertPush').mockResolvedValue()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
+
+    expect(await screen.findByRole('button', { name: 'Dashboard back' })).toBeTruthy()
+    expect(setPush).toHaveBeenCalledWith(true)
+  })
+
+  it('leaves it unticked once put off, and starting asks nothing then', async () => {
+    push.offered = true
+    localStorage.setItem('stl.pushAsked', 'true')
+    open()
+    vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
+
+    const box = await screen.findByRole('checkbox', { name: 'Allow notifications on this device' })
+    expect((box as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
+
+    expect(await screen.findByRole('button', { name: 'Dashboard back' })).toBeTruthy()
+    expect(pushLib.subscribeDevice).not.toHaveBeenCalled()
+  })
+
+  it('offers nothing where push is not offered', async () => {
+    open()
+    vi.spyOn(api, 'startStrategy').mockResolvedValue({ id: 'st' } as StrategySummary)
+
+    expect(await screen.findByText('Email')).toBeTruthy()
+    expect(screen.queryByRole('checkbox', { name: 'Allow notifications on this device' })).toBeNull()
+    fireEvent.click(await screen.findByRole('button', { name: 'Start the simulation' }))
+    expect(await screen.findByRole('button', { name: 'Dashboard back' })).toBeTruthy()
+    expect(pushLib.subscribeDevice).not.toHaveBeenCalled()
   })
 
   it('renders "Create an account to start it" for guests and links to sign-up with next', async () => {

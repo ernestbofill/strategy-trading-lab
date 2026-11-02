@@ -191,6 +191,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.confirm.row.settings': 'Configuració',
   'newStrategy.confirm.row.budget': 'Pressupost',
   'newStrategy.confirm.row.notifications': 'Notificacions',
+  'newStrategy.confirm.allowPush': 'Permet les notificacions en aquest dispositiu',
   'newStrategy.confirm.notify.appEmail': 'App i correu',
   'newStrategy.confirm.notify.app': 'App',
   'newStrategy.confirm.notify.email': 'Correu',

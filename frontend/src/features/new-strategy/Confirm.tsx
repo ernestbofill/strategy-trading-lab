@@ -13,7 +13,8 @@ import { money } from '../../lib/format'
 import { useOptionalAccount } from '../account/AccountContext'
 import { accountNotificationsPath, signUpPathFor } from '../account/paths'
 import { usePushOffered } from '../account/usePushOffered'
-import { PushPrompt } from '../account/DevicePush'
+import { usePushAsk } from '../account/usePushAsk'
+import { Checkbox } from '../../components/Field'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
@@ -24,8 +25,6 @@ import { defaultName, NAME_MAX_LENGTH, newStrategyFrom } from './newStrategy'
 import { advancedPath, budgetPath, confirmPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
 import { useDraftCurrency } from './useDraftCurrency'
 import { useTemplate } from './useTemplate'
-
-const noop = () => {}
 
 interface SummaryRow {
   label: string
@@ -74,6 +73,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const byApp = alerts && pushOffered && (account?.alertPush ?? true)
   // The server only emails a confirmed address.
   const byEmail = account ? account.alertEmails && account.emailVerified : true
+  const pushAsk = usePushAsk()
   const notifyKey = !alerts
     ? account?.overviewEmail === false ? 'newStrategy.confirm.notify.off' : 'newStrategy.confirm.notify.summary'
     : byApp && byEmail ? 'newStrategy.confirm.notify.appEmail'
@@ -96,8 +96,11 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
 
   const start = async () => {
     if (atLimit) return
+    // First, while the tap still counts: the browser only shows its permission prompt from one.
+    const asked = pushAsk.run()
     setStarting(true)
     setError(null)
+    await asked
     try {
       await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
     } catch (e) {
@@ -117,8 +120,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     invalidate(dashboardCacheKey)
     // Replace this screen in the history: going back must not reopen Confirm with the reset draft, which would
     // start a second strategy from the default template. An AI strategy's first round waits on the dashboard.
-    // With alerts by app, the dashboard asks to allow notifications on this device (spec: Notifications).
-    navigate(dashboardPath, { replace: true, state: byApp ? { askPush: true } : null })
+    navigate(dashboardPath, { replace: true })
     reset()
   }
 
@@ -245,8 +247,15 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
         <BulletList items={next} />
       </Section>
 
-      {/* Right above the start button: the second ask, if the dashboard's was put off (spec: Notifications). */}
-      {byApp && <PushPrompt place="confirm" onDone={noop} />}
+      {/* Right above the start button: Start asks the browser when it is ticked (spec: Notifications). */}
+      {pushAsk.kind === 'ask' && (
+        <Checkbox checked={pushAsk.ticked} onChange={pushAsk.setTicked}>
+          {t('newStrategy.confirm.allowPush')}
+        </Checkbox>
+      )}
+      {(pushAsk.kind === 'blocked' || pushAsk.kind === 'homeScreen') && (
+        <p className="caption">{t(pushAsk.kind === 'blocked' ? 'account.push.blocked' : 'account.push.homeScreen')}</p>
+      )}
     </Screen>
   )
 }

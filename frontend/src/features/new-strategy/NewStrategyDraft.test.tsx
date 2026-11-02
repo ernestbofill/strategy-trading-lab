@@ -37,4 +37,54 @@ describe('NewStrategyDraftProvider', () => {
 
     expect(result.current).toMatchObject({ budget: 3500, mode: 'live', name: 'My Guest Strategy' })
   })
+
+  describe('after a reload', () => {
+    const mount = (getOwner: () => string | null | undefined) =>
+      renderHook(() => useNewStrategyDraft(), {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <NewStrategyDraftProvider owner={getOwner()}>{children}</NewStrategyDraftProvider>
+        ),
+      })
+
+    it('keeps the chosen template and choices', () => {
+      const first = mount(() => null)
+      act(() => first.result.current.switchTemplate('trend'))
+      act(() => first.result.current.update({ budget: 4200, mode: 'live' }))
+      first.unmount()
+
+      const { result } = mount(() => null)
+      expect(result.current).toMatchObject({ templateKey: 'trend', budget: 4200, mode: 'live' })
+    })
+
+    it('holds a user\'s draft while the account loads, then keeps it for the same user', () => {
+      const first = mount(() => 'a@example.com')
+      act(() => first.result.current.switchTemplate('ai'))
+      first.unmount()
+
+      let owner: string | null | undefined = undefined // The account is still loading.
+      const { result, rerender } = mount(() => owner)
+      expect(result.current.templateKey).toBe('ai')
+      owner = 'a@example.com'
+      rerender()
+      expect(result.current.templateKey).toBe('ai')
+    })
+
+    it('starts over when someone else is logged in, or nobody', () => {
+      const first = mount(() => 'a@example.com')
+      act(() => first.result.current.switchTemplate('ai'))
+      first.unmount()
+
+      let owner: string | null | undefined = undefined
+      const { result, rerender } = mount(() => owner)
+      owner = null
+      rerender()
+      expect(result.current.templateKey).toBe('dip')
+    })
+
+    it('ignores a stored draft it cannot read', () => {
+      sessionStorage.setItem('stl.newStrategyDraft.v1', '{not json')
+      const { result } = mount(() => null)
+      expect(result.current.templateKey).toBe('dip')
+    })
+  })
 })

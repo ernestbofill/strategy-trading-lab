@@ -2,9 +2,6 @@ name: CI frontend
 
 on:
   pull_request:
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/ci-frontend.yml'
 
 concurrency:
   group: ci-frontend-${{ github.ref }}
@@ -20,16 +17,38 @@ jobs:
       run:
         working-directory: frontend
     steps:
+      # The PR's merge commit and its first parent, main: enough to see what the PR changes.
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
-      - uses: actions/setup-node@v6
+      # Every PR runs this workflow, so `frontend` always reports to the required checks on main; the steps below run
+      # only when the PR changes frontend/ or this workflow. (A workflow-level paths filter would leave the check
+      # waiting forever on PRs that don't touch it.)
+      - name: Did frontend change?
+        id: changed
+        working-directory: .
+        run: |
+          if git diff --name-only HEAD^1 HEAD | grep -qE '^(frontend/|\.github/workflows/ci-frontend.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing in frontend/ changed: the checks are skipped."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.changed.outputs.run == 'true'
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
+      - if: steps.changed.outputs.run == 'true'
+        run: npm ci
+      - if: steps.changed.outputs.run == 'true'
+        run: npm run lint
+      - if: steps.changed.outputs.run == 'true'
+        run: npm test
       # Typechecks (tsc -b) and builds.
-      - run: npm run build
+      - if: steps.changed.outputs.run == 'true'
+        run: npm run build

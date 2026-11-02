@@ -2,9 +2,6 @@ name: CI backend
 
 on:
   pull_request:
-    paths:
-      - 'backend/**'
-      - '.github/workflows/ci-backend.yml'
 
 concurrency:
   group: ci-backend-${{ github.ref }}
@@ -46,15 +43,34 @@ jobs:
       AWS_ACCESS_KEY_ID: stl-ci
       AWS_SECRET_ACCESS_KEY: stl-ci-secret
     steps:
+      # The PR's merge commit and its first parent, main: enough to see what the PR changes.
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
-      - uses: actions/setup-dotnet@v5
+      # Every PR runs this workflow, so `backend` always reports to the required checks on main; the steps below run
+      # only when the PR changes backend/ or this workflow. (A workflow-level paths filter would leave the check
+      # waiting forever on PRs that don't touch it.)
+      - name: Did backend change?
+        id: changed
+        working-directory: .
+        run: |
+          if git diff --name-only HEAD^1 HEAD | grep -qE '^(backend/|\.github/workflows/ci-backend.yml)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing in backend/ changed: the checks are skipped."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.changed.outputs.run == 'true'
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
       # Against main as it is now, not as it was when the PR opened. The deploy workflow checks again
       # (two open PRs can both pass with the same bump).
-      - name: Check the version was bumped
+      - if: steps.changed.outputs.run == 'true'
+        name: Check the version was bumped
         working-directory: .
         run: |
           git fetch --quiet --no-tags --depth=1 origin main
@@ -76,19 +92,24 @@ jobs:
           fi
           echo "Backend version: ${old:-none} -> $new"
 
-      - run: dotnet restore
+      - if: steps.changed.outputs.run == 'true'
+        run: dotnet restore
       # It exits 0 even when it finds something, so the step fails on its report instead.
-      - name: Audit packages
+      - if: steps.changed.outputs.run == 'true'
+        name: Audit packages
         run: |
           dotnet list package --vulnerable --include-transitive | tee audit.txt
           if grep -q "has the following vulnerable packages" audit.txt; then exit 1; fi
-      - run: dotnet build --no-restore --configuration Release
+      - if: steps.changed.outputs.run == 'true'
+        run: dotnet build --no-restore --configuration Release
       # The schema from migrations.sql, as the deploy applies it, and the bucket neon.ts declares.
-      - name: Prepare the test database and bucket
+      - if: steps.changed.outputs.run == 'true'
+        name: Prepare the test database and bucket
         run: |
           psql "postgresql://stl:stl@localhost:5432/stl_test" -v ON_ERROR_STOP=1 -q -f migrations.sql
           for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:9000 && break; sleep 2; done
           aws --endpoint-url "$AWS_ENDPOINT_URL_S3" s3 mb s3://assets
       # Every test runs, the [NeonFact] ones included, against the services above. ModelTests also fails on a model
       # change without a migration.
-      - run: dotnet test --no-build --configuration Release
+      - if: steps.changed.outputs.run == 'true'
+        run: dotnet test --no-build --configuration Release

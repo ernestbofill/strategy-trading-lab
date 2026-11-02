@@ -88,6 +88,8 @@ Ask for a credential when you need one.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
 - Changes Ernest has staged go into your next commit, together with yours. Don't unstage or stash them.
 - Merge PRs with **squash merge** (`gh pr merge --squash --delete-branch`), so `main` stays linear with one commit per PR. Write the PR title as the final commit subject (imperative, with `(#number)`), because the squash uses it. Merge only when asked, or in a loop (see *Iterating*).
+- **`main` is protected** (Ernest, 2026-11-02): a PR merges only when the `backend` and `frontend` checks pass and the branch is up to date with `main`. Both checks run on every PR and skip their steps when their folder didn't change, so a docs-only PR passes them in seconds. When GitHub says the branch is out of date, merge `origin/main` into it (never rebase), fix any clash, and check the versions are still above `main`'s, then push. The backend's CI refuses a version that isn't above `main`'s, but nothing checks the frontend's (#142 and #140 both took backend `0.54.0-alpha` and frontend `0.49.0-alpha`; #143 bumped again).
+- **Auto-merge** is allowed (Ernest, 2026-11-02): when a merge is due (asked, or in a loop), `gh pr merge <PR> --auto --squash --delete-branch` merges once the required checks pass, instead of waiting by hand.
 
 ## Feature, fixes and agentic workflow
 
@@ -104,7 +106,7 @@ Defaults:
 
 ### Kinds of change
 
-- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, READMEs, instructions, `.claude/`, comments): no version bump (CI skips the check), no `/simplify`, no `/code-review`. Steps 1, 4 and 7 only.
+- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, READMEs, instructions, `.claude/`, comments): no version bump (CI skips its steps), no `/simplify`, no `/code-review`. Steps 1, 4 and 7 only.
 - **Normal** (UI, an isolated fix or feature): steps 1–5, with one review round. Run `/simplify` only when the diff has real new code (about 50+ changed lines); a one-line fix skips it.
 - **High risk**: strategy and budget calculations (signals, steps, results, backtests), authentication, and security. Also foundational work that much else will build on. All steps, an `opus` review, and a second round after any real finding.
 
@@ -118,7 +120,7 @@ Defaults:
 6. **More review rounds (only when they pay off).** Run `/code-review <PR> --comment` again on the new head when the PR is large (roughly 400+ changed lines or 10+ files), high risk, or the last round found a real bug (not nits). Stop when a round finds nothing serious, or after 3 rounds in total; then list what is still open in the closing comment.
 7. **Report and stop.** Post a closing PR comment: what changed, what the reviews found and fixed, and the CI state. Then ask Ernest before merging (in a loop, see below).
 
-**Push in batches.** Every push re-runs CI on the whole PR (about two minutes), even a commit that only touches docs, because GitHub filters paths on the PR's whole diff. So push once per step, not once per commit: commit the `ROADMAP.md`, spec, `TODO.md` and memory edits together with the code they go with, and push a step's commits together. Never push a docs-only commit on its own while a code push is still to come in the same step.
+**Push in batches.** Every push re-runs CI on the whole PR (about two minutes), even a commit that only touches docs, because each check looks at the PR's whole diff. So push once per step, not once per commit: commit the `ROADMAP.md`, spec, `TODO.md` and memory edits together with the code they go with, and push a step's commits together. Never push a docs-only commit on its own while a code push is still to come in the same step.
 
 At any time, be critical: point out inconsistencies, problems and possible improvements. Ideas are welcome; add the ones worth keeping to `ROADMAP.md`.
 

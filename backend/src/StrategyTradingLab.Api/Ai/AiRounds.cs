@@ -166,6 +166,11 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
 
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        // The stocks it follows, read under the strategy's lock as the daily check does: a stock unticked with Edit list meanwhile gets no signal.
+        var following = await db.Database.SqlQuery<Guid>($"""
+            SELECT a.asset_id AS "Value" FROM strategies s JOIN strategy_assets a ON a.strategy_id = s.id
+            WHERE s.id = {strategy.Id} AND a.active AND a.removed_at IS NULL FOR NO KEY UPDATE OF s
+            """).ToListAsync(cancellationToken);
         var scoresJson = JsonSerializer.SerializeToDocument(scores, JsonSerializerOptions.Web);
         var roundId = round.Id;
         if (extra)
@@ -198,7 +203,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
         var rates = live ? null : await ExchangeRates.LoadAsync(db, session, cancellationToken);
 
         var signals = new List<Signal>();
-        foreach (var pick in plan.Picks)
+        foreach (var pick in plan.Picks.Where(p => following.Contains(p.AssetId)))
         {
             var close = await db.Prices.Where(p => p.AssetId == pick.AssetId && p.Date <= session).OrderByDescending(p => p.Date)
                 .Select(p => p.Close).FirstAsync(cancellationToken);

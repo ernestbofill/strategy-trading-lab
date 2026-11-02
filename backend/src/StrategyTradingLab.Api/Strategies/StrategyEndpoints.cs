@@ -179,7 +179,8 @@ public static class StrategyEndpoints
 
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
-            if (NewStrategyValidation.AssetsError(ids, template, assets, user.Locale, [.. strategy.Assets.Select(a => a.AssetId)]) is { } invalid)
+            if (NewStrategyValidation.AssetsError(ids, template, assets, user.Locale,
+                    [.. strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId)]) is { } invalid)
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetIds"] = [invalid] });
 
             var now = time.GetUtcNow();

@@ -56,12 +56,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var missing = new List<string>();
             try
             {
-                // Locked while it is checked, with its list read under the lock: Edit list waits, so an unticked stock gets no new signal.
-                await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-                await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM strategies WHERE id = {strategy.Id} FOR NO KEY UPDATE", cancellationToken);
-                strategy.Assets = await db.StrategyAssets.AsNoTracking().Where(a => a.StrategyId == strategy.Id).ToListAsync(cancellationToken);
                 var run = await EvaluateAsync(strategy, lastSession, now, rates, missing, cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
                 signals += run.NewSignals;
                 trades += run.NewTrades;
                 missed += run.Missed;
@@ -86,7 +81,8 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         CancellationToken cancellationToken)
     {
         int signals = 0, trades = 0, missed = await CloseUnfollowedAsync(strategy, lastSession, cancellationToken);
-        var added = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).ToDictionary(a => a.AssetId, a => DateOnly.FromDateTime(a.AddedAt.UtcDateTime));
+        var listed = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).ToDictionary(a => a.AssetId, a => a.AddedAt);
+        var added = listed.ToDictionary(a => a.Key, a => DateOnly.FromDateTime(a.Value.UtcDateTime));
         var wanted = added.Keys.ToList();
         // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
         var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id && (s.Status == SignalStatus.Confirmed || s.Status == SignalStatus.Waiting))
@@ -109,9 +105,11 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 missing.Add($"{asset.Symbol}: the newest price is from {bars[^1].Date:yyyy-MM-dd}.");
 
             var (firstChecked, checkedUntil) = await CheckedDaysAsync(strategy.Id, asset.Id, cancellationToken);
-            // A stock ticked again after its last check (Edit list: added after the start, yet checked before) gets no signal for
-            // the days it was off the list: its first check back looks at the latest day only, as for a stock just added (no back-dating, #45).
-            if (checkedUntil is { } until && added[asset.Id] > strategy.StartedOn && added[asset.Id] > until && bars[^1].Date > until)
+            // A stock ticked again (Edit list) was checked on a session before the last one finished when it was added; a stock just
+            // added is first checked on that session or later. It gets no signal for the days it was off the list: its first check back
+            // looks at the latest day only, as for a stock just added (no back-dating, #45).
+            if (firstChecked is { } first && first < UsSession.LastComplete(listed[asset.Id])
+                && checkedUntil is { } until && added[asset.Id] > until && bars[^1].Date > until)
                 checkedUntil = bars[^1].Date.AddDays(-1);
             var replayFrom = firstChecked ?? bars[^1].Date;
             // No bar from that day on (a price row revised away): the latest bar, never back to the start.
@@ -122,13 +120,26 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);
             if (days[^1].Status == RuleStatus.NotEnoughData)
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
+            // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running: an Edit
+            // list save or an archive made since the strategy was loaded waits for this or wins, and gets no new signal.
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            if (!await StillFollowedAsync(strategy.Id, asset.Id, cancellationToken)) continue;
             var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             signals += run.NewSignals;
             trades += run.NewTrades;
             missed += run.Missed;
         }
         return new Changes(signals, trades, missed);
     }
+
+    /// <summary>Locks the strategy's row until the transaction ends, and says whether it still runs and follows the stock.</summary>
+    async Task<bool> StillFollowedAsync(Guid strategyId, Guid assetId, CancellationToken cancellationToken) =>
+        (await db.Database.SqlQuery<Guid>($"""
+            SELECT a.asset_id AS "Value" FROM strategies s JOIN strategy_assets a ON a.strategy_id = s.id
+            WHERE s.id = {strategyId} AND s.status = 'running' AND a.asset_id = {assetId} AND a.active AND a.removed_at IS NULL
+            FOR NO KEY UPDATE OF s
+            """).ToListAsync(cancellationToken)).Count > 0;
 
     /// <summary>
     /// The waiting signals of stocks the daily check no longer follows (delisted, unticked or removed from the strategy) would

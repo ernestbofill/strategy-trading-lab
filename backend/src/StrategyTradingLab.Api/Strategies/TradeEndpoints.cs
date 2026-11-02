@@ -24,8 +24,8 @@ public static class TradeEndpoints
             // An ended strategy's history is final (spec: Strategy page, ended).
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
-            // Any stock it lists, also one unticked with Edit list: the user may still sell what they hold of it.
-            if (strategy.Assets.All(a => a.AssetId != request.AssetId))
+            // A stock it follows; a sale also on one unticked with Edit list, so the user can record selling what they hold of it.
+            if (strategy.Assets.All(a => a.AssetId != request.AssetId || (request.Side != TradeSide.Sell && !(a.Active && a.RemovedAt == null))))
                 return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = [Messages.PickStrategyStock.In(user.Locale)] });
 
             var asset = await db.Assets.FindAsync([request.AssetId], cancellationToken);

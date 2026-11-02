@@ -295,6 +295,9 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
             var sale = await client.PostAsJsonAsync($"/strategies/{id}/trades", new
                 { assetId = a, side = "sell", date = new DateOnly(2026, 9, 23), price = 100m, enteredAs = "shares", shares = 0.99m, fee = 1m });
             Assert.Equal(HttpStatusCode.Created, sale.StatusCode);
+            var buy = await client.PostAsJsonAsync($"/strategies/{id}/trades", new
+                { assetId = a, side = "buy", date = new DateOnly(2026, 9, 23), price = 100m, enteredAs = "amount", amount = 99m, fee = 1m });
+            Assert.Equal(HttpStatusCode.BadRequest, buy.StatusCode); // Buys only on the stocks it follows.
             DateTimeOffset removedAt;
             using (var scope = factory.Services.CreateScope())
             {

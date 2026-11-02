@@ -36,7 +36,7 @@ public static class NewStrategyValidation
 
     /// <summary>
     /// What is wrong with a strategy's stocks or fund (Confirm, Edit list); null when fine. <c>assets</c> are the ones found for
-    /// <c>ids</c>; those in <c>listed</c> (Edit list: the strategy's own) may have been delisted since.
+    /// <c>ids</c>; those in <c>listed</c> (Edit list: the ones it follows) may have been delisted since.
     /// </summary>
     public static string? AssetsError(IReadOnlyList<Guid> ids, Template template, IReadOnlyCollection<Asset> assets, string locale,
         IReadOnlyCollection<Guid>? listed = null)

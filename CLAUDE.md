@@ -6,7 +6,7 @@ Strategy Trading Lab (STL) is a strategy lab and monitoring side app. A user pic
 
 The owner and engineer is Mr Ernest.
 
-It is a hobby project with no active users, which may launch publicly later. A broken screen or a failed deploy costs little, so favour progress over ceremony and keep reviews light where nothing is at stake. Still build it ready for launch: secrets, security and the product rules apply in full, and the *High risk* list stays high risk.
+It is a hobby project with no active users, which may launch publicly later. A broken screen or a failed deploy costs little, so favour progress over ceremony and keep reviews light where nothing is at stake. Don't overly add tests: we want to keep CI/CD light and fast. Prefer updating existing tests when behaviour changes over creating new test suites or multiplying test cases for simple UI, copy, templates or low-risk tweaks. Still build it ready for launch: secrets, security and the product rules apply in full, and the *High risk* list stays high risk.
 
 ## Sources of truth
 
@@ -111,7 +111,7 @@ Defaults:
 ### Steps
 
 1. **Analyze and orchestrate.** Read the relevant code, docs and `ROADMAP.md`, then state the plan in a few lines: what changes, which files, the kind of change, and any risks. Ask only when a decision is really Ernest's to make.
-2. **Implement.** Work on the session's branch. A merge that changes the application or its runtime is a release: bump the version as the frontend and backend instructions say. Add or update tests. Keep `ROADMAP.md`, the spec and these instructions up to date.
+2. **Implement.** Work on the session's branch. A merge that changes the application or its runtime is a release: bump the version as the frontend and backend instructions say. Update existing tests when behaviour changes, and only add new tests for critical business logic or complex calculations (don't overly add tests; keep CI/CD light and fast). Keep `ROADMAP.md`, the spec and these instructions up to date.
 3. **Simplify.** Before the first push, run `/simplify` in a subagent on the branch's changes. Keep the cleanups that make the code clearer and commit them; the PR then opens on the simplified code, with one CI run fewer.
 4. **PR.** Run the checks in the frontend and backend instructions, then commit, push, and open a pull request into `main`. Don't wait to be asked. Fill in the PR template. If step 3 ran, post a PR comment listing what simplify changed, what was left out, and why.
 5. **Code review.** Run `/code-review <PR> --comment` in a subagent, so the findings land as inline PR comments. Fix the real ones, run the checks again, and push all of the round's fixes at once. Reply on each finding's thread with the fixing commit, or with why it stays as is, then resolve it. It runs after simplify, so it reviews the final code.
@@ -136,7 +136,7 @@ When the goal needs several features, decide how to split it into PRs and run th
 
 - The spec, `ROADMAP.md`, `docs/decisions.md` and other docs are updated.
 - The code follows these instructions and the frontend or backend ones.
-- It has meaningful tests, or needs none.
+- It has meaningful tests, or needs none (avoid overly adding tests; keep suites lean and fast).
 - The PR is open and CI passes.
 - It was reviewed as its kind of change requires.
 

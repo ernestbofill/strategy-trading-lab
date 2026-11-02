@@ -98,11 +98,11 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         var hintHtml = hint is null ? "" : $"<div style=\"margin-top:6px;font-family:{Ui};font-size:12px;line-height:18px;color:{InkSoft};\">{Encode(hint)}</div>";
         var html =
             $"<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 20px;background:{Ground};border:1px dashed {Hairline};border-radius:3px;\">" +
-            $"<tr><td style=\"padding:14px 18px;\">" +
+            "<tr><td style=\"padding:14px 18px;\">" +
             $"<div style=\"font-family:{Ui};font-size:11px;line-height:16px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:{InkSoft};\">{Encode(label)}</div>" +
             $"<div style=\"margin-top:4px;font-family:{Mono};font-size:20px;line-height:26px;font-weight:700;letter-spacing:2px;color:{Primary};\">{Encode(code)}</div>" +
-            $"{hintHtml}" +
-            $"</td></tr></table>";
+            hintHtml +
+            "</td></tr></table>";
         return Add(text, html);
     }
 
@@ -122,7 +122,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         var leadText = lead is null ? url : $"{lead}\n{url}";
         var leadHtml = lead is null ? "" : $"<p style=\"margin:0 0 12px;\">{Encode(lead.TrimEnd(':'))}.</p>";
         return Add(leadText,
-            $"{leadHtml}" +
+            leadHtml +
             $"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 20px;\"><tr>" +
             $"<td bgcolor=\"{Primary}\" style=\"background:{Primary};border-radius:2px;\">" +
             $"<a href=\"{Encode(url)}\" style=\"display:inline-block;padding:12px 20px;font-family:{Mono};font-size:14px;line-height:20px;font-weight:700;" +

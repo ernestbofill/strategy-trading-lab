@@ -48,6 +48,14 @@ public class EmailDocumentTests
         Assert.Contains("Your code", email.Html);
         Assert.Contains("DVN6-2PTF", email.Html);
         Assert.Contains("Or enter this code on sign-up.", email.Html);
+
+        var withoutHint = new EmailDocument("en", "https://app.example")
+            .Code("Your code", "DVN6-2PTF")
+            .Build("Invite");
+
+        Assert.Equal("Your code: DVN6-2PTF", withoutHint.Text);
+        Assert.Contains("Your code", withoutHint.Html);
+        Assert.Contains("DVN6-2PTF", withoutHint.Html);
     }
 
     [Fact]

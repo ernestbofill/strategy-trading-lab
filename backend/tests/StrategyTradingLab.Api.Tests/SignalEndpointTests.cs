@@ -143,6 +143,31 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
+    public async Task An_answered_signal_is_refused_in_the_users_language()
+    {
+        var (client, _, assetId, first, _) = await SeedAsync();
+        try
+        {
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/locale", new { locale = "ca" })).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync($"/signals/{first}/trade", Trade())).StatusCode);
+
+            foreach (var refused in new[]
+            {
+                await client.PostAsJsonAsync($"/signals/{first}/trade", Trade()),
+                await client.PostAsJsonAsync($"/signals/{first}/skip", new { reason = "other" }),
+            })
+            {
+                Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+                Assert.Equal("Aquest senyal ja té resposta.", await refused.Content.ReadFromJsonAsync<string>());
+            }
+        }
+        finally
+        {
+            await CleanAsync(assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_sell_signal_prefills_the_held_shares_and_records_the_sale()
     {
         var (client, strategyId, assetId, _, _) = await SeedAsync();

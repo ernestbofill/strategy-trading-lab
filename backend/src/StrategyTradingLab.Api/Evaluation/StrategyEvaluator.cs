@@ -104,6 +104,10 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 missing.Add($"{asset.Symbol}: the newest price is from {bars[^1].Date:yyyy-MM-dd}.");
 
             var (firstChecked, checkedUntil) = await CheckedDaysAsync(strategy.Id, asset.Id, cancellationToken);
+            // A stock ticked again after its last check (Edit list: added after the start, yet checked before) gets no signal for
+            // the days it was off the list: its first check back looks at the latest day only, as for a stock just added (no back-dating, #45).
+            if (checkedUntil is { } until && added[asset.Id] > strategy.StartedOn && added[asset.Id] > until && bars[^1].Date > until)
+                checkedUntil = bars[^1].Date.AddDays(-1);
             var replayFrom = firstChecked ?? bars[^1].Date;
             // No bar from that day on (a price row revised away): the latest bar, never back to the start.
             var replayIndex = bars.FindIndex(b => b.Date >= replayFrom);

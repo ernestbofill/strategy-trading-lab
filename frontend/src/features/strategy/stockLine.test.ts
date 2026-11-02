@@ -21,6 +21,11 @@ const row = (fields: Partial<StockRow>): StockRow => ({
 const words = { zone: 'the discount zone', notCandidate: 'Below its long trend' }
 
 describe('stockLine', () => {
+  it('dims a stock unticked with Edit list as removed, keeping its result', () => {
+    const line = stockLine(row({ status: 'removed', invested: 100, result: 4.2 }), 'simulation', 'EUR', words)
+    expect([line.pill, line.tone, line.detail, line.result]).toEqual(['REMOVED', 'muted', 'Off the list, no signals', '+4.2%'])
+  })
+
   it('points a live signal to the user with its step', () => {
     const line = stockLine(row({ status: 'waitingForYou', signalStep: 2, rulesSteps: 1 }), 'live', 'EUR', words)
     expect([line.pill, line.detail]).toEqual(['WAITING FOR YOU', 'Signal: step 2 of 5'])

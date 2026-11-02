@@ -563,7 +563,11 @@ The same three settings can be changed later from the strategy page (not drawn).
   - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
   - A figure that can't be worked out (the index fund has no prices at all) shows "–".
   - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".
-- **"Stocks · [n]"** (**"Funds · [n]"** for a template that invests in a fund, #95), with an **"Edit list"** link on the right that opens the stock list editor (same list as on the review, for this strategy).
+- **"Stocks · [n]"** (**"Funds · [n]"** for a template that invests in a fund, #95), with an **"Edit list"** link on the right that opens the stock list editor (same list as on the review, for this strategy). [n] counts the stocks it follows.
+- **Edit list** (built, ROADMAP item 36; not drawn): `/strategies/{id}/list`, running strategies with a stock list only (a fund template's fund isn't changed while it runs; assumed). Title "Edit list", a short lead ("Unticking a stock stops its signals; waiting ones close as missed. Its trades stay in the results. A stock ticked again starts from today."), then the review's list: "Choose stocks to watch", "[n] of [total] ticked", the stocks it follows ticked and the ones unticked earlier that still have trades unticked, "+ Add a stock" with the same search and limits, and at 60 ticked "60 stocks, the most for now". "Save the list" (off with nothing ticked: "Tick at least one stock to watch.") saves and goes back to the strategy page (`PUT /strategies/{id}/assets`, the full ticked list; the API refuses more than 60, none, or an archived strategy). Saving:
+  - An unticked stock stops its signals at once: its waiting signals become *Missed*, ending that day (snooze cleared), as when archiving. Its trades stay in the results.
+  - Its row stays on the page while it has trades in the results, dimmed, with "REMOVED" and "Off the list, no signals", after the other rows. Without trades it leaves the page (and the editor). It can't get a trade by hand.
+  - A stock ticked again (or added) is followed from that moment: the daily check gives it no signal for the days it was off the list; its first check back looks at the latest finished day only, as for a stock just added (#45). The rules still replay its whole history, so a step the rules took while it was off counts in its step numbers (the known *replay step numbers* issue, ROADMAP *After launch*).
 - One row per stock, each a link to that stock's page (not drawn):
   - The name, a status pill and a detail line:
     - "WAITING FOR YOU" (live; "Signal: step [n] of [max]") → Confirm a signal
@@ -818,8 +822,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Index trend* and *Bear markets*.
 - Stock page: the chart with the discount zone shaded (Milestone 3), status history.
-- Stock list editor from the strategy page ("Edit list"; "+ Add a stock" on the review is built, #90).
-- Until a screen is built, the controls that open it are hidden, not shown disabled: "Edit list", the "Backtest" tile, and, for a guest, Confirm's "Edit" on the Notifications row. The item that builds the screen brings its control back.
+- Until a screen is built, the controls that open it are hidden, not shown disabled: the "Backtest" tile, and, for a guest, Confirm's "Edit" on the Notifications row. The item that builds the screen brings its control back.
 - Sell signals for *Index trend*, and its "Out of the market" status.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.

@@ -161,6 +161,61 @@ public static class StrategyEndpoints
         .WithName("UpdateStrategySettings")
         .WithSummary("Updates the settings (rules) of a running strategy.");
 
+        group.MapPut("/{id:guid}/assets", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (
+            Guid id, UpdateStrategyAssets request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var user = await CurrentUser(sessions, cancellationToken);
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            // Locked first, so two saves of the list go one after the other and an archive meanwhile wins.
+            var mine = await db.Database.SqlQuery<Guid>(
+                    $"""SELECT id AS "Value" FROM strategies WHERE id = {id} AND user_id = {user.Id} FOR NO KEY UPDATE""")
+                .ToListAsync(cancellationToken);
+            if (mine.Count == 0) return TypedResults.NotFound();
+            var strategy = await db.Strategies.Include(s => s.Assets).SingleAsync(s => s.Id == id, cancellationToken);
+            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
+            if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
+
+            var ids = request.AssetIds ?? [];
+            var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
+            if (NewStrategyValidation.AssetsError(ids, template, assets, user.Locale) is { } invalid)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetIds"] = [invalid] });
+
+            var now = time.GetUtcNow();
+            // Spec (strategy page, Edit list): an unticked stock stops its signals, and its trades stay. A stock ticked again
+            // is checked from the day it comes back (no back-dating, #45): the daily check reads that day from AddedAt.
+            var removed = new List<Guid>();
+            foreach (var listed in strategy.Assets)
+            {
+                var ticked = ids.Contains(listed.AssetId);
+                var following = listed.Active && listed.RemovedAt is null;
+                if (ticked && !following)
+                {
+                    (listed.Active, listed.RemovedAt, listed.AddedAt) = (true, null, now);
+                }
+                else if (!ticked && following)
+                {
+                    (listed.Active, listed.RemovedAt) = (false, now);
+                    removed.Add(listed.AssetId);
+                }
+            }
+            foreach (var added in ids.Where(assetId => strategy.Assets.All(a => a.AssetId != assetId)).ToList())
+                strategy.Assets.Add(new StrategyAsset { AssetId = added, Active = true, AddedAt = now });
+            strategy.UpdatedAt = now;
+            await db.SaveChangesAsync(cancellationToken);
+
+            // Their waiting signals can't be answered in time any more: missed, ending today, as when archiving.
+            var today = Today(user, time);
+            if (removed.Count > 0)
+                await db.Signals.Where(s => s.StrategyId == id && s.Status == SignalStatus.Waiting && removed.Contains(s.AssetId))
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
+                        .SetProperty(x => x.EndedOn, x => x.EndedOn ?? today)
+                        .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithName("UpdateStrategyAssets")
+        .WithSummary("Edit list: sets the stocks a running strategy follows. Unticked ones stop their signals (waiting ones become missed); their trades stay.");
+
         group.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
@@ -327,9 +382,12 @@ public static class StrategyEndpoints
             .ToListAsync(cancellationToken);
 
         var shown = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
+        var you = book.You(strategy);
+        // A stock unticked with Edit list keeps its row, dimmed, while it has trades in the results (spec: strategy page).
+        var removed = strategy.Assets.Where(a => !shown.Contains(a.AssetId) && you.Any(t => t.AssetId == a.AssetId)).Select(a => a.AssetId).ToList();
 
         // Assets referenced by the strategy, its signals, or its trades.
-        var allAssetIds = shown.Concat(signalEntities.Select(s => s.AssetId)).Distinct().ToList();
+        var allAssetIds = shown.Concat(removed).Concat(signalEntities.Select(s => s.AssetId)).Distinct().ToList();
         var assetsById = await db.Assets.AsNoTracking().Include(a => a.Texts).Where(a => allAssetIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, cancellationToken);
 
@@ -338,14 +396,13 @@ public static class StrategyEndpoints
             .GroupBy(r => r.AssetId).Select(g => g.OrderByDescending(r => r.Date).First())
             .ToDictionaryAsync(r => r.AssetId, cancellationToken);
 
-        var assets = shown.Where(assetsById.ContainsKey).Select(id => assetsById[id]).ToList();
+        var assets = shown.Concat(removed).Where(assetsById.ContainsKey).Select(id => assetsById[id]).ToList();
 
         // The close each latest evaluation looked at (one day for most strategies).
         var checkedDays = latest.Values.Select(r => r.Date).Distinct().ToList();
         var closes = await db.Prices.AsNoTracking().Where(p => shown.Contains(p.AssetId) && checkedDays.Contains(p.Date))
             .ToDictionaryAsync(p => (p.AssetId, p.Date), p => p.Close, cancellationToken);
 
-        var you = book.You(strategy);
         var maxSteps = strategy.Budget.MaxSteps;
         var stocks = assets.Select(asset =>
         {
@@ -376,7 +433,7 @@ public static class StrategyEndpoints
             var latestStatus = evaluation?.Status
                 ?? (ai is null ? null : aiScores!.ContainsKey(asset.Id) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
             var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
-            var status = StrategyPage.WithCandidacy(
+            var status = removed.Contains(asset.Id) ? StockStatus.Removed : StrategyPage.WithCandidacy(
                 StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey), checks);
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
             var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";

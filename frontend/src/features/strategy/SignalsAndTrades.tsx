@@ -23,6 +23,7 @@ import { signalPath } from '../dashboard/paths'
 import { ambiguousFields, parseNumber, rateOn, skipReasons, type TradeForm } from '../signal/signalForm'
 import { strategyCacheKey } from './useStrategy'
 import styles from './SignalsAndTrades.module.css'
+import { followedStocks } from './stockLine'
 
 type TimelineItem =
   | { kind: 'trade'; trade: StrategyTradeItem; date: string; createdAt: string }
@@ -307,7 +308,9 @@ function SignalPill({ signal }: { signal: StrategySignalItem }) {
 
 function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: () => void; onCancel: () => void }) {
   const t = useT()
-  const [assetId, setAssetId] = useState(s.stocks[0]?.assetId ?? '')
+  // Trades by hand go on the stocks it follows (the API refuses the others).
+  const stocks = followedStocks(s)
+  const [assetId, setAssetId] = useState(stocks[0]?.assetId ?? '')
   const [side, setSide] = useState<TradeSide>('buy')
   const [date, setDate] = useState(s.today)
   const [price, setPrice] = useState('')
@@ -386,7 +389,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
         label={t('trades.stock')}
         value={assetId}
         error={errors.assetId}
-        options={s.stocks.map((st) => ({ value: st.assetId, label: `${st.name} (${st.symbol})` }))}
+        options={stocks.map((st) => ({ value: st.assetId, label: `${st.name} (${st.symbol})` }))}
         onChange={setAssetId}
       />
 

@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
-/// <summary>The strategy page's actions, end to end: rename, the alerts switch, Archive, and deleting an archived strategy.</summary>
+/// <summary>The strategy page's actions, end to end: rename, Edit list, the alerts switch, Archive, and deleting an archived strategy.</summary>
 public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsApi>
 {
     static object Request(string name, string mode = "live") => new
@@ -243,6 +243,90 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
         finally
         {
             await RemoveAsync(email);
+        }
+    }
+
+    [NeonFact]
+    public async Task Edit_list_stops_an_unticked_stocks_signals_keeps_its_trades_and_brings_it_back_from_that_day()
+    {
+        var (client, email) = await factory.VerifiedAsync();
+        var (other, otherEmail) = await factory.VerifiedAsync();
+        try
+        {
+            var id = await StartAsync(client, $"List {Tag()}");
+            var dip = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).ToList();
+            var (a, b, c) = (dip[0], dip[1], dip[2]); // It started with A and B.
+            Guid signalId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var signal = new Signal
+                {
+                    StrategyId = id, AssetId = a, Side = TradeSide.Buy, StepNo = 1, MaxSteps = 5, StepAmount = 100,
+                    SignalDate = new DateOnly(2026, 9, 22), ClosePrice = 100, Facts = JsonDocument.Parse("{}"),
+                    Status = SignalStatus.Waiting, SnoozedUntil = new DateOnly(2026, 9, 23),
+                };
+                db.Signals.Add(signal);
+                db.UserTrades.Add(new UserTrade
+                {
+                    StrategyId = id, AssetId = a, TradeDate = new DateOnly(2026, 9, 22), Side = TradeSide.Buy, Price = 100, EnteredAs = EnteredAs.Amount,
+                    Amount = 99, Shares = 0.99m, Fee = 1, FxRate = 1, FxSource = FxSource.Reference, Source = TradeSource.Manual,
+                });
+                await db.SaveChangesAsync();
+                signalId = signal.Id;
+            }
+
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = Array.Empty<Guid>() })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = new[] { b, b } })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = new[] { b, Guid.NewGuid() } })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest,
+                (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = Enumerable.Range(0, 61).Select(_ => Guid.NewGuid()) })).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await other.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = new[] { b } })).StatusCode);
+
+            // A unticked, C added: A's waiting signal is missed, and its row stays (removed) for its trade.
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = new[] { b, c } })).StatusCode);
+            var detail = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}");
+            var rows = detail.GetProperty("stocks").EnumerateArray().ToDictionary(r => r.GetProperty("assetId").GetGuid(), r => r.GetProperty("status").GetString());
+            Assert.Equal("removed", rows[a]);
+            Assert.NotEqual("removed", rows[b]);
+            Assert.NotEqual("removed", rows[c]);
+            Assert.Equal(3, rows.Count);
+            DateTimeOffset removedAt;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.Id == signalId);
+                Assert.Equal(SignalStatus.Missed, signal.Status);
+                Assert.Null(signal.SnoozedUntil);
+                Assert.NotNull(signal.EndedOn);
+                var listed = await db.StrategyAssets.AsNoTracking().SingleAsync(sa => sa.StrategyId == id && sa.AssetId == a);
+                Assert.False(listed.Active);
+                removedAt = listed.RemovedAt!.Value;
+                Assert.Equal(1, await db.UserTrades.CountAsync(t => t.StrategyId == id && t.AssetId == a && t.DeletedAt == null));
+            }
+
+            // Ticked again: followed from now on, and B unticked with no trades leaves the page.
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = new[] { a, c } })).StatusCode);
+            detail = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}");
+            rows = detail.GetProperty("stocks").EnumerateArray().ToDictionary(r => r.GetProperty("assetId").GetGuid(), r => r.GetProperty("status").GetString());
+            Assert.Equal(new HashSet<Guid> { a, c }, rows.Keys.ToHashSet());
+            Assert.NotEqual("removed", rows[a]);
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var listed = await db.StrategyAssets.AsNoTracking().SingleAsync(sa => sa.StrategyId == id && sa.AssetId == a);
+                Assert.True(listed.Active);
+                Assert.Null(listed.RemovedAt);
+                Assert.True(listed.AddedAt >= removedAt);
+            }
+
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync($"/strategies/{id}/assets", new { assetIds = new[] { a } })).StatusCode);
+        }
+        finally
+        {
+            await RemoveAsync(email);
+            await RemoveAsync(otherEmail);
         }
     }
 }

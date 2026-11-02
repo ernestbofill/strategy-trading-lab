@@ -9,7 +9,7 @@ import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { aiRoundPath, aiRoundsPath, stockPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
+import { aiRoundPath, aiRoundsPath, stockPath, strategyListPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
 import { ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
@@ -17,7 +17,7 @@ import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
-import { stockLine } from './stockLine'
+import { followedStocks, stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
 
 function Figure({ label, value, highlight, tip }: { label: string; value: number | null; highlight?: boolean; tip?: ReactNode }) {
@@ -141,7 +141,15 @@ function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummar
 function Stocks({ s }: { s: StrategyDetail }) {
   const t = useT()
   return (
-    <Section title={t(s.investsIn === 'stockList' ? 'strategy.stocks' : 'strategy.funds', { count: s.stocks.length })}>
+    <Section
+      title={t(s.investsIn === 'stockList' ? 'strategy.stocks' : 'strategy.funds', { count: followedStocks(s).length })}
+      aside={
+        // A fund template's fund isn't changed on a running strategy (not designed).
+        s.status === 'running' && s.investsIn === 'stockList' ? (
+          <TextAction to={strategyListPath(s.id)}>{t('strategy.editList')}</TextAction>
+        ) : undefined
+      }
+    >
       <ul className={styles.stocks}>
         {s.stocks.map((row) => {
           const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
@@ -165,7 +173,7 @@ function Stocks({ s }: { s: StrategyDetail }) {
           // Every row opens its stock page; a signal waiting for the user is answered from there.
           return (
             <li key={row.assetId}>
-              <Link to={stockPath(s.id, row.assetId)} className={styles.stock}>
+              <Link to={stockPath(s.id, row.assetId)} className={styles.stock} data-removed={row.status === 'removed' || undefined}>
                 {content}
               </Link>
             </li>

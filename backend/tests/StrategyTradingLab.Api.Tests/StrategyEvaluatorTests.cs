@@ -543,6 +543,30 @@ public class StrategyEvaluatorTests
 
 
     [NeonFact]
+    public async Task A_stock_ticked_again_gets_no_signal_for_the_days_it_was_off_the_list()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // Checked last on day 298, then off the list over the dip on day 300, and ticked again on day 301 (Edit list).
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            var back = new DateTimeOffset(new DateOnly(2024, 1, 1).AddDays(301).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            await db.StrategyAssets.Where(a => a.StrategyId == strategyId).ExecuteUpdateAsync(a => a.SetProperty(x => x.AddedAt, back));
+
+            await Evaluator(db).RunAsync(default);
+
+            Assert.Equal(0, await SignalCount(db, strategyId)); // Not day 300's signal, back-dated.
+            Assert.True(await db.DailyEvaluations.AnyAsync(e => e.StrategyId == strategyId && e.Date == new DateOnly(2024, 1, 1).AddDays(301)));
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_waiting_signal_left_on_an_ended_strategy_is_missed_by_the_next_run()
     {
         using var api = new AccountsApi();

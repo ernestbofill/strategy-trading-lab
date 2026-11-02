@@ -96,11 +96,11 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
 
   const start = async () => {
     if (atLimit) return
-    // First, while the tap still counts: the browser only shows its permission prompt from one.
-    const asked = pushAsk.run()
+    // First, while the tap still counts: the browser only shows its permission prompt from one. Not awaited: the device's
+    // setup (the service worker, the server) must never hold up or block the start.
+    void pushAsk.run()
     setStarting(true)
     setError(null)
-    await asked
     try {
       await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
     } catch (e) {

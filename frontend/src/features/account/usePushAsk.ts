@@ -26,8 +26,9 @@ export function usePushAsk() {
   const [ticked, setTicked] = useState(() => !pushAsked())
 
   /**
-   * Call it first thing in the Start tap, before anything else is awaited: the browser only asks from a tap. Never throws, so
-   * the strategy starts whatever the answer. Ticking it also turns the account's App box back on.
+   * Call it first thing in the Start tap, before anything else is awaited (the browser only asks from a tap), and don't wait for
+   * it: the rest (the service worker, the server) can be slow or never settle. Never throws. Ticking it also turns the
+   * account's App box back on.
    */
   const run = async () => {
     try {

@@ -11,7 +11,9 @@ import { useT } from '../../i18n/I18n'
 import { resolveBudget } from '../../lib/budget'
 import { money } from '../../lib/format'
 import { useOptionalAccount } from '../account/AccountContext'
-import { accountEmailsPath, signUpPathFor } from '../account/paths'
+import { accountNotificationsPath, signUpPathFor } from '../account/paths'
+import { usePushAsk } from '../account/usePushAsk'
+import { Checkbox } from '../../components/Field'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
@@ -63,8 +65,20 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Ticked in Choose the mode's Alerts box (shown only where the app offers push), for strategies that alert.
-  const push = draft.push && (isLive || template.aiRound !== null)
+  // Strategies that alert: live ones (signals) and AI ones (rounds due). Their alerts follow the account's
+  // Notifications; the others only appear in the summary.
+  const alerts = isLive || template.aiRound !== null
+  const pushAsk = usePushAsk()
+  // App only where this device will get it: allowed with App on, or the box ticked (which turns App on).
+  const byApp = alerts && ((pushAsk.kind === 'granted' && (account?.alertPush ?? true)) || (pushAsk.kind === 'ask' && pushAsk.ticked))
+  // The server only emails a confirmed address.
+  const byEmail = account ? account.alertEmails && account.emailVerified : true
+  const notifyKey = !alerts
+    ? account?.overviewEmail === false ? 'newStrategy.confirm.notify.off' : 'newStrategy.confirm.notify.summary'
+    : byApp && byEmail ? 'newStrategy.confirm.notify.appEmail'
+    : byApp ? 'newStrategy.confirm.notify.app'
+    : byEmail ? 'newStrategy.confirm.notify.email'
+    : 'newStrategy.confirm.notify.off'
 
   // Numbered against the user's strategies once they are loaded; only queried for logged-in accounts.
   const dashboard = useDashboard(Boolean(account))
@@ -81,10 +95,13 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
 
   const start = async () => {
     if (atLimit) return
+    // First, while the tap still counts: the browser only shows its permission prompt from one. Not awaited: the device's
+    // setup (the service worker, the server) must never hold up or block the start.
+    void pushAsk.run()
     setStarting(true)
     setError(null)
     try {
-      await api.startStrategy({ ...newStrategyFrom(draft, template, shownName, currency), push })
+      await api.startStrategy(newStrategyFrom(draft, template, shownName, currency))
     } catch (e) {
       setError(
         e instanceof NameTakenError
@@ -102,8 +119,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     invalidate(dashboardCacheKey)
     // Replace this screen in the history: going back must not reopen Confirm with the reset draft, which would
     // start a second strategy from the default template. An AI strategy's first round waits on the dashboard.
-    // With push chosen, the dashboard asks to allow notifications on this device (spec: Choose the mode, Alerts).
-    navigate(dashboardPath, { replace: true, state: push ? { askPush: true } : null })
+    navigate(dashboardPath, { replace: true })
     reset()
   }
 
@@ -142,10 +158,11 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
       to: budgetPath,
     },
-    { label: t('newStrategy.confirm.row.overview'), value: t('newStrategy.confirm.overview'), to: isGuest ? undefined : accountEmailsPath },
-    ...(isLive || template.aiRound
-      ? [{ label: t('newStrategy.confirm.row.alerts'), value: t(push ? 'newStrategy.confirm.alertsPush' : 'newStrategy.confirm.alerts'), to: modePath }]
-      : []),
+    {
+      label: t('newStrategy.confirm.row.notifications'),
+      value: t(notifyKey),
+      to: isGuest ? undefined : accountNotificationsPath,
+    },
     ...(template.aiRound
       ? [
           {
@@ -228,6 +245,16 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       <Section title={t('newStrategy.confirm.next')}>
         <BulletList items={next} />
       </Section>
+
+      {/* Right above the start button: Start asks the browser when it is ticked (spec: Notifications). */}
+      {pushAsk.kind === 'ask' && (
+        <Checkbox checked={pushAsk.ticked} onChange={pushAsk.setTicked}>
+          {t('newStrategy.confirm.allowPush')}
+        </Checkbox>
+      )}
+      {(pushAsk.kind === 'blocked' || pushAsk.kind === 'homeScreen') && (
+        <p className="caption">{t(pushAsk.kind === 'blocked' ? 'account.push.blocked' : 'account.push.homeScreen')}</p>
+      )}
     </Screen>
   )
 }

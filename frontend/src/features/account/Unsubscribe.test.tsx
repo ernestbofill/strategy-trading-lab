@@ -55,6 +55,6 @@ describe('Unsubscribe', () => {
     expect(await screen.findByText(/Couldn't turn them off/i)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Turn off' }))
-    expect(await screen.findByText(/No more daily overviews/i)).toBeTruthy()
+    expect(await screen.findByText(/No more summary emails/i)).toBeTruthy()
   })
 })

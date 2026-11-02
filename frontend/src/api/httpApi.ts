@@ -267,8 +267,7 @@ export const httpApi: Api = {
   setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
   setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
-  getStockChangeEmails: () => getRequired('/account/stock-change-emails'),
-  setStockChangeEmails: async (strategyId, enabled) => void (await account('/stock-change-emails', { strategyId, enabled }, { session: true })),
+  setAlertPush: async (enabled) => void (await account('/alert-push', { enabled }, { session: true })),
   unsubscribe: async (token, kind) => {
     const response = await fetch(`${BASE_URL}/email/unsubscribe/${encodeURIComponent(token)}/${kind}`, { method: 'POST', headers: APP_HEADER })
     if (response.status === 404) throw new ExpiredLinkError()
@@ -303,8 +302,6 @@ export const httpApi: Api = {
     if (!response.ok && response.status !== 404) throw new Error(`DELETE /strategies/${id} failed: HTTP ${response.status}`)
   },
   renameStrategy: (id, name) => strategyAction('PUT', id, 'name', { name }),
-  setStrategyNotifications: (id, enabled) => strategyAction('PUT', id, 'notifications', { enabled }),
-  setStrategyPush: (id, enabled) => strategyAction('PUT', id, 'push', { enabled }),
   getPushKey: async () => (await getRequired<{ publicKey: string | null }>('/push/key')).publicKey,
   savePushSubscription: (subscription) => put('/push/subscription', subscription),
   removePushSubscription: async (endpoint) => {

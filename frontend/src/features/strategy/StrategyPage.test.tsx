@@ -25,8 +25,6 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   mode: 'live',
   status: 'running',
   endedOn: null,
-  notifications: true,
-  push: false,
   startedOn: '2026-10-13',
   today: '2026-10-24',
   currency: 'EUR',
@@ -205,18 +203,8 @@ describe('StrategyPage', () => {
     expect(rename).not.toHaveBeenCalled()
   })
 
-  it("switches a live strategy's alerts", async () => {
+  it('has no notification switches: they are all in the account', async () => {
     open(detail({ id: 'a' }))
-    const alerts = vi.spyOn(api, 'setStrategyNotifications').mockResolvedValue()
-
-    const box = await screen.findByRole('checkbox', { name: "Email me this strategy's signals" })
-    expect((box as HTMLInputElement).checked).toBe(true)
-    fireEvent.click(box)
-    expect(alerts).toHaveBeenCalledWith('a', false)
-  })
-
-  it('has no alerts switch on a simulation that sends no emails', async () => {
-    open(detail({ id: 'n', mode: 'simulation', signals: null }))
 
     expect(await screen.findByRole('button', { name: 'Archive the strategy' })).toBeTruthy()
     expect(screen.queryByRole('checkbox')).toBeNull()

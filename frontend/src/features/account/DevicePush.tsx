@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { UnauthorizedError } from '../../api'
 import { FormMessage } from '../../components/Field'
-import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { deviceSubscription, pushKey, pushSupport, subscribeDevice, unsubscribeDevice } from '../../lib/push'
 import styles from './Account.module.css'
@@ -9,7 +8,7 @@ import styles from './Account.module.css'
 /** `none`: the server sends no push (no keys), so there is nothing to turn on. */
 type DeviceState = 'loading' | 'none' | 'on' | 'off'
 
-/** The account page's "Notifications" section: push on this device, on or off. */
+/** The account page's "This device" line under Notifications: push on this device, on or off. */
 export function DevicePush() {
   const t = useT()
   const support = pushSupport()
@@ -63,58 +62,7 @@ export function DevicePush() {
       <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => void change()}>
         {t(state === 'on' ? 'account.push.turnOff' : 'account.push.turnOn')}
       </button>
-      <p className="caption">{t('account.push.hint')}</p>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
     </>
-  )
-}
-
-/**
- * Right after a strategy is started with push on (Ernest, 2026-11-01): asks to allow notifications on this device, from a tap,
- * since Safari only asks then. Already allowed: it subscribes quietly and shows nothing.
- */
-export function PushPrompt({ onDone }: { onDone: () => void }) {
-  const t = useT()
-  const support = pushSupport()
-  const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<'on' | 'refused' | 'failed' | null>(null)
-  const granted = support === 'ready' && Notification.permission === 'granted'
-
-  useEffect(() => {
-    if (!granted) return
-    subscribeDevice().then(onDone, onDone)
-  }, [granted, onDone])
-
-  if (granted || support === 'unsupported') return null
-
-  const allow = async () => {
-    setBusy(true)
-    try {
-      setResult((await subscribeDevice()) ? 'on' : 'refused')
-    } catch {
-      setResult('failed')
-    }
-    setBusy(false)
-  }
-
-  return (
-    <div className={styles.pushPrompt} role="region" aria-label={t('account.push.promptTitle')}>
-      <p className="ui-strong">{t('account.push.promptTitle')}</p>
-      {result === 'on' ? (
-        <FormMessage tone="done">{t('account.push.promptOn')}</FormMessage>
-      ) : result ? (
-        <FormMessage tone="error">{t(result === 'refused' ? 'account.push.promptRefused' : 'account.push.failed')}</FormMessage>
-      ) : support === 'ready' ? (
-        <>
-          <p>{t('account.push.promptText')}</p>
-          <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => void allow()}>
-            {t('account.push.promptAllow')}
-          </button>
-        </>
-      ) : (
-        <p>{t(support === 'homeScreen' ? 'account.push.homeScreen' : 'account.push.blocked')}</p>
-      )}
-      <TextAction onClick={onDone}>{t(result ? 'account.push.promptClose' : 'account.push.promptLater')}</TextAction>
-    </div>
   )
 }

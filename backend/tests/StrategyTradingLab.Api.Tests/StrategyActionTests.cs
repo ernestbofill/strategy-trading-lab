@@ -66,52 +66,6 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
-    public async Task The_alerts_switch_turns_a_running_strategys_notifications_off_and_on()
-    {
-        var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).
-        try
-        {
-            var id = await StartAsync(client, $"Alerts {Tag()}");
-            Assert.True((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("notifications").GetBoolean());
-
-            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/strategies/{id}/notifications", new { enabled = (bool?)null })).StatusCode);
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/notifications", new { enabled = false })).StatusCode);
-            Assert.False((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("notifications").GetBoolean());
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/notifications", new { enabled = true })).StatusCode);
-            Assert.True((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("notifications").GetBoolean());
-
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync($"/strategies/{id}/notifications", new { enabled = false })).StatusCode);
-        }
-        finally
-        {
-            await RemoveAsync(email);
-        }
-    }
-
-    [NeonFact]
-    public async Task The_push_switch_is_off_by_default_and_turns_on_and_off_while_running()
-    {
-        var (client, email) = await factory.VerifiedAsync();
-        try
-        {
-            var id = await StartAsync(client, $"Push {Tag()}");
-            Assert.False((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("push").GetBoolean());
-
-            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/strategies/{id}/push", new { enabled = (bool?)null })).StatusCode);
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/push", new { enabled = true })).StatusCode);
-            Assert.True((await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("push").GetBoolean());
-
-            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"/strategies/{id}/archive", null)).StatusCode);
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync($"/strategies/{id}/push", new { enabled = false })).StatusCode);
-        }
-        finally
-        {
-            await RemoveAsync(email);
-        }
-    }
-
-    [NeonFact]
     public async Task A_device_subscribes_once_moves_to_whoever_logs_in_and_unsubscribes()
     {
         var (first, firstEmail) = await factory.VerifiedAsync();

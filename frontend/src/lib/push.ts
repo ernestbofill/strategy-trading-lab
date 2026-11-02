@@ -87,3 +87,25 @@ export async function unsubscribeDevice(): Promise<void> {
   await api.removePushSubscription(subscription.endpoint)
   await subscription.unsubscribe()
 }
+
+const ASKED_KEY = 'stl.pushAsked'
+
+/**
+ * Whether Confirm already offered "Allow notifications on this device" here (spec: Notifications): ticked the first time,
+ * unticked from then on. Per device, since the permission is; false without storage.
+ */
+export function pushAsked(): boolean {
+  try {
+    return localStorage.getItem(ASKED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+export function notePushAsked(): void {
+  try {
+    localStorage.setItem(ASKED_KEY, 'true')
+  } catch {
+    // No storage: the box is ticked again next time, which is harmless.
+  }
+}

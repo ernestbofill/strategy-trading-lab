@@ -11,7 +11,6 @@ export const account = {
   'account.expiredLink': 'This link has expired. Ask for a new one.',
   'account.error.tooManyTries': 'Too many tries. Wait a few minutes and try again.',
   'account.error.generic': 'Something went wrong. Try again.',
-  'account.overviewEmail': "Email me a summary on days my strategies change.",
   'account.unsubscribe.topBar': 'STL // EMAIL',
   'account.unsubscribe.title': 'Turn off these emails?',
   'account.unsubscribe.titleDone': 'Emails turned off',

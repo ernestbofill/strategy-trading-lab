@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Invites;
 
 namespace StrategyTradingLab.Api.Auth;
 
-public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool OverviewEmail, bool DisclaimerAccepted,
+public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool DisclaimerAccepted,
     string? Currency = null, string? FirstName = null, string? LastName = null, string? InviteCode = null, string? TermsVersion = null);
 public record LogInRequest(string? Email, string? Password);
 public record TokenRequest(string? Token);
@@ -104,7 +104,7 @@ public static class AccountEndpoints
             var user = new User
             {
                 Email = email!, FirstName = firstName, LastName = lastName, TimeZone = request.TimeZone!, Locale = locale,
-                Currency = currency, OverviewEmail = request.OverviewEmail, DisclaimerAcceptedAt = now,
+                Currency = currency, DisclaimerAcceptedAt = now,
                 TermsVersionAccepted = termsVersion, TermsAcceptedAt = now,
                 Role = invite?.Role ?? UserRole.User, InviteId = invite?.Id,
             };

@@ -12,7 +12,6 @@ export const account: Record<keyof typeof en, string> = {
   'account.expiredLink': "Aquest enllaç ha caducat. Demana'n un de nou.",
   'account.error.tooManyTries': 'Massa intents. Espera uns minuts i torna-ho a provar.',
   'account.error.generic': 'Alguna cosa ha fallat. Torna-ho a provar.',
-  'account.overviewEmail': "Envia’m un resum per correu els dies que les meves estratègies canvien.",
   'account.unsubscribe.topBar': 'STL // CORREU',
   'account.unsubscribe.title': 'Vols desactivar aquests correus?',
   'account.unsubscribe.titleDone': 'Correus desactivats',

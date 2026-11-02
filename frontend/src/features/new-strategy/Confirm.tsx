@@ -13,6 +13,7 @@ import { money } from '../../lib/format'
 import { useOptionalAccount } from '../account/AccountContext'
 import { accountNotificationsPath, signUpPathFor } from '../account/paths'
 import { usePushOffered } from '../account/usePushOffered'
+import { PushPrompt } from '../account/DevicePush'
 import { invalidate } from '../../lib/useLoadable'
 import { dashboardCacheKey, useDashboard } from '../dashboard/useDashboard'
 import styles from './Confirm.module.css'
@@ -23,6 +24,8 @@ import { defaultName, NAME_MAX_LENGTH, newStrategyFrom } from './newStrategy'
 import { advancedPath, budgetPath, confirmPath, dashboardPath, modePath, pickPath, promptPath, reviewPath } from './paths'
 import { useDraftCurrency } from './useDraftCurrency'
 import { useTemplate } from './useTemplate'
+
+const noop = () => {}
 
 interface SummaryRow {
   label: string
@@ -240,6 +243,9 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       <Section title={t('newStrategy.confirm.next')}>
         <BulletList items={next} />
       </Section>
+
+      {/* Right above the start button: the second ask, if the dashboard's was put off (spec: Notifications). */}
+      {byApp && <PushPrompt place="confirm" onDone={noop} />}
     </Screen>
   )
 }

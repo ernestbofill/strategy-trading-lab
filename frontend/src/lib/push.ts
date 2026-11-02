@@ -87,3 +87,25 @@ export async function unsubscribeDevice(): Promise<void> {
   await api.removePushSubscription(subscription.endpoint)
   await subscription.unsubscribe()
 }
+
+const ASKS_KEY = 'stl.pushAsks'
+
+/**
+ * How many times this device was asked to allow notifications (spec: Notifications): at most twice, on the dashboard after
+ * the first live or AI strategy starts, then on Confirm of the next one. Per device, since the permission is; 0 without storage.
+ */
+export function pushAsks(): number {
+  try {
+    return Number(localStorage.getItem(ASKS_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
+export function notePushAsk(): void {
+  try {
+    localStorage.setItem(ASKS_KEY, String(pushAsks() + 1))
+  } catch {
+    // No storage: the device may be asked again, which is harmless.
+  }
+}

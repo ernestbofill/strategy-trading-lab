@@ -754,7 +754,6 @@ export interface SignUp {
   locale: Locale
   /** IANA, e.g. "Europe/Madrid". */
   timeZone: string
-  overviewEmail: boolean
   currency: Currency
   disclaimerAccepted: boolean
   /** The accepted legal terms version. */

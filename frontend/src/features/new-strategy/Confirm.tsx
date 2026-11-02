@@ -69,8 +69,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   // Notifications; the others only appear in the summary.
   const alerts = isLive || template.aiRound !== null
   const pushAsk = usePushAsk()
-  // App only where this device can get it (not blocked, not an iPhone browser tab).
-  const byApp = alerts && (pushAsk.kind === 'ask' || pushAsk.kind === 'granted') && (account?.alertPush ?? true)
+  // App only where this device will get it: allowed with App on, or the box ticked (which turns App on).
+  const byApp = alerts && ((pushAsk.kind === 'granted' && (account?.alertPush ?? true)) || (pushAsk.kind === 'ask' && pushAsk.ticked))
   // The server only emails a confirmed address.
   const byEmail = account ? account.alertEmails && account.emailVerified : true
   const notifyKey = !alerts

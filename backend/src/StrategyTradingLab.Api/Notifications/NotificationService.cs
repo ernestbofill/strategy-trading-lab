@@ -19,6 +19,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder), and no overview goes out before it.</summary>
     public const int MorningHour = 7;
 
+    /// <summary>The summary's window of earlier daily checks: stock changes compare against them.</summary>
+    const int RecentDays = 4;
+
     /// <summary>How far back an alert that wasn't sent is still tried.</summary>
     public const int AlertDays = 3;
 
@@ -330,13 +333,15 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
         var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
                             join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
-                            where ids.Contains(eval.StrategyId) && eval.Date >= lastSession.AddDays(-4)
+                            where ids.Contains(eval.StrategyId) && eval.Date >= lastSession.AddDays(-RecentDays)
                             select new { eval, asset.Name }).ToListAsync(cancellationToken);
         var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId);
         if (stockChanges.Count == 0 && !signals.Any(x => x.signal.SignalDate == lastSession))
-            // Only strategies checked in the recent days count: one that has nothing to check (every stock unticked) or keeps
-            // failing would otherwise hold the verdict, and its hourly retry, forever.
-            return (null, strategies.Where(s => s.StartedOn <= lastSession && recent.Any(x => x.eval.StrategyId == s.Id))
+            // Only strategies the check is still due to reach count: those checked in the recent days, or started in them (not
+            // checked yet). One that has nothing to check (every stock unticked) or keeps failing would otherwise hold the
+            // verdict, and its hourly retry, forever.
+            return (null, strategies.Where(s => s.StartedOn <= lastSession
+                    && (s.StartedOn >= lastSession.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
                 .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == lastSession)));
 
         var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)

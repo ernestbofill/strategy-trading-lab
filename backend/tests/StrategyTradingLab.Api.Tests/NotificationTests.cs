@@ -521,6 +521,60 @@ public class NotificationTests
     }
 
     [NeonFact]
+    public async Task A_strategy_the_check_never_reaches_does_not_hold_a_quiet_day()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seeded = await SeedAsync(db);
+        try
+        {
+            // Running for weeks with nothing checked (every stock unticked): no evaluation in the recent days.
+            db.Strategies.Add(new Strategy
+            {
+                UserId = seeded.UserId, TemplateKey = "dip", Name = $"Empty {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Simulation, Status = StrategyStatus.Running,
+                StartedOn = new DateOnly(2026, 10, 1), Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+            });
+            await db.SaveChangesAsync();
+
+            await Service(scope, new Captured()).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default);
+            var quiet = await db.Notifications.SingleAsync(n => n.UserId == seeded.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));
+            Assert.Equal("Not sent: nothing changed.", quiet.Error);
+        }
+        finally
+        {
+            await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_quiet_day_waits_for_a_strategy_started_that_day_to_be_checked()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seeded = await SeedAsync(db);
+        try
+        {
+            var friday = new DateOnly(2026, 10, 23);
+            db.Strategies.Add(new Strategy
+            {
+                UserId = seeded.UserId, TemplateKey = "dip", Name = $"New {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Simulation, Status = StrategyStatus.Running,
+                StartedOn = friday, Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+                Assets = [new StrategyAsset { AssetId = seeded.AssetId, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            });
+            await db.SaveChangesAsync();
+
+            Assert.Equal(0, await Service(scope, new Captured()).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default));
+            Assert.False(db.Notifications.Any(n => n.UserId == seeded.UserId && n.Kind == NotificationKind.Overview && n.ForDate == friday));
+        }
+        finally
+        {
+            await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_snoozed_signal_is_reminded_once_from_seven_on_its_snooze_day_while_it_waits()
     {
         using var api = new AccountsApi();

@@ -74,7 +74,7 @@ public class FeedbackValidationTests
         Assert.Contains("ana@example.com sent feedback (bug) on /new/templates/ai.", email.Body);
         Assert.Contains("About: \"ADD A STOCK\"", email.Body);
         Assert.Contains("The button does nothing", email.Body);
-        Assert.Contains("https://stl.example/feedback", email.Body);
+        Assert.Contains("https://stl.example/en/feedback", email.Body);
     }
 
     [Fact]

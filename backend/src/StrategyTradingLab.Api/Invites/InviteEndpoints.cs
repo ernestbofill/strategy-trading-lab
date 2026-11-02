@@ -146,6 +146,6 @@ public static class InviteEndpoints
     }
 
     static AdminInvite Dto(Invite i, InviteTexts texts, string? from, IReadOnlyList<InvitedUser> joined) =>
-        new(i.Id, i.Code, texts.Link(i.Code), texts.Message(i.Code, i.Locale, i.FirstName, from), i.FirstName, i.LastName, i.Email,
+        new(i.Id, i.Code, texts.Link(i.Code, i.Locale), texts.Message(i.Code, i.Locale, i.FirstName, from), i.FirstName, i.LastName, i.Email,
             i.Locale, i.Role, i.MaxUses, i.Uses, i.CreatedAt, i.SentAt, i.RevokedAt, joined);
 }

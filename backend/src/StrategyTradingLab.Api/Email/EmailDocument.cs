@@ -148,11 +148,12 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         var line = preheader?.Replace('\n', ' ') ?? "";
         var cut = line.Length > 140 && char.IsHighSurrogate(line[138]) ? 138 : 139; // Never half an emoji.
         var preview = Encode(line.Length > 140 ? line[..cut] + "…" : line);
-        var brand = appUrl is null ? "STRATEGY TRADING LAB"
-            : $"<a href=\"{Encode(appUrl)}/\" style=\"color:{Primary};text-decoration:none;\">STRATEGY TRADING LAB</a>";
+        var home = appUrl is null ? null : Encode(AppLink.To(appUrl, locale));
+        var brand = home is null ? "STRATEGY TRADING LAB"
+            : $"<a href=\"{home}\" style=\"color:{Primary};text-decoration:none;\">STRATEGY TRADING LAB</a>";
         // No "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.
-        var footer = "Strategy Trading Lab" + (appUrl is null ? ""
-            : $" &middot; <a href=\"{Encode(appUrl)}/\" style=\"color:{InkSoft};\">{Encode(Ca ? "Obre l'aplicació" : "Open the app")}</a>");
+        var footer = "Strategy Trading Lab" + (home is null ? ""
+            : $" &middot; <a href=\"{home}\" style=\"color:{InkSoft};\">{Encode(Ca ? "Obre l'aplicació" : "Open the app")}</a>");
 
         return
             $"<!doctype html><html lang=\"{lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +

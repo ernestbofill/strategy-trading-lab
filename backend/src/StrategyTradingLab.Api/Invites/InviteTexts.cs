@@ -9,11 +9,12 @@ namespace StrategyTradingLab.Api.Invites;
 /// </summary>
 public class InviteTexts(IConfiguration configuration)
 {
-    string AppUrl => (configuration["PublicUrl"] ?? throw new InvalidOperationException("PublicUrl isn't set.")).TrimEnd('/');
+    string AppUrl => AppLink.AppUrl(configuration);
 
-    public string SignUpUrl => $"{AppUrl}/sign-up";
+    /// <summary>Sign-up in the invite's language, so the invitee's first page is in it (spec: Language).</summary>
+    public string SignUpUrl(string locale) => AppLink.To(AppUrl, locale, "/sign-up");
 
-    public string Link(string code) => $"{SignUpUrl}?invite={Uri.EscapeDataString(code)}";
+    public string Link(string code, string locale) => $"{SignUpUrl(locale)}?invite={Uri.EscapeDataString(code)}";
 
     /// <summary>The message to copy, signed with the inviter's first name when they have one.</summary>
     public string Message(string code, string locale, string firstName, string? from)
@@ -23,14 +24,14 @@ public class InviteTexts(IConfiguration configuration)
             ? $"""
               Hola, {firstName}! T'he convidat a Strategy Trading Lab, una app per provar i seguir estratègies d'inversió amb les teves pròpies regles. Primer en simulació, sense diners reals. Mai no opera per tu ni es connecta al teu bròquer.
 
-              Entra amb aquest enllaç: {Link(code)}
-              O registra't a {SignUpUrl} amb el codi {code}{sign}
+              Entra amb aquest enllaç: {Link(code, locale)}
+              O registra't a {SignUpUrl(locale)} amb el codi {code}{sign}
               """
             : $"""
               Hi {firstName}! I've invited you to Strategy Trading Lab, an app to test and follow investing strategies with your own rules. Try them in simulation first, with no real money. It never trades for you or connects to your broker.
 
-              Join with this link: {Link(code)}
-              Or sign up at {SignUpUrl} with the code {code}{sign}
+              Join with this link: {Link(code, locale)}
+              Or sign up at {SignUpUrl(locale)} with the code {code}{sign}
               """;
     }
 
@@ -46,14 +47,14 @@ public class InviteTexts(IConfiguration configuration)
                     .Heading(title)
                     .Paragraph($"Hola, {firstName}!")
                     .Paragraph("Strategy Trading Lab és una app per provar i seguir estratègies d'inversió amb les teves pròpies regles. Comença en simulació, sense diners reals. Mai no opera per tu ni es connecta al teu bròquer.")
-                    .Action("La teva invitació és a punt:", "Accepta la invitació", Link(code))
-                    .Box($"O registra't a {SignUpUrl} amb el codi:\n{code}")
+                    .Action("La teva invitació és a punt:", "Accepta la invitació", Link(code, locale))
+                    .Box($"O registra't a {SignUpUrl(locale)} amb el codi:\n{code}")
                 : document
                     .Heading(title)
                     .Paragraph($"Hi {firstName}!")
                     .Paragraph("Strategy Trading Lab is an app to test and follow investing strategies with your own rules. Start in simulation, with no real money. It never trades for you or connects to your broker.")
-                    .Action("Your invite is ready:", "Accept the invite", Link(code))
-                    .Box($"Or sign up at {SignUpUrl} with the code:\n{code}"))
+                    .Action("Your invite is ready:", "Accept the invite", Link(code, locale))
+                    .Box($"Or sign up at {SignUpUrl(locale)} with the code:\n{code}"))
             .Build(title);
     }
 }

@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import type { Locale } from './api/types'
 import { I18nProvider, useI18n } from './i18n/I18n'
+import { LOCALES } from './i18n/locale'
 import { AccountProvider, useAccount, useOptionalAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
 import { ForgotPassword } from './features/account/ForgotPassword'
@@ -76,6 +78,24 @@ function PreloadTemplates() {
   return null
 }
 
+/**
+ * An emailed link starts with its language (`/ca/sign-up?invite=…`, spec: Language): the page opens in that language,
+ * which this device keeps, and the address loses the prefix. The language changes in the same update as the address, so
+ * the page mounts in it (Sign-up's form starts from the page's language). A signed-in account's own language wins: it is
+ * left alone here, and `LocaleFromAccount` applies the account's when it loads after the link's.
+ */
+function LanguageLink({ locale }: { locale: Locale }) {
+  const { setLocale } = useI18n()
+  const signedIn = useOptionalAccount() !== null
+  const navigate = useNavigate()
+  const { pathname, search, hash } = useLocation()
+  useEffect(() => {
+    if (!signedIn) setLocale(locale)
+    navigate(`${pathname.slice(locale.length + 1) || '/'}${search}${hash}`, { replace: true })
+  }, [locale, signedIn, setLocale, navigate, pathname, search, hash])
+  return null
+}
+
 function Preloads() {
   const { state } = useAccount()
   return state.status === 'ready' && state.account ? <PreloadTemplates /> : null
@@ -105,6 +125,9 @@ export default function App() {
           <Preloads />
           <DraftPerUser>
             <Routes>
+              {LOCALES.map(({ value }) => (
+                <Route key={value} path={`/${value}/*`} element={<LanguageLink locale={value} />} />
+              ))}
               <Route element={<AppLayout />}>
                 <Route path={signUpPath} element={<SignUp />} />
                 <Route path={logInPath} element={<LogIn />} />

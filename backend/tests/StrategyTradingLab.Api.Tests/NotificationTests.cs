@@ -23,7 +23,7 @@ public class NotificationTests
         Assert.Contains("Your rules for Zscaler & friends are met for Zscaler: 8.2% below its recent peak, still above its 50-day average.", body);
         Assert.Contains("Under your settings that's step 2 of 5 (€100).", body);
         Assert.Contains("Close on 22 Oct 2026: $187.5", body);
-        Assert.Contains("https://app.example/strategies/11111111-1111-1111-1111-111111111111/signals/22222222-2222-2222-2222-222222222222", body);
+        Assert.Contains("https://app.example/en/strategies/11111111-1111-1111-1111-111111111111/signals/22222222-2222-2222-2222-222222222222", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
     }
 
@@ -95,7 +95,7 @@ public class NotificationTests
 
         Assert.Equal("Time for the AI round of My AI picks and Tech scores", subject);
         Assert.StartsWith("Time for the AI rounds of My AI picks and Tech scores. It takes about two minutes.", body);
-        Assert.Contains("My AI picks: https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
+        Assert.Contains("My AI picks: https://app.example/en/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
     }
 
@@ -107,6 +107,7 @@ public class NotificationTests
 
         Assert.Equal("És l'hora de la ronda d'IA de Les meves IA", subject);
         Assert.EndsWith(EmailTexts.DisclaimerCa, body);
+        Assert.Contains("https://app.example/ca/strategies/11111111-1111-1111-1111-111111111111/ai-round", body); // Opens in Catalan.
         Assert.Equal("la teva IA l'ha puntuat amb 91 sobre 100, la puntuació més alta de la ronda", EmailTexts.FactSentence(signal, "ca"));
         Assert.Equal("your AI scored it 91 out of 100, the top score of the round", EmailTexts.FactSentence(signal));
     }
@@ -117,7 +118,7 @@ public class NotificationTests
         var (_, body, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], [], "https://app.example", "en",
             [(Guid.Parse("11111111-1111-1111-1111-111111111111"), "My AI picks")]);
 
-        Assert.Contains("Waiting for you\n- Time for the AI round of My AI picks. https://app.example/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
+        Assert.Contains("Waiting for you\n- Time for the AI round of My AI picks. https://app.example/en/strategies/11111111-1111-1111-1111-111111111111/ai-round", body);
     }
 
     sealed class Captured : IEmailSender

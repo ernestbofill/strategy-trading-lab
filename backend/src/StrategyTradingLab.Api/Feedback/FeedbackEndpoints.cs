@@ -137,7 +137,7 @@ public static partial class FeedbackEndpoints
             .Paragraph($"{senderEmail} sent feedback ({kind}){(item.Route is null ? "." : $" on {item.Route}.")}");
         if (item.SelectedText is not null) email.Quote("About", item.SelectedText);
         email.Paragraph(item.Text).Paragraph("Reply to this email to answer them.");
-        if (appUrl is not null) email.Links([("All feedback", $"{appUrl}/feedback")]);
+        if (appUrl is not null) email.Links([("All feedback", AppLink.To(appUrl, "en", "/feedback"))]);
         // The subject holds no address: failed sends log it.
         return new(owner, email.Build($"New feedback ({kind})"), replyTo: senderEmail);
     }

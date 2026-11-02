@@ -131,8 +131,8 @@ public static class EmailTexts
                $"Close on {Date(s.Date)}: {Money(s.ClosePrice, s.AssetCurrency)}";
     }
 
-    /// <summary>The signal's Confirm a signal page.</summary>
-    public static string SignalUrl(SignalLine s, string appUrl) => $"{appUrl}/strategies/{s.StrategyId}/signals/{s.SignalId}";
+    /// <summary>The signal's Confirm a signal page, in the email's language.</summary>
+    public static string SignalUrl(SignalLine s, string appUrl, string locale) => AppLink.To(appUrl, locale, $"/strategies/{s.StrategyId}/signals/{s.SignalId}");
 
     static string ModeName(StrategyMode mode, string locale) =>
         mode == StrategyMode.Live ? (locale == "ca" ? "En directe" : "Live") : (locale == "ca" ? "Simulació" : "Simulation");
@@ -144,7 +144,7 @@ public static class EmailTexts
         var email = new EmailDocument(locale, appUrl).Eyebrow($"{eyebrow} · {ModeName(s.Mode, locale)}");
         if (intro is not null) email.Paragraph(intro);
         return email.Box(SignalText(s, locale))
-            .Action(ca ? "Consulta'l i indica si hi has actuat:" : "See it, and say whether you acted on it:", ca ? "Veure el senyal" : "See the signal", SignalUrl(s, appUrl))
+            .Action(ca ? "Consulta'l i indica si hi has actuat:" : "See it, and say whether you acted on it:", ca ? "Veure el senyal" : "See the signal", SignalUrl(s, appUrl, locale))
             .Disclaimer(DisclaimerFor(locale))
             .Build(subject);
     }
@@ -158,8 +158,8 @@ public static class EmailTexts
         ? Signal(s, appUrl, locale, $"{s.StockName}: es compleixen les teves regles per a {s.StrategyName}", null, s.Side == TradeSide.Sell ? "Senyal de venda" : "Senyal")
         : Signal(s, appUrl, locale, $"{s.StockName}: your rules for {s.StrategyName} are met", null, s.Side == TradeSide.Sell ? "Sale signal" : "Signal");
 
-    /// <summary>The AI round screen of a strategy.</summary>
-    public static string AiRoundUrl(Guid strategyId, string appUrl) => $"{appUrl}/strategies/{strategyId}/ai-round";
+    /// <summary>The AI round screen of a strategy, in the email's language.</summary>
+    public static string AiRoundUrl(Guid strategyId, string appUrl, string locale) => AppLink.To(appUrl, locale, $"/strategies/{strategyId}/ai-round");
 
     /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
     public static EmailContent AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en")
@@ -173,7 +173,7 @@ public static class EmailTexts
             .Paragraph(ca
                 ? $"És l'hora de la ronda d'IA {(many ? "de les estratègies" : "de")} {names}. Són uns dos minuts."
                 : $"Time for the AI round{(many ? "s" : "")} of {names}. It takes about two minutes.")
-            .Links(strategies.Select(s => (s.Name, AiRoundUrl(s.StrategyId, appUrl))))
+            .Links(strategies.Select(s => (s.Name, AiRoundUrl(s.StrategyId, appUrl, locale))))
             .Paragraph(ca
                 ? "L'aplicació no es connecta a la teva IA. Si omets una ronda, aquella ronda no té senyal."
                 : "The app doesn't connect to your AI. If you skip a round, there's no signal that round.")
@@ -193,13 +193,13 @@ public static class EmailTexts
 
         if (waiting.Count > 0 || aiRoundsDue.Count > 0)
             email.Section(ca ? "T’espera a tu" : "Waiting for you",
-                aiRoundsDue.Select(r => new EmailItem(ca ? $"És l'hora de la ronda d'IA de {r.Name}." : $"Time for the AI round of {r.Name}.", AiRoundUrl(r.StrategyId, appUrl)))
+                aiRoundsDue.Select(r => new EmailItem(ca ? $"És l'hora de la ronda d'IA de {r.Name}." : $"Time for the AI round of {r.Name}.", AiRoundUrl(r.StrategyId, appUrl, locale)))
                 .Concat(waiting.Select(s =>
                 {
                     var detail = s.Side == TradeSide.Sell ? (ca ? ": venda" : ": sale")
                         : s.StepNo is { } no && s.MaxSteps is { } max ? (ca ? $": pas {no} de {max}" : $": step {no} of {max}") : "";
                     return new EmailItem(ca ? $"{s.StockName}, {s.StrategyName}{detail}, tancament del {Date(s.Date, locale)}."
-                        : $"{s.StockName}, {s.StrategyName}{detail}, close on {Date(s.Date)}.", SignalUrl(s, appUrl));
+                        : $"{s.StockName}, {s.StrategyName}{detail}, close on {Date(s.Date)}.", SignalUrl(s, appUrl, locale));
                 })));
 
         email.Section(ca ? "Què ha canviat avui" : "What changed today", changed.Count == 0
@@ -222,7 +222,7 @@ public static class EmailTexts
             ? $"{s.Name} ({ModeName(s.Mode, locale)}): des del {Date(s.StartedOn, locale)}, {s.Signals} {(s.Signals == 1 ? "senyal" : "senyals")}"
             : $"{s.Name} ({ModeName(s.Mode, locale)}): since {Date(s.StartedOn)}, {s.Signals} {(s.Signals == 1 ? "signal" : "signals")}")));
 
-        return email.Links([(ca ? "Obre l'aplicació" : "Open the app", $"{appUrl}/")])
+        return email.Links([(ca ? "Obre l'aplicació" : "Open the app", AppLink.To(appUrl, locale))])
             .Disclaimer(DisclaimerFor(locale))
             .Build(title);
     }

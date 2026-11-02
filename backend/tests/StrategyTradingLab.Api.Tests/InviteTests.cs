@@ -62,7 +62,7 @@ public class InviteTests(AccountsApi api) : IClassFixture<AccountsApi>
         var invite = await NewInvite(owner, new { firstName = "Anna", lastName = "Puig", email, locale = "ca", send = true });
 
         var code = invite.GetProperty("code").GetString()!;
-        Assert.EndsWith($"/sign-up?invite={code}", invite.GetProperty("link").GetString());
+        Assert.EndsWith($"/ca/sign-up?invite={code}", invite.GetProperty("link").GetString()); // Opens Sign-up in Catalan.
         var message = invite.GetProperty("message").GetString()!;
         Assert.StartsWith("Hola, Anna!", message);
         Assert.Contains(code, message);
@@ -72,6 +72,7 @@ public class InviteTests(AccountsApi api) : IClassFixture<AccountsApi>
         var sent = await api.Emails.WaitForAsync(email, "Test t'ha convidat a Strategy Trading Lab");
         Assert.NotNull(sent);
         Assert.Contains(code, sent!.Body);
+        Assert.Contains($"/ca/sign-up?invite={code}", sent.Body);
         Assert.NotNull(sent.ReplyTo); // Answers go to the owner.
 
         var list = await owner.GetFromJsonAsync<JsonElement>("/admin/invites");

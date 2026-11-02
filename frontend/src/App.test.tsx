@@ -26,6 +26,7 @@ function open(path: string) {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  localStorage.clear()
   window.history.replaceState({}, '', '/')
 })
 
@@ -127,5 +128,39 @@ describe('app routes', () => {
     open('/legal')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Legal notice' })).toBeTruthy()
+  })
+})
+
+describe('links with a language', () => {
+  it('opens an emailed Catalan invite link on Sign-up in Catalan, without the prefix', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+    vi.spyOn(api, 'getSignUpOptions').mockResolvedValue({ inviteOnly: true, invite: null })
+
+    open('/ca/sign-up?invite=ABCD-EFGH')
+
+    expect(await screen.findByText('STL // CREA UN COMPTE')).toBeTruthy()
+    expect(window.location.pathname).toBe('/sign-up')
+    expect(window.location.search).toBe('?invite=ABCD-EFGH')
+    expect(document.documentElement.lang).toBe('ca')
+    expect(localStorage.getItem('stl.locale')).toBe('ca') // This device keeps it.
+  })
+
+  it('opens the home of a language at /ca', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/ca')
+
+    expect(await screen.findByText('STL // CREA UN COMPTE')).toBeTruthy() // A new device lands on Sign-up.
+    expect(window.location.pathname).toBe('/sign-up')
+  })
+
+  it("keeps a signed-in account's language over the link's", async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(account)
+
+    open('/ca/dashboard')
+
+    expect(await screen.findByText('Dashboard screen')).toBeTruthy()
+    expect(window.location.pathname).toBe('/dashboard')
+    expect(document.documentElement.lang).toBe('en')
   })
 })

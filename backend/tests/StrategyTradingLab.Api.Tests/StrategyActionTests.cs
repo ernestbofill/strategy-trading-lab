@@ -293,7 +293,8 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
             Assert.Equal(3, rows.Count);
             // The user may still sell what they hold of an unticked stock.
             var sale = await client.PostAsJsonAsync($"/strategies/{id}/trades", new
-                { assetId = a, side = "sell", date = new DateOnly(2026, 9, 23), price = 100m, enteredAs = "shares", shares = 0.99m, fee = 1m });
+                { assetId = a, side = "sell", date = new DateOnly(2026, 9, 23), price = 100m, enteredAs = "shares", shares = 0.99m, fee = 1m,
+                  fxSource = "user", fxRate = 1m }); // The user's own rate: CI's database may have no reference rate that day.
             Assert.Equal(HttpStatusCode.Created, sale.StatusCode);
             var buy = await client.PostAsJsonAsync($"/strategies/{id}/trades", new
                 { assetId = a, side = "buy", date = new DateOnly(2026, 9, 23), price = 100m, enteredAs = "amount", amount = 99m, fee = 1m });

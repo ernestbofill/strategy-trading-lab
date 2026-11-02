@@ -182,8 +182,8 @@ public static class EmailTexts
         return $"{headline}{step}\n{close}";
     }
 
-    /// <summary>The signal's Confirm a signal page.</summary>
-    public static string SignalUrl(SignalLine s, string appUrl) => $"{appUrl}/strategies/{s.StrategyId}/signals/{s.SignalId}";
+    /// <summary>The signal's Confirm a signal page, in the email's language.</summary>
+    public static string SignalUrl(SignalLine s, string appUrl, string locale) => AppLink.To(appUrl, locale, $"/strategies/{s.StrategyId}/signals/{s.SignalId}");
 
     /// <summary>The alert and the reminder: the signal box and the link to the signal.</summary>
     static EmailContent Signal(SignalLine s, string appUrl, string locale, string subject, string? intro, string eyebrow, string? unsubscribeToken)
@@ -191,7 +191,7 @@ public static class EmailTexts
         var email = new EmailDocument(locale, appUrl).Eyebrow($"{eyebrow} · {ModeName(s.Mode, locale)}");
         if (intro is not null) email.Paragraph(intro);
         return email.Box(SignalText(s, locale))
-            .Action(SeeSignalPrompt.In(locale), SeeSignalButton.In(locale), SignalUrl(s, appUrl))
+            .Action(SeeSignalPrompt.In(locale), SeeSignalButton.In(locale), SignalUrl(s, appUrl, locale))
             .WithUnsubscribe(EmailKind.Alerts, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
             .Build(subject);
@@ -212,8 +212,8 @@ public static class EmailTexts
             (s.Side == TradeSide.Sell ? SaleSignalEyebrow : SignalEyebrow).In(locale),
             unsubscribeToken);
 
-    /// <summary>The AI round screen of a strategy.</summary>
-    public static string AiRoundUrl(Guid strategyId, string appUrl) => $"{appUrl}/strategies/{strategyId}/ai-round";
+    /// <summary>The AI round screen of a strategy, in the email's language.</summary>
+    public static string AiRoundUrl(Guid strategyId, string appUrl, string locale) => AppLink.To(appUrl, locale, $"/strategies/{strategyId}/ai-round");
 
     /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
     public static EmailContent AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en", string? unsubscribeToken = null)
@@ -224,7 +224,7 @@ public static class EmailTexts
         return new EmailDocument(locale, appUrl)
             .Eyebrow(AiRoundEyebrow.In(locale))
             .Paragraph(intro)
-            .Links(strategies.Select(s => (s.Name, AiRoundUrl(s.StrategyId, appUrl))))
+            .Links(strategies.Select(s => (s.Name, AiRoundUrl(s.StrategyId, appUrl, locale))))
             .Paragraph(AiRoundNoConnect.In(locale))
             .WithUnsubscribe(EmailKind.Alerts, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
@@ -252,12 +252,12 @@ public static class EmailTexts
 
         if (waiting.Count > 0 || aiRoundsDue.Count > 0)
             email.Section(OverviewWaitingSection.In(locale),
-                aiRoundsDue.Select(r => new EmailItem(OverviewAiRoundItem.In(locale, r.Name), AiRoundUrl(r.StrategyId, appUrl)))
+                aiRoundsDue.Select(r => new EmailItem(OverviewAiRoundItem.In(locale, r.Name), AiRoundUrl(r.StrategyId, appUrl, locale)))
                 .Concat(waiting.Select(s =>
                 {
                     var detail = s.Side == TradeSide.Sell ? OverviewSaleDetail.In(locale)
                         : s.StepNo is { } no && s.MaxSteps is { } max ? OverviewStepDetail.In(locale, no, max) : "";
-                    return new EmailItem(OverviewWaitingSignal.In(locale, s.StockName, s.StrategyName, detail, Date(s.Date, locale)), SignalUrl(s, appUrl));
+                    return new EmailItem(OverviewWaitingSignal.In(locale, s.StockName, s.StrategyName, detail, Date(s.Date, locale)), SignalUrl(s, appUrl, locale));
                 })));
 
         if (changed.Count > 0)
@@ -279,7 +279,7 @@ public static class EmailTexts
             (s.Signals == 1 ? OverviewStrategyScoreOne : OverviewStrategyScoreMany)
                 .In(locale, s.Name, ModeName(s.Mode, locale), Date(s.StartedOn, locale), s.Signals))));
 
-        return email.Links([(OverviewOpenApp.In(locale), $"{appUrl}/")])
+        return email.Links([(OverviewOpenApp.In(locale), AppLink.To(appUrl, locale))])
             .WithUnsubscribe(EmailKind.Overview, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
             .Build(title);

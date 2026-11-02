@@ -25,7 +25,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// <summary>How far back an alert that wasn't sent is still tried.</summary>
     public const int AlertDays = 3;
 
-    string AppUrl => (configuration["PublicUrl"] ?? throw new InvalidOperationException("PublicUrl isn't set.")).TrimEnd('/');
+    string AppUrl => AppLink.AppUrl(configuration);
 
     /// <summary>Whether the admin page lets the app send these emails (off on a development computer).</summary>
     public async Task<bool> EnabledAsync(CancellationToken cancellationToken) =>

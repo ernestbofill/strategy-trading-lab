@@ -20,7 +20,7 @@ public class EmailDocumentTests
             "Your code: DVN6-2PTF\n\n" +
             "Your strategies\n- (Live) Dips (Live): since 1 Oct 2026\n\nNot financial advice. Signals follow your rules.", email.Text);
         foreach (var part in new[] { "lang=\"en\"", "Signal &#183; Live", "Close on 22 Oct 2026: $187.5", "href=\"https://app.example/s/1\"", "See the signal",
-                     "Your code", "DVN6-2PTF", "Your strategies", ">Live</span>", "Not financial advice. Signals follow your rules.", "href=\"https://app.example/\"" })
+                     "Your code", "DVN6-2PTF", "Your strategies", ">Live</span>", "Not financial advice. Signals follow your rules.", "href=\"https://app.example/en\"" })
             Assert.Contains(part, email.Html);
         Assert.DoesNotContain("&#9650;", email.Html);
         Assert.DoesNotContain("Or open this link:", email.Html);
@@ -47,6 +47,7 @@ public class EmailDocumentTests
         Assert.Contains("Confirma el correu", email.Html);
         Assert.Contains("opacity:0;color:#100d23;\">Confirma:</div>", email.Html); // The inbox preview is the call to action.
         Assert.Contains("Obre l&#39;aplicaci&#243;", email.Html);
+        Assert.Contains("href=\"https://app.example/ca\"", email.Html); // The app opens in the email's language.
     }
 
     [Fact]

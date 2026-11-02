@@ -5,14 +5,17 @@ namespace StrategyTradingLab.Api.Auth;
 /// <summary>The account emails (spec: Sign-up, Forgot and reset password), in English and Catalan.</summary>
 public class AccountEmails(EmailQueue queue, IConfiguration configuration)
 {
-    string AppUrl => (configuration["PublicUrl"] ?? throw new InvalidOperationException("PublicUrl isn't set.")).TrimEnd('/');
+    string AppUrl => AppLink.AppUrl(configuration);
+
+    /// <summary>A page of the app, in the email's language (spec: Language).</summary>
+    string Link(string locale, string path) => AppLink.To(AppUrl, locale, path);
 
     EmailDocument Email(string locale) => new EmailDocument(locale, AppUrl).Eyebrow(locale == "ca" ? "El teu compte" : "Your account");
 
     public void Verify(string to, string token, string locale = "en")
     {
-        var url = $"{AppUrl}/verify-email?token={token}";
-        var reset = $"{AppUrl}/forgot-password";
+        var url = Link(locale, $"/verify-email?token={token}");
+        var reset = Link(locale, "/forgot-password");
         // A stranger may have signed up with this email first (backend/AUTH.md): the owner can ignore it, or take the
         // account back with a reset, which ends every other session.
         queue.Enqueue(new(to, locale == "ca"
@@ -35,19 +38,19 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
         queue.Enqueue(new(to, locale == "ca"
             ? Email(locale)
                 .Paragraph("Algú ha intentat crear un compte de Strategy Trading Lab amb aquest correu, però ja en tens un.")
-                .Links([("Inicia la sessió", $"{AppUrl}/log-in"), ("Has oblidat la contrasenya?", $"{AppUrl}/forgot-password")])
+                .Links([("Inicia la sessió", Link(locale, "/log-in")), ("Has oblidat la contrasenya?", Link(locale, "/forgot-password"))])
                 .Paragraph("Si no has estat tu, pots ignorar aquest correu: res no ha canviat.")
                 .Build("Algú ha intentat crear un compte amb el teu correu")
             : Email(locale)
                 .Paragraph("Someone tried to create a Strategy Trading Lab account with this email, but you already have one.")
-                .Links([("Log in", $"{AppUrl}/log-in"), ("Forgot your password?", $"{AppUrl}/forgot-password")])
+                .Links([("Log in", Link(locale, "/log-in")), ("Forgot your password?", Link(locale, "/forgot-password"))])
                 .Paragraph("If it wasn't you, you can ignore this email: nothing has changed.")
                 .Build("Someone tried to sign up with your email")));
     }
 
     public void Reset(string to, string token, string locale = "en")
     {
-        var url = $"{AppUrl}/reset-password?token={token}";
+        var url = Link(locale, $"/reset-password?token={token}");
         queue.Enqueue(new(to, locale == "ca"
             ? Email(locale)
                 .Action("Tria una nova contrasenya obrint aquest enllaç:", "Tria una contrasenya", url)
@@ -62,7 +65,7 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
     /// <summary>Warns that an unconfirmed account will be deleted in 7 days unless its email is confirmed.</summary>
     public void UnconfirmedWarning(string to, string token, string locale = "en")
     {
-        var url = $"{AppUrl}/verify-email?token={token}";
+        var url = Link(locale, $"/verify-email?token={token}");
         queue.Enqueue(new(to, locale == "ca"
             ? Email(locale)
                 .Action("Confirma el teu correu obrint aquest enllaç:", "Confirma el correu", url)

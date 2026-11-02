@@ -88,6 +88,8 @@ Ask for a credential when you need one.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
 - Changes Ernest has staged go into your next commit, together with yours. Don't unstage or stash them.
 - Merge PRs with **squash merge** (`gh pr merge --squash --delete-branch`), so `main` stays linear with one commit per PR. Write the PR title as the final commit subject (imperative, with `(#number)`), because the squash uses it. Merge only when asked, or in a loop (see *Iterating*).
+- **Bring the branch up to date before merging.** When `main` moved since the PR's last push (GitHub shows "Update branch"), merge `origin/main` into it (never rebase), fix any clash, and check the versions are still above `main`'s: two PRs that bump to the same version break the deploy (#142 and #140 both took backend `0.54.0-alpha`, so #142's deploy was refused and #143 bumped again). Push, wait for CI, then merge.
+- **Auto-merge** is allowed (Ernest, 2026-11-02): when a merge is due (asked, or in a loop), `gh pr merge <PR> --auto --squash --delete-branch` merges once the PR can be merged, instead of waiting by hand. It only waits for *required* checks: until `main` requires the `backend` and `frontend` checks, it merges at once, so use it only on a head whose CI already passed. It never replaces the up-to-date check above.
 
 ## Feature, fixes and agentic workflow
 

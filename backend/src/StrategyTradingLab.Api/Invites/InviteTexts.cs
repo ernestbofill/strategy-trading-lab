@@ -46,14 +46,14 @@ public class InviteTexts(IConfiguration configuration)
                     .Heading(title)
                     .Paragraph($"Hola, {firstName}!")
                     .Paragraph("Strategy Trading Lab és una app per provar i seguir estratègies d'inversió amb les teves pròpies regles. Comença en simulació, sense diners reals. Mai no opera per tu ni es connecta al teu bròquer.")
-                    .Action("La teva invitació és a punt:", "Accepta la invitació", Link(code))
-                    .Box($"O registra't a {SignUpUrl} amb el codi:\n{code}")
+                    .Action("Accepta la invitació", Link(code))
+                    .Code("El teu codi", code, "O escriu aquest codi en registrar-te.")
                 : document
                     .Heading(title)
                     .Paragraph($"Hi {firstName}!")
                     .Paragraph("Strategy Trading Lab is an app to test and follow investing strategies with your own rules. Start in simulation, with no real money. It never trades for you or connects to your broker.")
-                    .Action("Your invite is ready:", "Accept the invite", Link(code))
-                    .Box($"Or sign up at {SignUpUrl} with the code:\n{code}"))
+                    .Action("Accept the invite", Link(code))
+                    .Code("Your code", code, "Or enter this code on sign-up."))
             .Build(title);
     }
 }

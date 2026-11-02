@@ -91,24 +91,42 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             $"<td bgcolor=\"{Ground}\" style=\"background:{Ground};border-left:3px solid {Primary};padding:14px 16px;\">{Encode(lines[0])}{figures}</td></tr></table>");
     }
 
+    /// <summary>A code chip (e.g. an invite code), with an optional hint line.</summary>
+    public EmailDocument Code(string label, string code, string? hint = null)
+    {
+        var text = hint is null ? $"{label}: {code}" : $"{label}: {code}\n{hint}";
+        var hintHtml = hint is null ? "" : $"<div style=\"margin-top:6px;font-family:{Ui};font-size:12px;line-height:18px;color:{InkSoft};\">{Encode(hint)}</div>";
+        var html =
+            $"<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 20px;background:{Ground};border:1px dashed {Hairline};border-radius:3px;\">" +
+            $"<tr><td style=\"padding:14px 18px;\">" +
+            $"<div style=\"font-family:{Ui};font-size:11px;line-height:16px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:{InkSoft};\">{Encode(label)}</div>" +
+            $"<div style=\"margin-top:4px;font-family:{Mono};font-size:20px;line-height:26px;font-weight:700;letter-spacing:2px;color:{Primary};\">{Encode(code)}</div>" +
+            $"{hintHtml}" +
+            $"</td></tr></table>";
+        return Add(text, html);
+    }
+
     /// <summary>A quote of what the user selected, e.g. About: "ADD A STOCK".</summary>
     public EmailDocument Quote(string label, string text) =>
         Add($"{label}: \"{text}\"",
             $"<p style=\"margin:0 0 4px;font-size:13px;color:{InkSoft};\">{Encode(label)}</p>" +
             $"<p style=\"margin:0 0 16px;padding:8px 12px;border-left:3px solid {Hairline};font-style:italic;\">{Lines(text)}</p>");
 
-    /// <summary>The main link: the lead and the address in the text, a button with the link under it in the HTML.</summary>
-    public EmailDocument Action(string lead, string button, string url)
+    /// <summary>The main link: a button in the HTML, the address in the text.</summary>
+    public EmailDocument Action(string button, string url) => Action(null, button, url);
+
+    /// <summary>The main link: an optional lead before the button in the HTML, the address in the text.</summary>
+    public EmailDocument Action(string? lead, string button, string url)
     {
-        preheader ??= lead;
-        return Add($"{lead}\n{url}",
-            $"<p style=\"margin:0 0 12px;\">{Encode(lead.TrimEnd(':'))}.</p>" +
-            $"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 8px;\"><tr>" +
+        if (lead is not null) preheader ??= lead;
+        var leadText = lead is null ? url : $"{lead}\n{url}";
+        var leadHtml = lead is null ? "" : $"<p style=\"margin:0 0 12px;\">{Encode(lead.TrimEnd(':'))}.</p>";
+        return Add(leadText,
+            $"{leadHtml}" +
+            $"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 20px;\"><tr>" +
             $"<td bgcolor=\"{Primary}\" style=\"background:{Primary};border-radius:2px;\">" +
             $"<a href=\"{Encode(url)}\" style=\"display:inline-block;padding:12px 20px;font-family:{Mono};font-size:14px;line-height:20px;font-weight:700;" +
-            $"letter-spacing:0.5px;text-transform:uppercase;color:{OnAction};text-decoration:none;\">{Encode(button)}</a></td></tr></table>" +
-            $"<p style=\"margin:0 0 20px;font-size:12px;line-height:18px;color:{InkSoft};word-break:break-all;\">" +
-            $"{Encode(Ca ? "O obre aquest enllaç:" : "Or open this link:")} <a href=\"{Encode(url)}\" style=\"color:{InkSoft};\">{Encode(url)}</a></p>");
+            $"letter-spacing:0.5px;text-transform:uppercase;color:{OnAction};text-decoration:none;\">{Encode(button)}</a></td></tr></table>");
     }
 
     /// <summary>Links side by side: one "label: url" line each in the text, outlined buttons in the HTML.</summary>
@@ -206,7 +224,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             "<tr><td align=\"center\" style=\"padding:24px 16px;\">" +
             "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width:560px;\">" +
             $"<tr><td style=\"padding:0 0 12px;font-family:{Mono};font-size:13px;line-height:20px;font-weight:700;letter-spacing:2px;color:{Primary};\">" +
-            $"<span style=\"color:{HotPink};\">&#9650;</span> {brand}</td></tr>" +
+            $"{brand}</td></tr>" +
             $"<tr><td bgcolor=\"{Card}\" style=\"background:{Card};border:1px solid {Hairline};border-top:3px solid {Primary};padding:24px;" +
             $"font-family:{Ui};font-size:16px;line-height:24px;color:{Ink};\">" +
             (eyebrow is null ? "" :

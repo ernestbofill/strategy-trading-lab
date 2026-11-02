@@ -20,6 +20,34 @@ public class EmailDocumentTests
         foreach (var part in new[] { "lang=\"en\"", "Signal &#183; Live", "Close on 22 Oct 2026: $187.5", "href=\"https://app.example/s/1\"", "See the signal",
                      "Your strategies", ">Live</span>", "Not financial advice. Signals follow your rules.", "href=\"https://app.example/\"" })
             Assert.Contains(part, email.Html);
+        Assert.DoesNotContain("&#9650;", email.Html);
+        Assert.DoesNotContain("Or open this link:", email.Html);
+    }
+
+    [Fact]
+    public void Action_without_lead_emits_no_lead_paragraph()
+    {
+        var email = new EmailDocument("en", "https://app.example")
+            .Action("Accept the invite", "https://app.example/sign-up?invite=ABCD-EFGH")
+            .Build("Invite");
+
+        Assert.Equal("https://app.example/sign-up?invite=ABCD-EFGH", email.Text);
+        Assert.Contains("Accept the invite", email.Html);
+        Assert.Contains("href=\"https://app.example/sign-up?invite=ABCD-EFGH\"", email.Html);
+        Assert.DoesNotContain("Or open this link:", email.Html);
+    }
+
+    [Fact]
+    public void Code_block_formats_label_code_and_hint()
+    {
+        var email = new EmailDocument("en", "https://app.example")
+            .Code("Your code", "DVN6-2PTF", "Or enter this code on sign-up.")
+            .Build("Invite");
+
+        Assert.Equal("Your code: DVN6-2PTF\nOr enter this code on sign-up.", email.Text);
+        Assert.Contains("Your code", email.Html);
+        Assert.Contains("DVN6-2PTF", email.Html);
+        Assert.Contains("Or enter this code on sign-up.", email.Html);
     }
 
     [Fact]
@@ -40,7 +68,8 @@ public class EmailDocumentTests
         var email = new EmailDocument("ca", "https://app.example").Action("Confirma:", "Confirma el correu", "https://app.example/v").Build("Assumpte");
 
         Assert.Contains("lang=\"ca\"", email.Html);
-        Assert.Contains("O obre aquest enlla&#231;:", email.Html);
+        Assert.DoesNotContain("O obre aquest enlla", email.Html);
+        Assert.Contains("Confirma el correu", email.Html);
         Assert.Contains("opacity:0;color:#100d23;\">Confirma:</div>", email.Html); // The inbox preview is the call to action.
         Assert.Contains("Obre l&#39;aplicaci&#243;", email.Html);
     }

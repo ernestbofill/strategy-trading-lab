@@ -105,10 +105,10 @@ public class NotificationTests
         var overview = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example", "ca", unsubscribeToken: "tok3n");
         var none = EmailTexts.SignalAlert(Dip(), "https://app.example");
 
-        Assert.Contains("Turn off signal and reminder emails: https://app.example/unsubscribe/tok3n/alerts", alert.Text);
-        Assert.Contains("href=\"https://app.example/unsubscribe/tok3n/alerts\"", alert.Html);
+        Assert.Contains("Turn off signal and reminder emails: https://app.example/en/unsubscribe/tok3n/alerts", alert.Text);
+        Assert.Contains("href=\"https://app.example/en/unsubscribe/tok3n/alerts\"", alert.Html);
         Assert.Equal("https://app.example/api/email/unsubscribe/tok3n/alerts", alert.OneClickUnsubscribe);
-        Assert.Contains("Desactiva els correus de resum: https://app.example/unsubscribe/tok3n/overview", overview.Text);
+        Assert.Contains("Desactiva els correus de resum: https://app.example/ca/unsubscribe/tok3n/overview", overview.Text);
         Assert.EndsWith(EmailTexts.DisclaimerCa, overview.Text);
         Assert.Null(none.OneClickUnsubscribe);
         Assert.DoesNotContain("unsubscribe", none.Text);

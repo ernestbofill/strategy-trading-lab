@@ -168,8 +168,10 @@ describe('links with a language', () => {
 
     open('/ca')
 
-    expect(await screen.findByText('STL // CREA UN COMPTE')).toBeTruthy() // A new device lands on Sign-up.
-    expect(window.location.pathname).toBe('/sign-up')
+    expect(await screen.findByRole('heading', { level: 1, name: /Opera segons regles/ })).toBeTruthy()
+    expect(window.location.pathname).toBe('/')
+    expect(document.documentElement.lang).toBe('ca')
+    expect(localStorage.getItem('stl.locale')).toBe('ca')
   })
 
   it("keeps a signed-in account's language over the link's", async () => {

@@ -45,7 +45,7 @@ public class SecurityTests(WebApplicationFactory<Program> factory) : IClassFixtu
 
         Assert.NotNull(message);
         Assert.Contains("If you didn't sign up for Strategy Trading Lab, ignore this email: the account stays unconfirmed.", message!.Body);
-        Assert.Contains("https://strategytradinglab.com/forgot-password", message.Body);
+        Assert.Contains("https://strategytradinglab.com/en/forgot-password", message.Body);
     }
 
     [Fact]

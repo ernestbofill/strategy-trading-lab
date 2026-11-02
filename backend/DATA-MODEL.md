@@ -101,8 +101,9 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | locale | text, not null | `en` \| `ca` in v1 (BCP 47 tags). Picked by the user at sign-up, never guessed; editable in the account. Sets the language and formats of emails and notifications |
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
 | role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip comes from an owner's invite |
-| overview_email | bool, not null, default true | Daily overview on/off |
-| alert_emails | bool, not null, default true | Signal alerts, snooze reminders and AI round reminders on/off |
+| overview_email | bool, not null, default true | The summary by email on/off |
+| alert_emails | bool, not null, default true | Signals and reminders (signal alerts, snooze reminders, AI round reminders) by email on/off |
+| alert_push | bool, not null, default true | Signals and reminders by web push, to the devices the user turned on (the account's App box) on/off |
 | unsubscribe_token | text, not null, unique | Private random token in the unsubscribe links of this user's emails; it can only turn emails off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | terms_version_accepted | varchar(32), null | The version of the legal terms accepted by the user (e.g. `2026-10-31`) |
@@ -207,9 +208,6 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | status | text, not null | `running` \| `ended` |
 | started_on | date, not null | "since [date]" |
 | ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. When it was archived (the screens' word for `ended`, #96): archiving closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
-| notifications | bool, not null, default true | Email alerts for this strategy (signals, snooze reminders, AI rounds). Off = it keeps running quietly |
-| push | bool, not null, default false | Its alerts also go to the user's devices by web push (Choose the mode's Alerts box, the strategy page's push switch) |
-| stock_change_emails | bool, not null, default false | Whether the daily overview tells this strategy's stock changes (a stock becomes or stops being a candidate, or comes within 3% of its signal). Opt in, on the account page |
 | currency | char(3), not null | Fixed at creation. Budget, trade amounts and results are in it |
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |
@@ -356,7 +354,7 @@ Every notification the app sends, one row per channel. A notification goes out *
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade | |
 | signal_id | uuid FK → signals, cascade, null | What the notification is about, for `signal` and `snoozed`. Null for kinds about nothing in particular (`overview`, later) |
-| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the daily overview, no signal) \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) |
+| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the summary, no signal; a quiet day keeps its claim with "Not sent: nothing changed.") \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) |
 | channel | text, not null | `push` \| `email` |
 | for_date | date, not null | The day it is for: the signal day, or the `snoozed_until` day |
 | sent_at | timestamptz, null | Null while queued |

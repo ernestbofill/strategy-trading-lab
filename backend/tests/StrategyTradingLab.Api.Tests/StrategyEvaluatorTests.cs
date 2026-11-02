@@ -543,6 +543,56 @@ public class StrategyEvaluatorTests
 
 
     [NeonFact]
+    public async Task A_stock_ticked_again_gets_no_signal_for_the_days_it_was_off_the_list()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // Checked last on day 298 (a Friday), then off the list over the dip on day 300, and ticked again early on day 302
+        // (a Tuesday, when the last finished session is day 301).
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            var back = new DateTimeOffset(new DateOnly(2024, 1, 1).AddDays(302).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            await db.StrategyAssets.Where(a => a.StrategyId == strategyId).ExecuteUpdateAsync(a => a.SetProperty(x => x.AddedAt, back));
+
+            await Evaluator(db).RunAsync(default);
+
+            Assert.Equal(0, await SignalCount(db, strategyId)); // Not day 300's signal, back-dated.
+            Assert.True(await db.DailyEvaluations.AnyAsync(e => e.StrategyId == strategyId && e.Date == new DateOnly(2024, 1, 1).AddDays(301)));
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_stock_added_after_the_start_still_gets_the_signal_of_a_day_its_check_missed()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // Added on Saturday, day 299, so its first check was on Friday, day 298; the run for day 300's dip failed, and the next one catches it up.
+        var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
+        try
+        {
+            var saturday = new DateTimeOffset(new DateOnly(2024, 1, 1).AddDays(299).ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero);
+            await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s => s.SetProperty(x => x.StartedOn, new DateOnly(2024, 1, 1).AddDays(290)));
+            await db.StrategyAssets.Where(a => a.StrategyId == strategyId).ExecuteUpdateAsync(a => a.SetProperty(x => x.AddedAt, saturday));
+
+            await Evaluator(db).RunAsync(default);
+
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(new DateOnly(2024, 1, 1).AddDays(300), signal.SignalDate);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_waiting_signal_left_on_an_ended_strategy_is_missed_by_the_next_run()
     {
         using var api = new AccountsApi();

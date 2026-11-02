@@ -29,16 +29,26 @@ public static class NewStrategyValidation
 
         ValidateBudget(request.Budget, template, Fail, locale);
 
-        var fund = template.Watches is DefaultFund;
-        var ids = request.AssetIds ?? [];
-        if (ids.Distinct().Count() != ids.Count) Fail("assetIds", Messages.ListedOnce.In(locale));
-        else if (ids.Count == 0) Fail("assetIds", fund ? Messages.PickTheFund.In(locale) : Messages.PickOneStock.In(locale));
-        else if (fund && ids.Count != 1) Fail("assetIds", Messages.PickExactlyOneFund.In(locale));
-        else if (ids.Count > MaxStocks) Fail("assetIds", Messages.TooManyStocks.In(locale, MaxStocks));
-        else if (assets.Count != ids.Count || assets.Any(asset => !asset.Active || (asset.Kind == AssetKind.Fund) != fund))
-            Fail("assetIds", fund ? Messages.NotAFund.In(locale) : Messages.NotStocks.In(locale));
+        if (AssetsError(request.AssetIds ?? [], template, assets, locale) is { } assetsError) Fail("assetIds", assetsError);
 
         return errors;
+    }
+
+    /// <summary>
+    /// What is wrong with a strategy's stocks or fund (Confirm, Edit list); null when fine. <c>assets</c> are the ones found for
+    /// <c>ids</c>; those in <c>listed</c> (Edit list: the ones it follows) may have been delisted since.
+    /// </summary>
+    public static string? AssetsError(IReadOnlyList<Guid> ids, Template template, IReadOnlyCollection<Asset> assets, string locale,
+        IReadOnlyCollection<Guid>? listed = null)
+    {
+        var fund = template.Watches is DefaultFund;
+        if (ids.Distinct().Count() != ids.Count) return Messages.ListedOnce.In(locale);
+        if (ids.Count == 0) return fund ? Messages.PickTheFund.In(locale) : Messages.PickOneStock.In(locale);
+        if (fund && ids.Count != 1) return Messages.PickExactlyOneFund.In(locale);
+        if (ids.Count > MaxStocks) return Messages.TooManyStocks.In(locale, MaxStocks);
+        if (assets.Count != ids.Count || assets.Any(asset => (!asset.Active && listed?.Contains(asset.Id) != true) || (asset.Kind == AssetKind.Fund) != fund))
+            return fund ? Messages.NotAFund.In(locale) : Messages.NotStocks.In(locale);
+        return null;
     }
 
     /// <summary>What is wrong with a strategy's name (Confirm, Rename): trimmed, 1 to <see cref="NameMaxLength"/> characters. Null when fine.</summary>

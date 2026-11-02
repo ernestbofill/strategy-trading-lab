@@ -20,6 +20,9 @@ public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, B
 /// <summary>New settings (rules) for a running strategy.</summary>
 public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
 
+/// <summary>A running strategy's new stock list (Edit list): every stock it follows from now on, ticked.</summary>
+public record UpdateStrategyAssets(IReadOnlyList<Guid>? AssetIds);
+
 /// <summary>A new name for a strategy (Rename): the same rules as Confirm's.</summary>
 public record RenameStrategy(string? Name);
 
@@ -79,6 +82,8 @@ public enum StockStatus
     NotCandidate,
     NotEnoughData,
     NotChecked,
+    /// <summary>Unticked with Edit list: no more signals, but its trades stay in the results, so its row stays.</summary>
+    Removed,
 }
 
 /// <summary>

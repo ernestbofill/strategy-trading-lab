@@ -278,6 +278,7 @@ export const httpApi: Api = {
   getDashboard: () => getRequired('/dashboard'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
   updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),
+  updateStrategyAssets: (id, assetIds) => put(`/strategies/${encodeURIComponent(id)}/assets`, { assetIds }),
   getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),
   confirmSignal: async (id, trade) => void (await signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
   logManualTrade: async (strategyId, trade) =>

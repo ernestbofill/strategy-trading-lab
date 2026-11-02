@@ -77,6 +77,7 @@ public static class StrategyPage
         StockStatus.Building => 2,
         StockStatus.Holding or StockStatus.Done => 3,
         StockStatus.NoBudget or StockStatus.Watching or StockStatus.OutOfTheMarket => 4,
+        StockStatus.Removed => 6,
         _ => 5,
     };
 }

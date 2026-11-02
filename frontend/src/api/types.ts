@@ -254,6 +254,8 @@ export type StockStatus =
   | 'watching'
   | 'notCandidate'
   | 'notEnoughData'
+  /** Unticked with Edit list: no more signals; its row stays while it has trades. */
+  | 'removed'
   | 'notChecked'
 
 export type TradeSide = 'buy' | 'sell'
@@ -1008,6 +1010,8 @@ export interface Api {
   getStrategy(id: string): Promise<StrategyDetail | undefined>
   /** Updates the settings (rules) of a running strategy. */
   updateStrategySettings(id: string, settings: Record<string, number>): Promise<void>
+  /** Edit list: the stocks a running strategy follows from now on. Rejects with `InvalidFieldsError` (`assetIds`). */
+  updateStrategyAssets(id: string, assetIds: string[]): Promise<void>
   /** A live signal for Confirm a signal; undefined when the user has no such signal. */
   getSignal(id: string): Promise<SignalDetail | undefined>
   /** Rejects with `InvalidFieldsError` (by field) or `InvalidValueError` (already answered). */

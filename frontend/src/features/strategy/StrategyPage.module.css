@@ -175,6 +175,9 @@
   color: var(--ink);
   text-decoration: none;
 }
+.stock[data-removed] .stockName {
+  opacity: 0.6;
+}
 a.stock:hover {
   background: var(--surface-hover);
   color: var(--ink);

@@ -1,4 +1,5 @@
 import type { StrategyDetail, TemplateDetail } from '../../api'
+import { followedStocks } from '../strategy/stockLine'
 import { initialDraft, type DraftState } from './draftState'
 
 /**
@@ -6,11 +7,12 @@ import { initialDraft, type DraftState } from './draftState'
  * choices, in live mode, named `name`. The draft keeps only what differs from the template, as the flow's screens do.
  */
 export function draftFromStrategy(s: StrategyDetail, template: TemplateDetail, name: string): DraftState {
-  const watched = new Set(s.stocks.map((row) => row.assetId))
+  const stocks = followedStocks(s)
+  const watched = new Set(stocks.map((row) => row.assetId))
   const { watches, defaults } = template
   const starter = watches.kind === 'stocks' ? watches.starterList : []
   const starterIds = new Set(starter.map((stock) => stock.id))
-  const fundRow = watches.kind === 'fund' ? s.stocks.find((row) => row.assetId !== watches.fund.id) : undefined
+  const fundRow = watches.kind === 'fund' ? stocks.find((row) => row.assetId !== watches.fund.id) : undefined
   const settings = Object.fromEntries(
     Object.entries(s.settings ?? {}).filter(([key, value]) => defaults.params[key] !== value),
   )
@@ -21,7 +23,7 @@ export function draftFromStrategy(s: StrategyDetail, template: TemplateDetail, n
     // Stocks it watches outside the starter list; their prices are in, as the simulation has run on them.
     added:
       watches.kind === 'stocks'
-        ? s.stocks
+        ? stocks
             .filter((row) => !starterIds.has(row.assetId))
             .map((row) => ({ id: row.assetId, symbol: row.symbol, name: row.name, what: '', pricesIn: true }))
         : [],

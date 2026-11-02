@@ -307,8 +307,15 @@ function SignalPill({ signal }: { signal: StrategySignalItem }) {
 
 function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: () => void; onCancel: () => void }) {
   const t = useT()
+  // Any stock on its page, also one unticked with Edit list: what the user holds of it can still be sold.
   const [assetId, setAssetId] = useState(s.stocks[0]?.assetId ?? '')
-  const [side, setSide] = useState<TradeSide>('buy')
+  const removed = (id: string) => s.stocks.some((st) => st.assetId === id && st.status === 'removed')
+  // A stock unticked with Edit list takes only a sale.
+  const [side, setSide] = useState<TradeSide>(removed(assetId) ? 'sell' : 'buy')
+  const pickAsset = (id: string) => {
+    setAssetId(id)
+    if (removed(id)) setSide('sell')
+  }
   const [date, setDate] = useState(s.today)
   const [price, setPrice] = useState('')
   const [enteredAs, setEnteredAs] = useState<'amount' | 'shares'>('amount')
@@ -387,7 +394,7 @@ function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; onDone: (
         value={assetId}
         error={errors.assetId}
         options={s.stocks.map((st) => ({ value: st.assetId, label: `${st.name} (${st.symbol})` }))}
-        onChange={setAssetId}
+        onChange={pickAsset}
       />
 
       <div className={styles.sideToggle}>

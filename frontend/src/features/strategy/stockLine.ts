@@ -1,4 +1,4 @@
-import type { CheckTexts, Currency, StockRow, StockStatusWords, StrategyMode } from '../../api'
+import type { CheckTexts, Currency, StockRow, StockStatusWords, StrategyDetail, StrategyMode } from '../../api'
 import { tNow, type Translate } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { money, signedPct } from '../../lib/format'
@@ -81,6 +81,8 @@ function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, 
       return t('strategy.stock.notEnoughData')
     case 'notChecked':
       return t('strategy.stock.notChecked')
+    case 'removed':
+      return t('strategy.stock.removed')
   }
 }
 
@@ -96,7 +98,11 @@ const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
   notCandidate: ['strategy.pill.notCandidate', 'muted'],
   notEnoughData: ['strategy.pill.notChecked', 'muted'],
   notChecked: ['strategy.pill.notChecked', 'muted'],
+  removed: ['strategy.pill.removed', 'muted'],
 }
+
+/** The stocks a strategy follows: not those unticked with Edit list, whose rows stay while they have trades. */
+export const followedStocks = (s: StrategyDetail) => s.stocks.filter((row) => row.status !== 'removed')
 
 /** The words of a stock's row on the strategy page (spec: Strategy page, one row per stock). */
 export function stockLine(

@@ -481,6 +481,43 @@ public class NotificationTests
     }
 
     [NeonFact]
+    public async Task A_quiet_day_is_only_final_once_every_strategy_was_checked_for_the_session()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var seeded = await SeedAsync(db);
+        try
+        {
+            // A second strategy the daily check hasn't reached yet for Friday 23 October.
+            var late = new Strategy
+            {
+                UserId = seeded.UserId, TemplateKey = "dip", Name = $"Late {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Live, Status = StrategyStatus.Running,
+                StartedOn = new DateOnly(2026, 10, 1), Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
+                Assets = [new StrategyAsset { AssetId = seeded.AssetId, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            };
+            db.Strategies.Add(late);
+            await db.SaveChangesAsync();
+            var friday = new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero);
+            bool Claimed() => db.Notifications.Any(n => n.UserId == seeded.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));
+
+            // Quiet so far, but not every strategy was checked: the claim is given back, nothing is sent.
+            Assert.Equal(0, await Service(scope, new Captured()).SendOverviewsAsync(friday, default));
+            Assert.False(Claimed());
+
+            // Once checked (still quiet), the verdict is final and kept.
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = late.Id, AssetId = seeded.AssetId, Date = new DateOnly(2026, 10, 23), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
+            await db.SaveChangesAsync();
+            Assert.Equal(0, await Service(scope, new Captured()).SendOverviewsAsync(friday, default));
+            Assert.True(Claimed());
+        }
+        finally
+        {
+            await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_snoozed_signal_is_reminded_once_from_seven_on_its_snooze_day_while_it_waits()
     {
         using var api = new AccountsApi();

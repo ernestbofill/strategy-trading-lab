@@ -18,8 +18,8 @@ public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword
 public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
 public record LocaleRequest(string? Locale);
-public record OverviewEmailRequest(bool? Enabled);
-public record AlertEmailsRequest(bool? Enabled);
+/// <summary>An on/off switch of the account (the notification boxes); a missing value is refused, not read as off.</summary>
+public record SwitchRequest(bool? Enabled);
 public record NameRequest(string? FirstName, string? LastName);
 
 /// <summary>
@@ -225,7 +225,7 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("Sets the language of the user's account and emails.");
 
-        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (OverviewEmailRequest request, AppDbContext db,
+        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);
@@ -238,7 +238,7 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("Turns the summary email on or off for the logged-in user.");
 
-        group.MapPost("/alert-emails", async Task<Results<NoContent, ValidationProblem>> (AlertEmailsRequest request, AppDbContext db,
+        group.MapPost("/alert-emails", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);
@@ -251,7 +251,7 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("Turns the signal alerts and reminders on or off for the logged-in user.");
 
-        group.MapPost("/alert-push", async Task<Results<NoContent, ValidationProblem>> (AlertEmailsRequest request, AppDbContext db,
+        group.MapPost("/alert-push", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);

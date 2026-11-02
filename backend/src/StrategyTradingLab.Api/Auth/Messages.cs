@@ -51,8 +51,8 @@ public static class Messages
     public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot ajornar un senyal que encara espera.");
     public static readonly Message StrategyEnded = new("This strategy is archived, so there is no reminder to send.",
         "Aquesta estratègia està arxivada, així que no hi ha cap recordatori per enviar.");
-    public static readonly Message NotificationsOff = new("Reminders are off in your account, so there is no reminder to send.",
-        "Els recordatoris estan desactivats al teu compte, així que no hi ha cap recordatori per enviar.");
+    public static readonly Message NotificationsOff = new("A reminder can't reach you: turn on reminder emails, or notifications on this device, in your account.",
+        "Un recordatori no et pot arribar: activa els correus de recordatoris, o les notificacions en aquest dispositiu, al teu compte.");
     public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu correu per començar en directe.");
     public static readonly Message NotYourSimulation = new("Pick one of your simulations to copy.", "Tria una de les teves simulacions per copiar-la.");
     public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma la teva adreça de correu per rebre recordatoris.");

@@ -79,7 +79,16 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
             // AI rounds due count by the user's own date, which may already be the day after the session.
             var today = DateOnly.FromDateTime(local.DateTime);
-            if (await SendAsync(claimed, user.Email, () => ComposeSummaryAsync(user.Id, today, lastSession, user.Locale, user.UnsubscribeToken, cancellationToken), cancellationToken)) sent++;
+            // A quiet day is only final once every strategy has been checked for the session: until then (the daily check still
+            // running, a strategy that couldn't be checked yet), the claim is given back and a later run looks again.
+            var incomplete = false;
+            if (await SendAsync(claimed, user.Email, async () =>
+                {
+                    var (content, complete) = await ComposeSummaryAsync(user.Id, today, lastSession, user.Locale, user.UnsubscribeToken, cancellationToken);
+                    incomplete = content is null && !complete;
+                    return content;
+                }, cancellationToken)) sent++;
+            else if (incomplete) await ReleaseAsync(claimed);
         }
         return await SettledAsync(sent);
     }
@@ -301,8 +310,11 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { return now; } // UTC, as the dashboard does.
     }
 
-    /// <summary>The summary's email, or null on a quiet day: no signal on the session and no stock change.</summary>
-    async Task<EmailContent?> ComposeSummaryAsync(Guid userId, DateOnly today, DateOnly lastSession, string locale, string unsubscribeToken, CancellationToken cancellationToken)
+    /// <summary>
+    /// The summary's email, or null on a quiet day: no signal on the session and no stock change. <c>Complete</c> says whether every
+    /// running strategy that ran on the session was checked for it, so a quiet verdict is final.
+    /// </summary>
+    async Task<(EmailContent? Content, bool Complete)> ComposeSummaryAsync(Guid userId, DateOnly today, DateOnly lastSession, string locale, string unsubscribeToken, CancellationToken cancellationToken)
     {
         var strategies = await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var ids = strategies.Select(s => s.Id).ToList();
@@ -320,14 +332,16 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                             where ids.Contains(eval.StrategyId) && eval.Date >= lastSession.AddDays(-4)
                             select new { eval, asset.Name }).ToListAsync(cancellationToken);
         var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId);
-        if (stockChanges.Count == 0 && !signals.Any(x => x.signal.SignalDate == lastSession)) return null;
+        if (stockChanges.Count == 0 && !signals.Any(x => x.signal.SignalDate == lastSession))
+            return (null, strategies.Where(s => s.StartedOn <= lastSession)
+                .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == lastSession)));
 
         var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
             .OrderBy(r => r.DueOn).Select(r => r.StrategyId).ToListAsync(cancellationToken);
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id))).ToList();
-        return EmailTexts.Overview(lastSession, waiting, changed, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))], unsubscribeToken, stockChanges);
+        return (EmailTexts.Overview(lastSession, waiting, changed, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))], unsubscribeToken, stockChanges), true);
     }
 
     /// <summary>

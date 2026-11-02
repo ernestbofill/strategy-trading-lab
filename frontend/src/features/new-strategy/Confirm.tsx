@@ -72,7 +72,8 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const alerts = isLive || template.aiRound !== null
   const pushOffered = usePushOffered()
   const byApp = alerts && pushOffered && (account?.alertPush ?? true)
-  const byEmail = account?.alertEmails ?? true
+  // The server only emails a confirmed address.
+  const byEmail = account ? account.alertEmails && account.emailVerified : true
   const notifyKey = !alerts
     ? account?.overviewEmail === false ? 'newStrategy.confirm.notify.off' : 'newStrategy.confirm.notify.summary'
     : byApp && byEmail ? 'newStrategy.confirm.notify.appEmail'

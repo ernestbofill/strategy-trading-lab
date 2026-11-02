@@ -103,9 +103,6 @@ Both modes work end to end for every template the pick screen offers.
 31. **End-to-end tests of the main journeys.** Tooling. Playwright in CI, against the API and a throwaway database with its own owner: look around → sign up (with and without the invite gate) → start a simulation → dashboard; a live signal → confirm it → results; add a stock; archive and delete a strategy; delete the account. So the loop can merge without Ernest testing by hand.
 32. **Lawyer review.** Ernest. The live flow, the copy, the taglines ("Buy the dip" is an instruction, kept on purpose; "Take the wins, dodge the losses"), the default stock lists, the legal pages and the invites, with the questions in the regulation note (section 8). Change what the review asks for.
 42. ~~**Notifications from scratch.**~~ Built (#135, Ernest's feedback of 2026-11-01: "daily, signals, etc." was a mess). See *Done* and the spec's *Notifications*. Left for later: item 43.
-
-### If there's time before the quiet launch
-
 33. ~~**Your AI's top picks.**~~ Built (#70), in English and Catalan, with Claude's assumptions for the open AI decisions (how sharing works, prompt v1, a forgiving reader, the model list), confirmed by Ernest (2026-11-01): see the spec and `docs/decisions.md`. Left for later: the AI comparison page (after launch), web push for the round reminder (built, #134), and trying prompt v1 by hand in ChatGPT, Claude and Gemini (Ernest, `TODO.md`).
 
 **Quiet launch.** When Milestones 1 and 2 are done: switch sign-ups to *invite only* on `/admin`, Ernest invites friends, they invite a few more, and the feedback decides what comes next.

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -37,4 +38,5 @@ export default defineConfig({
       },
     }),
   ],
+  test: { setupFiles: ['src/testSetup.ts'] },
 })

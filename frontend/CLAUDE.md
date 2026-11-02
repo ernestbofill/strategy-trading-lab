@@ -24,7 +24,7 @@
   - `Callout`/`LabelledLine`, `RuleList` and `RichText` (`**label**` and `` `term` `` markup), `BulletList`, `KeyValueList`.
 - `src/features/<flow>/`: one folder per flow; the new-strategy flow is in `features/new-strategy/`.
   - `paths.ts` holds the route builders.
-  - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, in memory only: a reload starts again from the defaults. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started.
+  - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, kept in the tab's sessionStorage (`draftStorage.ts`) so a reload keeps it; closing the tab drops it. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started.
   - `useTemplate.ts` holds the data hooks.
 - `src/features/account/`: sign-up, log-in, password links and the account page. `AccountContext` asks `/account/me` once at start and clears the user on a 401 (`onSessionEnded` in `api/`); `RequireAccount` is the layout route of every screen that needs a user, sending others to Log-in with `?next=` (only app paths, `safeNext`). Logging in or out forgets every cached load (`invalidateAll`).
 - `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading).

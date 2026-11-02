@@ -57,9 +57,13 @@ const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m)
 const AdminInvites = lazyPage(() => import('./features/admin/AdminInvites').then((m) => m.AdminInvites))
 const AdminAlerts = lazyPage(() => import('./features/admin/AdminAlerts').then((m) => m.AdminAlerts))
 
-/** The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. */
+/**
+ * The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. The owner is
+ * undefined until the account is known, so a reload keeps a signed-in user's draft.
+ */
 function DraftPerUser({ children }: { children: ReactNode }) {
-  const owner = useOptionalAccount()?.email ?? null
+  const { state } = useAccount()
+  const owner = state.status === 'ready' ? (state.account?.email ?? null) : undefined
   return <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
 }
 

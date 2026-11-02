@@ -208,11 +208,11 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Looking around without an account (not drawn)
 
 - The start page on a device that has never logged in is Sign-up, with a short intro above the form: what the app is, the two modes, and that it never trades for you or connects to your broker.
-- A guest sees every template's review, How we tested and Advanced settings, and can go through the whole new-strategy flow. The draft lives in the browser only.
+- A guest sees every template's review, How we tested and Advanced settings, and can go through the whole new-strategy flow. The draft lives in the browser only, in the tab: a reload anywhere in the flow keeps the chosen template and every choice; closing the tab drops it.
 - On Name, preview and confirm, the button reads "Create an account to start it" and opens Sign-up. After sign-up (logged in at once) the user is back on Confirm with the draft, and starts it from there.
 - A guest has no dashboard, account or emails. The top bar shows "LOG IN" instead of "ACCOUNT", and the first screen's eyebrow stays "Welcome to Strategy Trading Lab".
 - The template endpoints are public already; nothing about a guest is stored on the server.
-- A guest's draft is shown in euro and stays in euro after sign-up (the amounts aren't converted). Live can be picked; the email must be confirmed before the strategy starts. A guest never sees another user's draft: a log-out clears it.
+- A guest's draft is shown in euro and stays in euro after sign-up (the amounts aren't converted). Live can be picked; the email must be confirmed before the strategy starts. A guest never sees another user's draft: a log-out clears it, and so does a reload once the session has ended.
 - A screen's one primary action and its note (a short hint or a data source, never a disclaimer) close the page content; there is no separate bottom bar (#105). Every screen ends with a footer: links to the legal pages (`/legal/notice`, `/legal/terms`, `/legal/privacy`, `/legal/disclaimer`, `/about`) and the short disclaimer. The pages provide the complete legal notices, terms of use, privacy policy, full disclaimer, and about page with conflicts of interest disclosure. Sign-up records the accepted terms version (`terms_version_accepted`, `terms_accepted_at`).
 
 ### Log-in (not drawn)

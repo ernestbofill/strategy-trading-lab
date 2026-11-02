@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { TemplateKey } from '../../api'
 import { initialDraft, withTemplate, type DraftPatch, type DraftState } from './draftState'
+import { readStoredDraft, storeDraft } from './draftStorage'
 
 export type { AiSource, Mode } from './draftState'
 
@@ -16,19 +17,23 @@ interface Draft extends DraftState {
 
 const DraftContext = createContext<Draft | null>(null)
 
-// Held in memory only: a reload or reopening the app starts from the defaults. It belongs to `owner` (the logged-in
-// user's email, null for a guest): a guest signing up or logging in keeps their draft; another user, or a log-out,
-// starts it over, so a guest never sees the last user's draft.
-export function NewStrategyDraftProvider({ owner, children }: { owner: string | null; children: ReactNode }) {
-  const [state, setState] = useState<DraftState>(initialDraft)
-  const [draftOwner, setDraftOwner] = useState(owner)
-  if (owner !== draftOwner) {
+// Kept in this tab's sessionStorage, so a reload mid-flow keeps the chosen template and choices; closing the tab drops
+// it. It belongs to `owner` (the logged-in user's email, null for a guest, undefined while the account is still
+// loading): a guest signing up or logging in keeps their draft; another user, or a log-out, starts it over, so a guest
+// never sees the last user's draft. While the owner is unknown the draft is held as it is, so a reload doesn't reset it.
+export function NewStrategyDraftProvider({ owner, children }: { owner: string | null | undefined; children: ReactNode }) {
+  const [stored] = useState(readStoredDraft)
+  const [state, setState] = useState<DraftState>(() => stored?.state ?? initialDraft)
+  const [draftOwner, setDraftOwner] = useState<string | null>(() => (stored ? stored.owner : (owner ?? null)))
+  if (owner !== undefined && owner !== draftOwner) {
     // Reset while rendering, not in an effect, so the next user never sees a frame of the last one's draft.
     setDraftOwner(owner)
     if (draftOwner !== null) {
       setState(initialDraft)
     }
   }
+
+  useEffect(() => storeDraft({ owner: draftOwner, state }), [draftOwner, state])
 
   const update = useCallback((patch: DraftPatch) => setState((s) => ({ ...s, ...patch })), [])
   const switchTemplate = useCallback((key: TemplateKey) => setState((s) => withTemplate(s, key)), [])

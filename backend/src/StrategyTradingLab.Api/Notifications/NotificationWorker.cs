@@ -29,7 +29,7 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                 if (await service.EnabledAsync(stoppingToken))
                 {
                     var sent = await service.SendOverviewsAsync(time.GetUtcNow(), stoppingToken);
-                    if (sent > 0) logger.LogInformation("Sent {Count} daily overviews.", sent);
+                    if (sent > 0) logger.LogInformation("Sent {Count} summaries.", sent);
                     var reminders = await service.SendSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken);
                     if (reminders > 0) logger.LogInformation("Sent {Count} snooze reminders.", reminders);
                     var rounds = await service.SendAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);

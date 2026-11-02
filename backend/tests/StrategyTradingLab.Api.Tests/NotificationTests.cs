@@ -489,7 +489,8 @@ public class NotificationTests
         var seeded = await SeedAsync(db);
         try
         {
-            // A second strategy the daily check hasn't reached yet for Friday 23 October.
+            // A second strategy the daily check hasn't reached yet for Friday 23 October. (One it never checks, with nothing to
+            // check, doesn't count: it would hold the verdict forever.)
             var late = new Strategy
             {
                 UserId = seeded.UserId, TemplateKey = "dip", Name = $"Late {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Live, Status = StrategyStatus.Running,
@@ -497,6 +498,8 @@ public class NotificationTests
                 Assets = [new StrategyAsset { AssetId = seeded.AssetId, Active = true, AddedAt = DateTimeOffset.UtcNow }],
             };
             db.Strategies.Add(late);
+            // Checked on Thursday, so the check is still due to reach it for Friday.
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = late.Id, AssetId = seeded.AssetId, Date = new DateOnly(2026, 10, 22), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
             await db.SaveChangesAsync();
             var friday = new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero);
             bool Claimed() => db.Notifications.Any(n => n.UserId == seeded.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));

@@ -12,7 +12,6 @@ import { resolveBudget } from '../../lib/budget'
 import { money } from '../../lib/format'
 import { useOptionalAccount } from '../account/AccountContext'
 import { accountNotificationsPath, signUpPathFor } from '../account/paths'
-import { usePushOffered } from '../account/usePushOffered'
 import { usePushAsk } from '../account/usePushAsk'
 import { Checkbox } from '../../components/Field'
 import { invalidate } from '../../lib/useLoadable'
@@ -69,11 +68,11 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   // Strategies that alert: live ones (signals) and AI ones (rounds due). Their alerts follow the account's
   // Notifications; the others only appear in the summary.
   const alerts = isLive || template.aiRound !== null
-  const pushOffered = usePushOffered()
-  const byApp = alerts && pushOffered && (account?.alertPush ?? true)
+  const pushAsk = usePushAsk()
+  // App only where this device can get it (not blocked, not an iPhone browser tab).
+  const byApp = alerts && (pushAsk.kind === 'ask' || pushAsk.kind === 'granted') && (account?.alertPush ?? true)
   // The server only emails a confirmed address.
   const byEmail = account ? account.alertEmails && account.emailVerified : true
-  const pushAsk = usePushAsk()
   const notifyKey = !alerts
     ? account?.overviewEmail === false ? 'newStrategy.confirm.notify.off' : 'newStrategy.confirm.notify.summary'
     : byApp && byEmail ? 'newStrategy.confirm.notify.appEmail'

@@ -91,7 +91,9 @@ public static class SignalEndpoints
             var byEmail = user.AlertEmails && user.EmailVerifiedAt is not null;
             var byPush = user.AlertPush && push.PublicKey is not null && await db.PushSubscriptions.AnyAsync(p => p.UserId == user.Id, cancellationToken);
             if (!byEmail && !byPush)
-                return TypedResults.Conflict((user.AlertEmails ? Messages.ConfirmEmailForReminders : Messages.NotificationsOff).In(user.Locale));
+                return TypedResults.Conflict((user.AlertEmails ? Messages.ConfirmEmailForReminders
+                    // Without push on this server, the device isn't a way to offer.
+                    : push.PublicKey is null ? Messages.ReminderEmailsOff : Messages.NotificationsOff).In(user.Locale));
             // The next US market day (spec: a day is a US market day), counted from the later of New York's date and the user's,
             // so it is always after the user's own today: the reminder goes out from 07:00 of that day in their time zone.
             var newYork = UsSession.Today(time.GetUtcNow());

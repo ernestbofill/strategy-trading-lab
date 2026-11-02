@@ -10,7 +10,7 @@ namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>
 /// Sends the notification emails (spec: Notifications): the live signal alert right after the daily check that found it, and
-/// the daily overview right after the daily check that evaluated the session. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
+/// the summary right after the daily check that evaluated the session. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
 /// key is the dedupe contract), then the email is sent and the row says whether it worked. Only to verified addresses.
 /// </summary>
 public class NotificationService(AppDbContext db, IEmailSender sender, IPushSender push, SettingsStore settings, IConfiguration configuration, AdminAlerts alerts,
@@ -312,7 +312,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
     /// <summary>
     /// The summary's email, or null on a quiet day: no signal on the session and no stock change. <c>Complete</c> says whether every
-    /// running strategy that ran on the session was checked for it, so a quiet verdict is final.
+    /// running strategy the daily check has been checking (any day of the recent window) was checked for the session, so a
+    /// quiet verdict is final.
     /// </summary>
     async Task<(EmailContent? Content, bool Complete)> ComposeSummaryAsync(Guid userId, DateOnly today, DateOnly lastSession, string locale, string unsubscribeToken, CancellationToken cancellationToken)
     {
@@ -333,7 +334,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                             select new { eval, asset.Name }).ToListAsync(cancellationToken);
         var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId);
         if (stockChanges.Count == 0 && !signals.Any(x => x.signal.SignalDate == lastSession))
-            return (null, strategies.Where(s => s.StartedOn <= lastSession)
+            // Only strategies checked in the recent days count: one that has nothing to check (every stock unticked) or keeps
+            // failing would otherwise hold the verdict, and its hourly retry, forever.
+            return (null, strategies.Where(s => s.StartedOn <= lastSession && recent.Any(x => x.eval.StrategyId == s.Id))
                 .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == lastSession)));
 
         var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)

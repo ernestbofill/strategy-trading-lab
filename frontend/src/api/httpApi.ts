@@ -32,7 +32,9 @@ async function getRequired<T>(path: string): Promise<T> {
   return value
 }
 
-/** POSTs `body` as JSON. A 409 means the name is taken; any other failure throws. */
+type Problem = { errors?: Record<string, string[]>; detail?: string } | null
+
+/** POSTs `body` as JSON. A 409 means the name is taken; a 400 with errors maps to InvalidFieldsError; any other failure throws. */
 async function post<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
@@ -41,6 +43,12 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   })
   if (response.status === 409) throw new NameTakenError()
   if (response.status === 401) endedSession()
+  if (response.status === 400) {
+    const problem = (await response.json().catch(() => null)) as Problem
+    if (problem?.errors) {
+      throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
+    }
+  }
   if (!response.ok) throw new Error(`POST ${path} failed: HTTP ${response.status}`)
   return (await response.json()) as T
 }
@@ -139,8 +147,6 @@ async function admin(method: string, path: string, body?: unknown): Promise<Resp
   if (!response.ok) throw new Error(`${method} /admin${path} failed: HTTP ${response.status}`)
   return response
 }
-
-type Problem = { errors?: Record<string, string[]>; detail?: string } | null
 
 interface AccountCall {
   /** A link endpoint (verify, reset): a 400 with only a message is an expired or used link. */
@@ -260,6 +266,13 @@ export const httpApi: Api = {
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
   setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
+  setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
+  setAlertPush: async (enabled) => void (await account('/alert-push', { enabled }, { session: true })),
+  unsubscribe: async (token, kind) => {
+    const response = await fetch(`${BASE_URL}/email/unsubscribe/${encodeURIComponent(token)}/${kind}`, { method: 'POST', headers: APP_HEADER })
+    if (response.status === 404) throw new ExpiredLinkError()
+    if (!response.ok) throw new Error(`Couldn't turn the emails off (${response.status}).`)
+  },
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
@@ -289,7 +302,17 @@ export const httpApi: Api = {
     if (!response.ok && response.status !== 404) throw new Error(`DELETE /strategies/${id} failed: HTTP ${response.status}`)
   },
   renameStrategy: (id, name) => strategyAction('PUT', id, 'name', { name }),
-  setStrategyNotifications: (id, enabled) => strategyAction('PUT', id, 'notifications', { enabled }),
+  getPushKey: async () => (await getRequired<{ publicKey: string | null }>('/push/key')).publicKey,
+  savePushSubscription: (subscription) => put('/push/subscription', subscription),
+  removePushSubscription: async (endpoint) => {
+    const response = await fetch(`${BASE_URL}/push/unsubscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...APP_HEADER, ...langHeader() },
+      body: JSON.stringify({ endpoint }),
+    })
+    if (response.status === 401) endedSession()
+    if (!response.ok) throw new Error(`POST /push/unsubscribe failed: HTTP ${response.status}`)
+  },
   archiveStrategy: (id) => strategyAction('POST', id, 'archive'),
   getAdminSettings: async () => (await admin('GET', '/settings')).json(),
   getAdminInvites: async () => (await admin('GET', '/invites')).json(),
@@ -307,9 +330,15 @@ export const httpApi: Api = {
   switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
   getAdminAssets: async () => (await admin('GET', '/assets')).json(),
   getAdminUsers: async () => (await admin('GET', '/users')).json(),
+  getAdminAlerts: async () => (await admin('GET', '/alerts')).json(),
+  dismissAdminAlert: async (id) => void (await admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
   setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
   addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
   updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),
+  flushAdminPrices: async () => (await admin('DELETE', '/assets/prices')).json(),
+  flushAdminAssetPrices: async (id) => void (await admin('DELETE', `/assets/${encodeURIComponent(id)}/prices`)),
+  downloadAdminAssetPrices: async (id, years) => (await admin('POST', `/assets/${encodeURIComponent(id)}/prices`, { years })).json(),
+  downloadAdminRates: async (years) => (await admin('POST', '/assets/rates', { years })).json(),
   submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
   getFeedback: async (status) =>
     (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],

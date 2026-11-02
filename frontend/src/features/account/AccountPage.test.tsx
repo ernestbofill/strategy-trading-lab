@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Account, Role } from '../../api'
+import { api, type Account, type Role } from '../../api'
 import { AccountPage } from './AccountPage'
 
 let currentRole: Role = 'user'
@@ -13,10 +13,15 @@ const baseAccount: Account = {
   locale: 'en',
   timeZone: 'Europe/Madrid',
   overviewEmail: true,
+  alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',
   aiSharing: false,
 }
+
+const push = vi.hoisted(() => ({ offered: false }))
+vi.mock('./usePushOffered', () => ({ usePushOffered: () => push.offered }))
+vi.mock('./DevicePush', () => ({ DevicePush: () => <p>Device state</p> }))
 
 vi.mock('./AccountContext', () => ({
   useCurrentAccount: () => ({ ...baseAccount, role: currentRole }),
@@ -52,5 +57,41 @@ describe('AccountPage', () => {
     )
 
     expect(screen.queryByRole('link', { name: /Admin settings/i })).toBeNull()
+  })
+
+  it('sets signals and reminders by app and email, and the summary by email, in one place', async () => {
+    currentRole = 'user'
+    push.offered = true
+    const setPush = vi.spyOn(api, 'setAlertPush').mockResolvedValue()
+    const setSummary = vi.spyOn(api, 'setOverviewEmail').mockResolvedValue()
+    render(
+      <MemoryRouter>
+        <AccountPage />
+      </MemoryRouter>,
+    )
+
+    const alerts = screen.getByRole('group', { name: 'Signals and reminders' })
+    const summary = screen.getByRole('group', { name: 'Summary' })
+    expect(within(alerts).getAllByRole('checkbox')).toHaveLength(2)
+    expect(within(summary).getAllByRole('checkbox')).toHaveLength(1)
+    fireEvent.click(within(alerts).getByRole('checkbox', { name: 'App' }))
+    fireEvent.click(within(summary).getByRole('checkbox', { name: 'Email' }))
+    await waitFor(() => expect(setPush).toHaveBeenCalledWith(false))
+    await waitFor(() => expect(setSummary).toHaveBeenCalledWith(false))
+  })
+
+  it('leaves the App box out where the app offers no push', () => {
+    currentRole = 'user'
+    push.offered = false
+    render(
+      <MemoryRouter>
+        <AccountPage />
+      </MemoryRouter>,
+    )
+
+    const alerts = screen.getByRole('group', { name: 'Signals and reminders' })
+    expect(within(alerts).queryByRole('checkbox', { name: 'App' })).toBeNull()
+    expect(within(alerts).getByRole('checkbox', { name: 'Email' })).toBeTruthy()
+    expect(screen.queryByText('This device')).toBeNull()
   })
 })

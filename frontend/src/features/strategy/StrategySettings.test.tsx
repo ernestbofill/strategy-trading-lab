@@ -43,7 +43,6 @@ const strategyDetail: StrategyDetail = {
   mode: 'live',
   status: 'running',
   endedOn: null,
-  notifications: true,
   startedOn: '2026-10-13',
   today: '2026-10-24',
   currency: 'EUR',

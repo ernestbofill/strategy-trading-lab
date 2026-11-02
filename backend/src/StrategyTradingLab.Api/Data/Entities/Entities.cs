@@ -24,6 +24,10 @@ public class Asset
     public string? Industry { get; set; }
     /// <summary>Who added it at run time; null for a seeded asset (or once that account is deleted).</summary>
     public Guid? AddedBy { get; set; }
+    /// <summary>Why the last price fetch couldn't be used (Yahoo's error, bars that aren't daily); null when it worked or before the first one.</summary>
+    public string? PricesProblem { get; set; }
+    /// <summary>When its prices were last fetched successfully; null before the first such fetch.</summary>
+    public DateTimeOffset? PricesCheckedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 
     public List<AssetText> Texts { get; set; } = [];
@@ -50,7 +54,14 @@ public class User : IHasUpdatedAt
     public required string Locale { get; set; }
     public string Currency { get; set; } = "EUR";
     public UserRole Role { get; set; } = UserRole.User;
+    /// <summary>The summary by email (spec: Notifications), sent after the US market close on days something changed.</summary>
     public bool OverviewEmail { get; set; } = true;
+    /// <summary>Signal alerts and reminders (snoozed signals, AI rounds due) by email.</summary>
+    public bool AlertEmails { get; set; } = true;
+    /// <summary>Signal alerts and reminders by web push, to every device the user turned on (the account page's "App" box).</summary>
+    public bool AlertPush { get; set; } = true;
+    /// <summary>Private: it is the whole credential of the unsubscribe links in this user's emails, which can only turn emails off.</summary>
+    public string UnsubscribeToken { get; set; } = null!; // Given on add by the model (UnsubscribeTokenGenerator), so reading a user draws nothing.
     public DateTimeOffset? DisclaimerAcceptedAt { get; set; }
     /// <summary>The version of the legal terms accepted by the user (e.g. "2026-10-31").</summary>
     public string? TermsVersionAccepted { get; set; }
@@ -60,6 +71,8 @@ public class User : IHasUpdatedAt
     public DateTimeOffset? AiSharingChangedAt { get; set; }
     /// <summary>The invite the account signed up with, if any: who invited it is the invite's maker.</summary>
     public Guid? InviteId { get; set; }
+    /// <summary>When the 23-day warning email was sent to an unconfirmed account; null until warned.</summary>
+    public DateTimeOffset? UnconfirmedWarnedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
@@ -139,7 +152,6 @@ public class Strategy : IHasUpdatedAt
     public DateOnly StartedOn { get; set; }
     /// <summary>When the user archived it (status <c>Ended</c>): it stops, and shows in the dashboard's collapsed Archived section.</summary>
     public DateTimeOffset? EndedAt { get; set; }
-    public bool Notifications { get; set; } = true;
     public required string Currency { get; set; }
     public required Budget Budget { get; set; }
     public required JsonDocument Params { get; set; }
@@ -279,6 +291,40 @@ public class DailyEvaluation
     public int? StepNo { get; set; }
     public required JsonDocument Facts { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>
+/// An address the mail service reported as bounced, invalid or complaining (Brevo's webhook): the sender skips it, so the
+/// app stops mailing an address that can't or won't get its emails, which protects the sending domain's reputation.
+/// </summary>
+public class EmailSuppression
+{
+    public Guid Id { get; set; }
+    public required string Email { get; set; }
+    public SuppressionReason Reason { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+/// <summary>
+/// A problem the background jobs found, for the owner's Alerts page (spec: Admin alerts) instead of an email. One row per
+/// problem (<c>Key</c>, such as <c>prices:SAP.DE</c> or <c>strategy:{id}</c>): seen again, it counts up rather than adding a row.
+/// </summary>
+public class AdminAlert
+{
+    public Guid Id { get; set; }
+    public required string Key { get; set; }
+    public AlertSource Source { get; set; }
+    public AlertStatus Status { get; set; } = AlertStatus.Open;
+    public required string Title { get; set; }
+    public string? Detail { get; set; }
+    /// <summary>The strategy it is about, if any: deleting the strategy deletes its alerts.</summary>
+    public Guid? StrategyId { get; set; }
+    /// <summary>How many times it was seen since it opened.</summary>
+    public int Count { get; set; } = 1;
+    public DateTimeOffset FirstSeenAt { get; set; }
+    public DateTimeOffset LastSeenAt { get; set; }
+    /// <summary>When it was dismissed or cleared.</summary>
+    public DateTimeOffset? ClosedAt { get; set; }
 }
 
 /// <summary>

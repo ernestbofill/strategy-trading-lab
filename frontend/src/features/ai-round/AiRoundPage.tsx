@@ -170,7 +170,6 @@ function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string)
           {t(saving ? 'aiRound.saving' : 'aiRound.use')}
         </PrimaryAction>
       }
-      note={t('common.disclaimerFull')}
     >
       <Header r={r} title={t(r.open ? 'aiRound.title' : 'aiRound.extraTitle')} />
       {!r.open && <p className={styles.plain}>{t('aiRound.extraIntro', { due: shortDate(r.dueOn, locale) })}</p>}

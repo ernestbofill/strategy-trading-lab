@@ -1,3 +1,4 @@
+using System.Text.Json;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
 using StrategyTradingLab.Api.Strategies;
@@ -120,9 +121,23 @@ public class PerformanceTests
     {
         Assert.Equal(StockStatus.Done, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 5, 5, "bear"));
         Assert.Equal(StockStatus.Building, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Building, false, false, 2, 5, "bear"));
+        Assert.Equal(StockStatus.NoBudget, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Building, false, false, 0, 5, "bear"));
+        Assert.Equal(StockStatus.NoBudget, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 0, 5, "bear"));
         Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.NotCandidate, false, false, 0, null, "trend"));
         Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 1, null, "trend"));
         Assert.Equal(StockStatus.Signal, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.SellSignal, false, true, 0, null, "trend"));
         Assert.Equal(StockStatus.WaitingForYou, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.SellSignal, true, true, 1, null, "trend"));
+    }
+
+    [Fact]
+    public void Bear_cycle_reads_the_current_drops_steps_and_start_date()
+    {
+        using var active = JsonDocument.Parse("""{"doneSteps":3,"cycleStart":"2025-06-10"}""");
+        Assert.Equal((3, new DateOnly(2025, 6, 10)), StrategyPage.BearCycle(active.RootElement));
+
+        using var idle = JsonDocument.Parse("""{"doneSteps":0}""");
+        Assert.Equal((0, (DateOnly?)null), StrategyPage.BearCycle(idle.RootElement));
+
+        Assert.Equal(((int?)null, (DateOnly?)null), StrategyPage.BearCycle(null));
     }
 }

@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Invites;
 
 namespace StrategyTradingLab.Api.Auth;
 
-public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool OverviewEmail, bool DisclaimerAccepted,
+public record SignUpRequest(string? Email, string? Password, string? Locale, string? TimeZone, bool DisclaimerAccepted,
     string? Currency = null, string? FirstName = null, string? LastName = null, string? InviteCode = null, string? TermsVersion = null);
 public record LogInRequest(string? Email, string? Password);
 public record TokenRequest(string? Token);
@@ -18,7 +18,8 @@ public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword
 public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
 public record LocaleRequest(string? Locale);
-public record OverviewEmailRequest(bool? Enabled);
+/// <summary>An on/off switch of the account (the notification boxes); a missing value is refused, not read as off.</summary>
+public record SwitchRequest(bool? Enabled);
 public record NameRequest(string? FirstName, string? LastName);
 
 /// <summary>
@@ -33,7 +34,7 @@ public record SignUpOptions(bool InviteOnly, SignUpInvite? Invite);
 public record ResetRecipient(string Email, string Locale);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
-public record AccountDto(string Email, string? FirstName, string? LastName, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, string Currency, UserRole Role, bool AiSharing = false, string? TermsVersionAccepted = null, DateTimeOffset? TermsAcceptedAt = null);
+public record AccountDto(string Email, string? FirstName, string? LastName, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, bool AlertEmails, string Currency, UserRole Role, bool AlertPush, bool AiSharing = false, string? TermsVersionAccepted = null, DateTimeOffset? TermsAcceptedAt = null);
 
 /// <summary>A message for the user, the same whatever the email (sign-up, forgot password).</summary>
 public record AccountMessage(string Message);
@@ -42,7 +43,7 @@ public record AccountMessage(string Message);
 public static class AccountEndpoints
 {
     public const string SignUpLimit = "account-sign-up", LogInLimit = "account-log-in", EmailLimit = "account-email",
-        PasswordLimit = "account-password", InviteLimit = "account-invite";
+        PasswordLimit = "account-password", InviteLimit = "account-invite", LogOutLimit = "account-log-out";
     static readonly TimeSpan VerifyFor = TimeSpan.FromHours(24), ResetFor = TimeSpan.FromHours(1);
 
     /// <summary>Checked when the email has no account, so a wrong email takes as long as a wrong password.</summary>
@@ -103,7 +104,7 @@ public static class AccountEndpoints
             var user = new User
             {
                 Email = email!, FirstName = firstName, LastName = lastName, TimeZone = request.TimeZone!, Locale = locale,
-                Currency = currency, OverviewEmail = request.OverviewEmail, DisclaimerAcceptedAt = now,
+                Currency = currency, DisclaimerAcceptedAt = now,
                 TermsVersionAccepted = termsVersion, TermsAcceptedAt = now,
                 Role = invite?.Role ?? UserRole.User, InviteId = invite?.Id,
             };
@@ -171,12 +172,13 @@ public static class AccountEndpoints
             await sessions.EndAsync(cancellationToken);
             return TypedResults.NoContent();
         })
+        .RequireRateLimiting(LogOutLimit)
         .WithSummary("Ends this device's session.");
 
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.Currency, user.Role, user.AiSharing, user.TermsVersionAccepted, user.TermsAcceptedAt));
+            return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.AlertEmails, user.Currency, user.Role, user.AlertPush, user.AiSharing, user.TermsVersionAccepted, user.TermsAcceptedAt));
         })
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");
@@ -223,7 +225,7 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("Sets the language of the user's account and emails.");
 
-        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (OverviewEmailRequest request, AppDbContext db,
+        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);
@@ -234,7 +236,33 @@ public static class AccountEndpoints
             return TypedResults.NoContent();
         })
         .RequireUser()
-        .WithSummary("Turns the daily overview email on or off for the logged-in user.");
+        .WithSummary("Turns the summary email on or off for the logged-in user.");
+
+        group.MapPost("/alert-emails", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
+            if (request.Enabled is not { } enabled)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertEmails, enabled), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Turns the signal alerts and reminders on or off for the logged-in user.");
+
+        group.MapPost("/alert-push", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
+            if (request.Enabled is not { } enabled)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, enabled), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Turns the signal alerts and reminders by web push (to the user's devices) on or off for the logged-in user.");
 
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.

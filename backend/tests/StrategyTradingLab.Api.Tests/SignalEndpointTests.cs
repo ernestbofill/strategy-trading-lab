@@ -143,6 +143,31 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
+    public async Task An_answered_signal_is_refused_in_the_users_language()
+    {
+        var (client, _, assetId, first, _) = await SeedAsync();
+        try
+        {
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/locale", new { locale = "ca" })).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync($"/signals/{first}/trade", Trade())).StatusCode);
+
+            foreach (var refused in new[]
+            {
+                await client.PostAsJsonAsync($"/signals/{first}/trade", Trade()),
+                await client.PostAsJsonAsync($"/signals/{first}/skip", new { reason = "other" }),
+            })
+            {
+                Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+                Assert.Equal("Aquest senyal ja té resposta.", await refused.Content.ReadFromJsonAsync<string>());
+            }
+        }
+        finally
+        {
+            await CleanAsync(assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_sell_signal_prefills_the_held_shares_and_records_the_sale()
     {
         var (client, strategyId, assetId, _, _) = await SeedAsync();
@@ -153,7 +178,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.Strategies.Where(s => s.Id == strategyId).ExecuteUpdateAsync(s =>
-                    s.SetProperty(x => x.TemplateKey, "trend").SetProperty(x => x.Budget, new Budget(1000, null, null)).SetProperty(x => x.Notifications, false));
+                    s.SetProperty(x => x.TemplateKey, "trend").SetProperty(x => x.Budget, new Budget(1000, null, null)));
                 db.UserTrades.Add(new UserTrade
                 {
                     StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, TradeDate = SignalDay.AddDays(-5),
@@ -204,13 +229,10 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{second}/trade", Trade())).StatusCode);
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{second}/snooze", null)).StatusCode);
 
-            using (var setup = factory.Services.CreateScope())
-            {
-                var setupDb = setup.ServiceProvider.GetRequiredService<AppDbContext>();
-                await setupDb.Strategies.Where(s => s.Assets.Any(a => a.AssetId == assetId)).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, false));
-                Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{first}/snooze", null)).StatusCode); // No reminder could be sent.
-                await setupDb.Strategies.Where(s => s.Assets.Any(a => a.AssetId == assetId)).ExecuteUpdateAsync(s => s.SetProperty(x => x.Notifications, true));
-            }
+            // Reminder emails off and no device: no reminder could be sent.
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-emails", new { enabled = false })).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/signals/{first}/snooze", null)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-emails", new { enabled = true })).StatusCode);
 
             var snooze = await client.PostAsync($"/signals/{first}/snooze", null);
             Assert.Equal(HttpStatusCode.OK, snooze.StatusCode);

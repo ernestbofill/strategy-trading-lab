@@ -157,12 +157,13 @@ export interface StrategyResults {
 
 /** How the template did in the past, shown while a strategy has no results of its own. */
 export interface PastResult {
-  /** "2010-2024". */
+  /** "2000-2024". */
   years: string
   template: number
   index: number
   /** Percent return of the template's worst calendar year in that time. */
   worstYear: number
+  isCustomized?: boolean
 }
 
 /** A strategy as shown on the dashboard. */
@@ -283,9 +284,10 @@ export interface StockRow {
   exchange: string
   currency: string
   what: string | null
-  /** The day of its latest check, that day's close, and each rule's verdict (empty before the daily check stored them). */
+  /** The day of its latest check, that day's close, when it became a candidate, and each rule's verdict. */
   checkedOn: string | null
   close: number | null
+  candidateSince?: string | null
   checks: RuleCheck[]
 }
 
@@ -293,8 +295,9 @@ export interface StockRow {
 export type CheckGroup = 'candidate' | 'buy' | 'sell' | 'next'
 
 /**
- * One rule's verdict on the latest checked day: backend Engine/BuyRules.cs (RuleCheck). `met` is null for a figure shown
- * for context only; `progress` (0 to 1) is how far a figure that must grow has come; `used` marks a milestone that earned its step.
+ * One rule's verdict on the latest checked day: backend Engine/BuyRules.cs (RuleCheck). `met` is a boolean verdict;
+ * `progress` (0 to 1+, exceeding 1 past the threshold) is how far a figure that must grow has come; `used` marks a
+ * milestone that earned its step; `preview` marks next-step rules shown before the first buy.
  */
 export interface RuleCheck {
   key: string
@@ -306,13 +309,21 @@ export interface RuleCheck {
   level: number | null
   progress: number | null
   used: boolean | null
+  date?: string | null
+  midLevel?: number | null
+  endLevel?: number | null
+  subValue?: number | null
+  endValue?: number | null
+  preview?: boolean | null
 }
 
-/** A template's words for a check, with {value}, {+value}, {min}, {max} and {level}; `none` when the check has no value. */
+/** A template's words for a check, with {value}, {+value}, {min}, {max}, {level}, {midLevel}, {endLevel}, and {date}; `past` when past `max`, `none` when no value. */
 export interface CheckTexts {
   label: string
   detail: string
   short: string
+  past?: string | null
+  pastShort?: string | null
   none?: string | null
   info?: string | null
 }
@@ -337,8 +348,6 @@ export interface StrategyDetail {
   status: StrategyStatus
   /** The local date it was archived; its results stop there. Null while it runs. */
   endedOn: string | null
-  /** Emails for its signals and AI rounds (the alerts switch). */
-  notifications: boolean
   startedOn: string
   /** The user's local date. */
   today: string
@@ -652,6 +661,12 @@ export interface NewStrategy {
   sourceStrategyId?: string
 }
 
+/** What the browser's `PushSubscription.toJSON()` gives: backend Notifications/WebPushEndpoints.cs. */
+export interface PushSubscriptionJson {
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+}
+
 /** A setting on the admin page. A secret's `value` is never sent: only whether it is set. */
 export interface AdminSetting {
   key: string
@@ -715,7 +730,12 @@ export interface Account {
   emailVerified: boolean
   locale: Locale
   timeZone: string
+  /** The summary by email, after the US market close on days something changed. */
   overviewEmail: boolean
+  /** Signal alerts and reminders by email. */
+  alertEmails: boolean
+  /** Signal alerts and reminders by web push, on the devices the user turned on. */
+  alertPush: boolean
   /** Of the user's new strategies; running ones keep theirs. */
   currency: Currency
   role: Role
@@ -734,7 +754,6 @@ export interface SignUp {
   locale: Locale
   /** IANA, e.g. "Europe/Madrid". */
   timeZone: string
-  overviewEmail: boolean
   currency: Currency
   disclaimerAccepted: boolean
   /** The accepted legal terms version. */
@@ -865,6 +884,8 @@ export interface AdminUser {
   role: Role
   joined: string
   confirmed: boolean
+  /** Why the mail service says the address can't be mailed (the app no longer sends it the overview or alerts); null when it can. */
+  emailBlocked: 'bounced' | 'invalid' | 'complaint' | null
   /** The last time any of its sessions was used; null when none is kept. */
   lastVisit: string | null
   running: number
@@ -889,6 +910,25 @@ export interface AdminUsers {
   users: AdminUser[]
 }
 
+/** What raised an admin alert. */
+export type AlertSource = 'dailyCheck' | 'prices' | 'strategies' | 'aiStrategies' | 'email'
+
+/** Open; dismissed (quiet while the problem lasts); or cleared, when a later run found the problem gone. */
+export type AlertStatus = 'open' | 'dismissed' | 'cleared'
+
+/** A problem the background jobs found: backend Admin/AdminAlerts.cs (AdminAlertDto). `count`: times seen since it opened. */
+export interface AdminAlert {
+  id: string
+  source: AlertSource
+  status: AlertStatus
+  title: string
+  detail: string | null
+  count: number
+  firstSeenAt: string
+  lastSeenAt: string
+  closedAt: string | null
+}
+
 /** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
 export interface AdminAsset {
   id: string
@@ -903,6 +943,21 @@ export interface AdminAsset {
   strategies: number
   /** Newest stored price day ("2026-10-22"), or null if none is stored yet. */
   latestPriceDate: string | null
+  /** Why the last price fetch couldn't be used (Yahoo's error, bars that aren't daily), or null when it worked. */
+  pricesProblem: string | null
+}
+
+/** What deleting every price did: backend Admin/AdminEndpoints.cs (PricesFlushed). */
+export interface PricesFlushed {
+  prices: number
+  rates: number
+}
+
+/** What downloading the exchange rates did: backend Admin/AdminEndpoints.cs (RatesDownloaded). */
+export interface RatesDownloaded {
+  rows: number
+  /** The currencies that failed, with why. */
+  problems: PriceProblem[]
 }
 
 /** What adding a symbol did: backend Admin/AdminEndpoints.cs (AdminAddedAsset). */
@@ -939,8 +994,12 @@ export interface Api {
   setCurrency(currency: Currency): Promise<void>
   /** Sets the language of the user's account and emails. Rejects with `InvalidFieldsError`. */
   setLocale(locale: Locale): Promise<void>
-  /** Turns the daily overview email on or off. */
+  /** Turns the summary email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
+  setAlertEmails(enabled: boolean): Promise<void>
+  setAlertPush(enabled: boolean): Promise<void>
+  /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */
+  unsubscribe(token: string, kind: 'overview' | 'alerts'): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>
   getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
   /** Rejects with `UnauthorizedError` when the session has ended (also for `startStrategy`). */
@@ -972,8 +1031,12 @@ export interface Api {
   deleteStrategy(id: string): Promise<void>
   /** Rejects with `NameTakenError` when another running strategy has the name, `InvalidFieldsError` for a wrong length. */
   renameStrategy(id: string, name: string): Promise<void>
-  /** The alerts switch of a running strategy. Rejects with `InvalidValueError` once it has ended. */
-  setStrategyNotifications(id: string, enabled: boolean): Promise<void>
+  /** The VAPID key to subscribe with; null when the server doesn't send push. */
+  getPushKey(): Promise<string | null>
+  /** Saves this device's push subscription for the logged-in user. */
+  savePushSubscription(subscription: PushSubscriptionJson): Promise<void>
+  /** Forgets this device's push subscription. */
+  removePushSubscription(endpoint: string): Promise<void>
   /** Archives a running strategy: the daily check stops, its waiting signals become missed and its name is free. Rejects with `InvalidValueError` when it is archived already. */
   archiveStrategy(id: string): Promise<void>
   /** Admin page, for the owner. Each rejects with `UnauthorizedError` when not logged in, `ForbiddenError` for any other role, `TooManyTriesError` when rate-limited. */
@@ -1006,12 +1069,27 @@ export interface Api {
 /** All assets, for the admin assets page. */
   getAdminAssets(): Promise<AdminAsset[]>
   getAdminUsers(): Promise<AdminUsers>
+  /** The open and dismissed alerts, and those cleared in the last 7 days, last seen first. */
+  getAdminAlerts(): Promise<AdminAlert[]>
+  /** Dismisses an open alert: it stays quiet while its problem lasts. */
+  dismissAdminAlert(id: string): Promise<void>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */
   addAdminAsset(symbol: string): Promise<AdminAddedAsset>
   /** Changes an asset's name and English description. Rejects with `InvalidFieldsError` (`name`, `what`). */
   updateAdminAsset(id: string, edit: { name: string; what: string }): Promise<void>
+  /** Deletes every stored price and exchange rate. */
+  flushAdminPrices(): Promise<PricesFlushed>
+  /** Deletes one asset's stored prices. */
+  flushAdminAssetPrices(id: string): Promise<void>
+  /**
+   * Replaces one asset's prices with the daily prices of the last `years` years and returns its row. Rejects with
+   * `InvalidFieldsError` (`years`), or `InvalidValueError` when Yahoo fails or the daily refresh is running.
+   */
+  downloadAdminAssetPrices(id: string, years: number): Promise<AdminAsset>
+  /** Replaces the exchange rates of every currency in use with the last `years` years. */
+  downloadAdminRates(years: number): Promise<RatesDownloaded>
 /** Submits a feedback comment (requires a confirmed email). Rejects with `ForbiddenError`, `InvalidValueError` or `TooManyTriesError`. */
   submitFeedback(feedback: NewFeedback): Promise<FeedbackItem>
   /** Owner only: lists, edits, closes/reopens or deletes feedback comments. */

@@ -19,9 +19,9 @@
       }
     ],
     "backtest": {
-      "scope": "9 stocks, 2010-2024.",
-      "years": "2010-2024",
-      "universe": "9, the starter list",
+      "scope": "1,146 stocks, 2000-2024.",
+      "years": "2000-2024",
+      "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     },
     "stockStatus": {
@@ -87,30 +87,35 @@
     "checks": {
       "gain": {
         "label": "Proven growth",
-        "detail": "Rose {value}% from its low (needs {min}%).",
+        "detail": "Rose {value}% from its low ({level} → {endLevel}, needs {min}%).",
         "short": "rose {value}% (needs {min}%)",
         "info": "The recent peak must be at least {min}% above the lowest close of the last months: only proven winners count."
       },
       "stacked": {
         "label": "Averages stacked",
-        "detail": "Needs the short average above the middle one, and that above the long one.",
+        "detail": "Short {level} · middle {midLevel} · long {endLevel} (needs short > middle > long).",
+        "none": "Needs the short average above the middle one, and that above the long one.",
         "short": "averages not stacked",
         "info": "The SMA 50, SMA 150 and SMA 200 (average closes over those days), in that order: a steady uptrend."
       },
       "rising": {
         "label": "Long average rising",
-        "detail": "Needs the long average higher than 20 trading days ago.",
-        "short": "long average not rising"
+        "detail": "{+value}% vs 20 trading days ago ({endLevel} → {level}, needs above 0%).",
+        "none": "Needs the long average higher than 20 trading days ago.",
+        "short": "long average not rising",
+        "info": "The long average (SMA 200) must be higher than 20 trading days ago so the long-term trend is pointing up."
       },
       "zone": {
         "label": "In the discount zone",
-        "detail": "{value}% below the recent peak. The zone is {min}–{max}% below ({level} and down).",
+        "detail": "{value}% below the recent peak. The zone is {min}–{max}% below ({level} to {endLevel}).",
+        "past": "{value}% below the recent peak — fell past the {min}–{max}% discount zone ({level} to {endLevel}).",
         "short": "{value}% below its peak (zone {min}–{max}%)",
+        "pastShort": "{value}% below its peak (past {max}% zone)",
         "info": "The discount zone is a dip of {min}–{max}% below the highest close of the last weeks."
       },
       "floor": {
         "label": "Above the floor average",
-        "detail": "{+value}% vs the floor average ({level}).",
+        "detail": "{+value}% vs the floor average ({level}, needs 0% or higher).",
         "short": "below the floor average",
         "info": "A dip that falls through the SMA 50 is a collapse, not a discount."
       },
@@ -142,9 +147,9 @@
       }
     ],
     "backtest": {
-      "scope": "16 stocks, 2010-2024.",
-      "years": "2010-2024",
-      "universe": "16, the starter list",
+      "scope": "1,146 stocks, 2000-2024.",
+      "years": "2000-2024",
+      "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     },
     "stockStatus": {
@@ -214,27 +219,32 @@
     "checks": {
       "beaten": {
         "label": "Beaten down lately",
-        "detail": "Last beaten down {value} trading days ago. It counts for {max} days.",
+        "detail": "Candidate since {date} ({value} of {max} trading days). Now {+subValue}% from the 52-week high ({level}) and {+endValue}% vs the SMA 200 ({endLevel}).",
+        "past": "Window closed: last beaten down on {date} ({value} trading days ago; window is {max} days).",
         "short": "not beaten down lately",
-        "none": "Not beaten down in its price history.",
-        "info": "Beaten down: at least {min}% below its 52-week high and below its SMA 200. It stays a candidate for {max} trading days after that."
+        "pastShort": "candidate window closed ({value}d ago)",
+        "none": "Not beaten down in its price history. Needs both conditions below on the same day to start a {max}-day window.",
+        "info": "Beaten down: at least {min}% below its 52-week high and below its SMA 200 on the same day. Once triggered, it stays a candidate for {max} trading days while it recovers."
       },
       "drop": {
         "label": "Drop from the 52-week high",
-        "detail": "{+value}% from the 52-week high ({level}).",
-        "short": "{+value}% from its high"
+        "detail": "{+value}% from the 52-week high ({level}, needs −{min}% or lower).",
+        "short": "{+value}% from its high (needs −{min}%)",
+        "info": "To become beaten down, the close must fall at least {min}% below the highest close of the last 52 weeks."
       },
       "vsSma200": {
         "label": "Price vs SMA 200",
-        "detail": "{+value}% vs the SMA 200 ({level}).",
-        "short": "{+value}% vs SMA 200",
-        "info": "The average close of the last 200 days, the long trend."
+        "detail": "{+value}% vs the SMA 200 ({level}, needs below 0% when beaten down).",
+        "short": "{+value}% vs SMA 200 (needs below)",
+        "info": "The average close of the last 200 days, the long trend. A stock must fall below it (while at least {min}% off its 52-week high) to count as beaten down."
       },
       "buyLine": {
         "label": "Price vs the buy line",
-        "detail": "{+value}% vs the buy line ({level}). A step needs 0 to +{max}%.",
+        "detail": "{+value}% vs the buy line ({level}). A step needs 0% to +{max}% ({level} to {endLevel}).",
+        "past": "{+value}% above the buy line ({level}) — past the +{max}% chase limit ({endLevel}).",
         "short": "{+value}% vs the buy line",
-        "info": "The buy line is {min}% above the SMA 50, the average close of the last 50 days: the stock has turned."
+        "pastShort": "too far past the buy line ({+value}%)",
+        "info": "The buy line is {min}% above the SMA 50 ({midLevel}), the average close of the last 50 days: the stock has turned. Above +{max}% past the buy line is too late to chase."
       },
       "chase": {
         "label": "Not too far past the line",
@@ -249,24 +259,36 @@
       },
       "sma200": {
         "label": "Back above the SMA 200",
-        "detail": "{+value}% vs the SMA 200 ({level}).",
-        "short": "below the SMA 200"
+        "detail": "{+value}% vs the SMA 200 ({level}). Step window: 0% to +{max}% ({level} to {endLevel}).",
+        "past": "{+value}% above the SMA 200 ({level}) — past the +{max}% chase limit ({endLevel}).",
+        "short": "below the SMA 200",
+        "pastShort": "past the SMA 200 limit ({+value}%)",
+        "info": "Milestone: reclaiming the 200-day average confirms the long-term recovery and earns one step if bought within +{max}%."
       },
       "golden": {
         "label": "Golden cross",
-        "detail": "Needs the SMA 50 above the SMA 200. Price {+value}% vs the SMA 50 ({level}).",
-        "short": "no golden cross yet"
+        "detail": "SMA 50 ({level}) is {+subValue}% vs SMA 200 ({midLevel}). Price {+value}% vs SMA 50 (window 0% to +{max}%, up to {endLevel}).",
+        "past": "SMA 50 ({level}) is {+subValue}% vs SMA 200 ({midLevel}), but price is {+value}% above SMA 50 (past +{max}% limit, {endLevel}).",
+        "short": "no golden cross yet",
+        "pastShort": "past the SMA 50 limit ({+value}%)",
+        "info": "Milestone: the 50-day average crosses above the 200-day average, confirming a medium-term uptrend."
       },
       "near_high": {
         "label": "Near the old high",
-        "detail": "Needs a close within {min}% of the 52-week high: {+value}% vs that line ({level}).",
-        "short": "{+value}% vs the near-high line"
+        "detail": "{+value}% vs the near-high line ({level}, within {min}% of {midLevel}). Step window: 0% to +{max}% (up to {endLevel}).",
+        "past": "{+value}% above the near-high line ({level}) — past the +{max}% chase limit ({endLevel}).",
+        "short": "{+value}% vs the near-high line",
+        "pastShort": "past the near-high limit ({+value}%)",
+        "info": "Milestone: price recovers to within {min}% of the 52-week high."
       },
       "breakout": {
         "label": "Breakout",
-        "detail": "{+value}% vs the high before its {min}% pullback ({level}).",
+        "detail": "{+value}% vs the high before its {min}% pullback ({level}). Step window: 0% to +{max}% ({level} to {endLevel}).",
+        "past": "{+value}% above the high before its {min}% pullback ({level}) — past the +{max}% chase limit ({endLevel}).",
         "short": "no breakout yet",
-        "none": "Needs a {min}% pullback first, then a close above the high before it."
+        "pastShort": "past the breakout limit ({+value}%)",
+        "none": "Needs an {min}% pullback after the last buy, then a close above the high before it.",
+        "info": "Milestone: after pulling back at least {min}% from a post-buy high, breaking above that high earns one step."
       },
       "cooldown": {
         "label": "Wait after a step",
@@ -296,9 +318,9 @@
       }
     ],
     "backtest": {
-      "scope": "3 big drops, 2000-2024. Big drops are rare: it may not signal for years.",
+      "scope": "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years.",
       "years": "2000-2024",
-      "universe": "The S&P 500 fund",
+      "universe": "Major equity indexes and 30 sector ETFs across 134 bear markets",
       "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."
     },
     "stockStatus": {
@@ -352,13 +374,17 @@
       },
       "bounce": {
         "label": "Bounce off the low",
-        "detail": "{value}% above the drop's low. The first step comes at {min}% ({level}).",
-        "short": "{value}% above its low (needs {min}%)"
+        "detail": "{value}% above the drop's low ({endLevel}). The first step comes at +{min}% ({level}).",
+        "none": "Once in a drop, the first step signals when the close climbs +{min}% off the drop's lowest close.",
+        "short": "{value}% above its low (needs {min}%)",
+        "info": "Instead of guessing the bottom of a crash, the first buy waits for a +{min}% rebound off the lowest close."
       },
       "pace": {
         "label": "Next step",
         "detail": "{value} of {min} trading days since the last step.",
-        "short": "{value} of {min} days to the next step"
+        "none": "After the first bounce, signals one more step every {min} trading days until all steps are bought.",
+        "short": "{value} of {min} days to the next step",
+        "info": "Spreads the remaining steps across the recovery at a steady pace of one step every {min} trading days."
       }
     }
   },
@@ -401,9 +427,9 @@
       }
     ],
     "backtest": {
-      "scope": "2000-2024, 23 buys and sells.",
+      "scope": "6 major indexes, 2000-2024.",
       "years": "2000-2024",
-      "universe": "The index fund",
+      "universe": "6 major global indexes (S&P 500, Nasdaq-100, EFA, DAX, Nikkei)",
       "testedDefaults": "The whole €3,000 budget, all in, all out."
     },
     "stockStatus": {
@@ -423,14 +449,15 @@
     "checks": {
       "buyLine": {
         "label": "Price vs the buy line",
-        "detail": "{+value}% vs the buy line ({level}), {min}% above the trend line.",
+        "detail": "{+value}% vs the buy line ({level}, +{min}% above the SMA {midLevel}). Close is {+subValue}% vs the SMA.",
         "short": "{+value}% vs the buy line",
-        "info": "The trend line is the average close of the last 200 days."
+        "info": "The trend line is the average close of the last 200 days. Signals a buy above +{min}%; inside the ±{min}% band ({endLevel} to {level}), the trend stays unchanged."
       },
       "sellLine": {
         "label": "Price vs the sell line",
-        "detail": "{+value}% vs the sell line ({level}), {min}% below the trend line.",
-        "short": "{+value}% vs the sell line"
+        "detail": "{+value}% vs the sell line ({level}, −{min}% below the SMA {midLevel}). Close is {+subValue}% vs the SMA.",
+        "short": "{+value}% vs the sell line",
+        "info": "Signals a sale below −{min}% of the 200-day average; inside the ±{min}% band ({level} to {endLevel}), the position stays held."
       }
     }
   },

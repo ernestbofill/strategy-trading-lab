@@ -4,7 +4,28 @@ using System.Text;
 namespace StrategyTradingLab.Api.Email;
 
 /// <summary>An email ready to send: the plain text and the same content as HTML (spec: Emails).</summary>
-public record EmailContent(string Subject, string Text, string Html);
+/// <param name="OneClickUnsubscribe">The address that turns this kind of email off with one POST (the List-Unsubscribe header), when the email has one.</param>
+public record EmailContent(string Subject, string Text, string Html, string? OneClickUnsubscribe = null)
+{
+    public void Deconstruct(out string subject, out string text, out string html) => (subject, text, html) = (Subject, Text, Html);
+}
+
+/// <summary>The kinds of email a user can turn off from the email itself.</summary>
+public enum EmailKind { Overview, Alerts }
+
+/// <summary>The addresses that turn one kind of email off for the user whose private token is in them (see <c>User.UnsubscribeToken</c>).</summary>
+public static class UnsubscribeLinks
+{
+    public static string Slug(EmailKind kind) => kind == EmailKind.Overview ? "overview" : "alerts";
+
+    public static EmailKind? FromSlug(string slug) => slug switch { "overview" => EmailKind.Overview, "alerts" => EmailKind.Alerts, _ => null };
+
+    /// <summary>The app's page, with one button: opening a link must never change anything, because mail scanners open every link.</summary>
+    public static string PageUrl(string appUrl, string locale, string token, EmailKind kind) => AppLink.To(appUrl, locale, $"/unsubscribe/{token}/{Slug(kind)}");
+
+    /// <summary>The API's address for the List-Unsubscribe header: mail apps POST to it (RFC 8058).</summary>
+    public static string OneClickUrl(string appUrl, string token, EmailKind kind) => $"{appUrl}/api/email/unsubscribe/{token}/{Slug(kind)}";
+}
 
 /// <summary>A line in a section; <paramref name="Url"/> links it to its page, <paramref name="Tag"/> is a mode label (Live tags stand out).</summary>
 public record EmailItem(string Text, string? Url = null, string? Tag = null, bool Live = false);
@@ -24,6 +45,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
 
     readonly List<(string Text, string Html)> blocks = [];
     string? eyebrow, disclaimer, preheader;
+    (string Label, string PageUrl, string OneClickUrl)? unsubscribe;
 
     bool Ca => locale == "ca";
 
@@ -69,24 +91,40 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             $"<td bgcolor=\"{Ground}\" style=\"background:{Ground};border-left:3px solid {Primary};padding:14px 16px;\">{Encode(lines[0])}{figures}</td></tr></table>");
     }
 
-    /// <summary>A quote of what the user selected, e.g. About: "ADD A STOCK".</summary>
-    public EmailDocument Quote(string label, string text) =>
-        Add($"{label}: \"{text}\"",
-            $"<p style=\"margin:0 0 4px;font-size:13px;color:{InkSoft};\">{Encode(label)}</p>" +
-            $"<p style=\"margin:0 0 16px;padding:8px 12px;border-left:3px solid {Hairline};font-style:italic;\">{Lines(text)}</p>");
-
-    /// <summary>The main link: the lead and the address in the text, a button with the link under it in the HTML.</summary>
-    public EmailDocument Action(string lead, string button, string url)
+    /// <summary>A code chip (e.g. an invite code), with an optional hint line.</summary>
+    public EmailDocument Code(string label, string code, string? hint = null)
     {
-        preheader ??= lead;
-        return Add($"{lead}\n{url}",
-            $"<p style=\"margin:0 0 12px;\">{Encode(lead.TrimEnd(':'))}.</p>" +
-            $"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 8px;\"><tr>" +
+        var text = hint is null ? $"{label}: {code}" : $"{label}: {code}\n{hint}";
+        var hintHtml = hint is null ? "" : $"<p style=\"margin:8px 0 0;font-size:13px;line-height:18px;color:{InkSoft};\">{Lines(hint)}</p>";
+        return Add(text,
+            $"<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 20px;\"><tr>" +
+            $"<td bgcolor=\"{Ground}\" style=\"background:{Ground};border:1px dashed {Hairline};padding:14px 16px;text-align:center;\">" +
+            $"<div style=\"font-family:{Mono};font-size:11px;line-height:16px;letter-spacing:1.5px;text-transform:uppercase;color:{InkSoft};margin-bottom:4px;\">{Encode(label)}</div>" +
+            $"<div style=\"font-family:{Mono};font-size:20px;line-height:26px;font-weight:700;letter-spacing:3px;color:{Primary};\">{Encode(code)}</div>" +
+            $"{hintHtml}</td></tr></table>");
+    }
+
+    public EmailDocument Quote(string label, string body) =>
+        Add($"{label}: \"{body}\"",
+            $"<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 16px;\"><tr>" +
+            $"<td bgcolor=\"{Ground}\" style=\"background:{Ground};border-left:3px solid {Hairline};padding:10px 14px;font-size:14px;line-height:20px;color:{InkSoft};\">" +
+            $"<strong style=\"color:{Ink};\">{Encode(label)}:</strong> &ldquo;{Lines(body)}&rdquo;</td></tr></table>");
+
+    /// <summary>The email's call to action: a button in the HTML, a "lead url" in the text.</summary>
+    public EmailDocument Action(string button, string url) => Action(null, button, url);
+
+    /// <summary>A call to action with a lead sentence ("See it:", "Confirm by opening:").</summary>
+    public EmailDocument Action(string? lead, string button, string url)
+    {
+        if (lead is not null) preheader ??= lead;
+        var leadText = lead is null ? url : $"{lead}\n{url}";
+        var leadHtml = lead is null ? "" : $"<p style=\"margin:0 0 12px;\">{Encode(lead.TrimEnd(':'))}.</p>";
+        return Add(leadText,
+            leadHtml +
+            $"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 20px;\"><tr>" +
             $"<td bgcolor=\"{Primary}\" style=\"background:{Primary};border-radius:2px;\">" +
             $"<a href=\"{Encode(url)}\" style=\"display:inline-block;padding:12px 20px;font-family:{Mono};font-size:14px;line-height:20px;font-weight:700;" +
-            $"letter-spacing:0.5px;text-transform:uppercase;color:{OnAction};text-decoration:none;\">{Encode(button)}</a></td></tr></table>" +
-            $"<p style=\"margin:0 0 20px;font-size:12px;line-height:18px;color:{InkSoft};word-break:break-all;\">" +
-            $"{Encode(Ca ? "O obre aquest enllaç:" : "Or open this link:")} <a href=\"{Encode(url)}\" style=\"color:{InkSoft};\">{Encode(url)}</a></p>");
+            $"letter-spacing:0.5px;text-transform:uppercase;color:{OnAction};text-decoration:none;\">{Encode(button)}</a></td></tr></table>");
     }
 
     /// <summary>Links side by side: one "label: url" line each in the text, outlined buttons in the HTML.</summary>
@@ -108,21 +146,23 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         var list = items.ToList();
         var text = new StringBuilder(title);
         foreach (var item in list)
-            text.Append("\n- ").Append(item.Tag is null ? "" : $"({item.Tag}) ").Append(item.Text).Append(item.Url is null ? "" : $" {item.Url}");
+        {
+            var tag = item.Tag is null ? "" : $"({item.Tag}) ";
+            var url = item.Url is null ? "" : $" {item.Url}";
+            text.Append($"\n- {tag}{item.Text}{url}");
+        }
 
         var html = new StringBuilder(
-            $"<h2 style=\"margin:24px 0 4px;padding-bottom:6px;border-bottom:1px solid {Hairline};font-family:{Mono};font-size:13px;line-height:20px;" +
-            $"font-weight:700;letter-spacing:1px;text-transform:uppercase;color:{Accent};\">{Encode(title)}</h2>" +
-            "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 8px;\">");
+            $"<p style=\"margin:20px 0 8px;font-family:{Mono};font-size:13px;line-height:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:{Accent};\">" +
+            $"{Encode(title)}</p>" +
+            "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 16px;\">");
         foreach (var item in list)
         {
-            var color = item.Live ? HotPink : Info;
-            var tag = item.Tag is null ? "" :
-                $"<span style=\"display:inline-block;margin-right:6px;padding:0 6px;border:1px solid {color};border-radius:11px;font-family:{Mono};" +
-                $"font-size:11px;line-height:18px;letter-spacing:0.5px;text-transform:uppercase;color:{color};\">{Encode(item.Tag)}</span>";
+            var tag = item.Tag is null ? ""
+                : $"<span style=\"display:inline-block;padding:1px 6px;margin-right:8px;font-family:{Mono};font-size:11px;line-height:16px;font-weight:700;" +
+                  $"background:{(item.Live ? HotPink : Hairline)};color:{Ink};border-radius:2px;\">{Encode(item.Tag)}</span>";
             var body = item.Url is null ? Encode(item.Text)
-                : $"<a href=\"{Encode(item.Url)}\" style=\"color:{Ink};text-decoration:underline;text-decoration-color:{Primary};\">{Encode(item.Text)}</a>" +
-                  $" <a href=\"{Encode(item.Url)}\" style=\"color:{Primary};text-decoration:none;\">&rarr;</a>";
+                : $"<a href=\"{Encode(item.Url)}\" style=\"color:{Primary};text-decoration:underline;\">{Encode(item.Text)}</a>";
             html.Append($"<tr><td style=\"padding:10px 0;border-bottom:1px solid {Hairline};font-size:15px;line-height:22px;\">{tag}{body}</td></tr>");
         }
         html.Append("</table>");
@@ -136,10 +176,29 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         return this;
     }
 
+    /// <summary>"Turn off these emails": a line above the disclaimer in the text, a link in the footer in the HTML, and the one-click address for the header.</summary>
+    public EmailDocument Unsubscribe(EmailKind kind, string token)
+    {
+        if (appUrl is null) throw new InvalidOperationException("An unsubscribe link needs the app's address.");
+        var label = (kind, Ca) switch
+        {
+            (EmailKind.Overview, false) => "Turn off summary emails",
+            (EmailKind.Overview, true) => "Desactiva els correus de resum",
+            (_, false) => "Turn off signal and reminder emails",
+            _ => "Desactiva els correus de senyals i recordatoris",
+        };
+        unsubscribe = (label, UnsubscribeLinks.PageUrl(appUrl, locale, token, kind), UnsubscribeLinks.OneClickUrl(appUrl, token, kind));
+        return this;
+    }
+
+    /// <summary><see cref="Unsubscribe(EmailKind, string)"/> when there is a token (an email to an address without an account has none).</summary>
+    public EmailDocument WithUnsubscribe(EmailKind kind, string? token) => token is null ? this : Unsubscribe(kind, token);
+
     public EmailContent Build(string subject)
     {
-        var text = string.Join("\n\n", blocks.Select(b => b.Text).Append(disclaimer).OfType<string>());
-        return new(subject, text, Html(subject));
+        var text = string.Join("\n\n", blocks.Select(b => b.Text)
+            .Append(unsubscribe is { } u ? $"{u.Label}: {u.PageUrl}" : null).Append(disclaimer).OfType<string>());
+        return new(subject, text, Html(subject), unsubscribe?.OneClickUrl);
     }
 
     string Html(string subject)
@@ -153,7 +212,8 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             : $"<a href=\"{home}\" style=\"color:{Primary};text-decoration:none;\">STRATEGY TRADING LAB</a>";
         // No "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.
         var footer = "Strategy Trading Lab" + (home is null ? ""
-            : $" &middot; <a href=\"{home}\" style=\"color:{InkSoft};\">{Encode(Ca ? "Obre l'aplicació" : "Open the app")}</a>");
+            : $" &middot; <a href=\"{home}\" style=\"color:{InkSoft};\">{Encode(Ca ? "Obre l'aplicació" : "Open the app")}</a>")
+            + (unsubscribe is { } u ? $" &middot; <a href=\"{Encode(u.PageUrl)}\" style=\"color:{InkSoft};\">{Encode(u.Label)}</a>" : "");
 
         return
             $"<!doctype html><html lang=\"{lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
@@ -165,7 +225,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
             "<tr><td align=\"center\" style=\"padding:24px 16px;\">" +
             "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"max-width:560px;\">" +
             $"<tr><td style=\"padding:0 0 12px;font-family:{Mono};font-size:13px;line-height:20px;font-weight:700;letter-spacing:2px;color:{Primary};\">" +
-            $"<span style=\"color:{HotPink};\">&#9650;</span> {brand}</td></tr>" +
+            $"{brand}</td></tr>" +
             $"<tr><td bgcolor=\"{Card}\" style=\"background:{Card};border:1px solid {Hairline};border-top:3px solid {Primary};padding:24px;" +
             $"font-family:{Ui};font-size:16px;line-height:24px;color:{Ink};\">" +
             (eyebrow is null ? "" :

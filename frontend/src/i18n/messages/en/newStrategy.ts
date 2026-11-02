@@ -100,9 +100,11 @@ export const newStrategy = {
   'newStrategy.how.run.index': 'An S&P 500 fund (SPY) gets the same money on the same days, and is never sold.',
   'newStrategy.how.run.fees': 'Fees: {fee} per trade. Taxes not included.',
   'newStrategy.how.byPeriod': 'By period',
+  'newStrategy.how.independentPeriods':
+    "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All.",
   'newStrategy.how.cantShow': "What a backtest can't show",
   'newStrategy.how.survivors':
-    "The starter list holds companies that are around today. Stocks that failed along the way aren't in it, which flatters past results.",
+    "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results.",
   'newStrategy.how.realPrices': 'Real prices can differ from the opening price, especially on busy days.',
 
   // 2b Advanced settings
@@ -139,11 +141,11 @@ export const newStrategy = {
   'newStrategy.mode.sim.line': 'Test it on paper. No real money.',
   'newStrategy.mode.sim.who': 'the app, on paper, every time the rules say so.',
   'newStrategy.mode.sim.app': "records each trade at the next day's opening price.",
-  'newStrategy.mode.sim.you': 'nothing. Read the daily overview.',
+  'newStrategy.mode.sim.you': "nothing. Read the summary.",
   'newStrategy.mode.live.name': 'Live',
   'newStrategy.mode.live.line': 'Follow it with real money at your own broker.',
   'newStrategy.mode.live.who': 'you, at your broker, if and when you choose.',
-  'newStrategy.mode.live.app': 'emails you each signal and records what you confirm.',
+  'newStrategy.mode.live.app': "alerts you to each signal and records what you confirm.",
   'newStrategy.mode.live.confirmFirst': 'Confirm your email to go live.',
   'newStrategy.mode.live.you': 'confirm each signal: I did it, or I skipped it.',
 
@@ -194,8 +196,13 @@ export const newStrategy = {
   'newStrategy.confirm.row.stocks': 'Stocks',
   'newStrategy.confirm.row.settings': 'Settings',
   'newStrategy.confirm.row.budget': 'Budget',
-  'newStrategy.confirm.row.overview': 'Daily overview',
-  'newStrategy.confirm.row.alerts': 'Alerts',
+  'newStrategy.confirm.row.notifications': 'Notifications',
+  'newStrategy.confirm.allowPush': 'Allow notifications on this device',
+  'newStrategy.confirm.notify.appEmail': 'App and email',
+  'newStrategy.confirm.notify.app': 'App',
+  'newStrategy.confirm.notify.email': 'Email',
+  'newStrategy.confirm.notify.off': 'Off',
+  'newStrategy.confirm.notify.summary': 'Summary by email',
   'newStrategy.confirm.row.prompt': 'Prompt',
   'newStrategy.confirm.modeLiveSignal': 'Live: you trade at your broker and confirm each signal',
   'newStrategy.confirm.modeLiveTrade': 'Live: you trade at your broker and confirm each trade',
@@ -203,8 +210,6 @@ export const newStrategy = {
   'newStrategy.confirm.stocksMore': '{first} and {n} more',
   'newStrategy.confirm.budgetStepsFund': '{budget} · steps of {step} · up to {max} for the fund',
   'newStrategy.confirm.budgetStepsStock': '{budget} · steps of {step} · up to {max} per stock',
-  'newStrategy.confirm.overview': 'By email, after the US market close',
-  'newStrategy.confirm.alerts': 'Email',
   'newStrategy.confirm.prompt': 'Suggested',
   'newStrategy.confirm.promptEdited': 'Edited',
   'newStrategy.confirm.next': 'What happens next',
@@ -214,5 +219,5 @@ export const newStrategy = {
   'newStrategy.confirm.next.liveWatch': 'From today the app watches your stocks and alerts you as soon as your rules are met.',
   'newStrategy.confirm.next.liveConfirm': 'You confirm each signal, and the app tracks the results of what you did.',
   'newStrategy.confirm.next.simRuns': 'From today it runs on real prices and records its own paper trades.',
-  'newStrategy.confirm.next.simFirst': 'Your first daily overview comes after the next US market close.',
+  'newStrategy.confirm.next.simFirst': "A summary comes after the US market close on days something changes.",
 } as const

@@ -11,15 +11,19 @@ public class EmailDocumentTests
             .Paragraph("You asked to be reminded.")
             .Box("Your rules are met.\nClose on 22 Oct 2026: $187.5")
             .Action("See it:", "See the signal", "https://app.example/s/1")
+            .Code("Your code", "DVN6-2PTF")
             .Section("Your strategies", [new("Dips (Live): since 1 Oct 2026", Tag: "Live", Live: true)])
             .Disclaimer("Not financial advice. Signals follow your rules.")
             .Build("Subject");
 
         Assert.Equal("You asked to be reminded.\n\nYour rules are met.\nClose on 22 Oct 2026: $187.5\n\nSee it:\nhttps://app.example/s/1\n\n" +
+            "Your code: DVN6-2PTF\n\n" +
             "Your strategies\n- (Live) Dips (Live): since 1 Oct 2026\n\nNot financial advice. Signals follow your rules.", email.Text);
         foreach (var part in new[] { "lang=\"en\"", "Signal &#183; Live", "Close on 22 Oct 2026: $187.5", "href=\"https://app.example/s/1\"", "See the signal",
-                     "Your strategies", ">Live</span>", "Not financial advice. Signals follow your rules.", "href=\"https://app.example/en\"" })
+                     "Your code", "DVN6-2PTF", "Your strategies", ">Live</span>", "Not financial advice. Signals follow your rules.", "href=\"https://app.example/en\"" })
             Assert.Contains(part, email.Html);
+        Assert.DoesNotContain("&#9650;", email.Html);
+        Assert.DoesNotContain("Or open this link:", email.Html);
     }
 
     [Fact]
@@ -40,7 +44,7 @@ public class EmailDocumentTests
         var email = new EmailDocument("ca", "https://app.example").Action("Confirma:", "Confirma el correu", "https://app.example/v").Build("Assumpte");
 
         Assert.Contains("lang=\"ca\"", email.Html);
-        Assert.Contains("O obre aquest enlla&#231;:", email.Html);
+        Assert.Contains("Confirma el correu", email.Html);
         Assert.Contains("opacity:0;color:#100d23;\">Confirma:</div>", email.Html); // The inbox preview is the call to action.
         Assert.Contains("Obre l&#39;aplicaci&#243;", email.Html);
         Assert.Contains("href=\"https://app.example/ca\"", email.Html); // The app opens in the email's language.

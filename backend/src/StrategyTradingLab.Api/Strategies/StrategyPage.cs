@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.Json;
 using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Data.Entities;
 
@@ -6,6 +8,21 @@ namespace StrategyTradingLab.Api.Strategies;
 /// <summary>The strategy page's rules for each stock's pill (spec: Strategy page).</summary>
 public static class StrategyPage
 {
+    /// <summary>
+    /// For Bear markets, the current drop's step count and when its first step signalled (none between drops). Each drop has its
+    /// own steps, so signals and buys from an earlier drop don't count towards the next one.
+    /// </summary>
+    public static (int? DoneSteps, DateOnly? CycleStart) BearCycle(JsonElement? facts)
+    {
+        if (facts is not { ValueKind: JsonValueKind.Object } root
+            || !root.TryGetProperty("doneSteps", out var ds) || ds.ValueKind != JsonValueKind.Number)
+            return default;
+        DateOnly? start = root.TryGetProperty("cycleStart", out var cs) && cs.ValueKind == JsonValueKind.String
+            && DateOnly.TryParseExact(cs.GetString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
+            ? date
+            : null;
+        return (ds.GetInt32(), start);
+    }
     /// <summary>
     /// A live signal waiting for an answer comes first; then a simulation's signal of the latest evaluated day. A stock
     /// with every step bought, or that the rules hold, is <i>Holding</i> (<i>Done</i> for <i>Bear markets</i>),

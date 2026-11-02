@@ -12,9 +12,11 @@ import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
 import { currencyOptionsWith } from './currencies'
 import { errorText } from './copy'
-import { EMAILS_HASH, logInPath } from './paths'
+import { NOTIFICATIONS_HASH, logInPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { InstallApp } from './InstallApp'
+import { NotificationSettings } from './NotificationSettings'
+import { unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SendFeedback } from '../feedback/SendFeedback'
 
@@ -28,15 +30,17 @@ export function AccountPage() {
   const [logOutError, setLogOutError] = useState<string | null>(null)
   const { hash } = useLocation()
 
-  // Confirm's "Edit" on Daily overview opens the page at its Emails section.
+  // Confirm's "Edit" on Notifications opens the page at its Notifications section.
   useEffect(() => {
-    if (hash === EMAILS_HASH) document.getElementById(EMAILS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
+    if (hash === NOTIFICATIONS_HASH) document.getElementById(NOTIFICATIONS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
   }, [hash])
 
   const logOut = async () => {
     setLoggingOut(true)
     setLogOutError(null)
     try {
+      // The next person on this device mustn't get this account's alerts: the device stops first (best effort).
+      await unsubscribeDevice().catch(() => {})
       await api.logOut()
     } catch (err) {
       // Only a session that is already gone counts as logged out: otherwise the cookie still works, so say so.
@@ -91,8 +95,8 @@ export function AccountPage() {
         </Section>
       )}
 
-      <Section id={EMAILS_HASH.slice(1)} title={t('account.page.emails')}>
-        <OverviewEmail current={account.overviewEmail} onSaved={refresh} />
+      <Section id={NOTIFICATIONS_HASH.slice(1)} title={t('account.page.notifications')}>
+        <NotificationSettings account={account} onSaved={refresh} />
       </Section>
 
       <Section title={t('account.page.dataPrivacy')}>
@@ -299,34 +303,6 @@ function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Prom
         {t('account.aiSharing')}
       </Checkbox>
       <AiSharingDetails />
-      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-    </div>
-  )
-}
-
-function OverviewEmail({ current, onSaved }: { current: boolean; onSaved: () => Promise<unknown> }) {
-  const t = useT()
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
-
-  const change = async (enabled: boolean) => {
-    if (busy) return
-    setBusy(true)
-    setMessage(null)
-    try {
-      await api.setOverviewEmail(enabled)
-      await onSaved()
-    } catch (err) {
-      setMessage({ tone: 'error', text: errorText(err) })
-    }
-    setBusy(false)
-  }
-
-  return (
-    <div className={styles.form}>
-      <Checkbox checked={current} onChange={(enabled) => void change(enabled)}>
-        {t('account.overviewEmail')}
-      </Checkbox>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
     </div>
   )

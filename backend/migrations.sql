@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+﻿CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
     migration_id character varying(150) NOT NULL,
     product_version character varying(32) NOT NULL,
     CONSTRAINT pk___ef_migrations_history PRIMARY KEY (migration_id)
@@ -1553,20 +1553,276 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    ALTER TABLE assets ADD prices_checked_at timestamptz;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    ALTER TABLE assets ADD prices_problem text;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000002';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000003';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000004';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000005';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000006';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000007';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000008';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000009';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000010';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000011';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000012';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000013';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000014';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000015';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000016';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000017';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000018';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000019';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000000020';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001002';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001003';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001004';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001005';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000001006';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000002001';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000002002';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    UPDATE assets SET prices_checked_at = NULL, prices_problem = NULL
+    WHERE id = '019a0000-0000-7000-8001-000000002003';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031092835_AddAssetPricesProblem') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261031092835_AddAssetPricesProblem', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
 
 START TRANSACTION;
 
 DO $EF$
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at timestamp with time zone;
+    ALTER TABLE users ADD terms_accepted_at timestamptz;
     END IF;
 END $EF$;
 
 DO $EF$
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261031093333_AddTermsAccepted') THEN
-    ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_version_accepted character varying(32);
+    ALTER TABLE users ADD terms_version_accepted character varying(32);
     END IF;
 END $EF$;
 
@@ -1578,3 +1834,232 @@ BEGIN
     END IF;
 END $EF$;
 COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE TABLE admin_alerts (
+        id uuid NOT NULL,
+        key character varying(200) NOT NULL,
+        source text NOT NULL,
+        status text NOT NULL DEFAULT 'open',
+        title character varying(200) NOT NULL,
+        detail character varying(2000),
+        strategy_id uuid,
+        count integer NOT NULL,
+        first_seen_at timestamptz NOT NULL,
+        last_seen_at timestamptz NOT NULL,
+        closed_at timestamptz,
+        CONSTRAINT pk_admin_alerts PRIMARY KEY (id),
+        CONSTRAINT ck_admin_alerts_closed_at CHECK ((status = 'open') = (closed_at IS NULL)),
+        CONSTRAINT ck_admin_alerts_count CHECK (count >= 1),
+        CONSTRAINT ck_admin_alerts_source CHECK (source IN ('daily_check', 'prices', 'strategies', 'ai_strategies', 'email')),
+        CONSTRAINT ck_admin_alerts_status CHECK (status IN ('open', 'dismissed', 'cleared')),
+        CONSTRAINT fk_admin_alerts_strategies_strategy_id FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE CASCADE
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE UNIQUE INDEX ix_admin_alerts_key ON admin_alerts (key);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE INDEX ix_admin_alerts_status_last_seen_at ON admin_alerts (status, last_seen_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    CREATE INDEX ix_admin_alerts_strategy_id ON admin_alerts (strategy_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101100746_AddAdminAlerts') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101100746_AddAdminAlerts', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    ALTER TABLE users ADD alert_emails boolean NOT NULL DEFAULT TRUE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    ALTER TABLE users ADD unsubscribe_token text NOT NULL DEFAULT '';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    UPDATE users SET unsubscribe_token = replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    ALTER TABLE users ALTER COLUMN unsubscribe_token DROP DEFAULT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    CREATE UNIQUE INDEX ix_users_unsubscribe_token ON users (unsubscribe_token);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101112713_AddEmailUnsubscribe') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101112713_AddEmailUnsubscribe', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101121233_AddEmailSuppressions') THEN
+    CREATE TABLE email_suppressions (
+        id uuid NOT NULL,
+        email citext NOT NULL,
+        reason text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_email_suppressions PRIMARY KEY (id),
+        CONSTRAINT ck_email_suppressions_reason CHECK (reason IN ('bounced', 'invalid', 'complaint'))
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101121233_AddEmailSuppressions') THEN
+    CREATE UNIQUE INDEX ix_email_suppressions_email ON email_suppressions (email);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101121233_AddEmailSuppressions') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101121233_AddEmailSuppressions', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101135757_AddStockChangeEmails') THEN
+    ALTER TABLE strategies ADD stock_change_emails boolean NOT NULL DEFAULT FALSE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101135757_AddStockChangeEmails') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101135757_AddStockChangeEmails', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101140435_AddUnconfirmedWarnedAt') THEN
+    ALTER TABLE users ADD unconfirmed_warned_at timestamptz;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101140435_AddUnconfirmedWarnedAt') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101140435_AddUnconfirmedWarnedAt', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101141407_AddStrategyPush') THEN
+    ALTER TABLE strategies ADD push boolean NOT NULL DEFAULT FALSE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101141407_AddStrategyPush') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101141407_AddStrategyPush', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101204559_SimplerNotifications') THEN
+    ALTER TABLE strategies DROP COLUMN notifications;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101204559_SimplerNotifications') THEN
+    ALTER TABLE strategies DROP COLUMN push;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101204559_SimplerNotifications') THEN
+    ALTER TABLE strategies DROP COLUMN stock_change_emails;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101204559_SimplerNotifications') THEN
+    ALTER TABLE users ADD alert_push boolean NOT NULL DEFAULT TRUE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261101204559_SimplerNotifications') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261101204559_SimplerNotifications', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

@@ -52,6 +52,7 @@ erDiagram
     signals ||--o| user_trades : "confirmed as"
     strategies ||--o{ user_trades : "live trades"
     signals ||--o{ notifications : "alerted by"
+    strategies ||--o{ admin_alerts : "problems of"
 ```
 
 ## Tables
@@ -100,10 +101,14 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | locale | text, not null | `en` \| `ca` in v1 (BCP 47 tags). Picked by the user at sign-up, never guessed; editable in the account. Sets the language and formats of emails and notifications |
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
 | role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip comes from an owner's invite |
-| overview_email | bool, not null, default true | Daily overview on/off |
+| overview_email | bool, not null, default true | The summary by email on/off |
+| alert_emails | bool, not null, default true | Signals and reminders (signal alerts, snooze reminders, AI round reminders) by email on/off |
+| alert_push | bool, not null, default true | Signals and reminders by web push, to the devices the user turned on (the account's App box) on/off |
+| unsubscribe_token | text, not null, unique | Private random token in the unsubscribe links of this user's emails; it can only turn emails off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | terms_version_accepted | varchar(32), null | The version of the legal terms accepted by the user (e.g. `2026-10-31`) |
 | terms_accepted_at | timestamptz, null | When the terms were accepted at sign-up |
+| unconfirmed_warned_at | timestamptz, null | When the 23-day warning email was sent to an unconfirmed account; null until warned |
 | created_at, updated_at | timestamptz | |
 
 | ai_sharing | bool, not null, default false | Shares AI rounds (asked at the first round, changed in the account; off removes what was shared) |
@@ -203,7 +208,6 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | status | text, not null | `running` \| `ended` |
 | started_on | date, not null | "since [date]" |
 | ended_at | timestamptz, null | `CHECK ((status = 'ended') = (ended_at IS NOT NULL))`. When it was archived (the screens' word for `ended`, #96): archiving closes its waiting signals as `missed` and skips its AI round due; its results stop at this day |
-| notifications | bool, not null, default true | Signal notifications for this strategy, on every channel. Off = it keeps running quietly |
 | currency | char(3), not null | Fixed at creation. Budget, trade amounts and results are in it |
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |
@@ -350,7 +354,7 @@ Every notification the app sends, one row per channel. A notification goes out *
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade | |
 | signal_id | uuid FK → signals, cascade, null | What the notification is about, for `signal` and `snoozed`. Null for kinds about nothing in particular (`overview`, later) |
-| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the daily overview, no signal) \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) |
+| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the summary, no signal; a quiet day keeps its claim with "Not sent: nothing changed.") \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) |
 | channel | text, not null | `push` \| `email` |
 | for_date | date, not null | The day it is for: the signal day, or the `snoozed_until` day |
 | sent_at | timestamptz, null | Null while queued |
@@ -364,7 +368,7 @@ Every notification the app sends, one row per channel. A notification goes out *
 - `CHECK ((kind IN ('signal', 'snoozed')) = (signal_id IS NOT NULL))`.
 - A new subject adds its own column and joins the key and the check: AI rounds will add `ai_round_id` (FK → ai_rounds), not a generic id.
 
-No row is created for a channel the user can't receive (no push subscription) or when the strategy's notifications are off. Push goes to all the user's devices as one row; a per-device log can come later if support needs it.
+No row is created for a channel the user can't receive (no push subscription) or that the strategy has off (`notifications` for email, `push` for push). Push goes to all the user's devices as one row; a per-device log can come later if support needs it.
 
 ### `app_settings`
 
@@ -394,6 +398,36 @@ In-app feedback notes (`bug` | `idea` | `note` | `feature`). Any logged-in user 
 | created_at, updated_at | timestamptz | |
 
 Index `(status, created_at)` and `(user_id)`.
+
+### `admin_alerts`
+
+Problems the background jobs found, for the owner's Alerts page (`/admin/alerts`) instead of emails (ROADMAP item 21). One row per problem, by `key`: a job raises it each time it sees it (`count` goes up) and clears it once a run finds it gone. The owner can dismiss an open one: it stays quiet while the problem lasts, and opens again (counting from 1) only after it cleared and came back. The daily run deletes alerts cleared over 30 days ago. Cascades from `strategies`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| key | varchar(200), unique, not null | `daily-check`, `prices:SAP.DE`, `prices:behind`, `strategy:{id}`, `ai-strategy:{id}`, `email:notifications`, `email:account` |
+| source | text, not null | `daily_check` \| `prices` \| `strategies` \| `ai_strategies` \| `email` (`CHECK`). A run of one source clears that source's alerts it didn't raise. |
+| status | text, not null, default `open` | `open` \| `dismissed` \| `cleared` (`CHECK`) |
+| title | varchar(200), not null | |
+| detail | varchar(2000), null | For a strategy: its owner's email, template and mode, then each stock's problem. Never an email's address or body. |
+| strategy_id | uuid FK → strategies, cascade, null | |
+| count | int, not null | Times seen since it opened (`CHECK count >= 1`) |
+| first_seen_at, last_seen_at | timestamptz, not null | |
+| closed_at | timestamptz, null | When dismissed or cleared: `CHECK ((status = 'open') = (closed_at IS NULL))` |
+
+Index `(status, last_seen_at)` and `(strategy_id)`.
+
+### `email_suppressions`
+
+Addresses the mail service (Brevo's webhook, `POST /email/events`) reported as bounced, invalid or complaining. The sender never sends them the overview or the alerts (not the emails someone just asked for, like a confirmation or a password link). Nothing removes a row but the owner, in the database.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK | |
+| email | citext, unique, not null | Not linked to `users`: it also holds addresses that never had an account |
+| reason | text, not null | `bounced` \| `invalid` \| `complaint` (`CHECK`) |
+| created_at | timestamptz, not null, default `now()` | |
 
 ### `prices_daily`
 

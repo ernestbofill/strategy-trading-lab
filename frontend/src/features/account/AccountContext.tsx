@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api, onSessionEnded, type Account } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
 import { rememberLoggedIn } from './knownDevice'
+import { claimDevice } from '../../lib/push'
 
 type AccountState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; account: Account | null }
 
@@ -43,6 +44,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         if (account.email !== ownerRef.current) {
           invalidateAll()
           ownerRef.current = account.email
+          // A device with notifications on now notifies whoever is signed in, never the last user (a session that ended
+          // without Log out, on a shared browser).
+          void claimDevice()
         }
       }
       setState({ status: 'ready', account })

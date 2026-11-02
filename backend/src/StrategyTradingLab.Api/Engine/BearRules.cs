@@ -14,6 +14,7 @@ public class BearRules : IBuyRules
 {
     readonly BearParams p;
     readonly IReadOnlyList<decimal> close;
+    readonly DateOnly[] dates;
     readonly decimal?[] recentHigh;
 
     string phase = "normal";
@@ -21,13 +22,16 @@ public class BearRules : IBuyRules
     int sinceLast;
     decimal peak;
     decimal low;
+    DateOnly? dropSince;
     int doneSteps;
     bool rearmed;
+    DateOnly cycleStart;
 
     public BearRules(IReadOnlyList<PriceBar> bars, BearParams parameters)
     {
         p = parameters;
         close = [.. bars.Select(b => b.Close)];
+        dates = [.. bars.Select(b => b.Date)];
         recentHigh = Indicators.RollingHigh(close, p.HighDays);
     }
 
@@ -58,6 +62,7 @@ public class BearRules : IBuyRules
             if (price >= peak)
             {
                 phase = "normal";
+                dropSince = null;
                 reason = "Recovered its previous high: the cycle is complete.";
             }
             else if (p.Rearm && age >= p.HighDays)
@@ -65,6 +70,7 @@ public class BearRules : IBuyRules
                 // A long bear market that never recovered its old peak: the 6-month high has rolled
                 // into post-crash prices, so watch for a fresh leg down from that lower high.
                 phase = "normal";
+                dropSince = null;
                 rearmed = true;
                 rearmedToday = true;
                 reason = string.Create(CultureInfo.InvariantCulture,
@@ -81,6 +87,7 @@ public class BearRules : IBuyRules
             phase = "drawdown";
             peak = high;
             low = price;
+            dropSince = dates[i];
             age = 0;
             rearmed = false;
             reason = string.Create(CultureInfo.InvariantCulture,
@@ -94,6 +101,7 @@ public class BearRules : IBuyRules
                 phase = "accumulating";
                 doneSteps = 0;
                 sinceLast = 0;
+                cycleStart = day.Day;
             }
         }
 
@@ -132,37 +140,45 @@ public class BearRules : IBuyRules
         var belowHighPct = Math.Round(Math.Max(0, -Indicators.PctFrom(price, high)), 2);
         var belowDropPeakPct = peak > 0 ? Math.Round(Math.Max(0, -Indicators.PctFrom(price, peak)), 2) : belowHighPct;
         var aboveLowPct = low > 0 ? Math.Round(Math.Max(0, Indicators.PctFrom(price, low)), 2) : 0m;
+        var done = phase is "accumulating" or "done" || status == RuleStatus.BuySignal ? doneSteps : 0;
         var facts = new Dictionary<string, object>
         {
             ["belowHighPct"] = belowHighPct,
             ["belowDropPeakPct"] = belowDropPeakPct,
             ["aboveLowPct"] = aboveLowPct,
-            ["doneSteps"] = phase is "accumulating" or "done" || status == RuleStatus.BuySignal ? doneSteps : 0,
+            ["doneSteps"] = done,
             // In a drawdown, how far the price still has to bounce to reach the first step ("close to the line").
             ["distancePct"] = phase == "drawdown"
                 ? Math.Round(Math.Max(0, Indicators.PctFrom(bounceLine, price)), 2)
                 : belowHighPct,
         };
+        if (done > 0) facts["cycleStart"] = cycleStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         var windowOpen = status == RuleStatus.BuySignal
             || (phase is "accumulating" or "done" && price >= bounceLine);
-        // In normal markets only the drop counts; in a drop, the bounce off its low; while buying, the pace of the steps.
         var inDrop = phase != "normal";
+        if (inDrop && dropSince is { } ds) facts["candidateSince"] = ds.ToString("yyyy-MM-dd");
+        var dropPct = inDrop ? belowDropPeakPct : belowHighPct;
+        var dropLevel = Math.Round(inDrop ? peak : high, 2);
+        var bounced = inDrop && phase != "drawdown";
+        var dropProgress = RuleCheck.ProgressOf(dropPct, p.DrawdownPct);
+        var bounceProgress = RuleCheck.ProgressOf(aboveLowPct, p.ReboundPct);
         List<RuleCheck> checks =
         [
+            new("drop", CheckGroup.Candidate, inDrop, dropPct, p.DrawdownPct, Level: dropLevel,
+                Progress: inDrop ? Math.Max(1m, dropProgress ?? 1m) : dropProgress, Date: inDrop ? dropSince : null),
             inDrop
-                ? new("drop", CheckGroup.Candidate, true, belowDropPeakPct, p.DrawdownPct, Level: Math.Round(peak, 2))
-                : new("drop", CheckGroup.Candidate, false, belowHighPct, p.DrawdownPct, Level: Math.Round(high, 2),
-                    Progress: RuleCheck.ProgressOf(belowHighPct, p.DrawdownPct)),
+                ? new("bounce", CheckGroup.Buy, bounced, aboveLowPct, p.ReboundPct,
+                    Level: Math.Round(bounceLine, 2), EndLevel: Math.Round(low, 2),
+                    Progress: bounced ? Math.Max(1m, bounceProgress ?? 1m) : bounceProgress)
+                : new("bounce", CheckGroup.Buy, false, null, p.ReboundPct),
+            phase == "accumulating" && status != RuleStatus.BuySignal
+                ? new("pace", CheckGroup.Next, false, sinceLast, p.StepEveryDays,
+                    Progress: RuleCheck.ProgressOf(sinceLast, p.StepEveryDays))
+                : phase == "done" || (phase == "accumulating" && status == RuleStatus.BuySignal && doneSteps > 1)
+                    ? new("pace", CheckGroup.Next, true, p.StepEveryDays, p.StepEveryDays, Progress: 1,
+                        Used: phase == "done" ? true : null)
+                    : new("pace", CheckGroup.Next, false, null, p.StepEveryDays, Preview: true),
         ];
-        if (inDrop)
-        {
-            var bounced = phase != "drawdown";
-            checks.Add(new("bounce", CheckGroup.Buy, bounced, aboveLowPct, p.ReboundPct, Level: Math.Round(bounceLine, 2),
-                Progress: bounced ? null : RuleCheck.ProgressOf(aboveLowPct, p.ReboundPct)));
-        }
-        // Between steps, the wait for the next one (a signal day shows the signal itself).
-        if (phase == "accumulating" && status != RuleStatus.BuySignal)
-            checks.Add(new("pace", CheckGroup.Next, false, sinceLast, p.StepEveryDays, Progress: RuleCheck.ProgressOf(sinceLast, p.StepEveryDays)));
         return new RuleDecision(status, reason, facts, windowOpen, stepNo) { Checks = checks };
     }
 }

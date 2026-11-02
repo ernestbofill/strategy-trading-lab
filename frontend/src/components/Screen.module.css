@@ -29,7 +29,8 @@
 }
 
 .back,
-.titleLink {
+.titleLink,
+.versionLink {
   color: var(--ink-muted);
   text-decoration: none;
   min-height: 44px;
@@ -37,13 +38,18 @@
   align-items: center;
 }
 .back:hover,
-.titleLink:hover {
+.titleLink:hover,
+.versionLink:hover {
   color: var(--primary);
+}
+.versionLink {
+  gap: var(--space-2);
 }
 
 .content {
   flex: 1;
   padding: var(--space-4) var(--gutter);
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -57,11 +63,8 @@
   }
 }
 
-.footer {
-  padding: var(--space-3) var(--gutter);
-  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
-  background: var(--surface-deep);
-  border-top: 1px solid var(--border-hairline);
+/* The one primary action and its note close the content, above the site footer. */
+.actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -71,19 +74,19 @@
 .note {
   text-align: center;
 }
-.footer[data-note-above] .note {
+.actions[data-note-above] .note {
   order: -1;
 }
 
 @media (min-width: 768px) {
-  .footer {
+  .actions {
     flex-direction: row;
     align-items: center;
     justify-content: flex-end; /* the action stays right even without a note */
     gap: var(--space-4);
   }
   .note,
-  .footer[data-note-above] .note {
+  .actions[data-note-above] .note {
     order: -1;
     flex: 1;
     text-align: left;
@@ -106,7 +109,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: var(--space-2);
 }
 .step {
   grid-column: 3;

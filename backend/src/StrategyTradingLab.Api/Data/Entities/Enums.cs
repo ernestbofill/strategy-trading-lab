@@ -39,3 +39,15 @@ public enum AiRoundStatus { Due, Done, Skipped }
 public enum FeedbackKind { Bug, Idea, Note, Feature }
 
 public enum FeedbackStatus { Open, Closed }
+
+/// <summary>Why an address is on the list the app never sends to (<see cref="EmailSuppression"/>): the mail service reported it.</summary>
+public enum SuppressionReason { Bounced, Invalid, Complaint }
+
+/// <summary>What raised an admin alert. Each source clears its own alerts once a run finds the problem gone.</summary>
+public enum AlertSource { DailyCheck, Prices, Strategies, AiStrategies, Email }
+
+/// <summary>
+/// An admin alert: open; dismissed by the owner (it stays quiet while the problem lasts); or cleared, when a later run found
+/// the problem gone. Only a cleared alert opens again, the next time its problem comes back.
+/// </summary>
+public enum AlertStatus { Open, Dismissed, Cleared }

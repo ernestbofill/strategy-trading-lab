@@ -37,21 +37,27 @@ public static class CheckGroup
 
 /// <summary>
 /// One rule's verdict on one day, as the stock page shows it ("Volume is 0.84× its 50-day average, needs 1.2×"). <c>Met</c> is
-/// null for a figure shown for context only. <c>Value</c> is today's figure, <c>Min</c> and <c>Max</c> the rule's numbers,
-/// <c>Level</c> a price line, and <c>Progress</c> (0 to 1) how far a figure that must grow has come. <c>Used</c> marks a
-/// milestone that already earned its step. The words are the template's texts, by <c>Key</c>.
+/// whether the rule holds today. <c>Value</c> is today's figure, <c>Min</c> and <c>Max</c> the rule's numbers,
+/// <c>Level</c>, <c>MidLevel</c> and <c>EndLevel</c> price lines, and <c>Progress</c> (0 or more; exceeds 1 past the target)
+/// how far a figure that must grow has come. <c>Used</c> marks a milestone that already earned its step, <c>Date</c> when a
+/// window or drop started, <c>SubValue</c> and <c>EndValue</c> secondary figures, and <c>Preview</c> a next-step rule shown
+/// collapsed before the first step is bought. The words are the template's texts, by <c>Key</c>.
 /// </summary>
 public record RuleCheck(string Key, string Group, bool? Met, decimal? Value = null, decimal? Min = null, decimal? Max = null,
-    decimal? Level = null, decimal? Progress = null, bool? Used = null)
+    decimal? Level = null, decimal? Progress = null, bool? Used = null, DateOnly? Date = null, decimal? MidLevel = null,
+    decimal? EndLevel = null, decimal? SubValue = null, decimal? EndValue = null, bool? Preview = null)
 {
-    /// <summary>How far <paramref name="value"/> has come toward <paramref name="target"/>, from 0 to 1 (null without a positive target).</summary>
-    public static decimal? ProgressOf(decimal value, decimal target) => target > 0 ? Math.Round(Math.Clamp(value / target, 0, 1), 2) : null;
+    /// <summary>How far <paramref name="value"/> has come toward <paramref name="target"/> (0 or more; exceeds 1 past the target).</summary>
+    public static decimal? ProgressOf(decimal value, decimal target) => target > 0 ? Math.Round(Math.Max(0, value / target), 2) : null;
 
     /// <summary>The cooldown after the last step, when it holds a buy back today: the days still to wait.</summary>
-    public static RuleCheck? Cooldown(DayContext day, int cooldownDays) =>
-        day.Cooling && day.HasPosition
-            ? new RuleCheck("cooldown", CheckGroup.Buy, false, Math.Max(0, day.LastBuyDay.AddDays(cooldownDays).DayNumber - day.Day.DayNumber), cooldownDays)
-            : null;
+    public static RuleCheck? Cooldown(DayContext day, int cooldownDays)
+    {
+        if (!day.Cooling || !day.HasPosition) return null;
+        var waited = Math.Max(0, day.Day.DayNumber - day.LastBuyDay.DayNumber);
+        var remaining = Math.Max(0, cooldownDays - waited);
+        return new RuleCheck("cooldown", CheckGroup.Buy, false, remaining, cooldownDays, Progress: ProgressOf(waited, cooldownDays));
+    }
 }
 
 /// <summary>

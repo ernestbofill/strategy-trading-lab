@@ -39,7 +39,7 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
   const feeText = `${b.feePercent ? `${b.feePercent}% + ` : ''}${eur(b.feePerTrade)}`
 
   return (
-    <Screen top={top} note={t('common.disclaimer')}>
+    <Screen top={top}>
       <PageHeader
         title={t('newStrategy.how.title')}
         lead={t('newStrategy.how.lead')}
@@ -75,11 +75,11 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
           <>
             <Section title={t('newStrategy.how.byPeriod')}>
               <PeriodTable periods={b.periods} />
+              <p className="caption">{t('newStrategy.how.independentPeriods')}</p>
             </Section>
             <Callout tone="warning" title={t('newStrategy.how.cantShow')}>
               <p>{t('newStrategy.how.survivors')}</p>
               <p>{t('newStrategy.how.realPrices')}</p>
-              <p>{t('common.pastResults')}</p>
             </Callout>
           </>
         }

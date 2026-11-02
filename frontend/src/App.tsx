@@ -13,11 +13,13 @@ import {
   logInPath,
   resetPasswordPath,
   signUpPath,
+  unsubscribePath,
   verifyEmailPath,
 } from './features/account/paths'
 import { RequireAccount } from './features/account/RequireAccount'
 import { ResetPassword } from './features/account/ResetPassword'
 import { SignUp } from './features/account/SignUp'
+import { Unsubscribe } from './features/account/Unsubscribe'
 import { VerifyEmail } from './features/account/VerifyEmail'
 import { RequireOwner } from './features/account/RequireOwner'
 import { FeedbackCapture } from './features/feedback/FeedbackCapture'
@@ -41,20 +43,29 @@ import { AiRoundsPage } from './features/ai-round/AiRoundsPage'
 import { StrategyPromptEditor } from './features/ai-round/StrategyPromptEditor'
 import { ReviewTemplate } from './features/new-strategy/review/ReviewTemplate'
 import { LazyPage } from './components/LazyPage'
+import { Screen, ScreenMessage, TopBar } from './components/Screen'
+import { TextAction } from './components/TextAction'
 import { useTemplates } from './features/new-strategy/useTemplate'
 import { lazyPage } from './lib/lazyPage'
 import { LegalPage } from './features/legal/LegalPage'
 import { aboutPath, disclaimerPath, legalNoticePath, privacyPath, termsPath } from './features/legal/paths'
+import { WelcomePage } from './features/welcome/WelcomePage'
+import { welcomePath } from './features/welcome/paths'
 
 // Loaded only when an owner opens /admin, so users never download the admin pages or TanStack Table.
 const AdminSettings = lazyPage(() => import('./features/admin/AdminSettings').then((m) => m.AdminSettings))
 const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((m) => m.AdminAssets))
 const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m) => m.AdminUsers))
 const AdminInvites = lazyPage(() => import('./features/admin/AdminInvites').then((m) => m.AdminInvites))
+const AdminAlerts = lazyPage(() => import('./features/admin/AdminAlerts').then((m) => m.AdminAlerts))
 
-/** The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. */
+/**
+ * The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. The owner is
+ * undefined until the account is known, so a reload keeps a signed-in user's draft.
+ */
 function DraftPerUser({ children }: { children: ReactNode }) {
-  const owner = useOptionalAccount()?.email ?? null
+  const { state } = useAccount()
+  const owner = state.status === 'ready' ? (state.account?.email ?? null) : undefined
   return <NewStrategyDraftProvider owner={owner}>{children}</NewStrategyDraftProvider>
 }
 
@@ -105,6 +116,33 @@ function FeedbackCaptureIfLoggedIn() {
   return useOptionalAccount() ? <FeedbackCapture /> : null
 }
 
+/**
+ * Root route ('/'):
+ * - Authenticated users see the Dashboard.
+ * - Guests see the WelcomePage highlighting the core features (Builder, Simulation, Tracker).
+ */
+function HomeRoute() {
+  const { state, refresh } = useAccount()
+  if (state.status === 'loading') {
+    return (
+      <Screen top={<TopBar title="STL" />}>
+        <ScreenMessage>Loading…</ScreenMessage>
+      </Screen>
+    )
+  }
+  if (state.status === 'error') {
+    return (
+      <Screen top={<TopBar title="STL" />}>
+        <ScreenMessage>
+          Could not reach Strategy Trading Lab.{' '}
+          <TextAction onClick={() => void refresh()}>Try again</TextAction>
+        </ScreenMessage>
+      </Screen>
+    )
+  }
+  return state.account ? <Dashboard /> : <WelcomePage />
+}
+
 /** Root layout providing in-app feedback capture across all screens for logged-in users with verified email. */
 function AppLayout() {
   const { pathname } = useLocation()
@@ -134,6 +172,7 @@ export default function App() {
                 <Route path={forgotPasswordPath} element={<ForgotPassword />} />
                 <Route path={resetPasswordPath} element={<ResetPassword />} />
                 <Route path={verifyEmailPath} element={<VerifyEmail />} />
+                <Route path={`${unsubscribePath}/:token/:kind`} element={<Unsubscribe />} />
 
                 <Route path="/legal" element={<Navigate to={legalNoticePath} replace />} />
                 <Route path={legalNoticePath} element={<LegalPage section="notice" />} />
@@ -141,6 +180,10 @@ export default function App() {
                 <Route path={privacyPath} element={<LegalPage section="privacy" />} />
                 <Route path={disclaimerPath} element={<LegalPage section="disclaimer" />} />
                 <Route path={aboutPath} element={<LegalPage section="about" />} />
+
+                {/* Root route: Dashboard for authenticated users, Welcome highlight page for guests */}
+                <Route path={homePath} element={<HomeRoute />} />
+                <Route path={welcomePath} element={<WelcomePage />} />
 
                 {/* Public new-strategy flow: guests can look around and configure a draft without an account */}
                 <Route path={pickPath} element={<PickTemplate />} />
@@ -154,7 +197,6 @@ export default function App() {
 
                 {/* Routes requiring an authenticated account */}
                 <Route element={<RequireAccount />}>
-                  <Route path={homePath} element={<Dashboard />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path={accountPath} element={<AccountPage />} />
                   <Route element={<RequireOwner />}>
@@ -163,6 +205,14 @@ export default function App() {
                       element={
                         <LazyPage back="/">
                           <AdminSettings />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/admin/alerts"
+                      element={
+                        <LazyPage back="/admin">
+                          <AdminAlerts />
                         </LazyPage>
                       }
                     />

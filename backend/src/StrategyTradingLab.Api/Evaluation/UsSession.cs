@@ -23,4 +23,13 @@ public static class UsSession
         while (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) day = day.AddDays(-1);
         return day;
     }
+
+    /// <summary>The weekdays after <paramref name="from"/>, up to and including <paramref name="to"/>: how many sessions a price is behind, holidays aside.</summary>
+    public static int WeekdaysBetween(DateOnly from, DateOnly to)
+    {
+        var count = 0;
+        for (var day = from.AddDays(1); day <= to; day = day.AddDays(1))
+            if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)) count++;
+        return count;
+    }
 }

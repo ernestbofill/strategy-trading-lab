@@ -23,9 +23,6 @@ public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Setti
 /// <summary>A new name for a strategy (Rename): the same rules as Confirm's.</summary>
 public record RenameStrategy(string? Name);
 
-/// <summary>The strategy's alerts switch.</summary>
-public record StrategyNotifications(bool? Enabled);
-
 /// <summary>
 /// A strategy as shown on the dashboard. <c>EndedOn</c> is the user's local date it was archived (status <c>Ended</c>, null
 /// while running); its results stop there, and it goes in the dashboard's collapsed Archived section.
@@ -49,7 +46,7 @@ public record StrategySummary(
 public record StrategyResults(decimal Strategy, decimal? Index, IReadOnlyList<decimal> History);
 
 /// <summary>How the template did in the past, shown while a strategy has no results of its own.</summary>
-public record PastResult(string Years, decimal Template, decimal Index, decimal WorstYear);
+public record PastResult(string Years, decimal Template, decimal Index, decimal WorstYear, bool IsCustomized = false);
 
 public enum WaitingKind { BuySignal, SellSignal, AiRound }
 
@@ -100,6 +97,7 @@ public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Sta
     public string Currency { get; init; } = "";
     public string? What { get; init; }
     public DateOnly? CheckedOn { get; init; }
+    public DateOnly? CandidateSince { get; init; }
     public decimal? Close { get; init; }
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
 }
@@ -185,7 +183,6 @@ public record StrategyDetail(
     StrategyMode Mode,
     StrategyStatus Status,
     DateOnly? EndedOn,
-    bool Notifications,
     DateOnly StartedOn,
     DateOnly Today,
     string Currency,

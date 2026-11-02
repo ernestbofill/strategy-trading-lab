@@ -1,6 +1,6 @@
 # Backend deploy
 
-The API runs on the Oracle server (Ubuntu 24.04, arm64) as the systemd service `strategy-trading-lab-api`, on `127.0.0.1:5080`. nginx serves it at `https://140-238-209-178.sslip.io/api/` (`/api/health`, `/api/version`).
+The API runs on the Oracle server (Ubuntu 24.04, arm64) as the systemd service `strategy-trading-lab-api`, on `127.0.0.1:5080`. nginx serves it at `https://strategytradinglab.com/api/` (`/api/health`, `/api/version`).
 
 - **On merge to `main`**: the [Deploy backend](../../.github/workflows/deploy-backend.yml) workflow runs when `backend/` (not its tests or Markdown) or `deploy/backend/` changes, after building and testing it, then tags the commit `backend-v<version>`. It can also be run by hand from the Actions tab.
 - **From VS Code**: *Terminal → Run Task → Deploy backend to Oracle*. It deploys your working copy, so use it for hotfixes and checks, not instead of a PR. It doesn't tag.
@@ -17,7 +17,7 @@ The version is `<Version>` in [backend/Directory.Build.props](../../backend/Dire
 { "version": "0.1.0-alpha", "commit": "3f9c2e1…", "builtAt": "2026-10-18T12:04:31+00:00", "database": "production" }
 ```
 
-`database` is the one the API uses: production unless switched to dev on the admin page (`/admin`), which needs `DATABASE_URL_DEV` and `ADMIN_PASSWORD` in `api.env`. The choice is in `/var/lib/strategy-trading-lab-api/database.json`; the deploy's migrations always go to production.
+`database` is the one the API uses: production unless switched to dev on the admin page (`/admin`), which needs `DATABASE_URL_DEV` in `api.env`. The choice is in `/var/lib/strategy-trading-lab-api/database.json`; the deploy's migrations always go to production.
 
 `builtAt` is when the release was built, minutes before it went live. It's `null` in Debug builds.
 
@@ -31,7 +31,7 @@ install.sh creates the rest (the `stlab-api` user, `/opt/strategy-trading-lab-ap
 
 ## The environment file
 
-`/etc/strategy-trading-lab/api.env` holds the API's secrets: the production Neon branch's variables (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `AWS_*`, as `neon env pull` writes them for the `production` branch), `DATABASE_URL_DEV` (the dev branch's pooled URL, so the admin page can switch to dev) and `ADMIN_PASSWORD`. [production.env.example](production.env.example) lists them.
+`/etc/strategy-trading-lab/api.env` holds the API's secrets: the production Neon branch's variables (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `AWS_*`, as `neon env pull` writes them for the `production` branch), `DATABASE_URL_DEV` (the dev branch's pooled URL, so the admin page can switch to dev), `OWNER_EMAIL`, `BREVO_WEBHOOK_KEY` and the web push pair `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (`dotnet run -- vapid-keys` makes one). [production.env.example](production.env.example) lists them.
 
 Keep the values in `deploy/backend/production.env` on your machine (gitignored, never committed; copy the example) and send them with [deploy-env.sh](deploy-env.sh) (Mac, Linux) or [deploy-env.ps1](deploy-env.ps1) (Windows), or *Terminal → Run Task → Deploy backend environment to Oracle*. It checks the file (one `KEY=value` per line, the two database URLs present), uploads it, and [install-env.sh](install-env.sh) installs it on the server: root-only (`600`), the old one kept as `api.env.previous`, the API restarted and checked on `/health`, and the old file put back if it isn't healthy. It prints variable names only, never values. A file with Windows line ends is fine.
 

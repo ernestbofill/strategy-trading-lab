@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
@@ -25,8 +26,14 @@ record Changes(int NewSignals, int NewTrades, int Missed);
 /// signal trade at the next day's opening price once that day has one, and where the stock stands today. A strategy's
 /// first check looks at the latest finished day only, and the rules start fresh from there, as the POC's backtest does on its start day. Idempotent: a second run the same day changes nothing.
 /// </summary>
-public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<StrategyEvaluator> logger)
+public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider time, ILogger<StrategyEvaluator> logger)
 {
+    /// <summary>
+    /// A stock whose newest price is more sessions behind than this is missing data. Holidays aren't known, and other exchanges
+    /// close on other days, so a day or two behind is normal.
+    /// </summary>
+    public const int StaleAfterSessions = 3;
+
     public async Task<EvaluationSummary> RunAsync(CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
@@ -42,27 +49,35 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
                 .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
 
         int signals = 0, trades = 0, missed = leftOver, failed = 0, evaluated = 0;
+        // What kept a strategy from being checked in full, for the owner's Alerts page.
+        var problems = new List<(Strategy Strategy, string Title, string Detail)>();
         foreach (var strategy in strategies.Where(s => TemplateRules.Supports(s.TemplateKey)))
         {
+            var missing = new List<string>();
             try
             {
-                var run = await EvaluateAsync(strategy, lastSession, now, rates, cancellationToken);
+                var run = await EvaluateAsync(strategy, lastSession, now, rates, missing, cancellationToken);
                 signals += run.NewSignals;
                 trades += run.NewTrades;
                 missed += run.Missed;
                 evaluated++;
+                if (missing.Count > 0)
+                    problems.Add((strategy, $"\"{strategy.Name}\" is missing price data", string.Join("\n", missing)));
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {
                 db.ChangeTracker.Clear();
                 failed++;
                 logger.LogError(error, "Evaluating strategy {Strategy} failed.", strategy.Id);
+                problems.Add((strategy, $"\"{strategy.Name}\" couldn't be checked", error.Message));
             }
         }
+        await alerts.SyncStrategiesAsync(AlertSource.Strategies, "strategy", problems, cancellationToken);
         return new EvaluationSummary(evaluated, signals, trades, missed, failed);
     }
 
-    async Task<Changes> EvaluateAsync(Strategy strategy, DateOnly lastSession, DateTimeOffset now, ExchangeRates rates,
+    /// <param name="missing">Gets a line for each stock the rules couldn't check in full: no prices, prices too old, or too short a history.</param>
+    async Task<Changes> EvaluateAsync(Strategy strategy, DateOnly lastSession, DateTimeOffset now, ExchangeRates rates, List<string> missing,
         CancellationToken cancellationToken)
     {
         int signals = 0, trades = 0, missed = await CloseUnfollowedAsync(strategy, lastSession, cancellationToken);
@@ -74,20 +89,31 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
-            var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date <= lastSession).OrderBy(p => p.Date)
-                .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
             // A stock added later is evaluated from the day it was added, not from the strategy's start.
             var start = added[asset.Id] > strategy.StartedOn ? added[asset.Id] : strategy.StartedOn;
-            var from = bars.FindIndex(b => b.Date >= start);
-            if (from < 0) continue; // Nothing since the strategy (or the stock) started.
-            var replayFrom = await ReplayFromAsync(strategy.Id, asset.Id, bars[^1].Date, cancellationToken);
+            if (start > DateOnly.FromDateTime(now.UtcDateTime).AddDays(1)) continue; // Nothing if the strategy (or stock) starts in the future.
+
+            var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date <= lastSession).OrderBy(p => p.Date)
+                .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
+            if (bars.Count == 0)
+            {
+                missing.Add($"{asset.Symbol}: no prices stored.");
+                continue;
+            }
+            if (UsSession.WeekdaysBetween(bars[^1].Date, lastSession) > StaleAfterSessions)
+                missing.Add($"{asset.Symbol}: the newest price is from {bars[^1].Date:yyyy-MM-dd}.");
+
+            var (firstChecked, checkedUntil) = await CheckedDaysAsync(strategy.Id, asset.Id, cancellationToken);
+            var replayFrom = firstChecked ?? bars[^1].Date;
             // No bar from that day on (a price row revised away): the latest bar, never back to the start.
             var replayIndex = bars.FindIndex(b => b.Date >= replayFrom);
-            from = Math.Max(from, replayIndex < 0 ? bars.Count - 1 : replayIndex);
+            var from = replayIndex < 0 ? bars.Count - 1 : replayIndex;
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);
-            var run = await SyncAsync(strategy, asset, bars, days, now, rates, budget, cancellationToken);
+            if (days[^1].Status == RuleStatus.NotEnoughData)
+                missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
+            var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, cancellationToken);
             signals += run.NewSignals;
             trades += run.NewTrades;
             missed += run.Missed;
@@ -111,30 +137,36 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
     }
 
     /// <summary>
-    /// The first day the rules replay for this strategy and stock (ROADMAP item 7, decided in #58). The first run evaluates the
-    /// latest finished day only, as for a stock just added, so a strategy that existed before its engine ran gets no backlog of
-    /// old signals. Later runs replay from that first day, or from an earlier signal's day (a strategy that got a backlog before
-    /// this rule keeps counting those steps).
+    /// The first day the rules replay for this strategy and stock, and the last day checked before (ROADMAP item 7, decided in #58).
+    /// The first run evaluates the latest finished day only, as for a stock just added, so a strategy that existed before its
+    /// engine ran gets no backlog of old signals (the first day is null then). Later runs replay from that first day, or from an earlier
+    /// signal's day (a strategy that got a backlog before this rule keeps counting those steps). Days checked before the price
+    /// history was long enough don't count: the rules couldn't run, so once the history is there the stock starts fresh and the
+    /// latest day checked can still get its signal (none before it). After the first real check or the first signal every day counts, so a later short
+    /// history never opens the past to new signals or restarts the steps.
     /// </summary>
-    async Task<DateOnly> ReplayFromAsync(Guid strategyId, Guid assetId, DateOnly latest, CancellationToken cancellationToken)
+    async Task<(DateOnly? First, DateOnly? Until)> CheckedDaysAsync(Guid strategyId, Guid assetId, CancellationToken cancellationToken)
     {
-        var firstEvaluated = await db.DailyEvaluations.Where(r => r.StrategyId == strategyId && r.AssetId == assetId)
-            .MinAsync(r => (DateOnly?)r.Date, cancellationToken);
-        if (firstEvaluated is null) return latest;
+        var days = await db.DailyEvaluations.Where(r => r.StrategyId == strategyId && r.AssetId == assetId)
+            .GroupBy(r => 1)
+            .Select(g => new { First = g.Where(r => r.Status != EvaluationStatus.NotEnoughData).Min(r => (DateOnly?)r.Date), Until = g.Max(r => (DateOnly?)r.Date) })
+            .SingleOrDefaultAsync(cancellationToken);
         var firstSignal = await db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId)
             .MinAsync(s => (DateOnly?)s.SignalDate, cancellationToken);
-        return firstSignal < firstEvaluated ? firstSignal.Value : firstEvaluated.Value;
+        DateOnly? first = (days?.First, firstSignal) switch
+        {
+            ({ } check, { } signal) => check < signal ? check : signal,
+            (var check, var signal) => check ?? signal,
+        };
+        // Only short-of-history days so far: a first run, but no day before the last one checked gets a signal.
+        return first is null ? (null, days?.Until?.AddDays(-1)) : (first, days?.Until);
     }
 
+    /// <param name="evaluatedUntil">The last day checked before (<see cref="CheckedDaysAsync"/>).</param>
     async Task<Changes> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,
-        DateTimeOffset now, ExchangeRates rates, BudgetUse budget, CancellationToken cancellationToken)
+        DateOnly? evaluatedUntil, DateTimeOffset now, ExchangeRates rates, BudgetUse budget, CancellationToken cancellationToken)
     {
         int newSignals = 0, newTrades = 0, missed = 0;
-
-        // Days up to the last one evaluated before are never given new signals: a changed setting or a revised price
-        // history must not back-date signals and trades.
-        var evaluatedUntil = await db.DailyEvaluations.Where(r => r.StrategyId == strategy.Id && r.AssetId == asset.Id)
-            .MaxAsync(r => (DateOnly?)r.Date, cancellationToken);
 
         // Where it stands today.
         var latest = days[^1];
@@ -150,7 +182,8 @@ public class StrategyEvaluator(AppDbContext db, TimeProvider time, ILogger<Strat
             row.Facts = TodaysFacts(latest);
         }
 
-        // A signal for each buy or sale the rules call for.
+        // A signal for each buy or sale the rules call for. Days up to the last one evaluated before are never given new
+        // signals: a changed setting or a revised price history must not back-date signals and trades.
         var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id)
             .ToDictionaryAsync(s => (s.SignalDate, s.Side), cancellationToken);
         var live = strategy.Mode == StrategyMode.Live;

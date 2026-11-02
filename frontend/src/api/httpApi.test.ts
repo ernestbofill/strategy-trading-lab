@@ -24,6 +24,17 @@ describe('httpApi', () => {
     expect(fetch).toHaveBeenCalledWith('/api/templates/bear', expect.anything())
   })
 
+  it('turns an email kind off with a POST to the link in the email, and reads a 404 as an expired link', async () => {
+    respond(204)
+    await httpApi.unsubscribe('tok/3n', 'overview')
+    expect(fetch).toHaveBeenCalledWith('/api/email/unsubscribe/tok%2F3n/overview', expect.objectContaining({ method: 'POST' }))
+
+    respond(404)
+    await expect(httpApi.unsubscribe('old', 'alerts')).rejects.toBeInstanceOf(ExpiredLinkError)
+    respond(500)
+    await expect(httpApi.unsubscribe('tok', 'alerts')).rejects.toThrow()
+  })
+
   it('treats a 404 as not found', async () => {
     respond(404)
     await expect(httpApi.getTemplate('dip')).resolves.toBeUndefined()
@@ -64,6 +75,15 @@ describe('httpApi.startStrategy', () => {
   it('rejects with NameTakenError when the name is taken', async () => {
     respond(409)
     await expect(httpApi.startStrategy(strategy)).rejects.toBeInstanceOf(NameTakenError)
+  })
+
+  it('maps 400 with errors to InvalidFieldsError', async () => {
+    respond(400, { errors: { strategies: ['You run 10 strategies, the most for now. Archive one to start another.'] } })
+    await expect(httpApi.startStrategy(strategy)).rejects.toMatchObject({
+      name: 'InvalidFieldsError',
+      message: 'You run 10 strategies, the most for now. Archive one to start another.',
+      fields: { strategies: 'You run 10 strategies, the most for now. Archive one to start another.' },
+    })
   })
 
   it('fails on any other error', async () => {

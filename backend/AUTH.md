@@ -27,7 +27,7 @@ email_tokens  id uuid PK · user_id FK → users (cascade) · purpose ('verify_e
               token_hash bytea unique · created_at · expires_at (verify 24 h, reset 1 h) · used_at null
 ```
 
-Both are new tables, so the migration changes no existing data. Expired rows are deleted by a daily clean-up (later, with the other scheduled jobs). `last_used_at` is written at most once a minute per session. IP addresses are not stored (privacy).
+Both are new tables, so the migration changes no existing data. Expired rows are deleted by the daily housekeeping clean-up (`Auth/HousekeepingService.cs`), which also deletes accounts never confirmed after 30 days (with a warning email at 23). `last_used_at` is written at most once a minute per session. IP addresses are not stored (privacy).
 
 ## How it is built
 
@@ -40,7 +40,9 @@ Both are new tables, so the migration changes no existing data. Expired rows are
 
 **What sign-up can still tell.** The answer is the same either way, and a taken email does the same password hashing as a new one, but a new account is logged in at once (Ernest's choice) and an existing one isn't, so someone who signs up with an email can tell from the cookie (and roughly from the timing of the database writes) whether it already had an account. The sign-up rate limit (5 an hour per client) keeps that slow. Hiding it fully would mean not logging in at sign-up.
 
-**Someone who signed up with your email first** keeps a working account until the email's owner acts. The confirmation email says to ignore it if you didn't sign up, and an unconfirmed account can't go live. If the owner clicks the link anyway, the account is confirmed, but the link logs no one in, so the other person still holds the password and their session. The owner takes the account back with "Forgot your password?" (also linked from the email they get when they try to sign up): a reset ends every other session. Closing this fully would mean choosing the password from the confirmation link, an open question for Ernest.
+**Someone who signed up with your email first** keeps a working account until the email's owner acts. The confirmation email says to ignore it if you didn't sign up (the account stays unconfirmed, so it can't go live; item 23 will delete accounts never confirmed after 30 days), and links "Forgot your password?" to take the account back: a reset ends every other session. If the owner clicks the confirmation link anyway, the account is confirmed but the link logs no one in, so the other person keeps the password and their session until the owner resets it. Ernest kept this behaviour in the security pass (item 25, #106) rather than having the confirmation link choose the password.
+
+**`OWNER_EMAIL` needs its account first.** The owner role goes to the confirmed account with that email, so if `OWNER_EMAIL` names an email with no account yet, someone else could sign up with it and become owner once the email's holder clicks the confirmation link. Create and confirm the owner's account before setting `OWNER_EMAIL` to it (as today on dev and production).
 
 **The lock can be used to annoy.** Anyone can keep an email locked with 5 wrong tries every 15 minutes. A reset clears the lock; a lock per email and client would end that, if it is ever abused.
 

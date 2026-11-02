@@ -24,7 +24,7 @@ public static class StrategyEndpoints
         app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
-            var all = await db.Strategies.AsNoTracking().Where(strategy => strategy.UserId == user.Id).ToListAsync(cancellationToken);
+            var all = await db.Strategies.AsNoTracking().Where(strategy => strategy.UserId == user.Id).Include(strategy => strategy.Assets).ToListAsync(cancellationToken);
             // Running ones newest first, then the archived ones, last archived first.
             var strategies = all.Where(s => s.Status == StrategyStatus.Running)
                 .OrderByDescending(s => s.StartedOn).ThenByDescending(s => s.CreatedAt)
@@ -98,6 +98,15 @@ public static class StrategyEndpoints
                 parameters = AiRoundEndpoints.Apply(parameters, request.Ai, (field, message) => errors[$"ai.{field}"] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
+            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM users WHERE id = {user.Id} FOR NO KEY UPDATE", cancellationToken);
+            var running = await db.Strategies.CountAsync(s => s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
+            if (running >= NewStrategyValidation.MaxRunningStrategies)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["strategies"] = [Messages.StrategyLimit.In(user.Locale, NewStrategyValidation.MaxRunningStrategies)]
+                });
+
             var strategy = new Strategy
             {
                 UserId = user.Id,
@@ -120,6 +129,7 @@ public static class StrategyEndpoints
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
+                await tx.CommitAsync(cancellationToken);
             }
             // The running name index refuses a taken name, also when two requests race.
             catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RunningNameIndex })
@@ -205,22 +215,6 @@ public static class StrategyEndpoints
         .WithName("RenameStrategy")
         .WithSummary("Renames a strategy, with Confirm's name rules (unique among the user's running strategies).");
 
-        group.MapPut("/{id:guid}/notifications", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (
-            Guid id, StrategyNotifications request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
-        {
-            var user = await CurrentUser(sessions, cancellationToken);
-            if (request.Enabled is not { } enabled)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(user.Locale)] });
-            var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
-            if (strategy is null) return TypedResults.NotFound();
-            if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
-            strategy.Notifications = enabled;
-            await db.SaveChangesAsync(cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .WithName("SetStrategyNotifications")
-        .WithSummary("Turns a running strategy's alerts (emails for its signals and AI rounds) on or off. The daily overview still lists them.");
-
         group.MapPost("/{id:guid}/archive", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
@@ -282,14 +276,42 @@ public static class StrategyEndpoints
         var figures = trades is { } t ? t.Book.Figures(strategy, ResultsDay(strategy, user, t.Today)) : null;
         var results = figures is null ? null : new StrategyResults(figures.You, figures.Index, [.. figures.History.Select(p => p.You)]);
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
-            strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(template, texts),
+            strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(strategy, template, texts),
             strategy.Status, EndedOn(strategy, user));
     }
 
-    static PastResult? PastResultOf(Template template, TemplateTexts texts) =>
+    static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
         template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
-            ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear)
+            ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear, IsCustomized(strategy, template, activeAssetIds))
             : null;
+
+    internal static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds = null)
+    {
+        if (template.Settings.Count > 0)
+        {
+            var root = strategy.Params.RootElement;
+            var defaultRoot = template.ParamsJson().RootElement;
+            foreach (var s in template.Settings)
+            {
+                if (root.TryGetProperty(s.Key, out var prop) && defaultRoot.TryGetProperty(s.Key, out var defProp)
+                    && prop.ValueKind == JsonValueKind.Number && defProp.ValueKind == JsonValueKind.Number
+                    && prop.GetDecimal() != defProp.GetDecimal())
+                {
+                    return true;
+                }
+            }
+        }
+
+        var activeIds = activeAssetIds ?? (strategy.Assets is null
+            ? []
+            : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
+        return template.Watches switch
+        {
+            StarterList starter => activeIds.Any(id => !starter.Stocks.Any(stock => stock.Id == id)),
+            DefaultFund defaultFund => activeIds.Any(id => id != defaultFund.Fund.Id),
+            _ => false,
+        };
+    }
 
     static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, User user, DateOnly today, CancellationToken cancellationToken,
         AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null)
@@ -333,26 +355,22 @@ public static class StrategyEndpoints
             var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
-            var buySignals = own.Count(s => s.Side == TradeSide.Buy);
+            var (doneSteps, cycleStart) = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
+            var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
             int rulesSteps;
             if (maxSteps is null)
             {
                 var lastSignal = own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault();
                 rulesSteps = lastSignal?.Side == TradeSide.Buy ? 1 : 0;
             }
-            else if (strategy.TemplateKey == "bear"
-                && evaluation?.Facts.RootElement.TryGetProperty("doneSteps", out var ds) == true
-                && ds.ValueKind == JsonValueKind.Number)
-            {
-                rulesSteps = Math.Min(ds.GetInt32(), buySignals);
-            }
             else
             {
-                rulesSteps = buySignals;
+                rulesSteps = doneSteps is { } done ? Math.Min(done, buySignals) : buySignals;
             }
             var userSteps = maxSteps is null ? (invested > 0 ? 1 : 0)
                 : strategy.TemplateKey == "bear" && !live ? rulesSteps
-                : trades.Count(b => b.Side == TradeSide.Buy);
+                : doneSteps == 0 ? 0
+                : trades.Count(b => b.Side == TradeSide.Buy && (cycleStart is null || b.Date >= cycleStart));
 
             // Before an AI strategy's daily check has a verdict: watching once a round scored the stock, else not scored yet.
             var latestStatus = evaluation?.Status
@@ -364,6 +382,9 @@ public static class StrategyEndpoints
             var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
             decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
                 ? d.GetDecimal() : null;
+            DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
+                && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
+                ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
                 Steps: userSteps,
                 RulesSteps: live ? rulesSteps : null,
@@ -378,6 +399,7 @@ public static class StrategyEndpoints
                 What = asset.Texts.FirstOrDefault(t => t.Locale == user.Locale)?.What
                     ?? asset.Texts.FirstOrDefault(t => t.Locale == TemplateTexts.DefaultLocale)?.What,
                 CheckedOn = evaluation?.Date,
+                CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 Checks = checks,
             };
@@ -486,9 +508,9 @@ public static class StrategyEndpoints
             : null;
 
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
-            EndedOn(strategy, user), strategy.Notifications, strategy.StartedOn, today, strategy.Currency,
+            EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, resultsDay), PastResultOf(template, texts), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
+            book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks };
     }
 

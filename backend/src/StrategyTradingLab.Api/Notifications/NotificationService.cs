@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using StrategyTradingLab.Api.Admin;
@@ -11,13 +10,17 @@ namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>
 /// Sends the notification emails (spec: Notifications): the live signal alert right after the daily check that found it, and
-/// the daily overview right after the daily check that evaluated the session. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
+/// the summary right after the daily check that evaluated the session. Each goes out once: a row in <c>notifications</c> is claimed first (its unique
 /// key is the dedupe contract), then the email is sent and the row says whether it worked. Only to verified addresses.
 /// </summary>
-public class NotificationService(AppDbContext db, IEmailSender sender, SettingsStore settings, IConfiguration configuration, ILogger<NotificationService> logger)
+public class NotificationService(AppDbContext db, IEmailSender sender, IPushSender push, SettingsStore settings, IConfiguration configuration, AdminAlerts alerts,
+    ILogger<NotificationService> logger)
 {
     /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder), and no overview goes out before it.</summary>
     public const int MorningHour = 7;
+
+    /// <summary>The summary's window of earlier daily checks: stock changes compare against them.</summary>
+    const int RecentDays = 4;
 
     /// <summary>How far back an alert that wasn't sent is still tried.</summary>
     public const int AlertDays = 3;
@@ -29,7 +32,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         (await settings.ValuesAsync(cancellationToken)).GetValueOrDefault("EMAILS_ENABLED") != "false";
 
     /// <summary>
-    /// An alert for each live signal of the last <see cref="AlertDays"/> days that is still waiting, whose strategy has notifications
+    /// An alert for each live signal of the last <see cref="AlertDays"/> days that is still waiting, of a user with alert emails
     /// on, and that has none yet. Looking back (instead of at the signals a run just made) is what retries an alert a run
     /// couldn't send (email not set up yet, a shutdown) without ever sending one twice.
     /// </summary>
@@ -41,21 +44,22 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
-                              && strategy.Notifications && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null
+                              && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email)
-                          select new { signal, strategy, user.Id, user.Email, user.Locale, asset }).ToListAsync(cancellationToken);
+                          select new { signal, strategy, user.Id, user.Email, user.Locale, user.UnsubscribeToken, asset }).ToListAsync(cancellationToken);
 
         var sent = 0;
         foreach (var row in rows)
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
-            if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale)), cancellationToken)) sent++;
+            if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
-    /// The overview of the last finished US session, once, to every user the daily check has evaluated that session for: sent right
+    /// The summary of the last finished US session, once, to every user the daily check has evaluated that session for, on days
+    /// something changed (a signal or a stock change; a quiet day sends nothing, and its claim says so): sent right
     /// after the check, and by the hourly check for whoever wasn't sent it then (email not set up yet, a restart, an address just
     /// confirmed). Never in the user's night (before 07:00 their time): it waits for the morning. One per trading day, so a weekend
     /// sends Friday's once and not three times.
@@ -68,7 +72,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
                 && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.ForDate == lastSession)
                 // Only once the daily check has evaluated that session for them: an overview of stale data would say nothing happened.
                 && db.Strategies.Any(s => s.UserId == u.Id && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == lastSession)))
-            .Select(u => new { u.Id, u.Email, u.TimeZone, u.Locale }).ToListAsync(cancellationToken);
+            .Select(u => new { u.Id, u.Email, u.TimeZone, u.Locale, u.UnsubscribeToken }).ToListAsync(cancellationToken);
         var sent = 0;
         foreach (var user in users)
         {
@@ -78,78 +82,229 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
 
             // AI rounds due count by the user's own date, which may already be the day after the session.
             var today = DateOnly.FromDateTime(local.DateTime);
-            if (await SendAsync(claimed, user.Email, () => ComposeOverviewAsync(user.Id, today, lastSession, user.Locale, cancellationToken), cancellationToken)) sent++;
+            // A quiet day is only final once every strategy has been checked for the session: until then (the daily check still
+            // running, a strategy that couldn't be checked yet), the claim is given back and a later run looks again.
+            var incomplete = false;
+            if (await SendAsync(claimed, user.Email, async () =>
+                {
+                    var (content, complete) = await ComposeSummaryAsync(user.Id, today, lastSession, user.Locale, user.UnsubscribeToken, cancellationToken);
+                    incomplete = content is null && !complete;
+                    return content;
+                }, cancellationToken)) sent++;
+            else if (incomplete) await ReleaseAsync(claimed);
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
     /// The reminder of each snoozed signal, once, from 07:00 of its snooze day in the user's time zone, while it still waits
-    /// and its strategy has notifications on (spec: Snooze). Snoozing again sets a later day, which gets its own reminder.
+    /// and its strategy runs (spec: Snooze). Snoozing again sets a later day, which gets its own reminder.
     /// </summary>
     public async Task<int> SendSnoozeRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        // No time zone is more than a day ahead of UTC, so later snooze days can wait.
-        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
-        // Nor more than a day behind, plus a day for time zones: older snooze days are no longer reminded (see below).
-        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
+        var (earliest, latest) = ReminderDays(now);
         var rows = await (from signal in db.Signals.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest && signal.SnoozedUntil >= earliest
-                              && strategy.Mode == StrategyMode.Live && strategy.Notifications && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null
+                              && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
                                   && x.Channel == NotificationChannel.Email && x.ForDate == signal.SnoozedUntil)
-                          select new { signal, strategy, user.Id, user.Email, user.TimeZone, user.Locale, asset }).ToListAsync(cancellationToken);
+                          select new { signal, strategy, user.Id, user.Email, user.TimeZone, user.Locale, user.UnsubscribeToken, asset }).ToListAsync(cancellationToken);
 
         var sent = 0;
         foreach (var row in rows)
         {
-            var local = LocalTime(now, row.TimeZone);
             var day = row.signal.SnoozedUntil!.Value;
-            var localDay = DateOnly.FromDateTime(local.DateTime);
-            if (localDay < day || (localDay == day && local.Hour < MorningHour)) continue;
-            // A day already gone (the reminder couldn't go out then, e.g. notifications were off) isn't reminded late.
-            if (localDay > day.AddDays(1)) continue;
+            if (!IsMorningOf(day, LocalTime(now, row.TimeZone))) continue;
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
-            if (await SendAsync(claimed, row.Email, () => Task.FromResult(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale)), cancellationToken)) sent++;
+            if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
         }
-        return sent;
+        return await SettledAsync(sent);
     }
 
     /// <summary>
     /// "Time for the AI round", once per user and due day, from 07:00 of that day in the user's time zone (spec: Notifications,
-    /// AI round due), listing every round of theirs due that day whose strategy has notifications on. Not for a strategy's first
+    /// AI round due), listing every round of theirs due that day. Not for a strategy's first
     /// round, which is due the day it starts (Confirm opens it), nor for a round whose week has run out.
     /// </summary>
     public async Task<int> SendAiRoundRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        // As for snoozes: no time zone is more than a day from UTC.
-        var latest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(1);
-        var earliest = DateOnly.FromDateTime(now.UtcDateTime).AddDays(-2);
+        var (earliest, latest) = ReminderDays(now);
         var rows = await (from round in db.AiRounds.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
                           where round.Status == AiRoundStatus.Due && round.DueOn <= latest && round.DueOn >= earliest && round.DueOn > strategy.StartedOn
-                              && strategy.Notifications && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null
+                              && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
                               && !db.Notifications.Any(x => x.UserId == user.Id && x.Kind == NotificationKind.AiRound
                                   && x.Channel == NotificationChannel.Email && x.ForDate == round.DueOn)
-                          select new { round.DueOn, strategy.Id, strategy.Name, UserId = user.Id, user.Email, user.TimeZone, user.Locale }).ToListAsync(cancellationToken);
+                          select new { round.DueOn, strategy.Id, strategy.Name, UserId = user.Id, user.Email, user.TimeZone, user.Locale, user.UnsubscribeToken }).ToListAsync(cancellationToken);
 
         var sent = 0;
         foreach (var group in rows.GroupBy(r => (r.UserId, r.DueOn)))
         {
             var first = group.First();
-            var local = LocalTime(now, first.TimeZone);
-            var localDay = DateOnly.FromDateTime(local.DateTime);
-            if (localDay < group.Key.DueOn || (localDay == group.Key.DueOn && local.Hour < MorningHour)) continue;
-            if (localDay > group.Key.DueOn.AddDays(1)) continue; // A day gone isn't reminded late; the overview still lists it.
+            if (!IsMorningOf(group.Key.DueOn, LocalTime(now, first.TimeZone))) continue;
             if (await ClaimAsync(group.Key.UserId, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken) is not { } claimed) continue;
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
-            if (await SendAsync(claimed, first.Email, () => Task.FromResult(EmailTexts.AiRoundDue(strategies, AppUrl, first.Locale)), cancellationToken)) sent++;
+            if (await SendAsync(claimed, first.Email, () => Task.FromResult<EmailContent?>(EmailTexts.AiRoundDue(strategies, AppUrl, first.Locale, first.UnsubscribeToken)), cancellationToken)) sent++;
+        }
+        return await SettledAsync(sent);
+    }
+
+    /// <summary>
+    /// The push twin of <see cref="SendSignalAlertsAsync"/>: each waiting live signal, once, to all the devices of a user with
+    /// alert push on. It needs no confirmed email and ignores the email switches: push has its own.
+    /// </summary>
+    public async Task<int> PushSignalAlertsAsync(DateOnly today, CancellationToken cancellationToken)
+    {
+        if (push.PublicKey is null) return 0;
+        var since = today.AddDays(-AlertDays);
+        var rows = await (from signal in db.Signals.AsNoTracking()
+                          join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
+                          join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
+                          join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
+                          where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
+                              && user.AlertPush && strategy.Status == StrategyStatus.Running && db.PushSubscriptions.Any(p => p.UserId == user.Id)
+                              && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push)
+                          select new { signal, strategy, user.Id, user.Locale, asset }).ToListAsync(cancellationToken);
+        var sent = 0;
+        foreach (var row in rows)
+        {
+            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
+            if (await PushAsync(claimed, row.Id, PushTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), row.Locale), cancellationToken)) sent++;
         }
         return sent;
+    }
+
+    /// <summary>The push twin of <see cref="SendSnoozeRemindersAsync"/>, with the same morning rules.</summary>
+    public async Task<int> PushSnoozeRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (push.PublicKey is null) return 0;
+        var (earliest, latest) = ReminderDays(now);
+        var rows = await (from signal in db.Signals.AsNoTracking()
+                          join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
+                          join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
+                          join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
+                          where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest && signal.SnoozedUntil >= earliest
+                              && strategy.Mode == StrategyMode.Live && user.AlertPush && strategy.Status == StrategyStatus.Running
+                              && db.PushSubscriptions.Any(p => p.UserId == user.Id)
+                              && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
+                                  && x.Channel == NotificationChannel.Push && x.ForDate == signal.SnoozedUntil)
+                          select new { signal, strategy, user.Id, user.TimeZone, user.Locale, asset }).ToListAsync(cancellationToken);
+        var sent = 0;
+        foreach (var row in rows)
+        {
+            var day = row.signal.SnoozedUntil!.Value;
+            if (!IsMorningOf(day, LocalTime(now, row.TimeZone))) continue;
+            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
+            if (await PushAsync(claimed, row.Id, PushTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), row.Locale), cancellationToken)) sent++;
+        }
+        return sent;
+    }
+
+    /// <summary>The push twin of <see cref="SendAiRoundRemindersAsync"/>: one per user and due day.</summary>
+    public async Task<int> PushAiRoundRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (push.PublicKey is null) return 0;
+        var (earliest, latest) = ReminderDays(now);
+        var rows = await (from round in db.AiRounds.AsNoTracking()
+                          join strategy in db.Strategies.AsNoTracking() on round.StrategyId equals strategy.Id
+                          join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
+                          where round.Status == AiRoundStatus.Due && round.DueOn <= latest && round.DueOn >= earliest && round.DueOn > strategy.StartedOn
+                              && user.AlertPush && strategy.Status == StrategyStatus.Running && db.PushSubscriptions.Any(p => p.UserId == user.Id)
+                              && !db.Notifications.Any(x => x.UserId == user.Id && x.Kind == NotificationKind.AiRound
+                                  && x.Channel == NotificationChannel.Push && x.ForDate == round.DueOn)
+                          select new { round.DueOn, strategy.Id, strategy.Name, UserId = user.Id, user.TimeZone, user.Locale }).ToListAsync(cancellationToken);
+        var sent = 0;
+        foreach (var group in rows.GroupBy(r => (r.UserId, r.DueOn)))
+        {
+            var first = group.First();
+            if (!IsMorningOf(group.Key.DueOn, LocalTime(now, first.TimeZone))) continue;
+            if (await ClaimAsync(group.Key.UserId, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
+            var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
+            if (await PushAsync(claimed, group.Key.UserId, PushTexts.AiRoundDue(strategies, group.Key.DueOn, first.Locale), cancellationToken)) sent++;
+        }
+        return sent;
+    }
+
+    /// <summary>
+    /// The due days worth looking at: no time zone is more than a day from UTC, so later days can wait, and older ones
+    /// (a day plus a day for time zones) are no longer reminded; the overview still lists them.
+    /// </summary>
+    static (DateOnly Earliest, DateOnly Latest) ReminderDays(DateTimeOffset now)
+    {
+        var utcDay = DateOnly.FromDateTime(now.UtcDateTime);
+        return (utcDay.AddDays(-2), utcDay.AddDays(1));
+    }
+
+    /// <summary>From 07:00 of the day in the user's time zone, until the end of the next day (a day gone isn't reminded late).</summary>
+    static bool IsMorningOf(DateOnly day, DateTimeOffset local)
+    {
+        var localDay = DateOnly.FromDateTime(local.DateTime);
+        return !(localDay < day || (localDay == day && local.Hour < MorningHour) || localDay > day.AddDays(1));
+    }
+
+    static readonly TimeSpan FailingDeviceDays = TimeSpan.FromDays(7);
+    const string PushAlertKey = "push:notifications";
+
+    /// <summary>
+    /// Sends a claimed push notification to every device of the user and records the result: sent if one device got it. A device
+    /// the push service says is gone, or that has failed for a week, is forgotten. When none got it but one only failed this time
+    /// (not a refusal, which would fail again every hour), the claim is given back for the hourly check to retry. No admin alert: devices come and go.
+    /// </summary>
+    async Task<bool> PushAsync(Guid notificationId, Guid userId, PushMessage message, CancellationToken cancellationToken)
+    {
+        var devices = await db.PushSubscriptions.AsNoTracking().Where(p => p.UserId == userId).ToListAsync(cancellationToken);
+        var payload = message.ToJson();
+        var now = DateTimeOffset.UtcNow;
+        bool delivered = false, retry = false, refused = false;
+        foreach (var device in devices)
+        {
+            PushOutcome outcome;
+            try { outcome = await push.SendAsync(device, payload, cancellationToken); }
+            // A shutdown mid-send gives the claim back: a device that got it already shows it once, by its tag.
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                await ReleaseAsync(notificationId);
+                throw;
+            }
+            catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            {
+                logger.LogWarning("Couldn't push notification {Id}: {Kind}", notificationId, error.GetType().Name);
+                outcome = PushOutcome.Failed;
+            }
+            // A device failing for a week (a key it no longer matches, a push service that keeps refusing it) is gone too.
+            var failing = outcome is PushOutcome.Failed or PushOutcome.Refused;
+            if (failing && device.LastFailedAt < now - FailingDeviceDays) outcome = PushOutcome.Gone;
+            delivered |= outcome == PushOutcome.Sent;
+            retry |= outcome == PushOutcome.Failed;
+            refused |= outcome == PushOutcome.Refused;
+            var deviceRow = db.PushSubscriptions.Where(p => p.Id == device.Id);
+            if (outcome == PushOutcome.Gone) await deviceRow.ExecuteDeleteAsync(CancellationToken.None);
+            // LastFailedAt is when it started failing, so it is only set once and cleared by a delivery.
+            else if (failing && device.LastFailedAt is null)
+                await deviceRow.ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, now), CancellationToken.None);
+            else if (outcome == PushOutcome.Sent && device.LastFailedAt is not null)
+                await deviceRow.ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, (DateTimeOffset?)null), CancellationToken.None);
+        }
+        // A refusal can be the server's own setup (keys that don't match): the owner sees it on /admin/alerts, and it clears with the next delivery.
+        if (refused) await alerts.RaiseAsync(AlertSource.Email, new NewAlert(PushAlertKey, "Web push refused",
+            "A push service refused a notification for good (400, 403 or 413). One device: it may be gone. All of them: check VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are a pair."), CancellationToken.None);
+        else if (delivered) await alerts.ClearAsync(PushAlertKey, CancellationToken.None);
+        // None got it but one may later (a push service down, a timeout): give the claim back, so the hourly check tries again.
+        if (!delivered && retry)
+        {
+            await ReleaseAsync(notificationId);
+            return false;
+        }
+        await db.Notifications.Where(n => n.Id == notificationId)
+            .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, delivered ? now : (DateTimeOffset?)null)
+                .SetProperty(x => x.FailedAt, delivered ? (DateTimeOffset?)null : now)
+                .SetProperty(x => x.Error, delivered ? null : "No device got it."), CancellationToken.None);
+        db.ChangeTracker.Clear();
+        return delivered;
     }
 
     static DateTimeOffset LocalTime(DateTimeOffset now, string timeZone)
@@ -158,7 +313,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { return now; } // UTC, as the dashboard does.
     }
 
-    async Task<EmailContent> ComposeOverviewAsync(Guid userId, DateOnly today, DateOnly lastSession, string locale, CancellationToken cancellationToken)
+    /// <summary>
+    /// The summary's email, or null on a quiet day: no signal on the session and no stock change. <c>Complete</c> says whether every
+    /// running strategy the daily check has been checking (any day of the recent window) was checked for the session, so a
+    /// quiet verdict is final.
+    /// </summary>
+    async Task<(EmailContent? Content, bool Complete)> ComposeSummaryAsync(Guid userId, DateOnly today, DateOnly lastSession, string locale, string unsubscribeToken, CancellationToken cancellationToken)
     {
         var strategies = await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var ids = strategies.Select(s => s.Id).ToList();
@@ -171,33 +331,51 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
         var waiting = signals.Where(x => x.signal.Status == SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).OrderBy(l => l.Date).ToList();
         var changed = signals.Where(x => x.signal.SignalDate == lastSession && x.signal.Status != SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).ToList();
 
-        // Each stock's latest evaluation only, and only if it is still watching.
         var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
                             join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
-                            where ids.Contains(eval.StrategyId) && eval.Date >= lastSession.AddDays(-4)
+                            where ids.Contains(eval.StrategyId) && eval.Date >= lastSession.AddDays(-RecentDays)
                             select new { eval, asset.Name }).ToListAsync(cancellationToken);
-        var watching = recent.GroupBy(x => (x.eval.StrategyId, x.eval.AssetId)).Select(g => g.OrderByDescending(x => x.eval.Date).First())
-            .Where(x => x.eval.Status == EvaluationStatus.Watching);
-        var close = watching
-            .Select(x => (x.eval.StrategyId, x.Name, Distance: x.eval.Facts.RootElement.TryGetProperty("distancePct", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetDecimal() : (decimal?)null))
-            .Where(x => x.Distance is > 0)
-            .OrderBy(x => x.Distance).Take(5)
-            .Select(x => new CloseLine(byId[x.StrategyId].Name, byId[x.StrategyId].Mode, byId[x.StrategyId].TemplateKey, x.Name, x.Distance!.Value)).ToList();
+        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId);
+        if (stockChanges.Count == 0 && !signals.Any(x => x.signal.SignalDate == lastSession))
+            // Only strategies the check is still due to reach count: those checked in the recent days, or started in them (not
+            // checked yet). One that has nothing to check (every stock unticked) or keeps failing would otherwise hold the
+            // verdict, and its hourly retry, forever.
+            return (null, strategies.Where(s => s.StartedOn <= lastSession
+                    && (s.StartedOn >= lastSession.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
+                .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == lastSession)));
 
         var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
             .OrderBy(r => r.DueOn).Select(r => r.StrategyId).ToListAsync(cancellationToken);
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id))).ToList();
-        return EmailTexts.Overview(lastSession, waiting, changed, close, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))]);
+        return (EmailTexts.Overview(lastSession, waiting, changed, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))], unsubscribeToken, stockChanges), true);
     }
+
+    /// <summary>
+    /// The stock changes of every running strategy: each stock evaluated on the last session against its latest
+    /// earlier evaluation of the recent days (see <see cref="StockChanges.Latest"/>). A stock without an earlier day (just added) has nothing to compare.
+    /// </summary>
+    static List<StockChangeLine> StockChangeLines(IEnumerable<(DailyEvaluation Eval, string Name)> recent, DateOnly lastSession, Dictionary<Guid, Strategy> strategies) =>
+        recent.GroupBy(x => (x.Eval.StrategyId, x.Eval.AssetId))
+            .Select(g => g.OrderByDescending(x => x.Eval.Date).ToList())
+            .Where(days => days[0].Eval.Date == lastSession)
+            .Select(days => (days, change: StockChanges.Latest([.. days.Select(d => (d.Eval.Status, d.Eval.Facts.RootElement))])))
+            .Where(x => x.change is not null)
+            .Select(x =>
+            {
+                var strategy = strategies[x.days[0].Eval.StrategyId];
+                return new StockChangeLine(strategy.Id, x.days[0].Eval.AssetId, strategy.Name, strategy.Mode, strategy.TemplateKey, x.days[0].Name, x.change!.Value.Kind, x.change.Value.DistancePct);
+            })
+            .OrderBy(c => c.StrategyName).ThenBy(c => c.StockName).ToList();
 
     static SignalLine Line(Signal signal, Strategy strategy, Asset asset) => SignalLine.From(signal, strategy, asset);
 
     /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>
-    async Task<Guid?> ClaimAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, CancellationToken cancellationToken)
+    async Task<Guid?> ClaimAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, CancellationToken cancellationToken,
+        NotificationChannel channel = NotificationChannel.Email)
     {
-        var notification = new Notification { UserId = userId, SignalId = signalId, Kind = kind, Channel = NotificationChannel.Email, ForDate = forDate };
+        var notification = new Notification { UserId = userId, SignalId = signalId, Kind = kind, Channel = channel, ForDate = forDate };
         db.Notifications.Add(notification);
         try
         {
@@ -214,18 +392,36 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
     /// <summary>
     /// Writes and sends the email of a claimed notification and records whether it worked. Email not set up yet releases the claim
     /// (nothing happened: a later run tries again); a refused send is recorded as failed; a shutdown keeps the claim (once, never twice).
-    /// Any other error is recorded and does not stop the others.
+    /// Any other error is recorded and does not stop the others. A compose that returns null (a quiet day's summary) sends nothing,
+    /// and the claim stays with that reason, so later runs don't look again.
     /// </summary>
-    async Task<bool> SendAsync(Guid notificationId, string to, Func<Task<EmailContent>> compose, CancellationToken cancellationToken)
+    async Task<bool> SendAsync(Guid notificationId, string to, Func<Task<EmailContent?>> compose, CancellationToken cancellationToken)
     {
         string? error = null;
+        var shutDown = false;
         try
         {
-            await sender.SendAsync(new OutgoingEmail(to, await compose()), cancellationToken);
+            if (await compose() is not { } content)
+            {
+                await db.Notifications.Where(n => n.Id == notificationId)
+                    .ExecuteUpdateAsync(n => n.SetProperty(x => x.Error, "Not sent: nothing changed."), CancellationToken.None);
+                db.ChangeTracker.Clear();
+                return false;
+            }
+            await sender.SendAsync(new OutgoingEmail(to, content), cancellationToken);
         }
-        catch (EmailNotSetUpException)
+        catch (EmailNotSetUpException notSetUp)
         {
             await ReleaseAsync(notificationId);
+            await EmailFailedAsync(notSetUp.Message);
+            return false;
+        }
+        catch (EmailSuppressedException)
+        {
+            // Skipped, not sent and not failed: the row says why, and no alert opens for an address the mail service already told us about.
+            await db.Notifications.Where(n => n.Id == notificationId)
+                .ExecuteUpdateAsync(n => n.SetProperty(x => x.Error, "Not sent: the address is on the suppression list."), CancellationToken.None);
+            db.ChangeTracker.Clear();
             return false;
         }
         // A shutdown keeps the claim: the mail server may have accepted the email already, and losing one is better than sending it twice.
@@ -234,13 +430,56 @@ public class NotificationService(AppDbContext db, IEmailSender sender, SettingsS
             // Not the server's own words (they often quote the address) and never the body: both are the user's data.
             error = problem is EmailException ? "The mail server refused or couldn't send it." : "The email couldn't be written or sent.";
             logger.LogWarning("Couldn't send notification {Id}: {Kind}", notificationId, problem.GetType().Name);
+            shutDown = problem is OperationCanceledException && cancellationToken.IsCancellationRequested;
         }
+        // A shutdown isn't an email problem: the claim stays as it is, neither sent nor failed, and raises no alert.
+        if (shutDown) return false;
         var now = DateTimeOffset.UtcNow;
         await db.Notifications.Where(n => n.Id == notificationId)
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, error is null ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, error is null ? (DateTimeOffset?)null : now).SetProperty(x => x.Error, error), CancellationToken.None);
         db.ChangeTracker.Clear();
+        if (error is null) anySent = true;
+        else await EmailFailedAsync(error);
         return error is null;
+    }
+
+    const string EmailAlertKey = "email:notifications";
+
+    // What this scope's sends did, so the alert clears once, after a batch where every email went out (not per email).
+    bool anySent, anyFailed;
+
+    /// <summary>
+    /// How long a failure keeps the alert from clearing: a week, so an address that fails whenever it is sent to (a weekend or a
+    /// clock change in between) keeps the alert open, and dismissed if it was.
+    /// </summary>
+    static readonly TimeSpan FailureMemory = TimeSpan.FromDays(7);
+
+    async Task EmailFailedAsync(string problem)
+    {
+        anyFailed = true;
+        await alerts.RaiseAsync(AlertSource.Email, new NewAlert(EmailAlertKey, "Emails to users failed",
+            $"The last one: {problem} The count is the failures since every email of a run last went out."), CancellationToken.None);
+    }
+
+    /// <summary>The end of a batch: clears the email alert if emails went out and none failed. Returns how many were sent.</summary>
+    async Task<int> SettledAsync(int sent)
+    {
+        if (!anySent || anyFailed) return sent;
+        // Not while any other run failed in the last day (another time zone's overviews, the alerts): mixed results would
+        // otherwise clear the alert and open it again each day, undoing a dismiss.
+        var since = DateTimeOffset.UtcNow - FailureMemory;
+        try
+        {
+            if (await db.Notifications.AnyAsync(n => n.Channel == NotificationChannel.Email && n.FailedAt > since, CancellationToken.None)) return sent;
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The email alert couldn't be checked: {Reason}", error.Message);
+            return sent;
+        }
+        await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
+        return sent;
     }
 
     /// <summary>Gives the claim back: nothing was sent, so the next run may send it.</summary>

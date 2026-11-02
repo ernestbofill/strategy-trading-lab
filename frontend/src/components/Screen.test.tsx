@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../api'
 import { AccountProvider } from '../features/account/AccountContext'
-import { TopBar } from './Screen'
+import { PrimaryAction, Screen, TopBar } from './Screen'
 
 afterEach(() => {
   cleanup()
@@ -16,7 +16,7 @@ const makeAccount = (role: 'user' | 'owner'): Account => ({
   firstName: null, lastName: null, emailVerified: true,
   locale: 'en',
   timeZone: 'UTC',
-  overviewEmail: true,
+  overviewEmail: true, alertEmails: true, alertPush: true,
   currency: 'EUR',
   role,
   aiSharing: false,
@@ -45,21 +45,22 @@ describe('TopBar', () => {
     expect(screen.getByText('STL // LOG IN')).toBeDefined()
   })
 
-  it('shows FE version only when user is an owner', async () => {
+  it('shows FE version as a link to /admin only when user is an owner', async () => {
     vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('owner'))
 
     render(
       <MemoryRouter>
         <AccountProvider>
-          <TopBar title="STL // ADMIN" />
+          <TopBar title="STL // DASHBOARD" />
         </AccountProvider>
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText(new RegExp(`v${__APP_VERSION__}`))).toBeDefined()
+    const versionLink = await screen.findByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })
+    expect(versionLink.getAttribute('href')).toBe('/admin')
   })
 
-  it('does not show FE version when user is not an owner', async () => {
+  it('does not show FE version link when user is not an owner', async () => {
     const getAccountSpy = vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
 
     render(
@@ -71,6 +72,26 @@ describe('TopBar', () => {
     )
 
     await waitFor(() => expect(getAccountSpy).toHaveBeenCalled())
+    expect(screen.queryByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })).toBeNull()
     expect(screen.queryByText(new RegExp(`v${__APP_VERSION__}`))).toBeNull()
+  })
+})
+
+describe('Screen', () => {
+  it('ends the content with the action and its note, above the site footer', () => {
+    render(
+      <MemoryRouter>
+        <Screen top={<TopBar title="STL" />} action={<PrimaryAction onClick={() => {}}>Continue</PrimaryAction>} note="A hint">
+          <p>Body</p>
+        </Screen>
+      </MemoryRouter>,
+    )
+
+    const main = screen.getByRole('main')
+    const action = screen.getByRole('button', { name: 'Continue' })
+    const footer = screen.getByRole('contentinfo')
+    expect(main.contains(action)).toBe(true)
+    expect(main.contains(screen.getByText('A hint'))).toBe(true)
+    expect(action.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

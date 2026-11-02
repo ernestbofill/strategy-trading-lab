@@ -24,9 +24,18 @@ using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.Feedback;
 using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Neon;
+using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
+
+// `dotnet run -- vapid-keys` prints a new key pair for web push, for the server's environment (deploy/backend/README.md).
+if (args is ["vapid-keys"])
+{
+    var keys = VapidKeys.Create();
+    Console.WriteLine($"VAPID_PUBLIC_KEY={keys.PublicKey}\nVAPID_PRIVATE_KEY={keys.PrivateKey}");
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +61,9 @@ else if (!builder.Environment.IsDevelopment())
     // every restart would lose the saved secrets. Fail the deploy's health check instead.
     throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");
 builder.Services.AddScoped<SettingsStore>();
+builder.Services.AddScoped<AdminAlerts>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddHttpClient<IPushSender, WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailWorker>();
 
@@ -69,9 +80,9 @@ builder.Services.AddScoped<AssetCatalog>();
 builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>();
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();
-builder.Services.AddScoped<StrategyTradingLab.Api.Notifications.NotificationService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<AiRounds>();
-builder.Services.AddHostedService<StrategyTradingLab.Api.Notifications.NotificationWorker>();
+builder.Services.AddHostedService<NotificationWorker>();
 
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();
@@ -84,6 +95,7 @@ builder.Services.AddSingleton<InviteEmailLimit>();
 builder.Services.AddSingleton<InviteTexts>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<AccountEmails>();
+builder.Services.AddScoped<HousekeepingService>();
 
 // nginx (on the same machine) passes the client's address and https on. Only loopback proxies are trusted
 // (ForwardedHeadersOptions' default), so a client can't fake its address to dodge the log-in rate limit.
@@ -104,7 +116,13 @@ builder.Services.AddRateLimiter(options =>
     PerClient(AccountEndpoints.LogInLimit, 10, TimeSpan.FromMinutes(15));
     PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
     PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
+    PerClient(AccountEndpoints.LogOutLimit, 30, TimeSpan.FromMinutes(1));
     PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
+    PerClient(UnsubscribeEndpoints.UnsubscribeLimit, 120, TimeSpan.FromMinutes(1));
+    PerClient(EmailEventEndpoints.EventsLimit, 600, TimeSpan.FromMinutes(1));
+    PerClient(TemplateEndpoints.TemplatesLimit, 60, TimeSpan.FromMinutes(1));
+    PerClient(Program.HealthLimit, 120, TimeSpan.FromMinutes(1));
+    PerClient(Program.VersionLimit, 60, TimeSpan.FromMinutes(1));
     // A look-up with a code tells whether it works, so it is limited like a guess; one without a code (every Sign-up
     // load, many visitors behind one address) only says whether sign-ups are invite only, and isn't limited.
     options.AddPolicy(AccountEndpoints.InviteLimit, http => string.IsNullOrEmpty(http.Request.Query["invite"])
@@ -124,6 +142,7 @@ builder.Services.AddRateLimiter(options =>
     PerUser(AssetEndpoints.SearchLimit, 100, TimeSpan.FromHours(1));
     PerUser(AssetEndpoints.AddLimit, 10, TimeSpan.FromHours(1));
 });
+builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
@@ -138,11 +157,29 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler();
+}
+
+// Security headers (defense in depth on every API response).
+app.Use(async (http, next) =>
+{
+    http.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    http.Response.Headers.Append("X-Frame-Options", "DENY");
+    http.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    http.Response.Headers.Append("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    await next(http);
+});
+
 // CSRF (backend/AUTH.md): every state-changing request must carry X-Requested-With: stl, which the app always sends
 // and a form or image on another site can't. With SameSite=Lax cookies and JSON-only bodies, that closes CSRF.
+// Not an endpoint marked SkipCsrfCheck (the unsubscribe address): a mail app's one-click POST (RFC 8058) can't send the header,
+// and the address uses no cookie, only its private token, and can only turn emails off.
 app.Use(async (http, next) =>
 {
     if (!HttpMethods.IsGet(http.Request.Method) && !HttpMethods.IsHead(http.Request.Method) && !HttpMethods.IsOptions(http.Request.Method)
+        && http.GetEndpoint()?.Metadata.GetMetadata<SkipCsrfCheck>() is null
         && http.Request.Headers["X-Requested-With"] != "stl")
     {
         http.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -205,6 +242,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
         : $"ok: bucket {bucket} ({listing.Result.KeyCount ?? 0} key(s) in the first page)";
     return TypedResults.Ok(new HealthResponse(postgres.Result, objectStorage));
 })
+.RequireRateLimiting(Program.HealthLimit)
 .WithName("Health")
 .WithSummary("Checks the API can reach Postgres and object storage on its Neon branch.");
 
@@ -216,11 +254,15 @@ app.MapTrades();
 app.MapAdmin();
 app.MapInvites();
 app.MapAccount();
+app.MapWebPush();
 app.MapFeedback();
+app.MapUnsubscribe();
+app.MapEmailEvents();
 app.MapAssets();
 
 // For the client to show which API it talks to, and a DEV tag while it uses the dev database.
 app.MapGet("/version", (DatabaseSwitch databases) => TypedResults.Ok(VersionResponse.Current with { Database = databases.Active }))
+.RequireRateLimiting(Program.VersionLimit)
 .WithName("Version")
 .WithSummary("The API's version, the commit it was built from, when it was built (Release builds) and which database it uses.");
 
@@ -247,4 +289,8 @@ record VersionResponse(string Version, string? Commit, DateTimeOffset? BuiltAt, 
 }
 
 /// <summary>Visible to integration tests.</summary>
-public partial class Program;
+public partial class Program
+{
+    public const string HealthLimit = "health";
+    public const string VersionLimit = "version";
+}

@@ -15,14 +15,21 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
     public void Verify(string to, string token, string locale = "en")
     {
         var url = Link(locale, $"/verify-email?token={token}");
+        var reset = Link(locale, "/forgot-password");
+        // A stranger may have signed up with this email first (backend/AUTH.md): the owner can ignore it, or take the
+        // account back with a reset, which ends every other session.
         queue.Enqueue(new(to, locale == "ca"
             ? Email(locale)
                 .Action("Confirma el teu correu obrint aquest enllaç:", "Confirma el correu", url)
-                .Paragraph("Funciona durant 24 hores. Si no t'has registrat a Strategy Trading Lab, ignora aquest correu.")
+                .Paragraph("Funciona durant 24 hores. Si no t'has registrat a Strategy Trading Lab, ignora aquest correu: el compte queda sense confirmar.")
+                .Paragraph("Si algú altre s'ha registrat amb el teu correu, pots recuperar el compte: una contrasenya nova tanca totes les altres sessions.")
+                .Links([("Has oblidat la contrasenya?", reset)])
                 .Build("Confirma el teu correu per a Strategy Trading Lab")
             : Email(locale)
                 .Action("Confirm your email by opening this link:", "Confirm my email", url)
-                .Paragraph("It works for 24 hours. If you didn't sign up for Strategy Trading Lab, ignore this email.")
+                .Paragraph("It works for 24 hours. If you didn't sign up for Strategy Trading Lab, ignore this email: the account stays unconfirmed.")
+                .Paragraph("If someone else signed up with your email, you can take the account back: a new password ends every other session.")
+                .Links([("Forgot your password?", reset)])
                 .Build("Confirm your email for Strategy Trading Lab")));
     }
 
@@ -53,5 +60,24 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
                 .Action("Choose a new password by opening this link:", "Choose a new password", url)
                 .Paragraph("It works for 1 hour. If you didn't ask for it, ignore this email: your password stays the same.")
                 .Build("Choose a new password for Strategy Trading Lab")));
+    }
+
+    /// <summary>Warns that an unconfirmed account will be deleted in 7 days unless its email is confirmed.</summary>
+    public void UnconfirmedWarning(string to, string token, string locale = "en")
+    {
+        var url = Link(locale, $"/verify-email?token={token}");
+        queue.Enqueue(new(to, locale == "ca"
+            ? Email(locale)
+                .Action("Confirma el teu correu obrint aquest enllaç:", "Confirma el correu", url)
+                .Paragraph("Funciona durant 24 hores. Fa 23 dies que vas crear el compte, però encara no s'ha confirmat.")
+                .Paragraph("Per mantenir el compte, confirma el correu durant els propers 7 dies: els comptes que no es confirmen s'eliminen al cap de 30 dies.")
+                .Paragraph("Si no t'has registrat a Strategy Trading Lab, ignora aquest correu: s'eliminarà automàticament.")
+                .Build("Confirma el teu correu per mantenir el teu compte de Strategy Trading Lab")
+            : Email(locale)
+                .Action("Confirm your email by opening this link:", "Confirm my email", url)
+                .Paragraph("It works for 24 hours. You created your account 23 days ago, but the email hasn't been confirmed yet.")
+                .Paragraph("To keep your account, confirm your email within the next 7 days: accounts never confirmed are deleted after 30 days.")
+                .Paragraph("If you didn't sign up for Strategy Trading Lab, ignore this email: it will be deleted automatically.")
+                .Build("Confirm your email to keep your Strategy Trading Lab account")));
     }
 }

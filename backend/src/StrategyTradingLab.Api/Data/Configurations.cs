@@ -43,6 +43,14 @@ class AssetTextConfiguration : IEntityTypeConfiguration<AssetText>
     }
 }
 
+/// <summary>Gives each new user their private unsubscribe token (a value generator runs when the entity is added, never when it is read).</summary>
+class UnsubscribeTokenGenerator : Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator<string>
+{
+    public override bool GeneratesTemporaryValues => false;
+
+    public override string Next(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry) => Auth.SecretTokens.NewPlain();
+}
+
 class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> entity)
@@ -53,6 +61,10 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Currency).HasColumnType(Money.Currency).HasColumnDefault("EUR");
         entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
+        entity.Property(user => user.AlertEmails).HasColumnDefault(true);
+        entity.Property(user => user.AlertPush).HasColumnDefault(true);
+        entity.Property(user => user.UnsubscribeToken).HasValueGenerator<UnsubscribeTokenGenerator>();
+        entity.HasIndex(user => user.UnsubscribeToken).IsUnique();
         entity.Property(user => user.AiSharing).HasColumnDefault(false);
         entity.Property(user => user.FirstName).HasMaxLength(AccountRules.NameMax);
         entity.Property(user => user.LastName).HasMaxLength(AccountRules.NameMax);
@@ -106,7 +118,6 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
             table.HasCheckConstraint("ck_strategies_budget_steps",
                 "(budget_step IS NULL) = (budget_max_steps IS NULL)");
         });
-        entity.Property(strategy => strategy.Notifications).HasColumnDefault(true);
         entity.Property(strategy => strategy.Currency).HasColumnType(Money.Currency);
         entity.ComplexProperty(strategy => strategy.Budget, budget =>
         {
@@ -337,6 +348,37 @@ class FeedbackItemConfiguration : IEntityTypeConfiguration<FeedbackItem>
         entity.HasIndex(item => item.UserId);
         entity.HasOne<User>().WithMany()
             .HasForeignKey(item => item.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+class EmailSuppressionConfiguration : IEntityTypeConfiguration<EmailSuppression>
+{
+    public void Configure(EntityTypeBuilder<EmailSuppression> entity)
+    {
+        entity.ToTable("email_suppressions");
+        entity.Property(suppression => suppression.Email).HasColumnType("citext").HasMaxLength(320);
+        entity.HasIndex(suppression => suppression.Email).IsUnique();
+        entity.Property(suppression => suppression.CreatedAt).HasDefaultValueSql("now()");
+    }
+}
+
+class AdminAlertConfiguration : IEntityTypeConfiguration<AdminAlert>
+{
+    public void Configure(EntityTypeBuilder<AdminAlert> entity)
+    {
+        entity.ToTable("admin_alerts", table =>
+        {
+            table.HasCheckConstraint("ck_admin_alerts_closed_at", "(status = 'open') = (closed_at IS NULL)");
+            table.HasCheckConstraint("ck_admin_alerts_count", "count >= 1");
+        });
+        entity.HasIndex(alert => alert.Key).IsUnique();
+        entity.HasIndex(alert => new { alert.Status, alert.LastSeenAt });
+        entity.HasIndex(alert => alert.StrategyId);
+        entity.Property(alert => alert.Key).HasMaxLength(Admin.AdminAlerts.KeyMax);
+        entity.Property(alert => alert.Title).HasMaxLength(Admin.AdminAlerts.TitleMax);
+        entity.Property(alert => alert.Detail).HasMaxLength(Admin.AdminAlerts.DetailMax);
+        entity.Property(alert => alert.Status).HasColumnDefault(AlertStatus.Open);
+        entity.HasOne<Strategy>().WithMany().HasForeignKey(alert => alert.StrategyId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 

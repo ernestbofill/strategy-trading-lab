@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
+import { LanguageSwitch } from '../../components/LanguageSwitch'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Tagline } from '../../components/Tagline'
@@ -30,7 +31,14 @@ export function PickTemplate() {
           title={t('newStrategy.pick.topBar')}
           back={hasHistory ? (isGuest ? signUpPath : homePath) : undefined}
           step={isGuest ? undefined : '1 / 5'}
-          aside={isGuest ? <TextAction to={logInPathFor(pickPath)}>{t('newStrategy.pick.logIn')}</TextAction> : undefined}
+          aside={
+            isGuest ? (
+              <>
+                <LanguageSwitch />
+                <TextAction to={logInPathFor(pickPath)}>{t('newStrategy.pick.logIn')}</TextAction>
+              </>
+            ) : undefined
+          }
         />
       }
       action={<PrimaryAction to={reviewPath(templateKey)}>{t('newStrategy.pick.continue')}</PrimaryAction>}

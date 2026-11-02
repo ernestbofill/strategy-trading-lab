@@ -2,14 +2,18 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { api, NameTakenError, type Dashboard, type StrategyDetail, type TemplateDetail } from '../../api'
+import { api, NameTakenError, type Dashboard, type StrategyDetail, type StrategySummary, type TemplateDetail } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { StrategyPage } from './StrategyPage'
 
+// No push on this device: the push switch stays hidden (it has its own tests through Confirm and lib/push).
+vi.mock('../account/usePushOffered', () => ({ usePushOffered: () => false }))
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  invalidateAll()
 })
 
 const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
@@ -21,7 +25,6 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   mode: 'live',
   status: 'running',
   endedOn: null,
-  notifications: true,
   startedOn: '2026-10-13',
   today: '2026-10-24',
   currency: 'EUR',
@@ -104,9 +107,7 @@ describe('StrategyPage', () => {
       '/strategies/live/settings',
     )
     expect(screen.getByRole('heading', { name: 'Stocks · 1' })).toBeTruthy()
-    expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).toContain(
-      "Past results don't promise future ones.",
-    )
+    expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).not.toContain('Past results')
   })
 
   it("titles a fund strategy's list Funds and explains the S&P 500 fund only when asked", async () => {
@@ -202,18 +203,8 @@ describe('StrategyPage', () => {
     expect(rename).not.toHaveBeenCalled()
   })
 
-  it("switches a live strategy's alerts", async () => {
+  it('has no notification switches: they are all in the account', async () => {
     open(detail({ id: 'a' }))
-    const alerts = vi.spyOn(api, 'setStrategyNotifications').mockResolvedValue()
-
-    const box = await screen.findByRole('checkbox', { name: "Email me this strategy's signals" })
-    expect((box as HTMLInputElement).checked).toBe(true)
-    fireEvent.click(box)
-    expect(alerts).toHaveBeenCalledWith('a', false)
-  })
-
-  it('has no alerts switch on a simulation that sends no emails', async () => {
-    open(detail({ id: 'n', mode: 'simulation', signals: null }))
 
     expect(await screen.findByRole('button', { name: 'Archive the strategy' })).toBeTruthy()
     expect(screen.queryByRole('checkbox')).toBeNull()
@@ -330,5 +321,17 @@ describe('StrategyPage', () => {
 
     expect((await screen.findByRole('link', { name: 'Zscaler sim' })).getAttribute('href')).toBe('/strategies/sim-9')
     expect(screen.getByText(/Copied from/)).toBeTruthy()
+  })
+
+  it('disables "Go live" when running strategies is at 10', async () => {
+    vi.spyOn(api, 'getTemplate').mockResolvedValue(dipTemplate)
+    vi.spyOn(api, 'getDashboard').mockResolvedValue({
+      today: '2026-10-28',
+      waiting: [],
+      strategies: Array.from({ length: 10 }, (_, i) => ({ id: `s${i}`, name: `S${i}`, status: 'running' as const } as unknown as StrategySummary)),
+    })
+    open(detail({ id: 'gl-sim', mode: 'simulation' }))
+    const goLive = await screen.findByRole('button', { name: /Go live You run 10 strategies/ })
+    expect((goLive as HTMLButtonElement).disabled).toBe(true)
   })
 })

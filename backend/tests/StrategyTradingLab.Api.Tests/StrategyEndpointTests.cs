@@ -44,8 +44,9 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             Assert.Equal(3000, created.GetProperty("budget").GetDecimal());
             Assert.Equal(0, created.GetProperty("used").GetDecimal());
             Assert.Equal(JsonValueKind.Null, created.GetProperty("results").ValueKind);
-            Assert.Equal(212, created.GetProperty("pastResult").GetProperty("template").GetDecimal());
+            Assert.Equal(490, created.GetProperty("pastResult").GetProperty("template").GetDecimal());
             Assert.Equal(-21, created.GetProperty("pastResult").GetProperty("worstYear").GetDecimal());
+            Assert.False(created.GetProperty("pastResult").GetProperty("isCustomized").GetBoolean());
             Assert.Equal($"/strategies/{created.GetProperty("id").GetGuid()}", response.Headers.Location?.OriginalString);
 
             using (var scope = factory.Services.CreateScope())
@@ -361,5 +362,46 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
         });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [NeonFact]
+    public async Task At_most_10_running_strategies_per_user_and_archiving_one_frees_a_slot()
+    {
+        var (client, email) = await factory.SignedUpAsync();
+        var names = Enumerable.Range(1, 11).Select(i => $"LimitTest {i} {Guid.NewGuid()}").ToList();
+        var strategyIds = new List<Guid>();
+        try
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                var response = await client.PostAsJsonAsync("/strategies", Request("dip", names[i]));
+                Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+                var created = await response.Content.ReadFromJsonAsync<JsonElement>();
+                strategyIds.Add(created.GetProperty("id").GetGuid());
+            }
+
+            // 11th running strategy is rejected with validation error
+            var eleventh = await client.PostAsJsonAsync("/strategies", Request("dip", names[10]));
+            Assert.Equal(HttpStatusCode.BadRequest, eleventh.StatusCode);
+            var body = await eleventh.Content.ReadFromJsonAsync<JsonElement>();
+            var error = body.GetProperty("errors").GetProperty("strategies")[0].GetString();
+            Assert.Equal("You run 10 strategies, the most for now. Archive one to start another.", error);
+
+            // Archiving one running strategy frees a slot
+            var archiveResponse = await client.PostAsync($"/strategies/{strategyIds[0]}/archive", null);
+            Assert.Equal(HttpStatusCode.NoContent, archiveResponse.StatusCode);
+
+            // Starting the 11th now succeeds
+            var retry = await client.PostAsJsonAsync("/strategies", Request("dip", names[10]));
+            Assert.Equal(HttpStatusCode.Created, retry.StatusCode);
+            var retryCreated = await retry.Content.ReadFromJsonAsync<JsonElement>();
+            strategyIds.Add(retryCreated.GetProperty("id").GetGuid());
+        }
+        finally
+        {
+            using var scope = factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.Users.Where(u => u.Email == email).ExecuteDeleteAsync();
+        }
     }
 }

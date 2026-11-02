@@ -12,7 +12,7 @@ import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib
 import { aiRoundPath, aiRoundsPath, stockPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
-import { AlertsSwitch, ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
+import { ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
@@ -72,11 +72,13 @@ function Summary({ s }: { s: StrategyDetail }) {
           {pastResult && (
             <>
               {' '}
-              {t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
+              {pastResult.isCustomized
+                ? t('strategy.pastSummary.custom')
+                : t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
               <span className={styles.mono}>{signedPct(pastResult.template)}</span> {t('strategy.pastSummary.vs')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.index)}</span> {t('strategy.pastSummary.after')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>.
-              {s.templateKey === 'bear' && ' Big drops are rare: it may not signal for years.'}
+              {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
             </>
           )}
         </p>
@@ -207,7 +209,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
     />
   )
   return (
-    <Screen top={top} note={`${source} ${t('common.disclaimer')} ${t('common.pastResults')}`}>
+    <Screen top={top} note={source}>
       <div className={styles.header}>
         {renaming ? <RenameForm s={s} onClose={() => setRenaming(false)} /> : <h1 className={styles.title}>{s.name}</h1>}
         <div className={styles.sub}>
@@ -246,8 +248,6 @@ function StrategyView({ s }: { s: StrategyDetail }) {
           )}
         </div>
       )}
-      {/* Only strategies that email have alerts: live ones (signals) and AI ones (rounds due). */}
-      {running && (live || s.aiRounds) && <AlertsSwitch s={s} />}
       {/* One way out of each state: a running strategy is archived, and only an archived one can be deleted. */}
       {running ? <ArchiveStrategy s={s} /> : <DeleteStrategy id={s.id} name={s.name} />}
     </Screen>

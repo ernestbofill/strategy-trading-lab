@@ -183,4 +183,4 @@ These keep live mode on the information-and-tools side of the line, and they cos
 - [European Commission call for advice on the Retail Investment Strategy (2026)](https://www.esma.europa.eu/sites/default/files/2026-08/Call_for_advice_on_RIS_to_ESMA.pdf): timeline.
 - [EU AI Act, Annex III](https://ai-act-service-desk.ec.europa.eu/en/ai-act/annex-3)
 
-> Update 2026-10-27: Ernest chose the tagline "Buy the dip" for *Winners at a discount* (no brand name, but "Buy" is an instruction). It stays an open point for the legal review (ROADMAP item 30).
+> Update 2026-10-27: Ernest chose the tagline "Buy the dip" for *Winners at a discount* (no brand name, but "Buy" is an instruction). It stays an open point for the legal review (ROADMAP item 32).

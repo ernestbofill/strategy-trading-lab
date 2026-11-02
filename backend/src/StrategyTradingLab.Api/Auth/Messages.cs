@@ -35,6 +35,7 @@ public static class Messages
         "Massa intents. Espera uns minuts o restableix la contrasenya.");
     public static readonly Message ExpiredLink = new("This link has expired. Ask for a new one.", "Aquest enllaç ha caducat. Demana'n un de nou.");
     public static readonly Message SayTrueOrFalse = new("Say true or false.", "Indica si està activat o desactivat.");
+    public static readonly Message PushNotSupported = new("This browser can't get notifications from the app.", "Aquest navegador no pot rebre notificacions de l'app.");
     public static readonly Message ResetLinkSent = new("If that email has an account, we sent a link. It works for 1 hour.",
         "Si aquest correu té un compte, t'hem enviat un enllaç. Funciona durant 1 hora.");
     public static readonly Message EnterFirstName = new("Enter your first name.", "Escriu el teu nom.");
@@ -50,8 +51,10 @@ public static class Messages
     public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot ajornar un senyal que encara espera.");
     public static readonly Message StrategyEnded = new("This strategy is archived, so there is no reminder to send.",
         "Aquesta estratègia està arxivada, així que no hi ha cap recordatori per enviar.");
-    public static readonly Message NotificationsOff = new("This strategy's notifications are off, so there is no reminder to send.",
-        "Les notificacions d'aquesta estratègia estan desactivades, així que no hi ha cap recordatori per enviar.");
+    public static readonly Message ReminderEmailsOff = new("A reminder can't reach you: turn on reminder emails in your account.",
+        "Un recordatori no et pot arribar: activa els correus de recordatoris al teu compte.");
+    public static readonly Message NotificationsOff = new("A reminder can't reach you: turn on reminder emails, or notifications on this device, in your account.",
+        "Un recordatori no et pot arribar: activa els correus de recordatoris, o les notificacions en aquest dispositiu, al teu compte.");
     public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu correu per començar en directe.");
     public static readonly Message NotYourSimulation = new("Pick one of your simulations to copy.", "Tria una de les teves simulacions per copiar-la.");
     public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma la teva adreça de correu per rebre recordatoris.");
@@ -76,6 +79,9 @@ public static class Messages
     public static readonly Message TradeTooBig = new("That is more than one trade can be.", "Això és més del que pot ser una operació.");
 
     // Strategies
+    public static readonly Message StrategyLimit = new(
+        "You run {0} strategies, the most for now. Archive one to start another.",
+        "Tens {0} estratègies en marxa, el màxim per ara. Arxiva'n una per començar-ne una altra.");
     public static readonly Message StrategyIsEnded = new("This strategy is archived, so it can't change.", "Aquesta estratègia està arxivada, així que no pot canviar.");
     public static readonly Message ArchiveBeforeDelete = new("Archive the strategy before deleting it.", "Arxiva l’estratègia abans d’esborrar-la.");
     public static readonly Message NameTaken = new("You already have a running strategy with that name.", "Ja tens una estratègia en marxa amb aquest nom.");
@@ -122,8 +128,6 @@ public static class Messages
         "Aquesta ronda d'IA ha canviat mentrestant. Torna a carregar per veure com està.");
     public static readonly Message OneSourceOn = new("At least one source stays on.", "Almenys una font queda activada.");
     public static readonly Message InstructionsLength = new("Keep it under {0} characters.", "Que no passi de {0} caràcters.");
-    public static readonly Message InstructionsEmpty = new("Write the instructions, or reset to the suggested ones.",
-        "Escriu les instruccions, o torna a les suggerides.");
     public static readonly Message TooManyStocks = new("Use at most {0} stocks.", "Fes servir com a màxim {0} accions.");
     public static readonly Message PromptChanged = new("The prompt changed since you copied it. Copy it again and ask your AI again.",
         "El prompt ha canviat des que l'has copiat. Torna'l a copiar i torna-ho a demanar a la teva IA.");

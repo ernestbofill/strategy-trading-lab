@@ -23,6 +23,10 @@ public static class PushTexts
         locale == "ca" ? $"Recordatori: {s.StockName}, les teves regles per a {s.StrategyName}" : $"Reminder: {s.StockName}, your rules for {s.StrategyName}",
         EmailTexts.SignalText(s, locale), SignalPath(s), $"signal-{s.SignalId}");
 
+    /// <summary>Replaces the signal's own notification on the device (the same tag).</summary>
+    public static PushMessage SignalEnded(SignalLine s, DateOnly endedOn, string locale) => new(
+        EmailTexts.EndedTitle(s, locale), EmailTexts.EndedText(s, endedOn, locale), SignalPath(s), $"signal-{s.SignalId}");
+
     /// <summary>One for every round due that day; it opens the round when there is one, else the dashboard.</summary>
     public static PushMessage AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, DateOnly dueOn, string locale)
     {

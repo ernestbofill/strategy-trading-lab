@@ -64,6 +64,11 @@ public static class EmailTexts
     static readonly Message SnoozeIntro = new("You asked to be reminded of this signal.", "Has demanat que et recordem aquest senyal.");
     static readonly Message SnoozeEyebrow = new("Reminder", "Recordatori");
     static readonly Message AlertSubject = new("{0}: your rules for {1} are met", "{0}: es compleixen les teves regles per a {1}");
+    static readonly Message EndedSubject = new("{0}: the buy signal for {1} has ended", "{0}: el senyal de compra de {1} ha acabat");
+    static readonly Message EndedEyebrow = new("Signal ended", "Senyal acabat");
+    static readonly Message EndedIntro = new("Since {0} your rules for {1} no longer hold for {2}, so this buy signal ended without an answer. You can still record what you did.",
+        "Des del {0} les teves regles per a {1} ja no es compleixen per a {2}, així que aquest senyal de compra ha acabat sense resposta. Encara pots registrar què vas fer.");
+    static readonly Message EndedPrompt = new("See it:", "Consulta'l:");
     static readonly Message SaleSignalEyebrow = new("Sale signal", "Senyal de venda");
     static readonly Message SignalEyebrow = new("Signal", "Senyal");
 
@@ -211,6 +216,20 @@ public static class EmailTexts
             null,
             (s.Side == TradeSide.Sell ? SaleSignalEyebrow : SignalEyebrow).In(locale),
             unsubscribeToken);
+
+    /// <summary>"The buy signal has ended": the signal box under a line saying when and why, and the link to the signal.</summary>
+    public static EmailContent SignalEnded(SignalLine s, DateOnly endedOn, string appUrl, string locale = "en", string? unsubscribeToken = null) =>
+        new EmailDocument(locale, appUrl).Eyebrow($"{EndedEyebrow.In(locale)} · {ModeName(s.Mode, locale)}")
+            .Paragraph(EndedText(s, endedOn, locale))
+            .Box(SignalText(s, locale))
+            .Action(EndedPrompt.In(locale), SeeSignalButton.In(locale), SignalUrl(s, appUrl, locale))
+            .WithUnsubscribe(EmailKind.Alerts, unsubscribeToken)
+            .Disclaimer(DisclaimerFor(locale))
+            .Build(EndedSubject.In(locale, s.StockName, s.StrategyName));
+
+    public static string EndedTitle(SignalLine s, string locale) => EndedSubject.In(locale, s.StockName, s.StrategyName);
+
+    public static string EndedText(SignalLine s, DateOnly endedOn, string locale) => EndedIntro.In(locale, Date(endedOn, locale), s.StrategyName, s.StockName);
 
     /// <summary>The AI round screen of a strategy, in the email's language.</summary>
     public static string AiRoundUrl(Guid strategyId, string appUrl, string locale) => AppLink.To(appUrl, locale, $"/strategies/{strategyId}/ai-round");

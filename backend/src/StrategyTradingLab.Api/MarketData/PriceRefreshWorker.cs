@@ -257,6 +257,9 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(session, stoppingToken));
             // Apart from the emails' count; a push problem stays in its own rows (a device gone, a push service down).
             logger.LogInformation("Pushed {Count} signal alerts.", await notifications.PushSignalAlertsAsync(session, stoppingToken));
+            // A buy signal that ended unanswered, after its alert (one this run just sent waits for its next day).
+            logger.LogInformation("Sent {Count} ended signal alerts.", await notifications.SendSignalEndedAsync(session, stoppingToken));
+            logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

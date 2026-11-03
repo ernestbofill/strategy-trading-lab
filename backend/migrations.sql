@@ -2063,3 +2063,42 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261103201546_AddSignalEndedNotification') THEN
+    ALTER TABLE notifications DROP CONSTRAINT ck_notifications_kind;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261103201546_AddSignalEndedNotification') THEN
+    ALTER TABLE notifications DROP CONSTRAINT ck_notifications_signal_id;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261103201546_AddSignalEndedNotification') THEN
+    ALTER TABLE notifications ADD CONSTRAINT ck_notifications_kind CHECK (kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261103201546_AddSignalEndedNotification') THEN
+    ALTER TABLE notifications ADD CONSTRAINT ck_notifications_signal_id CHECK ((kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261103201546_AddSignalEndedNotification') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261103201546_AddSignalEndedNotification', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

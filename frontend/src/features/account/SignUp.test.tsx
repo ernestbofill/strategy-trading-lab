@@ -9,6 +9,7 @@ import { SignUp } from './SignUp'
 vi.mock('./AccountContext', () => ({
   useAccount: () => ({ state: { status: 'ready', account: null }, refresh: vi.fn().mockResolvedValue(null) }),
   useIsOwner: () => false,
+  useRole: () => null,
 }))
 
 afterEach(() => {

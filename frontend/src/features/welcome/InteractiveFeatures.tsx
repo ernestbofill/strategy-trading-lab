@@ -129,7 +129,7 @@ const TRACKER_ACTIONS: Array<{
 
 export function InteractiveFeatures() {
   const t = useT()
-  const [activeFeature, setActiveFeature] = useState<FeatureKey | null>('builder')
+  const [activeFeature, setActiveFeature] = useState<FeatureKey | null>(null)
   const [builderTemplate, setBuilderTemplate] = useState<BuilderTemplateKey>('discount')
   const [simTab, setSimTab] = useState<'perf' | 'trades'>('perf')
   const [trackerState, setTrackerState] = useState<TrackerActionKey | null>(null)

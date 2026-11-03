@@ -22,6 +22,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// <summary>The summary's window of earlier daily checks: stock changes compare against them.</summary>
     const int RecentDays = 4;
 
+    /// <summary>
+    /// A stock's signal alert goes out once in this window per strategy and side: an extra check the same day (a re-run, a price
+    /// that came in late) that signals the same stock again records its alert as not sent instead.
+    /// </summary>
+    static readonly TimeSpan RepeatWindow = TimeSpan.FromHours(20);
+
     /// <summary>How far back an alert that wasn't sent is still tried.</summary>
     public const int AlertDays = 3;
 
@@ -38,6 +44,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// </summary>
     public async Task<int> SendSignalAlertsAsync(DateOnly today, CancellationToken cancellationToken)
     {
+        var recent = DateTimeOffset.UtcNow - RepeatWindow;
         var since = today.AddDays(-AlertDays);
         var rows = await (from signal in db.Signals.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
@@ -46,13 +53,27 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
                               && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email)
-                          select new { signal, strategy, user.Id, user.Email, user.Locale, user.UnsubscribeToken, asset }).ToListAsync(cancellationToken);
+                          // A second check the same day (a re-run, a price that came in late) can signal the same stock again: it was alerted already.
+                          let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email && x.SentAt > recent
+                              && db.Signals.Any(o => o.Id == x.SignalId && o.StrategyId == signal.StrategyId && o.AssetId == signal.AssetId && o.Side == signal.Side))
+                          select new { signal, strategy, user.Id, user.Email, user.Locale, user.UnsubscribeToken, asset, repeat }).ToListAsync(cancellationToken);
 
         var sent = 0;
-        foreach (var row in rows)
+        var seen = new HashSet<(Guid, Guid, TradeSide)>();
+        foreach (var row in rows.OrderBy(r => r.signal.CreatedAt))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
-            if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
+            // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
+            if (row.repeat || seen.Contains(SameThing(row.signal)))
+            {
+                await NotSentAsync(claimed, "Not sent: this stock's alert went out today.");
+                continue;
+            }
+            if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken))
+            {
+                sent++;
+                seen.Add(SameThing(row.signal));
+            }
         }
         return await SettledAsync(sent);
     }
@@ -160,6 +181,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     public async Task<int> PushSignalAlertsAsync(DateOnly today, CancellationToken cancellationToken)
     {
         if (push.PublicKey is null) return 0;
+        var recent = DateTimeOffset.UtcNow - RepeatWindow;
         var since = today.AddDays(-AlertDays);
         var rows = await (from signal in db.Signals.AsNoTracking()
                           join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
@@ -168,12 +190,79 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
                               && user.AlertPush && strategy.Status == StrategyStatus.Running && db.PushSubscriptions.Any(p => p.UserId == user.Id)
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push)
+                          let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt > recent
+                              && db.Signals.Any(o => o.Id == x.SignalId && o.StrategyId == signal.StrategyId && o.AssetId == signal.AssetId && o.Side == signal.Side))
+                          select new { signal, strategy, user.Id, user.Locale, asset, repeat }).ToListAsync(cancellationToken);
+        var sent = 0;
+        var seen = new HashSet<(Guid, Guid, TradeSide)>();
+        foreach (var row in rows.OrderBy(r => r.signal.CreatedAt))
+        {
+            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
+            // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
+            if (row.repeat || seen.Contains(SameThing(row.signal)))
+            {
+                await NotSentAsync(claimed, "Not sent: this stock's alert went out today.");
+                continue;
+            }
+            if (await PushAsync(claimed, row.Id, PushTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), row.Locale), cancellationToken))
+            {
+                sent++;
+                seen.Add(SameThing(row.signal));
+            }
+        }
+        return sent;
+    }
+
+    /// <summary>
+    /// "The buy signal has ended": once per channel, for each live buy signal of the last <see cref="AlertDays"/> days that ended
+    /// without an answer (missed) because its rules no longer hold, after the user was alerted of it on that channel. Not for a
+    /// signal closed because the strategy was archived or the stock unticked: the user did that.
+    /// </summary>
+    public async Task<int> SendSignalEndedAsync(DateOnly today, CancellationToken cancellationToken)
+    {
+        var since = today.AddDays(-AlertDays);
+        var rows = await (from signal in db.Signals.AsNoTracking()
+                          join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
+                          join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
+                          join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
+                          where signal.Side == TradeSide.Buy && signal.Status == SignalStatus.Missed && signal.EndedOn >= since
+                              && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && asset.Active
+                              && db.StrategyAssets.Any(a => a.StrategyId == strategy.Id && a.AssetId == asset.Id && a.Active && a.RemovedAt == null)
+                              && user.EmailVerifiedAt != null && user.AlertEmails
+                              && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email && x.SentAt != null)
+                              && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == NotificationChannel.Email)
+                          select new { signal, strategy, user.Id, user.Email, user.Locale, user.UnsubscribeToken, asset }).ToListAsync(cancellationToken);
+
+        var sent = 0;
+        foreach (var row in rows)
+        {
+            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.SignalEnded, row.signal.EndedOn!.Value, cancellationToken) is not { } claimed) continue;
+            if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SignalEnded(Line(row.signal, row.strategy, row.asset), row.signal.EndedOn!.Value, AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
+        }
+        return await SettledAsync(sent);
+    }
+
+    /// <summary>The push twin of <see cref="SendSignalEndedAsync"/>: to the user's devices, after the signal's own push.</summary>
+    public async Task<int> PushSignalEndedAsync(DateOnly today, CancellationToken cancellationToken)
+    {
+        if (push.PublicKey is null) return 0;
+        var since = today.AddDays(-AlertDays);
+        var rows = await (from signal in db.Signals.AsNoTracking()
+                          join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
+                          join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
+                          join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
+                          where signal.Side == TradeSide.Buy && signal.Status == SignalStatus.Missed && signal.EndedOn >= since
+                              && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && asset.Active
+                              && db.StrategyAssets.Any(a => a.StrategyId == strategy.Id && a.AssetId == asset.Id && a.Active && a.RemovedAt == null)
+                              && user.AlertPush && db.PushSubscriptions.Any(p => p.UserId == user.Id)
+                              && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt != null)
+                              && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == NotificationChannel.Push)
                           select new { signal, strategy, user.Id, user.Locale, asset }).ToListAsync(cancellationToken);
         var sent = 0;
         foreach (var row in rows)
         {
-            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
-            if (await PushAsync(claimed, row.Id, PushTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), row.Locale), cancellationToken)) sent++;
+            if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.SignalEnded, row.signal.EndedOn!.Value, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
+            if (await PushAsync(claimed, row.Id, PushTexts.SignalEnded(Line(row.signal, row.strategy, row.asset), row.signal.EndedOn!.Value, row.Locale), cancellationToken)) sent++;
         }
         return sent;
     }
@@ -371,6 +460,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
     static SignalLine Line(Signal signal, Strategy strategy, Asset asset) => SignalLine.From(signal, strategy, asset);
 
+    /// <summary>What makes two signals the same thing for an alert: strategy, stock and side.</summary>
+    static (Guid, Guid, TradeSide) SameThing(Signal signal) => (signal.StrategyId, signal.AssetId, signal.Side);
+
     /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>
     async Task<Guid?> ClaimAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, CancellationToken cancellationToken,
         NotificationChannel channel = NotificationChannel.Email)
@@ -480,6 +572,14 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         }
         await alerts.ClearAsync(EmailAlertKey, CancellationToken.None);
         return sent;
+    }
+
+    /// <summary>Keeps the claim without sending, so no later run sends it, and says why.</summary>
+    async Task NotSentAsync(Guid notificationId, string reason)
+    {
+        await db.Notifications.Where(n => n.Id == notificationId)
+            .ExecuteUpdateAsync(n => n.SetProperty(x => x.Error, reason), CancellationToken.None);
+        db.ChangeTracker.Clear();
     }
 
     /// <summary>Gives the claim back: nothing was sent, so the next run may send it.</summary>

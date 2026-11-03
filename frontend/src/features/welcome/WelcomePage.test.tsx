@@ -50,23 +50,22 @@ describe('WelcomePage', () => {
     const simTab = screen.getByRole('tab', { name: /Real-time simulation/ })
     const trackerTab = screen.getByRole('tab', { name: /Trading tracker/ })
 
-    expect(builderTab.getAttribute('aria-selected')).toBe('true')
+    // All three start collapsed; the first tab is the tabbable one
+    expect(builderTab.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('tabpanel')).toBeNull()
     expect(builderTab.getAttribute('tabIndex')).toBe('0')
     expect(simTab.getAttribute('tabIndex')).toBe('-1')
     expect(trackerTab.getAttribute('tabIndex')).toBe('-1')
 
-    // Clicking the already-active tab collapses the detail panel
-    fireEvent.click(builderTab)
-    expect(builderTab.getAttribute('aria-selected')).toBe('false')
-    expect(builderTab.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('tabpanel')).toBeNull()
-    // First tab remains tabbable when all panels are collapsed
-    expect(builderTab.getAttribute('tabIndex')).toBe('0')
-
-    // Clicking it again re-expands the detail panel
+    // Clicking a tab expands its detail panel
     fireEvent.click(builderTab)
     expect(builderTab.getAttribute('aria-selected')).toBe('true')
     expect(screen.getByRole('tabpanel')).toBeTruthy()
+
+    // Clicking the already-active tab collapses it again
+    fireEvent.click(builderTab)
+    expect(builderTab.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('tabpanel')).toBeNull()
   })
 
   it('supports arrow, Home, and End key navigation with focus management between feature pillar tabs', () => {
@@ -95,7 +94,8 @@ describe('WelcomePage', () => {
   it('interactively switches template rules and watched assets (stocks vs S&P 500 fund)', () => {
     renderPage()
 
-    // Builder tab is active by default with "Winners at a discount"
+    // Open the builder: "Winners at a discount" is picked first
+    fireEvent.click(screen.getByRole('tab', { name: /Strategy builder/ }))
     expect(screen.getByText('SMA 50 > 150 > 200 · 5%–15% discount zone')).toBeTruthy()
     expect(screen.getByText('Watched stocks:')).toBeTruthy()
     expect(screen.getByText('ZS ✓')).toBeTruthy()
@@ -190,6 +190,7 @@ describe('WelcomePage', () => {
 
   it('renders fully in Catalan with glossary-compliant rules, funds, and budgets', () => {
     renderPage('ca')
+    fireEvent.click(screen.getByRole('tab', { name: /Constructor|Creador|estrat/i }))
 
     expect(screen.getByRole('heading', { level: 1, name: 'Opera segons regles, no per emocions.' })).toBeTruthy()
     expect(screen.getByText('SMA 50 > 150 > 200 · zona de descompte 5%–15%')).toBeTruthy()

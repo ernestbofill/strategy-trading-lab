@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { api, onSessionEnded, type Account } from '../../api'
+import { api, onSessionEnded, type Account, type Role } from '../../api'
 import { invalidateAll, refreshAll } from '../../lib/useLoadable'
 import { rememberLoggedIn } from './knownDevice'
 import { claimDevice } from '../../lib/push'
@@ -114,6 +114,13 @@ export function useCurrentAccount(): Account {
   const { state } = useAccount()
   if (state.status !== 'ready' || !state.account) throw new Error('useCurrentAccount needs RequireAccount.')
   return state.account
+}
+
+/** The logged-in user's role, null for a guest, undefined while loading. Safe to call anywhere, even outside AccountProvider. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useRole(): Role | null | undefined {
+  const ctx = useContext(AccountContext)
+  return ctx?.state.status === 'ready' ? (ctx.state.account?.role ?? null) : undefined
 }
 
 /** Whether the current logged-in user is an owner. Safe to call anywhere, even outside AccountProvider. */

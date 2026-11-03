@@ -50,13 +50,13 @@ export const aiRound: Record<keyof typeof en, string> = {
   'aiRound.change': 'Canvia',
   'aiRound.consent.title': 'Ajuda’ns a saber quines IA puntuen millor les accions',
   'aiRound.consent.text':
-    'Comparteix aquesta ronda: el model d’IA que has fet servir i la seva resposta, a part del teu compte. Mai no hi guardem el teu nom, el correu, el pressupost ni les operacions. Ho pots aturar quan vulguis a Compte → Dades i privacitat, i això també esborra el que has compartit.',
+    'Comparteix aquesta ronda: el model d’IA que has fet servir i la seva resposta, a part del teu compte. Mai no hi guardem el teu nom, el mail, el pressupost ni les operacions. Ho pots aturar quan vulguis a Compte → Dades i privacitat, i això també esborra el que has compartit.',
   'aiRound.consent.check': 'Comparteix les meves rondes d’IA',
   'aiRound.keep.title': 'Què guardem',
   'aiRound.keep.what':
-    'De cada ronda compartida: el model d’IA, el dia, la versió del prompt i si l’has editat, les fonts activades, els símbols de les accions, la resposta de la teva IA i les seves puntuacions. Abans de guardar-la, traiem tot el que sembli una adreça de correu, un número de telèfon o els paràmetres d’un enllaç.',
+    'De cada ronda compartida: el model d’IA, el dia, la versió del prompt i si l’has editat, les fonts activades, els símbols de les accions, la resposta de la teva IA i les seves puntuacions. Abans de guardar-la, traiem tot el que sembli una adreça de correu electrònic, un número de telèfon o els paràmetres d’un enllaç.',
   'aiRound.keep.never':
-    'Mai no hi va: el teu nom, el correu, el compte, el nom de l’estratègia, el pressupost, les fases, les operacions ni si hi has actuat, i només el dia, no l’hora. Res no hi apunta a tu: només la teva pròpia ronda en guarda una nota, perquè si desactives la compartició puguem esborrar el que has compartit.',
+    'Mai no hi va: el teu nom, el mail, el compte, el nom de l’estratègia, el pressupost, les fases, les operacions ni si hi has actuat, i només el dia, no l’hora. Res no hi apunta a tu: només la teva pròpia ronda en guarda una nota, perquè si desactives la compartició puguem esborrar el que has compartit.',
   'aiRound.scores.aria': 'Les puntuacions de la teva IA',
   'aiRound.scores.outOf': ' sobre 100',
   'aiRound.scores.step': '· Fase {step}',

@@ -24,7 +24,7 @@ export const trades: Record<keyof typeof en, string> = {
   'trades.pill.did': 'FET',
   'trades.pill.skipped': 'OMÈS',
   'trades.pill.missed': 'PERDUT',
-  'trades.pill.snoozed': 'AJORNAT',
+  'trades.pill.snoozed': 'POSPOSAT',
   'trades.pill.waiting': 'EN ESPERA',
   'trades.stock': 'Acció',
   'trades.buy': 'Compra',

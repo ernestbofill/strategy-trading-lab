@@ -12,7 +12,7 @@ export const feedback: Record<keyof typeof en, string> = {
   'feedback.saving': 'Desant…',
   'feedback.save': 'Desa',
   'feedback.saved': 'Comentari desat ✓',
-  'feedback.errorForbidden': 'Confirma primer la teva adreça de correu per enviar comentaris.',
+  'feedback.errorForbidden': 'Confirma primer el teu mail per enviar comentaris.',
   'feedback.errorTooMany': 'Has enviat massa comentaris fa poc. Torna-ho a provar més tard.',
   'feedback.errorSave': 'No s’ha pogut desar el comentari. Torna-ho a provar.',
   'feedback.kind.type': 'Tipus',
@@ -25,6 +25,6 @@ export const feedback: Record<keyof typeof en, string> = {
   'feedback.send.placeholder': 'Què canviaries?',
   'feedback.send.action': 'Envia comentaris',
   'feedback.send.sending': 'S’està enviant…',
-  'feedback.send.sent': 'Gràcies, enviat. Potser et responem per correu.',
-  'feedback.send.confirmFirst': 'Confirma el teu correu per enviar comentaris.',
+  'feedback.send.sent': 'Gràcies, enviat. Potser et responem per mail.',
+  'feedback.send.confirmFirst': 'Confirma el teu mail per enviar comentaris.',
 }

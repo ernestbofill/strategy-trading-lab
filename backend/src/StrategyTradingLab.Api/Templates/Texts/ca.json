@@ -2,12 +2,12 @@
   "dip": {
     "name": "Líders amb descompte",
     "tagline": "Espera una baixada",
-    "idea": "Una acció en plena ratxa fa una petita baixada. L'estratègia assenyala aquest retrocés.",
-    "rationale": "Tria empreses líders: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera un retrocés curt, quan el preu cau uns quants punts percentuals.",
+    "idea": "Una acció en plena ratxa fa una petita baixada. L'estratègia assenyala aquesta baixada.",
+    "rationale": "Tria empreses líders: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera una baixada curta, quan el preu cau uns quants punts percentuals.",
     "rules": [
       {
         "marker": "01",
-        "text": "**És una líder provada:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
+        "text": "**És un líder demostrat:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
       },
       {
         "marker": "02",
@@ -15,7 +15,7 @@
       },
       {
         "marker": "03",
-        "text": "**El retrocés no és un col·lapse:** continua per sobre de la seva `SMA {floorDays}` (preu mitjà dels últims {floorDays} dies)."
+        "text": "**La baixada no és un col·lapse:** continua per sobre de la seva `SMA {floorDays}` (preu mitjà dels últims {floorDays} dies)."
       }
     ],
     "backtest": {
@@ -26,7 +26,7 @@
     },
     "stockStatus": {
       "zone": "la zona de descompte",
-      "notCandidate": "Per sota de la seva tendència a llarg termini"
+      "notCandidate": "Per sota de la seva tendència a llarg"
     },
     "settings": {
       "minGainPct": {
@@ -47,33 +47,33 @@
       "peakDays": {
         "sentence": "El màxim recent és el tancament més alt dels últims {value}.",
         "value": "{n} dies",
-        "help": "D'on es mesura el retrocés. Més llarg: un màxim més antic i sovint més alt, i el mateix preu es llegeix com un retrocés més profund."
+        "help": "D'on es mesura la baixada. Més llarg: un màxim més antic i sovint més alt, i el mateix preu es llegeix com una baixada més profunda."
       },
       "zoneStartPct": {
         "sentence": "La zona de descompte comença {value} per sota del màxim recent.",
         "value": "{n}%",
-        "help": "El retrocés més petit que compta. Més baix: dona senyal abans, amb retrocessos petits. Més alt: espera un descompte més gran, i hi ha menys senyals."
+        "help": "La baixada més petita que compta. Més baix: dona senyal abans, amb baixades petites. Més alt: espera un descompte més gran, i hi ha menys senyals."
       },
       "zoneEndPct": {
         "sentence": "Acaba {value} per sota del màxim recent.",
         "value": "{n}%",
-        "help": "El retrocés més profund que compta. Més alt: també compra caigudes més fortes, mentre es mantinguin per sobre de la mitjana terra."
+        "help": "La baixada més profunda que compta. Més alt: també compra caigudes més fortes, mentre es mantinguin per sobre de la mitjana terra."
       },
       "floorDays": {
         "sentence": "La mitjana terra és la SMA de {value}.",
         "value": "{n} dies",
-        "help": "La part de dalt de la pila de la candidata i el terra de la zona: un tancament per sota és un col·lapse, no un retrocés. Més curta: el terra segueix el preu de prop, i els retrocessos profunds el travessen."
+        "help": "La part de dalt de la pila de la candidata i el terra de la zona: un tancament per sota és un col·lapse, no una baixada. Més curta: el terra segueix el preu de prop, i les baixades profundes el travessen."
       },
       "cooldownDays": {
         "sentence": "Després d'una fase, espera {value} abans del següent senyal de compra.",
         "value": "{n} dies naturals",
-        "help": "Compta des de la compra de la fase. Més curt: les fases arriben més juntes. Més llarg: les fases d'una acció es reparteixen en més retrocessos."
+        "help": "Compta des de la compra de la fase. Més curt: les fases arriben més juntes. Més llarg: les fases d'una acció es reparteixen en més baixades."
       }
     },
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidata: quines accions vigila",
-        "lead": "Una acció és candidata, una líder provada, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
+        "lead": "Una acció és candidata, un líder demostrat, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
       },
       "signal": {
         "title": "2 · Senyal de compra: quan una candidata dona senyal",
@@ -89,7 +89,7 @@
         "label": "Creixement provat",
         "detail": "Ha pujat un {value}% des del seu mínim ({level} → {endLevel}, cal un {min}%).",
         "short": "ha pujat un {value}% (cal un {min}%)",
-        "info": "El màxim recent ha de ser almenys un {min}% per sobre del tancament més baix dels últims mesos: només compten les líders provades."
+        "info": "El màxim recent ha de ser almenys un {min}% per sobre del tancament més baix dels últims mesos: només compten els líders demostrats."
       },
       "stacked": {
         "label": "Mitjanes en ordre",
@@ -111,13 +111,13 @@
         "past": "{value}% per sota del màxim recent — ha caigut més enllà de la zona del {min}–{max}% ({level} a {endLevel}).",
         "short": "{value}% sota el màxim (zona {min}–{max}%)",
         "pastShort": "{value}% sota el màxim (més enllà del {max}%)",
-        "info": "La zona de descompte és un retrocés d'un {min}–{max}% per sota del tancament més alt de les últimes setmanes."
+        "info": "La zona de descompte és una baixada d'un {min}–{max}% per sota del tancament més alt de les últimes setmanes."
       },
       "floor": {
         "label": "Per sobre de la mitjana terra",
         "detail": "{+value}% respecte a la mitjana terra ({level}, cal 0% o més).",
         "short": "per sota de la mitjana terra",
-        "info": "Un retrocés que travessa la SMA 50 és un enfonsament, no un descompte."
+        "info": "Una baixada que travessa la SMA 50 és un enfonsament, no un descompte."
       },
       "cooldown": {
         "label": "Espera després d'una fase",
@@ -188,9 +188,9 @@
         "help": "Més alt: aquesta fita arriba abans en la recuperació."
       },
       "breakoutPullbackPct": {
-        "sentence": "Fita de ruptura: un retrocés d'almenys un {value}, i després un tancament per sobre del màxim anterior.",
+        "sentence": "Fita de ruptura: una baixada d'almenys un {value}, i després un tancament per sobre del màxim anterior.",
         "value": "{n}%",
-        "help": "Més alt: cal un retrocés més profund abans, i la ruptura arriba menys sovint."
+        "help": "Més alt: cal una baixada més profunda abans, i la ruptura arriba menys sovint."
       },
       "cooldownDays": {
         "sentence": "Després d'una fase, espera {value} abans del següent senyal de compra.",
@@ -209,7 +209,7 @@
       },
       "milestones": {
         "title": "3 · Fites: les fases següents",
-        "lead": "Un cop comprada, cada nou senyal que el gir és real dona una fase més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'un retrocés. Cadascuna es compra només fins al límit de persecució per sobre del seu nivell."
+        "lead": "Un cop comprada, cada nou senyal que el gir és real dona una fase més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'una baixada. Cadascuna es compra només fins al límit de persecució per sobre del seu nivell."
       },
       "pace": {
         "title": "4 · Ritme: cada quan compra",
@@ -283,12 +283,12 @@
       },
       "breakout": {
         "label": "Ruptura",
-        "detail": "{+value}% respecte al màxim d'abans del retrocés d'un {min}% ({level}, finestra de 0% a +{max}% fins a {endLevel}).",
+        "detail": "{+value}% respecte al màxim d'abans de la baixada d'un {min}% ({level}, finestra de 0% a +{max}% fins a {endLevel}).",
         "past": "Massa lluny: {+value}% per sobre del nivell de ruptura ({level}); el límit és +{max}% ({endLevel}).",
         "short": "encara sense ruptura",
         "pastShort": "massa lluny de la ruptura ({+value}%)",
-        "none": "Primer cal un retrocés d'un {min}%, i després un tancament per sobre del màxim d'abans.",
-        "info": "Fita: després de retrocedir almenys un {min}% des d'un màxim posterior a la compra, superar aquest màxim dona una fase."
+        "none": "Primer cal una baixada d'un {min}%, i després un tancament per sobre del màxim d'abans.",
+        "info": "Fita: després de baixar almenys un {min}% des d'un màxim posterior a la compra, superar aquest màxim dona una fase."
       },
       "cooldown": {
         "label": "Espera després d'una fase",

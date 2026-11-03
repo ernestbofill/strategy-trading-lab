@@ -121,7 +121,7 @@ public class AccountRulesTests
     public void Password_error_returns_catalan_when_locale_is_ca()
     {
         Assert.Equal("Fes servir almenys 10 caràcters.", AccountRules.PasswordError("short", null, "ca"));
-        Assert.Equal("No facis servir el teu correu com a contrasenya.", AccountRules.PasswordError("me@example.com", "me@example.com", "ca"));
+        Assert.Equal("No facis servir el teu mail com a contrasenya.", AccountRules.PasswordError("me@example.com", "me@example.com", "ca"));
     }
 
     [Fact]

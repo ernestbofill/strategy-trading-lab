@@ -3,7 +3,7 @@ import type { signal as en } from '../en/signal'
 export const signal: Record<keyof typeof en, string> = {
   'signal.what': 'aquest senyal',
   'signal.title': 'SENYAL · {date}',
-  'signal.live': 'EN DIRECTE',
+  'signal.live': 'REAL',
   'signal.rules': 'Les teves regles per a {strategy} es compleixen per a {stock}: {reason}.',
   'signal.step': 'Segons la teva configuració, és la fase {step}.',
   'signal.stepAmount': 'Segons la teva configuració, és la fase {step} ({amount}).',
@@ -19,7 +19,7 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.did': 'Ho has fet.',
   'signal.didFull': 'Ho has fet: {shares} accions a {price} el {date} ({amount}, comissió {fee}).',
   'signal.error.save': 'No s’ha pogut desar. Torna-ho a provar.',
-  'signal.error.snooze': 'No s’ha pogut ajornar. Torna-ho a provar.',
+  'signal.error.snooze': 'No s’ha pogut posposar. Torna-ho a provar.',
   'signal.error.ambiguous': 'És 1250 o 1,25? Escriu-ho com a 1250 o 1.25.',
   'signal.hint.prefilled':
     'Emplenat amb el preu d’obertura del {date}. Canvia el que sigui diferent al teu broker.',
@@ -58,5 +58,5 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.skip.noteSaleNext':
     'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet, així que el proper senyal per a {stock} serà el {next}.',
   'signal.snooze.until': 'T’ho recordarem el {date}.',
-  'signal.snooze.action': 'Ajorna-ho al proper dia de borsa',
+  'signal.snooze.action': 'Posposa-ho al proper dia de borsa',
 }

@@ -183,9 +183,9 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         var label = (kind, Ca) switch
         {
             (EmailKind.Overview, false) => "Turn off summary emails",
-            (EmailKind.Overview, true) => "Desactiva els correus de resum",
+            (EmailKind.Overview, true) => "Desactiva els mails de resum",
             (_, false) => "Turn off signal and reminder emails",
-            _ => "Desactiva els correus de senyals i recordatoris",
+            _ => "Desactiva els mails de senyals i recordatoris",
         };
         unsubscribe = (label, UnsubscribeLinks.PageUrl(appUrl, locale, token, kind), UnsubscribeLinks.OneClickUrl(appUrl, token, kind));
         return this;

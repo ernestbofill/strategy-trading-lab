@@ -23,8 +23,8 @@ export const common: Record<keyof typeof en, string> = {
   'footer.welcome': 'Benvinguda',
   'footer.templates': 'Plantilles',
   'footer.signUp': 'Crea un compte',
-  'footer.logIn': 'Inicia la sessió',
-  'footer.dashboard': 'Tauler',
+  'footer.logIn': 'Inicia sessió',
+  'footer.dashboard': 'Dashboard',
   'footer.newStrategy': 'Nova estratègia',
   'footer.account': 'Compte',
   'footer.notifications': 'Notificacions',
@@ -50,7 +50,7 @@ export const common: Record<keyof typeof en, string> = {
   'legal.about.title': 'Quant a',
   'legal.about.lead': 'Quant a Strategy Trading Lab.',
   'legal.about.content':
-    'Un laboratori d’estratègies i aplicació d’acompanyament. Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en directe. L’aplicació mai no posa ordres ni es connecta a cap broker.',
+    'Un laboratori d’estratègies i aplicació d’acompanyament. Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en mode real. L’aplicació mai no posa ordres ni es connecta a cap broker.',
   'legal.topBar': 'STL // LEGAL',
   'legal.laterStep': 'Aquesta pàgina vindrà més endavant.',
 }

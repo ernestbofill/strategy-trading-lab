@@ -194,13 +194,13 @@ describe('WelcomePage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Opera segons regles, no per emocions.' })).toBeTruthy()
     expect(screen.getByText('SMA 50 > 150 > 200 · zona de descompte 5%–15%')).toBeTruthy()
-    expect(screen.getByText('100 € / pas · màx. 3 passos')).toBeTruthy()
+    expect(screen.getByText('100 € / fase · màx. 3 fases')).toBeTruthy()
     expect(screen.getByText('Accions a vigilar:')).toBeTruthy()
 
     // Switch template in Catalan to "Empreses en remuntada"
     fireEvent.click(screen.getByRole('button', { name: 'Empreses en remuntada' }))
     expect(screen.getByText('≥ 30% sota el màxim anual · +15% sobre SMA 50 + volum')).toBeTruthy()
-    expect(screen.getByText('150 € / pas · màx. 2 passos')).toBeTruthy()
+    expect(screen.getByText('150 € / fase · màx. 2 fases')).toBeTruthy()
 
     // Switch template in Catalan to "Mercats baixistes"
     fireEvent.click(screen.getByRole('button', { name: 'Mercats baixistes' }))

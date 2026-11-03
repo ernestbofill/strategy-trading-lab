@@ -9,7 +9,9 @@ Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sente
 | stock | acció (pl. accions) |
 | fund | fons |
 | index fund | fons indexat |
-| step (not *tranche*) | pas (pl. passos) |
+| step (not *tranche*) | fase (f., pl. fases): "la primera fase", "Fase 2 de 5", "compra per fases". Not *pas*. (Ernest, 2026-11-03) |
+| step amount | import de la fase / import de cada fase; "€100 per fase" |
+| size (of money) | import, never *mida* |
 | signal | senyal |
 | strategy | estratègia |
 | template | plantilla |

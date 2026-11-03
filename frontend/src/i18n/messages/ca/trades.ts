@@ -17,7 +17,7 @@ export const trades: Record<keyof typeof en, string> = {
   'trades.fee': '(comissió {fee})',
   'trades.buySignal': 'Senyal de compra',
   'trades.sellSignal': 'Senyal de venda',
-  'trades.stepOf': 'Pas {n} de {max}',
+  'trades.stepOf': 'Fase {n} de {max}',
   'trades.close': 'Tancament: {price}',
   'trades.remindOn': 'Recordatori el {date}',
   'trades.endedOn': 'Acabat el {date}',

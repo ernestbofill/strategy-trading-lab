@@ -102,9 +102,9 @@ public static class Messages
     public static readonly Message NotStocks = new("Some of those are not stocks we can follow.", "Algunes d'aquestes no són accions que puguem seguir.");
     public static readonly Message SetBudget = new("Set a budget.", "Fixa un pressupost.");
     public static readonly Message WholeBudget = new("Use a whole amount from {0:0} to {1:0}.", "Fes servir un import sencer entre {0:0} i {1:0}.");
-    public static readonly Message NoSteps = new("This template has no steps.", "Aquesta plantilla no té passos.");
+    public static readonly Message NoSteps = new("This template has no steps.", "Aquesta plantilla no té fases.");
     public static readonly Message WholeStep = new("Use a whole amount from {0:0} up to the budget.", "Fes servir un import sencer des de {0:0} fins al pressupost.");
-    public static readonly Message UseSteps = new("Use 1 to {0} steps.", "Fes servir d'1 a {0} passos.");
+    public static readonly Message UseSteps = new("Use 1 to {0} steps.", "Fes servir d'1 a {0} fases.");
 
     // Advanced settings
     public static readonly Message NoSuchSetting = new("This template has no such setting.", "Aquesta plantilla no té aquest ajust.");

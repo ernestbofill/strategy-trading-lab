@@ -10,14 +10,18 @@ self.addEventListener('push', (event) => {
   }
   const title = message.title || 'Strategy Trading Lab'
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: message.body || '',
-      tag: message.tag,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      // Only app paths are opened.
-      data: { url: typeof message.url === 'string' && message.url.startsWith('/') && !message.url.startsWith('//') ? message.url : '/' },
-    }),
+    Promise.all([
+      // An open app reloads what it shows, so the new signal is listed (main.tsx).
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => windows.forEach((client) => client.postMessage({ type: 'stl:refresh' }))),
+      self.registration.showNotification(title, {
+        body: message.body || '',
+        tag: message.tag,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        // Only app paths are opened.
+        data: { url: typeof message.url === 'string' && message.url.startsWith('/') && !message.url.startsWith('//') ? message.url : '/' },
+      }),
+    ]),
   )
 })
 

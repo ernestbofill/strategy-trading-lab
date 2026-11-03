@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, onSessionEnded, type Account } from '../../api'
-import { invalidateAll } from '../../lib/useLoadable'
+import { invalidateAll, refreshAll } from '../../lib/useLoadable'
 import { rememberLoggedIn } from './knownDevice'
 import { claimDevice } from '../../lib/push'
 
@@ -76,7 +76,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     // The start-up check: its state is set after the request, not synchronously.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh()
-    const recheck = () => document.visibilityState === 'visible' && void refresh()
+    // Back in front: once the same user is confirmed, open screens reload what the server may have changed meanwhile.
+    // Another user, or none, already cleared everything, and the open screens reload after React commits.
+    const recheck = () => {
+      if (document.visibilityState !== 'visible') return
+      const owner = ownerRef.current
+      void refresh().then((account) => account && account.email === owner && refreshAll(30 * 1000))
+    }
     document.addEventListener('visibilitychange', recheck)
     const stop = onSessionEnded(clear)
     return () => {

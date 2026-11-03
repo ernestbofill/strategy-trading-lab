@@ -1,9 +1,9 @@
 {
   "dip": {
-    "name": "Guanyadores amb descompte",
-    "tagline": "Compra la baixada",
-    "idea": "Una acció en plena ratxa fa un petit pas enrere. L'estratègia assenyala aquest retrocés.",
-    "rationale": "Tria accions guanyadores: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera un retrocés curt, quan el preu cau uns quants punts percentuals.",
+    "name": "Liders amb descompte",
+    "tagline": "Espera una baixada",
+    "idea": "Una acció en plena ratxa fa una petita baixada. L'estratègia assenyala aquest retrocés.",
+    "rationale": "Tria empreses liders: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera un retrocés curt, quan el preu cau uns quants punts percentuals.",
     "rules": [
       {
         "marker": "01",
@@ -26,7 +26,7 @@
     },
     "stockStatus": {
       "zone": "la zona de descompte",
-      "notCandidate": "Per sota de la seva tendència llarga"
+      "notCandidate": "Per sota de la seva tendència a llarg"
     },
     "settings": {
       "minGainPct": {
@@ -128,8 +128,8 @@
     }
   },
   "comeback": {
-    "name": "La remuntada",
-    "tagline": "Accions en alça",
+    "name": "Empreses en remuntada",
+    "tagline": "Accions a l'alça",
     "idea": "Una acció que ha caigut molt comença a recuperar-se. L'estratègia busca un canvi de tendència confirmat.",
     "rationale": "Una acció que ha caigut molt torna a pujar. En lloc d'endevinar el fons, l'estratègia espera que el canvi de tendència sembli confirmat i llavors assenyala compres per passos.",
     "rules": [
@@ -300,9 +300,9 @@
   },
   "bear": {
     "name": "Mercats baixistes",
-    "tagline": "Quan el mercat està de rebaixes",
+    "tagline": "Quan el mercat està barat",
     "idea": "Quan tot el mercat cau un 20%, l'estratègia assenyala compres d'un fons ampli de l'S&P 500 en petits passos mentre es recupera.",
-    "rationale": "Les grans caigudes del mercat són rares i fan por, i la majoria de gent ven. En lloc d'endevinar el fons, l'estratègia espera el primer rebot i llavors assenyala compres en petits passos mentre els preus encara són baixos.",
+    "rationale": "Les grans caigudes del mercat són rares i fan por, i la majoria de gent ven. En lloc d'endevinar quan s'ha tocat fons, l'estratègia espera el primer rebot i llavors assenyala compres en petits passos mentre els preus encara són baixos.",
     "rules": [
       {
         "marker": "01",
@@ -389,10 +389,10 @@
     }
   },
   "trend": {
-    "name": "Tendència de l'índex",
+    "name": "Segueix un índex",
     "tagline": "Queda't amb els guanys, esquiva les pèrdues",
     "idea": "L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa.",
-    "rationale": "Els mercats es mouen en ones llargues. L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa, per esquivar la caiguda. Després de la caiguda busca un nou senyal de compra.",
+    "rationale": "Els mercats es mouen en onades llargues. L'estratègia assenyala la compra d'un fons indexat ampli quan el mercat entra en tendència alcista, i la venda quan la tendència gira a la baixa, per esquivar la caiguda. Després de la caiguda busca un nou senyal de compra.",
     "settings": {
       "smaDays": {
         "sentence": "La línia de tendència és la SMA de {value}.",

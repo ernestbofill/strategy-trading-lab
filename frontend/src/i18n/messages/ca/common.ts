@@ -18,6 +18,24 @@ export const common: Record<keyof typeof en, string> = {
   'common.decrease': 'Redueix {label}',
   'common.increase': 'Augmenta {label}',
 
+  // Site map in the footer
+  'footer.app': 'Aplicació',
+  'footer.welcome': 'Benvinguda',
+  'footer.templates': 'Plantilles',
+  'footer.signUp': 'Crea un compte',
+  'footer.logIn': 'Inicia la sessió',
+  'footer.dashboard': 'Tauler',
+  'footer.newStrategy': 'Nova estratègia',
+  'footer.account': 'Compte',
+  'footer.admin': 'Administració',
+  'footer.overview': 'Resum',
+  'footer.alerts': 'Alertes',
+  'footer.users': 'Usuaris',
+  'footer.assets': 'Accions i fons',
+  'footer.invites': 'Invitacions',
+  'footer.feedback': 'Comentaris',
+  'footer.siteMap': 'Mapa del lloc',
+
   // Legal footer and pages
   'legal.nav': 'Legal',
   'legal.notice.title': 'Avís legal',

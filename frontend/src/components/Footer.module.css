@@ -1,44 +1,93 @@
+/* The site footer: a compact site map. On phones each group's links flow on a line and wrap; from 768px the groups are columns. */
 .footer {
   margin-top: auto;
   padding-top: var(--space-4);
   border-top: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
-.disclaimer {
-  margin: 0;
-  font: 12px/16px var(--font-ui);
-  color: var(--ink-muted);
+.brand {
+  margin: 0 0 var(--space-1);
+  font: 700 12px/16px var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--primary);
 }
 
 .nav {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heading {
+  margin: 0;
+  font: 700 11px/16px var(--font-mono);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink);
 }
 
 .links {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   column-gap: var(--space-3);
-  row-gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* 44px tall for touch, with the text small so the footer stays quiet. */
 .link {
-  font: 12px/20px var(--font-ui);
-  color: var(--ink-muted);
+  font: 13px/20px var(--font-ui);
+  color: var(--ink-sidebar);
   text-decoration: none;
   min-height: 44px;
-  min-width: 44px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
 }
 
 .link:hover {
   color: var(--primary);
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.link[aria-current='page'] {
+  color: var(--primary);
+}
+
+.disclaimer {
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-hairline);
+  font: 12px/16px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+@media (min-width: 768px) {
+  .nav {
+    flex-direction: row;
+    gap: 64px;
+  }
+
+  .links {
+    flex-direction: column;
+  }
+
+  .heading {
+    margin-bottom: var(--space-1);
+  }
+}
+
+/* A mouse needs no 44px rows: the columns close up. */
+@media (min-width: 768px) and (pointer: fine) {
+  .link {
+    min-height: 28px;
+  }
 }

@@ -25,6 +25,24 @@ export const common = {
   'common.decrease': 'Decrease {label}',
   'common.increase': 'Increase {label}',
 
+  // Site map in the footer (the links each user may open)
+  'footer.app': 'App',
+  'footer.welcome': 'Welcome',
+  'footer.templates': 'Templates',
+  'footer.signUp': 'Sign up',
+  'footer.logIn': 'Log in',
+  'footer.dashboard': 'Dashboard',
+  'footer.newStrategy': 'New strategy',
+  'footer.account': 'Account',
+  'footer.admin': 'Admin',
+  'footer.overview': 'Overview',
+  'footer.alerts': 'Alerts',
+  'footer.users': 'Users',
+  'footer.assets': 'Stocks and funds',
+  'footer.invites': 'Invites',
+  'footer.feedback': 'Feedback',
+  'footer.siteMap': 'Site map',
+
   // Legal footer and pages
   'legal.nav': 'Legal',
   'legal.notice.title': 'Legal notice',

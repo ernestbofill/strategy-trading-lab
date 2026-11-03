@@ -119,7 +119,6 @@ describe('app routes', () => {
   })
 
   it('renders legal links in the footer on every screen', async () => {
-    // Two site maps are rendered (narrow and wide) and CSS shows one, so each link can appear twice.
     vi.spyOn(api, 'getAccount').mockResolvedValue(null)
 
     open('/sign-up')

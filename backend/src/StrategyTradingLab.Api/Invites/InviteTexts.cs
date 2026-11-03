@@ -22,7 +22,7 @@ public class InviteTexts(IConfiguration configuration)
         var sign = from is null ? "" : $"\n\n– {from}";
         return locale == "ca"
             ? $"""
-              Hola, {firstName}! T'he convidat a Strategy Trading Lab, una app per provar i seguir estratègies d'inversió amb les teves pròpies regles. És en una versió alfa tancada, disponible només per invitació. Primer en simulació, sense diners reals. Mai no opera per tu ni es connecta al teu bròquer.
+              Hola, {firstName}! T'he convidat a Strategy Trading Lab, una app per provar i seguir estratègies d'inversió amb les teves pròpies regles. És una versió "Alpha" de prova, disponible només per invitació. És simulació, sense diners reals, la app mai no opera per tu ni es connecta al teu bròquer.
 
               Entra amb aquest enllaç: {Link(code, locale)}
               O registra't a {SignUpUrl(locale)} amb el codi {code}{sign}
@@ -51,7 +51,7 @@ public class InviteTexts(IConfiguration configuration)
         return (ca
                 ? doc
                     .Paragraph($"Hola, {firstName}!")
-                    .Paragraph("Strategy Trading Lab és una app per provar i seguir estratègies d'inversió amb les teves pròpies regles. Actualment és en una versió alfa tancada, disponible només per invitació. Comença en simulació, sense diners reals. Mai no opera per tu ni es connecta al teu bròquer.")
+                    .Paragraph("Strategy Trading Lab és una app per provar i seguir estratègies d'inversió amb les teves pròpies regles. Actualment és en una versió \"Alpha\" de prova, disponible només per invitació. És simulació, sense diners reals, la app mai no opera per tu ni es connecta al teu bròquer.")
                     .Action("Accepta la invitació", Link(code, locale))
                     .Code("El teu codi", code, "O escriu aquest codi en registrar-te.")
                 : doc

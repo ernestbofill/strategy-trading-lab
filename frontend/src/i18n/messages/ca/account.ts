@@ -52,7 +52,7 @@ export const account: Record<keyof typeof en, string> = {
   'account.invite.title': 'Benvingut/da, {name}',
   'account.invite.from': "{name} t'ha convidat a Strategy Trading Lab.",
   'account.invite.anonymous': 'Tens una invitació a Strategy Trading Lab.',
-  'account.invite.lead': 'Prova estratègies amb les teves pròpies regles, en simulació i sense diners reals. L’aplicació mai no opera per tu ni es connecta al teu bròquer.',
+  'account.invite.lead': 'Prova estratègies amb les teves pròpies regles, primer en simulació i sense diners reals. L’aplicació mai no opera per tu ni es connecta al teu bròquer.',
   'account.invite.code': 'El teu codi',
   'account.invite.notValid': "Aquesta invitació ja no es pot fer servir. Demana'n una de nova o escriu un altre codi a sota.",
 

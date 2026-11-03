@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
-import { act, renderHook, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { invalidate, invalidateAll, refreshAll, useLoadable } from './useLoadable'
 
 describe('useLoadable', () => {
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+  })
+
   it('loads again on a screen that is open when every result is forgotten (another user)', async () => {
     let user = 'a'
     const { result } = renderHook(() => useLoadable('test:dashboard', async () => `${user}'s dashboard`))
@@ -64,6 +69,7 @@ describe('useLoadable', () => {
     act(() => invalidate('test:strategy:4'))
     first.unmount()
     const { result } = renderHook(() => useLoadable('test:strategy:4', load))
+    expect(result.current).toEqual({ status: 'loading' })
     act(() => finish())
 
     await waitFor(() => expect(result.current).toEqual({ status: 'ready', data: 'count: 2' }))
@@ -77,17 +83,20 @@ describe('useLoadable', () => {
     first.unmount()
 
     waiting = 3
-    const later = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_000)
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_000)
     const { result } = renderHook(() => useLoadable('test:dashboard:2', load))
     expect(result.current).toEqual({ status: 'ready', data: 'waiting: 2' })
     await waitFor(() => expect(result.current).toEqual({ status: 'ready', data: 'waiting: 3' }))
-    later.mockRestore()
   })
 
   it('reloads an open screen on refreshAll and keeps its result when the reload fails', async () => {
     let waiting: number | null = 2
+    let failures = 0
     const load = async () => {
-      if (waiting === null) throw new Error('offline')
+      if (waiting === null) {
+        failures++
+        throw new Error('offline')
+      }
       return `waiting: ${waiting}`
     }
     const { result } = renderHook(() => useLoadable('test:dashboard:3', load))
@@ -99,7 +108,8 @@ describe('useLoadable', () => {
 
     waiting = null
     act(() => refreshAll())
-    await new Promise((r) => setTimeout(r, 10))
+    await waitFor(() => expect(failures).toBe(1))
+    await act(async () => {})
     expect(result.current).toEqual({ status: 'ready', data: 'waiting: 3' })
   })
 })

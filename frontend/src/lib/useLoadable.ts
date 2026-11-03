@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 
 export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status: 'missing' } | { status: 'ready'; data: T }
 
@@ -8,32 +8,39 @@ export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status
 const settled = new Map<string, Loadable<unknown>>()
 const pending = new Map<string, Promise<void>>()
 const loadedAt = new Map<string, number>()
-// The open screens: their loaders and the listeners that re-render them.
-const loaders = new Map<string, () => Promise<unknown>>()
-const listeners = new Map<string, Set<() => void>>()
+// Keys the user changed (`invalidate`): a screen that opens on one shows loading, not the old result, until it reloads.
+const stale = new Set<string>()
+// The open screens on each key: the listener that re-renders each, with its latest loader.
+const listeners = new Map<string, Map<() => void, () => Promise<unknown>>>()
+const loaderOf = (cacheKey: string) => listeners.get(cacheKey)?.values().next().value
 
 const LOADING = { status: 'loading' } as const
 const MISSING = { status: 'missing' } as const
 /** A result this young isn't loaded again when another screen opens on it (the dashboard and its cards). */
 const FRESH_MS = 2000
 
-const notify = (cacheKey: string) => listeners.get(cacheKey)?.forEach((listener) => listener())
+const notify = (cacheKey: string) => listeners.get(cacheKey)?.forEach((_, listener) => listener())
 
 /** Starts a load of `cacheKey` unless one is in flight. A failed reload keeps the result already shown. */
 function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
   if (pending.has(cacheKey)) return
   // An invalidated request still finishes, but must not overwrite the newer one's result.
   const current = (): boolean => pending.get(cacheKey) === started
-  const settle = (result: Loadable<unknown>) => {
+  const settle = (result: Loadable<unknown>, loaded: boolean) => {
     if (!current()) return
     pending.delete(cacheKey)
-    loadedAt.set(cacheKey, Date.now())
+    stale.delete(cacheKey)
+    if (loaded) loadedAt.set(cacheKey, Date.now())
     settled.set(cacheKey, result)
     notify(cacheKey)
   }
+  const failed = (): Loadable<unknown> => {
+    const shown = settled.get(cacheKey)
+    return shown && shown.status !== 'loading' ? shown : { status: 'error' }
+  }
   const started: Promise<void> = load().then(
-    (data) => settle(data === undefined ? MISSING : { status: 'ready', data }),
-    () => settle(settled.get(cacheKey)?.status === 'ready' ? settled.get(cacheKey)! : { status: 'error' }),
+    (data) => settle(data === undefined ? MISSING : { status: 'ready', data }, true),
+    () => settle(failed(), false),
   )
   pending.set(cacheKey, started)
 }
@@ -44,12 +51,12 @@ function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
  */
 export function invalidate(cacheKey: string) {
   pending.delete(cacheKey)
-  const load = loaders.get(cacheKey)
+  loadedAt.delete(cacheKey)
+  stale.add(cacheKey)
+  const load = loaderOf(cacheKey)
+  // Screens showing it keep it until the reload lands; with none open, the next screen loads it.
   if (load) fetchKey(cacheKey, load)
-  else {
-    settled.delete(cacheKey)
-    loadedAt.delete(cacheKey)
-  }
+  else settled.delete(cacheKey)
 }
 
 /**
@@ -60,41 +67,51 @@ export function invalidateAll() {
   settled.clear()
   pending.clear()
   loadedAt.clear()
-  for (const [cacheKey, load] of loaders) {
-    fetchKey(cacheKey, load)
+  stale.clear()
+  for (const cacheKey of listeners.keys()) {
+    fetchKey(cacheKey, loaderOf(cacheKey)!)
     notify(cacheKey)
   }
 }
 
-/** Reloads what the open screens show, keeping it on screen meanwhile: the server may have changed it. */
-export function refreshAll() {
-  for (const [cacheKey, load] of loaders) fetchKey(cacheKey, load)
+/**
+ * Reloads what the open screens show, keeping it on screen meanwhile: the server may have changed it. Results younger
+ * than `olderThanMs` are left alone (a quick switch back to the app).
+ */
+export function refreshAll(olderThanMs = 0) {
+  const now = Date.now()
+  for (const cacheKey of listeners.keys()) {
+    if (now - (loadedAt.get(cacheKey) ?? 0) >= olderThanMs) fetchKey(cacheKey, loaderOf(cacheKey)!)
+  }
 }
 
 /** Loads `load()` for `cacheKey`, showing a kept result at once and reloading it; `undefined` from `load` means not found. */
 export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | undefined>): Loadable<T> {
+  // Reloads call the latest `load`, which may read the screen's current props.
+  const loadRef = useRef(load)
+  useEffect(() => void (loadRef.current = load))
   const subscribe = useCallback(
     (listener: () => void) => {
       if (!cacheKey) return () => {}
-      let set = listeners.get(cacheKey)
-      if (!set) listeners.set(cacheKey, (set = new Set()))
-      set.add(listener)
+      let open = listeners.get(cacheKey)
+      if (!open) listeners.set(cacheKey, (open = new Map()))
+      open.set(listener, () => loadRef.current())
       return () => {
-        set.delete(listener)
-        if (set.size === 0) {
-          listeners.delete(cacheKey)
-          loaders.delete(cacheKey)
-        }
+        open.delete(listener)
+        if (open.size === 0) listeners.delete(cacheKey)
       }
     },
     [cacheKey],
   )
   const getSnapshot = useCallback(() => (cacheKey ? (settled.get(cacheKey) ?? LOADING) : MISSING), [cacheKey])
   const state = useSyncExternalStore(subscribe, getSnapshot)
+  // A screen that opens on a key the user changed waits for the reload; one already showing it keeps it meanwhile.
+  const shown = useRef<string | null>(null)
+  const result = cacheKey && stale.has(cacheKey) && shown.current !== cacheKey ? LOADING : state
+  if (result.status !== 'loading') shown.current = cacheKey
 
   useEffect(() => {
     if (!cacheKey) return
-    loaders.set(cacheKey, load)
     // An error is retried at once; a kept result is shown while it loads again, unless it was just loaded.
     const cached = settled.get(cacheKey)
     if (cached?.status === 'error') settled.delete(cacheKey)
@@ -105,5 +122,5 @@ export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cacheKey])
 
-  return state as Loadable<T>
+  return result as Loadable<T>
 }

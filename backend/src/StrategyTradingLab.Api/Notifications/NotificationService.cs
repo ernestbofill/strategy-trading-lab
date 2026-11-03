@@ -63,12 +63,17 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         foreach (var row in rows.OrderBy(r => r.signal.CreatedAt))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
-            if (row.repeat || !seen.Add(SameThing(row.signal)))
+            // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
+            if (row.repeat || seen.Contains(SameThing(row.signal)))
             {
                 await NotSentAsync(claimed, "Not sent: this stock's alert went out today.");
                 continue;
             }
-            if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
+            if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken))
+            {
+                sent++;
+                seen.Add(SameThing(row.signal));
+            }
         }
         return await SettledAsync(sent);
     }
@@ -193,12 +198,17 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         foreach (var row in rows.OrderBy(r => r.signal.CreatedAt))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
-            if (row.repeat || !seen.Add(SameThing(row.signal)))
+            // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
+            if (row.repeat || seen.Contains(SameThing(row.signal)))
             {
                 await NotSentAsync(claimed, "Not sent: this stock's alert went out today.");
                 continue;
             }
-            if (await PushAsync(claimed, row.Id, PushTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), row.Locale), cancellationToken)) sent++;
+            if (await PushAsync(claimed, row.Id, PushTexts.SignalAlert(Line(row.signal, row.strategy, row.asset), row.Locale), cancellationToken))
+            {
+                sent++;
+                seen.Add(SameThing(row.signal));
+            }
         }
         return sent;
     }

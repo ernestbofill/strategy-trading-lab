@@ -17,6 +17,8 @@ const loaderOf = (cacheKey: string) => listeners.get(cacheKey)?.values().next().
 // Bumped to have the open screens on a key load it again from their effect, after React commits: a screen that the
 // same change unmounts (log-out, navigating away from the screen just answered) doesn't load it for nothing.
 const reloads = new Map<string, number>()
+// Keys whose data only changes with a deploy (templates): loaded once, not again on open or `refreshAll`.
+const fixed = new Set<string>()
 
 const LOADING = { status: 'loading' } as const
 const MISSING = { status: 'missing' } as const
@@ -30,7 +32,10 @@ function requestReload(cacheKey: string) {
   notify(cacheKey)
 }
 
-/** Starts a load of `cacheKey` unless one is in flight. A failed background reload keeps the result already shown. */
+/**
+ * Starts a load of `cacheKey` unless one is in flight. A failed background reload keeps the result already shown; a
+ * failed reload after `invalidate` shows the error.
+ */
 function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
   if (pending.has(cacheKey)) return
   // An invalidated request still finishes, but must not overwrite the newer one's result.
@@ -86,12 +91,19 @@ export function invalidateAll() {
 export function refreshAll(olderThanMs = 0) {
   const now = Date.now()
   for (const cacheKey of listeners.keys()) {
-    if (now - (loadedAt.get(cacheKey) ?? 0) >= olderThanMs) fetchKey(cacheKey, loaderOf(cacheKey)!)
+    if (!fixed.has(cacheKey) && now - (loadedAt.get(cacheKey) ?? 0) >= olderThanMs) fetchKey(cacheKey, loaderOf(cacheKey)!)
   }
 }
 
-/** Loads `load()` for `cacheKey`, showing a kept result at once and reloading it; `undefined` from `load` means not found. */
-export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | undefined>): Loadable<T> {
+/**
+ * Loads `load()` for `cacheKey`, showing a kept result at once and reloading it; `undefined` from `load` means not found.
+ * `fixed` data (templates) only changes with a deploy, so a kept result isn't loaded again.
+ */
+export function useLoadable<T>(
+  cacheKey: string | null,
+  load: () => Promise<T | undefined>,
+  { fixed: isFixed = false } = {},
+): Loadable<T> {
   // Reloads call the latest `load`, which may read the screen's current props.
   const loadRef = useRef(load)
   useLayoutEffect(() => void (loadRef.current = load))
@@ -103,7 +115,10 @@ export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | 
       open.set(listener, () => loadRef.current())
       return () => {
         open.delete(listener)
-        if (open.size === 0) listeners.delete(cacheKey)
+        if (open.size === 0) {
+          listeners.delete(cacheKey)
+          reloads.delete(cacheKey)
+        }
       }
     },
     [cacheKey],
@@ -119,13 +134,17 @@ export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | 
 
   useEffect(() => {
     if (!cacheKey) return
+    if (isFixed) fixed.add(cacheKey)
     // An error is retried at once; a kept result is shown while it loads again, unless it was just loaded.
     const cached = settled.get(cacheKey)
     if (cached?.status === 'error') {
       settled.delete(cacheKey)
       notify(cacheKey)
-    } else if (Date.now() - (loadedAt.get(cacheKey) ?? 0) < FRESH_MS) return
+    } else if (cached && fixed.has(cacheKey) && !stale.has(cacheKey)) return
+    else if (Date.now() - (loadedAt.get(cacheKey) ?? 0) < FRESH_MS) return
     fetchKey(cacheKey, loadRef.current)
+    // `isFixed` is part of what the key identifies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cacheKey, reload])
 
   return result as Loadable<T>

@@ -20,7 +20,11 @@ registerSW({
 // the app is in front and when a push arrives (push-sw.js). Coming back to the front reloads it too, once the account
 // check says the same user is in (AccountContext).
 setInterval(() => document.visibilityState === 'visible' && refreshAll(60 * 1000), 5 * 60 * 1000)
-navigator.serviceWorker?.addEventListener('message', (event) => event.data?.type === 'stl:refresh' && refreshAll())
+// A burst of pushes (one per signal after the daily check) reloads once; hidden tabs catch up when they come to the front.
+navigator.serviceWorker?.addEventListener(
+  'message',
+  (event) => event.data?.type === 'stl:refresh' && document.visibilityState === 'visible' && refreshAll(5 * 1000),
+)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

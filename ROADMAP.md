@@ -60,6 +60,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Catalan: English and Catalan catalogs in the frontend with language selection on sign-up and the account page (per-device storage, synced via `POST /account/locale`), embedded template texts (`Texts/ca.json`), localized backend error and validation messages, account emails, and signal alerts. Standard terminology in `docs/glossary-ca.md`. Every link in an email or invite starts with its language (`/ca/sign-up?invite=…`), so it opens the app in that language (#140).
 - The new-strategy draft survives a reload: it is kept in the tab's sessionStorage with its owner, so a refresh mid-flow no longer falls back to the default template; another user, or no session, still starts it over.
 - Welcome highlight page: Root page (`/`) for unauthenticated guests introduces the three core pillars (Strategy builder, Simulation, Trading tracker) with interactive expandable preview decks, zero broker sync trust callout, and direct guest (`/new`), register (`/sign-up`), and log-in (`/log-in`) pathways; authenticated users continue directly to the dashboard (#112).
+- Notifications and site polish (Ernest, 2026-11-03): a "buy signal ended" alert by email and app when an alerted live buy signal ends unanswered; a stock's signal alert at most once a day per strategy, so an extra check the same day doesn't alert it again; the mail icon (`icon-mail.svg`/`.png`) for the sender avatar; the Welcome page's three boxes start collapsed; the footer is a permission-aware site map.
 
 ## Next
 

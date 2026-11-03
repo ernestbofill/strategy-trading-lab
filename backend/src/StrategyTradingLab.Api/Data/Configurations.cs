@@ -246,7 +246,7 @@ class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         entity.ToTable("notifications", table =>
         {
             table.HasCheckConstraint("ck_notifications_signal_id",
-                "(kind IN ('signal', 'snoozed')) = (signal_id IS NOT NULL)");
+                "(kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL)");
         });
 
         // The dedupe contract: once per user, kind, channel, day and subject, a null subject included.

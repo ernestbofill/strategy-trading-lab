@@ -367,6 +367,42 @@ public class NotificationTests
     }
 
     [NeonFact]
+    public async Task A_second_signal_for_the_same_stock_the_same_day_is_not_alerted_and_an_alerted_buy_that_ends_is_told_once()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId, signalId, _) = await SeedAsync(db);
+        try
+        {
+            var today = new DateOnly(2026, 10, 23);
+            var sender = new Captured();
+            Assert.Equal(1, await Service(scope, sender).SendSignalAlertsAsync(today, default));
+            // An extra check the same day (a price that came in late) signals the same stock again, for the next session.
+            db.Signals.Add(new Signal
+            {
+                StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, StepNo = 2, MaxSteps = 5, StepAmount = 100, SignalDate = today,
+                ClosePrice = 187.5m, Facts = JsonDocument.Parse("{}"), Status = SignalStatus.Waiting,
+            });
+            await db.SaveChangesAsync();
+            Assert.Equal(0, await Service(scope, sender).SendSignalAlertsAsync(today, default));
+            Assert.Equal(1, await db.Notifications.CountAsync(n => n.UserId == userId && n.SentAt == null && n.Error != null));
+
+            await db.Signals.Where(s => s.Id == signalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, today));
+            var first = await Service(scope, sender).SendSignalEndedAsync(today, default);
+            var second = await Service(scope, sender).SendSignalEndedAsync(today, default);
+
+            Assert.Equal((1, 0), (first, second));
+            Assert.Equal(2, sender.Sent.Count);
+            Assert.Contains("the buy signal for", sender.Sent[1].Subject);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task An_alert_to_a_suppressed_address_is_recorded_as_skipped_not_sent_or_failed()
     {
         using var api = new AccountsApi();

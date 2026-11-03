@@ -44,6 +44,9 @@ describe('stockLine', () => {
     )
     expect(stockLine(row({ status: 'holding', steps: 5, rulesSteps: 5 }), 'live', 'EUR', words).detail).toBe('5 of 5 steps')
     expect(stockLine(row({ status: 'building', steps: 2 }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
+    // Every step skipped: the pill says where the user is, the line both.
+    const skipped = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, steps: 0, rulesSteps: 1 }), 'live', 'EUR', words)
+    expect([skipped.pill, skipped.detail]).toEqual(['OUT OF THE MARKET', 'Rules: In the market · You: Out of the market'])
   })
 
   it('formats bear drop statuses and trend out-of-the-market pills', () => {

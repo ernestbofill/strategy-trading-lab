@@ -29,7 +29,7 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   'welcome.builder.mock.t1Name': 'L\u00EDders amb descompte',
   'welcome.builder.mock.t1Rule': 'SMA 50 > 150 > 200 \u00B7 zona de descompte 5%\u201315%',
   'welcome.builder.mock.t1Budget': '100 \u20AC / pas \u00B7 m\u00E0x. 3 passos',
-  'welcome.builder.mock.t2Name': 'La remuntada',
+  'welcome.builder.mock.t2Name': 'Empreses en remuntada',
   'welcome.builder.mock.t2Rule': '\u2265 30% sota el m\u00E0xim anual \u00B7 +15% sobre SMA 50 + volum',
   'welcome.builder.mock.t2Budget': '150 \u20AC / pas \u00B7 m\u00E0x. 2 passos',
   'welcome.builder.mock.t3Name': 'Mercats baixistes',

@@ -1,13 +1,13 @@
 {
   "dip": {
-    "name": "Liders amb descompte",
+    "name": "Líders amb descompte",
     "tagline": "Espera una baixada",
     "idea": "Una acció en plena ratxa fa una petita baixada. L'estratègia assenyala aquest retrocés.",
-    "rationale": "Tria empreses liders: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera un retrocés curt, quan el preu cau uns quants punts percentuals.",
+    "rationale": "Tria empreses líders: empreses el preu de les quals puja de manera constant des de fa mesos perquè el mercat hi creu. Després espera un retrocés curt, quan el preu cau uns quants punts percentuals.",
     "rules": [
       {
         "marker": "01",
-        "text": "**És una guanyadora provada:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
+        "text": "**És una líder provada:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
       },
       {
         "marker": "02",
@@ -26,7 +26,7 @@
     },
     "stockStatus": {
       "zone": "la zona de descompte",
-      "notCandidate": "Per sota de la seva tendència a llarg"
+      "notCandidate": "Per sota de la seva tendència a llarg termini"
     },
     "settings": {
       "minGainPct": {
@@ -73,7 +73,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidata: quines accions vigila",
-        "lead": "Una acció és candidata, una guanyadora provada, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
+        "lead": "Una acció és candidata, una líder provada, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
       },
       "signal": {
         "title": "2 · Senyal de compra: quan una candidata dona senyal",
@@ -89,7 +89,7 @@
         "label": "Creixement provat",
         "detail": "Ha pujat un {value}% des del seu mínim ({level} → {endLevel}, cal un {min}%).",
         "short": "ha pujat un {value}% (cal un {min}%)",
-        "info": "El màxim recent ha de ser almenys un {min}% per sobre del tancament més baix dels últims mesos: només compten les guanyadores provades."
+        "info": "El màxim recent ha de ser almenys un {min}% per sobre del tancament més baix dels últims mesos: només compten les líders provades."
       },
       "stacked": {
         "label": "Mitjanes en ordre",
@@ -131,7 +131,7 @@
     "name": "Empreses en remuntada",
     "tagline": "Accions a l'alça",
     "idea": "Una acció que ha caigut molt comença a recuperar-se. L'estratègia busca un canvi de tendència confirmat.",
-    "rationale": "Una acció que ha caigut molt torna a pujar. En lloc d'endevinar el fons, l'estratègia espera que el canvi de tendència sembli confirmat i llavors assenyala compres per passos.",
+    "rationale": "Una acció que ha caigut molt torna a pujar. En lloc d'endevinar quan ha tocat fons, l'estratègia espera que el canvi de tendència sembli confirmat i llavors assenyala compres per passos.",
     "rules": [
       {
         "marker": "01",
@@ -358,7 +358,7 @@
       },
       "signal": {
         "title": "2 · Senyal de compra: el primer pas",
-        "lead": "El primer pas arriba quan el tancament rebota el rebot per sobre del tancament més baix de la caiguda."
+        "lead": "El primer pas arriba quan el tancament rebota per sobre del tancament més baix de la caiguda tant com marca el rebot."
       },
       "pace": {
         "title": "3 · Ritme: els passos següents",
@@ -377,7 +377,7 @@
         "detail": "{value}% per sobre del mínim de la caiguda ({endLevel}). El primer pas arriba al +{min}% ({level}).",
         "none": "Un cop en una caiguda, el primer pas arriba quan el tancament puja un +{min}% des del mínim de la caiguda.",
         "short": "{value}% sobre el mínim (cal un {min}%)",
-        "info": "En lloc d'endevinar el fons d'una caiguda, la primera compra espera un rebot del +{min}% des del mínim."
+        "info": "En lloc d'endevinar quan la caiguda ha tocat fons, la primera compra espera un rebot del +{min}% des del mínim."
       },
       "pace": {
         "label": "Pas següent",

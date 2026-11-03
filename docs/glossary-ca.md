@@ -41,6 +41,21 @@ Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sente
 | prompt (for the AI) | prompt (m.) |
 | AI round | ronda d'IA |
 | score | puntuació |
+| proven winner (Winners at a discount) | líder provada (empreses líders) |
+| on the rise | a l'alça |
+| guess the bottom | endevinar quan ha tocat fons |
+| waves (markets) | onades |
+| long-term trend | tendència a llarg termini |
+
+Template names and taglines (Ernest, 2026-11-03):
+
+| English | Catalan |
+| --- | --- |
+| Winners at a discount · Buy the dip | Líders amb descompte · Espera una baixada |
+| The comeback · Stocks on the rise | Empreses en remuntada · Accions a l'alça |
+| Bear markets · When the market is on sale | Mercats baixistes · Quan el mercat està barat |
+| Index trend · Take the wins, dodge the losses | Segueix un índex · Queda't amb els guanys, esquiva les pèrdues |
+| Your AI's top picks · Let your AI do the reading | Les millors tries de la teva IA · Deixa que la teva IA faci la lectura |
 
 Fixed sentences (word for word):
 

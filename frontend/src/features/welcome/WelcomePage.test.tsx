@@ -197,8 +197,8 @@ describe('WelcomePage', () => {
     expect(screen.getByText('100 € / pas · màx. 3 passos')).toBeTruthy()
     expect(screen.getByText('Accions a vigilar:')).toBeTruthy()
 
-    // Switch template in Catalan to "La remuntada"
-    fireEvent.click(screen.getByRole('button', { name: 'La remuntada' }))
+    // Switch template in Catalan to "Empreses en remuntada"
+    fireEvent.click(screen.getByRole('button', { name: 'Empreses en remuntada' }))
     expect(screen.getByText('≥ 30% sota el màxim anual · +15% sobre SMA 50 + volum')).toBeTruthy()
     expect(screen.getByText('150 € / pas · màx. 2 passos')).toBeTruthy()
 

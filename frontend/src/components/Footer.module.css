@@ -1,4 +1,5 @@
-/* The site footer: a compact site map. On phones each group's links flow on a line and wrap; from 768px the groups are columns. */
+/* The site footer: a compact site map without headings. On phones each group's links flow on a line and wrap; from 768px the
+   groups are columns over the whole width. */
 .footer {
   margin-top: auto;
   padding-top: var(--space-4);
@@ -8,25 +9,10 @@
   gap: var(--space-3);
 }
 
-.brand {
-  margin: 0 0 var(--space-1);
-  font: 700 12px/16px var(--font-mono);
-  letter-spacing: 1px;
-  color: var(--primary);
-}
-
 .nav {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.heading {
-  margin: 0;
-  font: 700 11px/16px var(--font-mono);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--ink);
 }
 
 .links {
@@ -72,16 +58,13 @@
 
 @media (min-width: 768px) {
   .nav {
-    flex-direction: row;
-    gap: 64px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-4);
   }
 
   .links {
     flex-direction: column;
-  }
-
-  .heading {
-    margin-bottom: var(--space-1);
   }
 }
 

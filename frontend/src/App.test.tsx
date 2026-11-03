@@ -124,11 +124,11 @@ describe('app routes', () => {
     open('/sign-up')
 
     expect(screen.getByRole('contentinfo')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Legal notice' })).toBeTruthy()
+    expect(screen.getAllByRole('link', { name: 'Legal notice' }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: 'Terms of use' }).length).toBeGreaterThan(0)
     expect(screen.getAllByRole('link', { name: 'Privacy policy' }).length).toBeGreaterThan(0)
-    expect(screen.getByRole('link', { name: 'Disclaimer' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'About' })).toBeTruthy()
+    expect(screen.getAllByRole('link', { name: 'Disclaimer' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'About' }).length).toBeGreaterThan(0)
   })
 
   it('renders public legal pages such as /legal/disclaimer', async () => {

@@ -112,4 +112,19 @@ describe('useLoadable', () => {
     await act(async () => {})
     expect(result.current).toEqual({ status: 'ready', data: 'waiting: 3' })
   })
+
+  it('shows the error when the reload after a change the user made fails, not the result from before it', async () => {
+    let online = true
+    const load = async () => {
+      if (!online) throw new Error('offline')
+      return 'trades: 2'
+    }
+    const { result } = renderHook(() => useLoadable('test:strategy:5', load))
+    await waitFor(() => expect(result.current).toEqual({ status: 'ready', data: 'trades: 2' }))
+
+    online = false
+    act(() => invalidate('test:strategy:5'))
+
+    await waitFor(() => expect(result.current).toEqual({ status: 'error' }))
+  })
 })

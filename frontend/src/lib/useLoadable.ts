@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status: 'missing' } | { status: 'ready'; data: T }
 
@@ -8,11 +8,15 @@ export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status
 const settled = new Map<string, Loadable<unknown>>()
 const pending = new Map<string, Promise<void>>()
 const loadedAt = new Map<string, number>()
-// Keys the user changed (`invalidate`): a screen that opens on one shows loading, not the old result, until it reloads.
+// Keys the user changed (`invalidate`): a screen that opens on one shows loading, not the old result, until it reloads,
+// and a failed reload shows the error instead of the result from before the change.
 const stale = new Set<string>()
 // The open screens on each key: the listener that re-renders each, with its latest loader.
 const listeners = new Map<string, Map<() => void, () => Promise<unknown>>>()
 const loaderOf = (cacheKey: string) => listeners.get(cacheKey)?.values().next().value
+// Bumped to have the open screens on a key load it again from their effect, after React commits: a screen that the
+// same change unmounts (log-out, navigating away from the screen just answered) doesn't load it for nothing.
+const reloads = new Map<string, number>()
 
 const LOADING = { status: 'loading' } as const
 const MISSING = { status: 'missing' } as const
@@ -21,7 +25,12 @@ const FRESH_MS = 2000
 
 const notify = (cacheKey: string) => listeners.get(cacheKey)?.forEach((_, listener) => listener())
 
-/** Starts a load of `cacheKey` unless one is in flight. A failed reload keeps the result already shown. */
+function requestReload(cacheKey: string) {
+  reloads.set(cacheKey, (reloads.get(cacheKey) ?? 0) + 1)
+  notify(cacheKey)
+}
+
+/** Starts a load of `cacheKey` unless one is in flight. A failed background reload keeps the result already shown. */
 function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
   if (pending.has(cacheKey)) return
   // An invalidated request still finishes, but must not overwrite the newer one's result.
@@ -36,7 +45,7 @@ function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
   }
   const failed = (): Loadable<unknown> => {
     const shown = settled.get(cacheKey)
-    return shown && shown.status !== 'loading' ? shown : { status: 'error' }
+    return shown && !stale.has(cacheKey) ? shown : { status: 'error' }
   }
   const started: Promise<void> = load().then(
     (data) => settle(data === undefined ? MISSING : { status: 'ready', data }, true),
@@ -53,25 +62,21 @@ export function invalidate(cacheKey: string) {
   pending.delete(cacheKey)
   loadedAt.delete(cacheKey)
   stale.add(cacheKey)
-  const load = loaderOf(cacheKey)
   // Screens showing it keep it until the reload lands; with none open, the next screen loads it.
-  if (load) fetchKey(cacheKey, load)
+  if (listeners.has(cacheKey)) requestReload(cacheKey)
   else settled.delete(cacheKey)
 }
 
 /**
  * Forgets every result: another user logged in (or out), so nothing loaded for the last one may show. Screens that
- * are open show loading and load again.
+ * are still open once React commits show loading and load again.
  */
 export function invalidateAll() {
   settled.clear()
   pending.clear()
   loadedAt.clear()
   stale.clear()
-  for (const cacheKey of listeners.keys()) {
-    fetchKey(cacheKey, loaderOf(cacheKey)!)
-    notify(cacheKey)
-  }
+  for (const cacheKey of listeners.keys()) requestReload(cacheKey)
 }
 
 /**
@@ -89,7 +94,7 @@ export function refreshAll(olderThanMs = 0) {
 export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | undefined>): Loadable<T> {
   // Reloads call the latest `load`, which may read the screen's current props.
   const loadRef = useRef(load)
-  useEffect(() => void (loadRef.current = load))
+  useLayoutEffect(() => void (loadRef.current = load))
   const subscribe = useCallback(
     (listener: () => void) => {
       if (!cacheKey) return () => {}
@@ -104,23 +109,24 @@ export function useLoadable<T>(cacheKey: string | null, load: () => Promise<T | 
     [cacheKey],
   )
   const getSnapshot = useCallback(() => (cacheKey ? (settled.get(cacheKey) ?? LOADING) : MISSING), [cacheKey])
+  const getReload = useCallback(() => (cacheKey ? (reloads.get(cacheKey) ?? 0) : 0), [cacheKey])
   const state = useSyncExternalStore(subscribe, getSnapshot)
+  const reload = useSyncExternalStore(subscribe, getReload)
   // A screen that opens on a key the user changed waits for the reload; one already showing it keeps it meanwhile.
-  const shown = useRef<string | null>(null)
-  const result = cacheKey && stale.has(cacheKey) && shown.current !== cacheKey ? LOADING : state
-  if (result.status !== 'loading') shown.current = cacheKey
+  const [shown, setShown] = useState<string | null>(null)
+  const result = cacheKey && stale.has(cacheKey) && shown !== cacheKey ? LOADING : state
+  if (result.status !== 'loading' && shown !== cacheKey) setShown(cacheKey)
 
   useEffect(() => {
     if (!cacheKey) return
     // An error is retried at once; a kept result is shown while it loads again, unless it was just loaded.
     const cached = settled.get(cacheKey)
-    if (cached?.status === 'error') settled.delete(cacheKey)
-    if (cached?.status !== 'error' && Date.now() - (loadedAt.get(cacheKey) ?? 0) < FRESH_MS) return
-    fetchKey(cacheKey, load)
-    if (cached?.status === 'error') notify(cacheKey)
-    // `load` is identified by `cacheKey`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cacheKey])
+    if (cached?.status === 'error') {
+      settled.delete(cacheKey)
+      notify(cacheKey)
+    } else if (Date.now() - (loadedAt.get(cacheKey) ?? 0) < FRESH_MS) return
+    fetchKey(cacheKey, loadRef.current)
+  }, [cacheKey, reload])
 
   return result as Loadable<T>
 }

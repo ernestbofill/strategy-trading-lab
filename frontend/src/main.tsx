@@ -16,10 +16,10 @@ registerSW({
   },
 })
 
-// The server changes data on its own (a new signal, an AI round due), so open screens reload it when the app comes back
-// to the front (unless loaded in the last 30 s), every few minutes while it is in front, and when a push arrives (push-sw.js).
-document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && refreshAll(30 * 1000))
-setInterval(() => document.visibilityState === 'visible' && refreshAll(), 5 * 60 * 1000)
+// The server changes data on its own (a new signal, an AI round due), so open screens reload it every few minutes while
+// the app is in front and when a push arrives (push-sw.js). Coming back to the front reloads it too, once the account
+// check says the same user is in (AccountContext).
+setInterval(() => document.visibilityState === 'visible' && refreshAll(60 * 1000), 5 * 60 * 1000)
 navigator.serviceWorker?.addEventListener('message', (event) => event.data?.type === 'stl:refresh' && refreshAll())
 
 createRoot(document.getElementById('root')!).render(

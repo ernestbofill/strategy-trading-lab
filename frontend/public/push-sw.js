@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     Promise.all([
       // An open app reloads what it shows, so the new signal is listed (main.tsx).
-      self.clients.matchAll({ type: 'window' }).then((windows) => windows.forEach((client) => client.postMessage({ type: 'stl:refresh' }))),
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => windows.forEach((client) => client.postMessage({ type: 'stl:refresh' }))),
       self.registration.showNotification(title, {
         body: message.body || '',
         tag: message.tag,

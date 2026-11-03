@@ -27,7 +27,7 @@
   - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, kept in the tab's sessionStorage (`draftStorage.ts`) so a reload keeps it; closing the tab drops it. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started.
   - `useTemplate.ts` holds the data hooks.
 - `src/features/account/`: sign-up, log-in, password links and the account page. `AccountContext` asks `/account/me` once at start and clears the user on a 401 (`onSessionEnded` in `api/`); `RequireAccount` is the layout route of every screen that needs a user, sending others to Log-in with `?next=` (only app paths, `safeNext`). Logging in or out forgets every cached load (`invalidateAll`).
-- `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading).
+- `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading). A kept result shows at once and is loaded again in the background: the server changes data on its own (new signals), so screens reload on open, when the app comes back to the front, every 5 minutes in front and on a push (`refreshAll`). Call `invalidate` after the user changes something, so the next screen doesn't show the old result first.
 
 ## Conventions
 

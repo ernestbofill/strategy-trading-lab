@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import { invalidate, invalidateAll, useLoadable } from './useLoadable'
+import { describe, expect, it, vi } from 'vitest'
+import { invalidate, invalidateAll, refreshAll, useLoadable } from './useLoadable'
 
 describe('useLoadable', () => {
   it('loads again on a screen that is open when every result is forgotten (another user)', async () => {
@@ -67,5 +67,39 @@ describe('useLoadable', () => {
     act(() => finish())
 
     await waitFor(() => expect(result.current).toEqual({ status: 'ready', data: 'count: 2' }))
+  })
+
+  it('shows the kept result on a screen that opens again, then what the server has now (a new signal)', async () => {
+    let waiting = 2
+    const load = async () => `waiting: ${waiting}`
+    const first = renderHook(() => useLoadable('test:dashboard:2', load))
+    await waitFor(() => expect(first.result.current).toEqual({ status: 'ready', data: 'waiting: 2' }))
+    first.unmount()
+
+    waiting = 3
+    const later = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_000)
+    const { result } = renderHook(() => useLoadable('test:dashboard:2', load))
+    expect(result.current).toEqual({ status: 'ready', data: 'waiting: 2' })
+    await waitFor(() => expect(result.current).toEqual({ status: 'ready', data: 'waiting: 3' }))
+    later.mockRestore()
+  })
+
+  it('reloads an open screen on refreshAll and keeps its result when the reload fails', async () => {
+    let waiting: number | null = 2
+    const load = async () => {
+      if (waiting === null) throw new Error('offline')
+      return `waiting: ${waiting}`
+    }
+    const { result } = renderHook(() => useLoadable('test:dashboard:3', load))
+    await waitFor(() => expect(result.current).toEqual({ status: 'ready', data: 'waiting: 2' }))
+
+    waiting = 3
+    act(() => refreshAll())
+    await waitFor(() => expect(result.current).toEqual({ status: 'ready', data: 'waiting: 3' }))
+
+    waiting = null
+    act(() => refreshAll())
+    await new Promise((r) => setTimeout(r, 10))
+    expect(result.current).toEqual({ status: 'ready', data: 'waiting: 3' })
   })
 })

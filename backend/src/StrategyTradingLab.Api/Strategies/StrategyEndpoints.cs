@@ -446,7 +446,7 @@ public static class StrategyEndpoints
                 ?? (ai is null ? null : aiScores!.ContainsKey(asset.Id) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
             var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
             var status = removed.Contains(asset.Id) ? StockStatus.Removed : StrategyPage.WithCandidacy(
-                StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey), checks);
+                StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
             var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
             var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
             decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number

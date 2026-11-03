@@ -127,6 +127,10 @@ public class PerformanceTests
         Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 1, null, "trend"));
         Assert.Equal(StockStatus.Signal, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.SellSignal, false, true, 0, null, "trend"));
         Assert.Equal(StockStatus.WaitingForYou, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.SellSignal, true, true, 1, null, "trend"));
+        // Live, the buy skipped: the rules hold it, the user doesn't.
+        Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 1, null, "trend", userSteps: 0));
+        Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 1, null, "trend", userSteps: 1));
+        Assert.Equal(StockStatus.Watching, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Building, false, false, 2, 5, "bear", userSteps: 0));
     }
 
     [Fact]

@@ -52,6 +52,10 @@
   flex-shrink: 0;
   max-width: 70%;
 }
+/* The sides clip their overflow, so a control inside one draws its focus ring inside its own box. */
+.topBar :focus-visible {
+  outline-offset: -2px;
+}
 
 .content {
   flex: 1;
@@ -110,7 +114,6 @@
   font: 13px/20px var(--font-ui);
 }
 
-/* The build version, centered so a tester can say which one they have, and DEV while the API uses the dev database. */
 .step {
   text-align: right;
 }

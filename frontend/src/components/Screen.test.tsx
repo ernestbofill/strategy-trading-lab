@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../api'
 import { AccountProvider } from '../features/account/AccountContext'
@@ -43,6 +43,41 @@ describe('TopBar', () => {
 
     expect(screen.queryByRole('link', { name: 'STL // LOG IN' })).toBeNull()
     expect(screen.getByText('STL // LOG IN')).toBeDefined()
+  })
+
+  it('goes up and names the parent on a screen opened directly, and back once opened from the app', () => {
+    render(
+      <MemoryRouter initialEntries={['/strategies/s1/signals/g1']}>
+        <Routes>
+          <Route path="/" element={<p>Dashboard page</p>} />
+          <Route
+            path="/strategies/:id"
+            element={<TopBar back="/" />}
+          />
+          <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    // Opened from a notification: up to the strategy, which goes on up to the dashboard, not back to the signal.
+    fireEvent.click(screen.getByRole('link', { name: '\u2190 STRATEGY' }))
+    fireEvent.click(screen.getByRole('link', { name: '\u2190 DASHBOARD' }))
+    expect(screen.getByText('Dashboard page')).toBeDefined()
+  })
+
+  it('goes back in the history when the screen was opened from inside the app', () => {
+    render(
+      <MemoryRouter initialEntries={['/strategies/s1']}>
+        <Routes>
+          <Route path="/strategies/:id" element={<Link to="/strategies/s1/signals/g1">Open signal</Link>} />
+          <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('link', { name: 'Open signal' }))
+    fireEvent.click(screen.getByRole('link', { name: '\u2190 BACK' }))
+    expect(screen.getByRole('link', { name: 'Open signal' })).toBeDefined()
   })
 
   it('shows FE version as a link to /admin only when user is an owner', async () => {

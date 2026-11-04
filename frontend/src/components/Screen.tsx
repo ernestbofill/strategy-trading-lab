@@ -1,11 +1,25 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useIsOwner } from '../features/account/AccountContext'
+import { useIsOwner, useRole } from '../features/account/AccountContext'
 import { useBackendVersion } from '../lib/backendVersion'
 import { useT } from '../i18n/I18n'
+import type { MessageKey } from '../i18n/messages/en'
 import { Footer } from './Footer'
 import styles from './Screen.module.css'
 import { Tag } from './Tag'
+
+/** Marks a history entry reached by going up: the screen before it isn't one the user came from. */
+interface UpState {
+  up?: boolean
+}
+
+/** The name of the parent `back` leads to, for the up link of a screen opened directly. */
+function upLabel(to: string, guest: boolean): MessageKey {
+  if (to === '/') return guest ? 'common.up.home' : 'common.up.dashboard'
+  if (to === '/admin') return 'common.up.admin'
+  if (/^\/strategies\/[^/]+$/.test(to)) return 'common.up.strategy'
+  return 'common.back'
+}
 
 interface TopBarProps {
   /** Shown on the left. Pass `back` for a "← BACK" link instead. */
@@ -14,7 +28,11 @@ interface TopBarProps {
   titleLink?: string
   /** Accessible label for the title link. Defaults to `${title}, home`. */
   titleLinkAriaLabel?: string
-  /** Where "← BACK" goes when the screen was opened directly. Otherwise it goes one step back in the history. */
+  /**
+   * The screen's parent. Opened from inside the app, "← BACK" goes one step back in the history.
+   * Opened directly (a notification, an email link), the link goes up to this parent and names it
+   * ("← STRATEGY", "← DASHBOARD") where it can.
+   */
   back?: string
   step?: string
   /** Shown on the right instead of the step: a link such as "ACCOUNT". */
@@ -24,8 +42,11 @@ interface TopBarProps {
 export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside }: TopBarProps) {
   const t = useT()
   const navigate = useNavigate()
+  const location = useLocation()
   // The first entry of the history has the key 'default': there is nothing to go back to.
-  const hasHistory = useLocation().key !== 'default'
+  // An entry reached by going up has nothing of the app's before it either, so it keeps going up.
+  const hasHistory = location.key !== 'default' && !(location.state as UpState | null)?.up
+  const guest = useRole() === null
   const isOwner = useIsOwner()
   const onDevDatabase = useBackendVersion()?.database === 'dev'
   const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -39,8 +60,9 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
   return (
     <header className={styles.topBar}>
       {back ? (
-        <Link to={back} onClick={goBack} className={styles.back}>
-          {t('common.back')}
+        // Going up replaces the entry, so the parent's own back can't return here.
+        <Link to={back} onClick={goBack} replace state={{ up: true } satisfies UpState} className={styles.back}>
+          {t(hasHistory ? 'common.back' : upLabel(back, guest))}
         </Link>
       ) : titleLink ? (
         <Link

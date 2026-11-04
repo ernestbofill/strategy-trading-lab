@@ -89,6 +89,8 @@ These apply to every screen, email and alert.
 
 **Headers.** Every screen of the new-strategy flow has a top bar with "← BACK" on the left and the step ("1 / 5" to "5 / 5") on the right. The first screen shows "STL // NEW STRATEGY" instead of a back link (when reached from the dashboard, show "← BACK" to the dashboard). Back goes to the previous screen.
 
+**Back and up (every screen, #PR).** Opened from inside the app, "← BACK" goes to the previous screen. Opened directly (a notification, an email link, a typed address), there is no previous screen, so the link goes up to the screen's parent and names it: "← STRATEGY" (a signal, stock, AI round, the strategy's settings or stock list), "← DASHBOARD" (a strategy, the account), "← ADMIN" (the admin pages), "← HOME" (the legal pages for a guest; "← DASHBOARD" when signed in). Other parents keep "← BACK". Going up replaces the screen in the history, so the parent goes on up rather than back to it: signal → strategy → dashboard. (Ernest, 2026-11-04)
+
 ## 5. The templates
 
 Five templates. The first four exist in the POC; *Your AI's top picks* is new. Use the POC defaults below as the tested defaults. Where the screen copy simplifies a rule, the POC rule is what the engine runs.

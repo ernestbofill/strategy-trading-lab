@@ -45,23 +45,26 @@ describe('TopBar', () => {
     expect(screen.getByText('STL // LOG IN')).toBeDefined()
   })
 
-  it('goes up and names the parent on a screen opened directly, and back once opened from the app', () => {
+  it('goes up and names the parent on a screen opened directly, without looping back', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
     render(
       <MemoryRouter initialEntries={['/strategies/s1/signals/g1']}>
-        <Routes>
-          <Route path="/" element={<p>Dashboard page</p>} />
-          <Route
-            path="/strategies/:id"
-            element={<TopBar back="/" />}
-          />
-          <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
-        </Routes>
+        <AccountProvider>
+          <Routes>
+            <Route path="/" element={<p>Dashboard page</p>} />
+            <Route
+              path="/strategies/:id"
+              element={<TopBar back="/" />}
+            />
+            <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
+          </Routes>
+        </AccountProvider>
       </MemoryRouter>,
     )
 
     // Opened from a notification: up to the strategy, which goes on up to the dashboard, not back to the signal.
     fireEvent.click(screen.getByRole('link', { name: '\u2190 STRATEGY' }))
-    fireEvent.click(screen.getByRole('link', { name: '\u2190 DASHBOARD' }))
+    fireEvent.click(await screen.findByRole('link', { name: '\u2190 DASHBOARD' }))
     expect(screen.getByText('Dashboard page')).toBeDefined()
   })
 

@@ -42,7 +42,7 @@
   - Show visible focus with the `--border-focus` outline.
   - Make sure each control has a name a screen reader can announce.
 - **Responsive:** design at 390px first, then check at 768px and 1280px+. Wider layouts use `Columns` and grid; the primary action moves to the right of its note.
-- **Back:** `TopBar` goes one step back in the browser history, whichever page you came from. Its `back` is only where it goes when the screen was opened directly.
+- **Back:** `TopBar` goes one step back in the browser history, whichever page you came from. Its `back` is the screen's parent: when the screen was opened directly (a notification, an email link) the link goes up there instead, named after it where it can ("← STRATEGY", "← DASHBOARD", `upLabel`), and replaces the entry so the parent keeps going up.
 - **Not built yet:** hide the control until the item that builds its screen brings it back (ROADMAP item 27). Never leave a dead link or button.
 - Keep components small and typed. Don't add a dependency without a clear need.
 - Create components for reusable UI. But don't over-engineer it, consider if its a concept that makes sense as a reusable component.
@@ -50,7 +50,7 @@
 
 ## Versioning
 
-- Bump the version in `frontend/package.json` (and `package-lock.json`) in every PR that changes the app, above `main`'s. CI fails without it. It is shown in the app's top bar and nothing bumps it automatically.
+- Bump the version in `frontend/package.json` (and `package-lock.json`) in every PR that changes the app, above `main`'s. CI fails without it. It is shown at the end of the site footer and nothing bumps it automatically.
 - Bump the minor number for a new screen or feature (`0.1.0-alpha` → `0.2.0-alpha`) and the patch number for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`). Keep the `-alpha` suffix.
 
 ## Testing (Vitest + Testing Library)

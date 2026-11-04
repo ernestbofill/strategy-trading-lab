@@ -9,6 +9,11 @@ export const common = {
   'common.indexTip.text': 'Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold.',
   /** The top bar's link to the screen before. */
   'common.back': '\u2190 BACK',
+  /** The top bar's link up to the parent, on a screen opened directly (a notification, an email link). */
+  'common.up.dashboard': '\u2190 DASHBOARD',
+  'common.up.strategy': '\u2190 STRATEGY',
+  'common.up.admin': '\u2190 ADMIN',
+  'common.up.home': '\u2190 HOME',
   /** Tooltip and accessible name for the header version link to the admin page. */
   'common.admin': 'Admin',
   /** Tooltip of the DEV tag in the top bar. */

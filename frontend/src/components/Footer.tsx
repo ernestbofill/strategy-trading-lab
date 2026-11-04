@@ -8,7 +8,9 @@ import { accountNotificationsPath, logInPath, signUpPath } from '../features/acc
 import { aboutPath, disclaimerPath, legalNoticePath, privacyPath, termsPath } from '../features/legal/paths'
 import { homePath, pickPath } from '../features/new-strategy/paths'
 import { welcomePath } from '../features/welcome/paths'
+import { useBackendVersion } from '../lib/backendVersion'
 import styles from './Footer.module.css'
+import { Tag } from './Tag'
 
 interface SiteLink {
   to: string
@@ -85,11 +87,12 @@ function groupsFor(role: Role | null | undefined): LinkGroup[] {
   return role === 'owner' ? [...user, owner, legal] : [...user, legal]
 }
 
-/** The site footer: every page the user may open, in columns without headings (the title only names a column for screen readers), then the short disclaimer. */
+/** The site footer: every page the user may open, in columns without headings (the title only names a column for screen readers), then the short disclaimer and the app's version. */
 export function Footer() {
   const t = useT()
   const groups = groupsFor(useRole())
   const { pathname, hash } = useLocation()
+  const onDevDatabase = useBackendVersion()?.database === 'dev'
   return (
     <footer className={styles.footer}>
       <nav aria-label={t('footer.siteMap')} className={styles.nav}>
@@ -110,7 +113,17 @@ export function Footer() {
           </ul>
         ))}
       </nav>
-      <p className={styles.disclaimer}>{t('common.disclaimer')}</p>
+      <div className={styles.bottom}>
+        <p className={styles.disclaimer}>{t('common.disclaimer')}</p>
+        <p className={styles.version}>
+          v{__APP_VERSION__}
+          {onDevDatabase && (
+            <Tag tone="dev" title={t('common.devDatabase')}>
+              DEV
+            </Tag>
+          )}
+        </p>
+      </div>
     </footer>
   )
 }

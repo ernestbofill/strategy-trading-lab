@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../api'
 import { AccountProvider } from '../features/account/AccountContext'
@@ -45,35 +45,42 @@ describe('TopBar', () => {
     expect(screen.getByText('STL // LOG IN')).toBeDefined()
   })
 
-  it('shows FE version as a link to /admin only when user is an owner', async () => {
-    vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('owner'))
-
+  it('goes up and names the parent on a screen opened directly, without looping back', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/strategies/s1/signals/g1']}>
         <AccountProvider>
-          <TopBar title="STL // DASHBOARD" />
+          <Routes>
+            <Route path="/" element={<p>Dashboard page</p>} />
+            <Route
+              path="/strategies/:id"
+              element={<TopBar back="/" />}
+            />
+            <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
+          </Routes>
         </AccountProvider>
       </MemoryRouter>,
     )
 
-    const versionLink = await screen.findByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })
-    expect(versionLink.getAttribute('href')).toBe('/admin')
+    // Opened from a notification: up to the strategy, which goes on up to the dashboard, not back to the signal.
+    fireEvent.click(screen.getByRole('link', { name: '\u2190 STRATEGY' }))
+    fireEvent.click(await screen.findByRole('link', { name: '\u2190 DASHBOARD' }))
+    expect(screen.getByText('Dashboard page')).toBeDefined()
   })
 
-  it('does not show FE version link when user is not an owner', async () => {
-    const getAccountSpy = vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
-
+  it('goes back in the history when the screen was opened from inside the app', () => {
     render(
-      <MemoryRouter>
-        <AccountProvider>
-          <TopBar title="STL // DASHBOARD" />
-        </AccountProvider>
+      <MemoryRouter initialEntries={['/strategies/s1']}>
+        <Routes>
+          <Route path="/strategies/:id" element={<Link to="/strategies/s1/signals/g1">Open signal</Link>} />
+          <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
+        </Routes>
       </MemoryRouter>,
     )
 
-    await waitFor(() => expect(getAccountSpy).toHaveBeenCalled())
-    expect(screen.queryByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })).toBeNull()
-    expect(screen.queryByText(new RegExp(`v${__APP_VERSION__}`))).toBeNull()
+    fireEvent.click(screen.getByRole('link', { name: 'Open signal' }))
+    fireEvent.click(screen.getByRole('link', { name: '\u2190 BACK' }))
+    expect(screen.getByRole('link', { name: 'Open signal' })).toBeDefined()
   })
 })
 
@@ -93,5 +100,7 @@ describe('Screen', () => {
     expect(main.contains(action)).toBe(true)
     expect(main.contains(screen.getByText('A hint'))).toBe(true)
     expect(action.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // The version is in the footer, for anyone, not in the top bar.
+    expect(footer.textContent).toContain(`v${__APP_VERSION__}`)
   })
 })

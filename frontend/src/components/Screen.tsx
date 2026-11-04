@@ -1,11 +1,24 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useIsOwner } from '../features/account/AccountContext'
-import { useBackendVersion } from '../lib/backendVersion'
+import { useRole } from '../features/account/AccountContext'
+import type { Role } from '../api'
 import { useT } from '../i18n/I18n'
+import type { MessageKey } from '../i18n/messages/en'
 import { Footer } from './Footer'
 import styles from './Screen.module.css'
-import { Tag } from './Tag'
+
+/** Marks a history entry reached by going up: the screen before it isn't one the user came from. */
+interface UpState {
+  up?: boolean
+}
+
+/** The name of the parent `back` leads to, for the up link of a screen opened directly. `role` is undefined while the account loads. */
+function upLabel(to: string, role: Role | null | undefined): MessageKey {
+  if (to === '/') return role === undefined ? 'common.back' : role === null ? 'common.up.home' : 'common.up.dashboard'
+  if (to === '/admin') return 'common.up.admin'
+  if (/^\/strategies\/[^/]+$/.test(to)) return 'common.up.strategy'
+  return 'common.back'
+}
 
 interface TopBarProps {
   /** Shown on the left. Pass `back` for a "← BACK" link instead. */
@@ -14,7 +27,11 @@ interface TopBarProps {
   titleLink?: string
   /** Accessible label for the title link. Defaults to `${title}, home`. */
   titleLinkAriaLabel?: string
-  /** Where "← BACK" goes when the screen was opened directly. Otherwise it goes one step back in the history. */
+  /**
+   * The screen's parent. Opened from inside the app, "← BACK" goes one step back in the history.
+   * Opened directly (a notification, an email link), the link goes up to this parent and names it
+   * ("← STRATEGY", "← DASHBOARD") where it can.
+   */
   back?: string
   step?: string
   /** Shown on the right instead of the step: a link such as "ACCOUNT". */
@@ -24,10 +41,11 @@ interface TopBarProps {
 export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside }: TopBarProps) {
   const t = useT()
   const navigate = useNavigate()
+  const location = useLocation()
   // The first entry of the history has the key 'default': there is nothing to go back to.
-  const hasHistory = useLocation().key !== 'default'
-  const isOwner = useIsOwner()
-  const onDevDatabase = useBackendVersion()?.database === 'dev'
+  // An entry reached by going up has nothing of the app's before it either, so it keeps going up.
+  const hasHistory = location.key !== 'default' && !(location.state as UpState | null)?.up
+  const role = useRole()
   const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
     const plainClick = e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
     if (hasHistory && plainClick) {
@@ -39,8 +57,9 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
   return (
     <header className={styles.topBar}>
       {back ? (
-        <Link to={back} onClick={goBack} className={styles.back}>
-          {t('common.back')}
+        // Going up replaces the entry, so the parent's own back can't return here.
+        <Link to={back} onClick={goBack} replace state={{ up: true } satisfies UpState} className={styles.back}>
+          {t(hasHistory ? 'common.back' : upLabel(back, role))}
         </Link>
       ) : titleLink ? (
         <Link
@@ -53,23 +72,6 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
       ) : (
         <div>{title}</div>
       )}
-      <div className={styles.version}>
-        {isOwner && (
-          <Link
-            to="/admin"
-            className={styles.versionLink}
-            aria-label={`v${__APP_VERSION__}${onDevDatabase ? ' DEV' : ''}, ${t('common.admin')}`}
-            title={t('common.admin')}
-          >
-            v{__APP_VERSION__}
-            {onDevDatabase && (
-              <Tag tone="dev" title={t('common.devDatabase')}>
-                DEV
-              </Tag>
-            )}
-          </Link>
-        )}
-      </div>
       {(step || aside) && <div className={styles.step}>{step ?? aside}</div>}
     </header>
   )

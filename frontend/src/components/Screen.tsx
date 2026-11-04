@@ -1,6 +1,7 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useIsOwner, useRole } from '../features/account/AccountContext'
+import type { Role } from '../api'
 import { useBackendVersion } from '../lib/backendVersion'
 import { useT } from '../i18n/I18n'
 import type { MessageKey } from '../i18n/messages/en'
@@ -13,9 +14,9 @@ interface UpState {
   up?: boolean
 }
 
-/** The name of the parent `back` leads to, for the up link of a screen opened directly. */
-function upLabel(to: string, guest: boolean): MessageKey {
-  if (to === '/') return guest ? 'common.up.home' : 'common.up.dashboard'
+/** The name of the parent `back` leads to, for the up link of a screen opened directly. `role` is undefined while the account loads. */
+function upLabel(to: string, role: Role | null | undefined): MessageKey {
+  if (to === '/') return role === undefined ? 'common.back' : role === null ? 'common.up.home' : 'common.up.dashboard'
   if (to === '/admin') return 'common.up.admin'
   if (/^\/strategies\/[^/]+$/.test(to)) return 'common.up.strategy'
   return 'common.back'
@@ -46,7 +47,7 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
   // The first entry of the history has the key 'default': there is nothing to go back to.
   // An entry reached by going up has nothing of the app's before it either, so it keeps going up.
   const hasHistory = location.key !== 'default' && !(location.state as UpState | null)?.up
-  const guest = useRole() === null
+  const role = useRole()
   const isOwner = useIsOwner()
   const onDevDatabase = useBackendVersion()?.database === 'dev'
   const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -62,7 +63,7 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
       {back ? (
         // Going up replaces the entry, so the parent's own back can't return here.
         <Link to={back} onClick={goBack} replace state={{ up: true } satisfies UpState} className={styles.back}>
-          {t(hasHistory ? 'common.back' : upLabel(back, guest))}
+          {t(hasHistory ? 'common.back' : upLabel(back, role))}
         </Link>
       ) : titleLink ? (
         <Link

@@ -15,10 +15,12 @@
   }
 }
 
+/* One line: the back link or title on the left, the step on the right. Text too long for it ends in "…", never wraps. */
 .topBar {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  column-gap: var(--space-2);
+  display: flex;
+  justify-content: space-between;
+  column-gap: var(--space-3);
+  white-space: nowrap;
   align-items: center;
   height: 44px;
   padding: 0 var(--gutter);
@@ -29,21 +31,26 @@
 }
 
 .back,
-.titleLink,
-.versionLink {
+.titleLink {
   color: var(--ink-muted);
   text-decoration: none;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
+  display: block;
+  line-height: 44px;
 }
 .back:hover,
-.titleLink:hover,
-.versionLink:hover {
+.titleLink:hover {
   color: var(--primary);
 }
-.versionLink {
-  gap: var(--space-2);
+
+/* The left side keeps its full text first; the step gives way, then both end in "…". */
+.topBar > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topBar > :first-child {
+  flex-shrink: 0;
+  max-width: 70%;
 }
 
 .content {
@@ -104,14 +111,6 @@
 }
 
 /* The build version, centered so a tester can say which one they have, and DEV while the API uses the dev database. */
-.version {
-  grid-column: 2;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
 .step {
-  grid-column: 3;
-  justify-self: end;
   text-align: right;
 }

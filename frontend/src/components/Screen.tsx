@@ -1,13 +1,11 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useIsOwner, useRole } from '../features/account/AccountContext'
+import { useRole } from '../features/account/AccountContext'
 import type { Role } from '../api'
-import { useBackendVersion } from '../lib/backendVersion'
 import { useT } from '../i18n/I18n'
 import type { MessageKey } from '../i18n/messages/en'
 import { Footer } from './Footer'
 import styles from './Screen.module.css'
-import { Tag } from './Tag'
 
 /** Marks a history entry reached by going up: the screen before it isn't one the user came from. */
 interface UpState {
@@ -48,8 +46,6 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
   // An entry reached by going up has nothing of the app's before it either, so it keeps going up.
   const hasHistory = location.key !== 'default' && !(location.state as UpState | null)?.up
   const role = useRole()
-  const isOwner = useIsOwner()
-  const onDevDatabase = useBackendVersion()?.database === 'dev'
   const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
     const plainClick = e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
     if (hasHistory && plainClick) {
@@ -76,23 +72,6 @@ export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside
       ) : (
         <div>{title}</div>
       )}
-      <div className={styles.version}>
-        {isOwner && (
-          <Link
-            to="/admin"
-            className={styles.versionLink}
-            aria-label={`v${__APP_VERSION__}${onDevDatabase ? ' DEV' : ''}, ${t('common.admin')}`}
-            title={t('common.admin')}
-          >
-            v{__APP_VERSION__}
-            {onDevDatabase && (
-              <Tag tone="dev" title={t('common.devDatabase')}>
-                DEV
-              </Tag>
-            )}
-          </Link>
-        )}
-      </div>
       {(step || aside) && <div className={styles.step}>{step ?? aside}</div>}
     </header>
   )

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../api'
@@ -82,37 +82,6 @@ describe('TopBar', () => {
     fireEvent.click(screen.getByRole('link', { name: '\u2190 BACK' }))
     expect(screen.getByRole('link', { name: 'Open signal' })).toBeDefined()
   })
-
-  it('shows FE version as a link to /admin only when user is an owner', async () => {
-    vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('owner'))
-
-    render(
-      <MemoryRouter>
-        <AccountProvider>
-          <TopBar title="STL // DASHBOARD" />
-        </AccountProvider>
-      </MemoryRouter>,
-    )
-
-    const versionLink = await screen.findByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })
-    expect(versionLink.getAttribute('href')).toBe('/admin')
-  })
-
-  it('does not show FE version link when user is not an owner', async () => {
-    const getAccountSpy = vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
-
-    render(
-      <MemoryRouter>
-        <AccountProvider>
-          <TopBar title="STL // DASHBOARD" />
-        </AccountProvider>
-      </MemoryRouter>,
-    )
-
-    await waitFor(() => expect(getAccountSpy).toHaveBeenCalled())
-    expect(screen.queryByRole('link', { name: new RegExp(`v${__APP_VERSION__}`) })).toBeNull()
-    expect(screen.queryByText(new RegExp(`v${__APP_VERSION__}`))).toBeNull()
-  })
 })
 
 describe('Screen', () => {
@@ -131,5 +100,7 @@ describe('Screen', () => {
     expect(main.contains(action)).toBe(true)
     expect(main.contains(screen.getByText('A hint'))).toBe(true)
     expect(action.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // The version is in the footer, for anyone, not in the top bar.
+    expect(footer.textContent).toContain(`v${__APP_VERSION__}`)
   })
 })

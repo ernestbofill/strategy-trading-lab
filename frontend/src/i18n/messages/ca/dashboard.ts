@@ -2,7 +2,7 @@ import type { dashboard as en } from '../en/dashboard'
 
 export const dashboard: Record<keyof typeof en, string> = {
   'dashboard.what': 'les teves estratègies',
-  'dashboard.title': 'STL // TAULER',
+  'dashboard.title': 'STL // DASHBOARD',
   'dashboard.account': 'Compte',
   'dashboard.heading': 'Les teves estratègies',
   'dashboard.newStrategy': '+ Nova estratègia',

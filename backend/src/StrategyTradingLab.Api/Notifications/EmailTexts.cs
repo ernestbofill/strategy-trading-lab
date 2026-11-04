@@ -33,7 +33,7 @@ public static class EmailTexts
     static string DisclaimerFor(string locale) => DisclaimerMsg.In(locale);
 
     // Modes
-    static readonly Message ModeLive = new("Live", "En directe");
+    static readonly Message ModeLive = new("Live", "Real");
     static readonly Message ModeSimulation = new("Simulation", "Simulació");
     static string ModeName(StrategyMode mode, string locale) =>
         (mode == StrategyMode.Live ? ModeLive : ModeSimulation).In(locale);
@@ -53,7 +53,7 @@ public static class EmailTexts
 
     // Signal text entries
     static readonly Message SaleTarget = new("a sale", "una venda");
-    static readonly Message StepInfo = new(" Under your settings that's step {0} of {1}{2}.", " Segons la teva configuració, és el pas {0} de {1}{2}.");
+    static readonly Message StepInfo = new(" Under your settings that's step {0} of {1}{2}.", " Segons la teva configuració, és la fase {0} de {1}{2}.");
     static readonly Message SignalHeadline = new("Your rules for {0} are met for {1}: {2}.", "Les teves regles per a {0} es compleixen per a {1}: {2}.");
     static readonly Message CloseOn = new("Close on {0}: {1}", "Tancament del {0}: {1}");
 
@@ -86,7 +86,7 @@ public static class EmailTexts
     static readonly Message OverviewWaitingSection = new("Waiting for you", "T'espera a tu");
     static readonly Message OverviewAiRoundItem = new("Time for the AI round of {0}.", "És l'hora de la ronda d'IA de {0}.");
     static readonly Message OverviewSaleDetail = new(": sale", ": venda");
-    static readonly Message OverviewStepDetail = new(": step {0} of {1}", ": pas {0} de {1}");
+    static readonly Message OverviewStepDetail = new(": step {0} of {1}", ": fase {0} de {1}");
     static readonly Message OverviewWaitingSignal = new("{0}, {1}{2}, close on {3}.", "{0}, {1}{2}, tancament del {3}.");
     static readonly Message OverviewWhatChangedSection = new("What changed today", "Què ha canviat avui");
     static readonly Message OverviewStockChangesSection = new("Stock changes", "Canvis de les teves accions");

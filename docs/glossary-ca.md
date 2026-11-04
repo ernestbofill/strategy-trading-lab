@@ -9,21 +9,23 @@ Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sente
 | stock | acció (pl. accions) |
 | fund | fons |
 | index fund | fons indexat |
-| step (not *tranche*) | pas (pl. passos) |
+| step (not *tranche*) | fase (f., pl. fases): "la primera fase", "Fase 2 de 5", "compra per fases". Not *pas*. (Ernest, 2026-11-03) |
+| step amount | import de la fase / import de cada fase; "€100 per fase" |
+| size (of money) | import, never *mida* |
 | signal | senyal |
 | strategy | estratègia |
 | template | plantilla |
 | budget | pressupost |
 | Simulation (mode) | Simulació |
-| Live (mode) | En directe |
+| Live (mode) | Real |
 | trade (noun) | operació |
 | buy / sell | compra / venda |
 | broker | broker |
-| dashboard | tauler |
+| dashboard | dashboard |
 | account | compte |
-| sign up / log in / log out | crear un compte / iniciar la sessió / tancar la sessió |
+| sign up / log in / log out | crear un compte / iniciar sessió / tancar sessió |
 | password | contrasenya |
-| email | correu electrònic (short: correu) |
+| email | correu electrònic (short: mail) |
 | settings / Advanced settings | configuració / Configuració avançada |
 | confirm | confirma |
 | Save | Desa |
@@ -32,15 +34,30 @@ Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sente
 | time zone | zona horària |
 | currency | moneda |
 | the worst year | el pitjor any |
-| index fund (comparison) | fons indexat |
-| peak / drop / dip | màxim / caiguda / retrocés |
+| index fund (comparison) | fons de referència (short: referència) |
+| peak / drop / dip | màxim / caiguda / baixada |
 | discount zone | zona de descompte |
-| snooze | ajorna |
+| snooze | posposa |
 | skip | omet |
 | bought / sold | comprat / venut |
 | prompt (for the AI) | prompt (m.) |
 | AI round | ronda d'IA |
 | score | puntuació |
+| proven winner (Winners at a discount) | líder demostrat (empreses líders) |
+| on the rise | a l'alça |
+| guess the bottom | endevinar quan ha tocat fons |
+| waves (markets) | onades |
+| long-term trend | tendència a llarg termini (short: tendència a llarg) |
+
+Template names and taglines (Ernest, 2026-11-03):
+
+| English | Catalan |
+| --- | --- |
+| Winners at a discount · Buy the dip | Líders amb descompte · Espera una baixada |
+| The comeback · Stocks on the rise | Empreses en remuntada · Accions a l'alça |
+| Bear markets · When the market is on sale | Mercats baixistes · Quan el mercat està barat |
+| Index trend · Take the wins, dodge the losses | Segueix un índex · Queda't amb els guanys, esquiva les pèrdues |
+| Your AI's top picks · Let your AI do the reading | Les millors tries de la teva IA · Deixa que la teva IA faci la lectura |
 
 Fixed sentences (word for word):
 

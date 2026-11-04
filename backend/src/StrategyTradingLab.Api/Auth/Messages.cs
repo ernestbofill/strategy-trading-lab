@@ -20,24 +20,24 @@ public readonly record struct Message(string En, string Ca)
 public static class Messages
 {
     // Account
-    public static readonly Message UseAnEmail = new("Use an email address, e.g. you@gmail.com.", "Fes servir una adreça de correu, p. ex. tu@gmail.com.");
+    public static readonly Message UseAnEmail = new("Use an email address, e.g. you@gmail.com.", "Fes servir una adreça de correu electrònic, p. ex. tu@gmail.com.");
     public static readonly Message PasswordTooShort = new("Use at least {0} characters.", "Fes servir almenys {0} caràcters.");
     public static readonly Message PasswordTooLong = new("Use at most {0} characters.", "Fes servir com a màxim {0} caràcters.");
-    public static readonly Message PasswordIsEmail = new("Don't use your email as the password.", "No facis servir el teu correu com a contrasenya.");
+    public static readonly Message PasswordIsEmail = new("Don't use your email as the password.", "No facis servir el teu mail com a contrasenya.");
     public static readonly Message PickLanguage = new("Pick English or Catalan.", "Tria anglès o català.");
     public static readonly Message PickCurrency = new("Pick a currency from the list.", "Tria una moneda de la llista.");
     public static readonly Message PickTimeZone = new("Pick your time zone.", "Tria la teva zona horària.");
     public static readonly Message TickTheBox = new("Tick the box to go on.", "Marca la casella per continuar.");
     public static readonly Message InvalidTermsVersion = new("Please accept the current version of the terms.", "Accepta la versió actual de les condicions.");
-    public static readonly Message CheckYourEmail = new("Check your email.", "Revisa el teu correu.");
-    public static readonly Message WrongLogIn = new("That email and password don't match.", "Aquest correu i aquesta contrasenya no coincideixen.");
+    public static readonly Message CheckYourEmail = new("Check your email.", "Revisa el teu mail.");
+    public static readonly Message WrongLogIn = new("That email and password don't match.", "Aquest mail i aquesta contrasenya no coincideixen.");
     public static readonly Message TooManyTries = new("Too many tries. Wait a few minutes, or reset your password.",
         "Massa intents. Espera uns minuts o restableix la contrasenya.");
     public static readonly Message ExpiredLink = new("This link has expired. Ask for a new one.", "Aquest enllaç ha caducat. Demana'n un de nou.");
     public static readonly Message SayTrueOrFalse = new("Say true or false.", "Indica si està activat o desactivat.");
     public static readonly Message PushNotSupported = new("This browser can't get notifications from the app.", "Aquest navegador no pot rebre notificacions de l'app.");
     public static readonly Message ResetLinkSent = new("If that email has an account, we sent a link. It works for 1 hour.",
-        "Si aquest correu té un compte, t'hem enviat un enllaç. Funciona durant 1 hora.");
+        "Si aquest mail té un compte, t'hem enviat un enllaç. Funciona durant 1 hora.");
     public static readonly Message EnterFirstName = new("Enter your first name.", "Escriu el teu nom.");
     public static readonly Message EnterLastName = new("Enter your last name.", "Escriu els teus cognoms.");
     public static readonly Message InviteNeeded = new("Sign-ups are by invitation for now. Enter your invite code.",
@@ -48,20 +48,20 @@ public static class Messages
 
     // Signals
     public static readonly Message AlreadyAnswered = new("This signal is already answered.", "Aquest senyal ja té resposta.");
-    public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot ajornar un senyal que encara espera.");
+    public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot posposar un senyal que encara espera.");
     public static readonly Message StrategyEnded = new("This strategy is archived, so there is no reminder to send.",
         "Aquesta estratègia està arxivada, així que no hi ha cap recordatori per enviar.");
     public static readonly Message ReminderEmailsOff = new("A reminder can't reach you: turn on reminder emails in your account.",
-        "Un recordatori no et pot arribar: activa els correus de recordatoris al teu compte.");
+        "Un recordatori no et pot arribar: activa els mails de recordatoris al teu compte.");
     public static readonly Message NotificationsOff = new("A reminder can't reach you: turn on reminder emails, or notifications on this device, in your account.",
-        "Un recordatori no et pot arribar: activa els correus de recordatoris, o les notificacions en aquest dispositiu, al teu compte.");
-    public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu correu per començar en directe.");
+        "Un recordatori no et pot arribar: activa els mails de recordatoris, o les notificacions en aquest dispositiu, al teu compte.");
+    public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu mail per començar en mode real.");
     public static readonly Message NotYourSimulation = new("Pick one of your simulations to copy.", "Tria una de les teves simulacions per copiar-la.");
-    public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma la teva adreça de correu per rebre recordatoris.");
+    public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma el teu mail per rebre recordatoris.");
 
-    public static readonly Message LiveOnlyLog = new("Trades can only be logged for live strategies.", "Només es poden registrar operacions en estratègies en directe.");
-    public static readonly Message LiveOnlyEdit = new("Only live trades can be edited.", "Només es poden editar les operacions en directe.");
-    public static readonly Message LiveOnlyDelete = new("Only live trades can be deleted.", "Només es poden eliminar les operacions en directe.");
+    public static readonly Message LiveOnlyLog = new("Trades can only be logged for live strategies.", "Només es poden registrar operacions en estratègies reals.");
+    public static readonly Message LiveOnlyEdit = new("Only live trades can be edited.", "Només es poden editar les operacions reals.");
+    public static readonly Message LiveOnlyDelete = new("Only live trades can be deleted.", "Només es poden eliminar les operacions reals.");
     public static readonly Message PickStrategyStock = new("Pick one of the strategy's stocks.", "Tria una de les accions de l'estratègia.");
 
     public static readonly Message EnterTradeDay = new("Enter the day you traded.", "Indica el dia que vas operar.");
@@ -87,7 +87,7 @@ public static class Messages
     public static readonly Message ArchiveBeforeDelete = new("Archive the strategy before deleting it.", "Arxiva l’estratègia abans d’esborrar-la.");
     public static readonly Message NameTaken = new("You already have a running strategy with that name.", "Ja tens una estratègia en marxa amb aquest nom.");
     public static readonly Message UseNameLength = new("Use 1 to {0} characters.", "Fes servir d'1 a {0} caràcters.");
-    public static readonly Message PickMode = new("Pick simulation or live.", "Tria simulació o en directe.");
+    public static readonly Message PickMode = new("Pick simulation or live.", "Tria simulació o real.");
     public static readonly Message ListedOnce = new("Each stock or fund can be listed once.", "Cada acció o fons es pot afegir només un cop.");
     public static readonly Message PickTheFund = new("Pick the fund.", "Tria el fons.");
     public static readonly Message PickOneStock = new("Pick at least one stock.", "Tria almenys una acció.");
@@ -102,9 +102,9 @@ public static class Messages
     public static readonly Message NotStocks = new("Some of those are not stocks we can follow.", "Algunes d'aquestes no són accions que puguem seguir.");
     public static readonly Message SetBudget = new("Set a budget.", "Fixa un pressupost.");
     public static readonly Message WholeBudget = new("Use a whole amount from {0:0} to {1:0}.", "Fes servir un import sencer entre {0:0} i {1:0}.");
-    public static readonly Message NoSteps = new("This template has no steps.", "Aquesta plantilla no té passos.");
+    public static readonly Message NoSteps = new("This template has no steps.", "Aquesta plantilla no té fases.");
     public static readonly Message WholeStep = new("Use a whole amount from {0:0} up to the budget.", "Fes servir un import sencer des de {0:0} fins al pressupost.");
-    public static readonly Message UseSteps = new("Use 1 to {0} steps.", "Fes servir d'1 a {0} passos.");
+    public static readonly Message UseSteps = new("Use 1 to {0} steps.", "Fes servir d'1 a {0} fases.");
 
     // Advanced settings
     public static readonly Message NoSuchSetting = new("This template has no such setting.", "Aquesta plantilla no té aquest ajust.");

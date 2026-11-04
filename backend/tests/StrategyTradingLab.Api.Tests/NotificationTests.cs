@@ -93,7 +93,7 @@ public class NotificationTests
         Assert.Equal("El teu resum, 23 oct. 2026", subject);
         Assert.DoesNotContain("T’espera a tu", body);
         foreach (var section in new[] { "T'espera a tu", "Què ha canviat avui", "Les teves estratègies" }) Assert.Contains(section, body);
-        Assert.Contains("Zscaler & friends (En directe): des del 1 oct. 2026, 1 senyal", body);
+        Assert.Contains("Zscaler & friends (Real): des del 1 oct. 2026, 1 senyal", body);
         Assert.Contains("The comeback (Simulació): des del 5 oct. 2026, 0 senyals", body);
         Assert.EndsWith(EmailTexts.DisclaimerCa, body);
     }
@@ -108,7 +108,7 @@ public class NotificationTests
         Assert.Contains("Turn off signal and reminder emails: https://app.example/en/unsubscribe/tok3n/alerts", alert.Text);
         Assert.Contains("href=\"https://app.example/en/unsubscribe/tok3n/alerts\"", alert.Html);
         Assert.Equal("https://app.example/api/email/unsubscribe/tok3n/alerts", alert.OneClickUnsubscribe);
-        Assert.Contains("Desactiva els correus de resum: https://app.example/ca/unsubscribe/tok3n/overview", overview.Text);
+        Assert.Contains("Desactiva els mails de resum: https://app.example/ca/unsubscribe/tok3n/overview", overview.Text);
         Assert.EndsWith(EmailTexts.DisclaimerCa, overview.Text);
         Assert.Null(none.OneClickUnsubscribe);
         Assert.DoesNotContain("unsubscribe", none.Text);

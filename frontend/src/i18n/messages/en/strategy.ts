@@ -59,7 +59,6 @@ export const strategy = {
   'strategy.pill.notChecked': 'NOT CHECKED',
   'strategy.pill.removed': 'REMOVED',
   'strategy.pill.done': 'DONE',
-  'strategy.pill.outOfMarket': 'OUT OF THE MARKET',
   'strategy.stock.signalWaiting': 'Signal waiting',
   'strategy.stock.signalStep': 'Signal: step {step}',
   'strategy.stock.boughtNextOpen': 'Bought at the next open',

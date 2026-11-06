@@ -298,7 +298,7 @@ Still to design:
 - **Stock page:** the chart with the discount zone shaded, the status history and the trades for that stock (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
 - **Stock list editor** from the strategy page, stock search, fund picker, and the prompt editor.
 - **Manual trade form**, and editing or deleting trades.
-- **Sell signals** and the "out of the market" status for *Index trend*.
+- **Sell signals** and the "candidate" status for *Index trend* when not holding.
 - **AI round history** and the error state when an answer can't be read.
 - **AI comparison page** (later): results by AI model.
 - **Account**, including **Data and privacy**: AI data sharing on or off, *What we keep*, export and delete account.

@@ -61,7 +61,6 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.pill.notChecked': 'SENSE COMPROVAR',
   'strategy.pill.removed': 'ELIMINADA',
   'strategy.pill.done': 'FET',
-  'strategy.pill.outOfMarket': 'FORA DEL MERCAT',
   'strategy.stock.signalWaiting': 'Senyal en espera',
   'strategy.stock.signalStep': 'Senyal: fase {step}',
   'strategy.stock.boughtNextOpen': 'Comprat a la propera obertura',

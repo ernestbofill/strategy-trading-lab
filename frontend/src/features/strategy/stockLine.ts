@@ -93,7 +93,7 @@ const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
   holding: ['strategy.pill.holding', 'holding'],
   done: ['strategy.pill.done', 'holding'],
   building: ['strategy.pill.building', 'building'],
-  outOfTheMarket: ['strategy.pill.outOfMarket', 'watching'],
+  outOfTheMarket: ['strategy.pill.candidate', 'watching'],
   noBudget: ['strategy.pill.candidate', 'watching'],
   watching: ['strategy.pill.candidate', 'watching'],
   notCandidate: ['strategy.pill.notCandidate', 'muted'],

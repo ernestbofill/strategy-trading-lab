@@ -95,6 +95,24 @@ If any is missing, go back and do it. If budget is left (fewer than 3 charters r
 
 Then commit, push and open the PR (README, *After a session*), and give Ernest a short summary in the chat: charters, new findings by severity, S1s in full, and the PR link.
 
+## Browser-only mode
+
+For an agent that can browse but can't write to the repo (Gemini in Chrome, or any tool without file access). Everything above applies, with these changes:
+
+- **Read** `README.md`, `GUIDE.md` and `STATE.md` on GitHub (the links in README, *From Gemini in Chrome*), not from disk. Skip creating a branch and a file.
+- **Shorter session:** 2 charters of about 50 actions each, or 3 if the first two ended early because they were blocked. Pick them as *Choose the charters* says.
+- **Keep the log in your own notes as you go**, in the shape of `sessions/_TEMPLATE.md`, line by line, so nothing is lost if the task is cut short. If you sense the task is about to end (a limit, a timeout), write the hand-back below at once with what you have.
+- **Ask Ernest to confirm** the form submissions your tool asks him about: that's expected. Never take over a step the safety rules forbid because a confirmation was given.
+- **The stop checklist still applies**, item by item. The only change: instead of updating files, you write them in the hand-back.
+
+**The hand-back.** End the session with one Markdown block in the chat, nothing left out, in this order:
+
+1. `### Session log`: the whole log, in the template's shape, with the session ID (`YYYY-MM-DD-G1`, `G` for a browser-only session) and the account's label.
+2. `### STATE.md changes`: each coverage row you changed (the full new row), each lead to add or remove, the new handoff note, and any baseline or fixture change.
+3. `### FINDINGS.md additions`: new findings in the file's block format, with IDs left as `F-NEW-1`, `F-NEW-2` (the agent that records them numbers them), and the IDs of existing findings you saw again or found fixed.
+
+Then say in one line how many findings you raised by severity, and repeat any S1 in full. The agent that records it writes the files, gives the findings their numbers, and opens the PR.
+
 ## Techniques
 
 Pick the ones that fit the charter. Name the one you used in the log.

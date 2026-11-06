@@ -6,6 +6,26 @@ Start a session with `/qa-session <account email>`, for example `/qa-session you
 
 The method is the same whichever AI runs it. Where these files name Claude's tools, use your own equivalent.
 
+### From Gemini in Chrome
+
+Gemini in Chrome's auto browse can test the app in your own Chrome, but it can't write to the repo. It follows the same guide in **browser-only mode** (GUIDE, *Browser-only mode*): a shorter session, and the log handed back in the chat. Before the first time, check that *Settings → AI innovations → Gemini in Chrome* has "Let Gemini browse for you", that the account's password is in Google Password Manager, and that this Chrome is signed in to GitHub (so Gemini can open the guide). Then open `https://strategytradinglab.com`, click *Ask Gemini* and paste this, with the account's email filled in:
+
+```text
+Run one QA session of the web app Strategy Trading Lab, at https://strategytradinglab.com, as the account <ACCOUNT EMAIL>.
+
+Read these first, in this order, and follow them for the whole session. They are the rules and the method:
+1. https://github.com/ernestbofill/strategy-trading-lab/blob/main/qa/README.md (the safety rules come before anything else)
+2. https://github.com/ernestbofill/strategy-trading-lab/blob/main/qa/GUIDE.md (follow its "Browser-only mode")
+3. https://github.com/ernestbofill/strategy-trading-lab/blob/main/qa/STATE.md (what to test next)
+The app's spec, to check screens against: https://github.com/ernestbofill/strategy-trading-lab/blob/main/docs/strategy-trading-lab-app-spec.md
+
+Sign in to the app through Google Password Manager. Never type, show or ask for the password, and never write the account's email in your notes: call the account by the part after "+" in its address.
+
+Run 2 charters of about 50 actions each. Don't stop when you find a bug: follow it as the guide says, and stop only when the budget is spent or the stop checklist is done. You can't write files, so at the end put the whole session log, and the changes to STATE.md and FINDINGS.md, in this chat as one Markdown block, as the guide's "Browser-only mode" says.
+```
+
+When it's done, copy its Markdown block and give it to Claude or Antigravity ("record this QA session"): the agent writes the files from it and opens the session PR, as in *After a session*.
+
 ## Files
 
 | File | What it is | Who writes it |

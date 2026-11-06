@@ -20,4 +20,4 @@ The `.invalid` address can't receive email, so set the rest in the dev database 
 
 Accounts starting with `claude-` on dev are disposable: anyone may delete them, and nothing should depend on them. The older fixed account `playwright-test-20261024@stl.invalid` (password `STL_BROWSER_TEST_PASSWORD` in `.env.local`) still works for quick checks of user screens.
 
-A standing account on dev and production, owner included, belongs to the scheduled QA agent idea in [ROADMAP.md](../ROADMAP.md) (*Ideas*), not to the dev flow.
+A standing account on dev and production, owner included, belongs to the QA sessions in [qa/](../qa/README.md) (a vip account on production, with its password saved in the browser), not to the dev flow.

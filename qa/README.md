@@ -2,7 +2,9 @@
 
 An AI agent tests the live app the way an expert manual tester would. Ernest starts each session by hand. One session explores a few areas in depth, writes everything it did and found in a session log, and leaves a handoff note so the next session carries on where it stopped.
 
-Start a session with `/qa-session <account email>` in Claude Code, for example `/qa-session you+qaagent@example.com`. Without an email, the agent asks which account to use. Another tool starts with: "Read `qa/README.md` and run one QA session as <account email>."
+Start a session with `/qa-session <account email>`, for example `/qa-session you+qaagent@example.com`. Without an email, the agent asks which account to use. The command exists for Claude Code (`.claude/commands/qa-session.md`) and Antigravity (`.agents/skills/qa-session/SKILL.md`); keep the two in step. Any other tool starts with: "Read `qa/README.md` and run one QA session as <account email>."
+
+The method is the same whichever AI runs it. Where these files name Claude's tools, use your own equivalent.
 
 ## Files
 
@@ -17,10 +19,10 @@ Start a session with `/qa-session <account email>` in Claude Code, for example `
 ## Where and as whom
 
 - **Production**, at `https://strategytradinglab.com`. It's what users see. The agent only does what a user can do.
-- **An account Ernest owns, named when the session starts** (the command's argument; the agent asks when it's missing). Normally the vip QA account. The address isn't kept in the repo. Its password is **saved in the browser** the agent drives: the built-in browser of the Claude desktop app, or Chrome with Claude in Chrome. The agent never types, reads, logs or asks for the password. When the app shows Log-in, it picks the saved login for that address from the browser's autofill. If it is signed in as a different account, it logs out first. If there is no saved login for it, or autofill doesn't fill it, the agent stops and asks Ernest to sign in.
+- **An account Ernest owns, named when the session starts** (the command's argument; the agent asks when it's missing). Normally the vip QA account. The address isn't kept in the repo. Its password is **saved in the browser** the agent drives: for Claude, the desktop app's built-in browser or Chrome with Claude in Chrome; for Antigravity, the Chrome profile its browser agent opens (which may not be your everyday profile, so save the password there too). The agent never types, reads, logs or asks for the password. When the app shows Log-in, it picks the saved login for that address from the browser's autofill. If it is signed in as a different account, it logs out first. If there is no saved login for it, or autofill doesn't fill it, the agent stops and asks Ernest to sign in.
 - **The account's label.** Logs, `STATE.md` and findings name the account by its label, never by its address: the part after `+` (`qaagent` for `…+qaagent@…`), or else a label Ernest gives. `STATE.md`'s account baseline and fixtures belong to one account: with another account, the agent adds a section for its label and doesn't touch the others' fixtures.
 - The account's email is confirmed, so Live mode and feedback work. The vip role has the same rights as a plain user for now. `/admin` is out of scope: the agent may open it once to check it is refused, and nothing more.
-- A cloud session without a link to Ernest's computer has no such browser, so it can't run a session. Run it from the desktop app on the Mac or the PC.
+- A cloud session without a link to Ernest's computer has no such browser, so it can't run a session. Run it locally on the Mac or the PC (the Claude desktop app, or Antigravity).
 
 ## Safety rules
 

@@ -26,7 +26,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 - `backend/`: C# .NET API with PostgreSQL on Neon. Read [backend/CLAUDE.md](backend/CLAUDE.md) before changing it.
 - `deploy/`: the Oracle server setup and deploy scripts.
 - `docs/`: the spec and product docs. Keep them in step with what was built.
-- `qa/`: the manual QA sessions an AI agent runs on production (`/qa-session`). Read [qa/README.md](qa/README.md) before running one. When a feature ships or goes, add or remove its row in `qa/STATE.md`'s coverage map in the same PR.
+- `qa/`: the manual QA sessions an AI agent runs on production (`/qa-session <account email>`). Read [qa/README.md](qa/README.md) before running one. When a feature ships or goes, add or remove its row in `qa/STATE.md`'s coverage map in the same PR.
 - `wireframes/`, `design-system/`: reference material. Don't edit them unless asked.
 
 ## AI tools

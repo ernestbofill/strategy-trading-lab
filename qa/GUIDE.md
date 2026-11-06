@@ -22,7 +22,7 @@ AI testers stop too early. They find one bug and report it, they see a happy pat
 1. Read `STATE.md`: the handoff note, the lead queue, the coverage map, the fixtures and the account baseline.
 2. Create the session log `sessions/YYYY-MM-DD-N.md` from [_TEMPLATE.md](sessions/_TEMPLATE.md), on a new branch `qa/YYYY-MM-DD-N` from the latest `main`.
 3. Open the app. Note the version at the end of the footer and the date. Note what changed since the last session: the PRs merged since its date (`git log --since`). **Changed areas get a charter first:** new code is where the new bugs are.
-4. Check you're signed in to the QA account. If not, sign in with the browser's saved login (README).
+4. Check you're signed in as the session's account (the command's argument; ask Ernest if none was given). If not, sign in with the browser's saved login for it (README).
 5. Write the session's plan in the log: 3 to 5 charters (below).
 
 ### 2. Choose the charters

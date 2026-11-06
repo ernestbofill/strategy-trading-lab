@@ -10,6 +10,8 @@ What the next session reads first. The agent updates it at the end of every sess
 
 ## Account baseline
 
+**Account:** `qaagent` (README, *The account's label*). Another account gets its own copy of this section and of *Fixtures*, under its label.
+
 The account's settings before any session changed them. Restore them before ending. The first session fills this in.
 
 | Setting | Value |

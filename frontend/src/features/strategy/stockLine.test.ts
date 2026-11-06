@@ -46,10 +46,10 @@ describe('stockLine', () => {
     expect(stockLine(row({ status: 'building', steps: 2 }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
     // Every step skipped: the pill says where the user is, the line both.
     const skipped = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, steps: 0, rulesSteps: 1 }), 'live', 'EUR', words)
-    expect([skipped.pill, skipped.detail]).toEqual(['OUT OF THE MARKET', 'Rules: In the market · You: Out of the market'])
+    expect([skipped.pill, skipped.detail]).toEqual(['CANDIDATE', 'Rules: In the market · You: Out of the market'])
   })
 
-  it('formats bear drop statuses and trend out-of-the-market pills', () => {
+  it('formats bear drop statuses and trend candidate pills', () => {
     const bearWords = {
       zone: 'the bounce line',
       notCandidate: '{n}% below its 6-month high',
@@ -67,7 +67,7 @@ describe('stockLine', () => {
 
     const trendWords = { zone: 'the buy line', notCandidate: 'Below its long trend', holding: 'In the market' }
     const out = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, distancePct: 1.8 }), 'simulation', 'EUR', trendWords)
-    expect([out.pill, out.detail]).toEqual(['OUT OF THE MARKET', '2% from the buy line'])
+    expect([out.pill, out.detail]).toEqual(['CANDIDATE', '2% from the buy line'])
     const holding = stockLine(row({ status: 'holding', maxSteps: null, steps: 1 }), 'simulation', 'EUR', trendWords)
     expect([holding.pill, holding.detail]).toEqual(['HOLDING', 'In the market'])
   })

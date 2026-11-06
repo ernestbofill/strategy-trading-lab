@@ -583,8 +583,8 @@ The same three settings can be changed later from the strategy page (not drawn).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
     - Every row opens the stock's page; a waiting signal is answered from there ("Answer the signal").
     - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought. Each drop counts only the signals and buys from that drop's first step (`cycleStart`), so a later drop after the budget is used up shows "CANDIDATE" with "No budget left for its steps".
-    - *Index trend* shows "OUT OF THE MARKET" ("−[n]% vs the buy line", or "Below its long trend" before the checks are stored) when not holding, and "HOLDING" ("In the market") when holding.
-    - Live, the pill says where the user is, not the rules: when the user skipped every step the rules hold, an all-in or *Index trend* stock is "OUT OF THE MARKET" and a stepped one a candidate (or not a candidate), with "Rules: [rules] · You: [you]" under it (e.g. "Rules: In the market · You: Out of the market").
+    - *Index trend* shows "CANDIDATE" ("[n]% from the buy line", or "Below its long trend" before the checks are stored) when not holding, like the other templates, and "HOLDING" ("In the market") when holding. (It said "OUT OF THE MARKET" until #156, which read like a verdict on the market next to a fund close to its buy line.)
+    - Live, the pill says where the user is, not the rules: when the user skipped every step the rules hold, an all-in or *Index trend* stock is "CANDIDATE" and a stepped one a candidate (or not a candidate), with "Rules: [rules] · You: [you]" under it (e.g. "Rules: In the market · You: Out of the market").
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
 - Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
 - **Signals and trades** (`SignalsAndTrades`):
@@ -830,7 +830,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Budget variants for *Index trend* and *Bear markets*.
 - Stock page: the chart with the discount zone shaded (Milestone 3), status history.
 - Until a screen is built, the controls that open it are hidden, not shown disabled: the "Backtest" tile, and, for a guest, Confirm's "Edit" on the Notifications row. The item that builds the screen brings its control back.
-- Sell signals for *Index trend*, and its "Out of the market" status.
+- Sell signals for *Index trend*, and its "Candidate" status when not holding.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.
 - Backtest page; History (every signal, trade, skip, AI round and status change, in date order).

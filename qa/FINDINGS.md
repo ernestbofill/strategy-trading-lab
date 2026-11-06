@@ -24,7 +24,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 
 ## F-001 · A sale larger than the holding is accepted and shows a false gain
 
-- **Severity:** S1 · **Area:** D6, D14 · **Status:** open
+- **Severity:** S3 (lowered from S1 by Ernest, 2026-11-06: it comes from a user's inconsistent entry) · **Area:** D6, D14 · **Status:** open
 - **Found:** 2026-11-06-1 · **Seen again:** –
 - **Version:** v0.52.0-alpha · **Width / language:** 1470px, English
 - **Steps:**
@@ -33,7 +33,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 - **Expected:** a warning or a refusal, or results that count only shares held. The spec lets a user record selling what they hold (§6 Strategy page, Log a trade by hand) and says nothing about selling more.
 - **Actual:** saved with no warning. You +258.8% (the proceeds of all 12 shares count), Budget used $0, Invested $0. Dashboard, strategy page and stock page all agree.
 - **How often:** 1 of 1
-- **Notes:** deleting the sale restores the result. It needs a typo, or shares bought before the strategy. Severity is S1 because the screen shows a wrong result; Ernest may rate it lower. Decision for Ernest: refuse, warn, or cap. Lead L-003.
+- **Notes:** deleting the sale restores the result. It needs a typo, or shares bought before the strategy. Still open for Ernest: refuse, warn, or cap. Lead L-003.
 
 ## F-002 · Budget ignores a decimal comma or point: 1000,50 becomes $100,050
 

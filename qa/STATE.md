@@ -6,7 +6,7 @@ What the next session reads first. The agent updates it at the end of every sess
 
 *Last session:* 2026-11-06-1, the breadth session, v0.52.0-alpha, `qaagent`.
 
-**S1 open:** F-001. A hand-logged sale larger than the holding is accepted and shows a false gain (+258.8% in the test). Ernest to decide what the app should do; L-003 has what is left to try.
+**No S1 open.** F-001 (a hand-logged sale larger than the holding shows a false gain, +258.8% in the test) was lowered to S3 by Ernest, because it comes from a user's inconsistent entry. What the app should do is still open; L-003 has what is left to try.
 
 **Next session, do first:** L-001 and L-002, because only time tests them. No fixture had a daily check yet, so every rules pill, the stock pages' rules (E2) and the summary charts are unseen. Compare with *Fixtures* below. AI rounds fall due every day, so run them. The ZS signal on `QA fixture · AI · Live` was snoozed to Nov 9, but should have ended on Nov 7: check it went *Missed* and what reminder went out.
 
@@ -51,7 +51,7 @@ Open leads to follow, most important first. **next** means the next session take
 | --- | --- | --- | --- | --- |
 | L-001 | F3, F4, G4 | The ZS extra-round signal on `AI · Live`, snoozed to Nov 9, should end when the round is due on Nov 7 (a Saturday). Did it go *Missed*? Does the reminder still go out, or a "buy signal ended" alert? Then: can a missed signal still record a trade? Are daily rounds really due on non-market days? | 2026-11-06-1 C2.17 | **next** |
 | L-002 | D3, E2, C1, D2, X9 | First daily check on all fixtures: every template's pills and detail lines, stock page rules and gauges, charts on cards and pages, AI "bought at the next open" row (F-007), *The rules alone* on `AI · Live`, what the summary email says. Compare with *Fixtures* | 2026-11-06-1 | **next** |
-| L-003 | D6, D14 | Follow F-001: a sale with no buy at all; editing a buy down below what was sold; deleting a buy after a sale; an oversold stock's row; the same in Confirm a sell signal | 2026-11-06-1 C3.7 | **next** |
+| L-003 | D6, D14 | Follow F-001: a sale with no buy at all; editing a buy down below what was sold; deleting a buy after a sale; an oversold stock's row; the same in Confirm a sell signal | 2026-11-06-1 C3.7 | |
 | L-004 | G5 | "Picks vs the rest": does "the rest –" fill in once the others have prices? Does the figure stay ahead of the strategy's own? (F-020) | 2026-11-06-1 C2.10 | |
 | L-005 | X3 | Signed-in screens at 390px and 360px, long names, 200% zoom. Chrome's window wouldn't resize below desktop; try the built-in browser with a saved login, or ask Ernest | 2026-11-06-1 C5 | |
 | L-006 | A4 | Real log-in, log-out and coming back to the page asked for, and the wrong-password check with `qa-nobody@stl.invalid`. Claude can't type a password on production, not even a made-up one, so these need Ernest, another tool or a saved login in the browser. **Log-out signs out the browser the session depends on** | 2026-11-06-1 C4.8 | |

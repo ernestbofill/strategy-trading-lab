@@ -76,6 +76,9 @@ public record StockWatches(IReadOnlyList<SecurityDto> StarterList) : Watches;
 
 public record FundWatches(SecurityDto Fund) : Watches;
 
+/// <summary>Backtest results for one benchmark index tab in How we tested.</summary>
+public record BenchmarkBacktestDto(string Key, string Name, IReadOnlyList<PeriodResult> Periods);
+
 /// <summary>The "Tested" box and How we tested. <c>Periods</c>: sub-periods, then the whole period last.</summary>
 public record BacktestDto(
     string Scope,
@@ -85,7 +88,8 @@ public record BacktestDto(
     string Universe,
     string TestedDefaults,
     decimal FeePerTrade,
-    decimal FeePercent);
+    decimal FeePercent,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<BenchmarkBacktestDto>? Benchmarks = null);
 
 /// <summary>What a new strategy from this template starts with. <c>Params</c> is the template's params record.</summary>
 public record TemplateDefaults(int Version, Budget Budget, object Params);

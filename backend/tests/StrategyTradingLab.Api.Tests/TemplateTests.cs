@@ -137,16 +137,52 @@ public class TemplateTests
     [Fact]
     public void Templates_with_backtest_have_standardized_periods()
     {
-        string[] expectedPeriods = ["2000-09", "2010-19", "2020-24", "All"];
+        string[] expectedPeriods = ["2000-12", "2013-19", "2020-26", "All"];
         foreach (var template in TemplateCatalog.All.Where(t => t.Backtest is not null))
         {
             var periods = template.Backtest!.Select(p => p.Period).ToArray();
             Assert.Equal(expectedPeriods, periods);
         }
 
-        // +490% over 25 years compounds at 7.4% a year; the S&P 500 fund's +538% at 7.7%.
         var all = TemplateCatalog.Dip.Backtest![^1];
-        Assert.Equal((7.4m, 7.7m, -37m), (all.TemplatePerYear, all.IndexPerYear, all.IndexWorstYear));
+        Assert.Equal((14.3m, 9.8m, -37m, 4.5m), (all.TemplatePerYear, all.IndexPerYear, all.IndexWorstYear, all.Alpha));
+    }
+
+    [Fact]
+    public void Bear_marks_2013_19_as_no_market_crashes_in_both_languages()
+    {
+        var row = TemplateCatalog.Bear.Backtest!.Single(p => p.Period == "2013-19");
+        Assert.Null(row.TemplatePerYear);
+        Assert.Null(row.IndexPerYear);
+        Assert.Null(row.WorstYear);
+        Assert.Null(row.Alpha);
+        Assert.Equal("No market crashes", TemplateTexts.For(TemplateCatalog.Bear, "en").Backtest!.Stories!["2013-19"]);
+        Assert.Equal("Cap gran caiguda del mercat", TemplateTexts.For(TemplateCatalog.Bear, "ca").Backtest!.Stories!["2013-19"]);
+    }
+
+    [Fact]
+    public void Trend_has_six_benchmark_indexes_with_sp500_first_and_localized_stories()
+    {
+        var benchmarks = TemplateCatalog.Trend.Benchmarks;
+        Assert.NotNull(benchmarks);
+        Assert.Equal(["sp500", "qqq", "efa", "dax", "nikkei", "vfinx"], benchmarks.Select(b => b.Key).ToArray());
+
+        foreach (var locale in new[] { "en", "ca" })
+        {
+            var texts = TemplateTexts.For(TemplateCatalog.Trend, locale).Backtest!;
+            Assert.NotNull(texts.Benchmarks);
+            foreach (var benchmark in benchmarks)
+            {
+                Assert.True(texts.Benchmarks.TryGetValue(benchmark.Key, out var bTexts), $"{locale} missing {benchmark.Key}");
+                Assert.NotEmpty(bTexts.Name);
+                Assert.NotNull(bTexts.Stories);
+                foreach (var p in benchmark.Periods)
+                {
+                    Assert.True(bTexts.Stories.TryGetValue(p.Period, out var story) && !string.IsNullOrWhiteSpace(story),
+                        $"{locale}/{benchmark.Key} missing story for {p.Period}");
+                }
+            }
+        }
     }
 
     [Fact]

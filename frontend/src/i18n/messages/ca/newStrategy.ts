@@ -78,6 +78,12 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.results.period': 'Període',
   'newStrategy.results.template': 'Plantilla',
   'newStrategy.results.index': 'S&P 500',
+  'newStrategy.results.alpha': 'Alfa',
+  'newStrategy.results.alphaTip.label': 'Què és l’alfa?',
+  'newStrategy.results.alphaTip.text':
+    'Alfa directa: l’avantatge anual respecte a posar els mateixos diners a l’índex els mateixos dies.',
+  'newStrategy.results.story': 'Història',
+  'newStrategy.results.indexTabs': 'Índexs provats',
   'newStrategy.how.noBacktest': 'Aquesta plantilla no té backtest.',
   'newStrategy.how.title': 'Com ho hem provat',
   'newStrategy.how.lead':

@@ -19,8 +19,8 @@
       }
     ],
     "backtest": {
-      "scope": "1,146 stocks, 2000-2024.",
-      "years": "2000-2024",
+      "scope": "1,146 stocks, 2000-2026.",
+      "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     },
@@ -147,8 +147,8 @@
       }
     ],
     "backtest": {
-      "scope": "1,146 stocks, 2000-2024.",
-      "years": "2000-2024",
+      "scope": "1,146 stocks, 2000-2026.",
+      "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
       "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
     },
@@ -318,10 +318,16 @@
       }
     ],
     "backtest": {
-      "scope": "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years.",
-      "years": "2000-2024",
+      "scope": "Major indexes and sector funds, 2000-2026. Big drops are rare: it may not signal for years.",
+      "years": "2000-2026",
       "universe": "Major equity indexes and 30 sector ETFs across 134 bear markets",
-      "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600."
+      "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600.",
+      "stories": {
+        "2000-12": "Bought 2001–02 & 2008–09 lows",
+        "2013-19": "No market crashes",
+        "2020-26": "Bought 2020, 2022 & 2025 drops",
+        "All": "7 bear cycles across 3 crashes"
+      }
     },
     "stockStatus": {
       "zone": "the bounce line",
@@ -427,10 +433,72 @@
       }
     ],
     "backtest": {
-      "scope": "6 major indexes, 2000-2024.",
-      "years": "2000-2024",
-      "universe": "6 major global indexes (S&P 500, Nasdaq-100, EFA, DAX, Nikkei)",
-      "testedDefaults": "The whole €3,000 budget, all in, all out."
+      "scope": "6 major indexes, 2000-2026.",
+      "years": "2000-2026",
+      "universe": "6 major global indexes (S&P 500, Nasdaq-100, Developed ex-US, DAX, Nikkei 225, Vanguard 500)",
+      "testedDefaults": "The whole €3,000 budget, all in, all out.",
+      "stories": {
+        "2000-12": "Dodged the 2000–02 and 2008 crashes",
+        "2013-19": "Insurance cost in a straight bull market",
+        "2020-26": "Whipsawed on V-shaped rebounds",
+        "All": "Nearly same return, less than half the crash"
+      },
+      "benchmarks": {
+        "sp500": {
+          "name": "S&P 500",
+          "stories": {
+            "2000-12": "Dodged the 2000–02 and 2008 crashes",
+            "2013-19": "Insurance cost in a straight bull market",
+            "2020-26": "Whipsawed on V-shaped rebounds",
+            "All": "Nearly same return, less than half the crash"
+          }
+        },
+        "qqq": {
+          "name": "Nasdaq-100",
+          "stories": {
+            "2000-12": "Dodged the dot-com collapse and 2008",
+            "2013-19": "Trailed a relentless tech bull run",
+            "2020-26": "Halved the 2022 tech bear market",
+            "All": "Beat buy-and-hold, cut worst fall from −83% to −42%"
+          }
+        },
+        "efa": {
+          "name": "Developed ex-US",
+          "stories": {
+            "2002-12": "Stepped out of the 2008 global crisis",
+            "2013-19": "Choppy sideways markets",
+            "2020-26": "Dodged the 2020 and 2022 drops",
+            "All": "Ahead of buy-and-hold with less than half the crash"
+          }
+        },
+        "dax": {
+          "name": "DAX",
+          "stories": {
+            "2000-12": "Avoided the 2000–03 and 2008 crashes",
+            "2013-19": "Smaller loss in 2018 (−11% vs −18%)",
+            "2020-26": "Protected capital in the 2022 energy shock",
+            "All": "+1.4%/yr ahead, cut worst fall from −73% to −31%"
+          }
+        },
+        "nikkei": {
+          "name": "Nikkei 225",
+          "stories": {
+            "2000-12": "Stayed in cash through Japan's lost decade",
+            "2013-19": "Rode the Abenomics recovery",
+            "2020-26": "Captured the post-2020 breakout",
+            "All": "Survived an −82% crash with −35% max fall"
+          }
+        },
+        "vfinx": {
+          "name": "Vanguard 500",
+          "stories": {
+            "2000-12": "Dodged the 2000–02 and 2008 crashes",
+            "2013-19": "Insurance cost in a straight bull market",
+            "2020-26": "Whipsawed on V-shaped rebounds",
+            "All": "Since 1981 (incl. 1987 crash): nearly same return"
+          }
+        }
+      }
     },
     "stockStatus": {
       "zone": "the buy line",

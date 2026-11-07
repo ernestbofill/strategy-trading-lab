@@ -72,21 +72,23 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
   }
 
   return (
-    <Screen
-      top={top}
-      action={
-        <PrimaryAction onClick={() => void save()} disabled={saving}>
-          {saving ? t('strategy.settings.saving') : t('newStrategy.advanced.save')}
-        </PrimaryAction>
-      }
-    >
+    <Screen top={top} note={t('common.disclaimer')}>
       <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
       {error && (
         <ScreenMessage>
           <span role="alert">{error}</span>
         </ScreenMessage>
       )}
-      <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
+      <AdvancedSettingsBody
+        template={template}
+        values={values}
+        onChange={setValues}
+        action={
+          <PrimaryAction onClick={() => void save()} disabled={saving}>
+            {saving ? t('strategy.settings.saving') : t('newStrategy.advanced.save')}
+          </PrimaryAction>
+        }
+      />
     </Screen>
   )
 }

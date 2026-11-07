@@ -163,6 +163,7 @@ Don't use Gmail, Google Drive, Claude Docs or eToro (the app never connects to a
 ## Working with Ernest
 
 - When Ernest asks for an opinion or a review ("wdyt", "review this"), write the full review in the chat first, with numbered or headed points he can quote. Change things only after he answers.
+- When Ernest says "let's plan it" or "plan it first" (even with "then you build"), show the plan in the chat and stop. Start implementing only after he answers (Ernest, #164).
 
 ## Claude Code: memory, the repo is what's shared
 

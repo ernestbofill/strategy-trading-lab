@@ -135,7 +135,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**It was beaten down:** the stock fell at least `{drawdownPct}%` from its high of the last year."
+        "text": "**It was beaten down:** the stock fell at least `{drawdownPct}%` from its high of the last 12 months."
       },
       {
         "marker": "02",
@@ -219,7 +219,7 @@
     "checks": {
       "beaten": {
         "label": "Beaten down lately",
-        "detail": "Candidate since {date} ({value} of {max} trading days). Now {+subValue}% from the 52-week high ({level}) and {+endValue}% vs the SMA 200 ({endLevel}).",
+        "detail": "Candidate since {date}. Now {+subValue}% from the 52-week high ({level}) and {+endValue}% vs the SMA 200 ({endLevel}).",
         "past": "Window closed: last beaten down on {date} ({value} trading days ago; window is {max} days).",
         "short": "not beaten down lately",
         "pastShort": "candidate window closed ({value}d ago)",

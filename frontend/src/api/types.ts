@@ -360,10 +360,17 @@ export interface StockStatusWords {
   holding?: string | null
 }
 
-/** A day's close, for the stock page's chart: backend Strategies/StrategyDtos.cs (PricePoint). */
-export interface PricePoint {
+/** A day of the stock page's chart: its close and the rules' checks that day (only candidate ones before `startedOn`). Backend Strategies/StrategyDtos.cs (ChartDay). */
+export interface ChartDay {
   date: string
   close: number
+  checks: RuleCheck[]
+}
+
+/** The stock page's chart: the last 90 days, and the day the rules first checked the stock under this strategy. */
+export interface StockChart {
+  startedOn: string | null
+  days: ChartDay[]
 }
 
 /** The strategy page: backend Strategies/StrategyDtos.cs (StrategyDetail). */
@@ -1078,8 +1085,8 @@ export interface Api {
   getDashboard(): Promise<Dashboard>
   /** The strategy page; undefined when the user has no such strategy. */
   getStrategy(id: string): Promise<StrategyDetail | undefined>
-  /** A stock's daily closes over the last 90 days, oldest first; undefined when it isn't in the user's strategy. */
-  getStockPrices(strategyId: string, assetId: string): Promise<PricePoint[] | undefined>
+  /** A stock's last 90 days with each day's rule checks, oldest first; undefined when it isn't in the user's strategy. */
+  getStockChart(strategyId: string, assetId: string): Promise<StockChart | undefined>
   /** Updates the settings (rules) of a running strategy. */
   updateStrategySettings(id: string, settings: Record<string, number>): Promise<void>
   /** Edit list: the stocks a running strategy follows from now on. Rejects with `InvalidFieldsError` (`assetIds`). */

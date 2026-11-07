@@ -67,6 +67,20 @@ public class RuleChecksTests
         Assert.Contains(days, d => d.Status == RuleStatus.BuySignal);
     }
 
+    [Fact]
+    public void Before_the_start_the_chart_gets_the_candidate_checks_of_a_stock_never_bought()
+    {
+        var bars = Bars("comeback-SMCI-800");
+        var from = bars[300].Date;
+        var start = bars[^20].Date;
+        var watched = StrategyTradingLab.Api.Strategies.StockChart.WatchedChecks(new ComebackRules(bars, new ComebackParams()), bars, from, start, 5);
+
+        Assert.Equal(bars.Count(b => b.Date >= from && b.Date < start), watched.Count);
+        // A run that buys swaps the candidate checks for milestones; a stock never bought keeps them every day.
+        Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "beaten"));
+        Assert.All(watched.Values.SelectMany(c => c), c => Assert.Equal(CheckGroup.Candidate, c.Group));
+    }
+
     [Theory]
     [InlineData("bear-SPY-5600")]
     [InlineData("bear-SPY-3800")]

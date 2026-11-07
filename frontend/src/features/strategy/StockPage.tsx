@@ -12,6 +12,7 @@ import { exact, formatRate, money, pctTone, shortDate, signedPct } from '../../l
 import { signalPath, strategyPath } from '../dashboard/paths'
 import { checkText, fillCheck, isPastMax } from './checks'
 import { PriceChart } from './PriceChart'
+import { isCandidateOn } from './priceChartMarks'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
 import { stockLine } from './stockLine'
@@ -282,7 +283,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   const live = s.mode === 'live'
   const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
   const candidate = row.checks.filter((c) => c.group === 'candidate' && c.met !== null)
-  const isCandidate = candidate.every((c) => c.met)
+  const isCandidate = isCandidateOn(row.checks)
   const since = candidate.length > 0 && isCandidate ? candidateDateOf(row) : null
   const answer =
     row.status === 'waitingForYou' && row.signalId ? <PrimaryAction to={signalPath(s.id, row.signalId)}>{t('stock.answer')}</PrimaryAction> : undefined
@@ -328,7 +329,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
         )}
       </div>
 
-      <PriceChart strategyId={s.id} assetId={row.assetId} checks={row.checks} isCandidate={isCandidate} currency={row.currency} />
+      <PriceChart strategyId={s.id} assetId={row.assetId} isCandidate={row.checks.length > 0 ? isCandidate : null} currency={row.currency} trades={own.trades} texts={s.checkTexts} />
 
       {/* Without enough price history the rules say nothing yet: the status line says so. */}
       {s.checkTexts && row.status !== 'notEnoughData' && (

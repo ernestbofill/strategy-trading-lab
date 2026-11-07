@@ -48,7 +48,25 @@ public static class StrategyEndpoints
             var due = await db.AiRounds.AsNoTracking()
                 .Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
                 .OrderByDescending(r => r.DueOn).Select(r => new { r.Id, r.StrategyId }).ToListAsync(cancellationToken);
-            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user, (book, today)))],
+            // Where each running strategy's stocks stand, as its page's pills say.
+            var signals = (await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).ToListAsync(cancellationToken))
+                .ToLookup(s => s.StrategyId);
+            var latest = (await db.DailyEvaluations.AsNoTracking().Where(r => ids.Contains(r.StrategyId))
+                .GroupBy(r => new { r.StrategyId, r.AssetId }).Select(g => g.OrderByDescending(r => r.Date).First())
+                .ToListAsync(cancellationToken)).ToDictionary(r => (r.StrategyId, r.AssetId));
+            var aiScores = new Dictionary<Guid, Dictionary<Guid, decimal>>();
+            foreach (var s in running.Where(AiRounds.IsAi)) aiScores[s.Id] = await rounds.LastScoresAsync(s.Id, cancellationToken);
+            var counts = running.ToDictionary(s => s.Id, s => CountsOf(s, book, signals[s.Id], latest, aiScores.GetValueOrDefault(s.Id)));
+            // The fund a fund template follows, named on its card.
+            var fundIds = strategies.Where(s => TemplateCatalog.Find(s.TemplateKey)!.InvestsIn != InvestsIn.StockList)
+                .SelectMany(s => Followed(s).Select(a => a.AssetId)).Distinct().ToList();
+            var symbols = await db.Assets.AsNoTracking().Where(a => fundIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Symbol, cancellationToken);
+            string? FundOf(Strategy s) => Followed(s).Select(a => symbols.GetValueOrDefault(a.AssetId)).FirstOrDefault(n => n is not null);
+            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user, (book, today)) with
+                {
+                    Stocks = counts.GetValueOrDefault(strategy.Id),
+                    Fund = FundOf(strategy),
+                })],
                 [.. due.Select(r => new WaitingItem(r.Id, WaitingKind.AiRound, r.StrategyId, names[r.StrategyId], null)),
                  .. waiting.Select(w => new WaitingItem(w.Id, w.Side == TradeSide.Buy ? WaitingKind.BuySignal : WaitingKind.SellSignal,
                     w.StrategyId, names[w.StrategyId], w.Name))]);
@@ -343,7 +361,29 @@ public static class StrategyEndpoints
         var results = figures is null ? null : new StrategyResults(figures.You, figures.Index, [.. figures.History.Select(p => p.You)]);
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
             strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(strategy, template, texts),
-            strategy.Status, EndedOn(strategy, user));
+            strategy.Status, EndedOn(strategy, user), trades is { } d ? d.Book.IndexSinceStart(strategy, ResultsDay(strategy, user, d.Today)) : null);
+    }
+
+    static IEnumerable<StrategyAsset> Followed(Strategy strategy) => strategy.Assets.Where(a => a.Active && a.RemovedAt is null);
+
+    /// <summary>A running strategy's followed stocks counted by pill, for its dashboard card.</summary>
+    static StockCounts CountsOf(Strategy strategy, StrategyBook book, IEnumerable<Signal> signals,
+        IReadOnlyDictionary<(Guid, Guid), DailyEvaluation> latest, IReadOnlyDictionary<Guid, decimal>? aiScores)
+    {
+        var you = book.You(strategy);
+        var own = signals.ToList();
+        var states = Followed(strategy).Select(a => StockStateOf(strategy, a.AssetId, false,
+            latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], aiScores))
+            .ToList();
+        // Bear markets' distance is above the low, not from a buy rule, so it is never "close".
+        bool Close(StockState s) => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket && strategy.TemplateKey != "bear"
+            && s.Distance is > 0 and <= StockCounts.ClosePct;
+        return new StockCounts(
+            states.Count(s => s.Status is StockStatus.WaitingForYou or StockStatus.Signal),
+            states.Count(Close),
+            states.Count(s => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket or StockStatus.NoBudget && !Close(s)),
+            states.Count(s => s.Status is StockStatus.Holding or StockStatus.Building or StockStatus.Done),
+            states.Count(s => s.Status == StockStatus.NotCandidate));
     }
 
     static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
@@ -418,39 +458,11 @@ public static class StrategyEndpoints
         var maxSteps = strategy.Budget.MaxSteps;
         var stocks = assets.Select(asset =>
         {
-            var own = signalEntities.Where(s => s.AssetId == asset.Id).ToList();
             var evaluation = latest.GetValueOrDefault(asset.Id);
-            var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
-            var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
-            var (doneSteps, cycleStart) = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
-            var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
-            int rulesSteps;
-            if (maxSteps is null)
-            {
-                var lastSignal = own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault();
-                rulesSteps = lastSignal?.Side == TradeSide.Buy ? 1 : 0;
-            }
-            else
-            {
-                rulesSteps = doneSteps is { } done ? Math.Min(done, buySignals) : buySignals;
-            }
-            var userSteps = maxSteps is null ? (invested > 0 ? 1 : 0)
-                : strategy.TemplateKey == "bear" && !live ? rulesSteps
-                : doneSteps == 0 ? 0
-                : trades.Count(b => b.Side == TradeSide.Buy && (cycleStart is null || b.Date >= cycleStart));
-
-            // Before an AI strategy's daily check has a verdict: watching once a round scored the stock, else not scored yet.
-            var latestStatus = evaluation?.Status
-                ?? (ai is null ? null : aiScores!.ContainsKey(asset.Id) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
-            var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
-            var status = removed.Contains(asset.Id) ? StockStatus.Removed : StrategyPage.WithCandidacy(
-                StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
-            var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
-            var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
-            decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
-                ? d.GetDecimal() : null;
+            var (status, rulesSteps, userSteps, distance, signal, checks) = StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
+                [.. signalEntities.Where(s => s.AssetId == asset.Id)], trades, aiScores);
             DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
                 && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
                 ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
@@ -581,6 +593,50 @@ public static class StrategyEndpoints
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks };
+    }
+
+    /// <summary>Where a stock stands today: its pill, the steps and signal behind it, and how far the price is from the rules.</summary>
+    record StockState(StockStatus Status, int RulesSteps, int UserSteps, decimal? Distance, Signal? Signal, IReadOnlyList<RuleCheck> Checks);
+
+    /// <summary>
+    /// A stock's state from its latest evaluation, its signals and the trades the results count (spec: Strategy page). For an AI
+    /// strategy, <paramref name="aiScores"/> holds the last round's scores (null for other templates).
+    /// </summary>
+    static StockState StockStateOf(Strategy strategy, Guid assetId, bool removed, DailyEvaluation? evaluation, IReadOnlyList<Signal> own,
+        IReadOnlyList<Buy> trades, IReadOnlyDictionary<Guid, decimal>? aiScores)
+    {
+        var live = strategy.Mode == StrategyMode.Live;
+        var maxSteps = strategy.Budget.MaxSteps;
+        var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
+        var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
+        var (doneSteps, cycleStart) = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
+        var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
+        int rulesSteps;
+        if (maxSteps is null)
+        {
+            var lastSignal = own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault();
+            rulesSteps = lastSignal?.Side == TradeSide.Buy ? 1 : 0;
+        }
+        else
+        {
+            rulesSteps = doneSteps is { } done ? Math.Min(done, buySignals) : buySignals;
+        }
+        var userSteps = maxSteps is null ? (Performance.Used(trades) > 0 ? 1 : 0)
+            : strategy.TemplateKey == "bear" && !live ? rulesSteps
+            : doneSteps == 0 ? 0
+            : trades.Count(b => b.Side == TradeSide.Buy && (cycleStart is null || b.Date >= cycleStart));
+
+        // Before an AI strategy's daily check has a verdict: watching once a round scored the stock, else not scored yet.
+        var latestStatus = evaluation?.Status
+            ?? (aiScores is null ? null : aiScores.ContainsKey(assetId) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
+        var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
+        var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
+            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
+        var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
+        var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
+        decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
+            ? d.GetDecimal() : null;
+        return new StockState(status, rulesSteps, userSteps, distance, signal, checks);
     }
 
     /// <summary>The rule checks a daily evaluation stored (none before they were stored).</summary>

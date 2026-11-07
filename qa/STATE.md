@@ -85,7 +85,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 
 | ID | Area | Spec | Depth | Last | Notes |
 | --- | --- | --- | --- | --- | --- |
-| C1 | Strategy cards: result, index fund, worst year, chart, budget bar | §6 Dashboard | untested | | |
+| C1 | Strategy cards: gain since start, S&P 500 fund, stock states, fund name, budget bar | §6 Dashboard | untested | | |
 | C2 | Waiting for you: live signals, AI rounds due | §6 Dashboard | untested | | |
 | C3 | The cap of 10 running strategies | §6 Dashboard | untested | | Reach it with throwaways, then clean up |
 | C4 | Archived section | §6 Dashboard | untested | | |

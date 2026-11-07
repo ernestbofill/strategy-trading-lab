@@ -186,6 +186,21 @@ export interface StrategySummary {
   status: StrategyStatus
   /** The local date it was archived; its results stop there. Null while it runs. */
   endedOn: string | null
+  /** The index fund's gain since the start day, in percent; null without its prices. */
+  indexSinceStart: number | null
+  /** Its stocks by pill; null once archived. */
+  stocks: StockCounts | null
+  /** The symbol of the fund a fund template follows; null for a stock list. */
+  fund: string | null
+}
+
+/** A strategy's stocks by pill, for its card. `close`: candidates within 3% of the buy rule, not counted again in `candidates`. */
+export interface StockCounts {
+  signals: number
+  close: number
+  candidates: number
+  holding: number
+  notCandidates: number
 }
 
 /** A running strategy is checked every day; an archived one (`ended`) keeps its history, read-only. */

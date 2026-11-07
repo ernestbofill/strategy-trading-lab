@@ -96,6 +96,8 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             var card = dashboard.GetProperty("strategies").EnumerateArray().Single(s => s.GetProperty("id").GetGuid() == id);
             Assert.Equal(100m, card.GetProperty("used").GetDecimal());
             Assert.Equal(expected, card.GetProperty("results").GetProperty("strategy").GetDecimal());
+            Assert.Equal(1, card.GetProperty("stocks").GetProperty("holding").GetInt32());
+            Assert.Equal(JsonValueKind.Null, card.GetProperty("fund").ValueKind);
         }
         finally
         {

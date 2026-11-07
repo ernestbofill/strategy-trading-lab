@@ -33,10 +33,10 @@ const templateWithBacktest: TemplateDetail = {
     feePercent: 0.2,
     feePerTrade: 1,
     periods: [
-      { period: '2000-09', template: 48, index: -8, worstYear: -18 },
-      { period: '2010-19', template: 185, index: 246, worstYear: -12 },
-      { period: '2020-24', template: 72, index: 96, worstYear: -21 },
-      { period: 'All', template: 490, index: 538, worstYear: -21 },
+      { period: '2000-09', years: 10, template: 48, index: -8, worstYear: -18, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 },
+      { period: '2010-19', years: 10, template: 185, index: 246, worstYear: -12, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 },
+      { period: '2020-24', years: 10, template: 72, index: 96, worstYear: -21, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 },
+      { period: 'All', years: 10, template: 490, index: 538, worstYear: -21, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 },
     ],
   },
   defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: {} },
@@ -53,7 +53,7 @@ const templateWithoutBacktest: TemplateDetail = {
 }
 
 describe('HowTested', () => {
-  it('renders backtest details, the By period table, and the independent periods note', async () => {
+  it('renders backtest details, the By period table, and the yearly averages note', async () => {
     vi.spyOn(api, 'getTemplate').mockResolvedValue(templateWithBacktest)
 
     render(
@@ -79,7 +79,7 @@ describe('HowTested', () => {
     // Independent test periods note
     expect(
       screen.getByText(
-        "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All.",
+        'All figures are yearly averages. Each period is an independent test that starts with fresh money.',
       ),
     ).toBeTruthy()
 

@@ -56,7 +56,11 @@ function Summary({ s }: { s: StrategyDetail }) {
           {pastResult && (
             // The strategy has no worst year of its own until it has run a year: the template's stands in.
             <p className={styles.worst}>
-              {t('strategy.worstYear', { years: pastResult.years, pct: signedPct(pastResult.worstYear) })}
+              {t('strategy.worstYear', {
+                years: pastResult.years,
+                pct: signedPct(pastResult.worstYear),
+                index: signedPct(pastResult.indexWorstYear),
+              })}
             </p>
           )}
         </>
@@ -75,9 +79,10 @@ function Summary({ s }: { s: StrategyDetail }) {
               {pastResult.isCustomized
                 ? t('strategy.pastSummary.custom')
                 : t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
-              <span className={styles.mono}>{signedPct(pastResult.template)}</span> {t('strategy.pastSummary.vs')}{' '}
-              <span className={styles.mono}>{signedPct(pastResult.index)}</span> {t('strategy.pastSummary.after')}{' '}
-              <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>.
+              <span className={styles.mono}>{signedPct(pastResult.templatePerYear, 1)}</span> {t('strategy.pastSummary.vs')}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.indexPerYear, 1)}</span> {t('strategy.pastSummary.after')}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>{t('strategy.pastSummary.indexWorst')}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.indexWorstYear)}</span>.
               {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
             </>
           )}

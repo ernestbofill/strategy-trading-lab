@@ -67,10 +67,15 @@ export interface AddedAsset {
 
 export interface PeriodResult {
   period: string
-  /** Percent return of the template, the index fund, and the worst calendar year. */
+  years: number
+  /** Percent return of the template and the index fund over the period, and each one's worst calendar year. */
   template: number
   index: number
   worstYear: number
+  indexWorstYear: number
+  /** The yearly rate that compounds to the period's return, one decimal. */
+  templatePerYear: number
+  indexPerYear: number
 }
 
 export interface Backtest {
@@ -159,10 +164,12 @@ export interface StrategyResults {
 export interface PastResult {
   /** "2000-2024". */
   years: string
-  template: number
-  index: number
-  /** Percent return of the template's worst calendar year in that time. */
+  /** The yearly rate that compounds to the template's and the S&P 500 fund's return over those years. */
+  templatePerYear: number
+  indexPerYear: number
+  /** Percent return of each one's worst calendar year in that time. */
   worstYear: number
+  indexWorstYear: number
   isCustomized?: boolean
 }
 

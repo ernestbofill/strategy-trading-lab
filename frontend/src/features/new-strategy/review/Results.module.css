@@ -7,39 +7,53 @@
 
 .figures {
   position: relative;
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
-.figures div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.figures th,
+.figures td {
+  padding: 2px 0;
+  text-align: left;
+  vertical-align: baseline;
 }
-.figures dt {
+.figures thead th,
+.figures tbody th {
   font: 11px/16px var(--font-ui);
   color: var(--ink-muted);
+  padding-right: var(--space-2);
 }
-.figures dd {
-  margin: 0;
+.figures td {
   font: 18px/26px var(--font-mono);
 }
 
 .periods {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  white-space: nowrap;
 }
 .periods th,
 .periods td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-1);
   border-bottom: 1px solid var(--border-hairline);
   text-align: right;
   font: 12px/20px var(--font-mono);
 }
 .periods th:first-child {
+  padding-left: var(--space-3);
   text-align: left;
+}
+.periods th:last-child,
+.periods td:last-child {
+  padding-right: var(--space-3);
+}
+.periods thead tr:first-child th {
+  text-align: center;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.periods thead tr:first-child td {
+  border-bottom: none;
 }
 .periods thead th {
   font: 11px/16px var(--font-ui);

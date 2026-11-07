@@ -63,8 +63,12 @@ public record StockCounts(int Signals, int Close, int Candidates, int Holding, i
 /// <summary>What a strategy has earned since it started, in percent, next to the index fund (null when its prices are missing). Null until it has trades.</summary>
 public record StrategyResults(decimal Strategy, decimal? Index, IReadOnlyList<decimal> History);
 
-/// <summary>How the template did in the past, shown while a strategy has no results of its own.</summary>
-public record PastResult(string Years, decimal Template, decimal Index, decimal WorstYear, bool IsCustomized = false);
+/// <summary>
+/// How the template did in the past, shown while a strategy has no results of its own: a year on average, and the worst
+/// year, of the template and the S&amp;P 500 fund.
+/// </summary>
+public record PastResult(
+    string Years, decimal TemplatePerYear, decimal IndexPerYear, decimal WorstYear, decimal IndexWorstYear, bool IsCustomized = false);
 
 public enum WaitingKind { BuySignal, SellSignal, AiRound }
 

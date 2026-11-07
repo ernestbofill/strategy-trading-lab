@@ -135,7 +135,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**Va ser castigada:** l'acció va caure almenys un `{drawdownPct}%` des del seu màxim de l'últim any."
+        "text": "**Va ser castigada:** l'acció va caure almenys un `{drawdownPct}%` des del seu màxim dels últims 12 mesos."
       },
       {
         "marker": "02",
@@ -219,7 +219,7 @@
     "checks": {
       "beaten": {
         "label": "Ha caigut fa poc",
-        "detail": "Candidata des del {date} (fa {value} sessions; la finestra és de {max} dies). Ara {+subValue}% des del màxim de 52 setmanes ({level}) i {+endValue}% respecte a la SMA 200 ({endLevel}).",
+        "detail": "Candidata des del {date}. Ara {+subValue}% des del màxim de 52 setmanes ({level}) i {+endValue}% respecte a la SMA 200 ({endLevel}).",
         "past": "Finestra tancada: l'última caiguda forta va ser el {date} (fa {value} sessions; la finestra és de {max} dies).",
         "short": "no ha caigut prou fa poc",
         "pastShort": "finestra tancada (fa {value}d, màx. {max}d)",

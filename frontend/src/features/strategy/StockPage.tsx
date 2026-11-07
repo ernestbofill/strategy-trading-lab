@@ -67,24 +67,7 @@ function CheckGauge({ check, currency }: { check: RuleCheck; currency: string })
     )
   }
 
-  // 4. Candidate time window (beaten down within `max` days; past `max` = window closed).
-  if (check.key === 'beaten' && check.value !== null && check.max !== null && check.max > 0) {
-    const fillPct =
-      check.value <= check.max
-        ? Math.max(4, Math.round((check.value / check.max) * 75))
-        : Math.min(100, Math.round(75 + ((check.value - check.max) / check.max) * 25))
-    return (
-      <div className={styles.progress}>
-        <div className={styles.bar} data-kind="threshold" aria-hidden="true">
-          <div className={styles.fill} data-state={state} style={{ width: `${fillPct}%` }} />
-          <span className={styles.targetTick} style={{ left: '75%' }} />
-        </div>
-        <span className={styles.mono} data-state={state}>
-          {t('stock.bar.window', { value: formatRate(check.value), max: formatRate(check.max) })}
-        </span>
-      </div>
-    )
-  }
+  // 4. (The candidate window, `beaten`, has no gauge: a bar of days read as "more is better".)
 
   // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`, milestones).
   if (WINDOW_KEYS.has(check.key) && check.value !== null && check.max !== null && check.max > 0) {

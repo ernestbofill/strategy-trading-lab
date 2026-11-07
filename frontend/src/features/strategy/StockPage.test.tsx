@@ -41,7 +41,7 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
   checkTexts: {
     beaten: {
       label: 'Beaten down lately',
-      detail: 'Candidate since {date} ({value} trading days ago; window is {max} days). Now {+subValue}% from the 52-week high ({level}) and {+endValue}% vs the SMA 200 ({endLevel}).',
+      detail: 'Candidate since {date}. Now {+subValue}% from the 52-week high ({level}) and {+endValue}% vs the SMA 200 ({endLevel}).',
       past: 'Window closed: last beaten down on {date} ({value} trading days ago; window is {max} days).',
       short: 'not beaten down lately',
       pastShort: 'window closed ({value}d ago, max {max}d)',
@@ -100,10 +100,10 @@ describe('StockPage', () => {
     expect(screen.getByText('1 of 2 met. All of them: a buy signal.')).toBeTruthy()
     expect(
       screen.getByText(
-        'Candidate since Sep 11 (12 trading days ago; window is 60 days). Now −29.2% from the 52-week high ($335.77) and +42.5% vs the SMA 200 ($166.86).',
+        'Candidate since Sep 11. Now −29.2% from the 52-week high ($335.77) and +42.5% vs the SMA 200 ($166.86).',
       ),
     ).toBeTruthy()
-    expect(screen.getByText('Day 12 of 60')).toBeTruthy()
+    expect(screen.queryByText(/Day \d+ of/)).toBeNull()
     expect(screen.getByText('+1.6% vs the buy line ($233.90). A step needs 0% to +8% (up to $252.61).')).toBeTruthy()
     expect(screen.getByText('0.84× its 50-day average (needs 1.1×).')).toBeTruthy()
     expect(screen.getByText('76%')).toBeTruthy()

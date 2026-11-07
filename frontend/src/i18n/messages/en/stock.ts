@@ -26,7 +26,6 @@ export const stock = {
   'stock.check.pastZone': 'Past zone',
   'stock.check.pastLimit': 'Past limit',
   'stock.check.about': 'About {label}',
-  'stock.bar.window': 'Day {value} of {max}',
   'stock.bar.zone': 'Zone {min}–{max}%',
   'stock.bar.chase': '0 to +{max}%',
   'stock.bar.short': 'Short {price}',

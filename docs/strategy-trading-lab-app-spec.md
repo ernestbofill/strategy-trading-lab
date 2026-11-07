@@ -300,7 +300,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 *The comeback* (`ReviewComeback`)
 - The idea: "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys in steps."
 - It signals when:
-  1. "**It was beaten down:** the stock fell at least [X]% from its high of the last year." (POC: 30% below the 52-week high.)
+  1. "**It was beaten down:** the stock fell at least [X]% from its high of the last 12 months." (POC: 30% below the 52-week high.)
   2. "**It turned around:** it climbs 15% above its SMA 50 (average price over the last 50 days)."
   3. "**More people are trading it:** its volume (shares traded per day) is rising."
 - Tested: "[N] stocks, [year]-[year]."
@@ -638,7 +638,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
     - Visual gauges per rule type:
       - **Threshold bar (with `> 100%` overflow):** shown whether met or not, with a `100%` target tick at 75% of the bar width so values that exceed the threshold (e.g. `238%` on *Proven growth*) visibly pass the target tick.
       - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`) and *The comeback*'s buy line and milestones (`0% to +8%`), showing both the entry threshold and the upper limit past which the signal is cancelled.
-      - **Candidate window bar:** for *Beaten down lately* (`Day [value] of [max]`), overflowing into `Window closed` past `[max]` days.
+      - *Beaten down lately* has no bar: a bar of days read as "more is better". Its sentence says since when it is a candidate, and `Window closed` shows once the window has passed.
       - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Mid $Y > Long $Z`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* (`Sell $X · SMA $Y · Buy $Z`).
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
   - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.

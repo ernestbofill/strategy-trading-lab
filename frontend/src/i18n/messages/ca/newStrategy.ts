@@ -73,11 +73,11 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.tested.howLink': 'Com ho hem provat ›',
   'newStrategy.results.thisTemplate': 'Aquesta plantilla',
   'newStrategy.results.indexFund': 'Fons S&P 500',
+  'newStrategy.results.perYear': "L'any, de mitjana",
   'newStrategy.results.worstYear': 'El pitjor any',
   'newStrategy.results.period': 'Període',
   'newStrategy.results.template': 'Plantilla',
   'newStrategy.results.index': 'S&P 500',
-  'newStrategy.results.worstYr': 'Pitjor any',
   'newStrategy.how.noBacktest': 'Aquesta plantilla no té backtest.',
   'newStrategy.how.title': 'Com ho hem provat',
   'newStrategy.how.lead':

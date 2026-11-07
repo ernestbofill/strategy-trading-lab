@@ -76,11 +76,11 @@ export const newStrategy = {
   'newStrategy.tested.howLink': 'How we tested ›',
   'newStrategy.results.thisTemplate': 'This template',
   'newStrategy.results.indexFund': 'S&P 500 fund',
+  'newStrategy.results.perYear': 'A year, on average',
   'newStrategy.results.worstYear': 'Worst year',
   'newStrategy.results.period': 'Period',
   'newStrategy.results.template': 'Template',
   'newStrategy.results.index': 'S&P 500',
-  'newStrategy.results.worstYr': 'Worst yr',
   'newStrategy.how.noBacktest': 'There is no backtest for this template.',
   'newStrategy.how.title': 'How we tested',
   'newStrategy.how.lead':

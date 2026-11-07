@@ -11,7 +11,7 @@ afterEach(cleanup)
 const dip = {
   key: 'dip',
   name: 'Winners at a discount',
-  backtest: { periods: [{ period: 'All', template: 212, index: 248, worstYear: -21 }] },
+  backtest: { periods: [{ period: 'All', years: 10, template: 212, index: 248, worstYear: -21, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 }] },
   defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: { zoneStartPct: 5, zoneEndPct: 6, peakDays: 60 } },
   settings: [
     { key: 'zoneStartPct', sentence: 'The discount zone starts {value} below the recent peak.', value: '{n}%', step: 1, min: 1, max: 39, below: 'zoneEndPct', group: 'signal', help: 'The smallest dip that counts.' },
@@ -24,7 +24,7 @@ const dip = {
 const trend = {
   key: 'trend',
   name: 'Index trend',
-  backtest: { periods: [{ period: 'All', template: 249, index: 272, worstYear: -11 }] },
+  backtest: { periods: [{ period: 'All', years: 10, template: 249, index: 272, worstYear: -11, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 }] },
   defaults: { version: 1, budget: { amount: 3000, step: null, maxSteps: null }, params: { smaDays: 200, bandPct: 3 } },
   settings: [
     { key: 'smaDays', sentence: 'The trend line is the average price over {value}.', value: '{n} days', step: 10, min: 50, max: 300 },

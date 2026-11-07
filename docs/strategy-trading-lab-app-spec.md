@@ -268,7 +268,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 3. **"The idea"**: the rationale in plain words, no numbers, no promises.
 4. **"It signals when"**: numbered rules (01, 02, 03), each "**Plain label:** detail", with numbers and terms highlighted and explained in brackets.
 5. **What it watches**: "Choose stocks to watch" (stock templates) or "The fund it watches" (fund templates).
-6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"), "Worst year" `[−X%]`; and a "How we tested ›" link to 2c.
+6. **"Tested"** box: the period and scope line; a small table with columns "This template" and "S&P 500 fund" (with its "i") and rows "A year, on average" `[+X.X%]` (the yearly rate that compounds to the whole period's return) and "Worst year" `[−X%]`; and a "How we tested ›" link to 2c.
 7. **"What can go wrong:"** one line.
 8. A row "Advanced settings ›" → 2b.
 9. Button "Use this template" → Choose the mode.
@@ -436,7 +436,7 @@ The settings are available when starting a strategy and on a running one (Tune t
   - "Results in euro, at each day's exchange rate."
   - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
   - "Fees: [€X] per trade. Taxes not included."
-- **"By period"**: a table "Period" / "Template" / "Index" / "Worst yr", rows "2000-09", "2010-19", "2020-24", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`).
+- **"By period"**: a table "Period", then "A year, on average" and "Worst year", each with "Template" and "S&P 500" columns; rows "2000-09", "2010-19", "2020-24", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`).
 - Caption under table: "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All."
 - Warning box **"What a backtest can't show"**:
   - "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results."

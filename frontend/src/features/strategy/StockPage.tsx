@@ -12,6 +12,7 @@ import { exact, formatRate, money, pctTone, shortDate, signedPct } from '../../l
 import { signalPath, strategyPath } from '../dashboard/paths'
 import { checkText, fillCheck, isPastMax } from './checks'
 import { PriceChart } from './PriceChart'
+import { isCandidateOn } from './priceChartMarks'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
 import { stockLine } from './stockLine'
@@ -282,7 +283,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   const live = s.mode === 'live'
   const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
   const candidate = row.checks.filter((c) => c.group === 'candidate' && c.met !== null)
-  const isCandidate = candidate.every((c) => c.met)
+  const isCandidate = isCandidateOn(row.checks)
   const since = candidate.length > 0 && isCandidate ? candidateDateOf(row) : null
   const answer =
     row.status === 'waitingForYou' && row.signalId ? <PrimaryAction to={signalPath(s.id, row.signalId)}>{t('stock.answer')}</PrimaryAction> : undefined

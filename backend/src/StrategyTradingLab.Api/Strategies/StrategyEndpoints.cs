@@ -100,23 +100,18 @@ public static class StrategyEndpoints
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.AsNoTracking()
                 .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
-                .Select(s => new { s.TemplateKey, s.Params }).SingleOrDefaultAsync(cancellationToken);
+                .Select(s => new { s.TemplateKey, s.Params, s.Budget.MaxSteps }).SingleOrDefaultAsync(cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == assetId).OrderBy(p => p.Date)
                 .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
             if (bars.Count == 0) return TypedResults.Ok(new StockChartData(null, []));
             var from = bars[^1].Date.AddDays(-StockChart.Days);
 
-            // From its first check on, the checks the daily check stored; before it, the candidate checks of the rules run afresh.
-            var stored = await db.DailyEvaluations.AsNoTracking().Where(e => e.StrategyId == id && e.AssetId == assetId)
-                .OrderBy(e => e.Date).Select(e => new { e.Date, e.Facts }).ToListAsync(cancellationToken);
-            DateOnly? startedOn = stored.Count > 0 ? stored[0].Date : null;
-            var checks = stored.Where(e => e.Date >= from).ToDictionary(e => e.Date, e => ChecksOf(e.Facts));
-            if (TemplateRules.Supports(strategy.TemplateKey) && (startedOn is null || startedOn > from))
-            {
-                var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
-                foreach (var (day, watched) in StockChart.WatchedChecks(rules, bars, from, startedOn)) checks[day] = watched;
-            }
+            var startedOn = await db.DailyEvaluations.Where(e => e.StrategyId == id && e.AssetId == assetId)
+                .MinAsync(e => (DateOnly?)e.Date, cancellationToken);
+            var checks = TemplateRules.Supports(strategy.TemplateKey)
+                ? StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, strategy.MaxSteps ?? 1)
+                : [];
             return TypedResults.Ok(new StockChartData(startedOn, [.. bars.Where(b => b.Date >= from)
                 .Select(b => new ChartDay(b.Date, b.Close, checks.GetValueOrDefault(b.Date) ?? []))]));
         })

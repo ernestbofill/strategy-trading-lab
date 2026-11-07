@@ -627,15 +627,15 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 - Top bar: "← BACK" to the strategy page.
 - H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
 - **Status box:** the same pill and line as its row on the strategy page, and when the stock is a candidate, "Candidate since [date]".
-- **Price chart** (under the status box), not interactive: the daily closes, with "90 days", "30 days" (the default) and "7 days" buttons, and the rules' levels drawn as they moved day by day, as lines or shaded areas. A legend under it names each level, with its latest price when it shows on the latest day.
-  - From the strategy's first check of the stock, each day's levels come from that day's stored rule checks. A dashed vertical line marks that day, "Started [date]" (left out when it is before the period shown).
+- **Price chart** (under the status box), not interactive: the daily closes, with "90 days", "30 days" (the default) and "7 days" buttons, and the rules' levels drawn as they moved day by day, as lines or shaded areas. A legend under it names each level, with its latest price when it shows on the latest day the rules checked.
+  - From the strategy's first check of the stock, each day's levels come from the rules replayed from that day, as the daily check does, on today's closes (so a split doesn't leave old levels behind). A dashed vertical line marks that day, "Started [date]" (left out when it is before the period shown).
   - Before it, buys don't apply: only the lines that make a stock a candidate show (they go back in time), from the rules run over the price history as for a stock never bought.
   - *The comeback*: on a candidate day after the start, the "Buy area" from the buy line to the chase limit; on a day it isn't one, the "Beaten down" line (the 52-week high less the drop the rules need). While the rules hold it, the next milestone's area (the first not used yet), named after its rule ("Back above SMA 200").
   - *Winners at a discount*: on a candidate day after the start, the "Discount zone"; on a day it isn't one, the "Proven growth" line (its low plus the growth the rules need).
   - *Bear markets*: the "Market fall" line always; after the start, the "Bounce buy" line once a drop has started (none before a drop).
   - *Index trend*: after the start, the "Buy line" and the "Sell line"; before it, the price only.
-  - This strategy's trades are dots at their price on their day, green for a buy and pink for a sell, with "Buy" and "Sell" in the legend.
-  - The scale fits the price, every level and every trade, so the distance to a far line stays in view.
+  - This strategy's trades are dots on the price line on their day, green for a buy and pink for a sell, with "Buy" and "Sell" in the legend.
+  - The scale fits the price and every level, so the distance to a far line stays in view.
   - A candidate's chart (by the latest day's checks) is framed and drawn in green, a stock that isn't one in violet. The chart is left out with fewer than two closes in all; a period with fewer than two (a gap in the prices) shows the last two, its dates under the chart. The data comes from `GET /strategies/{id}/stocks/{assetId}/chart` (the last 90 calendar days).
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
   - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."

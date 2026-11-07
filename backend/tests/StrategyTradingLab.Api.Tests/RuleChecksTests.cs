@@ -73,7 +73,7 @@ public class RuleChecksTests
         var bars = Bars("comeback-SMCI-800");
         var from = bars[300].Date;
         var start = bars[^20].Date;
-        var watched = StrategyTradingLab.Api.Strategies.StockChart.WatchedChecks(new ComebackRules(bars, new ComebackParams()), bars, from, start);
+        var watched = StrategyTradingLab.Api.Strategies.StockChart.WatchedChecks(new ComebackRules(bars, new ComebackParams()), bars, from, start, 5);
 
         Assert.Equal(bars.Count(b => b.Date >= from && b.Date < start), watched.Count);
         // A run that buys swaps the candidate checks for milestones; a stock never bought keeps them every day.

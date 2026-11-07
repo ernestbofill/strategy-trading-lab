@@ -44,7 +44,10 @@ export function PriceChart({
   const candidate = last.checks.length > 0 ? isCandidateOn(last.checks) : isCandidate
 
   const series = chartSeries(points)
+  // The legend's prices are the latest day the rules checked, which can be a day behind the latest close.
+  const lastChecked = points.findLastIndex((p) => p.checks.length > 0)
   const dayOf = (date: string) => points.findIndex((p) => p.date >= date)
+  // On the price line at its day's close: a trade's own price is what was paid, which a later split no longer matches.
   const dots = trades.filter((tr) => tr.tradeDate >= first && tr.tradeDate <= last.date).map((tr) => ({ ...tr, i: dayOf(tr.tradeDate) }))
   const startedOn = chart.data.startedOn
   const started = startedOn && startedOn > first && startedOn <= last.date ? dayOf(startedOn) : null
@@ -52,7 +55,6 @@ export function PriceChart({
   const [low, high] = priceRange([
     ...points.map((p) => p.close),
     ...series.flatMap((s) => s.points.flatMap((p) => (p.to === undefined ? [p.from] : [p.from, p.to]))),
-    ...dots.map((d) => d.price),
   ])
   const step = WIDTH / (points.length - 1)
   const x = (i: number) => +(i * step).toFixed(1)
@@ -90,7 +92,7 @@ export function PriceChart({
         {/* Round marks in HTML, so the stretched SVG doesn't squash them. */}
         <span className={styles.dot} style={{ left: '100%', top: pct(y(last.close), HEIGHT) }} />
         {dots.map((d) => (
-          <span key={d.id} className={styles.trade} data-side={d.side} style={{ left: pct(x(d.i), WIDTH), top: pct(y(d.price), HEIGHT) }} />
+          <span key={d.id} className={styles.trade} data-side={d.side} style={{ left: pct(x(d.i), WIDTH), top: pct(y(points[d.i].close), HEIGHT) }} />
         ))}
         {started !== null && (
           <span className={styles.startLabel} data-left={x(started) > WIDTH * 0.6} style={{ left: pct(x(started), WIDTH) }}>
@@ -109,7 +111,7 @@ export function PriceChart({
         </li>
         {series.map((s) => {
           const today = s.points[s.points.length - 1]
-          const now = today.i === points.length - 1
+          const now = today.i === lastChecked
           return (
             <li key={s.mark.id}>
               <span className={styles.key} data-kind={s.area ? 'area' : 'line'} data-tone={s.mark.tone} />

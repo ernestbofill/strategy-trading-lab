@@ -1,7 +1,7 @@
 export const stock = {
   'stock.what': 'this stock',
   'stock.notInStrategy': "This stock isn't in this strategy.",
-  'stock.close': 'Close {price} on {date}',
+  'stock.close': 'Close on {date}',
   'stock.candidateSince': 'Candidate since {date}',
   'stock.answer': 'Answer the signal',
   'stock.rules': 'Rules on {date}',

@@ -4,6 +4,25 @@
   gap: var(--space-1);
 }
 
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.priceValue {
+  font: 600 22px/28px var(--font-mono);
+}
+
 .symbol {
   margin: 0;
   font: 600 28px/36px var(--font-mono);

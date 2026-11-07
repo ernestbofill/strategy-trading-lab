@@ -3,7 +3,7 @@ import type { stock as en } from '../en/stock'
 export const stock: Record<keyof typeof en, string> = {
   'stock.what': 'aquesta acció',
   'stock.notInStrategy': 'Aquesta acció no és en aquesta estratègia.',
-  'stock.close': 'Tancament {price} el {date}',
+  'stock.close': 'Tancament del {date}',
   'stock.candidateSince': 'Candidata des del {date}',
   'stock.answer': 'Respon el senyal',
   'stock.rules': 'Regles el {date}',

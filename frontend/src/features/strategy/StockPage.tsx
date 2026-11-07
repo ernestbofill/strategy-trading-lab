@@ -67,7 +67,8 @@ function CheckGauge({ check, currency }: { check: RuleCheck; currency: string })
     )
   }
 
-  // 4. (The candidate window, `beaten`, has no gauge: a bar of days read as "more is better".)
+  // 4. The candidate window (`beaten`) has no gauge: a bar of days read as "more is better".
+  if (check.key === 'beaten') return null
 
   // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`, milestones).
   if (WINDOW_KEYS.has(check.key) && check.value !== null && check.max !== null && check.max > 0) {
@@ -294,7 +295,15 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   return (
     <Screen top={top} action={answer}>
       <div className={styles.header}>
-        <h1 className={styles.symbol}>{row.symbol}</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.symbol}>{row.symbol}</h1>
+          {row.close !== null && row.checkedOn && (
+            <div className={styles.price}>
+              <span className={styles.priceValue}>{exact(row.close, row.currency)}</span>
+              <span className={styles.muted}>{t('stock.close', { date: shortDate(row.checkedOn) })}</span>
+            </div>
+          )}
+        </div>
         <div className={styles.name}>
           {row.name}
           {row.exchange && <span className={styles.muted}> · {row.exchange}</span>}
@@ -311,16 +320,11 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
           <StockPill tone={line.tone}>{line.pill}</StockPill>
           <span>{line.detail}</span>
         </div>
-        {(row.close !== null && row.checkedOn) || since ? (
+        {since && (
           <div className={styles.statusMeta}>
-            {row.close !== null && row.checkedOn && (
-              <span className={styles.muted}>{t('stock.close', { price: exact(row.close, row.currency), date: shortDate(row.checkedOn) })}</span>
-            )}
-            {since && (
-              <span className={styles.candidateBadge}>{t('stock.candidateSince', { date: shortDate(since) })}</span>
-            )}
+            <span className={styles.candidateBadge}>{t('stock.candidateSince', { date: shortDate(since) })}</span>
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* Without enough price history the rules say nothing yet: the status line says so. */}

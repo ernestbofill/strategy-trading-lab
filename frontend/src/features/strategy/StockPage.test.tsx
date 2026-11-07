@@ -94,7 +94,8 @@ describe('StockPage', () => {
     expect(await screen.findByRole('heading', { name: 'ZS' })).toBeTruthy()
     expect(screen.getByText('CANDIDATE')).toBeTruthy()
     expect(screen.getByText('Volume 0.84× (needs 1.1×)')).toBeTruthy()
-    expect(screen.getByText('Close $237.62 on Oct 30')).toBeTruthy()
+    expect(screen.getByText('$237.62')).toBeTruthy()
+    expect(screen.getByText('Close on Oct 30')).toBeTruthy()
     expect(screen.getByText('Candidate since Sep 11')).toBeTruthy()
     expect(screen.getByText('Yes, since Sep 11: the rules watch it for a buy signal.')).toBeTruthy()
     expect(screen.getByText('1 of 2 met. All of them: a buy signal.')).toBeTruthy()
@@ -103,7 +104,7 @@ describe('StockPage', () => {
         'Candidate since Sep 11. Now −29.2% from the 52-week high ($335.77) and +42.5% vs the SMA 200 ($166.86).',
       ),
     ).toBeTruthy()
-    expect(screen.queryByText(/Day \d+ of/)).toBeNull()
+    expect(screen.queryByText(/Day \d+ of|^\+12%$/)).toBeNull()
     expect(screen.getByText('+1.6% vs the buy line ($233.90). A step needs 0% to +8% (up to $252.61).')).toBeTruthy()
     expect(screen.getByText('0.84× its 50-day average (needs 1.1×).')).toBeTruthy()
     expect(screen.getByText('76%')).toBeTruthy()

@@ -625,8 +625,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. No chart yet (ROADMAP, Milestone 3).
 
 - Top bar: "← BACK" to the strategy page.
-- H1: the symbol; under it the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
-- **Status box:** the same pill and line as its row on the strategy page, "Close [price] on [date]" (the close the rules looked at), and when the stock is a candidate, "Candidate since [date]".
+- H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
+- **Status box:** the same pill and line as its row on the strategy page, and when the stock is a candidate, "Candidate since [date]".
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
   - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."
   - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).

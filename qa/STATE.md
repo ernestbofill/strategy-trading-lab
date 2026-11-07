@@ -116,6 +116,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | E1 | Status box, position, its signals and trades | §6 Stock page | untested | | |
 | E2 | Rules on [date]: badges and gauges, per template | §6 Stock page | untested | | |
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | untested | | |
+| E4 | Price chart: 90/30/7 days, each template's levels, candidate vs not colours | §6 Stock page | untested | | |
 
 ### F · Confirm a signal (live)
 

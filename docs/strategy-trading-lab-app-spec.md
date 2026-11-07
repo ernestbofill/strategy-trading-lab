@@ -622,11 +622,17 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 ### Stock page (built, not drawn)
 
-One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. No chart yet (ROADMAP, Milestone 3).
+One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page.
 
 - Top bar: "← BACK" to the strategy page.
 - H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
 - **Status box:** the same pill and line as its row on the strategy page, and when the stock is a candidate, "Candidate since [date]".
+- **Price chart** (under the status box), not interactive: the daily closes, with "90 days", "30 days" (the default) and "7 days" buttons, and the rules' levels of the latest check drawn as flat lines or shaded areas ("Lines at today's levels"). A legend under it names each level with its price. Which levels:
+  - *The comeback*: a candidate's "Buy area", from the buy line to the chase limit; not a candidate, the "Beaten down" line (the 52-week high less the drop the rules need), which the price must cross to become one.
+  - *Winners at a discount*: a candidate's "Discount zone"; not a candidate, the "Proven growth" line (its low plus the growth the rules need).
+  - *Bear markets*: always the "Market fall" line and the "Bounce buy" line, so the gap between them shows. Before a drop there is no low yet, so the bounce line is the bounce off the fall line.
+  - *Index trend*: always the "Buy line" and the "Sell line".
+  - A candidate's chart is framed and drawn in green, a stock that isn't one in violet. The chart is left out with fewer than two closes in the period. The closes come from `GET /strategies/{id}/stocks/{assetId}/prices` (the last 90 calendar days).
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
   - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."
   - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).

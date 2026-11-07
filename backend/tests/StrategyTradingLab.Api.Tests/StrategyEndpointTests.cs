@@ -101,6 +101,30 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
     }
 
     [NeonFact]
+    public async Task A_stocks_prices_are_for_its_strategys_owner_only()
+    {
+        var name = $"Test {Guid.NewGuid()}";
+        var (client, _) = await factory.SignedUpAsync();
+        var (other, _) = await factory.SignedUpAsync();
+        try
+        {
+            var created = await (await client.PostAsJsonAsync("/strategies", Request("dip", name))).Content.ReadFromJsonAsync<JsonElement>();
+            var id = created.GetProperty("id").GetGuid();
+            var stock = TemplateCatalog.Find("dip")!.Watches.Assets.First().Id;
+            var notInIt = TemplateCatalog.Find("dip")!.Watches.Assets.Last().Id;
+
+            var prices = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}/stocks/{stock}/prices");
+            Assert.Equal(JsonValueKind.Array, prices.ValueKind);
+            Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/strategies/{id}/stocks/{stock}/prices")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/strategies/{id}/stocks/{notInIt}/prices")).StatusCode);
+        }
+        finally
+        {
+            await Remove(name);
+        }
+    }
+
+    [NeonFact]
     public async Task An_all_in_strategy_starts_without_steps()
     {
         var name = $"Test {Guid.NewGuid()}";

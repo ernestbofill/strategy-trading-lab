@@ -78,6 +78,10 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
 
 function open(s: StrategyDetail, assetId = 'zs') {
   vi.spyOn(api, 'getStrategy').mockResolvedValue(s)
+  vi.spyOn(api, 'getStockPrices').mockResolvedValue([
+    { date: '2026-10-01', close: 220 },
+    { date: '2026-10-30', close: 237.62 },
+  ])
   render(
     <MemoryRouter initialEntries={[`/strategies/s1/stocks/${assetId}`]}>
       <Routes>
@@ -97,6 +101,9 @@ describe('StockPage', () => {
     expect(screen.getByText('$237.62')).toBeTruthy()
     expect(screen.getByText('Close on Oct 30')).toBeTruthy()
     expect(screen.getByText('Candidate since Sep 11')).toBeTruthy()
+    // The chart: a candidate's buy area, from the buy line to the chase limit.
+    expect(await screen.findByText('$233.90–$252.61')).toBeTruthy()
+    expect(screen.getByRole('radio', { name: '30 days' })).toHaveProperty('checked', true)
     expect(screen.getByText('Yes, since Sep 11: the rules watch it for a buy signal.')).toBeTruthy()
     expect(screen.getByText('1 of 2 met. All of them: a buy signal.')).toBeTruthy()
     expect(

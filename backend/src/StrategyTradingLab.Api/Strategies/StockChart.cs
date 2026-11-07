@@ -13,9 +13,12 @@ public static class StockChart
     /// <summary>How far back the chart goes, in calendar days (its longest zoom).</summary>
     public const int Days = 90;
 
-    /// <summary>Each day's checks from <paramref name="from"/> on. <paramref name="newRules"/> builds fresh rules: they keep state, so each run needs its own.</summary>
+    /// <summary>
+    /// Each day's checks from <paramref name="from"/> on, after the start until the last day the daily check ran (an archived
+    /// strategy or an unticked stock stops there). <paramref name="newRules"/> builds fresh rules: they keep state, so each run needs its own.
+    /// </summary>
     public static Dictionary<DateOnly, IReadOnlyList<RuleCheck>> Checks(Func<IBuyRules> newRules, IReadOnlyList<PriceBar> bars, DateOnly from,
-        DateOnly? startedOn, int maxSteps)
+        DateOnly? startedOn, DateOnly? checkedUntil, int maxSteps)
     {
         var checks = startedOn is null || startedOn > from ? WatchedChecks(newRules(), bars, from, startedOn, maxSteps) : [];
         if (startedOn is { } day)
@@ -23,7 +26,7 @@ public static class StockChart
             // No bar from that day on (a price row revised away): the latest bar, as the daily check does.
             var start = bars.Count - 1;
             while (start > 0 && bars[start - 1].Date >= day) start--;
-            foreach (var evaluation in RulesRunner.Run(newRules(), bars, new StepPlan(maxSteps), start).Where(e => e.Date >= from))
+            foreach (var evaluation in RulesRunner.Run(newRules(), bars, new StepPlan(maxSteps), start).Where(e => e.Date >= from && e.Date <= checkedUntil))
                 checks[evaluation.Date] = evaluation.Checks;
         }
         return checks;

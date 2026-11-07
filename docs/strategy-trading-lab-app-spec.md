@@ -632,7 +632,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
   - *Winners at a discount*: a candidate's "Discount zone"; not a candidate, the "Proven growth" line (its low plus the growth the rules need).
   - *Bear markets*: always the "Market fall" line and the "Bounce buy" line, so the gap between them shows. Before a drop there is no low yet, so the bounce line is the bounce off the fall line.
   - *Index trend*: always the "Buy line" and the "Sell line".
-  - A candidate's chart is framed and drawn in green, a stock that isn't one in violet. The chart is left out with fewer than two closes in the period. The closes come from `GET /strategies/{id}/stocks/{assetId}/prices` (the last 90 calendar days).
+  - A candidate's chart is framed and drawn in green, a stock that isn't one in violet. The chart is left out with fewer than two closes in all; a period with fewer than two (a gap in the prices) shows the last two, its dates under the chart. The closes come from `GET /strategies/{id}/stocks/{assetId}/prices` (the last 90 calendar days).
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
   - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."
   - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).

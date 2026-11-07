@@ -31,9 +31,10 @@ export function PriceChart({
   const t = useT()
   const [days, setDays] = useState('30')
   const prices = useLoadable(`prices:${strategyId}:${assetId}`, () => api.getStockPrices(strategyId, assetId))
-  if (prices.status !== 'ready') return null
-  const points = lastDays(prices.data, Number(days))
-  if (points.length < 2) return null
+  if (prices.status !== 'ready' || prices.data.length < 2) return null
+  // A short period with a gap in the closes still draws its last two, so the buttons stay; the dates under it say when.
+  const period = lastDays(prices.data, Number(days))
+  const points = period.length >= 2 ? period : prices.data.slice(-2)
 
   const marks = chartMarks(checks, isCandidate)
   const [low, high] = priceRange(points, marks)

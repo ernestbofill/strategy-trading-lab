@@ -36,7 +36,6 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.signalsCount': '{did} fets · {skipped} omesos · {missed} perduts',
   'strategy.stocks': 'Accions · {count}',
   'strategy.funds': 'Fons · {count}',
-  'strategy.caption': 'Eliminar una acció n’atura els senyals. Les operacions fetes hi romanen als resultats.',
   'strategy.editList': 'Edita la llista',
   'strategy.list.title': 'Edita la llista',
   'strategy.list.lead': 'Desmarcar una acció n’atura els senyals; els pendents es tanquen com a perduts. Les seves operacions romanen als resultats. Una acció que tornes a marcar comença des d’avui.',

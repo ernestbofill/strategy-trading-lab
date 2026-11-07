@@ -588,7 +588,6 @@ The same three settings can be changed later from the strategy page (not drawn).
     - *Index trend* shows "CANDIDATE" ("[n]% from the buy line", or "Below its long trend" before the checks are stored) when not holding, like the other templates, and "HOLDING" ("In the market") when holding. (It said "OUT OF THE MARKET" until #156, which read like a verdict on the market next to a fund close to its buy line.)
     - Live, the pill says where the user is, not the rules: when the user skipped every step the rules hold, an all-in or *Index trend* stock is "CANDIDATE" and a stepped one a candidate (or not a candidate), with "Rules: [rules] · You: [you]" under it (e.g. "Rules: In the market · You: Out of the market").
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
-- Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
 - **Signals and trades** (`SignalsAndTrades`):
   - A chronological timeline of every signal and trade recorded for this strategy, ordered newest first.
   - Heading: "Signals and trades" with the item count ("· [n]").

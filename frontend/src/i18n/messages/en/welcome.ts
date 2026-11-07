@@ -45,7 +45,7 @@ export const welcome = {
   'welcome.sim.title': 'Real-time simulation',
   'welcome.sim.tagline': 'Forward-test on real prices with zero financial risk',
   'welcome.sim.summary':
-    'Paper trade live prices starting today. Stress-test execution and compare returns against the S&P 500 fund and worst-year benchmarks.',
+    'Run it on live prices starting today. Stress-test execution and compare returns against the S&P 500 fund and worst-year benchmarks.',
   'welcome.sim.point1': 'Real market closing prices updated daily after US market close.',
   'welcome.sim.point2': 'Automatic simulated order recording according to your exact strategy rules.',
   'welcome.sim.point3': 'Honest performance metrics alongside index fund returns and the worst historical year.',
@@ -57,7 +57,7 @@ export const welcome = {
   'welcome.sim.mock.indexLabel': 'S&P 500 fund',
   'welcome.sim.mock.worstLabel': 'Worst year',
   'welcome.sim.mock.tabPerf': 'Performance comparison',
-  'welcome.sim.mock.tabTrades': 'Paper trade log',
+  'welcome.sim.mock.tabTrades': 'Trade log',
   'welcome.sim.mock.log1': 'Bought 1 step \u00B7 AAPL @ $178.40',
   'welcome.sim.mock.log2': 'Bought 1 step \u00B7 MSFT @ $412.10',
   'welcome.sim.mock.note': 'Benchmark tracking uses daily closing prices.',

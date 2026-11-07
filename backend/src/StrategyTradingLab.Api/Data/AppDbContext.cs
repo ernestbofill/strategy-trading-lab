@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserTrade> UserTrades => Set<UserTrade>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<TemplateOverride> TemplateOverrides => Set<TemplateOverride>();
     public DbSet<UserSession> Sessions => Set<UserSession>();
     public DbSet<EmailToken> EmailTokens => Set<EmailToken>();
     public DbSet<Invite> Invites => Set<Invite>();

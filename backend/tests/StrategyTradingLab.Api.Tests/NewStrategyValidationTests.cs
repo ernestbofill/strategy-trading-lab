@@ -140,7 +140,7 @@ public class NewStrategyValidationTests
     {
         foreach (var template in TemplateCatalog.All)
         {
-            var assets = template.Watches.Assets.Select(seed => new Asset
+            var assets = template.Watches.AssetIds.Select(id => TemplateAssets.All.Single(seed => seed.Id == id)).Select(seed => new Asset
             {
                 Id = seed.Id, Symbol = seed.Symbol, Exchange = "X", Name = seed.Name, Currency = "USD",
                 Kind = template.Watches is DefaultFund ? AssetKind.Fund : AssetKind.Stock,

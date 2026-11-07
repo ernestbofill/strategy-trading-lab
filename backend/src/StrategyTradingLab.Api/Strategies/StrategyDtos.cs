@@ -52,13 +52,10 @@ public record StrategySummary(
 
 /// <summary>
 /// A strategy's stocks by pill, for its dashboard card: a signal (waiting or today's), a candidate within
-/// <see cref="StockCounts.ClosePct"/> of its buy rule (<c>Close</c>, not counted again in <c>Candidates</c>), any other
+/// the template's <see cref="Template.ClosePct"/> of its buy rule (<c>Close</c>, not counted again in <c>Candidates</c>), any other
 /// candidate, held (or building), and not a candidate. Stocks not checked yet aren't counted.
 /// </summary>
-public record StockCounts(int Signals, int Close, int Candidates, int Holding, int NotCandidates)
-{
-    public const decimal ClosePct = 3;
-}
+public record StockCounts(int Signals, int Close, int Candidates, int Holding, int NotCandidates);
 
 /// <summary>What a strategy has earned since it started, in percent, next to the index fund (null when its prices are missing). Null until it has trades.</summary>
 public record StrategyResults(decimal Strategy, decimal? Index, IReadOnlyList<decimal> History);

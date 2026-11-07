@@ -380,6 +380,18 @@ The admin page's settings (`Admin/SettingDefinitions.cs` lists which). One row p
 | value | text, null | Plain text, except secrets: encrypted with ASP.NET Core Data Protection (keys in the service's systemd `StateDirectory`, not in the database). Null: cleared, which hides the server's value too |
 | created_at, updated_at | timestamptz | |
 
+### `template_overrides`
+
+The owner's changes to a template on `/admin/templates` (`Admin/AdminTemplates.cs`, read by `Templates/TemplateStore.cs`): what a new strategy of it starts with. One row per changed template; only what differs from the tested values (the code's) is stored, and no row means the tested values. A running strategy keeps what it started with (its own `params` and `strategy_assets`).
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| template_key | text PK | One of the catalogue's keys (CHECK) |
+| defaults | jsonb, null | Advanced settings' defaults by setting key, `{"zoneEndPct": 12}`. A value the code no longer accepts makes every default the tested one |
+| asset_ids | uuid[], null | The starter list, or the one fund of a fund template |
+| close_pct | numeric(4,1), null | "Getting close": a candidate within this % of its buy rule (dashboard card, summary's stock changes). 0.5 to 10 |
+| created_at, updated_at | timestamptz | |
+
 ### `feedback_items`
 
 In-app feedback notes (`bug` | `idea` | `note` | `feature`). Any logged-in user with a verified email (`email_verified_at IS NOT NULL`) can submit one (from selected text on any screen, or as a general comment); only the owner lists, edits, closes/reopens or deletes them on `/admin` and `/feedback`. Cascades from `users`.

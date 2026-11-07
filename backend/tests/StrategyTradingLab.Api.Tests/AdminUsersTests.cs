@@ -33,7 +33,7 @@ public class AdminUsersTests(AdminFixture fixture) : IClassFixture<AdminFixture>
         {
             templateKey = "dip", name = $"Users {Guid.NewGuid():N}"[..20], mode = "live",
             budget = new { amount = 3000, step = 100, maxSteps = 5 },
-            assetIds = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).Take(2),
+            assetIds = TemplateCatalog.Dip.Watches.AssetIds.Take(2),
         };
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync("/strategies", request)).StatusCode);
 

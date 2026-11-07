@@ -16,7 +16,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     {
         templateKey = "dip", name, mode,
         budget = new { amount = 3000, step = 100, maxSteps = 5 },
-        assetIds = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).Take(2),
+        assetIds = TemplateCatalog.Dip.Watches.AssetIds.Take(2),
     };
 
     async Task<Guid> StartAsync(HttpClient client, string name, string mode = "live")
@@ -109,7 +109,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
         {
             var name = $"End {Tag()}";
             var id = await StartAsync(client, name);
-            var assetId = TemplateCatalog.Dip.Watches.Assets.First().Id;
+            var assetId = TemplateCatalog.Dip.Watches.AssetIds[0];
             Guid signalId, tradeId;
             using (var scope = factory.Services.CreateScope())
             {
@@ -254,7 +254,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
         try
         {
             var id = await StartAsync(client, $"List {Tag()}");
-            var dip = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).ToList();
+            var dip = TemplateCatalog.Dip.Watches.AssetIds.ToList();
             var (a, b, c) = (dip[0], dip[1], dip[2]); // It started with A and B.
             Guid signalId;
             using (var scope = factory.Services.CreateScope())
@@ -345,7 +345,7 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
         try
         {
             var id = await StartAsync(client, $"Sim list {Tag()}", mode: "simulation");
-            var dip = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).ToList();
+            var dip = TemplateCatalog.Dip.Watches.AssetIds.ToList();
             Guid signalId;
             using (var scope = factory.Services.CreateScope())
             {

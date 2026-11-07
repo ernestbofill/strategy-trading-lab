@@ -2102,3 +2102,30 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261107125949_AddTemplateOverrides') THEN
+    CREATE TABLE template_overrides (
+        template_key text NOT NULL,
+        defaults jsonb,
+        asset_ids uuid[],
+        close_pct numeric(4,1),
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        updated_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_template_overrides PRIMARY KEY (template_key),
+        CONSTRAINT ck_template_overrides_template_key CHECK (template_key IN ('dip', 'comeback', 'bear', 'trend', 'ai'))
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261107125949_AddTemplateOverrides') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261107125949_AddTemplateOverrides', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

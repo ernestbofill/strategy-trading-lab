@@ -953,6 +953,49 @@ export interface AdminAlert {
   closedAt: string | null
 }
 
+
+/** A template on /admin/templates: backend Admin/AdminTemplates.cs (AdminTemplate). What new strategies start with, next to the tested values. */
+export interface AdminTemplate {
+  key: string
+  name: string
+  investsIn: InvestsIn
+  changed: boolean
+  settings: AdminTemplateSetting[]
+  /** The starter list, or the one fund, sorted by name. */
+  assets: AdminTemplateAsset[]
+  testedAssetIds: string[]
+  /** "Getting close" in %; null for a template whose stocks have no buy rule (the AI's). */
+  closePct: number | null
+  testedClosePct: number
+}
+
+/** A setting of Advanced settings, with its words (`sentence` with `{value}`, `value` with `{n}`), range and defaults. */
+export interface AdminTemplateSetting {
+  key: string
+  sentence: string
+  value: string
+  step: number
+  min: number
+  max: number
+  below?: string | null
+  tested: number
+  current: number
+}
+
+export interface AdminTemplateAsset {
+  id: string
+  symbol: string
+  name: string
+  active: boolean
+}
+
+/** What new strategies of a template should start with: every setting's default, the stocks or the fund, "getting close". */
+export interface AdminTemplateChange {
+  defaults: Record<string, number>
+  assetIds: string[]
+  closePct: number | null
+}
+
 /** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
 export interface AdminAsset {
   id: string
@@ -1099,6 +1142,12 @@ export interface Api {
   getAdminAlerts(): Promise<AdminAlert[]>
   /** Dismisses an open alert: it stays quiet while its problem lasts. */
   dismissAdminAlert(id: string): Promise<void>
+  /** Every template: what new strategies start with, next to the tested values. */
+  getAdminTemplates(): Promise<AdminTemplate[]>
+  /** Sets what new strategies of a template start with. Rejects with `InvalidFieldsError` (`settings.<key>`, `assetIds`, `closePct`). */
+  setAdminTemplate(key: string, change: AdminTemplateChange): Promise<AdminTemplate>
+  /** Back to the tested values. */
+  resetAdminTemplate(key: string): Promise<void>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */

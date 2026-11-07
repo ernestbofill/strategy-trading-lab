@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using StrategyTradingLab.Api.Templates;
 
@@ -190,5 +192,56 @@ public class TemplateSettingsTests
 
         Assert.StartsWith("Use ", Refused("en"));
         Assert.StartsWith("Fes servir ", Refused("ca"));
+    }
+}
+
+/// <summary>/admin/templates: the owner's changes over the tested values, and what the page refuses. Nothing is saved, as other tests start strategies from the same templates.</summary>
+public class TemplateOverrideTests(AdminFixture fixture) : IClassFixture<AdminFixture>
+{
+    [Fact]
+    public void The_owners_defaults_list_and_getting_close_replace_the_tested_ones()
+    {
+        var dip = TemplateCatalog.Dip;
+        var stocks = new List<Guid> { TemplateAssets.Eaton.Id, TemplateAssets.Tesla.Id };
+        var row = new Data.Entities.TemplateOverride
+        {
+            TemplateKey = dip.Key,
+            Defaults = JsonDocument.Parse("""{"zoneEndPct": 12}"""),
+            AssetIds = stocks,
+            ClosePct = 4.5m,
+        };
+        var inUse = TemplateStore.Effective(dip, row);
+        Assert.Equal(12, ((DipParams)inUse.Params).ZoneEndPct);
+        Assert.Equal(((DipParams)dip.Params).ZoneStartPct, ((DipParams)inUse.Params).ZoneStartPct);
+        Assert.Equal(stocks, inUse.Watches.AssetIds);
+        Assert.Equal(4.5m, inUse.ClosePct);
+
+        // A saved default the code no longer accepts leaves every default as tested; a fund template keeps one fund.
+        var refused = TemplateStore.Effective(dip, new() { TemplateKey = dip.Key, Defaults = JsonDocument.Parse("""{"zoneEndPct": 99}""") });
+        Assert.Equal(dip.Params, refused.Params);
+        var trend = TemplateStore.Effective(TemplateCatalog.Trend, new() { TemplateKey = "trend", AssetIds = [TemplateAssets.Spy.Id] });
+        Assert.Equal(new DefaultFund(TemplateAssets.Spy), trend.Watches);
+    }
+
+    [NeonFact]
+    public async Task The_page_is_the_owners_and_refuses_values_new_strategies_could_not_start_with()
+    {
+        using var user = await fixture.SignedUpAsync(Data.Entities.UserRole.User);
+        Assert.Equal(HttpStatusCode.Forbidden, (await user.GetAsync("/admin/templates")).StatusCode);
+
+        var listed = await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/templates");
+        Assert.Equal(TemplateCatalog.Keys, listed.EnumerateArray().Select(t => t.GetProperty("key").GetString()));
+
+        var response = await fixture.Admin.PutAsJsonAsync("/admin/templates/trend", new
+        {
+            defaults = new Dictionary<string, decimal> { ["bandPct"] = 0.3m },
+            assetIds = new[] { TemplateAssets.Eaton.Id },
+            closePct = 11m,
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var errors = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
+        Assert.True(errors.TryGetProperty("settings.bandPct", out _));
+        Assert.True(errors.TryGetProperty("assetIds", out _));
+        Assert.True(errors.TryGetProperty("closePct", out _));
     }
 }

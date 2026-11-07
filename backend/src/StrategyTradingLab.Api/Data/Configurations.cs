@@ -270,6 +270,17 @@ class AppSettingConfiguration : IEntityTypeConfiguration<AppSetting>
     }
 }
 
+class TemplateOverrideConfiguration : IEntityTypeConfiguration<TemplateOverride>
+{
+    public void Configure(EntityTypeBuilder<TemplateOverride> entity)
+    {
+        entity.ToTable("template_overrides", table => table.HasInCheck("template_key", TemplateCatalog.Keys));
+        entity.HasKey(row => row.TemplateKey);
+        entity.Property(row => row.Defaults).HasColumnType("jsonb");
+        entity.Property(row => row.ClosePct).HasPrecision(4, 1);
+    }
+}
+
 class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
 {
     public void Configure(EntityTypeBuilder<UserSession> entity)

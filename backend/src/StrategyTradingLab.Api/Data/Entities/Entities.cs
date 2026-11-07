@@ -242,6 +242,20 @@ public class AppSetting : IHasUpdatedAt
     public DateTimeOffset UpdatedAt { get; set; }
 }
 
+/// <summary>
+/// The owner's changes to a template (/admin/templates, Templates/TemplateStore.cs). Null keeps the code's tested value:
+/// <c>Defaults</c> holds the Advanced settings' defaults by setting key, <c>AssetIds</c> the starter list or the one fund.
+/// </summary>
+public class TemplateOverride : IHasUpdatedAt
+{
+    public required string TemplateKey { get; set; }
+    public JsonDocument? Defaults { get; set; }
+    public List<Guid>? AssetIds { get; set; }
+    public decimal? ClosePct { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
 public class Notification
 {
     public Guid Id { get; set; }

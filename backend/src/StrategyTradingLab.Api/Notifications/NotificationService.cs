@@ -5,6 +5,7 @@ using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Notifications;
 
@@ -14,6 +15,7 @@ namespace StrategyTradingLab.Api.Notifications;
 /// key is the dedupe contract), then the email is sent and the row says whether it worked. Only to verified addresses.
 /// </summary>
 public class NotificationService(AppDbContext db, IEmailSender sender, IPushSender push, SettingsStore settings, IConfiguration configuration, AdminAlerts alerts,
+    TemplateStore templates,
     ILogger<NotificationService> logger)
 {
     /// <summary>Snooze reminders and the AI round reminder go out from this hour in the user's own time zone (a morning reminder), and no overview goes out before it.</summary>
@@ -424,7 +426,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                             join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
                             where ids.Contains(eval.StrategyId) && eval.Date >= lastSession.AddDays(-RecentDays)
                             select new { eval, asset.Name }).ToListAsync(cancellationToken);
-        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId);
+        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
+        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId, closePct);
         if (stockChanges.Count == 0 && !signals.Any(x => x.signal.SignalDate == lastSession))
             // Only strategies the check is still due to reach count: those checked in the recent days, or started in them (not
             // checked yet). One that has nothing to check (every stock unticked) or keeps failing would otherwise hold the
@@ -445,11 +448,13 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// The stock changes of every running strategy: each stock evaluated on the last session against its latest
     /// earlier evaluation of the recent days (see <see cref="StockChanges.Latest"/>). A stock without an earlier day (just added) has nothing to compare.
     /// </summary>
-    static List<StockChangeLine> StockChangeLines(IEnumerable<(DailyEvaluation Eval, string Name)> recent, DateOnly lastSession, Dictionary<Guid, Strategy> strategies) =>
+    static List<StockChangeLine> StockChangeLines(IEnumerable<(DailyEvaluation Eval, string Name)> recent, DateOnly lastSession, Dictionary<Guid, Strategy> strategies,
+        Dictionary<string, decimal> closePct) =>
         recent.GroupBy(x => (x.Eval.StrategyId, x.Eval.AssetId))
             .Select(g => g.OrderByDescending(x => x.Eval.Date).ToList())
             .Where(days => days[0].Eval.Date == lastSession)
-            .Select(days => (days, change: StockChanges.Latest([.. days.Select(d => (d.Eval.Status, d.Eval.Facts.RootElement))])))
+            .Select(days => (days, change: StockChanges.Latest([.. days.Select(d => (d.Eval.Status, d.Eval.Facts.RootElement))],
+                closePct[strategies[days[0].Eval.StrategyId].TemplateKey])))
             .Where(x => x.change is not null)
             .Select(x =>
             {

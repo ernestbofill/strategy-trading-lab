@@ -90,9 +90,9 @@ public class TemplateTests
         foreach (var template in TemplateCatalog.All)
         {
             var expected = template.Watches is DefaultFund ? AssetKind.Fund : AssetKind.Stock;
-            Assert.All(template.Watches.Assets, asset =>
+            Assert.All(template.Watches.AssetIds, id =>
             {
-                Assert.Contains(asset, TemplateAssets.All);
+                var asset = Assert.Single(TemplateAssets.All, seed => seed.Id == id);
                 Assert.Equal(expected, asset.Kind);
             });
         }
@@ -108,7 +108,7 @@ public class TemplateTests
     [Fact]
     public void The_ai_template_watches_the_stocks_of_both_stock_templates_once()
     {
-        Assert.Equal(19, TemplateCatalog.Ai.Watches.Assets.Count());
+        Assert.Equal(19, TemplateCatalog.Ai.Watches.AssetIds.Count);
     }
 
     [Theory]
@@ -161,7 +161,7 @@ public class TemplateTests
             Currency = "EUR",
             Budget = dip.Budget,
             Params = dip.ParamsJson(),
-            Assets = starter.Stocks.Select(s => new StrategyAsset { AssetId = s.Id, Active = true }).ToList(),
+            Assets = starter.StockIds.Select(s => new StrategyAsset { AssetId = s, Active = true }).ToList(),
         };
 
         Assert.False(StrategyEndpoints.IsCustomized(strategy, dip));
@@ -180,7 +180,7 @@ public class TemplateTests
             Currency = "EUR",
             Budget = dip.Budget,
             Params = customParams,
-            Assets = starter.Stocks.Select(s => new StrategyAsset { AssetId = s.Id, Active = true }).ToList(),
+            Assets = starter.StockIds.Select(s => new StrategyAsset { AssetId = s, Active = true }).ToList(),
         };
 
         Assert.True(StrategyEndpoints.IsCustomized(strategy, dip));
@@ -191,7 +191,7 @@ public class TemplateTests
     {
         var dip = TemplateCatalog.Dip;
         var starter = (StarterList)dip.Watches;
-        var assets = starter.Stocks.Select(s => new StrategyAsset { AssetId = s.Id, Active = true }).ToList();
+        var assets = starter.StockIds.Select(s => new StrategyAsset { AssetId = s, Active = true }).ToList();
         assets.Add(new StrategyAsset { AssetId = Guid.NewGuid(), Active = true });
         var strategy = new Strategy
         {
@@ -218,7 +218,7 @@ public class TemplateTests
             Currency = "EUR",
             Budget = trend.Budget,
             Params = trend.ParamsJson(),
-            Assets = [new StrategyAsset { AssetId = defaultFund.Fund.Id, Active = true }],
+            Assets = [new StrategyAsset { AssetId = defaultFund.FundId, Active = true }],
         };
         Assert.False(StrategyEndpoints.IsCustomized(defaultStrategy, trend));
 

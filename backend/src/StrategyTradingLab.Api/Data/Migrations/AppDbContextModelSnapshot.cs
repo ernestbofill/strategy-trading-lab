@@ -1766,6 +1766,46 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.TemplateOverride", b =>
+                {
+                    b.Property<string>("TemplateKey")
+                        .HasColumnType("text")
+                        .HasColumnName("template_key");
+
+                    b.PrimitiveCollection<List<Guid>>("AssetIds")
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("asset_ids");
+
+                    b.Property<decimal?>("ClosePct")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("close_pct");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<JsonDocument>("Defaults")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("defaults");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("TemplateKey")
+                        .HasName("pk_template_overrides");
+
+                    b.ToTable("template_overrides", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_template_overrides_template_key", "template_key IN ('dip', 'comeback', 'bear', 'trend', 'ai')");
+                        });
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")

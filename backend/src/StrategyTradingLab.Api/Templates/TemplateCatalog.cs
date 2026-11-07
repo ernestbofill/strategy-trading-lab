@@ -36,20 +36,24 @@ public record PeriodResult(string Period, int Years, decimal Template, decimal I
     decimal PerYear(decimal total) => Math.Round((decimal)(Math.Pow((double)(1 + total / 100), 1.0 / Years) - 1) * 100, 1);
 }
 
-/// <summary>What a template watches: a starter list of stocks, or one fund.</summary>
+/// <summary>What a template watches: a starter list of stocks, or one fund, by asset id (the owner can change them on /admin/templates).</summary>
 public abstract record TemplateWatches
 {
-    public abstract IEnumerable<Seed> Assets { get; }
+    public abstract IReadOnlyList<Guid> AssetIds { get; }
 }
 
-public sealed record StarterList(IReadOnlyList<Seed> Stocks) : TemplateWatches
+public sealed record StarterList(IReadOnlyList<Guid> StockIds) : TemplateWatches
 {
-    public override IEnumerable<Seed> Assets => Stocks;
+    public StarterList(params Seed[] stocks) : this([.. stocks.Select(stock => stock.Id)]) { }
+
+    public override IReadOnlyList<Guid> AssetIds => StockIds;
 }
 
-public sealed record DefaultFund(Seed Fund) : TemplateWatches
+public sealed record DefaultFund(Guid FundId) : TemplateWatches
 {
-    public override IEnumerable<Seed> Assets => [Fund];
+    public DefaultFund(Seed fund) : this(fund.Id) { }
+
+    public override IReadOnlyList<Guid> AssetIds => [FundId];
 }
 
 /// <summary>
@@ -72,11 +76,22 @@ public sealed record Template(
     /// <summary>The rules the user can tune on Advanced settings, in screen order. Empty until the template's are designed.</summary>
     public IReadOnlyList<Setting> Settings { get; init; } = [];
 
+    /// <summary>
+    /// "Getting close": a candidate within this many percent of its buy rule (the dashboard card, the summary's stock changes).
+    /// The AI template's stocks have no buy rule, so it never applies there.
+    /// </summary>
+    public decimal ClosePct { get; init; } = DefaultClosePct;
+
+    public const decimal DefaultClosePct = 3;
+
     /// <summary>The params as strategies.params stores them.</summary>
     public JsonDocument ParamsJson() => JsonSerializer.SerializeToDocument(Params, Params.GetType(), JsonSerializerOptions.Web);
 }
 
-/// <summary>The five templates, in the order the pick screen shows them.</summary>
+/// <summary>
+/// The five templates, in the order the pick screen shows them, with their tested defaults. The owner can change a template's
+/// defaults, starter list or fund and "getting close" on /admin/templates: <see cref="TemplateStore"/> gives the ones in use.
+/// </summary>
 public static class TemplateCatalog
 {
     /// <summary>The POC backtest's costs: 0.2% of the amount (spread, currency conversion) plus 1 per order.</summary>
@@ -105,7 +120,7 @@ public static class TemplateCatalog
 
     public static readonly Template Dip = new(
         "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        new StarterList([Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor]),
+        new StarterList(Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor),
         Tested((48, -18), (185, -12), (72, -21), (490, -21)),
         new DipParams())
     {
@@ -127,8 +142,8 @@ public static class TemplateCatalog
 
     public static readonly Template Comeback = new(
         "comeback", "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        new StarterList([Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
-            ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler]),
+        new StarterList(Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
+            ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler),
         Tested((62, -15), (210, -14), (88, -24), (540, -24)),
         new ComebackParams())
     {
@@ -180,7 +195,7 @@ public static class TemplateCatalog
     // No backtest: results start on the day the strategy starts. Watches the stocks of Winners at a discount and The comeback.
     public static readonly Template Ai = new(
         "ai", null, InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
-        new StarterList([.. Dip.Watches.Assets.Union(Comeback.Watches.Assets)]),
+        new StarterList([.. Dip.Watches.AssetIds.Union(Comeback.Watches.AssetIds)]),
         null,
         new AiParams())
     {

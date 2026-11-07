@@ -59,6 +59,7 @@ const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((
 const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m) => m.AdminUsers))
 const AdminInvites = lazyPage(() => import('./features/admin/AdminInvites').then((m) => m.AdminInvites))
 const AdminAlerts = lazyPage(() => import('./features/admin/AdminAlerts').then((m) => m.AdminAlerts))
+const AdminTemplates = lazyPage(() => import('./features/admin/AdminTemplates').then((m) => m.AdminTemplates))
 
 /**
  * The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. The owner is
@@ -230,6 +231,14 @@ export default function App() {
                       element={
                         <LazyPage back="/admin">
                           <AdminAssets />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/admin/templates"
+                      element={
+                        <LazyPage back="/admin">
+                          <AdminTemplates />
                         </LazyPage>
                       }
                     />

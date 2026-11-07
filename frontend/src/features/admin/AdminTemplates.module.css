@@ -1,0 +1,141 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: var(--space-3);
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  font: 600 18px/24px var(--font-ui);
+}
+
+.state {
+  color: var(--ink-muted);
+}
+.state[data-changed="true"] {
+  color: var(--warning);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.assets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.asset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  border-bottom: 1px solid var(--border-hairline);
+  font: 14px/20px var(--font-ui);
+  overflow-wrap: anywhere;
+}
+
+.symbol {
+  font-family: var(--font-mono);
+  color: var(--ink-muted);
+}
+
+.hidden {
+  color: var(--warning);
+}
+
+.remove {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: 0;
+  color: var(--ink-muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+.remove:hover {
+  color: var(--danger-ink);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.button,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 88px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.button {
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+.button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.primary {
+  background: var(--action-rest);
+  border: 1px solid transparent;
+  color: var(--on-action);
+}
+.primary:hover:not(:disabled),
+.primary:focus-visible {
+  background: var(--action);
+  box-shadow: var(--glow-primary);
+}
+
+.button:disabled,
+.primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.error {
+  margin: 0;
+  font: 14px/20px var(--font-ui);
+  color: var(--danger-ink);
+}
+
+.saved {
+  margin: 0;
+  font: 14px/20px var(--font-ui);
+  color: var(--success);
+}

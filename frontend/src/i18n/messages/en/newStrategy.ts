@@ -216,6 +216,6 @@ export const newStrategy = {
   'newStrategy.confirm.next.seePast': 'You see right away how the template did in the past.',
   'newStrategy.confirm.next.liveWatch': 'From today the app watches your stocks and alerts you as soon as your rules are met.',
   'newStrategy.confirm.next.liveConfirm': 'You confirm each signal, and the app tracks the results of what you did.',
-  'newStrategy.confirm.next.simRuns': 'From today it runs on real prices and records its own paper trades.',
+  'newStrategy.confirm.next.simRuns': 'From today it runs on real prices and records its own trades.',
   'newStrategy.confirm.next.simFirst': "A summary comes after the US market close on days something changes.",
 } as const

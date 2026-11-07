@@ -142,7 +142,7 @@ describe('WelcomePage', () => {
     ).toBeTruthy()
 
     const perfTab = screen.getByRole('tab', { name: 'Performance comparison' })
-    const tradesTab = screen.getByRole('tab', { name: 'Paper trade log' })
+    const tradesTab = screen.getByRole('tab', { name: 'Trade log' })
     expect(perfTab.getAttribute('aria-selected')).toBe('true')
     expect(perfTab.getAttribute('tabIndex')).toBe('0')
     expect(tradesTab.getAttribute('aria-selected')).toBe('false')

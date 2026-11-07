@@ -98,7 +98,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.how.run.fees': 'Comissions: {fee} per operació. Sense impostos.',
   'newStrategy.how.byPeriod': 'Per període',
   'newStrategy.how.independentPeriods':
-    "Cada període és una prova independent amb diners nous a l'inici, per això els períodes no sumen el total («All»).",
+    'Totes les xifres són mitjanes anuals. Cada període és una prova independent que comença amb diners nous.',
   'newStrategy.how.cantShow': 'El que un backtest no pot mostrar',
   'newStrategy.how.survivors':
     'Les proves històriques utilitzen empreses i índexs que cotitzen avui. Les empreses que van fer fallida o van ser excloses fa dècades no hi són, cosa que afavoreix els resultats passats.',

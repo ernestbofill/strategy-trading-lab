@@ -101,7 +101,7 @@ export const newStrategy = {
   'newStrategy.how.run.fees': 'Fees: {fee} per trade. Taxes not included.',
   'newStrategy.how.byPeriod': 'By period',
   'newStrategy.how.independentPeriods':
-    "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All.",
+    'All figures are yearly averages. Each period is an independent test that starts with fresh money.',
   'newStrategy.how.cantShow': "What a backtest can't show",
   'newStrategy.how.survivors':
     "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results.",

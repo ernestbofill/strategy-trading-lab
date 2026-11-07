@@ -37,7 +37,7 @@ const summary = (fields: Partial<StrategySummary>): StrategySummary => ({
   budget: 3000,
   used: 0,
   results: null,
-  pastResult: { years: '2010-2024', template: 212, index: 180, worstYear: -21 },
+  pastResult: { years: '2010-2024', templatePerYear: 8.1, indexPerYear: 7.3, worstYear: -21, indexWorstYear: -18 },
   status: 'running',
   endedOn: null,
   indexSinceStart: 1.2,

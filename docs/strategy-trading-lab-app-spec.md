@@ -437,7 +437,7 @@ The settings are available when starting a strategy and on a running one (Tune t
   - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
   - "Fees: [€X] per trade. Taxes not included."
 - **"By period"**: a table "Period", then "A year, on average" and "Worst year", each with "Template" and "S&P 500" columns; rows "2000-09", "2010-19", "2020-24", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`).
-- Caption under table: "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All."
+- Caption under table: "All figures are yearly averages. Each period is an independent test that starts with fresh money."
 - Warning box **"What a backtest can't show"**:
   - "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results."
   - "Real prices can differ from the opening price, especially on busy days."
@@ -562,8 +562,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 - **Summary box**
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"); a chart with three lines (You solid and highlighted, The rules alone solid, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
-  - Under the chart, until the strategy has a year of its own: "The template's worst year, [years]: [−X%]" (product rule: results next to the worst year).
-  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, with its worst year. The chart appears with the first buy.
+  - Under the chart, until the strategy has a year of its own: "Worst year, [years]: the template [−X%], an S&P 500 fund [−X%]" (product rule: results next to the worst year).
+  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, a year on average: "In the past, [years], the template did on average [+X.X%] a year vs [+X.X%] for an S&P 500 fund. Its worst year was [−X%], the fund's [−X%]." The chart appears with the first buy.
   - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
   - A figure that can't be worked out (the index fund has no prices at all) shows "–".
   - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".

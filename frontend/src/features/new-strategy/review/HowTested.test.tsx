@@ -53,7 +53,7 @@ const templateWithoutBacktest: TemplateDetail = {
 }
 
 describe('HowTested', () => {
-  it('renders backtest details, the By period table, and the independent periods note', async () => {
+  it('renders backtest details, the By period table, and the yearly averages note', async () => {
     vi.spyOn(api, 'getTemplate').mockResolvedValue(templateWithBacktest)
 
     render(
@@ -79,7 +79,7 @@ describe('HowTested', () => {
     // Independent test periods note
     expect(
       screen.getByText(
-        "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All.",
+        'All figures are yearly averages. Each period is an independent test that starts with fresh money.',
       ),
     ).toBeTruthy()
 

@@ -20,7 +20,7 @@ Each time period presented in *How we tested* (`2000-09`, `2010-19`, `2020-24`) 
 ### 1.3 Honest Benchmarking & Worst-Year Drawdowns
 - All equity strategies are benchmarked against an S&P 500 fund (SPY) receiving the exact same capital allocations on the same days, held without selling.
 - In accordance with STL design rules, every backtest disclosure displays the strategy return, benchmark index return, and the single **worst calendar year return** (`worstYear`) to ensure users observe downside risk alongside returns.
-- The review's Tested box and the *By period* table show each return **a year, on average**: the yearly rate that compounds to the period's return (e.g. +490% over 25 years is +7.4% a year), so 5- and 10-year periods compare. They show the S&P 500 fund's worst calendar year (`indexWorstYear`, SPY total return) next to the template's: 2000-09 −37% (2008), 2010-19 −5% (2018), 2020-24 −18% (2022), All −37% (2008).
+- Every screen (the review's Tested box, the *By period* table, the strategy page's past result) shows each return **a year, on average**: the yearly rate that compounds to the period's return (e.g. +490% over 25 years is +7.4% a year), so 5- and 10-year periods compare. They show the S&P 500 fund's worst calendar year (`indexWorstYear`, SPY total return) next to the template's: 2000-09 −37% (2008), 2010-19 −5% (2018), 2020-24 −18% (2022), All −37% (2008).
 
 ---
 
@@ -63,8 +63,8 @@ The four templates with algorithmic backtests use standardized test intervals:
 
 1. **Independent Periods Explanation**:
    Underneath the *By period* table on `/new/templates/:key/how-tested`, a caption clarifies:
-   > *"Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All."*
-   *(Catalan: "Cada període és una prova independent amb diners nous a l'inici, per això els períodes no sumen el total («All»)."*)
+   > *"All figures are yearly averages. Each period is an independent test that starts with fresh money."*
+   *(Catalan: "Totes les xifres són mitjanes anuals. Cada període és una prova independent que comença amb diners nous."*)
 
 2. **Survivor Bias Caveat**:
    The cautionary notice explains:

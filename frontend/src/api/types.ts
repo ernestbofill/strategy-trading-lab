@@ -164,10 +164,12 @@ export interface StrategyResults {
 export interface PastResult {
   /** "2000-2024". */
   years: string
-  template: number
-  index: number
-  /** Percent return of the template's worst calendar year in that time. */
+  /** The yearly rate that compounds to the template's and the S&P 500 fund's return over those years. */
+  templatePerYear: number
+  indexPerYear: number
+  /** Percent return of each one's worst calendar year in that time. */
   worstYear: number
+  indexWorstYear: number
   isCustomized?: boolean
 }
 

@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import type { Setting, TemplateDetail } from '../../api'
 import { RichText } from '../../components/RichText'
 import { Section } from '../../components/Section'
@@ -17,13 +17,14 @@ interface AdvancedSettingsBodyProps {
   template: TemplateDetail
   values: SettingValues
   onChange: Dispatch<SetStateAction<SettingValues>>
+  action?: ReactNode
 }
 
 /**
  * The setting rows with steppers, in the template's groups when it has them (each with what that part of the rules
- * decides), a reset to tested button, and the backtest comparison section.
+ * decides), a reset to tested button, optional action button, and the backtest comparison section.
  */
-export function AdvancedSettingsBody({ template, values, onChange }: AdvancedSettingsBodyProps) {
+export function AdvancedSettingsBody({ template, values, onChange, action }: AdvancedSettingsBodyProps) {
   const t = useT()
   const tested = testedValues(template)
   const changed = changedSettings(template, values)
@@ -56,14 +57,17 @@ export function AdvancedSettingsBody({ template, values, onChange }: AdvancedSet
             {rows(template.settings.filter((setting) => setting.group === group.key))}
           </section>
         ))}
-        <button
-          type="button"
-          className={`ui-strong ${styles.reset}`}
-          onClick={() => onChange(tested)}
-          disabled={!anyChanged}
-        >
-          {t('newStrategy.advanced.reset')}
-        </button>
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={`ui-strong ${styles.reset}`}
+            onClick={() => onChange(tested)}
+            disabled={!anyChanged}
+          >
+            {t('newStrategy.advanced.reset')}
+          </button>
+          {action && <div className={styles.action}>{action}</div>}
+        </div>
       </div>
       {template.backtest && (
         <Section title={t('newStrategy.advanced.backtest')}>

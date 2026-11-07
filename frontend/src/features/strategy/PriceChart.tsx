@@ -78,11 +78,9 @@ export function PriceChart({
             segments(s.points).map((run) => {
               const at = xs(run)
               const key = `${s.mark.id}:${run[0].i}`
-              if (!s.area) {
-                const ys = run.length === 1 ? [y(run[0].from), y(run[0].from)] : run.map((p) => y(p.from))
-                return <polyline key={key} points={at.map((px, k) => `${px},${ys[k]}`).join(' ')} className={styles.level} data-tone={s.mark.tone} vectorEffect="non-scaling-stroke" />
-              }
               const tops = run.length === 1 ? [run[0], run[0]] : run
+              if (!s.area)
+                return <polyline key={key} points={at.map((px, k) => `${px},${y(tops[k].from)}`).join(' ')} className={styles.level} data-tone={s.mark.tone} vectorEffect="non-scaling-stroke" />
               const edge = [...at.map((px, k) => `${px},${y(tops[k].from)}`), ...at.map((px, k) => `${px},${y(tops[k].to!)}`).reverse()]
               return <polygon key={key} points={edge.join(' ')} className={styles.area} data-tone={s.mark.tone} vectorEffect="non-scaling-stroke" />
             }),

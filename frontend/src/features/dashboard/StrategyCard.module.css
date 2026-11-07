@@ -61,7 +61,15 @@
   font-family: var(--font-mono);
 }
 
+.results {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
 .figures {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -80,6 +88,16 @@
 
 .index {
   font: 12px/20px var(--font-mono);
+}
+
+.chart {
+  display: flex;
+}
+.chart[data-tone="up"] {
+  color: var(--primary);
+}
+.chart[data-tone="down"] {
+  color: var(--danger-ink);
 }
 
 .states {

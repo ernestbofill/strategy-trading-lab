@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { StockCounts, StrategySummary, WaitingItem } from '../../api'
+import { Sparkline } from '../../components/Sparkline'
 import { Tag } from '../../components/Tag'
 import { useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
@@ -43,7 +44,7 @@ function States({ stocks, fund }: { stocks: StockCounts; fund: string | null }) 
   )
 }
 
-/** One strategy on the dashboard: its gain since it started next to the S&P 500 fund's. The whole card links to the strategy page. */
+/** One strategy on the dashboard: its gain since it started next to the S&P 500's, with a small chart once it has trades. The whole card links to the strategy page. */
 export function StrategyCard({ strategy: s, today, waiting }: { strategy: StrategySummary; today: string; waiting?: WaitingItem }) {
   const t = useT()
   const live = s.mode === 'live'
@@ -71,11 +72,18 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
         </span>
       </div>
-      <div className={styles.figures}>
-        <div className={styles.big} data-tone={pctTone(gain)}>
-          {gain === null ? '–' : signedPct(gain, 1)}
+      <div className={styles.results}>
+        <div className={styles.figures}>
+          <div className={styles.big} data-tone={pctTone(gain)}>
+            {gain === null ? '–' : signedPct(gain, 1)}
+          </div>
+          <div className={styles.index}>{t('dashboard.card.index', { pct: signedPctOrDash(index, 1) })}</div>
         </div>
-        <div className={styles.index}>{t('dashboard.card.index', { pct: signedPctOrDash(index, 1) })}</div>
+        {s.results && s.results.history.length > 1 && (
+          <span className={styles.chart} data-tone={pctTone(gain)}>
+            <Sparkline values={s.results.history} />
+          </span>
+        )}
       </div>
       {s.stocks && <States stocks={s.stocks} fund={s.fund} />}
       <div className={styles.budget}>

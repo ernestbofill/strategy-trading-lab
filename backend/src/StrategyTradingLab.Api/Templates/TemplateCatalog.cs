@@ -96,8 +96,12 @@ public static class TemplateCatalog
         [("2000-09", 10, -8, -37), ("2010-19", 10, 246, -5), ("2020-24", 5, 96, -18), ("All", 25, 538, -37)];
 
     /// <summary>A template's backtest: its return and worst year in each period, next to the S&P 500 fund's.</summary>
-    static IReadOnlyList<PeriodResult> Tested(params (decimal Template, decimal WorstYear)[] periods) =>
-        [.. Spy.Zip(periods, (spy, p) => new PeriodResult(spy.Period, spy.Years, p.Template, spy.Index, p.WorstYear, spy.WorstYear))];
+    static IReadOnlyList<PeriodResult> Tested(params (decimal Template, decimal WorstYear)[] periods)
+    {
+        // One result per S&P 500 period; Zip would silently drop the rest.
+        ArgumentOutOfRangeException.ThrowIfNotEqual(periods.Length, Spy.Length);
+        return [.. Spy.Zip(periods, (spy, p) => new PeriodResult(spy.Period, spy.Years, p.Template, spy.Index, p.WorstYear, spy.WorstYear))];
+    }
 
     public static readonly Template Dip = new(
         "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,

@@ -1153,8 +1153,8 @@ export interface Api {
   getAdminTemplates(): Promise<AdminTemplate[]>
   /** Sets what new strategies of a template start with. Rejects with `InvalidFieldsError` (`settings.<key>`, `assetIds`, `closePct`). */
   setAdminTemplate(key: string, change: AdminTemplateChange): Promise<AdminTemplate>
-  /** Back to the tested values. */
-  resetAdminTemplate(key: string): Promise<void>
+  /** Back to the tested values; resolves with the template as tested. */
+  resetAdminTemplate(key: string): Promise<AdminTemplate>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */

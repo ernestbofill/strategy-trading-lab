@@ -43,7 +43,7 @@ public static class AdminTemplates
         {
             var rows = await db.TemplateOverrides.AsNoTracking().ToDictionaryAsync(row => row.TemplateKey, cancellationToken);
             var inUse = TemplateCatalog.All.Select(t => (Tested: t, Row: rows.GetValueOrDefault(t.Key))).ToList();
-            var assets = await Assets(db, inUse.SelectMany(t => TemplateStore.Effective(t.Tested, t.Row).Watches.AssetIds), cancellationToken);
+            var assets = await Assets(db, inUse.SelectMany(t => t.Row?.AssetIds ?? t.Tested.Watches.AssetIds), cancellationToken);
             return inUse.Select(t => Dto(t.Tested, t.Row, assets)).ToList();
         })
         .WithSummary("Every template: the defaults, starter list or fund and \"getting close\" new strategies start with, next to the tested ones.");
@@ -60,8 +60,9 @@ public static class AdminTemplates
             var found = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
             if (NewStrategyValidation.AssetsError(ids, tested, found, TemplateTexts.DefaultLocale) is { } invalid) Fail("assetIds", invalid);
             var closePct = change.ClosePct ?? tested.ClosePct;
-            if (tested.Key == TemplateCatalog.Ai.Key ? closePct != tested.ClosePct
-                : closePct < MinClosePct || closePct > MaxClosePct || closePct % CloseStep != 0)
+            if (tested.Key == TemplateCatalog.Ai.Key && closePct != tested.ClosePct)
+                Fail("closePct", "This template has no getting close: its stocks have no buy rule.");
+            else if (closePct < MinClosePct || closePct > MaxClosePct || closePct % CloseStep != 0)
                 Fail("closePct", $"Use {MinClosePct} to {MaxClosePct}, in steps of {CloseStep}.");
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
@@ -76,32 +77,29 @@ public static class AdminTemplates
                 AssetIds = ids.ToHashSet().SetEquals(tested.Watches.AssetIds) ? null : [.. ids],
                 ClosePct = closePct == tested.ClosePct ? null : closePct,
             };
-            var saved = await db.TemplateOverrides.FindAsync([tested.Key], cancellationToken);
             var stored = row.Defaults is not null || row.AssetIds is not null || row.ClosePct is not null;
             if (!stored)
-            {
-                if (saved is not null) db.TemplateOverrides.Remove(saved);
-            }
-            else if (saved is null)
-            {
-                db.TemplateOverrides.Add(row);
-            }
+                await db.TemplateOverrides.Where(r => r.TemplateKey == tested.Key).ExecuteDeleteAsync(cancellationToken);
             else
-            {
-                (saved.Defaults, saved.AssetIds, saved.ClosePct) = (row.Defaults, row.AssetIds, row.ClosePct);
-            }
-            await db.SaveChangesAsync(cancellationToken);
+                // One statement, so two first saves at once (a double click, two tabs) can't both insert.
+                await db.Database.ExecuteSqlInterpolatedAsync($"""
+                    INSERT INTO template_overrides (template_key, defaults, asset_ids, close_pct)
+                    VALUES ({row.TemplateKey}, {row.Defaults}, {row.AssetIds}, {row.ClosePct})
+                    ON CONFLICT (template_key) DO UPDATE SET defaults = excluded.defaults, asset_ids = excluded.asset_ids,
+                        close_pct = excluded.close_pct, updated_at = now()
+                    """, cancellationToken);
 
             // The assets saved are the ones just checked.
             return TypedResults.Ok(Dto(tested, stored ? row : null, found.ToDictionary(a => a.Id)));
         })
         .WithSummary("Sets what new strategies of a template start with. Values equal to the tested ones aren't stored.");
 
-        templates.MapDelete("/{key}", async Task<Results<NoContent, NotFound>> (string key, AppDbContext db, CancellationToken cancellationToken) =>
+        templates.MapDelete("/{key}", async Task<Results<Ok<AdminTemplate>, NotFound>> (string key, AppDbContext db, CancellationToken cancellationToken) =>
         {
-            if (TemplateCatalog.Find(key) is null) return TypedResults.NotFound();
+            if (TemplateCatalog.Find(key) is not { } tested) return TypedResults.NotFound();
             await db.TemplateOverrides.Where(row => row.TemplateKey == key).ExecuteDeleteAsync(cancellationToken);
-            return TypedResults.NoContent();
+            // The tested template, so the page resets the card without loading every template again.
+            return TypedResults.Ok(Dto(tested, null, await Assets(db, tested.Watches.AssetIds, cancellationToken)));
         })
         .WithSummary("Back to the tested values: new strategies of the template start with the code's defaults, list or fund and \"getting close\".");
     }

@@ -23,12 +23,12 @@ const labelOf = (sentence: string, value: string) => sentence.replace('{value}',
 /** The typed text as a number, or NaN: the API says what is wrong with it. */
 const numberOf = (text: string) => (text.trim() === '' ? Number.NaN : Number(text.replace(',', '.')))
 
-function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved: (next: AdminTemplate | null) => void }) {
+function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved: (next: AdminTemplate, reset?: boolean) => void }) {
   const fund = template.investsIn !== 'stockList'
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(template.settings.map((s) => [s.key, formatRate(s.current)])),
+    Object.fromEntries(template.settings.map((s) => [s.key, String(s.current)])),
   )
-  const [close, setClose] = useState(template.closePct === null ? '' : formatRate(template.closePct))
+  const [close, setClose] = useState(template.closePct === null ? '' : String(template.closePct))
   const [assets, setAssets] = useState<AdminTemplateAsset[]>(template.assets)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [failed, setFailed] = useState(false)
@@ -73,8 +73,7 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
 
   const reset = () =>
     void run(async () => {
-      await api.resetAdminTemplate(template.key)
-      onSaved(null)
+      onSaved(await api.resetAdminTemplate(template.key), true)
     })
 
   const add = (picked: { id: string; symbol: string; name: string }) => {
@@ -117,7 +116,7 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
           label="Getting close: within _% of the buy rule"
           value={close}
           onChange={setClose}
-          hint={`Tested ${formatRate(template.testedClosePct)} · on the dashboard card and in the summary`}
+          hint={`Tested ${formatRate(template.testedClosePct)} · every strategy of this template, running ones too: the dashboard card (never for Bear markets) and the summary`}
           error={errors.closePct}
         />
       )}
@@ -170,7 +169,7 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
  */
 export function AdminTemplates() {
   const [state, setState] = useState<State>({ status: 'loading' })
-  // A reset reloads the template from the server, and its card (only) starts over from the tested values: other cards keep
+  // A reset brings the tested template back, and its card (only) starts over from the tested values: other cards keep
   // their unsaved edits.
   const [resets, setResets] = useState<Record<string, number>>({})
 
@@ -182,34 +181,23 @@ export function AdminTemplates() {
     }
   }, [])
 
-  const saved = (key: string, next: AdminTemplate | null) => {
-    if (next === null) {
-      void fetchTemplates().then((loaded) => {
-        const fresh = loaded.status === 'ready' ? loaded.templates.find((t) => t.key === key) : undefined
-        if (!fresh) return setState(loaded)
-        replace(key, fresh)
-        setResets((r) => ({ ...r, [key]: (r[key] ?? 0) + 1 }))
-      })
-      return
-    }
-    replace(key, next)
-  }
-
-  const replace = (key: string, next: AdminTemplate) =>
+  const saved = (key: string, next: AdminTemplate, reset?: boolean) => {
     setState((s) => (s.status === 'ready' ? { ...s, templates: s.templates.map((t) => (t.key === key ? next : t)) } : s))
+    if (reset) setResets((r) => ({ ...r, [key]: (r[key] ?? 0) + 1 }))
+  }
 
   return (
     <Screen top={<TopBar back="/admin" step="ADMIN" />}>
       <PageHeader
         title="Templates"
-        lead="What new strategies start with. Running strategies keep their own values, and past results stay the tested ones."
+        lead="What new strategies start with. Running strategies keep their own rules and stocks; getting close applies to all."
       />
       {state.status === 'loading' && <ScreenMessage>Loading the templates…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the templates. Try again later.</ScreenMessage>}
       {state.status === 'ready' && (
         <div className={styles.list}>
           {state.templates.map((t) => (
-            <TemplateCard key={`${t.key}-${resets[t.key] ?? 0}`} template={t} onSaved={(next) => saved(t.key, next)} />
+            <TemplateCard key={`${t.key}-${resets[t.key] ?? 0}`} template={t} onSaved={(next, reset) => saved(t.key, next, reset)} />
           ))}
         </div>
       )}

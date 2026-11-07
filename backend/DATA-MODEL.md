@@ -382,14 +382,14 @@ The admin page's settings (`Admin/SettingDefinitions.cs` lists which). One row p
 
 ### `template_overrides`
 
-The owner's changes to a template on `/admin/templates` (`Admin/AdminTemplates.cs`, read by `Templates/TemplateStore.cs`): what a new strategy of it starts with. One row per changed template; only what differs from the tested values (the code's) is stored, and no row means the tested values. A running strategy keeps what it started with (its own `params` and `strategy_assets`).
+The owner's changes to a template on `/admin/templates` (`Admin/AdminTemplates.cs`, read by `Templates/TemplateStore.cs`): what a new strategy of it starts with. One row per changed template; only what differs from the tested values (the code's) is stored, and no row means the tested values. A running strategy keeps the rules and stocks it started with (its own `params` and `strategy_assets`); `close_pct` applies to it too.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | template_key | text PK | One of the catalogue's keys (CHECK) |
 | defaults | jsonb, null | Advanced settings' defaults by setting key, `{"zoneEndPct": 12}`. A value the code no longer accepts makes every default the tested one |
 | asset_ids | uuid[], null | The starter list, or the one fund of a fund template |
-| close_pct | numeric(4,1), null | "Getting close": a candidate within this % of its buy rule (dashboard card, summary's stock changes). 0.5 to 10 |
+| close_pct | numeric(4,1), null | "Getting close": a candidate within this % of its buy rule (dashboard card, summary's stock changes), for every strategy of the template, running ones too. 0.5 to 10 |
 | created_at, updated_at | timestamptz | |
 
 ### `feedback_items`

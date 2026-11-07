@@ -110,9 +110,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.advanced.save': 'Desa la configuració',
   'newStrategy.advanced.reset': '⟳ Torna als valors provats',
   'newStrategy.advanced.backtest': 'Backtest',
-  'newStrategy.advanced.defaultsResults':
-    'Aquests són els resultats dels valors provats. Tornar a fer la prova amb la teva configuració arribarà més endavant.',
-  'newStrategy.advanced.onDefaults': 'Fas servir els valors provats. Canvia una opció per comparar.',
+  'newStrategy.advanced.backtestSoon': 'Aviat podràs fer el backtest de la teva estratègia.',
   'newStrategy.advanced.tested': 'Provat: {value}',
   'newStrategy.advanced.changed': 'CANVIAT',
   'newStrategy.advanced.decrease': 'Disminueix',

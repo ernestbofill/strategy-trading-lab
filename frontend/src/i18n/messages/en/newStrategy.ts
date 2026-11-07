@@ -114,9 +114,7 @@ export const newStrategy = {
   'newStrategy.advanced.save': 'Save settings',
   'newStrategy.advanced.reset': '⟳ Reset to tested',
   'newStrategy.advanced.backtest': 'Backtest',
-  'newStrategy.advanced.defaultsResults':
-    "These are the tested defaults' results. Re-running the test with your settings comes later.",
-  'newStrategy.advanced.onDefaults': "You're on the tested defaults. Change a setting to compare.",
+  'newStrategy.advanced.backtestSoon': 'Backtesting your strategy is coming soon.',
   'newStrategy.advanced.tested': 'Tested: {value}',
   'newStrategy.advanced.changed': 'CHANGED',
   'newStrategy.advanced.decrease': 'Decrease',

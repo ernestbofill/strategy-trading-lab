@@ -59,7 +59,7 @@ const row = (sentence: RegExp) => screen.getByRole('group', { name: sentence })
 describe('Advanced', () => {
   it('marks a changed setting, keeps the zone start under its end, and saves only the changes', async () => {
     open()
-    expect(await screen.findByText("You're on the tested defaults. Change a setting to compare.")).toBeTruthy()
+    expect(await screen.findByText('Backtesting your strategy is coming soon.')).toBeTruthy()
 
     // The zone runs 5–6%: its start can't go up, its end can't come down.
     const start = row(/The discount zone starts/)
@@ -73,7 +73,6 @@ describe('Advanced', () => {
     expect(within(peak).getByText('55 days')).toBeTruthy()
     expect(within(peak).getByText('CHANGED')).toBeTruthy()
     expect(within(peak).getByText('Tested: 60 days')).toBeTruthy()
-    expect(screen.getByRole('table')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }))
     expect(await screen.findByText('Saved {"peakDays":55}')).toBeTruthy()

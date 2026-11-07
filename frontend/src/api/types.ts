@@ -201,7 +201,7 @@ export interface StrategySummary {
   fund: string | null
 }
 
-/** A strategy's stocks by pill, for its card. `close`: candidates within 3% of the buy rule, not counted again in `candidates`. */
+/** A strategy's stocks by pill, for its card. `close`: candidates within the template's getting close % (3 unless the owner changed it) of the buy rule, not counted again in `candidates`. */
 export interface StockCounts {
   signals: number
   close: number

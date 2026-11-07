@@ -7,7 +7,7 @@ import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/S
 import { useLeave } from '../../components/useLeave'
 import { strategyPath } from '../dashboard/paths'
 import { AdvancedSettingsBody } from '../new-strategy/AdvancedSettingsBody'
-import { changedSettings, settingValues, type SettingValues } from '../new-strategy/settings'
+import { settingValues, type SettingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
 import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
@@ -58,7 +58,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
     setSaving(true)
     setError(null)
     try {
-      await api.updateStrategySettings(strategy.id, changedSettings(template, values))
+      await api.updateStrategySettings(strategy.id, values)
       invalidateAll()
       leave()
     } catch (err) {

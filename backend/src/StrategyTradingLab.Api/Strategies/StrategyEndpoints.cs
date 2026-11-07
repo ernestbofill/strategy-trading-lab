@@ -196,7 +196,14 @@ public static class StrategyEndpoints
             if (await store.FindAsync(strategy.TemplateKey, cancellationToken) is not { } template) return TypedResults.NotFound();
 
             var errors = new Dictionary<string, string[]>();
-            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale, strategy.Params);
+            // A setting the request leaves out keeps the strategy's own value, never the template's default, which the owner
+            // may have changed since it started (/admin/templates).
+            var root = strategy.Params.RootElement;
+            var settings = template.Settings
+                .Where(s => root.TryGetProperty(s.Key, out var value) && value.ValueKind == JsonValueKind.Number)
+                .ToDictionary(s => s.Key, s => root.GetProperty(s.Key).GetDecimal());
+            foreach (var (key, value) in request.Settings ?? new Dictionary<string, decimal>()) settings[key] = value;
+            var parameters = TemplateSettings.Apply(template, settings, (field, message) => errors[field] = [message], user.Locale, strategy.Params);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             strategy.Params = parameters;

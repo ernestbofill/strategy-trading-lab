@@ -4,6 +4,7 @@ import { TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { formatRate } from '../../lib/format'
+import { invalidate } from '../../lib/useLoadable'
 import { AssetPicker } from '../new-strategy/review/AssetPicker'
 import styles from './AdminTemplates.module.css'
 
@@ -182,6 +183,9 @@ export function AdminTemplates() {
   }, [])
 
   const saved = (key: string, next: AdminTemplate, reset?: boolean) => {
+    // This tab's new-strategy screens keep templates until a deploy: load them again with the owner's change.
+    invalidate('templates')
+    invalidate(`template:${key}`)
     setState((s) => (s.status === 'ready' ? { ...s, templates: s.templates.map((t) => (t.key === key ? next : t)) } : s))
     if (reset) setResets((r) => ({ ...r, [key]: (r[key] ?? 0) + 1 }))
   }

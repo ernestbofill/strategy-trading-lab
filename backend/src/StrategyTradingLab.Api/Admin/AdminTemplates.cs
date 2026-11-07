@@ -58,7 +58,11 @@ public static class AdminTemplates
             TemplateSettings.Apply(tested, change.Defaults, Fail);
             var ids = change.AssetIds ?? tested.Watches.AssetIds;
             var found = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
-            if (NewStrategyValidation.AssetsError(ids, tested, found, TemplateTexts.DefaultLocale) is { } invalid) Fail("assetIds", invalid);
+            // An asset already on the list may have been hidden since: it can stay (TemplateStore leaves it out), so a save of
+            // something else isn't refused because of it.
+            var listed = (await db.TemplateOverrides.AsNoTracking().Where(r => r.TemplateKey == tested.Key).Select(r => r.AssetIds).FirstOrDefaultAsync(cancellationToken))
+                ?? tested.Watches.AssetIds;
+            if (NewStrategyValidation.AssetsError(ids, tested, found, TemplateTexts.DefaultLocale, [.. listed]) is { } invalid) Fail("assetIds", invalid);
             var closePct = change.ClosePct ?? tested.ClosePct;
             if (tested.Key == TemplateCatalog.Ai.Key && closePct != tested.ClosePct)
                 Fail("closePct", "This template has no getting close: its stocks have no buy rule.");

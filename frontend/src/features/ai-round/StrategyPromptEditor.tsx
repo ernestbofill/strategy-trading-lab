@@ -1,7 +1,8 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { api, InvalidFieldsError } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { TopBar } from '../../components/Screen'
+import { useLeave } from '../../components/useLeave'
 import { useT } from '../../i18n/I18n'
 import { invalidate } from '../../lib/useLoadable'
 import { aiRoundPath } from '../dashboard/paths'
@@ -12,7 +13,7 @@ import { PromptEditor } from './PromptEditor'
 export function StrategyPromptEditor() {
   const { id = '' } = useParams()
   const t = useT()
-  const navigate = useNavigate()
+  const leave = useLeave(aiRoundPath(id))
   const round = useAiRound(id)
   const top = <TopBar back={aiRoundPath(id)} aside={<span>{t('aiRound.editor.topBar')}</span>} />
   return (
@@ -30,7 +31,7 @@ export function StrategyPromptEditor() {
               throw new Error(error instanceof InvalidFieldsError ? error.message : t('aiRound.saveFailed'))
             }
             invalidate(aiRoundCacheKey(id))
-            navigate(aiRoundPath(id))
+            leave()
           }}
         />
       )}

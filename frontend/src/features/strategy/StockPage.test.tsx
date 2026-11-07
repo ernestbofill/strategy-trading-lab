@@ -78,10 +78,13 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
 
 function open(s: StrategyDetail, assetId = 'zs') {
   vi.spyOn(api, 'getStrategy').mockResolvedValue(s)
-  vi.spyOn(api, 'getStockPrices').mockResolvedValue([
-    { date: '2026-10-01', close: 220 },
-    { date: '2026-10-30', close: 237.62 },
-  ])
+  vi.spyOn(api, 'getStockChart').mockResolvedValue({
+    startedOn: '2026-10-13',
+    days: [
+      { date: '2026-10-01', close: 220, checks: [] },
+      { date: '2026-10-30', close: 237.62, checks: s.stocks[0]?.checks ?? [] },
+    ],
+  })
   render(
     <MemoryRouter initialEntries={[`/strategies/s1/stocks/${assetId}`]}>
       <Routes>

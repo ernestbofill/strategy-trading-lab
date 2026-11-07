@@ -166,8 +166,11 @@ public record StrategySignalItem(
     DateOnly? EndedOn,
     DateTimeOffset CreatedAt);
 
-/// <summary>A day's close, for the stock page's price chart.</summary>
-public record PricePoint(DateOnly Date, decimal Close);
+/// <summary>A day of the stock page's chart: its close and the rules' checks that day (only the candidate ones before <see cref="StockChartData.StartedOn"/>).</summary>
+public record ChartDay(DateOnly Date, decimal Close, IReadOnlyList<RuleCheck> Checks);
+
+/// <summary>The stock page's chart: the last 90 days, and the day the rules first checked the stock under this strategy (null before that).</summary>
+public record StockChartData(DateOnly? StartedOn, IReadOnlyList<ChartDay> Days);
 
 /// <summary>Stored reference rates for an asset's currency against the strategy's currency.</summary>
 public record CurrencyRates(string Currency, IReadOnlyList<RateDay> Rates);

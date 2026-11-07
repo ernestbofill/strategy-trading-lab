@@ -11,6 +11,7 @@ import type { MessageKey } from '../../i18n/messages/en'
 import { exact, formatRate, money, pctTone, shortDate, signedPct } from '../../lib/format'
 import { signalPath, strategyPath } from '../dashboard/paths'
 import { checkText, fillCheck, isPastMax } from './checks'
+import { PriceChart } from './PriceChart'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
 import { stockLine } from './stockLine'
@@ -326,6 +327,8 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
           </div>
         )}
       </div>
+
+      <PriceChart strategyId={s.id} assetId={row.assetId} checks={row.checks} isCandidate={isCandidate} currency={row.currency} />
 
       {/* Without enough price history the rules say nothing yet: the status line says so. */}
       {s.checkTexts && row.status !== 'notEnoughData' && (

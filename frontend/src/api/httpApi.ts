@@ -277,6 +277,7 @@ export const httpApi: Api = {
   getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
   getDashboard: () => getRequired('/dashboard'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
+  getStockPrices: (id, assetId) => get(`/strategies/${encodeURIComponent(id)}/stocks/${encodeURIComponent(assetId)}/prices`),
   updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),
   updateStrategyAssets: (id, assetIds) => put(`/strategies/${encodeURIComponent(id)}/assets`, { assetIds }),
   getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),

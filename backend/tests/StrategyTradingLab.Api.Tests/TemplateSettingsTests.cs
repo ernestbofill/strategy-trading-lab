@@ -221,6 +221,10 @@ public class TemplateOverrideTests(AdminFixture fixture) : IClassFixture<AdminFi
         Assert.Equal(dip.Params, refused.Params);
         var trend = TemplateStore.Effective(TemplateCatalog.Trend, new() { TemplateKey = "trend", AssetIds = [TemplateAssets.Spy.Id] });
         Assert.Equal(new DefaultFund(TemplateAssets.Spy), trend.Watches);
+
+        // A saved fund hidden since is left out: the tested fund again.
+        var hidden = TemplateStore.Effective(TemplateCatalog.Trend, new() { TemplateKey = "trend", AssetIds = [TemplateAssets.Spy.Id] }, _ => false);
+        Assert.Equal(TemplateCatalog.Trend.Watches, hidden.Watches);
     }
 
     [NeonFact]

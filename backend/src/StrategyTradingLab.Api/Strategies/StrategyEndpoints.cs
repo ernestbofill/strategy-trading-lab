@@ -405,10 +405,12 @@ public static class StrategyEndpoints
             states.Count(s => s.Status == StockStatus.NotCandidate));
     }
 
+    // The past result was tested with the catalogue's defaults and list, so "customized" compares with those, not with the
+    // owner's changes on /admin/templates: a running strategy doesn't flip when the owner edits a template.
     static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
         template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
             ? new PastResult(words.Years, all.TemplatePerYear, all.IndexPerYear, all.WorstYear, all.IndexWorstYear,
-                IsCustomized(strategy, template, activeAssetIds))
+                IsCustomized(strategy, TemplateCatalog.Find(template.Key)!, activeAssetIds))
             : null;
 
     internal static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds = null)

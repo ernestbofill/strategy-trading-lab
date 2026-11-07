@@ -969,7 +969,6 @@ export interface AdminTemplate {
   settings: AdminTemplateSetting[]
   /** The starter list, or the one fund, sorted by name. */
   assets: AdminTemplateAsset[]
-  testedAssetIds: string[]
   /** "Getting close" in %; null for a template whose stocks have no buy rule (the AI's). */
   closePct: number | null
   testedClosePct: number

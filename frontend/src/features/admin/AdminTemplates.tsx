@@ -52,12 +52,20 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
 
   const save = (e: FormEvent) => {
     e.preventDefault()
+    const defaults = Object.fromEntries(template.settings.map((s) => [s.key, numberOf(values[s.key] ?? '')]))
+    const closePct = template.closePct === null ? null : numberOf(close)
+    // A blank or a word would reach the API as null, which it reads as "tested": stop it here instead.
+    const notNumbers = Object.fromEntries([
+      ...Object.entries(defaults).filter(([, n]) => Number.isNaN(n)).map(([key]) => [`settings.${key}`, 'Type a number.']),
+      ...(closePct !== null && Number.isNaN(closePct) ? [['closePct', 'Type a number.']] : []),
+    ])
+    if (Object.keys(notNumbers).length > 0) {
+      setSaved(false)
+      setErrors(notNumbers)
+      return
+    }
     void run(async () => {
-      const next = await api.setAdminTemplate(template.key, {
-        defaults: Object.fromEntries(template.settings.map((s) => [s.key, numberOf(values[s.key] ?? '')])),
-        assetIds: assets.map((a) => a.id),
-        closePct: template.closePct === null ? null : numberOf(close),
-      })
+      const next = await api.setAdminTemplate(template.key, { defaults, assetIds: assets.map((a) => a.id), closePct })
       onSaved(next)
       setSaved(true)
     })
@@ -162,10 +170,9 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
  */
 export function AdminTemplates() {
   const [state, setState] = useState<State>({ status: 'loading' })
-  // A reset reloads the template from the server, so its card starts over from the tested values.
-  const [generation, setGeneration] = useState(0)
-
-  const load = () => fetchTemplates().then(setState)
+  // A reset reloads the template from the server, and its card (only) starts over from the tested values: other cards keep
+  // their unsaved edits.
+  const [resets, setResets] = useState<Record<string, number>>({})
 
   useEffect(() => {
     let current = true
@@ -177,11 +184,19 @@ export function AdminTemplates() {
 
   const saved = (key: string, next: AdminTemplate | null) => {
     if (next === null) {
-      void load().then(() => setGeneration((g) => g + 1))
+      void fetchTemplates().then((loaded) => {
+        const fresh = loaded.status === 'ready' ? loaded.templates.find((t) => t.key === key) : undefined
+        if (!fresh) return setState(loaded)
+        replace(key, fresh)
+        setResets((r) => ({ ...r, [key]: (r[key] ?? 0) + 1 }))
+      })
       return
     }
-    setState((s) => (s.status === 'ready' ? { ...s, templates: s.templates.map((t) => (t.key === key ? next : t)) } : s))
+    replace(key, next)
   }
+
+  const replace = (key: string, next: AdminTemplate) =>
+    setState((s) => (s.status === 'ready' ? { ...s, templates: s.templates.map((t) => (t.key === key ? next : t)) } : s))
 
   return (
     <Screen top={<TopBar back="/admin" step="ADMIN" />}>
@@ -194,7 +209,7 @@ export function AdminTemplates() {
       {state.status === 'ready' && (
         <div className={styles.list}>
           {state.templates.map((t) => (
-            <TemplateCard key={`${t.key}-${generation}`} template={t} onSaved={(next) => saved(t.key, next)} />
+            <TemplateCard key={`${t.key}-${resets[t.key] ?? 0}`} template={t} onSaved={(next) => saved(t.key, next)} />
           ))}
         </div>
       )}

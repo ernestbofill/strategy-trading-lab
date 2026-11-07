@@ -22,7 +22,6 @@ const dip: AdminTemplate = {
     { id: 'a1', symbol: 'ETN', name: 'Eaton', active: true },
     { id: 'a2', symbol: 'VRT', name: 'Vertiv', active: true },
   ],
-  testedAssetIds: ['a1', 'a2'],
   closePct: 3,
   testedClosePct: 3,
 }
@@ -40,7 +39,13 @@ describe('AdminTemplates', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.change(await screen.findByLabelText('The discount zone ends _% below the peak'), { target: { value: '12' } })
+    // A blank is stopped on the page, never sent as "tested".
+    fireEvent.change(await screen.findByLabelText('Getting close: within _% of the buy rule'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.getByText('Type a number.')).toBeTruthy()
+    expect(save).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText('The discount zone ends _% below the peak'), { target: { value: '12' } })
     fireEvent.click(screen.getByRole('button', { name: 'Remove Vertiv' }))
     fireEvent.change(screen.getByLabelText('Getting close: within _% of the buy rule'), { target: { value: '11' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))

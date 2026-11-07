@@ -10,10 +10,10 @@ namespace StrategyTradingLab.Api.Admin;
 
 /// <summary>
 /// A template on /admin/templates: what a new strategy starts with now, next to the tested values (the code's). <c>Changed</c>
-/// when any of it differs. <c>ClosePct</c> is null for the AI template, whose stocks have no buy rule to be close to.
+/// while the owner has saved changes, even ones no longer in use (a default the code refuses since, an asset hidden since). <c>ClosePct</c> is null for the AI template, whose stocks have no buy rule to be close to.
 /// </summary>
 public record AdminTemplate(string Key, string Name, InvestsIn InvestsIn, bool Changed, IReadOnlyList<AdminTemplateSetting> Settings,
-    IReadOnlyList<AdminTemplateAsset> Assets, IReadOnlyList<Guid> TestedAssetIds, decimal? ClosePct, decimal TestedClosePct);
+    IReadOnlyList<AdminTemplateAsset> Assets, decimal? ClosePct, decimal TestedClosePct);
 
 /// <summary>A setting of Advanced settings, with its words (as the screen's), range, tested default and the default in use.</summary>
 public record AdminTemplateSetting(string Key, string Sentence, string Value, decimal Step, decimal Min, decimal Max, string? Below,
@@ -38,11 +38,13 @@ public static class AdminTemplates
     {
         var templates = group.MapGroup("/templates");
 
-        templates.MapGet("/", async (AppDbContext db, TemplateStore store, CancellationToken cancellationToken) =>
+        // The saved rows as they are, not TemplateStore's: a hidden asset stays on the page, marked, for the owner to take out.
+        templates.MapGet("/", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
-            var inUse = await store.AllAsync(cancellationToken);
-            var assets = await Assets(db, inUse.SelectMany(t => t.Watches.AssetIds), cancellationToken);
-            return inUse.Select(template => Dto(TemplateCatalog.Find(template.Key)!, template, assets)).ToList();
+            var rows = await db.TemplateOverrides.AsNoTracking().ToDictionaryAsync(row => row.TemplateKey, cancellationToken);
+            var inUse = TemplateCatalog.All.Select(t => (Tested: t, Row: rows.GetValueOrDefault(t.Key))).ToList();
+            var assets = await Assets(db, inUse.SelectMany(t => TemplateStore.Effective(t.Tested, t.Row).Watches.AssetIds), cancellationToken);
+            return inUse.Select(t => Dto(t.Tested, t.Row, assets)).ToList();
         })
         .WithSummary("Every template: the defaults, starter list or fund and \"getting close\" new strategies start with, next to the tested ones.");
 
@@ -75,7 +77,8 @@ public static class AdminTemplates
                 ClosePct = closePct == tested.ClosePct ? null : closePct,
             };
             var saved = await db.TemplateOverrides.FindAsync([tested.Key], cancellationToken);
-            if (row.Defaults is null && row.AssetIds is null && row.ClosePct is null)
+            var stored = row.Defaults is not null || row.AssetIds is not null || row.ClosePct is not null;
+            if (!stored)
             {
                 if (saved is not null) db.TemplateOverrides.Remove(saved);
             }
@@ -89,8 +92,8 @@ public static class AdminTemplates
             }
             await db.SaveChangesAsync(cancellationToken);
 
-            var inUse = TemplateStore.Effective(tested, row);
-            return TypedResults.Ok(Dto(tested, inUse, await Assets(db, inUse.Watches.AssetIds, cancellationToken)));
+            // The assets saved are the ones just checked.
+            return TypedResults.Ok(Dto(tested, stored ? row : null, found.ToDictionary(a => a.Id)));
         })
         .WithSummary("Sets what new strategies of a template start with. Values equal to the tested ones aren't stored.");
 
@@ -116,8 +119,9 @@ public static class AdminTemplates
         return template.Settings.ToDictionary(s => s.Key, s => root.GetProperty(s.Key).GetDecimal());
     }
 
-    static AdminTemplate Dto(Template tested, Template inUse, IReadOnlyDictionary<Guid, Asset> assets)
+    static AdminTemplate Dto(Template tested, TemplateOverride? row, IReadOnlyDictionary<Guid, Asset> assets)
     {
+        var inUse = TemplateStore.Effective(tested, row);
         var texts = TemplateTexts.For(tested, TemplateTexts.DefaultLocale);
         var (testedValues, currentValues) = (Values(tested), Values(inUse));
         var settings = tested.Settings.Select(s =>
@@ -129,10 +133,8 @@ public static class AdminTemplates
         var listed = inUse.Watches.AssetIds.Where(assets.ContainsKey).Select(id => assets[id])
             .Select(a => new AdminTemplateAsset(a.Id, a.Symbol, a.Name, a.Active))
             .OrderBy(a => a.Name, StringComparer.InvariantCultureIgnoreCase).ToList();
-        var changed = settings.Any(s => s.Current != s.Tested) || !inUse.Watches.AssetIds.ToHashSet().SetEquals(tested.Watches.AssetIds)
-            || inUse.ClosePct != tested.ClosePct;
         var ai = tested.Key == TemplateCatalog.Ai.Key;
-        return new AdminTemplate(tested.Key, texts.Name, tested.InvestsIn, changed, settings, listed, tested.Watches.AssetIds,
+        return new AdminTemplate(tested.Key, texts.Name, tested.InvestsIn, row is not null, settings, listed,
             ai ? null : inUse.ClosePct, tested.ClosePct);
     }
 }

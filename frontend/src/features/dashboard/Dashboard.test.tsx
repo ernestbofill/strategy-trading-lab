@@ -75,7 +75,7 @@ describe('Dashboard', () => {
     expect(within(archived).getByText('Archived long ago')).toBeTruthy()
   })
 
-  it('shows the gain since the start next to the S&P 500 fund, and where the stocks stand', async () => {
+  it('shows the gain since the start next to the S&P 500, and where the stocks stand', async () => {
     vi.spyOn(api, 'getTemplates').mockResolvedValue([])
     vi.spyOn(api, 'getDashboard').mockResolvedValue({
       today: '2026-10-28',
@@ -101,14 +101,14 @@ describe('Dashboard', () => {
 
     const list = within(await screen.findByRole('link', { name: /Stock list/ }))
     expect(list.getByText('0.0%')).toBeTruthy()
-    expect(list.getByText('S&P 500 fund: +1.2%')).toBeTruthy()
+    expect(list.getByText('S&P 500: +1.2%')).toBeTruthy()
     expect(list.getByText('1 getting close')).toBeTruthy()
     expect(list.getByText('6 candidates')).toBeTruthy()
     expect(list.getByText('3 not a candidate')).toBeTruthy()
 
     const fund = within(screen.getByRole('link', { name: /Fund one/ }))
     expect(fund.getByText('−2.5%')).toBeTruthy()
-    expect(fund.getByText('S&P 500 fund: −1.1%')).toBeTruthy()
+    expect(fund.getByText('S&P 500: −1.1%')).toBeTruthy()
     expect(fund.getByText('CSPX: holding')).toBeTruthy()
   })
 

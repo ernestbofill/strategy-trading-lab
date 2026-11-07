@@ -11,7 +11,7 @@ export const dashboard: Record<keyof typeof en, string> = {
   'dashboard.waitingHidden': ' en espera',
   'dashboard.dot.aiRound': 'Ronda d’IA pendent',
   'dashboard.dot.signal': 'Senyal en espera',
-  'dashboard.card.index': 'Fons S&P 500: {pct}',
+  'dashboard.card.index': 'S&P 500: {pct}',
   'dashboard.card.bearRare': 'Les grans caigudes són poc freqüents: pot passar anys sense senyal.',
   'dashboard.card.budgetUsed': '{used} de {budget} utilitzats',
   'dashboard.state.signals': '{n, plural, one {# senyal} other {# senyals}}',

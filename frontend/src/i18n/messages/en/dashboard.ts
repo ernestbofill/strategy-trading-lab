@@ -9,7 +9,7 @@ export const dashboard = {
   'dashboard.waitingHidden': ' waiting',
   'dashboard.dot.aiRound': 'AI round due',
   'dashboard.dot.signal': 'Signal waiting',
-  'dashboard.card.index': 'S&P 500 fund: {pct}',
+  'dashboard.card.index': 'S&P 500: {pct}',
   'dashboard.card.bearRare': 'Big drops are rare: it may not signal for years.',
   'dashboard.card.budgetUsed': '{used} of {budget} used',
   'dashboard.state.signals': '{n, plural, one {# signal} other {# signals}}',

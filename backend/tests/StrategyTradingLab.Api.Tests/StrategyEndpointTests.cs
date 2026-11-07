@@ -110,8 +110,8 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
         {
             var created = await (await client.PostAsJsonAsync("/strategies", Request("dip", name))).Content.ReadFromJsonAsync<JsonElement>();
             var id = created.GetProperty("id").GetGuid();
-            var stock = TemplateCatalog.Find("dip")!.Watches.Assets.First().Id;
-            var notInIt = TemplateCatalog.Find("dip")!.Watches.Assets.Last().Id;
+            var stock = TemplateCatalog.Find("dip")!.Watches.AssetIds[0];
+            var notInIt = TemplateCatalog.Find("dip")!.Watches.AssetIds[^1];
 
             var prices = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}/stocks/{stock}/prices");
             Assert.Equal(JsonValueKind.Array, prices.ValueKind);

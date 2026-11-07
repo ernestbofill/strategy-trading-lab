@@ -57,6 +57,10 @@
   box-shadow: 0 0 8px var(--syntax-keyword);
 }
 
+.fund {
+  font-family: var(--font-mono);
+}
+
 .results {
   display: flex;
   align-items: flex-end;
@@ -73,13 +77,12 @@
 
 .big {
   font: 600 28px/36px var(--font-mono);
+  color: var(--ink-muted);
 }
-.big[data-tone="up"],
-.figure[data-tone="up"] {
+.big[data-tone="up"] {
   color: var(--success);
 }
-.big[data-tone="down"],
-.figure[data-tone="down"] {
+.big[data-tone="down"] {
   color: var(--danger-ink);
 }
 
@@ -97,14 +100,35 @@
   color: var(--danger-ink);
 }
 
-.text {
+.states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   margin: 0;
-  font-size: 14px;
-  line-height: 22px;
+  padding: 0;
+  list-style: none;
+  font: 13px/20px var(--font-ui);
 }
-
-.figure {
-  font-family: var(--font-mono);
+.states li::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+}
+.states [data-state="signals"]::before {
+  background: var(--hot-pink);
+}
+.states [data-state="close"]::before {
+  background: var(--warning);
+}
+.states [data-state="candidates"]::before {
+  background: var(--info);
+}
+.states [data-state="holding"]::before {
+  background: var(--primary);
 }
 
 .budget {

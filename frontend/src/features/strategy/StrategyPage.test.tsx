@@ -30,7 +30,7 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   currency: 'EUR',
   budget: { amount: 3000, used: 1200, step: 100, maxSteps: 5, steps: 12, totalSteps: 30 },
   results: null,
-  pastResult: { years: '2010-2024', template: 212, index: 180, worstYear: -21 },
+  pastResult: { years: '2010-2024', templatePerYear: 8.1, indexPerYear: 7.3, worstYear: -21, indexWorstYear: -18 },
   signals: { did: 9, skipped: 2, missed: 1 },
   words: { zone: 'the discount zone', notCandidate: 'Below its long trend' },
   stocks: [],
@@ -99,7 +99,7 @@ describe('StrategyPage', () => {
     expect(screen.getByText('−1.3%')).toBeTruthy()
     expect(screen.getByText('€1,200 of €3,000 · 12 of 30 steps')).toBeTruthy()
     expect(screen.getByText('9 did · 2 skipped · 1 missed')).toBeTruthy()
-    expect(screen.getByText(/The template's worst year, 2010-2024/).textContent).toContain('−21%')
+    expect(screen.getByText(/Worst year, 2010-2024/).textContent).toContain('the template −21%, an S&P 500 fund −18%')
     expect(screen.getByRole('link', { name: /Zscaler WAITING FOR YOU Signal: step 2 of 5/ }).getAttribute('href')).toBe(
       '/strategies/live/stocks/a',
     )
@@ -143,7 +143,8 @@ describe('StrategyPage', () => {
     open(detail({ id: 'sim', mode: 'simulation', signals: null, budget: { amount: 3000, used: 0, step: 100, maxSteps: 5, steps: 0, totalSteps: 30 } }))
 
     expect(await screen.findByText(/No paper trades yet/)).toBeTruthy()
-    expect(screen.getByText('−21%')).toBeTruthy()
+    expect(screen.getByText('+8.1%')).toBeTruthy()
+    expect(screen.getByText('−18%')).toBeTruthy()
     expect(screen.queryByText('Signals')).toBeNull()
     expect(screen.getByText(/Results come from paper trades/)).toBeTruthy()
   })

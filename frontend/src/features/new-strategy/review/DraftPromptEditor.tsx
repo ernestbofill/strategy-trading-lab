@@ -1,7 +1,8 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import type { TemplateKey } from '../../../api'
 import { LoadableScreen } from '../../../components/LoadableScreen'
 import { TopBar } from '../../../components/Screen'
+import { useLeave } from '../../../components/useLeave'
 import { useT } from '../../../i18n/I18n'
 import { PromptEditor } from '../../ai-round/PromptEditor'
 import { useNewStrategyDraft } from '../NewStrategyDraft'
@@ -15,7 +16,7 @@ export function DraftPromptEditor() {
   const { key } = useParams<{ key: TemplateKey }>()
   const draft = useNewStrategyDraft()
   const t = useT()
-  const navigate = useNavigate()
+  const leave = useLeave(reviewPath(key ?? ''))
   const top = <TopBar back={reviewPath(key ?? '')} aside={<span>{t('aiRound.editor.topBar')}</span>} />
   return (
     <LoadableScreen state={useTemplate(key)} top={top} what={t('newStrategy.what.template')}>
@@ -31,7 +32,7 @@ export function DraftPromptEditor() {
             onSave={async ({ instructions, ...sources }) => {
               if (!mine) draft.switchTemplate(template.key)
               draft.update({ aiSources: sources, aiInstructions: instructions })
-              navigate(reviewPath(template.key))
+              leave()
             }}
           />
         )

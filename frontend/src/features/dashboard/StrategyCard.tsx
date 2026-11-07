@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import type { StrategySummary, WaitingItem } from '../../api'
+import type { StockCounts, StrategySummary, WaitingItem } from '../../api'
 import { Sparkline } from '../../components/Sparkline'
 import { Tag } from '../../components/Tag'
 import { useT } from '../../i18n/I18n'
+import type { MessageKey } from '../../i18n/messages/en'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { strategyPath } from './paths'
 import styles from './StrategyCard.module.css'
@@ -14,52 +15,36 @@ function WaitingDot({ item }: { item: WaitingItem }) {
   return <span role="img" aria-label={label} title={label} className={styles.dot} data-kind={item.kind} />
 }
 
-function Body({ s }: { s: StrategySummary }) {
+/** The pills counted on the card, most pressing first: the count's words, and the one fund's state. */
+const STATES: [keyof StockCounts, MessageKey, MessageKey][] = [
+  ['signals', 'dashboard.state.signals', 'dashboard.fund.signal'],
+  ['close', 'dashboard.state.close', 'dashboard.fund.close'],
+  ['candidates', 'dashboard.state.candidates', 'dashboard.fund.candidate'],
+  ['holding', 'dashboard.state.holding', 'dashboard.fund.holding'],
+  ['notCandidates', 'dashboard.state.notCandidates', 'dashboard.fund.notCandidate'],
+]
+
+/** Where the stocks stand: "1 getting close · 6 candidates", or the fund's own state ("CSPX: candidate"). */
+function States({ stocks, fund }: { stocks: StockCounts; fund: string | null }) {
   const t = useT()
-  const { results, pastResult } = s
-  if (results) {
-    return (
-      <div className={styles.results}>
-        <div className={styles.figures}>
-          <div className={styles.big} data-tone={pctTone(results.strategy)}>
-            {signedPct(results.strategy, 1)}
-          </div>
-          <div className={styles.index}>{t('dashboard.card.index', { pct: signedPctOrDash(results.index, 1) })}</div>
-          {pastResult && (
-            <div className={styles.index}>{t('dashboard.card.worstYear', { pct: signedPct(pastResult.worstYear) })}</div>
-          )}
-        </div>
-        <span className={styles.chart} data-tone={pctTone(results.strategy)}>
-          <Sparkline values={results.history} />
-        </span>
-      </div>
-    )
-  }
-  if (s.used > 0) return <p className={styles.text}>{t('dashboard.card.noResultsBudget')}</p>
-  if (pastResult) {
-    const noTrades = s.mode === 'live' ? t('dashboard.card.noTradesLive') : t('dashboard.card.noTradesSim')
-    const intro = pastResult.isCustomized
-      ? t('dashboard.card.pastCustom')
-      : t('dashboard.card.pastBefore', { years: pastResult.years })
-    return (
-      <p className={styles.text}>
-        {noTrades} {intro}{' '}
-        <span className={styles.figure} data-tone={pctTone(pastResult.template)}>
-          {signedPct(pastResult.template)}
-        </span>{' '}
-        {t('dashboard.card.pastVs')} <span className={styles.figure}>{signedPct(pastResult.index)}</span>{' '}
-        {t('dashboard.card.pastAfter')}{' '}
-        <span className={styles.figure} data-tone={pctTone(pastResult.worstYear)}>
-          {signedPct(pastResult.worstYear)}
-        </span>
-        .{s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
-      </p>
-    )
-  }
-  return <p className={styles.text}>{t('dashboard.card.noResultsAi')}</p>
+  const shown = STATES.filter(([key]) => stocks[key] > 0)
+  if (shown.length === 0) return null
+  return (
+    <ul className={styles.states}>
+      {fund && shown.length === 1 ? (
+        <li data-state={shown[0][0]}>{t(shown[0][2], { fund })}</li>
+      ) : (
+        shown.map(([key, words]) => (
+          <li key={key} data-state={key}>
+            {t(words, { n: stocks[key] })}
+          </li>
+        ))
+      )}
+    </ul>
+  )
 }
 
-/** One strategy on the dashboard. The whole card links to the strategy page. */
+/** One strategy on the dashboard: its gain since it started next to the S&P 500's, with a small chart once it has trades. The whole card links to the strategy page. */
 export function StrategyCard({ strategy: s, today, waiting }: { strategy: StrategySummary; today: string; waiting?: WaitingItem }) {
   const t = useT()
   const live = s.mode === 'live'
@@ -68,13 +53,17 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
     : s.startedOn === today
       ? t('strategy.startedToday')
       : t('strategy.since', { date: shortDate(s.startedOn) })
+  // Nothing bought yet: the money hasn't moved. Bought but not yet priced: unknown.
+  const gain = s.results ? s.results.strategy : s.used > 0 ? null : 0
+  const index = s.results ? s.results.index : s.indexSinceStart
   return (
     <Link to={strategyPath(s.id)} className={styles.card}>
       <div className={styles.head}>
         <div className={styles.titles}>
           <div className={styles.name}>{s.name}</div>
           <div className={styles.sub}>
-            <em>{s.templateName}</em> · {since}
+            <em>{s.templateName}</em>
+            {s.fund && <> · <span className={styles.fund}>{s.fund}</span></>} · {since}
           </div>
         </div>
         <span className={styles.badges}>
@@ -83,7 +72,20 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
         </span>
       </div>
-      <Body s={s} />
+      <div className={styles.results}>
+        <div className={styles.figures}>
+          <div className={styles.big} data-tone={pctTone(gain)}>
+            {gain === null ? '–' : signedPct(gain, 1)}
+          </div>
+          <div className={styles.index}>{t('dashboard.card.index', { pct: signedPctOrDash(index, 1) })}</div>
+        </div>
+        {s.results && s.results.history.length > 1 && (
+          <span className={styles.chart} data-tone={pctTone(gain)}>
+            <Sparkline values={s.results.history} />
+          </span>
+        )}
+      </div>
+      {s.stocks && <States stocks={s.stocks} fund={s.fund} />}
       <div className={styles.budget}>
         <div className={styles.bar} aria-hidden="true" data-mode={s.mode}>
           <div className={styles.fill} style={{ width: `${Math.min(100, (s.used / s.budget) * 100)}%` }} />

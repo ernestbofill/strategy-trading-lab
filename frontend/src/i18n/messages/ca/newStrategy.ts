@@ -73,11 +73,11 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.tested.howLink': 'Com ho hem provat ›',
   'newStrategy.results.thisTemplate': 'Aquesta plantilla',
   'newStrategy.results.indexFund': 'Fons S&P 500',
+  'newStrategy.results.perYear': "L'any, de mitjana",
   'newStrategy.results.worstYear': 'El pitjor any',
   'newStrategy.results.period': 'Període',
   'newStrategy.results.template': 'Plantilla',
   'newStrategy.results.index': 'S&P 500',
-  'newStrategy.results.worstYr': 'Pitjor any',
   'newStrategy.how.noBacktest': 'Aquesta plantilla no té backtest.',
   'newStrategy.how.title': 'Com ho hem provat',
   'newStrategy.how.lead':
@@ -98,7 +98,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.how.run.fees': 'Comissions: {fee} per operació. Sense impostos.',
   'newStrategy.how.byPeriod': 'Per període',
   'newStrategy.how.independentPeriods':
-    "Cada període és una prova independent amb diners nous a l'inici, per això els períodes no sumen el total («All»).",
+    'Totes les xifres són mitjanes anuals. Cada període és una prova independent que comença amb diners nous.',
   'newStrategy.how.cantShow': 'El que un backtest no pot mostrar',
   'newStrategy.how.survivors':
     'Les proves històriques utilitzen empreses i índexs que cotitzen avui. Les empreses que van fer fallida o van ser excloses fa dècades no hi són, cosa que afavoreix els resultats passats.',
@@ -110,9 +110,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.advanced.save': 'Desa la configuració',
   'newStrategy.advanced.reset': '⟳ Torna als valors provats',
   'newStrategy.advanced.backtest': 'Backtest',
-  'newStrategy.advanced.defaultsResults':
-    'Aquests són els resultats dels valors provats. Tornar a fer la prova amb la teva configuració arribarà més endavant.',
-  'newStrategy.advanced.onDefaults': 'Fas servir els valors provats. Canvia una opció per comparar.',
+  'newStrategy.advanced.backtestSoon': 'Aviat podràs fer el backtest de la teva estratègia.',
   'newStrategy.advanced.tested': 'Provat: {value}',
   'newStrategy.advanced.changed': 'CANVIAT',
   'newStrategy.advanced.decrease': 'Disminueix',

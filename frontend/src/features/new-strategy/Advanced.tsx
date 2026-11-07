@@ -1,9 +1,10 @@
 import { useId, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import type { Setting, TemplateDetail, TemplateKey } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { useLeave } from '../../components/useLeave'
 import { useT } from '../../i18n/I18n'
 import { AdvancedSettingsBody } from './AdvancedSettingsBody'
 import styles from './Advanced.module.css'
@@ -33,8 +34,7 @@ export function Advanced() {
 function AdvancedContent({ template }: { template: TemplateDetail }) {
   const t = useT()
   const draft = useNewStrategyDraft()
-  const navigate = useNavigate()
-  const hasHistory = useLocation().key !== 'default'
+  const leave = useLeave(reviewPath(template.key))
   // The draft's changes belong to its template; another template's screen starts from its own tested values.
   const ownDraft = draft.templateKey === template.key
   const [values, setValues] = useState<SettingValues>(() => settingValues(template, ownDraft ? draft.settings : {}))
@@ -52,8 +52,7 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   const save = () => {
     if (!ownDraft) draft.switchTemplate(template.key)
     draft.update({ settings: changedSettings(template, values) })
-    if (hasHistory) navigate(-1)
-    else navigate(reviewPath(template.key))
+    leave()
   }
 
   return (

@@ -1,16 +1,12 @@
 import type { MouseEvent, ReactNode } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useRole } from '../features/account/AccountContext'
 import type { Role } from '../api'
 import { useT } from '../i18n/I18n'
 import type { MessageKey } from '../i18n/messages/en'
 import { Footer } from './Footer'
 import styles from './Screen.module.css'
-
-/** Marks a history entry reached by going up: the screen before it isn't one the user came from. */
-interface UpState {
-  up?: boolean
-}
+import { useHasHistory, type UpState } from './useLeave'
 
 /** The name of the parent `back` leads to, for the up link of a screen opened directly. `role` is undefined while the account loads. */
 function upLabel(to: string, role: Role | null | undefined): MessageKey {
@@ -41,10 +37,8 @@ interface TopBarProps {
 export function TopBar({ title, titleLink, titleLinkAriaLabel, back, step, aside }: TopBarProps) {
   const t = useT()
   const navigate = useNavigate()
-  const location = useLocation()
-  // The first entry of the history has the key 'default': there is nothing to go back to.
-  // An entry reached by going up has nothing of the app's before it either, so it keeps going up.
-  const hasHistory = location.key !== 'default' && !(location.state as UpState | null)?.up
+  // Opened directly, or reached by going up, it keeps going up.
+  const hasHistory = useHasHistory()
   const role = useRole()
   const goBack = (e: MouseEvent<HTMLAnchorElement>) => {
     const plainClick = e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)

@@ -223,12 +223,6 @@ a.stock:hover {
   font: 14px/20px var(--font-mono);
 }
 
-.caption {
-  margin: 0;
-  font-size: 12px;
-  line-height: 16px;
-}
-
 .tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

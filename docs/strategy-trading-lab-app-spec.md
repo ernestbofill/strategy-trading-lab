@@ -300,7 +300,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 *The comeback* (`ReviewComeback`)
 - The idea: "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys in steps."
 - It signals when:
-  1. "**It was beaten down:** the stock fell at least [X]% from its high of the last year." (POC: 30% below the 52-week high.)
+  1. "**It was beaten down:** the stock fell at least [X]% from its high of the last 12 months." (POC: 30% below the 52-week high.)
   2. "**It turned around:** it climbs 15% above its SMA 50 (average price over the last 50 days)."
   3. "**More people are trading it:** its volume (shares traded per day) is rising."
 - Tested: "[N] stocks, [year]-[year]."
@@ -625,8 +625,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. No chart yet (ROADMAP, Milestone 3).
 
 - Top bar: "← BACK" to the strategy page.
-- H1: the symbol; under it the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
-- **Status box:** the same pill and line as its row on the strategy page, "Close [price] on [date]" (the close the rules looked at), and when the stock is a candidate, "Candidate since [date]".
+- H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
+- **Status box:** the same pill and line as its row on the strategy page, and when the stock is a candidate, "Candidate since [date]".
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
   - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."
   - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).
@@ -638,7 +638,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
     - Visual gauges per rule type:
       - **Threshold bar (with `> 100%` overflow):** shown whether met or not, with a `100%` target tick at 75% of the bar width so values that exceed the threshold (e.g. `238%` on *Proven growth*) visibly pass the target tick.
       - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`) and *The comeback*'s buy line and milestones (`0% to +8%`), showing both the entry threshold and the upper limit past which the signal is cancelled.
-      - **Candidate window bar:** for *Beaten down lately* (`Day [value] of [max]`), overflowing into `Window closed` past `[max]` days.
+      - *Beaten down lately* has no bar: a bar of days read as "more is better". Its sentence says since when it is a candidate, and `Window closed` shows once the window has passed.
       - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Mid $Y > Long $Z`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* (`Sell $X · SMA $Y · Buy $Z`).
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
   - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.

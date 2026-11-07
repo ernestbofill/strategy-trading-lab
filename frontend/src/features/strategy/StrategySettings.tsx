@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { api, InvalidFieldsError, type StrategyDetail, type TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { useLeave } from '../../components/useLeave'
 import { strategyPath } from '../dashboard/paths'
 import { AdvancedSettingsBody } from '../new-strategy/AdvancedSettingsBody'
 import { changedSettings, settingValues, type SettingValues } from '../new-strategy/settings'
@@ -37,7 +38,7 @@ function StrategySettingsWithTemplate({ strategy }: { strategy: StrategyDetail }
 
 function StrategySettingsContent({ strategy, template }: { strategy: StrategyDetail; template: TemplateDetail }) {
   const t = useT()
-  const navigate = useNavigate()
+  const leave = useLeave(strategyPath(strategy.id))
   const [values, setValues] = useState<SettingValues>(() => settingValues(template, strategy.settings ?? {}))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -59,7 +60,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
     try {
       await api.updateStrategySettings(strategy.id, changedSettings(template, values))
       invalidateAll()
-      navigate(strategyPath(strategy.id))
+      leave()
     } catch (err) {
       if (err instanceof InvalidFieldsError) {
         setError(Object.values(err.fields)[0] || t('strategy.settings.checkSettings'))

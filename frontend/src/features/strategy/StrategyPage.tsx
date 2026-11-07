@@ -180,7 +180,6 @@ function Stocks({ s }: { s: StrategyDetail }) {
           )
         })}
       </ul>
-      <p className={styles.caption}>{t('strategy.caption')}</p>
     </Section>
   )
 }

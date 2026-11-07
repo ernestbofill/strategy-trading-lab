@@ -313,7 +313,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   2. "**The first bounce:** it climbs 5% off its low. That's the first step."
   3. "**Then in steps:** one more step every 2 weeks, until the budget is used."
 - Fund: "[S&P 500 fund name]" / "Tracks the 500 largest US companies" / "Change".
-- Tested: "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years." (Also added on the dashboard card and strategy page while there are no trades yet.)
+- Tested: "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years." (Also added on the strategy page while there are no trades yet.)
 - What can go wrong: "the market can keep falling after the first bounce, and stay low for years."
 
 *Index trend* (`ReviewTrend`)
@@ -545,10 +545,12 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 **Strategy cards**, one per strategy; the whole card links to its strategy page.
 - Header: the strategy name; under it "*[template]* · since [date]" or "*[template]* · started today"; on the right the mode tag ("LIVE" or "SIM"). A small glowing dot before the tag marks a card with something waiting, with an accessible label ("Signal waiting" or "AI round due"). The Waiting for you list carries the detail; the dot only points to the card.
-- Running: the result since start, big, "[+X.X%]"; under it "S&P 500 fund: [+X.X%]"; a small line chart on the right; a budget bar and "€[used] of €[budget] used".
-- Started today: "No paper trades yet. In the past, [year]-[year], the template did [+X%] vs [+X%] for an S&P 500 fund. Its worst year was [−X%]." (Live: "No trades yet. …", draft.) The worst year is the template's own, from its backtest.
-- A running strategy's own figures are since its start, so they have no worst year yet: until it has a year of its own, the card adds "Template's worst year: [−X%]" under the index fund (product rule: results next to the worst year). The page's bottom line carries the caption for them. An empty budget bar, "€0 of €[budget] used".
-- AI strategy with no results: "No results yet. They start after your first AI round."
+- A fund template names the fund it follows after the template: "*[template]* · [fund symbol] · since [date]".
+- The card is short (Ernest, 2026-11-07), with no past results or template text:
+  - The gain since start, big, "[+X.X%]": "0.0%", greyed, before the first buy (the money hasn't moved), "–" while bought trades have no price yet. Under it "S&P 500 fund: [+X.X%]": with trades, the same money put in on the same days, as on the strategy page; before the first buy, the fund since the start day.
+  - Where the stocks stand, by pill, most pressing first, zeros left out: "[n] signals · [n] getting close · [n] candidates · [n] holding · [n] not a candidate", each with a coloured dot. *Getting close* is a candidate within 3% of its buy rule, not counted again as a candidate (never for *Bear markets*, whose distance is from the low). A fund template says its one fund's state: "[symbol]: candidate". Stocks not checked yet aren't counted; archived cards have no state line.
+  - A budget bar and "€[used] of €[budget] used".
+- The worst year isn't on the card, an exception to the product rule (Ernest, 2026-11-07): the strategy page keeps it.
 - **Archived** (#91, merged with ending in #96): the archived strategies, last archived first, in a collapsed "Archived ([n])" section at the bottom (closed by default), after the running ones and the "+ New strategy" card. Each card carries an "ARCHIVED" tag before the mode tag, "*[template]* · archived [date]" under the name, and its results as they stood on that date. Only running strategies appear in *Waiting for you*.
 - Next to the running cards: a dashed placeholder card "+ New strategy" → Pick a template. A user runs at most 10 strategies at once: at 10, the card is off and reads "You run 10 strategies, the most for now. Archive one to start another." (assumed copy)
 
@@ -561,7 +563,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"); a chart with three lines (You solid and highlighted, The rules alone solid, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
   - Under the chart, until the strategy has a year of its own: "The template's worst year, [years]: [−X%]" (product rule: results next to the worst year).
-  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, as on the dashboard card, with its worst year. The chart appears with the first buy.
+  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, with its worst year. The chart appears with the first buy.
   - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
   - A figure that can't be worked out (the index fund has no prices at all) shows "–".
   - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".
@@ -586,7 +588,6 @@ The same three settings can be changed later from the strategy page (not drawn).
     - *Index trend* shows "CANDIDATE" ("[n]% from the buy line", or "Below its long trend" before the checks are stored) when not holding, like the other templates, and "HOLDING" ("In the market") when holding. (It said "OUT OF THE MARKET" until #156, which read like a verdict on the market next to a fund close to its buy line.)
     - Live, the pill says where the user is, not the rules: when the user skipped every step the rules hold, an all-in or *Index trend* stock is "CANDIDATE" and a stepped one a candidate (or not a candidate), with "Rules: [rules] · You: [you]" under it (e.g. "Rules: In the market · You: Out of the market").
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
-- Under the list: "Removing a stock stops its signals. Your trades in it stay in the results."
 - **Signals and trades** (`SignalsAndTrades`):
   - A chronological timeline of every signal and trade recorded for this strategy, ordered newest first.
   - Heading: "Signals and trades" with the item count ("· [n]").

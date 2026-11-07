@@ -40,6 +40,9 @@ const summary = (fields: Partial<StrategySummary>): StrategySummary => ({
   pastResult: { years: '2010-2024', template: 212, index: 180, worstYear: -21 },
   status: 'running',
   endedOn: null,
+  indexSinceStart: 1.2,
+  stocks: { signals: 0, close: 1, candidates: 6, holding: 0, notCandidates: 3 },
+  fund: null,
   ...fields,
 })
 
@@ -72,14 +75,20 @@ describe('Dashboard', () => {
     expect(within(archived).getByText('Archived long ago')).toBeTruthy()
   })
 
-  it('shows customized copy when strategy settings or stocks differ from defaults', async () => {
+  it('shows the gain since the start next to the S&P 500 fund, and where the stocks stand', async () => {
     vi.spyOn(api, 'getTemplates').mockResolvedValue([])
     vi.spyOn(api, 'getDashboard').mockResolvedValue({
       today: '2026-10-28',
       waiting: [],
       strategies: [
-        summary({ id: 'custom', name: 'Customized strategy', pastResult: { years: '2000-2024', template: 490, index: 538, worstYear: -21, isCustomized: true } }),
-        summary({ id: 'default', name: 'Default strategy', pastResult: { years: '2000-2024', template: 490, index: 538, worstYear: -21, isCustomized: false } }),
+        summary({ id: 'list', name: 'Stock list' }),
+        summary({
+          id: 'fund',
+          name: 'Fund one',
+          fund: 'CSPX',
+          results: { strategy: -2.5, index: -1.1, history: [] },
+          stocks: { signals: 0, close: 0, candidates: 0, holding: 1, notCandidates: 0 },
+        }),
       ],
     })
     render(
@@ -90,11 +99,17 @@ describe('Dashboard', () => {
       </NewStrategyDraftProvider>,
     )
 
-    const customCard = within(await screen.findByRole('link', { name: /Customized strategy/ }))
-    expect(customCard.getByText(/With the tested settings and stocks, the template did/)).toBeTruthy()
+    const list = within(await screen.findByRole('link', { name: /Stock list/ }))
+    expect(list.getByText('0.0%')).toBeTruthy()
+    expect(list.getByText('S&P 500 fund: +1.2%')).toBeTruthy()
+    expect(list.getByText('1 getting close')).toBeTruthy()
+    expect(list.getByText('6 candidates')).toBeTruthy()
+    expect(list.getByText('3 not a candidate')).toBeTruthy()
 
-    const defaultCard = within(await screen.findByRole('link', { name: /Default strategy/ }))
-    expect(defaultCard.getByText(/In the past, 2000-2024, the template did/)).toBeTruthy()
+    const fund = within(screen.getByRole('link', { name: /Fund one/ }))
+    expect(fund.getByText('−2.5%')).toBeTruthy()
+    expect(fund.getByText('S&P 500 fund: −1.1%')).toBeTruthy()
+    expect(fund.getByText('CSPX: holding')).toBeTruthy()
   })
 
   it('disables the new strategy button at the limit of 10 running strategies', async () => {

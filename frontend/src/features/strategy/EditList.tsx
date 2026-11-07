@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { api, InvalidFieldsError, type Security, type StrategyDetail } from '../../api'
 import { CheckList } from '../../components/CheckList'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { useLeave } from '../../components/useLeave'
 import { Section } from '../../components/Section'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
@@ -34,7 +35,7 @@ interface Listed {
 
 function EditListContent({ s }: { s: StrategyDetail }) {
   const t = useT()
-  const navigate = useNavigate()
+  const leave = useLeave(strategyPath(s.id))
   // Its stocks, and those unticked earlier that still have trades; then the ones added here.
   const [stocks, setStocks] = useState<Listed[]>(() => s.stocks.map((row) => ({ id: row.assetId, name: row.name, detail: row.what })))
   const [ticked, setTicked] = useState<string[]>(() => followedStocks(s).map((row) => row.assetId))
@@ -73,7 +74,7 @@ function EditListContent({ s }: { s: StrategyDetail }) {
     try {
       await api.updateStrategyAssets(s.id, ticked)
       invalidateAll()
-      navigate(strategyPath(s.id))
+      leave()
     } catch (err) {
       setError(err instanceof InvalidFieldsError ? Object.values(err.fields)[0] || t('strategy.list.saveFailed') : t('strategy.list.saveFailed'))
       setSaving(false)

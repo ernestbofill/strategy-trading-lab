@@ -163,6 +163,9 @@ public record StrategySignalItem(
     DateOnly? EndedOn,
     DateTimeOffset CreatedAt);
 
+/// <summary>A day's close, for the stock page's price chart.</summary>
+public record PricePoint(DateOnly Date, decimal Close);
+
 /// <summary>Stored reference rates for an asset's currency against the strategy's currency.</summary>
 public record CurrencyRates(string Currency, IReadOnlyList<RateDay> Rates);
 

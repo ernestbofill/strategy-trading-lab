@@ -19,6 +19,9 @@ public static class StrategyEndpoints
     /// <summary>The unique index on (user_id, lower(name)) WHERE status = 'running', made in the initial migration.</summary>
     const string RunningNameIndex = "ux_strategies_user_id_running_name";
 
+    /// <summary>How far back the stock page's chart goes, in calendar days (its longest zoom).</summary>
+    const int PriceChartDays = 90;
+
     public static void MapStrategies(this IEndpointRouteBuilder app)
     {
         app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
@@ -95,6 +98,21 @@ public static class StrategyEndpoints
         .WithSummary("The strategy page: results next to the rules' and the index fund's, the budget used, and where each stock stands.");
 
         var group = app.MapGroup("/strategies").WithTags("Strategies").RequireUser();
+
+        group.MapGet("/{id:guid}/stocks/{assetId:guid}/prices", async Task<Results<Ok<List<PricePoint>>, NotFound>> (
+            Guid id, Guid assetId, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = await CurrentUser(sessions, cancellationToken);
+            if (!await db.Strategies.AnyAsync(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId), cancellationToken))
+                return TypedResults.NotFound();
+            var latest = await db.Prices.Where(p => p.AssetId == assetId).MaxAsync(p => (DateOnly?)p.Date, cancellationToken);
+            if (latest is not { } last) return TypedResults.Ok(new List<PricePoint>());
+            var from = last.AddDays(-PriceChartDays);
+            return TypedResults.Ok(await db.Prices.AsNoTracking().Where(p => p.AssetId == assetId && p.Date >= from).OrderBy(p => p.Date)
+                .Select(p => new PricePoint(p.Date, p.Close)).ToListAsync(cancellationToken));
+        })
+        .WithName("GetStockPrices")
+        .WithSummary("The stock page's chart: a stock's daily closes over the last 90 days, for a stock in one of the user's strategies.");
 
         group.MapPost("/", async Task<Results<Created<StrategySummary>, ValidationProblem, Conflict<string>, NotFound>> (
             NewStrategy request, AppDbContext db, Sessions sessions, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>

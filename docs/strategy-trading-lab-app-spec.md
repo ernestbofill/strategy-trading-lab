@@ -169,7 +169,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   - **02 Real-time simulation:**
     - Tagline: "Forward-test on real prices with zero financial risk"
     - Points: Closing prices refreshed daily after US market close; automated simulated trade logging following exact rules; honest metrics next to S&P 500 fund and worst-year benchmarks.
-    - Interactive widget: Forward-testing stats (`+14.2%` vs `+8.1%` S&P 500 fund with `InfoTip` vs `−12.4%` worst year) with toggle between performance comparison and paper trade log.
+    - Interactive widget: Forward-testing stats (`+14.2%` vs `+8.1%` S&P 500 fund with `InfoTip` vs `−12.4%` worst year) with toggle between performance comparison and trade log.
     - CTA link: "Test in simulation mode ›" (`/new`).
   - **03 Trading tracker:**
     - Tagline: "Execute at your broker. 100% private & non-custodial"
@@ -524,7 +524,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 - **"What happens next"**
   - Live: "You see right away how the template did in the past." / "From today the app watches your stocks and alerts you as soon as your rules are met." / "You confirm each signal, and the app tracks the results of what you did."
-  - Simulation (not drawn): "You see right away how the template did in the past." / "From today it runs on real prices and records its own paper trades." / "A summary comes after the US market close on days something changes."
+  - Simulation (not drawn): "You see right away how the template did in the past." / "From today it runs on real prices and records its own trades." / "A summary comes after the US market close on days something changes."
   - *Your AI's top picks* (not drawn): "There are no past results for this template." / "Your first AI round is due now." / then the mode's line.
 - Above the button: nothing; the site footer has the disclaimer.
 - Button, Live: "Start following it live". Simulation (not drawn): "Start the simulation".
@@ -563,7 +563,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"); a chart with three lines (You solid and highlighted, The rules alone solid, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
   - Under the chart, until the strategy has a year of its own: "Worst year, [years]: the template [−X%], an S&P 500 fund [−X%]" (product rule: results next to the worst year).
-  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, a year on average: "In the past, [years], the template did on average [+X.X%] a year vs [+X.X%] for an S&P 500 fund. Its worst year was [−X%], the fund's [−X%]." The chart appears with the first buy.
+  - Before the first buy (not drawn): "No trades yet." and the template's past, a year on average: "In the past, [years], the template did on average [+X.X%] a year vs [+X.X%] for an S&P 500 fund. Its worst year was [−X%], the fund's [−X%]." The chart appears with the first buy.
   - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
   - A figure that can't be worked out (the index fund has no prices at all) shows "–".
   - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".
@@ -604,7 +604,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - **"Archive the strategy"** (built #91 as *End*, renamed #96, not drawn), running strategies only, with a confirm step in place: "Archive [name]? The daily check stops and signals still waiting close as missed. Its history stays, read-only, under Archived. This can't be undone." with "Archive it" and "Keep it running". Archiving sets it to ended (the date is the user's today), makes every waiting signal *Missed* (ending that day, snooze cleared), skips its AI round due, and frees its name (`POST /strategies/{id}/archive`).
 - **An archived strategy** (built #91): read-only. Its results stop at its archive date. No "Tune the settings", no "Log a trade by hand" and no editing or deleting trades, and its missed signals can't be answered any more (the API answers 409, "This strategy is archived, so it can't change."); its answered signals still open. At the bottom: "Delete the strategy". There is no unarchive.
 - "Delete the strategy" (built, not drawn), archived strategies only (the API answers 409 for a running one, "Archive the strategy before deleting it."), at the bottom: a confirm step in place, "Delete [name]? Its signals, trades and results go with it. This can't be undone." with "Delete" and "Keep it". It deletes the strategy for good, with its stocks, signals, trades, results and AI rounds, and the rounds it shared (nothing would point to them any more, so turning sharing off couldn't remove them). Then the dashboard, in place of the strategy page in the history.
-- Bottom, Live: "Your results come from the trades you confirmed, at your prices. Not financial advice. Signals follow your rules." Simulation (draft): "Results come from paper trades at the next day's opening price. Not financial advice. Signals follow your rules."
+- Bottom, Live: "Your results come from the trades you confirmed, at your prices. Not financial advice. Signals follow your rules." Simulation (draft): "Results come from trades at the next day's opening price. Not financial advice. Signals follow your rules."
 
 **Metrics**
 
@@ -622,11 +622,17 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 ### Stock page (built, not drawn)
 
-One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. No chart yet (ROADMAP, Milestone 3).
+One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page.
 
 - Top bar: "← BACK" to the strategy page.
 - H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
 - **Status box:** the same pill and line as its row on the strategy page, and when the stock is a candidate, "Candidate since [date]".
+- **Price chart** (under the status box), not interactive: the daily closes, with "90 days", "30 days" (the default) and "7 days" buttons, and the rules' levels of the latest check drawn as flat lines or shaded areas ("Lines at today's levels"). A legend under it names each level with its price. Which levels:
+  - *The comeback*: a candidate's "Buy area", from the buy line to the chase limit; not a candidate, the "Beaten down" line (the 52-week high less the drop the rules need), which the price must cross to become one.
+  - *Winners at a discount*: a candidate's "Discount zone"; not a candidate, the "Proven growth" line (its low plus the growth the rules need).
+  - *Bear markets*: always the "Market fall" line and the "Bounce buy" line, so the gap between them shows. Before a drop there is no low yet, so the bounce line is the bounce off the fall line.
+  - *Index trend*: always the "Buy line" and the "Sell line".
+  - A candidate's chart is framed and drawn in green, a stock that isn't one in violet. The chart is left out with fewer than two closes in all; a period with fewer than two (a gap in the prices) shows the last two, its dates under the chart. The closes come from `GET /strategies/{id}/stocks/{assetId}/prices` (the last 90 calendar days).
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
   - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."
   - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).
@@ -642,7 +648,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
       - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Mid $Y > Long $Z`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* (`Sell $X · SMA $Y · Buy $Z`).
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
   - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.
-- **"Your position"** (simulation: "Paper trades"), once it has buys: steps, invested, result.
+- **"Your position"** (simulation: "Trades"), once it has buys: steps, invested, result.
 - **Signals and trades** for this stock only; "+ Log a trade by hand" (live) offers only this stock.
 - A waiting signal (live): the primary action "Answer the signal" opens Confirm a signal.
 - Bottom: "Not financial advice. Signals follow your rules."

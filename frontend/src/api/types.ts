@@ -360,6 +360,12 @@ export interface StockStatusWords {
   holding?: string | null
 }
 
+/** A day's close, for the stock page's chart: backend Strategies/StrategyDtos.cs (PricePoint). */
+export interface PricePoint {
+  date: string
+  close: number
+}
+
 /** The strategy page: backend Strategies/StrategyDtos.cs (StrategyDetail). */
 export interface StrategyDetail {
   id: string
@@ -1073,6 +1079,8 @@ export interface Api {
   getDashboard(): Promise<Dashboard>
   /** The strategy page; undefined when the user has no such strategy. */
   getStrategy(id: string): Promise<StrategyDetail | undefined>
+  /** A stock's daily closes over the last 90 days, oldest first; undefined when it isn't in the user's strategy. */
+  getStockPrices(strategyId: string, assetId: string): Promise<PricePoint[] | undefined>
   /** Updates the settings (rules) of a running strategy. */
   updateStrategySettings(id: string, settings: Record<string, number>): Promise<void>
   /** Edit list: the stocks a running strategy follows from now on. Rejects with `InvalidFieldsError` (`assetIds`). */

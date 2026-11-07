@@ -46,7 +46,7 @@ export function TermsOfUseContent() {
         <p>The app offers two distinct, unmixed operating modes:</p>
         <ul className={styles.list}>
           <li>
-            <strong>Simulation mode:</strong> The app records paper trades when mathematical strategy conditions are met, tracking
+            <strong>Simulation mode:</strong> The app records trades when mathematical strategy conditions are met, tracking
             hypothetical performance without real capital.
           </li>
           <li>

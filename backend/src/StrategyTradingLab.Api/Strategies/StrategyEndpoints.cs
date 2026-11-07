@@ -95,20 +95,21 @@ public static class StrategyEndpoints
         var group = app.MapGroup("/strategies").WithTags("Strategies").RequireUser();
 
         group.MapGet("/{id:guid}/stocks/{assetId:guid}/chart", async Task<Results<Ok<StockChartData>, NotFound>> (
-            Guid id, Guid assetId, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+            Guid id, Guid assetId, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.AsNoTracking()
                 .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
                 .Select(s => new { s.TemplateKey, s.Params, s.Budget.MaxSteps }).SingleOrDefaultAsync(cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
-            var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == assetId).OrderBy(p => p.Date)
+            // Finished sessions only, as the daily check reads them: a bar refreshed during the session isn't final.
+            var lastSession = UsSession.LastComplete(time.GetUtcNow());
+            var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == assetId && p.Date <= lastSession).OrderBy(p => p.Date)
                 .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
             if (bars.Count == 0) return TypedResults.Ok(new StockChartData(null, []));
             var from = bars[^1].Date.AddDays(-StockChart.Days);
 
-            var startedOn = await db.DailyEvaluations.Where(e => e.StrategyId == id && e.AssetId == assetId)
-                .MinAsync(e => (DateOnly?)e.Date, cancellationToken);
+            var (startedOn, _) = await StrategyEvaluator.CheckedDaysAsync(db, id, assetId, cancellationToken);
             var checks = TemplateRules.Supports(strategy.TemplateKey)
                 ? StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, strategy.MaxSteps ?? 1)
                 : [];

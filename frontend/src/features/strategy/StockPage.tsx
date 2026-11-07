@@ -329,7 +329,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
         )}
       </div>
 
-      <PriceChart strategyId={s.id} assetId={row.assetId} isCandidate={isCandidate} currency={row.currency} trades={own.trades} texts={s.checkTexts} />
+      <PriceChart strategyId={s.id} assetId={row.assetId} isCandidate={row.checks.length > 0 ? isCandidate : null} currency={row.currency} trades={own.trades} texts={s.checkTexts} />
 
       {/* Without enough price history the rules say nothing yet: the status line says so. */}
       {s.checkTexts && row.status !== 'notEnoughData' && (

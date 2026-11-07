@@ -18,10 +18,14 @@ public static class StockChart
         DateOnly? startedOn, int maxSteps)
     {
         var checks = startedOn is null || startedOn > from ? WatchedChecks(newRules(), bars, from, startedOn, maxSteps) : [];
-        var start = startedOn is { } day ? bars.ToList().FindIndex(b => b.Date >= day) : -1;
-        if (start >= 0)
+        if (startedOn is { } day)
+        {
+            // No bar from that day on (a price row revised away): the latest bar, as the daily check does.
+            var start = bars.Count - 1;
+            while (start > 0 && bars[start - 1].Date >= day) start--;
             foreach (var evaluation in RulesRunner.Run(newRules(), bars, new StepPlan(maxSteps), start).Where(e => e.Date >= from))
                 checks[evaluation.Date] = evaluation.Checks;
+        }
         return checks;
     }
 

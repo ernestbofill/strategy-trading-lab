@@ -26,7 +26,8 @@ export function PriceChart({
 }: {
   strategyId: string
   assetId: string
-  isCandidate: boolean
+  /** The stored verdict the page shows; null before the daily check has stored any. */
+  isCandidate: boolean | null
   currency: string
   trades: StrategyTradeItem[]
   texts: Record<string, CheckTexts> | null | undefined
@@ -40,8 +41,8 @@ export function PriceChart({
   const points = period.length >= 2 ? period : chart.data.days.slice(-2)
   const first = points[0].date
   const last = points[points.length - 1]
-  // The latest day's own verdict, so a stock the daily check hasn't seen yet still reads right.
-  const candidate = last.checks.length > 0 ? isCandidateOn(last.checks) : isCandidate
+  // The page's verdict, as the status line says; a stock the daily check hasn't seen yet takes the latest day's.
+  const candidate = isCandidate ?? isCandidateOn(last.checks)
 
   const series = chartSeries(points)
   // The legend's prices are the latest day the rules checked, which can be a day behind the latest close.
@@ -60,7 +61,8 @@ export function PriceChart({
   const x = (i: number) => +(i * step).toFixed(1)
   const y = (price: number) => +(HEIGHT - ((price - low) / (high - low)) * HEIGHT).toFixed(1)
   // A level shown on a single day still gets a short dash.
-  const xs = (run: { i: number }[]) => (run.length === 1 ? [x(run[0].i) - step / 2, x(run[0].i) + step / 2] : run.map((p) => x(p.i)))
+  const xs = (run: { i: number }[]) =>
+    run.length === 1 ? [Math.max(0, x(run[0].i) - step / 2), Math.min(WIDTH, x(run[0].i) + step / 2)] : run.map((p) => x(p.i))
   const pct = (value: number, of: number) => `${(value / of) * 100}%`
   const nameOf = (s: (typeof series)[number]) => (s.mark.check ? (texts?.[s.mark.check]?.label ?? s.mark.check) : t(s.mark.label!))
 

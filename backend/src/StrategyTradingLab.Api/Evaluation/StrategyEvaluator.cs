@@ -104,7 +104,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             if (UsSession.WeekdaysBetween(bars[^1].Date, lastSession) > StaleAfterSessions)
                 missing.Add($"{asset.Symbol}: the newest price is from {bars[^1].Date:yyyy-MM-dd}.");
 
-            var (firstChecked, checkedUntil) = await CheckedDaysAsync(strategy.Id, asset.Id, cancellationToken);
+            var (firstChecked, checkedUntil) = await CheckedDaysAsync(db, strategy.Id, asset.Id, cancellationToken);
             // A stock ticked again (Edit list) was checked on a session before the last one finished when it was added; a stock just
             // added is first checked on that session or later. It gets no signal for the days it was off the list: its first check back
             // looks at the latest day only, as for a stock just added (no back-dating, #45).
@@ -164,8 +164,10 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     /// history was long enough don't count: the rules couldn't run, so once the history is there the stock starts fresh and the
     /// latest day checked can still get its signal (none before it). After the first real check or the first signal every day counts, so a later short
     /// history never opens the past to new signals or restarts the steps.
+    /// The stock page's chart replays from the same first day.
     /// </summary>
-    async Task<(DateOnly? First, DateOnly? Until)> CheckedDaysAsync(Guid strategyId, Guid assetId, CancellationToken cancellationToken)
+    internal static async Task<(DateOnly? First, DateOnly? Until)> CheckedDaysAsync(AppDbContext db, Guid strategyId, Guid assetId,
+        CancellationToken cancellationToken)
     {
         var days = await db.DailyEvaluations.Where(r => r.StrategyId == strategyId && r.AssetId == assetId)
             .GroupBy(r => 1)

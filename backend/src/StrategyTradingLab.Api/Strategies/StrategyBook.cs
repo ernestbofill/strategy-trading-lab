@@ -36,9 +36,11 @@ public sealed class StrategyBook
             .ToListAsync(cancellationToken);
 
         var buys = signalTrades.Select(t => t.Buy).Concat(userTrades.Select(t => t.Buy)).ToList();
-        var prices = buys.Count == 0
+        // From the first buy or start day: the index fund is also measured from the day each strategy started.
+        var prices = strategies.Count == 0
             ? new PriceBook(new Dictionary<Guid, (string, IReadOnlyList<DayPrice>)>(), new ExchangeRates([]))
-            : await LoadPricesAsync(db, [.. buys.Select(b => b.AssetId).Append(IndexFundId).Distinct()], buys.Min(b => b.Date), today, cancellationToken);
+            : await LoadPricesAsync(db, [.. buys.Select(b => b.AssetId).Append(IndexFundId).Distinct()],
+                buys.Select(b => b.Date).Concat(strategies.Select(s => s.StartedOn)).Min(), today, cancellationToken);
         return new StrategyBook(signalTrades.ToLookup(t => t.StrategyId, t => t.Buy), userTrades.ToLookup(t => t.StrategyId, t => t.Buy), prices);
     }
 
@@ -86,6 +88,12 @@ public sealed class StrategyBook
             index is null ? null : Performance.GainPct(index, Prices, today, strategy.Currency),
             Performance.History(you, rules, index, Prices, today, strategy.Currency));
     }
+
+    /// <summary>The index fund's gain from the day the strategy started to <paramref name="today"/>; null without its prices.</summary>
+    public decimal? IndexSinceStart(Strategy strategy, DateOnly today) =>
+        Performance.IndexBuys([new Buy(IndexFundId, strategy.StartedOn, 0, 1, 0)], Prices, IndexFundId, strategy.Currency) is { } index
+            ? Performance.GainPct(index, Prices, today, strategy.Currency)
+            : null;
 }
 
 /// <summary>A strategy's gain since it started, in percent: the user's own, the rules' (live only) and the index fund's for the same money.</summary>

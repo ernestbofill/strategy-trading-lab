@@ -96,13 +96,13 @@ export function PeriodTable({
   )
 
   const table = (
-    <div className={`well ${styles.tableWrap}`}>
-      <table
-        className={styles.periods}
-        id={activeBenchmark ? `${tabsId}-panel` : undefined}
-        role={activeBenchmark ? 'tabpanel' : undefined}
-        aria-labelledby={activeBenchmark ? `${tabsId}-tab-${activeBenchmark.key}` : undefined}
-      >
+    <div
+      className={`well ${styles.tableWrap}`}
+      id={activeBenchmark ? `${tabsId}-panel` : undefined}
+      role={activeBenchmark ? 'tabpanel' : undefined}
+      aria-labelledby={activeBenchmark ? `${tabsId}-tab-${activeBenchmark.key}` : undefined}
+    >
+      <table className={styles.periods}>
         <thead>
           <tr>
             <td />

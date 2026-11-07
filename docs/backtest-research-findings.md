@@ -45,16 +45,16 @@ The four templates with algorithmic backtests use the PoC research regimes:
 ## 3. Key Findings on Strategy Behavior
 
 ### 3.1 Dip and Turnaround Strategies
-- **Drawdown Protection in Crises**: Both `dip` (+48%) and `comeback` (+62%) strongly outperformed the index (-8%) during 2000–2009 because cash was deployed only during deep discounts rather than remaining fully invested through bear markets.
-- **Lagging During Relentless Bull Runs**: During 2010–2019, buying only dips (+185% and +210%) trailed 100% buy-and-hold (+246%) because strong bull runs rarely triggered pullbacks deep enough to deploy the full cash balance.
+- **Direct Alpha Across Regimes**: On deployed capital against a same-day S&P 500 baseline (`2000–2026`), both *Buy the dip* (`+14.1%` vs `+10.8%`, `+3.3%` alpha) and *Comebacks* (`+13.9%` vs `+10.9%`, `+3.0%` alpha) beat the market across all three sub-regimes (`2000–2012`, `2013–2019`, and `2020–2026`).
+- **Crash Resilience and Bull Participation**: During the two-crash decade (`2000–2012`), deploying capital only into 10–25% dips (`+9.1%` vs `+6.0%`) or confirmed `+15%` recoveries (`+9.1%` vs `+6.5%`) added `+2.6%` to `+3.1%` per year over buying the index on the same days, while keeping pace during the `2013–2019` bull run (`+1.6%` and `+3.0%` alpha).
 
 ### 3.2 Bear Market Accumulation
-- **Patience and Capital Preservation**: *The big market drop* stays largely in cash during tranquil bull regimes (hence +18% during 2010–2019 vs +246% for SPY).
-- **Crash Exploitation**: When rare major drawdowns occur (2000–02, 2008, 2020, 2022), phased stepped accumulation captures significant recovery upside with minimal drawdown risk (worst year was only -12% in 2008 vs -37% for the market).
+- **Patience in Crash-Free Regimes**: *Bear markets* (`bear`) waits for the S&P 500 to drop at least 20% from its peak before deploying capital. During `2013–2019`, no 20% market crash occurred (`"No market crashes"`).
+- **Crash Exploitation**: When major drawdowns occurred (`2000–2012` dot-com + 2008 crashes, and `2020–2026` COVID + 2022 drops), stepped accumulation into the index earned `+11.4%` a year vs `+9.6%` for same-day S&P 500 (`+1.8%` alpha) over the full `2000–2026` test, with a `-12%` worst year vs `-37%` for the index.
 
 ### 3.3 Index Trend
-- **Major Crash Avoidance**: *Ride the long trend* suffered almost no loss (-2%) in 2008 because the SMA 200 exit triggered before the crash deepened.
-- **Whipsaws in Sideways Markets**: During choppy or range-bound years (such as 2011 or 2015-16), trend following suffered minor whipsaw losses from false breakouts.
+- **Major Crash Avoidance**: *Index trend* (`trend`) suffered almost no loss (`-2%` vs `-37%`) in its worst year during `2000–2012` because the 200-day moving average exit stepped to cash before the 2001–02 and 2008 crashes deepened (`+5.8%` vs `+1.7%` per year on S&P 500).
+- **Whipsaws in Sideways or V-Shaped Markets**: During the calm `2013–2019` bull market (`+9.5%` vs `+13.1%`) and the V-shaped `2020` COVID rebound (`+11.1%` vs `+14.3%` in `2020–2026`), brief dips below the 200-day average triggered exits that re-entered slightly higher, trading some bull-market upside for half the worst-year drawdown (`-18%` vs `-37%` overall, `+8.0%` vs `+7.9%` per year across `2000–2026`).
 
 ---
 

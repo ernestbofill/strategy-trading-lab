@@ -5,7 +5,6 @@ import { Section } from '../../components/Section'
 import { useT } from '../../i18n/I18n'
 import { SettingRow } from './Advanced'
 import styles from './Advanced.module.css'
-import { PeriodTable } from './review/Results'
 import {
   changedSettings,
   settingBounds,
@@ -21,7 +20,7 @@ interface AdvancedSettingsBodyProps {
 
 /**
  * The setting rows with steppers, in the template's groups when it has them (each with what that part of the rules
- * decides), a reset to tested button, and the backtest comparison section.
+ * decides), a reset to tested button, and the backtest section (re-running it with the user's settings comes later).
  */
 export function AdvancedSettingsBody({ template, values, onChange }: AdvancedSettingsBodyProps) {
   const t = useT()
@@ -67,14 +66,7 @@ export function AdvancedSettingsBody({ template, values, onChange }: AdvancedSet
       </div>
       {template.backtest && (
         <Section title={t('newStrategy.advanced.backtest')}>
-          {anyChanged ? (
-            <>
-              <PeriodTable periods={template.backtest.periods} />
-              <p className="caption">{t('newStrategy.advanced.defaultsResults')}</p>
-            </>
-          ) : (
-            <p className={`well ${styles.message}`}>{t('newStrategy.advanced.onDefaults')}</p>
-          )}
+          <p className={`well ${styles.message}`}>{t('newStrategy.advanced.backtestSoon')}</p>
         </Section>
       )}
     </>

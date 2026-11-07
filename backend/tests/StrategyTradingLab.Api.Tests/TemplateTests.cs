@@ -143,6 +143,10 @@ public class TemplateTests
             var periods = template.Backtest!.Select(p => p.Period).ToArray();
             Assert.Equal(expectedPeriods, periods);
         }
+
+        // +490% over 25 years compounds at 7.4% a year; the S&P 500 fund's +538% at 7.7%.
+        var all = TemplateCatalog.Dip.Backtest![^1];
+        Assert.Equal((7.4m, 7.7m, -37m), (all.TemplatePerYear, all.IndexPerYear, all.IndexWorstYear));
     }
 
     [Fact]

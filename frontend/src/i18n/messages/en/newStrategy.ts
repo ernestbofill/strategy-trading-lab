@@ -76,11 +76,11 @@ export const newStrategy = {
   'newStrategy.tested.howLink': 'How we tested ›',
   'newStrategy.results.thisTemplate': 'This template',
   'newStrategy.results.indexFund': 'S&P 500 fund',
+  'newStrategy.results.perYear': 'A year, on average',
   'newStrategy.results.worstYear': 'Worst year',
   'newStrategy.results.period': 'Period',
   'newStrategy.results.template': 'Template',
   'newStrategy.results.index': 'S&P 500',
-  'newStrategy.results.worstYr': 'Worst yr',
   'newStrategy.how.noBacktest': 'There is no backtest for this template.',
   'newStrategy.how.title': 'How we tested',
   'newStrategy.how.lead':
@@ -101,7 +101,7 @@ export const newStrategy = {
   'newStrategy.how.run.fees': 'Fees: {fee} per trade. Taxes not included.',
   'newStrategy.how.byPeriod': 'By period',
   'newStrategy.how.independentPeriods':
-    "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All.",
+    'All figures are yearly averages. Each period is an independent test that starts with fresh money.',
   'newStrategy.how.cantShow': "What a backtest can't show",
   'newStrategy.how.survivors':
     "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results.",
@@ -114,9 +114,7 @@ export const newStrategy = {
   'newStrategy.advanced.save': 'Save settings',
   'newStrategy.advanced.reset': '⟳ Reset to tested',
   'newStrategy.advanced.backtest': 'Backtest',
-  'newStrategy.advanced.defaultsResults':
-    "These are the tested defaults' results. Re-running the test with your settings comes later.",
-  'newStrategy.advanced.onDefaults': "You're on the tested defaults. Change a setting to compare.",
+  'newStrategy.advanced.backtestSoon': 'Backtesting your strategy is coming soon.',
   'newStrategy.advanced.tested': 'Tested: {value}',
   'newStrategy.advanced.changed': 'CHANGED',
   'newStrategy.advanced.decrease': 'Decrease',

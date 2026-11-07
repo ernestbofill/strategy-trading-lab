@@ -388,7 +388,8 @@ public static class StrategyEndpoints
 
     static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
         template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
-            ? new PastResult(words.Years, all.Template, all.Index, all.WorstYear, IsCustomized(strategy, template, activeAssetIds))
+            ? new PastResult(words.Years, all.TemplatePerYear, all.IndexPerYear, all.WorstYear, all.IndexWorstYear,
+                IsCustomized(strategy, template, activeAssetIds))
             : null;
 
     internal static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds = null)

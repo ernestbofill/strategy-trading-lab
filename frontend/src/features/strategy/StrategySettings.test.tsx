@@ -27,7 +27,7 @@ const template = {
   ],
   settingGroups: [],
   backtest: {
-    periods: [{ period: '2020-2024', template: 120, index: 80, worstYear: -10 }],
+    periods: [{ period: '2020-2024', years: 10, template: 120, index: 80, worstYear: -10, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 }],
     yearly: [],
   },
   rules: [],

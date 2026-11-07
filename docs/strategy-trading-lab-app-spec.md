@@ -268,7 +268,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 3. **"The idea"**: the rationale in plain words, no numbers, no promises.
 4. **"It signals when"**: numbered rules (01, 02, 03), each "**Plain label:** detail", with numbers and terms highlighted and explained in brackets.
 5. **What it watches**: "Choose stocks to watch" (stock templates) or "The fund it watches" (fund templates).
-6. **"Tested"** box: the period and scope line; three figures, "This template" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"), "Worst year" `[−X%]`; and a "How we tested ›" link to 2c.
+6. **"Tested"** box: the period and scope line; a small table with columns "This template" and "S&P 500 fund" (with its "i") and rows "A year, on average" `[+X.X%]` (the yearly rate that compounds to the whole period's return) and "Worst year" `[−X%]`; and a "How we tested ›" link to 2c.
 7. **"What can go wrong:"** one line.
 8. A row "Advanced settings ›" → 2b.
 9. Button "Use this template" → Choose the mode.
@@ -412,7 +412,7 @@ The settings are available when starting a strategy and on a running one (Tune t
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
 - As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide."
 - Re-run on each change (debounced), with a loading state.
-- **Until the backtest engine exists** (built version): with a change, the screen shows the tested results by period (Template, Index, Worst yr, as on How we tested) and "These are the tested defaults' results. Re-running the test with your settings comes later. Past results don't promise future ones." When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
+- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
 
 **Behaviour**
 - "Reset to tested" puts every value back.
@@ -436,8 +436,8 @@ The settings are available when starting a strategy and on a running one (Tune t
   - "Results in euro, at each day's exchange rate."
   - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
   - "Fees: [€X] per trade. Taxes not included."
-- **"By period"**: a table "Period" / "Template" / "Index" / "Worst yr", rows "2000-09", "2010-19", "2020-24", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`).
-- Caption under table: "Each period is an independent test starting with fresh money at its beginning, which is why the periods don't add up to All."
+- **"By period"**: a table "Period", then "A year, on average" and "Worst year", each with "Template" and "S&P 500" columns; rows "2000-09", "2010-19", "2020-24", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`).
+- Caption under table: "All figures are yearly averages. Each period is an independent test that starts with fresh money."
 - Warning box **"What a backtest can't show"**:
   - "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results."
   - "Real prices can differ from the opening price, especially on busy days."
@@ -562,8 +562,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 - **Summary box**
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"); a chart with three lines (You solid and highlighted, The rules alone solid, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
-  - Under the chart, until the strategy has a year of its own: "The template's worst year, [years]: [−X%]" (product rule: results next to the worst year).
-  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, with its worst year. The chart appears with the first buy.
+  - Under the chart, until the strategy has a year of its own: "Worst year, [years]: the template [−X%], an S&P 500 fund [−X%]" (product rule: results next to the worst year).
+  - Before the first buy (not drawn): "No trades yet." (simulation: "No paper trades yet.") and the template's past, a year on average: "In the past, [years], the template did on average [+X.X%] a year vs [+X.X%] for an S&P 500 fund. Its worst year was [−X%], the fund's [−X%]." The chart appears with the first buy.
   - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.
   - A figure that can't be worked out (the index fund has no prices at all) shows "–".
   - A signal without a step number reads "Signal waiting" / "Bought at the next open". A distance under 1% reads "<1%".

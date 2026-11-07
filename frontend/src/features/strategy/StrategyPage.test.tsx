@@ -142,11 +142,11 @@ describe('StrategyPage', () => {
   it("shows a simulation without trades the template's past, with its worst year", async () => {
     open(detail({ id: 'sim', mode: 'simulation', signals: null, budget: { amount: 3000, used: 0, step: 100, maxSteps: 5, steps: 0, totalSteps: 30 } }))
 
-    expect(await screen.findByText(/No paper trades yet/)).toBeTruthy()
+    expect(await screen.findByText(/No trades yet/)).toBeTruthy()
     expect(screen.getByText('+8.1%')).toBeTruthy()
     expect(screen.getByText('−18%')).toBeTruthy()
     expect(screen.queryByText('Signals')).toBeNull()
-    expect(screen.getByText(/Results come from paper trades/)).toBeTruthy()
+    expect(screen.getByText(/Results come from trades/)).toBeTruthy()
   })
 
   it('deletes an archived strategy after a confirm step and opens the dashboard', async () => {

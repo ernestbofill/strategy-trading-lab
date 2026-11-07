@@ -51,7 +51,7 @@ export const stock = {
   'stock.bar.sma': 'SMA {price}',
   'stock.bar.buy': 'Buy {price}',
   'stock.position': 'Your position',
-  'stock.position.sim': 'Paper trades',
+  'stock.position.sim': 'Trades',
   'stock.position.steps': 'Steps',
   'stock.position.invested': 'Invested',
   'stock.position.result': 'Result',

@@ -19,9 +19,6 @@ public static class StrategyEndpoints
     /// <summary>The unique index on (user_id, lower(name)) WHERE status = 'running', made in the initial migration.</summary>
     const string RunningNameIndex = "ux_strategies_user_id_running_name";
 
-    /// <summary>How far back the stock page's chart goes, in calendar days (its longest zoom).</summary>
-    const int PriceChartDays = 90;
-
     public static void MapStrategies(this IEndpointRouteBuilder app)
     {
         app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
@@ -97,20 +94,30 @@ public static class StrategyEndpoints
 
         var group = app.MapGroup("/strategies").WithTags("Strategies").RequireUser();
 
-        group.MapGet("/{id:guid}/stocks/{assetId:guid}/prices", async Task<Results<Ok<List<PricePoint>>, NotFound>> (
-            Guid id, Guid assetId, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        group.MapGet("/{id:guid}/stocks/{assetId:guid}/chart", async Task<Results<Ok<StockChartData>, NotFound>> (
+            Guid id, Guid assetId, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
-            if (!await db.Strategies.AnyAsync(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId), cancellationToken))
-                return TypedResults.NotFound();
-            var latest = await db.Prices.Where(p => p.AssetId == assetId).MaxAsync(p => (DateOnly?)p.Date, cancellationToken);
-            if (latest is not { } last) return TypedResults.Ok(new List<PricePoint>());
-            var from = last.AddDays(-PriceChartDays);
-            return TypedResults.Ok(await db.Prices.AsNoTracking().Where(p => p.AssetId == assetId && p.Date >= from).OrderBy(p => p.Date)
-                .Select(p => new PricePoint(p.Date, p.Close)).ToListAsync(cancellationToken));
+            var strategy = await db.Strategies.AsNoTracking()
+                .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
+                .Select(s => new { s.TemplateKey, s.Params, s.Budget.MaxSteps }).SingleOrDefaultAsync(cancellationToken);
+            if (strategy is null) return TypedResults.NotFound();
+            // Finished sessions only, as the daily check reads them: a bar refreshed during the session isn't final.
+            var lastSession = UsSession.LastComplete(time.GetUtcNow());
+            var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == assetId && p.Date <= lastSession).OrderBy(p => p.Date)
+                .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
+            if (bars.Count == 0) return TypedResults.Ok(new StockChartData(null, []));
+            var from = bars[^1].Date.AddDays(-StockChart.Days);
+
+            var (startedOn, checkedUntil) = await StrategyEvaluator.CheckedDaysAsync(db, id, assetId, cancellationToken);
+            var checks = TemplateRules.Supports(strategy.TemplateKey)
+                ? StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, checkedUntil, strategy.MaxSteps ?? 1)
+                : [];
+            return TypedResults.Ok(new StockChartData(startedOn, [.. bars.Where(b => b.Date >= from)
+                .Select(b => new ChartDay(b.Date, b.Close, checks.GetValueOrDefault(b.Date) ?? []))]));
         })
-        .WithName("GetStockPrices")
-        .WithSummary("The stock page's chart: a stock's daily closes over the last 90 days, for a stock in one of the user's strategies.");
+        .WithName("GetStockChart")
+        .WithSummary("The stock page's chart: a stock's daily closes over the last 90 days with the rules' checks of each day, for a stock in one of the user's strategies.");
 
         group.MapPost("/", async Task<Results<Created<StrategySummary>, ValidationProblem, Conflict<string>, NotFound>> (
             NewStrategy request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>

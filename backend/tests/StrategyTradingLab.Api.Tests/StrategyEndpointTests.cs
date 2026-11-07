@@ -101,7 +101,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
     }
 
     [NeonFact]
-    public async Task A_stocks_prices_are_for_its_strategys_owner_only()
+    public async Task A_stocks_chart_is_for_its_strategys_owner_only()
     {
         var name = $"Test {Guid.NewGuid()}";
         var (client, _) = await factory.SignedUpAsync();
@@ -113,10 +113,10 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             var stock = TemplateCatalog.Find("dip")!.Watches.Assets.First().Id;
             var notInIt = TemplateCatalog.Find("dip")!.Watches.Assets.Last().Id;
 
-            var prices = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}/stocks/{stock}/prices");
-            Assert.Equal(JsonValueKind.Array, prices.ValueKind);
-            Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/strategies/{id}/stocks/{stock}/prices")).StatusCode);
-            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/strategies/{id}/stocks/{notInIt}/prices")).StatusCode);
+            var chart = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}/stocks/{stock}/chart");
+            Assert.Equal(JsonValueKind.Array, chart.GetProperty("days").ValueKind);
+            Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"/strategies/{id}/stocks/{stock}/chart")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/strategies/{id}/stocks/{notInIt}/chart")).StatusCode);
         }
         finally
         {

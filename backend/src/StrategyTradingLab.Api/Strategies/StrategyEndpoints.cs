@@ -101,8 +101,7 @@ public static class StrategyEndpoints
             Guid id, Guid assetId, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
-            if (!await db.StrategyAssets.AnyAsync(a => a.StrategyId == id && a.AssetId == assetId
-                    && db.Strategies.Any(s => s.Id == id && s.UserId == user.Id), cancellationToken))
+            if (!await db.Strategies.AnyAsync(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId), cancellationToken))
                 return TypedResults.NotFound();
             var latest = await db.Prices.Where(p => p.AssetId == assetId).MaxAsync(p => (DateOnly?)p.Date, cancellationToken);
             if (latest is not { } last) return TypedResults.Ok(new List<PricePoint>());

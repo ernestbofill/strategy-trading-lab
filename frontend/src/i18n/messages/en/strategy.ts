@@ -34,7 +34,6 @@ export const strategy = {
   'strategy.signalsCount': '{did} did · {skipped} skipped · {missed} missed',
   'strategy.stocks': 'Stocks · {count}',
   'strategy.funds': 'Funds · {count}',
-  'strategy.caption': 'Removing a stock stops its signals. Your trades in it stay in the results.',
   'strategy.editList': 'Edit list',
   'strategy.list.title': 'Edit list',
   'strategy.list.lead': 'Unticking a stock stops its signals; waiting ones close as missed. Its trades stay in the results. A stock ticked again starts from today.',

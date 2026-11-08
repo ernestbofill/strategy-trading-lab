@@ -1,6 +1,8 @@
-import { useId, useState, type KeyboardEvent } from 'react'
+import { useId, useState } from 'react'
 import type { BenchmarkBacktest, PeriodResult } from '../../../api'
 import { InfoTip } from '../../../components/InfoTip'
+import { Tabs } from '../../../components/Tabs'
+import { tabPanel } from '../../../components/tabPanel'
 import { useT } from '../../../i18n/I18n'
 import { signedPct } from '../../../lib/format'
 import styles from './Results.module.css'
@@ -73,21 +75,6 @@ export function PeriodTable({
   const hasStory = activePeriods.some((p) => p.templatePerYear !== null && Boolean(p.story))
   const dataCols = 4 + (hasAlpha ? 1 : 0) + (hasStory ? 1 : 0)
 
-  const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    if (!benchmarks || benchmarks.length === 0) return
-    let next = -1
-    if (e.key === 'ArrowRight') next = (index + 1) % benchmarks.length
-    else if (e.key === 'ArrowLeft') next = (index - 1 + benchmarks.length) % benchmarks.length
-    else if (e.key === 'Home') next = 0
-    else if (e.key === 'End') next = benchmarks.length - 1
-    if (next >= 0) {
-      e.preventDefault()
-      const target = benchmarks[next]
-      setActiveKey(target.key)
-      document.getElementById(`${tabsId}-tab-${target.key}`)?.focus()
-    }
-  }
-
   const pair = (
     <>
       <th scope="col">{t('newStrategy.results.template')}</th>
@@ -98,9 +85,7 @@ export function PeriodTable({
   const table = (
     <div
       className={`well ${styles.tableWrap}`}
-      id={activeBenchmark ? `${tabsId}-panel` : undefined}
-      role={activeBenchmark ? 'tabpanel' : undefined}
-      aria-labelledby={activeBenchmark ? `${tabsId}-tab-${activeBenchmark.key}` : undefined}
+      {...(activeBenchmark ? tabPanel(tabsId, activeBenchmark.key) : {})}
     >
       <table className={styles.periods}>
         <thead>
@@ -176,27 +161,13 @@ export function PeriodTable({
 
   return (
     <div className={styles.periodBlock}>
-      <div className={styles.indexTabs} role="tablist" aria-label={t('newStrategy.results.indexTabs')}>
-        {benchmarks.map((b, i) => {
-          const selected = b.key === activeBenchmark.key
-          return (
-            <button
-              key={b.key}
-              id={`${tabsId}-tab-${b.key}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={`${tabsId}-panel`}
-              tabIndex={selected ? 0 : -1}
-              className={`${styles.indexTab} ${selected ? styles.indexTabActive : ''}`}
-              onClick={() => setActiveKey(b.key)}
-              onKeyDown={(e) => onTabKeyDown(e, i)}
-            >
-              {b.name}
-            </button>
-          )
-        })}
-      </div>
+      <Tabs
+        id={tabsId}
+        label={t('newStrategy.results.indexTabs')}
+        items={benchmarks.map((b) => ({ key: b.key, label: b.name }))}
+        selected={activeBenchmark.key}
+        onSelect={setActiveKey}
+      />
       {table}
     </div>
   )

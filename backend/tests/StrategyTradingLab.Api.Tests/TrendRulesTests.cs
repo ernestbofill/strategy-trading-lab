@@ -51,4 +51,44 @@ public class TrendRulesTests
         Assert.Equal(RuleStatus.SignalEnded, ended.Status);
         Assert.Equal("The trend turned down before buying.", ended.Reason);
     }
+
+    [Fact]
+    public void A_buy_signal_closes_when_the_price_falls_back_below_the_buy_line_while_a_held_position_stays_held()
+    {
+        var bars = Enumerable.Range(0, 53).Select(i =>
+        {
+            var close = i switch
+            {
+                50 => 105m,   // Above SMA 50 + 3%: buy signal opens.
+                51 => 102.4m, // Inside the ±3% band (+2.4% vs SMA): below the buy line, above the sell line.
+                _ => 100m,
+            };
+            return new PriceBar(new DateOnly(2020, 1, 1).AddDays(i), close, close, close, close, 0);
+        }).ToList();
+
+        // Out of the market: the buy signal closes when the close drops back below the buy line.
+        var unheld = new TrendRules(bars, new TrendParams { SmaDays = 50, BandPct = 3 });
+        var buy = unheld.Decide(50, new DayContext(bars[50].Date, RuleStatus.Watching, 0, default, false, false, false, 1));
+        Assert.Equal(RuleStatus.BuySignal, buy.Status);
+        Assert.True(buy.WindowOpen);
+        Assert.True(buy.Checks.Single().Met);
+
+        var dipped = unheld.Decide(51, new DayContext(bars[51].Date, RuleStatus.BuySignal, 0, default, false, false, false, 1));
+        Assert.Equal(RuleStatus.SignalEnded, dipped.Status);
+        Assert.Equal("Price fell back below the buy line.", dipped.Reason);
+        Assert.False(dipped.WindowOpen);
+        Assert.False(dipped.Checks.Single().Met);
+
+        var watching = unheld.Decide(52, new DayContext(bars[52].Date, RuleStatus.SignalEnded, 0, default, false, false, false, 1));
+        Assert.Equal(RuleStatus.Watching, watching.Status);
+        Assert.False(watching.WindowOpen);
+
+        // With the rules' own position bought at day 51's open: the position stays held inside the ±3% band,
+        // while WindowOpen is false so an unanswered live buy signal from day 50 closes on day 51.
+        var days = RulesRunner.Run(new TrendRules(bars, new TrendParams { SmaDays = 50, BandPct = 3 }), bars, new StepPlan(1), from: 50);
+        Assert.Equal(RuleStatus.BuySignal, days[0].Status);
+        Assert.True(days[0].WindowOpen);
+        Assert.Equal(RuleStatus.Holding, days[1].Status);
+        Assert.False(days[1].WindowOpen);
+    }
 }

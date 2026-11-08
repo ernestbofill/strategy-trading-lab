@@ -43,6 +43,7 @@ const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
 function open(strategy: StrategyDetail) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getStrategy').mockResolvedValue(strategy)
+  vi.spyOn(api, 'getStockChart').mockResolvedValue({ startedOn: strategy.startedOn, days: [] })
   render(
     <NewStrategyDraftProvider owner="a@example.com">
       <MemoryRouter initialEntries={[`/strategies/${strategy.id}`]}>
@@ -110,26 +111,48 @@ describe('StrategyPage', () => {
     expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).not.toContain('Past results')
   })
 
-  it("titles a fund strategy's list Funds and explains the S&P 500 fund only when asked", async () => {
+  it("inlines a fund strategy's fund header, status and rules on the strategy page without a Funds list, and explains the S&P 500 fund when asked", async () => {
     open(
       detail({
         id: 'trend',
+        name: 'S&P 500 index',
         templateKey: 'trend',
         investsIn: 'indexFund',
-        mode: 'simulation',
-        signals: null,
-        results: { you: 2, rules: null, index: 3, history: [] },
+        mode: 'live',
+        results: { you: 2, rules: 2, index: 3, history: [] },
+        checkTexts: {
+          buyLine: {
+            label: 'Price vs the buy line',
+            detail: '{+value}% vs the buy line ({level}, +3% above the SMA {midLevel}).',
+            short: '{+value}% vs the buy line',
+          },
+        },
         stocks: [
           {
-            assetId: 'spy', symbol: 'SPY', name: 'SPDR S&P 500 ETF', status: 'holding', steps: 1, rulesSteps: null, maxSteps: null,
-            distancePct: null, signalId: null, signalStep: null, invested: 100, result: 2,
-            exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
+            assetId: 'cspx', symbol: 'CSPX.L', name: 'iShares Core S&P 500 UCITS ETF', status: 'waitingForYou', steps: 0, rulesSteps: 1, maxSteps: null,
+            distancePct: 1.3, signalId: 'sig-1', signalStep: null, invested: 100, result: 2,
+            exchange: 'XLON', currency: 'USD', what: 'Tracks the 500 largest US companies', checkedOn: '2026-11-06', close: 802.21,
+            checks: [{ key: 'buyLine', group: 'buy', met: false, value: -1.3, min: null, max: null, level: 812.91, midLevel: 789.23, endLevel: 765.55, progress: null, used: null }],
           },
         ],
       }),
     )
 
-    expect(await screen.findByRole('heading', { name: 'Funds · 1' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'S&P 500 index' })).toBeTruthy()
+    expect(screen.getByText('CSPX.L')).toBeTruthy()
+    expect(screen.getByText(/iShares Core S&P 500 UCITS ETF/)).toBeTruthy()
+    expect(screen.getByText(/XLON/)).toBeTruthy()
+    expect(screen.getByText('Tracks the 500 largest US companies')).toBeTruthy()
+    expect(screen.getByText('$802.21')).toBeTruthy()
+    expect(screen.getByText('Close on Nov 6')).toBeTruthy()
+    expect(screen.getByText('WAITING FOR YOU')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Rules on Nov 6' })).toBeTruthy()
+    expect(screen.getByText('Price vs the buy line')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Answer the signal' }).getAttribute('href')).toBe('/strategies/trend/signals/sig-1')
+    // No separate Funds list link or duplicate Position section on a single-fund strategy.
+    expect(screen.queryByRole('heading', { name: /Funds/ })).toBeNull()
+    expect(screen.queryByRole('heading', { name: /Your position|Trades/ })).toBeNull()
+
     const tip = screen.getByRole('button', { name: 'What is the S&P 500 fund?' })
     expect(screen.queryByText(/Buy and hold/)).toBeNull()
     fireEvent.click(tip)

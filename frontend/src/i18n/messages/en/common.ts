@@ -43,6 +43,7 @@ export const common = {
   'footer.logIn': 'Log in',
   'footer.dashboard': 'Dashboard',
   'footer.newStrategy': 'New strategy',
+  'footer.summary': 'Daily summary',
   'footer.account': 'Account',
   'footer.settings': 'Settings',
   'footer.notifications': 'Notifications',

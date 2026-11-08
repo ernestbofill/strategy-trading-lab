@@ -14,6 +14,7 @@ const baseAccount: Account = {
   locale: 'en',
   timeZone: 'Europe/Madrid',
   overviewEmail: true,
+  overviewPush: true,
   alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',
@@ -63,11 +64,12 @@ describe('AccountPage', () => {
 })
 
 describe('SettingsPage', () => {
-  it('sets signals and reminders by app and email, and the summary by email, in one place', async () => {
+  it('sets signals and reminders by app and email, and the summary by app and email, in one place', async () => {
     currentRole = 'user'
     push.offered = true
     const setPush = vi.spyOn(api, 'setAlertPush').mockResolvedValue()
-    const setSummary = vi.spyOn(api, 'setOverviewEmail').mockResolvedValue()
+    const setSummaryEmail = vi.spyOn(api, 'setOverviewEmail').mockResolvedValue()
+    const setSummaryPush = vi.spyOn(api, 'setOverviewPush').mockResolvedValue()
     render(
       <MemoryRouter>
         <SettingsPage />
@@ -77,11 +79,13 @@ describe('SettingsPage', () => {
     const alerts = screen.getByRole('group', { name: 'Signals and reminders' })
     const summary = screen.getByRole('group', { name: 'Summary' })
     expect(within(alerts).getAllByRole('checkbox')).toHaveLength(2)
-    expect(within(summary).getAllByRole('checkbox')).toHaveLength(1)
+    expect(within(summary).getAllByRole('checkbox')).toHaveLength(2)
     fireEvent.click(within(alerts).getByRole('checkbox', { name: 'App' }))
+    fireEvent.click(within(summary).getByRole('checkbox', { name: 'App' }))
     fireEvent.click(within(summary).getByRole('checkbox', { name: 'Email' }))
     await waitFor(() => expect(setPush).toHaveBeenCalledWith(false))
-    await waitFor(() => expect(setSummary).toHaveBeenCalledWith(false))
+    await waitFor(() => expect(setSummaryPush).toHaveBeenCalledWith(false))
+    await waitFor(() => expect(setSummaryEmail).toHaveBeenCalledWith(false))
   })
 
   it('opens Account from its first row and names Spain after Barcelona', () => {

@@ -153,6 +153,21 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
+    public async Task Summary_by_push_is_on_by_default_and_can_be_switched_off_and_on()
+    {
+        var (client, _) = await api.SignedUpAsync();
+        Assert.True((await Me(client)).GetProperty("overviewPush").GetBoolean());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-push", new { enabled = false })).StatusCode);
+        Assert.False((await Me(client)).GetProperty("overviewPush").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/overview-push", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-push", new { enabled = true })).StatusCode);
+        Assert.True((await Me(client)).GetProperty("overviewPush").GetBoolean());
+        using var visitor = api.CreateApiClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/overview-push", new { enabled = false })).StatusCode);
+    }
+
+    [NeonFact]
     public async Task A_wrong_password_and_an_unknown_email_get_the_same_answer()
     {
         var (_, email) = await api.SignedUpAsync();

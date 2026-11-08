@@ -9,7 +9,7 @@ import { usePushOffered } from './usePushOffered'
 
 /**
  * The account page's Notifications (spec: Notifications): the only place they are set. Two kinds, each with its channels:
- * signals and reminders (app, email) and the summary (email). The App box and this device's line only where the app offers push.
+ * signals and reminders (app, email) and the summary (app, email). The App box and this device's line only where the app offers push.
  */
 export function NotificationSettings({ account, onSaved }: { account: Account; onSaved: () => Promise<unknown> }) {
   const t = useT()
@@ -21,9 +21,10 @@ export function NotificationSettings({ account, onSaved }: { account: Account; o
         <Saved current={account.alertEmails} label={t('account.notify.email')} save={api.setAlertEmails} onSaved={onSaved} />
       </Kind>
       <Kind title={t('account.notify.summary')} hint={t('account.notify.summaryHint')}>
+        {pushOffered && <Saved current={account.overviewPush} label={t('account.notify.app')} save={api.setOverviewPush} onSaved={onSaved} />}
         <Saved current={account.overviewEmail} label={t('account.notify.email')} save={api.setOverviewEmail} onSaved={onSaved} />
       </Kind>
-      {pushOffered && account.alertPush && (
+      {pushOffered && (account.alertPush || account.overviewPush) && (
         <div className={styles.kind}>
           <h3 className={`ui-strong ${styles.subTitle}`}>{t('account.notify.device')}</h3>
           <DevicePush />

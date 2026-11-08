@@ -1,0 +1,18 @@
+export const summary = {
+  'summary.what': 'the daily summary',
+  'summary.title': 'Daily summary',
+  'summary.heading': 'Your summary, {date}',
+  'summary.quiet.title': 'No changes today',
+  'summary.quiet.body': 'Your strategies keep running with no new signals or stock changes.',
+  'summary.waiting.title': 'Waiting for you',
+  'summary.waiting.signal': '{stock}: your rules for {strategy} are met',
+  'summary.waiting.step': 'Step {step} of {max}',
+  'summary.waiting.aiRound': 'Time for the AI round of {strategy}.',
+  'summary.whatChanged.title': 'What changed today',
+  'summary.stockChanges.title': 'Stock changes',
+  'summary.strategies.title': 'Your strategies',
+  'summary.strategies.since': 'since {date}',
+  'summary.strategies.signals': '{n, plural, one {# signal} other {# signals}}',
+  'summary.noStrategies': 'No running strategies yet.',
+  'summary.startStrategy': 'Pick a template to start',
+}

@@ -23,7 +23,7 @@ The account's settings before any session changed them. Restore them before endi
 | Language | English |
 | Currency | USD |
 | Signals and reminders: App / Email | On / On |
-| Summary: Email | On |
+| Summary: App / Email | On / On |
 | This device (push) | Off for this device (Chrome) |
 | AI data sharing | Off. Answered "no" on the first round |
 | Strategies not starting with `QA ` (leave alone) | None |

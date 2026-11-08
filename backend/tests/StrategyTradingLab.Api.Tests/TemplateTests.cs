@@ -16,26 +16,24 @@ public class TemplateTests
     }
 
     [Fact]
-    public void Every_template_has_english_texts_with_rules()
-    {
-        foreach (var template in TemplateCatalog.All)
-        {
-            var texts = TemplateTexts.For(template, "en");
-            Assert.NotEmpty(texts.Name);
-            Assert.Equal(3, texts.Rules.Count);
-            Assert.Equal(template.Backtest is null, texts.Backtest is null);
-        }
-    }
+    public void Every_template_has_english_texts_with_rules() => AssertCompleteTexts("en");
 
     [Fact]
-    public void Every_template_has_catalan_texts_with_rules()
+    public void Every_template_has_catalan_texts_with_rules() => AssertCompleteTexts("ca");
+
+    private static void AssertCompleteTexts(string locale)
     {
         foreach (var template in TemplateCatalog.All)
         {
-            var texts = TemplateTexts.For(template, "ca");
+            var texts = TemplateTexts.For(template, locale);
             Assert.NotEmpty(texts.Name);
             Assert.Equal(3, texts.Rules.Count);
             Assert.Equal(template.Backtest is null, texts.Backtest is null);
+            if (template.Benchmarks is { } benchmarks)
+            {
+                Assert.All(benchmarks, b => Assert.All(b.Periods, p =>
+                    Assert.False(string.IsNullOrWhiteSpace(texts.Backtest!.Benchmarks![b.Key].Stories![p.Period]))));
+            }
         }
     }
 
@@ -137,16 +135,17 @@ public class TemplateTests
     [Fact]
     public void Templates_with_backtest_have_standardized_periods()
     {
-        string[] expectedPeriods = ["2000-09", "2010-19", "2020-24", "All"];
+        string[] expectedPeriods = ["2000-12", "2013-19", "2020-26", "All"];
         foreach (var template in TemplateCatalog.All.Where(t => t.Backtest is not null))
         {
             var periods = template.Backtest!.Select(p => p.Period).ToArray();
             Assert.Equal(expectedPeriods, periods);
         }
 
-        // +490% over 25 years compounds at 7.4% a year; the S&P 500 fund's +538% at 7.7%.
         var all = TemplateCatalog.Dip.Backtest![^1];
-        Assert.Equal((7.4m, 7.7m, -37m), (all.TemplatePerYear, all.IndexPerYear, all.IndexWorstYear));
+        Assert.Equal((14.3m, 9.8m, -37m, 4.5m), (all.TemplatePerYear, all.IndexPerYear, all.IndexWorstYear, all.Alpha));
+        Assert.Null(TemplateCatalog.Bear.Backtest![1].Alpha);
+        Assert.Equal(["sp500", "qqq", "efa", "dax", "nikkei", "vfinx"], TemplateCatalog.Trend.Benchmarks!.Select(b => b.Key));
     }
 
     [Fact]

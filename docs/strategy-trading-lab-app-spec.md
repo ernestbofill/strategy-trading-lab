@@ -436,7 +436,7 @@ The settings are available when starting a strategy and on a running one (Tune t
   - "Results in euro, at each day's exchange rate."
   - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
   - "Fees: [€X] per trade. Taxes not included."
-- **"By period"**: a table "Period", then "A year, on average" and "Worst year", each with "Template" and "S&P 500" columns; rows "2000-09", "2010-19", "2020-24", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`).
+- **"By period"**: a table "Period", then "A year, on average" and "Worst year" (each with "Template" and the index name), "Alpha" (with an "i" explaining direct alpha), and an optional "Story" column; rows "2000-12", "2013-19", "2020-26", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`). For *Bear markets*, `2013-19` reads "No market crashes". For *Index trend*, tabs above the table switch between the 6 tested indexes (S&P 500 first).
 - Caption under table: "All figures are yearly averages. Each period is an independent test that starts with fresh money."
 - Warning box **"What a backtest can't show"**:
   - "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results."

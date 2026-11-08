@@ -1,4 +1,5 @@
-import type { PeriodResult } from '../../../api'
+import { useId, useState, type KeyboardEvent } from 'react'
+import type { BenchmarkBacktest, PeriodResult } from '../../../api'
 import { InfoTip } from '../../../components/InfoTip'
 import { useT } from '../../../i18n/I18n'
 import { signedPct } from '../../../lib/format'
@@ -32,19 +33,19 @@ export function ResultFigures({ result }: { result: PeriodResult }) {
         <tr>
           <th scope="row">{t('newStrategy.results.perYear')}</th>
           <td>
-            <Pct value={result.templatePerYear} digits={1} />
+            <Pct value={result.templatePerYear ?? 0} digits={1} />
           </td>
           <td>
-            <Pct value={result.indexPerYear} digits={1} plain />
+            <Pct value={result.indexPerYear ?? 0} digits={1} plain />
           </td>
         </tr>
         <tr>
           <th scope="row">{t('newStrategy.results.worstYear')}</th>
           <td>
-            <Pct value={result.worstYear} />
+            <Pct value={result.worstYear ?? 0} />
           </td>
           <td>
-            <Pct value={result.indexWorstYear} />
+            <Pct value={result.indexWorstYear ?? 0} />
           </td>
         </tr>
       </tbody>
@@ -52,52 +53,151 @@ export function ResultFigures({ result }: { result: PeriodResult }) {
   )
 }
 
-/** "By period" table on How we tested: a year on average and the worst year, the template next to the S&P 500. */
-export function PeriodTable({ periods }: { periods: PeriodResult[] }) {
+/** "By period" table on How we tested: a year on average and the worst year, the template next to the index, plus alpha and optional story. */
+export function PeriodTable({
+  periods,
+  benchmarks,
+}: {
+  periods: PeriodResult[]
+  benchmarks?: BenchmarkBacktest[] | null
+}) {
   const t = useT()
+  const tabsId = useId()
+  const [activeKey, setActiveKey] = useState(benchmarks?.[0]?.key)
+
+  const activeBenchmark = benchmarks?.find((b) => b.key === activeKey) ?? benchmarks?.[0]
+  const activePeriods = activeBenchmark?.periods ?? periods
+  const indexLabel = activeBenchmark?.name ?? t('newStrategy.results.index')
+
+  const hasAlpha = activePeriods.some((p) => p.alpha !== undefined && p.alpha !== null)
+  const hasStory = activePeriods.some((p) => p.templatePerYear !== null && Boolean(p.story))
+  const dataCols = 4 + (hasAlpha ? 1 : 0) + (hasStory ? 1 : 0)
+
+  const onTabKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (!benchmarks || benchmarks.length === 0) return
+    let next = -1
+    if (e.key === 'ArrowRight') next = (index + 1) % benchmarks.length
+    else if (e.key === 'ArrowLeft') next = (index - 1 + benchmarks.length) % benchmarks.length
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = benchmarks.length - 1
+    if (next >= 0) {
+      e.preventDefault()
+      const target = benchmarks[next]
+      setActiveKey(target.key)
+      document.getElementById(`${tabsId}-tab-${target.key}`)?.focus()
+    }
+  }
+
   const pair = (
     <>
       <th scope="col">{t('newStrategy.results.template')}</th>
-      <th scope="col">{t('newStrategy.results.index')}</th>
+      <th scope="col">{indexLabel}</th>
     </>
   )
-  return (
-    <table className={`well ${styles.periods}`}>
-      <thead>
-        <tr>
-          <td />
-          <th scope="colgroup" colSpan={2}>
-            {t('newStrategy.results.perYear')}
-          </th>
-          <th scope="colgroup" colSpan={2}>
-            {t('newStrategy.results.worstYear')}
-          </th>
-        </tr>
-        <tr>
-          <th scope="col">{t('newStrategy.results.period')}</th>
-          {pair}
-          {pair}
-        </tr>
-      </thead>
-      <tbody>
-        {periods.map((p) => (
-          <tr key={p.period}>
-            <th scope="row">{p.period}</th>
-            <td>
-              <Pct value={p.templatePerYear} digits={1} />
-            </td>
-            <td>
-              <Pct value={p.indexPerYear} digits={1} plain />
-            </td>
-            <td>
-              <Pct value={p.worstYear} />
-            </td>
-            <td>
-              <Pct value={p.indexWorstYear} />
-            </td>
+
+  const table = (
+    <div
+      className={`well ${styles.tableWrap}`}
+      id={activeBenchmark ? `${tabsId}-panel` : undefined}
+      role={activeBenchmark ? 'tabpanel' : undefined}
+      aria-labelledby={activeBenchmark ? `${tabsId}-tab-${activeBenchmark.key}` : undefined}
+    >
+      <table className={styles.periods}>
+        <thead>
+          <tr>
+            <td />
+            <th scope="colgroup" colSpan={2}>
+              {t('newStrategy.results.perYear')}
+            </th>
+            <th scope="colgroup" colSpan={2}>
+              {t('newStrategy.results.worstYear')}
+            </th>
+            {hasAlpha && <td />}
+            {hasStory && <td />}
           </tr>
-        ))}
-      </tbody>
-    </table>
+          <tr>
+            <th scope="col">{t('newStrategy.results.period')}</th>
+            {pair}
+            {pair}
+            {hasAlpha && (
+              <th scope="col" className={styles.alphaCol}>
+                {t('newStrategy.results.alpha')}
+                <InfoTip
+                  label={t('newStrategy.results.alphaTip.label')}
+                  text={t('newStrategy.results.alphaTip.text')}
+                />
+              </th>
+            )}
+            {hasStory && (
+              <th scope="col" className={styles.storyCol}>
+                {t('newStrategy.results.story')}
+              </th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {activePeriods.map((p) => (
+            <tr key={p.period}>
+              <th scope="row">{p.period}</th>
+              {p.templatePerYear === null ? (
+                <td colSpan={dataCols} className={styles.emptyPeriod}>
+                  {p.story}
+                </td>
+              ) : (
+                <>
+                  <td>
+                    <Pct value={p.templatePerYear} digits={1} />
+                  </td>
+                  <td>
+                    <Pct value={p.indexPerYear ?? 0} digits={1} plain />
+                  </td>
+                  <td>
+                    <Pct value={p.worstYear ?? 0} />
+                  </td>
+                  <td>
+                    <Pct value={p.indexWorstYear ?? 0} />
+                  </td>
+                  {hasAlpha && (
+                    <td>
+                      <Pct value={p.alpha ?? 0} digits={1} />
+                    </td>
+                  )}
+                  {hasStory && <td className={styles.storyCell}>{p.story}</td>}
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+
+  if (!benchmarks?.length || !activeBenchmark) return table
+
+  return (
+    <div className={styles.periodBlock}>
+      <div className={styles.indexTabs} role="tablist" aria-label={t('newStrategy.results.indexTabs')}>
+        {benchmarks.map((b, i) => {
+          const selected = b.key === activeBenchmark.key
+          return (
+            <button
+              key={b.key}
+              id={`${tabsId}-tab-${b.key}`}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls={`${tabsId}-panel`}
+              tabIndex={selected ? 0 : -1}
+              className={`${styles.indexTab} ${selected ? styles.indexTabActive : ''}`}
+              onClick={() => setActiveKey(b.key)}
+              onKeyDown={(e) => onTabKeyDown(e, i)}
+            >
+              {b.name}
+            </button>
+          )
+        })}
+      </div>
+      {table}
+    </div>
   )
 }

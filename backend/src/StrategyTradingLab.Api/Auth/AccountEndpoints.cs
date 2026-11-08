@@ -281,15 +281,22 @@ public static class AccountEndpoints
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.
         group.MapPost("/verify-email", async Task<Results<NoContent, ProblemHttpResult>> (TokenRequest request, AppDbContext db,
-            TimeProvider time, HttpContext context, CancellationToken cancellationToken) =>
+            AccountEmails emails, TimeProvider time, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (await FindToken(db, request.Token, EmailTokenPurpose.VerifyEmail, time, cancellationToken) is not { } token
                 || !await Claim(db, token, time, cancellationToken))
                 return TypedResults.Problem(Messages.ExpiredLink.In(reqLocale), statusCode: StatusCodes.Status400BadRequest);
             var now = time.GetUtcNow();
-            await db.Users.Where(u => u.Id == token.UserId && u.EmailVerifiedAt == null)
+            var updated = await db.Users.Where(u => u.Id == token.UserId && u.EmailVerifiedAt == null)
                 .ExecuteUpdateAsync(u => u.SetProperty(x => x.EmailVerifiedAt, now), cancellationToken);
+            if (updated > 0)
+            {
+                var user = await db.Users.Where(u => u.Id == token.UserId)
+                    .Select(u => new { u.Email, u.FirstName, u.Locale })
+                    .SingleOrDefaultAsync(cancellationToken);
+                if (user is not null) emails.Welcome(user.Email, user.FirstName, user.Locale);
+            }
             return TypedResults.NoContent();
         })
         .RequireRateLimiting(PasswordLimit)

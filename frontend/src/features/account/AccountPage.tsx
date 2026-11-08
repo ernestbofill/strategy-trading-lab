@@ -10,7 +10,7 @@ import { useT } from '../../i18n/I18n'
 import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
 import { errorText } from './copy'
-import { NOTIFICATIONS_HASH, logInPath, settingsPath } from './paths'
+import { APP_HASH, NOTIFICATIONS_HASH, logInPath, settingsPath } from './paths'
 import { ResendLink } from './ResendLink'
 import { unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
@@ -26,9 +26,9 @@ export function AccountPage() {
   const [logOutError, setLogOutError] = useState<string | null>(null)
   const { hash } = useLocation()
 
-  // Notifications and feedback moved to Settings: an old link to them here goes on there.
+  // Notifications, feedback and app install moved to Settings: an old link to them here goes on there.
   useEffect(() => {
-    if (hash === NOTIFICATIONS_HASH || hash === SEND_FEEDBACK_HASH) navigate(`${settingsPath}${hash}`, { replace: true })
+    if (hash === NOTIFICATIONS_HASH || hash === SEND_FEEDBACK_HASH || hash === APP_HASH) navigate(`${settingsPath}${hash}`, { replace: true })
   }, [hash, navigate])
 
   const logOut = async () => {

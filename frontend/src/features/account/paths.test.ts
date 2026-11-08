@@ -3,8 +3,9 @@ import { dashboardPath } from '../new-strategy/paths'
 import { logInPathFor, safeNext } from './paths'
 
 describe('safeNext', () => {
-  it('keeps a path inside the app, with its query', () => {
+  it('keeps a path inside the app, with its query and hash', () => {
     expect(safeNext('/new/budget?x=1')).toBe('/new/budget?x=1')
+    expect(safeNext('/account#app')).toBe('/account#app')
   })
 
   it('goes to the dashboard for anything else', () => {

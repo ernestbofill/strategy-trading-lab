@@ -13,7 +13,7 @@ import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
 import { currencyOptionsWith } from './currencies'
 import { errorText } from './copy'
-import { NOTIFICATIONS_HASH, accountPath } from './paths'
+import { APP_HASH, NOTIFICATIONS_HASH, accountPath } from './paths'
 import { InstallApp } from './InstallApp'
 import { NotificationSettings } from './NotificationSettings'
 import { timeZoneOptions } from './timeZones'
@@ -27,9 +27,9 @@ export function SettingsPage() {
   const { hash } = useLocation()
   const name = [account.firstName, account.lastName].filter(Boolean).join(' ')
 
-  // Confirm's "Edit" on Notifications opens the page at its Notifications section.
+  // Deep-linking to a section (e.g. #notifications or #app) scrolls it into view.
   useEffect(() => {
-    if (hash === NOTIFICATIONS_HASH) document.getElementById(NOTIFICATIONS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
   }, [hash])
 
   return (
@@ -46,7 +46,7 @@ export function SettingsPage() {
         }
       />
 
-      <Section title={t('account.page.app')}>
+      <Section id={APP_HASH.slice(1)} title={t('account.page.app')}>
         <InstallApp />
       </Section>
 

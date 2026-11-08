@@ -88,6 +88,12 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         Assert.Equal(StrategyMode.Simulation, dto.StockChanges[0].Mode);
         Assert.Equal(StockChangeKind.CameClose, dto.StockChanges[0].Kind);
         Assert.Equal(StrategyMode.Live, dto.Strategies[0].Mode);
+
+        var serialized = JsonSerializer.Serialize(dto, JsonSerializerOptions.Web);
+        Assert.Contains("\"mode\":\"live\"", serialized);
+        Assert.Contains("\"mode\":\"simulation\"", serialized);
+        Assert.Contains("\"side\":\"buy\"", serialized);
+        Assert.Contains("\"kind\":\"cameClose\"", serialized);
     }
     [NeonFact]
     public async Task The_summary_reflects_quiet_state_before_strategies_and_changes_when_active()

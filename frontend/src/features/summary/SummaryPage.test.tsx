@@ -73,8 +73,43 @@ describe('SummaryPage', () => {
 
     const stratLink = screen.getByRole('link', { name: /Alpha Dip/i })
     expect(stratLink.getAttribute('href')).toBe('/strategies/strat-1')
+    expect(screen.getByText('LIVE')).toBeTruthy()
     expect(screen.getByText('since Oct 1')).toBeTruthy()
     expect(screen.getByText(/3 signals/)).toBeTruthy()
+  })
+
+  it('renders LIVE and SIM tags correctly regardless of PascalCase or lowercase mode', async () => {
+    vi.spyOn(api, 'getSummary').mockResolvedValue(
+      mockSummary({
+        hasChanges: false,
+        strategies: [
+          {
+            strategyId: 'strat-live',
+            strategyName: 'Live Strat',
+            mode: 'Live' as any,
+            startedOn: '2026-10-01',
+            signalsCount: 1,
+          },
+          {
+            strategyId: 'strat-sim',
+            strategyName: 'Sim Strat',
+            mode: 'Simulation' as any,
+            startedOn: '2026-10-01',
+            signalsCount: 0,
+          },
+        ],
+      }),
+    )
+
+    render(
+      <MemoryRouter>
+        <SummaryPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('link', { name: /Live Strat/i })).toBeTruthy()
+    expect(screen.getByText('LIVE')).toBeTruthy()
+    expect(screen.getByText('SIM')).toBeTruthy()
   })
 
   it('renders what changed, waiting items, stock changes, and scoreboard on active days', async () => {

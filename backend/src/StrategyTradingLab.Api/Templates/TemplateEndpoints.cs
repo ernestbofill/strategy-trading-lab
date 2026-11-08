@@ -67,10 +67,7 @@ public static class TemplateEndpoints
             Rationale = texts.Rationale,
             Rules = texts.Rules,
             Watches = template.Watches is DefaultFund ? new FundWatches(securities.Single()) : new StockWatches(securities),
-            Backtest = template.Backtest is { } periods && texts.Backtest is { } words
-                ? new BacktestDto(words.Scope, periods, TemplateCatalog.PriceProvider, words.Years, words.Universe,
-                    words.TestedDefaults, TemplateCatalog.Fee.Fixed, TemplateCatalog.Fee.Percent)
-                : null,
+            Backtest = BacktestOf(template, texts),
             Defaults = new TemplateDefaults(template.DefaultsVersion, template.Budget, template.Params),
             Settings = [.. template.Settings.Select(setting =>
             {
@@ -84,6 +81,29 @@ public static class TemplateEndpoints
                 return new SettingGroupDto(group, words.Title, words.Lead);
             })],
         };
+
+    static BacktestDto? BacktestOf(Template template, TemplateTexts texts)
+    {
+        if (template.Backtest is not { } periods || texts.Backtest is not { } words) return null;
+        var english = TemplateTexts.For(template, TemplateTexts.DefaultLocale).Backtest!;
+        var localizedPeriods = WithStories(periods, words.Stories, english.Stories);
+        var benchmarks = template.Benchmarks?.Select(b =>
+        {
+            var enBw = english.Benchmarks![b.Key];
+            var bw = words.Benchmarks?.GetValueOrDefault(b.Key) ?? enBw;
+            return new BenchmarkBacktestDto(b.Key, bw.Name, WithStories(b.Periods, bw.Stories, enBw.Stories));
+        }).ToList();
+        return new BacktestDto(words.Scope, localizedPeriods, TemplateCatalog.PriceProvider, words.Years, words.Universe,
+            words.TestedDefaults, TemplateCatalog.Fee.Fixed, TemplateCatalog.Fee.Percent, benchmarks);
+    }
+
+    static IReadOnlyList<PeriodResult> WithStories(
+        IReadOnlyList<PeriodResult> periods,
+        IReadOnlyDictionary<string, string>? stories,
+        IReadOnlyDictionary<string, string>? fallback) =>
+        stories is null && fallback is null
+            ? periods
+            : [.. periods.Select(p => p with { Story = stories?.GetValueOrDefault(p.Period) ?? fallback?.GetValueOrDefault(p.Period) ?? p.Story })];
 
     // A language without a setting's or group's words shows the English ones.
     static T Words<T>(Template template, IReadOnlyDictionary<string, T>? own, string key,

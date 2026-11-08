@@ -44,7 +44,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             Assert.Equal(3000, created.GetProperty("budget").GetDecimal());
             Assert.Equal(0, created.GetProperty("used").GetDecimal());
             Assert.Equal(JsonValueKind.Null, created.GetProperty("results").ValueKind);
-            Assert.Equal(7.4m, created.GetProperty("pastResult").GetProperty("templatePerYear").GetDecimal());
+            Assert.Equal(14.3m, created.GetProperty("pastResult").GetProperty("templatePerYear").GetDecimal());
             Assert.Equal(-21, created.GetProperty("pastResult").GetProperty("worstYear").GetDecimal());
             Assert.False(created.GetProperty("pastResult").GetProperty("isCustomized").GetBoolean());
             Assert.Equal($"/strategies/{created.GetProperty("id").GetGuid()}", response.Headers.Location?.OriginalString);

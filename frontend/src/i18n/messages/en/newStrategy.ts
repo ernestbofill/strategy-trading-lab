@@ -81,6 +81,12 @@ export const newStrategy = {
   'newStrategy.results.period': 'Period',
   'newStrategy.results.template': 'Template',
   'newStrategy.results.index': 'S&P 500',
+  'newStrategy.results.alpha': 'Alpha',
+  'newStrategy.results.alphaTip.label': 'What is alpha?',
+  'newStrategy.results.alphaTip.text':
+    'Direct alpha: the yearly advantage over putting the same money into the index on the same days.',
+  'newStrategy.results.story': 'Story',
+  'newStrategy.results.indexTabs': 'Tested indexes',
   'newStrategy.how.noBacktest': 'There is no backtest for this template.',
   'newStrategy.how.title': 'How we tested',
   'newStrategy.how.lead':

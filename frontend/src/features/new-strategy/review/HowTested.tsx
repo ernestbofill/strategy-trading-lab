@@ -74,7 +74,7 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
         aside={
           <>
             <Section title={t('newStrategy.how.byPeriod')}>
-              <PeriodTable periods={b.periods} />
+              <PeriodTable periods={b.periods} benchmarks={b.benchmarks} />
               <p className="caption">{t('newStrategy.how.independentPeriods')}</p>
             </Section>
             <Callout tone="warning" title={t('newStrategy.how.cantShow')}>

@@ -429,8 +429,8 @@ public static class StrategyEndpoints
     // tuned only when the user changed something, whatever the owner made active since on /admin/templates.
     // owner's changes on /admin/templates: a running strategy doesn't flip when the owner edits a template.
     static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
-        template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
-            ? new PastResult(words.Years, all.TemplatePerYear, all.IndexPerYear, all.WorstYear, all.IndexWorstYear,
+        template.Backtest?.LastOrDefault() is { TemplatePerYear: { } tmpl, IndexPerYear: { } idx, WorstYear: { } worst, IndexWorstYear: { } idxWorst } && texts.Backtest is { } words
+            ? new PastResult(words.Years, tmpl, idx, worst, idxWorst,
                 IsCustomized(strategy, template, activeAssetIds))
             : null;
 

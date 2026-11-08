@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using StrategyTradingLab.Api.Data.Entities;
 using static StrategyTradingLab.Api.Templates.TemplateAssets;
 
@@ -25,16 +26,24 @@ public record TestedFee(decimal Percent, decimal Fixed)
 }
 
 /// <summary>
-/// One backtest period of <c>Years</c> years: % return of the template and the index fund over the whole period, and each one's
-/// worst calendar year. The per-year figures are the yearly rate that compounds to the period's return.
+/// One backtest period: yearly-average % return of the template and the index fund (on money actually invested vs same-day
+/// index baseline for step strategies, or full account vs buy-and-hold for Index trend), each one's worst calendar year,
+/// direct alpha, and an optional story. Null figures mean the strategy never triggered in that period (e.g. Bear 2013-19).
 /// </summary>
-public record PeriodResult(string Period, int Years, decimal Template, decimal Index, decimal WorstYear, decimal IndexWorstYear)
+public record PeriodResult(
+    string Period,
+    decimal? TemplatePerYear = null,
+    decimal? IndexPerYear = null,
+    decimal? WorstYear = null,
+    decimal? IndexWorstYear = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Story = null)
 {
-    public decimal TemplatePerYear => PerYear(Template);
-    public decimal IndexPerYear => PerYear(Index);
-
-    decimal PerYear(decimal total) => Math.Round((decimal)(Math.Pow((double)(1 + total / 100), 1.0 / Years) - 1) * 100, 1);
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public decimal? Alpha => TemplatePerYear - IndexPerYear;
 }
+
+/// <summary>Backtest results for one benchmark index tab in a multi-index template (Index trend).</summary>
+public record BenchmarkBacktest(string Key, IReadOnlyList<PeriodResult> Periods);
 
 /// <summary>What a template watches: a starter list of stocks, or one fund, by asset id (the owner can change them on /admin/templates).</summary>
 public abstract record TemplateWatches
@@ -84,6 +93,9 @@ public sealed record Template(
 
     public const decimal DefaultClosePct = 3;
 
+    /// <summary>Optional multi-index backtest tabs (used by Index trend).</summary>
+    public IReadOnlyList<BenchmarkBacktest>? Benchmarks { get; init; }
+
     /// <summary>The params as strategies.params stores them.</summary>
     public JsonDocument ParamsJson() => JsonSerializer.SerializeToDocument(Params, Params.GetType(), JsonSerializerOptions.Web);
 }
@@ -106,22 +118,15 @@ public static class TemplateCatalog
     // Backtests of the strategy across time periods and a broad universe of assets (from the POC research).
     // Each period is an independent test starting with fresh money at its beginning.
 
-    // The S&P 500 fund (SPY) in each period: its return, and its worst calendar year (2008, 2018, 2022; total return).
-    static readonly (string Period, int Years, decimal Index, decimal WorstYear)[] Spy =
-        [("2000-09", 10, -8, -37), ("2010-19", 10, 246, -5), ("2020-24", 5, 96, -18), ("All", 25, 538, -37)];
-
-    /// <summary>A template's backtest: its return and worst year in each period, next to the S&P 500 fund's.</summary>
-    static IReadOnlyList<PeriodResult> Tested(params (decimal Template, decimal WorstYear)[] periods)
-    {
-        // One result per S&P 500 period; Zip would silently drop the rest.
-        ArgumentOutOfRangeException.ThrowIfNotEqual(periods.Length, Spy.Length);
-        return [.. Spy.Zip(periods, (spy, p) => new PeriodResult(spy.Period, spy.Years, p.Template, spy.Index, p.WorstYear, spy.WorstYear))];
-    }
-
     public static readonly Template Dip = new(
         "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList(Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor),
-        Tested((48, -18), (185, -12), (72, -21), (490, -21)),
+        [
+            new("2000-12", 11.5m, 5.5m, -18m, -37m),
+            new("2013-19", 14.9m, 13.4m, -12m, -4m),
+            new("2020-26", 16.3m, 14.3m, -21m, -18m),
+            new("All", 14.3m, 9.8m, -21m, -37m),
+        ],
         new DipParams())
     {
         // The spec's (2b): the POC's tunable rules, plus the two averages the POC fixes at 200 and 50 days. Grouped by what they
@@ -144,7 +149,12 @@ public static class TemplateCatalog
         "comeback", "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList(Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
             ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler),
-        Tested((62, -15), (210, -14), (88, -24), (540, -24)),
+        [
+            new("2000-12", 15.1m, 5.5m, -15m, -37m),
+            new("2013-19", 16.3m, 13.4m, -14m, -4m),
+            new("2020-26", 19.2m, 14.3m, -24m, -18m),
+            new("All", 16.5m, 9.8m, -24m, -37m),
+        ],
         new ComebackParams())
     {
         // The POC's tunable rules, except "below its SMA 200", a yes/no the screen has no control for.
@@ -164,7 +174,12 @@ public static class TemplateCatalog
     public static readonly Template Bear = new(
         "bear", "bear_accumulation", InvestsIn.Sp500Fund, SignalSides.BuysOnly, new Budget(3000, 600, 5),
         new DefaultFund(Cspx),
-        Tested((36, -12), (18, -4), (58, -18), (165, -18)),
+        [
+            new("2000-12", 9.4m, 1.7m, -12m, -37m),
+            new("2013-19"),
+            new("2020-26", 16.8m, 13.3m, -14m, -18m),
+            new("All", 11.2m, 7.7m, -14m, -37m),
+        ],
         new BearParams())
     {
         // The POC's tunable rules, except the second legs (rearm), a yes/no the screen has no control for.
@@ -177,11 +192,19 @@ public static class TemplateCatalog
         ],
     };
 
+    static readonly IReadOnlyList<PeriodResult> TrendSp500Periods =
+    [
+        new("2000-12", 6.4m, 1.7m, -4m, -37m),
+        new("2013-19", 10.4m, 13.8m, -11m, -4m),
+        new("2020-26", 11.2m, 13.3m, -16m, -18m),
+        new("All", 10.2m, 10.9m, -16m, -37m),
+    ];
+
     // All in, all out: no step, the whole budget at once.
     public static readonly Template Trend = new(
         "trend", "index_trend", InvestsIn.IndexFund, SignalSides.BuysAndSells, new Budget(3000, null, null),
         new DefaultFund(Cspx),
-        Tested((77, -2), (127, -11), (61, -21), (572, -21)),
+        TrendSp500Periods,
         new TrendParams())
     {
         Settings =
@@ -189,6 +212,45 @@ public static class TemplateCatalog
             new("smaDays", 10, 50, 300, Group: "signal"),
             new("bandPct", 1, 0, 10, Group: "signal"),
             new("cooldownDays", 1, 0, 30, Group: "pace"),
+        ],
+        Benchmarks =
+        [
+            new("sp500", TrendSp500Periods),
+            new("qqq",
+            [
+                new("2000-12", 4.8m, -1.2m, -15m, -42m),
+                new("2013-19", 15.4m, 18.9m, -9m, -1m),
+                new("2020-26", 16.2m, 18.5m, -19m, -33m),
+                new("All", 9.4m, 8.7m, -19m, -42m),
+            ]),
+            new("efa",
+            [
+                new("2002-12", 7.8m, 5.6m, -8m, -41m),
+                new("2013-19", 4.9m, 6.8m, -10m, -14m),
+                new("2020-26", 8.6m, 9.1m, -11m, -14m),
+                new("All", 7.2m, 7.0m, -11m, -41m),
+            ]),
+            new("dax",
+            [
+                new("2000-12", 6.1m, 0.8m, -12m, -44m),
+                new("2013-19", 6.8m, 8.5m, -11m, -18m),
+                new("2020-26", 10.4m, 11.2m, -9m, -12m),
+                new("All", 8.9m, 7.5m, -12m, -44m),
+            ]),
+            new("nikkei",
+            [
+                new("2000-12", 1.8m, -4.5m, -11m, -42m),
+                new("2013-19", 10.9m, 12.8m, -9m, -12m),
+                new("2020-26", 11.8m, 13.1m, -8m, -9m),
+                new("All", 6.5m, 5.8m, -11m, -42m),
+            ]),
+            new("vfinx",
+            [
+                new("2000-12", 6.3m, 1.7m, -4m, -37m),
+                new("2013-19", 10.3m, 13.7m, -11m, -4m),
+                new("2020-26", 11.1m, 13.3m, -16m, -18m),
+                new("All", 10.5m, 11.1m, -16m, -37m),
+            ]),
         ],
     };
 

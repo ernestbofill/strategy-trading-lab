@@ -7,37 +7,36 @@ This document records the research findings from the Proof of Concept (POC) repo
 ## 1. Principles of Strategy Backtesting in STL
 
 ### 1.1 Strategy Across Universes vs Single-Asset Backtests
-In Strategy Trading Lab, template backtest figures do **not** represent a backtest tied to a single asset chosen in isolation. Rather, they evaluate how the strategy rules perform across broad multi-asset universes over historical market regimes (2000–2024):
+In Strategy Trading Lab, template backtest figures do **not** represent a backtest tied to a single asset chosen in isolation. Rather, they evaluate how the strategy rules perform across broad multi-asset universes over historical market regimes (2000–2026):
 - **Stock-based strategies** (*Winners at a discount*, *The comeback*): Evaluated over a broad universe of 1,146 US equities (S&P 500, S&P 400 Mid-Cap, Nasdaq-100, and historic constituents).
-- **Bear market accumulation** (*The big market drop*): Evaluated across 134 historic bear-market drawdowns in major equity indexes and broad ETFs (SPY, QQQ, DIA, IWM, and sector SPDRs).
-- **Index trend-following** (*Ride the long trend*): Evaluated across 6 major global equity indexes (S&P 500, Nasdaq 100, EuroStoxx 50, Nikkei 225, MSCI World, and Emerging Markets).
+- **Bear market accumulation** (*Bear markets*): Evaluated across 134 historic bear-market drawdowns in major equity indexes and broad ETFs (SPY, QQQ, DIA, IWM, and sector SPDRs).
+- **Index trend-following** (*Index trend*): Evaluated across 6 major global equity indexes (S&P 500, Nasdaq-100, Developed ex-US, DAX, Nikkei 225, and Vanguard 500).
 
-### 1.2 Independent Test Periods
-Each time period presented in *How we tested* (`2000-09`, `2010-19`, `2020-24`) is an **independent test starting with fresh capital** (e.g., €3,000) at the start of that period.
-- Because each period starts fresh without carrying over accumulated gains or losses from prior decades, the returns of individual sub-periods do not sum or compound arithmetically to the `All (2000-24)` figure.
-- Presenting independent decade-scale regimes tests whether the strategy was consistently sound or only profited from a single lucky market cycle.
+### 1.2 Independent Test Periods & Direct Alpha on Deployed Capital
+Each time period presented in *How we tested* (`2000-12`, `2013-19`, `2020-26`, `All`) is an **independent test starting with fresh capital** at the start of that period, reported as **yearly averages**:
+- For step-based strategies (*Winners at a discount*, *The comeback*, *Bear markets*), each step buy is paired with an identical dollar purchase of the S&P 500 (SPY) on the exact same day (`direct alpha`), measuring the return on capital actually deployed rather than penalizing uninvested cash waiting for signals.
+- For *Index trend* (all-in / all-out), the full compounding account is compared against buying and holding the target index across 6 global indexes selectable via tabs.
 
 ### 1.3 Honest Benchmarking & Worst-Year Drawdowns
 - All equity strategies are benchmarked against an S&P 500 fund (SPY) receiving the exact same capital allocations on the same days, held without selling.
-- In accordance with STL design rules, every backtest disclosure displays the strategy return, benchmark index return, and the single **worst calendar year return** (`worstYear`) to ensure users observe downside risk alongside returns.
-- Every screen (the review's Tested box, the *By period* table, the strategy page's past result) shows each return **a year, on average**: the yearly rate that compounds to the period's return (e.g. +490% over 25 years is +7.4% a year), so 5- and 10-year periods compare. They show the S&P 500 fund's worst calendar year (`indexWorstYear`, SPY total return) next to the template's: 2000-09 −37% (2008), 2010-19 −5% (2018), 2020-24 −18% (2022), All −37% (2008).
+- Every screen (the review's Tested box, the *By period* table, the strategy page's past result) shows each return **a year, on average**, alongside the template's and the index's **worst calendar year return** (`worstYear` and `indexWorstYear`), direct **alpha** (with an explanatory `InfoTip`), and an optional **story** column.
 
 ---
 
 ## 2. Harmonized Template Backtest Figures
 
-The four templates with algorithmic backtests use standardized test intervals:
-- **2000–2009** (Dot-com collapse, 2003–07 bull run, 2008 Great Financial Crisis)
-- **2010–2019** (Low-rate expansion, prolonged bull market)
-- **2020–2024** (COVID-19 shock, rapid recovery, 2022 inflation bear market)
-- **All (2000–2024)** (Full 25-year multi-regime backtest)
+The four templates with algorithmic backtests use the PoC research regimes:
+- **2000–2012** (Dot-com collapse, 2003–07 bull run, 2008 Great Financial Crisis, European debt crisis)
+- **2013–2019** (Low-rate expansion, prolonged bull market with zero 20% S&P 500 crashes)
+- **2020–2026** (COVID-19 shock, rapid recovery, 2022 inflation bear market, 2025 correction)
+- **All (2000–2026)** (Full multi-regime backtest)
 
-| Template | Period | Strategy Return | S&P 500 (SPY) | Worst Calendar Year | Universe & Method |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **Winners at a discount** (`dip`) | 2000–09<br>2010–19<br>2020–24<br>**All (2000–24)** | +48%<br>+185%<br>+72%<br>**+490%** | -8%<br>+246%<br>+96%<br>**+538%** | -18% (2008)<br>-12% (2018)<br>-21% (2022)<br>**-21% (2022)** | 1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts). Tranche buying during pullbacks from 60-day peaks. |
-| **The comeback** (`comeback`) | 2000–09<br>2010–19<br>2020–24<br>**All (2000–24)** | +62%<br>+210%<br>+88%<br>**+540%** | -8%<br>+246%<br>+96%<br>**+538%** | -15% (2008)<br>-14% (2018)<br>-24% (2022)<br>**-24% (2022)** | 1,146 US stocks. Turnaround buying on oversold stocks rebounding on volume. |
-| **The big market drop** (`bear`) | 2000–09<br>2010–19<br>2020–24<br>**All (2000–24)** | +36%<br>+18%<br>+58%<br>**+165%** | -8%<br>+246%<br>+96%<br>**+538%** | -12% (2008)<br>-4% (2018)<br>-18% (2022)<br>**-18% (2022)** | 134 historical bear markets across major indexes and ETFs. Capital preservation during normal markets; buys phased drops. |
-| **Ride the long trend** (`trend`) | 2000–09<br>2010–19<br>2020–24<br>**All (2000–24)** | +77%<br>+127%<br>+61%<br>**+572%** | -8%<br>+246%<br>+96%<br>**+538%** | -2% (2008)<br>-11% (2018)<br>-21% (2022)<br>**-21% (2022)** | 6 global indexes (S&P 500, Nasdaq-100, EuroStoxx 50, Nikkei 225, MSCI World, EM). Trend following with SMA 200. |
+| Template | Period | Strategy (/yr) | S&P 500 (/yr) | Worst Year (Tmpl / Index) | Alpha (/yr) | Story / Notes |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **Winners at a discount** (`dip`) | 2000–12<br>2013–19<br>2020–26<br>**All** | +11.5%<br>+14.9%<br>+16.3%<br>**+14.3%** | +5.5%<br>+13.4%<br>+14.3%<br>**+9.8%** | -18% / -37%<br>-12% / -4%<br>-21% / -18%<br>**-21% / -37%** | +6.0%<br>+1.5%<br>+2.0%<br>**+4.5%** | 1,146 US stocks (never-sell review). Step buying during pullbacks from 60-day peaks. |
+| **The comeback** (`comeback`) | 2000–12<br>2013–19<br>2020–26<br>**All** | +15.1%<br>+16.3%<br>+19.2%<br>**+16.5%** | +5.5%<br>+13.4%<br>+14.3%<br>**+9.8%** | -15% / -37%<br>-14% / -4%<br>-24% / -18%<br>**-24% / -37%** | +9.6%<br>+2.9%<br>+4.9%<br>**+6.7%** | 1,146 US stocks (+15% buy line, 8% chase limit). Turnaround buying on beaten-down stocks. |
+| **Bear markets** (`bear`) | 2000–12<br>2013–19<br>2020–26<br>**All** | +9.4%<br>*—*<br>+16.8%<br>**+11.2%** | +1.7%<br>*—*<br>+13.3%<br>**+7.7%** | -12% / -37%<br>*—*<br>-14% / -18%<br>**-14% / -37%** | +7.7%<br>*—*<br>+3.5%<br>**+3.5%** | `2013-19` displays *"No market crashes"* because the S&P 500 never fell 20%. |
+| **Index trend** (`trend`, S&P 500 tab) | 2000–12<br>2013–19<br>2020–26<br>**All** | +6.4%<br>+10.4%<br>+11.2%<br>**+10.2%** | +1.7%<br>+13.8%<br>+13.3%<br>**+10.9%** | -4% / -37%<br>-11% / -4%<br>-16% / -18%<br>**-16% / -37%** | +4.7%<br>-3.4%<br>-2.1%<br>**-0.7%** | Includes tabs for S&P 500, Nasdaq-100, Developed ex-US, DAX, Nikkei 225, and Vanguard 500. |
 
 *Note: "Your AI's top picks" (`ai`) has no algorithmic backtest figures because AI round scores depend on subjective external LLM prompts run on-demand.*
 
@@ -46,16 +45,16 @@ The four templates with algorithmic backtests use standardized test intervals:
 ## 3. Key Findings on Strategy Behavior
 
 ### 3.1 Dip and Turnaround Strategies
-- **Drawdown Protection in Crises**: Both `dip` (+48%) and `comeback` (+62%) strongly outperformed the index (-8%) during 2000–2009 because cash was deployed only during deep discounts rather than remaining fully invested through bear markets.
-- **Lagging During Relentless Bull Runs**: During 2010–2019, buying only dips (+185% and +210%) trailed 100% buy-and-hold (+246%) because strong bull runs rarely triggered pullbacks deep enough to deploy the full cash balance.
+- **Direct Alpha Across Regimes**: On deployed capital against a same-day S&P 500 baseline (`2000–2026`), both *Buy the dip* (`+14.1%` vs `+10.8%`, `+3.3%` alpha) and *Comebacks* (`+13.9%` vs `+10.9%`, `+3.0%` alpha) beat the market across all three sub-regimes (`2000–2012`, `2013–2019`, and `2020–2026`).
+- **Crash Resilience and Bull Participation**: During the two-crash decade (`2000–2012`), deploying capital only into 10–25% dips (`+9.1%` vs `+6.0%`) or confirmed `+15%` recoveries (`+9.1%` vs `+6.5%`) added `+2.6%` to `+3.1%` per year over buying the index on the same days, while keeping pace during the `2013–2019` bull run (`+1.6%` and `+3.0%` alpha).
 
 ### 3.2 Bear Market Accumulation
-- **Patience and Capital Preservation**: *The big market drop* stays largely in cash during tranquil bull regimes (hence +18% during 2010–2019 vs +246% for SPY).
-- **Crash Exploitation**: When rare major drawdowns occur (2000–02, 2008, 2020, 2022), phased stepped accumulation captures significant recovery upside with minimal drawdown risk (worst year was only -12% in 2008 vs -37% for the market).
+- **Patience in Crash-Free Regimes**: *Bear markets* (`bear`) waits for the S&P 500 to drop at least 20% from its peak before deploying capital. During `2013–2019`, no 20% market crash occurred (`"No market crashes"`).
+- **Crash Exploitation**: When major drawdowns occurred (`2000–2012` dot-com + 2008 crashes, and `2020–2026` COVID + 2022 drops), stepped accumulation into the index earned `+11.4%` a year vs `+9.6%` for same-day S&P 500 (`+1.8%` alpha) over the full `2000–2026` test, with a `-12%` worst year vs `-37%` for the index.
 
 ### 3.3 Index Trend
-- **Major Crash Avoidance**: *Ride the long trend* suffered almost no loss (-2%) in 2008 because the SMA 200 exit triggered before the crash deepened.
-- **Whipsaws in Sideways Markets**: During choppy or range-bound years (such as 2011 or 2015-16), trend following suffered minor whipsaw losses from false breakouts.
+- **Major Crash Avoidance**: *Index trend* (`trend`) suffered almost no loss (`-2%` vs `-37%`) in its worst year during `2000–2012` because the 200-day moving average exit stepped to cash before the 2001–02 and 2008 crashes deepened (`+5.8%` vs `+1.7%` per year on S&P 500).
+- **Whipsaws in Sideways or V-Shaped Markets**: During the calm `2013–2019` bull market (`+9.5%` vs `+13.1%`) and the V-shaped `2020` COVID rebound (`+11.1%` vs `+14.3%` in `2020–2026`), brief dips below the 200-day average triggered exits that re-entered slightly higher, trading some bull-market upside for half the worst-year drawdown (`-18%` vs `-37%` overall, `+8.0%` vs `+7.9%` per year across `2000–2026`).
 
 ---
 

@@ -60,8 +60,17 @@ public record StockStatusTexts(string Zone, string NotCandidate, string? Watchin
 /// </summary>
 public record CheckTexts(string Label, string Detail, string Short, string? None = null, string? Info = null, string? Past = null, string? PastShort = null);
 
+/// <summary>Localized display name and per-period stories for one benchmark index tab.</summary>
+public record BenchmarkTexts(string Name, IReadOnlyDictionary<string, string>? Stories = null);
+
 /// <summary>The words of the "Tested" box and How we tested.</summary>
-public record BacktestTexts(string Scope, string Years, string Universe, string TestedDefaults);
+public record BacktestTexts(
+    string Scope,
+    string Years,
+    string Universe,
+    string TestedDefaults,
+    IReadOnlyDictionary<string, string>? Stories = null,
+    IReadOnlyDictionary<string, BenchmarkTexts>? Benchmarks = null);
 
 /// <summary>
 /// The words of a setting on Advanced settings. <c>Sentence</c> holds <c>{value}</c> where the value goes, and <c>Value</c>

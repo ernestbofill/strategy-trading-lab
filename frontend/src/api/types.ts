@@ -67,19 +67,23 @@ export interface AddedAsset {
 
 export interface PeriodResult {
   period: string
-  years: number
-  /** Percent return of the template and the index fund over the period, and each one's worst calendar year. */
-  template: number
-  index: number
-  worstYear: number
-  indexWorstYear: number
-  /** The yearly rate that compounds to the period's return, one decimal. */
-  templatePerYear: number
-  indexPerYear: number
+  /** Yearly-average % return of the template and the index, each one's worst calendar year, direct alpha, and optional story. Null when the strategy never triggered in that period. */
+  templatePerYear: number | null
+  indexPerYear: number | null
+  worstYear: number | null
+  indexWorstYear: number | null
+  alpha?: number | null
+  story?: string | null
+}
+
+export interface BenchmarkBacktest {
+  key: string
+  name: string
+  periods: PeriodResult[]
 }
 
 export interface Backtest {
-  /** "12 stocks, 2010-2024." */
+  /** "1,146 stocks, 2000-2026." */
   scope: string
   /** Sub-periods, then the whole period last (shown on the review). */
   periods: PeriodResult[]
@@ -91,6 +95,8 @@ export interface Backtest {
   /** The tested fee per trade: a % of the amount plus a fixed amount, 1 in the strategy's currency (€1, $1 or £1, rounded on purpose). */
   feePerTrade: number
   feePercent: number
+  /** Optional multi-index backtest tabs (used by Index trend). */
+  benchmarks?: BenchmarkBacktest[] | null
 }
 
 /** Euro amounts. `step` and `maxSteps` are null for all-in, all-out templates. */

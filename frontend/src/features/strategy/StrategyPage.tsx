@@ -3,18 +3,19 @@ import { Link, useParams } from 'react-router-dom'
 import type { AiRoundsSummary, StrategyDetail } from '../../api'
 import { InfoTip } from '../../components/InfoTip'
 import { LoadableScreen } from '../../components/LoadableScreen'
-import { Screen, TopBar } from '../../components/Screen'
+import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
-import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { aiRoundPath, aiRoundsPath, stockPath, strategyListPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
+import { exact, money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
+import { aiRoundPath, aiRoundsPath, signalPath, stockPath, strategyListPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { DeleteStrategy } from './DeleteStrategy'
 import { ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
+import { StockRules } from './StockPage'
 import { StockPill } from './StockPill'
 import { followedStocks, stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
@@ -146,13 +147,8 @@ function Stocks({ s }: { s: StrategyDetail }) {
   const t = useT()
   return (
     <Section
-      title={t(s.investsIn === 'stockList' ? 'strategy.stocks' : 'strategy.funds', { count: followedStocks(s).length })}
-      aside={
-        // A fund template's fund isn't changed on a running strategy (not designed).
-        s.status === 'running' && s.investsIn === 'stockList' ? (
-          <TextAction to={strategyListPath(s.id)}>{t('strategy.editList')}</TextAction>
-        ) : undefined
-      }
+      title={t('strategy.stocks', { count: followedStocks(s).length })}
+      aside={s.status === 'running' ? <TextAction to={strategyListPath(s.id)}>{t('strategy.editList')}</TextAction> : undefined}
     >
       <ul className={styles.stocks}>
         {s.stocks.map((row) => {
@@ -203,14 +199,18 @@ export function StrategyPage() {
 }
 
 /**
- * A loaded strategy. A running one has "RENAME" in the top bar, the alerts switch (strategies that email) and "Archive the
- * strategy"; an archived one is read-only, with "Archived on [date]" and "Delete the strategy".
+ * A loaded strategy. A running one has "RENAME" in the top bar and "Archive the strategy"; an archived one is read-only,
+ * with "Archived on [date]" and "Delete the strategy". A single-fund strategy inlines its fund's status, price chart and
+ * rule checks directly on this page instead of a separate stock page.
  */
 function StrategyView({ s }: { s: StrategyDetail }) {
   const t = useT()
   const [renaming, setRenaming] = useState(false)
   const live = s.mode === 'live'
   const running = s.status === 'running'
+  const fund = s.investsIn !== 'stockList' ? s.stocks[0] : undefined
+  const answer =
+    fund?.status === 'waitingForYou' && fund.signalId ? <PrimaryAction to={signalPath(s.id, fund.signalId)}>{t('stock.answer')}</PrimaryAction> : undefined
   const since = s.startedOn === s.today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
   const source = live ? t('strategy.source.live') : t('strategy.source.sim')
   const top = (
@@ -220,9 +220,30 @@ function StrategyView({ s }: { s: StrategyDetail }) {
     />
   )
   return (
-    <Screen top={top} note={source}>
+    <Screen top={top} action={answer} note={source}>
       <div className={styles.header}>
-        {renaming ? <RenameForm s={s} onClose={() => setRenaming(false)} /> : <h1 className={styles.title}>{s.name}</h1>}
+        {renaming ? (
+          <RenameForm s={s} onClose={() => setRenaming(false)} />
+        ) : (
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{s.name}</h1>
+            {fund?.close != null && fund.checkedOn && (
+              <div className={styles.price}>
+                <span className={styles.priceValue}>{exact(fund.close, fund.currency)}</span>
+                <span className={styles.muted}>{t('stock.close', { date: shortDate(fund.checkedOn) })}</span>
+              </div>
+            )}
+          </div>
+        )}
+        {fund && (
+          <>
+            <div className={styles.fundName}>
+              <span className={styles.fundSymbol}>{fund.symbol}</span> · {fund.name}
+              {fund.exchange && <span className={styles.muted}> · {fund.exchange}</span>}
+            </div>
+            {fund.what && <p className={styles.what}>{fund.what}</p>}
+          </>
+        )}
         <div className={styles.sub}>
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
           {s.endedOn && <span className={styles.ended}>{t('strategy.archivedOn', { date: shortDate(s.endedOn) })}</span>}
@@ -237,7 +258,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
         )}
       </div>
       <Summary s={s} />
-      <Stocks s={s} />
+      {fund ? <StockRules s={s} row={fund} /> : <Stocks s={s} />}
       <SignalsAndTrades s={s} />
       {(running || s.aiRounds) && (
         <div className={styles.tiles}>

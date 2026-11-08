@@ -88,6 +88,7 @@ function open(s: StrategyDetail, assetId = 'zs') {
   render(
     <MemoryRouter initialEntries={[`/strategies/s1/stocks/${assetId}`]}>
       <Routes>
+        <Route path="/strategies/:id" element={<p>Strategy page</p>} />
         <Route path="/strategies/:id/stocks/:assetId" element={<StockPage />} />
       </Routes>
     </MemoryRouter>,
@@ -172,5 +173,10 @@ describe('StockPage', () => {
 
     open(strategy([zs]), 'other')
     expect(await screen.findByText("This stock isn't in this strategy.")).toBeTruthy()
+  })
+
+  it('redirects a single-fund strategy stock route to the strategy page', async () => {
+    open({ ...strategy([zs]), investsIn: 'indexFund' })
+    expect(await screen.findByText('Strategy page')).toBeTruthy()
   })
 })

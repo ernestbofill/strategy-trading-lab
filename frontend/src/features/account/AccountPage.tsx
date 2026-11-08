@@ -13,7 +13,7 @@ import { errorText } from './copy'
 import { APP_HASH, NOTIFICATIONS_HASH, logInPath, settingsPath } from './paths'
 import { homePath } from '../new-strategy/paths'
 import { ResendLink } from './ResendLink'
-import { unsubscribeDevice } from '../../lib/push'
+import { deviceSubscription, unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
 
@@ -238,9 +238,10 @@ function DeleteAccount({ email }: { email: string }) {
     setError(null)
     setMessage(null)
     try {
-      // This device stops its alerts first (best effort): its subscription goes with the account anyway.
-      await unsubscribeDevice().catch(() => {})
       await api.deleteAccount(password)
+      // Only once deleted (a wrong password must leave this device's alerts on): the browser forgets its subscription, whose
+      // server row went with the account (best effort).
+      await deviceSubscription().then((subscription) => subscription?.unsubscribe()).catch(() => {})
       // A full load as a guest: no cached load of the deleted account survives, and no screen that needs it renders on the way.
       window.location.replace(homePath)
       return

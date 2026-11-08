@@ -59,7 +59,7 @@ All JSON, under `/api`. State-changing ones follow the CSRF rule above.
 | `POST /account/log-in` | email, password. Same error for a wrong email and a wrong password; the lock counts tries per email |
 | `POST /account/log-out` | ends this session |
 | `GET /account/me` | the user (email, verified, language, time zone, currency) or 401. The app's start-up check |
-| `POST /account/verify-email` | token from the email link. Confirms the email and logs no one in: a link that logged in whoever opened it would allow login CSRF and the takeover of an account someone pre-registered with a victim's email |
+| `POST /account/verify-email` | token from the email link. Confirms the email, sends the welcome email (linking to the welcome page and highlighting iOS and Android install instructions with a link to `/settings#app`), and logs no one in: a link that logged in whoever opened it would allow login CSRF and the takeover of an account someone pre-registered with a victim's email |
 | `POST /account/resend-verification` | for the logged-in user, rate-limited |
 | `POST /account/forgot-password` | email. Always the same answer |
 | `POST /account/reset-password` | token, new password. Ends all the user's sessions, then logs in this device |

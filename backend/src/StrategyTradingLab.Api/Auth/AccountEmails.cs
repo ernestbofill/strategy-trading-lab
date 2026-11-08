@@ -80,4 +80,36 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
                 .Paragraph("If you didn't sign up for Strategy Trading Lab, ignore this email: it will be deleted automatically.")
                 .Build("Confirm your email to keep your Strategy Trading Lab account")));
     }
+
+    /// <summary>Welcome email for new users after confirming their email address.</summary>
+    public void Welcome(string to, string? firstName, string locale = "en")
+    {
+        var ca = locale == "ca";
+        var welcomeUrl = Link(locale, "/welcome");
+        var appUrl = Link(locale, "/settings#app");
+        var title = ca
+            ? (string.IsNullOrWhiteSpace(firstName) ? "Et donem la benvinguda a Strategy Trading Lab" : $"Et donem la benvinguda, {firstName}")
+            : (string.IsNullOrWhiteSpace(firstName) ? "Welcome to Strategy Trading Lab" : $"Welcome, {firstName}");
+
+        var doc = new EmailDocument(locale, AppUrl)
+            .Eyebrow(ca ? "Benvinguda" : "Welcome")
+            .Heading(title)
+            .Paragraph(ca
+                ? "Strategy Trading Lab t'ajuda a provar i seguir estratègies d'inversió amb regles senzilles i provades: executa-les en simulació o en directe amb el teu propi bròquer. L'app mai no opera per tu ni es connecta al teu bròquer."
+                : "Strategy Trading Lab helps you test and follow investing strategies with simple, tested rules — run them in simulation or live with your own broker. The app never places orders and never connects to a broker.")
+            .Action(ca ? "Descobreix com funcionen el creador d'estratègies, la simulació i el seguiment en directe:"
+                       : "Learn how the strategy builder, simulation, and live tracking work:",
+                    ca ? "Descobreix com funciona" : "See how it works", welcomeUrl)
+            .Section(ca ? "Instal·la l'aplicació al mòbil" : "Install on your phone",
+            [
+                new(ca ? "Obre l'app amb el Safari, toca el botó Comparteix i tria 'Afegeix a la pantalla d'inici'."
+                       : "Open the app in Safari, tap the Share button, and choose 'Add to Home Screen'.", Tag: "iOS"),
+                new(ca ? "Obre l'app amb el Chrome o el navegador, toca el menú (⋮) i tria 'Instal·la l'aplicació' o 'Afegeix a la pantalla d'inici'."
+                       : "Open the app in Chrome or your browser, tap the menu (⋮), and choose 'Install app' or 'Add to Home screen'.", Tag: "Android"),
+            ], url: appUrl)
+            .Disclaimer(ca ? "No és assessorament financer. Els senyals segueixen les teves regles."
+                           : "Not financial advice. Signals follow your rules.");
+
+        queue.Enqueue(new(to, doc.Build(ca ? "Et donem la benvinguda a Strategy Trading Lab" : "Welcome to Strategy Trading Lab")));
+    }
 }

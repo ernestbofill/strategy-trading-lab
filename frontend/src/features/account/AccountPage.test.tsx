@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account, type Role } from '../../api'
 import { AccountPage } from './AccountPage'
+import { SettingsPage } from './SettingsPage'
 
 let currentRole: Role = 'user'
 
@@ -59,7 +60,9 @@ describe('AccountPage', () => {
 
     expect(screen.queryByRole('link', { name: /Admin settings/i })).toBeNull()
   })
+})
 
+describe('SettingsPage', () => {
   it('sets signals and reminders by app and email, and the summary by email, in one place', async () => {
     currentRole = 'user'
     push.offered = true
@@ -67,7 +70,7 @@ describe('AccountPage', () => {
     const setSummary = vi.spyOn(api, 'setOverviewEmail').mockResolvedValue()
     render(
       <MemoryRouter>
-        <AccountPage />
+        <SettingsPage />
       </MemoryRouter>,
     )
 
@@ -81,12 +84,23 @@ describe('AccountPage', () => {
     await waitFor(() => expect(setSummary).toHaveBeenCalledWith(false))
   })
 
+  it('opens Account from its first row and names Spain after Barcelona', () => {
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: /user@example.com/ }).getAttribute('href')).toBe('/account')
+    expect((screen.getByRole('combobox', { name: 'Time zone' }) as HTMLSelectElement).selectedOptions[0].textContent).toMatch(/^Europe\/Barcelona/)
+  })
+
   it('leaves the App box out where the app offers no push', () => {
     currentRole = 'user'
     push.offered = false
     render(
       <MemoryRouter>
-        <AccountPage />
+        <SettingsPage />
       </MemoryRouter>,
     )
 

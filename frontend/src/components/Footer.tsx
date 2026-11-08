@@ -3,8 +3,8 @@ import type { Role } from '../api'
 import { useT } from '../i18n/I18n'
 import type { MessageKey } from '../i18n/messages/en'
 import { useRole } from '../features/account/AccountContext'
-import { accountPath } from '../features/dashboard/paths'
-import { accountNotificationsPath, logInPath, signUpPath } from '../features/account/paths'
+import { accountPath, settingsPath } from '../features/dashboard/paths'
+import { settingsNotificationsPath, logInPath, signUpPath } from '../features/account/paths'
 import { aboutPath, disclaimerPath, legalNoticePath, privacyPath, termsPath } from '../features/legal/paths'
 import { homePath, pickPath } from '../features/new-strategy/paths'
 import { welcomePath } from '../features/welcome/paths'
@@ -60,10 +60,11 @@ const user: LinkGroup[] = [
     ],
   },
   {
-    title: 'footer.account',
+    title: 'footer.settings',
     links: [
+      { to: settingsPath, label: 'footer.settings' },
       { to: accountPath, label: 'footer.account' },
-      { to: accountNotificationsPath, label: 'footer.notifications' },
+      { to: settingsNotificationsPath, label: 'footer.notifications' },
     ],
   },
 ]

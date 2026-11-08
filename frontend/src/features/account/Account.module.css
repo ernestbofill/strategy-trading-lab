@@ -83,3 +83,8 @@
   margin: 0 0 var(--space-1);
   color: var(--ink);
 }
+
+/* A second line under a row's label (Settings' Account row). */
+.block {
+  display: block;
+}

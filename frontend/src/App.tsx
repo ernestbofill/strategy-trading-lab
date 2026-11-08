@@ -5,10 +5,12 @@ import { I18nProvider, useI18n } from './i18n/I18n'
 import { LOCALES } from './i18n/locale'
 import { AccountProvider, useAccount, useOptionalAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
+import { SettingsPage } from './features/account/SettingsPage'
 import { ForgotPassword } from './features/account/ForgotPassword'
 import { LogIn } from './features/account/LogIn'
 import {
   accountPath,
+  settingsPath,
   forgotPasswordPath,
   logInPath,
   resetPasswordPath,
@@ -200,6 +202,7 @@ export default function App() {
                 {/* Routes requiring an authenticated account */}
                 <Route element={<RequireAccount />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path={settingsPath} element={<SettingsPage />} />
                   <Route path={accountPath} element={<AccountPage />} />
                   <Route element={<RequireOwner />}>
                     <Route

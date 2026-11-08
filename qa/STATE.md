@@ -160,13 +160,14 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 
 | ID | Area | Spec | Depth | Last | Notes |
 | --- | --- | --- | --- | --- | --- |
-| H1 | Account page: email, install the app | §6 Account | smoke | 2026-11-06-1 | C5.5 |
-| H2 | Notifications: boxes, This device | §6 Account, §7 | smoke | 2026-11-06-1 | Summary box only; push not turned on. Restore the baseline. C5.4 |
-| H3 | Currency | §6 Account | smoke | 2026-11-06-1 | Restore the baseline. C5.3 |
-| H4 | Language (and the whole app in Catalan) | §6 Account | smoke | 2026-11-06-1 | Restore the baseline. C5.1 |
+| H1 | Account page: email, name, password | §6 Account | smoke | 2026-11-06-1 | Install the app moved to Settings (H8). C5.5 |
+| H2 | Notifications: boxes, This device | §6 Settings, §7 | smoke | 2026-11-06-1 | Summary box only; push not turned on. Restore the baseline. C5.4 |
+| H3 | Currency | §6 Settings | smoke | 2026-11-06-1 | Restore the baseline. C5.3 |
+| H4 | Language (and the whole app in Catalan) | §6 Settings | smoke | 2026-11-06-1 | Restore the baseline. C5.1 |
 | H5 | In-app feedback: select text, 💬 Add comment | §6 Admin, Feedback | smoke | 2026-11-06-1 | Send feedback only; select text: L-007. Once a session, `QA test, ignore:`. C5.6 |
 | H6 | `/feedback` page | §6 Admin, Feedback | smoke | 2026-11-06-1 | Refused for a vip, as it should be. C5.7 |
 | H7 | Unsubscribe page (an invalid token) | §7 | smoke | 2026-11-06-1 | Don't use a real token. C5.8 |
+| H8 | Settings page: the Account row, install the app, time zone (Barcelona) | §6 Settings | untested | | Notifications, currency and language moved here (H2–H4). Restore the baseline time zone. |
 
 ### X · Across the app
 

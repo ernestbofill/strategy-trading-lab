@@ -265,6 +265,7 @@ export const httpApi: Api = {
     void (await account('/change-password', { currentPassword, newPassword }, { session: true })),
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
   setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
+  setTimeZone: async (timeZone) => void (await account('/time-zone', { timeZone }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
   setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
   setAlertPush: async (enabled) => void (await account('/alert-push', { enabled }, { session: true })),

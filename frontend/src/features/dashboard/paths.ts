@@ -7,6 +7,8 @@ export const strategyListPath = (id: string) => `/strategies/${id}/list`
 export const signalPath = (strategyId: string, signalId: string) => `/strategies/${strategyId}/signals/${signalId}`
 export const aiRoundPath = (id: string) => `/strategies/${id}/ai-round`
 export const accountPath = '/account'
+/** Settings: language, currency, time zone, notifications. Its first row opens Account. */
+export const settingsPath = '/settings'
 /** A strategy's AI round history. */
 export const aiRoundsPath = (id: string) => `/strategies/${id}/ai-rounds`
 /** The prompt editor of a running AI strategy. */

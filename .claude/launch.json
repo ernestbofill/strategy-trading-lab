@@ -54,6 +54,8 @@
         "run",
         "--project",
         "backend/src/StrategyTradingLab.Api",
+        "-c",
+        "Release",
         "--launch-profile",
         "http",
         "--",

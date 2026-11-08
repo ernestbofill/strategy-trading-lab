@@ -1,26 +1,22 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { api, InvalidFieldsError, UnauthorizedError, type Currency, type Locale } from '../../api'
-import { Checkbox, FormMessage, PasswordField, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
+import { api, InvalidFieldsError, UnauthorizedError } from '../../api'
+import { Checkbox, FormMessage, PasswordField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { AdminLink } from '../admin/AdminTopBar'
-import { useI18n, useT } from '../../i18n/I18n'
-import { LOCALES } from '../../i18n/locale'
+import { useT } from '../../i18n/I18n'
 import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
-import { currencyOptionsWith } from './currencies'
 import { errorText } from './copy'
-import { NOTIFICATIONS_HASH, logInPath } from './paths'
+import { NOTIFICATIONS_HASH, logInPath, settingsPath } from './paths'
 import { ResendLink } from './ResendLink'
-import { InstallApp } from './InstallApp'
-import { NotificationSettings } from './NotificationSettings'
 import { unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
-import { SendFeedback } from '../feedback/SendFeedback'
+import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
 
-/** Account, first version (spec: Account): the email, change password, log out. */
+/** Account (spec: Account): who the user is and their data. Reached from Settings' first row. */
 export function AccountPage() {
   const t = useT()
   const account = useCurrentAccount()
@@ -30,10 +26,10 @@ export function AccountPage() {
   const [logOutError, setLogOutError] = useState<string | null>(null)
   const { hash } = useLocation()
 
-  // Confirm's "Edit" on Notifications opens the page at its Notifications section.
+  // Notifications and feedback moved to Settings: an old link to them here goes on there.
   useEffect(() => {
-    if (hash === NOTIFICATIONS_HASH) document.getElementById(NOTIFICATIONS_HASH.slice(1))?.scrollIntoView({ block: 'start' })
-  }, [hash])
+    if (hash === NOTIFICATIONS_HASH || hash === SEND_FEEDBACK_HASH) navigate(`${settingsPath}${hash}`, { replace: true })
+  }, [hash, navigate])
 
   const logOut = async () => {
     setLoggingOut(true)
@@ -55,7 +51,7 @@ export function AccountPage() {
   }
 
   return (
-    <Screen top={<TopBar home aside={account.role === 'owner' ? <AdminLink /> : null} />}>
+    <Screen top={<TopBar up={settingsPath} upLabel="common.settings" aside={account.role === 'owner' ? <AdminLink /> : null} />}>
       <PageHeader title={t('account.page.title')} />
 
       <Section title={t('account.page.email')}>
@@ -74,18 +70,6 @@ export function AccountPage() {
         <NameForm firstName={account.firstName ?? ''} lastName={account.lastName ?? ''} onSaved={refresh} />
       </Section>
 
-      <Section title={t('account.page.app')}>
-        <InstallApp />
-      </Section>
-
-      <Section title={t('account.page.language')}>
-        <LanguageForm current={account.locale} onSaved={refresh} />
-      </Section>
-
-      <Section title={t('account.page.currency')}>
-        <CurrencyForm current={account.currency} onSaved={refresh} />
-      </Section>
-
       {account.role === 'owner' && (
         <Section title={t('account.page.admin')}>
           <p className={styles.line}>{t('account.page.adminLine')}</p>
@@ -95,16 +79,8 @@ export function AccountPage() {
         </Section>
       )}
 
-      <Section id={NOTIFICATIONS_HASH.slice(1)} title={t('account.page.notifications')}>
-        <NotificationSettings account={account} onSaved={refresh} />
-      </Section>
-
       <Section title={t('account.page.dataPrivacy')}>
         <AiSharing current={account.aiSharing} onSaved={refresh} />
-      </Section>
-
-      <Section title={t('feedback.send.title')}>
-        <SendFeedback />
       </Section>
 
       <Section title={t('account.page.changePassword')}>
@@ -116,40 +92,6 @@ export function AccountPage() {
       </button>
       {logOutError && <FormMessage tone="error">{logOutError}</FormMessage>}
     </Screen>
-  )
-}
-
-function LanguageForm({ current, onSaved }: { current: Locale; onSaved: () => Promise<unknown> }) {
-  const t = useT()
-  const { setLocale: setAppLocale } = useI18n()
-  const [locale, setLocale] = useState(current)
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setMessage(null)
-    try {
-      await api.setLocale(locale)
-      setAppLocale(locale)
-      if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
-      setMessage({ tone: 'done', text: t('account.page.languageSaved') })
-    } catch (err) {
-      setMessage({ tone: 'error', text: (err instanceof InvalidFieldsError && err.fields.locale) || errorText(err) })
-    }
-    setBusy(false)
-  }
-
-  return (
-    <form className={styles.form} onSubmit={submit} noValidate>
-      <SegmentedField label={t('account.page.language')} hideLabel value={locale} onChange={(v) => setLocale(v as Locale)} options={LOCALES} />
-      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || locale === current}>
-        {busy ? t('account.saving') : t('account.page.languageSave')}
-      </button>
-    </form>
   )
 }
 
@@ -240,39 +182,6 @@ function ChangePassword({ email }: { email: string }) {
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !current || !next}>
         {busy ? t('account.saving') : t('account.page.changePassword')}
-      </button>
-    </form>
-  )
-}
-
-function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: () => Promise<unknown> }) {
-  const t = useT()
-  const [currency, setCurrency] = useState(current)
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
-  const options = currencyOptionsWith(t)
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setMessage(null)
-    try {
-      await api.setCurrency(currency)
-      if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
-      setMessage({ tone: 'done', text: t('account.page.currencySaved') })
-    } catch (err) {
-      setMessage({ tone: 'error', text: (err instanceof InvalidFieldsError && err.fields.currency) || errorText(err) })
-    }
-    setBusy(false)
-  }
-
-  return (
-    <form className={styles.form} onSubmit={submit} noValidate>
-      <SegmentedField label={t('account.page.currency')} hideLabel value={currency} onChange={(v) => setCurrency(v as Currency)} options={options} />
-      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || currency === current}>
-        {busy ? t('account.saving') : t('account.page.currencySave')}
       </button>
     </form>
   )

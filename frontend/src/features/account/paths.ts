@@ -1,11 +1,11 @@
 import { dashboardPath } from '../new-strategy/paths'
 
-import { accountPath } from '../dashboard/paths'
+import { accountPath, settingsPath } from '../dashboard/paths'
 
-export { accountPath }
-/** The hash of the account page's Notifications section, and the link that opens the page at it (Confirm's "Edit" on Notifications). */
+export { accountPath, settingsPath }
+/** The hash of the Settings page's Notifications section, and the link that opens the page at it (Confirm's "Edit" on Notifications). */
 export const NOTIFICATIONS_HASH = '#notifications'
-export const accountNotificationsPath = `${accountPath}${NOTIFICATIONS_HASH}`
+export const settingsNotificationsPath = `${settingsPath}${NOTIFICATIONS_HASH}`
 export const signUpPath = '/sign-up'
 /** The invite code in an invite link: /sign-up?invite=ABCD-EFGH. */
 export const INVITE_PARAM = 'invite'

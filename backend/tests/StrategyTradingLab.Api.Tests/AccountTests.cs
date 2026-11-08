@@ -89,7 +89,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
-    public async Task The_locale_is_english_unless_picked_at_sign_up_and_can_be_changed_in_the_account()
+    public async Task The_locale_is_english_unless_picked_at_sign_up_and_it_and_the_time_zone_can_be_changed()
     {
         var (client, _) = await api.SignedUpAsync();
         Assert.Equal("en", (await Me(client)).GetProperty("locale").GetString());
@@ -105,6 +105,11 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         var refused = await client.PostAsJsonAsync("/account/locale", new { locale = "fr" });
         Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
         Assert.Equal("ca", (await Me(client)).GetProperty("locale").GetString());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/time-zone", new { timeZone = "America/New_York" })).StatusCode);
+        Assert.Equal("America/New_York", (await Me(client)).GetProperty("timeZone").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/time-zone", new { timeZone = "Mars/Olympus" })).StatusCode);
+        Assert.Equal("America/New_York", (await Me(client)).GetProperty("timeZone").GetString());
     }
 
     [NeonFact]
@@ -283,6 +288,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/change-password", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/currency", new { currency = "USD" })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/locale", new { locale = "ca" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/time-zone", new { timeZone = "Europe/Madrid" })).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await visitor.GetAsync("/templates")).StatusCode);
     }
 

@@ -16,7 +16,7 @@ import { PriceChart } from './PriceChart'
 import { isCandidateOn } from './priceChartMarks'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
-import { stockLine } from './stockLine'
+import { stockLine, type StockLine } from './stockLine'
 import styles from './StockPage.module.css'
 import { useStrategy } from './useStrategy'
 
@@ -175,9 +175,6 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
   )
 }
 
-/** The statuses whose line counts the steps held. */
-const HOLDS: StockRow['status'][] = ['building', 'holding', 'done']
-
 const GROUPS: { group: CheckGroup; title: MessageKey }[] = [
   { group: 'candidate', title: 'stock.group.candidate' },
   { group: 'buy', title: 'stock.group.buy' },
@@ -257,16 +254,31 @@ function Rules({
 }
 
 /**
- * A stock's status line, figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's
- * page). `stats` sits between the status line and the chart.
+ * A stock's state under the rules as the first tile: the same pill and sentence as its row in the stock list, on one
+ * line when they fit (on the stock page, and on a fund strategy's page).
+ */
+export function StockStatus({ line }: { line: StockLine }) {
+  const t = useT()
+  return (
+    <Stat label={t('stock.status')}>
+      <span className={styles.status}>
+        <StockPill tone={line.tone}>{line.pill}</StockPill>
+        <span>{line.detail}</span>
+      </span>
+    </Stat>
+  )
+}
+
+/**
+ * A stock's figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's page).
+ * `stats` sits above the chart.
  */
 export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow; stats?: ReactNode }) {
   const t = useT()
-  const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
   const isCandidate = isCandidateOn(row.checks)
   const since = isCandidate && row.checks.some((c) => c.group === 'candidate' && c.met !== null) ? candidateDateOf(row) : null
   const trades = s.trades.filter((x) => x.assetId === row.assetId)
-  // Without enough price history the rules say nothing yet: the status line says so.
+  // Without enough price history the rules say nothing yet: the status tile says so.
   const rules = s.checkTexts && row.status !== 'notEnoughData' && (
     <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
       <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />
@@ -274,11 +286,6 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
   )
   return (
     <>
-      <div className={styles.status} data-tone={line.tone}>
-        <StockPill tone={line.tone}>{line.pill}</StockPill>
-        <span>{line.detail}</span>
-      </div>
-
       {stats}
 
       <PriceChart
@@ -357,15 +364,18 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
         s={s}
         row={row}
         stats={
-          row.result !== null && (
-            <Stats>
-              {row.maxSteps !== null && HOLDS.includes(row.status) && <Stat label={t('stock.position.steps')}>{line.detail}</Stat>}
-              <Stat label={t('stock.position.invested')}>{money(row.invested, s.currency)}</Stat>
-              <Stat label={t('stock.position.result')} tone={pctTone(row.result)}>
-                {line.result}
-              </Stat>
-            </Stats>
-          )
+          // While it holds the stock, the status already says the steps ("2 of 4 steps"), so there's no Steps tile.
+          <Stats>
+            <StockStatus line={line} />
+            {row.result !== null && (
+              <>
+                <Stat label={t('stock.position.invested')}>{money(row.invested, s.currency)}</Stat>
+                <Stat label={t('stock.position.result')} tone={pctTone(row.result)}>
+                  {line.result}
+                </Stat>
+              </>
+            )}
+          </Stats>
         }
       />
       <SignalsAndTrades s={own} />

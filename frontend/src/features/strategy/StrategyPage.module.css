@@ -76,7 +76,7 @@
   gap: 12px;
 }
 
-/* The results and their chart: framed like a stock's price chart, the one boxed block on a strategy page. */
+/* The results and their chart: framed in black like a stock's price chart (black is only for charts). */
 .results {
   display: flex;
   flex-direction: column;
@@ -190,13 +190,16 @@
   font-family: var(--font-mono);
 }
 
+/* A violet box of tappable rows; black is only for the charts. */
 .stocks {
   margin: 0;
   padding: 0;
   list-style: none;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
 }
-.stocks > li {
-  border-top: 1px solid var(--border-hairline);
+.stocks > li + li {
+  border-top: 1px solid var(--surface-editor);
 }
 
 .stock {
@@ -204,7 +207,7 @@
   align-items: center;
   gap: 12px;
   min-height: 64px;
-  padding: 10px var(--space-2);
+  padding: 10px var(--space-3);
   color: var(--ink);
   text-decoration: none;
 }

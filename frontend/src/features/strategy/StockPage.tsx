@@ -257,8 +257,8 @@ function Rules({
 }
 
 /**
- * A stock's status line, figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's
- * page). `stats` sits between the status line and the chart.
+ * A stock's status box, figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's
+ * page). `stats` sits between the status box and the chart.
  */
 export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow; stats?: ReactNode }) {
   const t = useT()
@@ -266,7 +266,7 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
   const isCandidate = isCandidateOn(row.checks)
   const since = isCandidate && row.checks.some((c) => c.group === 'candidate' && c.met !== null) ? candidateDateOf(row) : null
   const trades = s.trades.filter((x) => x.assetId === row.assetId)
-  // Without enough price history the rules say nothing yet: the status line says so.
+  // Without enough price history the rules say nothing yet: the status box says so.
   const rules = s.checkTexts && row.status !== 'notEnoughData' && (
     <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
       <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />

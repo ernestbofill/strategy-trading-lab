@@ -74,13 +74,16 @@
   color: var(--warning);
 }
 
-/* The stock's state under the rules: a line with an accent in the pill's colour, not a box. */
+/* The stock's state under the rules: a violet box like the lists, never black (black is only for charts, so two black boxes
+   never stack), with an accent in the pill's colour on its left. */
 .status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1) var(--space-2);
-  padding: 6px 0 6px 12px;
+  padding: 12px var(--space-3);
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
   border-left: 3px solid var(--ink-muted);
   font-size: 14px;
   line-height: 20px;
@@ -161,14 +164,16 @@
   color: var(--ink-sidebar);
 }
 
-/* A divided list, not cards: the price chart is the page's one boxed block. */
+/* A box like the stock list: its violet is what the bars' empty track shows against. */
 .checks {
   margin: var(--space-1) 0 0;
   padding: 0;
   list-style: none;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
 }
-.checks > li {
-  border-top: 1px solid var(--border-hairline);
+.checks > li + li {
+  border-top: 1px solid var(--surface-editor);
 }
 
 .check {
@@ -176,7 +181,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 0;
+  padding: 10px var(--space-3);
 }
 
 .checkMain {

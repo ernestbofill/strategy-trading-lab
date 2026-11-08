@@ -63,4 +63,11 @@ export const common: Record<keyof typeof en, string> = {
   'legal.about.content':
     'Un laboratori d’estratègies i aplicació d’acompanyament. Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en mode real. L’aplicació mai no posa ordres ni es connecta a cap broker.',
   'legal.laterStep': 'Aquesta pàgina vindrà més endavant.',
+  'errors.goHome': "Torna a l'inici",
+  'errors.notFound.title': "No s'ha trobat la pàgina",
+  'errors.notFound.line': "Aquesta pàgina no existeix, o s'ha mogut.",
+  'errors.crash.title': 'Alguna cosa ha fallat',
+  'errors.crash.line': "Aquesta pantalla no s'ha pogut mostrar. Normalment es resol tornant-la a carregar.",
+  'errors.crash.reload': 'Torna a carregar',
+  'errors.offline': 'No tens connexió. El que veus pot no estar al dia.',
 }

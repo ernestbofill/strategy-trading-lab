@@ -30,6 +30,7 @@
   color: var(--ink-sidebar);
   text-decoration: none;
   min-height: 44px;
+  min-width: 44px; /* A short link ("About") stays a 44px target. */
   display: inline-flex;
   align-items: center;
 }

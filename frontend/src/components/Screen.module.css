@@ -38,6 +38,7 @@
   align-items: center;
   gap: 6px;
   height: 44px;
+  min-width: 44px; /* "STL" alone is narrower than a touch target. */
 }
 .left:hover {
   color: var(--primary);

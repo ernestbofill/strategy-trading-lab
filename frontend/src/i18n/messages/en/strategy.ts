@@ -66,6 +66,7 @@ export const strategy = {
   'strategy.stock.rulesAndYou': 'Rules: {rules} · You: {you}',
   'strategy.stock.steps': '{n, plural, one {# step} other {# steps}}',
   'strategy.stock.stepsOf': '{n} of {max} steps',
+  'strategy.stock.milestonesUsed': '{steps} · its milestones are used',
   'strategy.stock.noBudget': 'No budget left for its steps',
   'strategy.stock.noBudgetShort': 'No budget left',
   'strategy.stock.sellWaiting': 'Sell signal waiting',

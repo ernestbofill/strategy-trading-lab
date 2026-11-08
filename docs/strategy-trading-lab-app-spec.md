@@ -224,6 +224,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - A guest has no dashboard, account or emails. The top bar shows "LOG IN" instead of "ACCOUNT", and the first screen's eyebrow stays "Welcome to Strategy Trading Lab".
 - The template endpoints are public already; nothing about a guest is stored on the server.
 - A guest's draft is shown in euro and stays in euro after sign-up (the amounts aren't converted). Live can be picked; the email must be confirmed before the strategy starts. A guest never sees another user's draft: a log-out clears it, and so does a reload once the session has ended.
+- **When something goes wrong** (item 26): an address the app doesn't have shows "Page not found", "This page doesn't exist, or it moved." and "Go home" (it used to open the home page quietly). A screen that crashes while rendering shows "Something went wrong", "This screen couldn't be shown. Reloading usually fixes it.", "Reload" and "Go home", without the footer; opening another page starts clean. While the device is offline, a line tops every screen: "You're offline. What you see may be out of date." Screens that load data already show their loading, error and not-found states (`LoadableScreen`).
 - A screen's one primary action and its note (a short hint or a data source, never a disclaimer) close the page content; there is no separate bottom bar (#105). Every screen ends with a footer: a site map of every page the user may open, then the short disclaimer and the app's version (Ernest, 2026-11-03; the version since #152). Just the links, no headings or brand line, in groups: Welcome, then Templates (a guest) or Dashboard and New strategy; Sign up and Log in (a guest) or Settings, Account and Notifications; for owners only Admin, Alerts, Users, Stocks and funds, Invites and Feedback; and the legal pages (`/legal/notice`, `/legal/terms`, `/legal/privacy`, `/legal/disclaimer`, `/legal/about`). While the account loads, only the legal pages. Pages that need an id (a strategy, a signal) aren't listed. On phones each group's links flow on one line and wrap; from 768px the groups are columns over the whole width. Links stay 44px tall for touch (28px with a mouse from 768px); the current page shows in the primary colour. The pages provide the complete legal notices, terms of use, privacy policy, full disclaimer, and about page with conflicts of interest disclosure. Sign-up records the accepted terms version (`terms_version_accepted`, `terms_accepted_at`).
 
 ### Log-in (not drawn)
@@ -879,7 +880,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Changing the budget.
 - Snooze on Confirm a signal; "Enter shares instead" and the exchange-rate line.
 - Summary settings (a time of your choice).
-- Empty, loading and error states.
+- ~~Empty, loading and error states.~~ (built, item 26: a 404 page, a crash page and the offline line; loading and error states per screen)
 
 Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP.md) → *The launch product*; each gets its section here when it is built):
 

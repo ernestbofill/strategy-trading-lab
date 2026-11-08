@@ -14,7 +14,7 @@
 
   --ink: #ffffff;
   --ink-sidebar: #b08bff;
-  --ink-muted: #7877b3;
+  --ink-muted: #9898c5; /* AA on the editor and sidebar surfaces (was #7877b3, 3.8:1). */
   --primary: #00ff9c;
   --accent: #00ffc8;
   --accent-violet: #721bf2;

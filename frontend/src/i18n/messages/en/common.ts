@@ -72,4 +72,11 @@ export const common = {
   'legal.about.content':
     'A strategy lab and monitoring side app. Pick a strategy template, tune its rules, and follow it as a simulation or live. The app never places orders and never connects to a broker.',
   'legal.laterStep': 'This page comes in a later step.',
+  'errors.goHome': 'Go home',
+  'errors.notFound.title': 'Page not found',
+  'errors.notFound.line': "This page doesn't exist, or it moved.",
+  'errors.crash.title': 'Something went wrong',
+  'errors.crash.line': "This screen couldn't be shown. Reloading usually fixes it.",
+  'errors.crash.reload': 'Reload',
+  'errors.offline': "You're offline. What you see may be out of date.",
 } as const

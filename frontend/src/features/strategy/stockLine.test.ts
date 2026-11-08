@@ -44,6 +44,12 @@ describe('stockLine', () => {
     )
     expect(stockLine(row({ status: 'holding', steps: 5, rulesSteps: 5 }), 'live', 'EUR', words).detail).toBe('5 of 5 steps')
     expect(stockLine(row({ status: 'building', steps: 2 }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
+    // The comeback holding with steps left but every milestone used (#58).
+    const milestone = (used: boolean) => ({ key: 'sma200', group: 'next' as const, met: true, value: null, min: null, max: null, level: null, progress: null, used })
+    expect(stockLine(row({ status: 'holding', steps: 2, checks: [milestone(true)] }), 'simulation', 'EUR', words).detail).toBe(
+      '2 of 5 steps · its milestones are used',
+    )
+    expect(stockLine(row({ status: 'holding', steps: 2, checks: [milestone(true), milestone(false)] }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
     // Every step skipped: the pill says where the user is, the line both.
     const skipped = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, steps: 0, rulesSteps: 1 }), 'live', 'EUR', words)
     expect([skipped.pill, skipped.detail]).toEqual(['CANDIDATE', 'Rules: In the market · You: Out of the market'])

@@ -122,7 +122,7 @@ describe('SettingsPage', () => {
     )
 
     expect(screen.getByRole('link', { name: /user@example.com/ }).getAttribute('href')).toBe('/account')
-    expect((screen.getByRole('combobox', { name: 'Time zone' }) as HTMLSelectElement).selectedOptions[0].textContent).toMatch(/^Europe\/Barcelona/)
+    expect((screen.getByRole('combobox', { name: 'Time zone' }) as HTMLSelectElement).selectedOptions[0].textContent).toMatch(/· Barcelona, Madrid/)
   })
 
   it('sends notifications at 07:00 by default, or as soon as they are ready', async () => {

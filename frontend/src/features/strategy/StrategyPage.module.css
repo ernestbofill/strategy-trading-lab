@@ -4,11 +4,55 @@
   gap: var(--space-1);
 }
 
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+.priceValue {
+  font: 600 22px/28px var(--font-mono);
+}
+
 .title {
   margin: 0;
   font: 600 28px/36px var(--font-mono);
   color: var(--primary);
   overflow-wrap: anywhere;
+}
+
+.fundName {
+  font-size: 14px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.fundSymbol {
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+
+.what {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-sidebar);
+}
+
+.muted {
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .sub {
@@ -238,9 +282,6 @@ a.stock:hover {
   padding: 10px 12px;
   background: var(--surface-sidebar);
   border: 1px solid var(--border-hairline);
-}
-
-.tileLink {
   text-decoration: none;
   color: inherit;
 }

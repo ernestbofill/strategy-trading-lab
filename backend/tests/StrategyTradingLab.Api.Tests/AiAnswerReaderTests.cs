@@ -96,9 +96,9 @@ public class AiAnswerReaderTests
 
         Assert.False(reading.Ok);
         Assert.Equal(
-            ["Zscaler is scored more than once.", "\"NVDA\" isn't one of your stocks.", "Vertiv: the overall score isn't a number from 0 to 100.",
-             "Schneider Electric has no score."],
+            ["Zscaler is scored more than once.", "Vertiv: the overall score isn't a number from 0 to 100."],
             reading.Problems);
+        Assert.Equal(["\"NVDA\" isn't one of your stocks, so it was left out.", "Schneider Electric has no score, so it can't get a step."], reading.Warnings);
         Assert.Equal([Zscaler.AssetId], reading.Scores.Select(s => s.AssetId));
     }
 
@@ -158,7 +158,18 @@ public class AiAnswerReaderTests
 
         var reading = AiAnswerReader.Read("| Stock | Overall |\n|---|---|\n| BYD | 50 |", stocks);
 
-        Assert.Contains("\"BYD\" isn't one of your stocks.", reading.Problems);
+        Assert.Contains("\"BYD\" isn't one of your stocks, so it was left out.", reading.Warnings);
+        Assert.False(reading.Ok);
+    }
+
+    [Fact]
+    public void A_symbol_the_AI_escaped_with_backslashes_still_matches()
+    {
+        AiStock[] stocks = [new(Guid.NewGuid(), "Grow.L", "Grow Co")];
+
+        var reading = AiAnswerReader.Read("| Stock | Overall |\n|---|---|\n| Grow.\\L | 50 |", stocks);
+
+        Assert.True(reading.Ok, string.Join(" ", reading.Problems));
     }
 
     [Fact]
@@ -183,7 +194,8 @@ public class AiAnswerReaderTests
 
         Assert.Equal(83m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).Overall);
         Assert.Equal(82m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).News);
-        Assert.Equal(["Schneider Electric no té puntuació."], reading.Problems);
+        Assert.Equal(["Schneider Electric no té puntuació, així que no pot tenir cap pas."], reading.Warnings);
+        Assert.True(reading.Ok);
     }
 
     [Fact]

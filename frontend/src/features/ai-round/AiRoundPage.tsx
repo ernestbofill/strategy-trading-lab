@@ -235,10 +235,19 @@ function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string)
               </ul>
             </Callout>
           )}
+          {shown.warnings.length > 0 && (
+            <Callout tone="warning" title={t('aiRound.checkAnswer')}>
+              <ul className={styles.problems}>
+                {shown.warnings.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </Callout>
+          )}
           {shown.scores.length > 0 && <ScoreList scores={shown.scores} maxSteps={shown.maxSteps} />}
           {shown.ok && (
             <>
-              <p className={styles.check}>{t('aiRound.allScored')}</p>
+              {shown.warnings.length === 0 && <p className={styles.check}>{t('aiRound.allScored')}</p>}
               <p className={styles.plain}>{stepLine(shown, r, t)}</p>
               {r.mode === 'simulation' && shown.scores.some((s) => s.step !== null) && <p className={styles.plain}>{t('aiRound.boughtNow')}</p>}
             </>

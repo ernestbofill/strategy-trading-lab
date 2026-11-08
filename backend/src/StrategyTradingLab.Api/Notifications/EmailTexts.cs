@@ -124,7 +124,7 @@ public static class EmailTexts
     static string MilestoneCa(string term) => term switch
     {
         "Reclaims the SMA 200" => "Recupera la SMA 200",
-        "Golden cross (SMA 50 above SMA 200)" => "Creu daurada (SMA 50 per sobre de la SMA 200)",
+        "Golden cross (SMA 50 above SMA 200)" => "Golden cross (SMA 50 per sobre de la SMA 200)",
         _ when Regex.Match(term, @"^Within ([\d.]+)% of the 52-week high$") is { Success: true } near => $"A menys d'un {near.Groups[1].Value}% del màxim de 52 setmanes",
         _ when Regex.Match(term, @"^Higher high after pulling back ([\d.]+)% \(breakout\)$") is { Success: true } up => $"Nou màxim després d'una correcció del {up.Groups[1].Value}% (ruptura)",
         _ => term,

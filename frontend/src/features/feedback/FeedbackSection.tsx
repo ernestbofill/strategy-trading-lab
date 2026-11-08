@@ -18,7 +18,7 @@ import { KindPicker } from './KindPicker'
 type Filter = 'open' | 'closed' | 'all'
 
 /**
- * Owner feedback review box: shown on `/admin` and on `/feedback`. Lists all feedback submitted by
+ * Owner feedback review box: shown on `/feedback`. Lists all feedback submitted by
  * confirmed users, filters by open/closed/all, exports open items as a Markdown table, and lets the
  * owner add, edit, close/reopen, or delete items.
  */

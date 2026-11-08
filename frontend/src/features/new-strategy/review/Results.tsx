@@ -8,9 +8,20 @@ import { signedPct } from '../../../lib/format'
 import styles from './Results.module.css'
 
 /** A result in percent; the sign is always written, colour only repeats it. */
-function Pct({ value, plain, digits }: { value: number; plain?: boolean; digits?: number }) {
+function Pct({
+  value,
+  plain,
+  lessBad,
+  digits,
+}: {
+  value: number
+  plain?: boolean
+  lessBad?: boolean
+  digits?: number
+}) {
+  const sign = plain ? undefined : value < 0 ? (lessBad ? 'warn' : 'neg') : 'pos'
   return (
-    <span className={styles.pct} data-sign={plain ? undefined : value < 0 ? 'neg' : 'pos'}>
+    <span className={styles.pct} data-sign={sign}>
       {signedPct(value, digits)}
     </span>
   )
@@ -19,6 +30,8 @@ function Pct({ value, plain, digits }: { value: number; plain?: boolean; digits?
 /** The Tested box's figures: the template next to the S&P 500 fund, a year on average and in the worst year. */
 export function ResultFigures({ result }: { result: PeriodResult }) {
   const t = useT()
+  const worst = result.worstYear ?? 0
+  const indexWorst = result.indexWorstYear ?? 0
   return (
     <table className={styles.figures}>
       <thead>
@@ -44,10 +57,10 @@ export function ResultFigures({ result }: { result: PeriodResult }) {
         <tr>
           <th scope="row">{t('newStrategy.results.worstYear')}</th>
           <td>
-            <Pct value={result.worstYear ?? 0} />
+            <Pct value={worst} lessBad={worst > indexWorst} />
           </td>
           <td>
-            <Pct value={result.indexWorstYear ?? 0} />
+            <Pct value={indexWorst} lessBad={indexWorst > worst} />
           </td>
         </tr>
       </tbody>
@@ -137,10 +150,10 @@ export function PeriodTable({
                     <Pct value={p.indexPerYear ?? 0} digits={1} plain />
                   </td>
                   <td>
-                    <Pct value={p.worstYear ?? 0} />
+                    <Pct value={p.worstYear ?? 0} lessBad={(p.worstYear ?? 0) > (p.indexWorstYear ?? 0)} />
                   </td>
                   <td>
-                    <Pct value={p.indexWorstYear ?? 0} />
+                    <Pct value={p.indexWorstYear ?? 0} lessBad={(p.indexWorstYear ?? 0) > (p.worstYear ?? 0)} />
                   </td>
                   {hasAlpha && (
                     <td>

@@ -98,10 +98,16 @@ describe('HowTested', () => {
     expect(screen.getByText('No market crashes')).toBeTruthy()
     expect(screen.getByText('Dodged the 2000–02 and 2008 crashes')).toBeTruthy()
 
+    // Worst year: the least bad (-18% vs -37%) uses the warning tone; the worse one uses neg
+    expect(screen.getAllByText('−18%')[0].getAttribute('data-sign')).toBe('warn')
+    expect(screen.getAllByText('−37%')[0].getAttribute('data-sign')).toBe('neg')
+
     // Alpha column tooltip and index tabs
     fireEvent.click(screen.getByRole('button', { name: 'What is alpha?' }))
     expect(
-      screen.getByText('Direct alpha: the yearly advantage over putting the same money into the index on the same days.'),
+      screen.getByText(
+        'How much more (or less) the template made per year than the index (Template minus the index). When a template buys in steps on different days, the index column invests the same money on those same days so the comparison is fair.',
+      ),
     ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Nasdaq-100' }))

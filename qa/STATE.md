@@ -4,23 +4,23 @@ What the next session reads first. The agent updates it at the end of every sess
 
 ## Handoff
 
-*Last session:* 2026-11-08-1, `v0.198.0-alpha`, `qaagent`.
+*Last session:* 2026-11-08-2, `v0.204.0-alpha`, `qaagent`.
 
-**Open S1 (modes mixed) / S3:** F-023: On `/summary`, the strategy scoreboard displays a gray `SIM` badge for all strategies including live ones (`QA fixture · Index · Live`, `QA fixture · Comeback · Live`, `QA fixture · AI · Live`). Root cause: backend `DailySummaryDtos.cs` line 56 serializes `StrategyMode` with default `JsonStringEnumConverter` ("Live", "Simulation"), whereas frontend `SummaryPage.tsx` line 151 strictly checks `s.mode === 'live'`.
+**Open S1 (modes mixed) / S3:** None. F-023 verified fixed in `v0.204.0-alpha` (LIVE and SIM tags correctly distinguish strategy modes on `/summary`).
 
-**Completed in 2026-11-08-1:**
-- L-001 resolved: Snoozed ZS signal on `AI · Live` ended on Nov 7 as `MISSED` with explanatory copy, and trade logging form remains available for recording trades.
-- L-002 resolved: All 6 fixtures evaluated; stock detail lines and pills are updated with live metrics.
-- Daily AI rounds executed: `AI · Live` has live buy signal for Palantir (Step 1 of 5) waiting in "Waiting for you"; `AI · Sim` auto-bought Step 1 ($100).
-- `/summary` dedicated page and `/settings` (timezone, notification delivery hour PR #190) verified.
-- Mobile 390px responsiveness verified with zero horizontal overflow across Dashboard, Summary, Single-asset, and Settings.
-- Throwaway lifecycle tested: `QA throwaway · Test` created, archived, permanently deleted; all 6 fixtures verified intact. Baseline settings restored.
+**Completed in 2026-11-08-2:**
+- L-010 resolved: F-023 verified fixed on `/summary`; LIVE badges render in live tone (`rgb(255, 64, 129)`), SIM badges render in sim tone (`rgb(0, 195, 255)`) across scoreboard, waiting, and change feeds.
+- L-011 resolved: Push notifications tested on `/settings`; service worker and VAPID FCM registration work, baseline restored to "Off for this device".
+- L-004 resolved: "Picks vs the rest" on AI rounds history verified; "the rest –" filled in with +3.4% once other stocks had market close prices.
+- L-012 resolved: Stock list editing on running strategy tested via throwaway strategy `QA throwaway · List Test`; stock unticked and removed, full archive/delete lifecycle verified.
+- Pending Live signal for Palantir on `QA fixture · AI · Live` confirmed at $160.38 + $1.20 fee; holding count updated to 2, budget used updated to $199 of $3,000, Waiting for you cleared.
+- Baseline settings and all 6 long-running fixtures verified intact.
 
 **Next session, do first:**
-1. Follow **L-010**: Verify the fix for F-023 on `/summary` once resolved.
-2. Follow **L-011**: Test device push notifications ("TURN ON" on `/settings`, service worker push notification delivery).
-3. Follow **L-012**: Test editing stock list on running strategy with multi-step buys.
-4. Process pending Live signal for Palantir on `QA fixture · AI · Live` (either confirm trade or skip).
+1. Check next AI round on `QA fixture · AI · Sim` and `QA fixture · AI · Live` when due on Nov 9.
+2. Follow **L-003**: Test edge-case trade entry (editing a buy down below what was sold, oversold row).
+3. Follow **L-008**: Test saving a changed setting on a running strategy (`TUNE THE SETTINGS`).
+4. Follow **L-007**: Test two tabs and stale tab acting on changed data, going offline, and in-app feedback via text selection.
 
 **How to sign in:** Chrome with Claude in Chrome / Antigravity browser agent signed in as `qaagent`. Don't log out of production as it breaks saved session credentials.
 
@@ -55,7 +55,7 @@ Long-running `QA` strategies that stay from session to session, so that what hap
 | QA fixture · Bear · Sim | Bear markets | Simulation | 2026-11-06 | iShares Core S&P 500 UCITS ETF, steps of $600 × 5, evaluated, no trades, $0 used |
 | QA fixture · Index · Live | Index trend | Live | 2026-11-06 | iShares Core S&P 500 UCITS ETF, all in, evaluated (buy progress line 99%), no trades, $0 used |
 | QA fixture · AI · Sim | Your AI's top picks | Simulation | 2026-11-06 | AI round every 1 day. Round 1 done (Eaton). Round 2 done on Nov 8: Palantir score 88 auto-bought Step 1 ($100), total $200 of $3,000 used |
-| QA fixture · AI · Live | Your AI's top picks | Live | 2026-11-06 | AI round every 1 day. Round 1: SU.PA did. Extra round: ZS ended Nov 7 without action, transitioned to MISSED. Round 2 done on Nov 8: Palantir score 88, Step 1 live signal pending in Waiting for you |
+| QA fixture · AI · Live | Your AI's top picks | Live | 2026-11-06 | AI round every 1 day. Round 1: SU.PA did ($98.80). Round 2: Palantir confirmed Nov 8 at $160.38 + $1.20 fee. 2 holdings, $199 of $3,000 used. Signals: 2 did, 0 skipped, 1 missed (ZS). Next due Nov 9 |
 
 ## Lead queue
 
@@ -63,15 +63,11 @@ Open leads to follow, most important first. **next** means the next session take
 
 | ID | Area | What to try | From | Priority |
 | --- | --- | --- | --- | --- |
-| L-010 | H8, D1 | Verify F-023 fix on `/summary`: live strategies should show green `LIVE` tag, simulation gray `SIM` tag | 2026-11-08-1 C2.4 | **next** |
-| L-011 | H2, H8 | Test device push notifications ("TURN ON" on `/settings`, service worker push notification delivery and VAPID registration) | 2026-11-08-1 C2.8 | |
-| L-012 | D4 | Test editing stock list on a running strategy with multi-step buys (removing a stock while holding shares or while a signal is pending) | 2026-11-08-1 | |
-| L-003 | D6, D14 | Follow F-001: a sale with no buy at all; editing a buy down below what was sold; deleting a buy after a sale; an oversold stock's row; the same in Confirm a sell signal | 2026-11-06-1 C3.7 | |
-| L-004 | G5 | "Picks vs the rest": does "the rest –" fill in once the others have prices? Does the figure stay ahead of the strategy's own? (F-020) | 2026-11-06-1 C2.10 | |
+| L-003 | D6, D14 | Follow F-001: a sale with no buy at all; editing a buy down below what was sold; deleting a buy after a sale; an oversold stock's row; the same in Confirm a sell signal | 2026-11-06-1 C3.7 | **next** |
+| L-008 | D9, B4, B5, G6 | Save a changed setting on a running strategy; Advanced and How we tested on Comeback, Bear and Trend (F-010 there?); edit and save a prompt; AI model "Other…"; the fee, amount and rate fields with malformed numbers (F-003) | 2026-11-06-1 | **next** |
 | L-005 | X3 | Signed-in screens at 390px and 360px, long names, 200% zoom. Chrome's window wouldn't resize below desktop; try the built-in browser with a saved login, or ask Ernest | 2026-11-06-1 C5 | |
 | L-006 | A4 | Real log-in, log-out and coming back to the page asked for, and the wrong-password check with `qa-nobody@stl.invalid`. Claude can't type a password on production, not even a made-up one, so these need Ernest, another tool or a saved login in the browser. **Log-out signs out the browser the session depends on** | 2026-11-06-1 C4.8 | |
 | L-007 | X5, X8, H5, B3 | Two tabs and a stale tab acting on changed data; going offline; select text → 💬 Add comment; adding a stock or fund the app doesn't have; the 60-stock limit; Back through the flow and after Start | 2026-11-06-1 | |
-| L-008 | D9, B4, B5, G6 | Save a changed setting on a running strategy; Advanced and How we tested on Comeback, Bear and Trend (F-010 there?); edit and save a prompt; AI model "Other…"; the fee, amount and rate fields with malformed numbers (F-003) | 2026-11-06-1 | |
 | L-009 | X6 | Signed-out access to a signed-in page (Log-in, then back). A signal or stock ID from another strategy of the same account | 2026-11-06-1 | |
 
 
@@ -128,7 +124,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | D1 | Summary box, Simulation | §6 Strategy page | deep | 2026-11-08-1 | F-023. Combined single-asset status tiles. C2.4, C3.2 |
 | D2 | Summary box, Live (You, The rules alone, index fund) | §6 Strategy page | deep | 2026-11-08-1 | Live status and budget tiles verified. C1.6, C3.2 |
 | D3 | Stock rows: pills, detail lines, order, per template | §6 Strategy page | deep | 2026-11-08-1 | All stock rows evaluated after market close. L-002 closed. C1.8 |
-| D4 | Edit list on a running strategy | §6 Strategy page | smoke | 2026-11-06-1 | C3.11 |
+| D4 | Edit list on a running strategy | §6 Strategy page | deep | 2026-11-08-2 | Stock list edit on running strategy verified via throwaway (Coherent unticked, count updated 9->8). C5.2–C5.4 |
 | D5 | Signals and trades timeline | §6 Strategy page | smoke | 2026-11-06-1 | F-005 |
 | D6 | Log a trade by hand (live) | §6 Strategy page | smoke | 2026-11-06-1 | F-001. C3.5–7 |
 | D7 | Edit and delete a trade (live) | §6 Strategy page | smoke | 2026-11-06-1 | C3.9 |
@@ -153,7 +149,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 
 | ID | Area | Spec | Depth | Last | Notes |
 | --- | --- | --- | --- | --- | --- |
-| F1 | I did it: fields, prefill, shares instead, validation | §6 Signal | smoke | 2026-11-06-1 | F-003. Prefilled price needs a stored open. C2.13 |
+| F1 | I did it: fields, prefill, shares instead, validation | §6 Signal | deep | 2026-11-08-2 | Palantir live signal confirmed: empty price blocked, invalid input rejected, shares toggle checked, trade saved. C2.3–C2.8 |
 | F2 | I skipped it: reasons | §6 Signal | smoke | 2026-11-06-1 | C2.16 |
 | F3 | Snooze | §6 Signal | deep | 2026-11-08-1 | Snoozed signal verified: transitioned to MISSED upon round due date. L-001 closed. C1.1 |
 | F4 | Answered and missed signals | §6 Signal | deep | 2026-11-08-1 | Missed signal verified: explanatory banner displayed, trade logging form remains submittable. L-001 closed. C1.1 |
@@ -168,7 +164,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | G2 | AI round, Live: opens Confirm a signal | §6 AI round | deep | 2026-11-08-1 | AI round live executed with Markdown table: PLTR scored 88, live buy signal created. C1.2–C1.3 |
 | G3 | The answer reader: tables, JSON, broken answers, the error box | §6 AI round | deep | 2026-11-06-1 | C2.2–4 |
 | G4 | Extra round, skip a round, before it's due | §6 AI round | deep | 2026-11-08-1 | Daily AI rounds processed when due. C1.2, C1.5 |
-| G5 | AI rounds history, Picks vs the rest | §6 AI rounds | smoke | 2026-11-06-1 | F-020. C2.10 |
+| G5 | AI rounds history, Picks vs the rest | §6 AI rounds | deep | 2026-11-08-2 | Picks vs the rest: "the rest –" verified filled in (+3.4%) after market close. L-004 closed. C4.2–C4.3 |
 | G6 | The strategy's prompt editor | §6 AI | untested | 2026-11-06-1 | Read only: L-008. C2.19 |
 | G7 | AI strategy page and stock rows (WATCHING, last score) | §6 AI strategies | smoke | 2026-11-06-1 | F-006, F-007. C2.7–8 |
 
@@ -177,13 +173,13 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | ID | Area | Spec | Depth | Last | Notes |
 | --- | --- | --- | --- | --- | --- |
 | H1 | Account page: email, name, password | §6 Account | smoke | 2026-11-06-1 | Install the app moved to Settings (H8). C5.5 |
-| H2 | Notifications: boxes, This device | §6 Settings, §7 | deep | 2026-11-08-1 | Delivery hour (PR #190) and notification toggles tested. Baseline restored. C2.7–C2.8 |
+| H2 | Notifications: boxes, This device | §6 Settings, §7 | deep | 2026-11-08-2 | Device push notifications enabled via Service Worker and VAPID FCM, restored to baseline Off. L-011 closed. C3.3–C3.5 |
 | H3 | Currency | §6 Settings | deep | 2026-11-08-1 | Baseline USD verified. C2.10 |
 | H4 | Language (and the whole app in Catalan) | §6 Settings | deep | 2026-11-08-1 | Baseline English verified. C2.10 |
 | H5 | In-app feedback: select text, 💬 Add comment | §6 Admin, Feedback | deep | 2026-11-08-1 | Feedback form verified on /settings#feedback. C2.9 |
 | H6 | `/feedback` page | §6 Admin, Feedback | smoke | 2026-11-06-1 | Refused for a vip, as it should be. C5.7 |
 | H7 | Unsubscribe page (an invalid token) | §7 | smoke | 2026-11-06-1 | Don't use a real token. C5.8 |
-| H8 | Settings page: the Account row, install the app, time zone (Barcelona), notification time | §6 Settings, §7 | deep | 2026-11-08-1 | Daily summary page (/summary) sections, Settings timezone, notification delivery hour (PR #190), feedback form. F-023. C2.1–C2.7 |
+| H8 | Settings page: the Account row, install the app, time zone (Barcelona), notification time | §6 Settings, §7 | regressed | 2026-11-08-2 | Verified F-023 fix on /summary scoreboard and notifications; Settings push toggle and time zone (PR #200, #201, #202). C1.1–C1.5, C3.1–C3.5 |
 | H9 | Delete my account (a throwaway account only: never `qaagent`) | §6 Account | untested | | Wrong password refused; then deleted, logged out, last email. |
 
 ### X · Across the app

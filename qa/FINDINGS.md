@@ -301,7 +301,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 
 ## F-023 · Daily summary page renders SIM tag for live strategies in the scoreboard
 
-- **Severity:** S1 (modes mixed) / S3 · **Area:** H8, D1 · **Status:** open
+- **Severity:** S1 (modes mixed) / S3 · **Area:** H8, D1 · **Status:** fixed (2026-11-08-2)
 - **Found:** 2026-11-08-1 · **Seen again:** –
 - **Version:** v0.198.0-alpha · **Width / language:** 1280px and 390px, English
 - **Steps:**
@@ -311,7 +311,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 - **Expected:** Live strategies display a green `LIVE` tag (`<Tag tone="live">LIVE</Tag>`), and simulation strategies display a gray `SIM` tag (`<Tag tone="sim">SIM</Tag>`), matching their actual mode.
 - **Actual:** Every strategy in the scoreboard is rendered with a gray `SIM` badge (e.g. `SIM QA FIXTURE · INDEX · LIVE`, `SIM QA FIXTURE · COMEBACK · LIVE`, `SIM QA FIXTURE · AI · LIVE`).
 - **How often:** every time (3 of 3 live strategies shown as SIM)
-- **Notes:** Root cause is in `backend/src/StrategyTradingLab.Api/Notifications/DailySummaryDtos.cs`: `[property: JsonConverter(typeof(JsonStringEnumConverter))] StrategyMode Mode` serializes enum as PascalCase (`"Live"` / `"Simulation"`). In `frontend/src/features/summary/SummaryPage.tsx` lines 151-153: `<Tag tone={s.mode === 'live' ? 'live' : 'sim'}>{s.mode === 'live' ? 'LIVE' : 'SIM'}</Tag>`. Because `s.mode` is `"Live"`, `s.mode === 'live'` evaluates to `false`, falling back to `'sim'`. The same pattern applies to `SummaryChangedSignal` and `SummaryStockChange` tags if they contain live events. Lead L-010.
+- **Notes:** Root cause was in `backend/src/StrategyTradingLab.Api/Notifications/DailySummaryDtos.cs`: `[property: JsonConverter(typeof(JsonStringEnumConverter))] StrategyMode Mode` serialized enum as PascalCase (`"Live"` / `"Simulation"`). In `frontend/src/features/summary/SummaryPage.tsx` lines 151-153: `<Tag tone={s.mode === 'live' ? 'live' : 'sim'}>{s.mode === 'live' ? 'LIVE' : 'SIM'}</Tag>`. Addressed in PR #200. Verified fixed on production `v0.204.0-alpha` in session 2026-11-08-2: all live fixtures display `<Tag tone="live">LIVE</Tag>` in live accent tone (`rgb(255, 64, 129)`), while simulation strategies display `<Tag tone="sim">SIM</Tag>`. Notifications in Waiting for you and What changed also respect mode tones. Lead L-010 closed.
 
 ## F-024 · Daily summary email HTML tag span lacks whitespace separator before body text
 

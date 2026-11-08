@@ -44,7 +44,7 @@ export function PriceChart({
   const points = period.length >= 2 ? period : chart.data.days.slice(-2)
   const first = points[0].date
   const last = points[points.length - 1]
-  // The page's verdict, as the status box says; a stock the daily check hasn't seen yet takes the latest day's.
+  // The page's verdict, as the header's status says; a stock the daily check hasn't seen yet takes the latest day's.
   const candidate = isCandidate ?? isCandidateOn(last.checks)
 
   const series = chartSeries(points, candidate)

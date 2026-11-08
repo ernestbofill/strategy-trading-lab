@@ -16,7 +16,7 @@ import { ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
 import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
-import { StockRules } from './StockPage'
+import { StockRules, StockStatus } from './StockPage'
 import { StockPill } from './StockPill'
 import { followedStocks, stockLine } from './stockLine'
 import { useStrategy } from './useStrategy'
@@ -252,6 +252,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
             {t('strategy.copiedFrom')} <Link to={strategyPath(s.sourceStrategyId)}>{s.sourceStrategyName}</Link>
           </p>
         )}
+        {fund && <StockStatus line={stockLine(fund, s.mode, s.currency, s.words, s.checkTexts, t)} />}
       </div>
       {fund ? (
         <StockRules s={s} row={fund} stats={<Summary s={s} />} />

@@ -16,7 +16,7 @@ import { PriceChart } from './PriceChart'
 import { isCandidateOn } from './priceChartMarks'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
-import { stockLine } from './stockLine'
+import { stockLine, type StockLine } from './stockLine'
 import styles from './StockPage.module.css'
 import { useStrategy } from './useStrategy'
 
@@ -257,16 +257,28 @@ function Rules({
 }
 
 /**
- * A stock's status box, figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's
- * page). `stats` sits between the status box and the chart.
+ * A stock's state under the rules, as the header's last line: the same pill and sentence as its row in the stock list,
+ * with no box of its own (on the stock page, and on a fund strategy's page).
+ */
+export function StockStatus({ line }: { line: StockLine }) {
+  return (
+    <div className={styles.status}>
+      <StockPill tone={line.tone}>{line.pill}</StockPill>
+      <span>{line.detail}</span>
+    </div>
+  )
+}
+
+/**
+ * A stock's figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's page).
+ * `stats` sits above the chart.
  */
 export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow; stats?: ReactNode }) {
   const t = useT()
-  const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
   const isCandidate = isCandidateOn(row.checks)
   const since = isCandidate && row.checks.some((c) => c.group === 'candidate' && c.met !== null) ? candidateDateOf(row) : null
   const trades = s.trades.filter((x) => x.assetId === row.assetId)
-  // Without enough price history the rules say nothing yet: the status box says so.
+  // Without enough price history the rules say nothing yet: the status in the header says so.
   const rules = s.checkTexts && row.status !== 'notEnoughData' && (
     <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
       <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />
@@ -274,11 +286,6 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
   )
   return (
     <>
-      <div className={styles.status} data-tone={line.tone}>
-        <StockPill tone={line.tone}>{line.pill}</StockPill>
-        <span>{line.detail}</span>
-      </div>
-
       {stats}
 
       <PriceChart
@@ -351,6 +358,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
           <Link to={strategyPath(s.id)}>{s.name}</Link>
         </div>
+        <StockStatus line={line} />
       </div>
 
       <StockRules

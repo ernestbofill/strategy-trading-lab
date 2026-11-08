@@ -74,30 +74,16 @@
   color: var(--warning);
 }
 
-/* The stock's state under the rules: a violet box like the lists, never black (black is only for charts, so two black boxes
-   never stack), with an accent in the pill's colour on its left. */
+/* The stock's state under the rules: the header's last line, in white and a step larger than the meta line above it. */
 .status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1) var(--space-2);
-  padding: 12px var(--space-3);
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
-  border-left: 3px solid var(--ink-muted);
+  margin-top: var(--space-2);
   font-size: 14px;
   line-height: 20px;
-}
-.status[data-tone="waiting"] {
-  border-left-color: var(--hot-pink);
-}
-.status[data-tone="signal"],
-.status[data-tone="building"] {
-  border-left-color: var(--info);
-}
-.status[data-tone="holding"],
-.status[data-tone="watching"] {
-  border-left-color: var(--primary);
+  color: var(--ink);
 }
 
 .group {

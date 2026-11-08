@@ -164,7 +164,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Welcome (marketing highlights) (not drawn)
 
 - **Entry point:** `/` for unauthenticated visitors, and `/welcome`. Authenticated visitors navigating to `/` continue directly to the Dashboard.
-- **Top bar:** "STL // STRATEGY TRADING LAB" on the left; the language and "LOG IN" on the right. Signed in: "DASHBOARD" · "ACCOUNT".
+- **Top bar:** "STL // STRATEGY TRADING LAB" on the left; the language and "LOG IN" on the right. Signed in: "DASHBOARD" · "ACCOUNT" (or "← BACK" to `/new` when opened from `/new` via `?from=new`).
 - **Hero:**
   - Headline: "Trade rules, not emotions."
   - Lead: "A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access."
@@ -187,6 +187,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - **Trust & Architecture section:**
   - Three cards: Zero broker access, Uncompromising benchmark honesty, and Disciplined systematic rules.
 - **Bottom CTA banner:**
+  - Only displayed for guests (authenticated users do not see this banner).
   - "Ready to test your first strategy? Explore all templates, customize settings, and run paper simulations with zero commitment. No credit card required."
   - Dual action buttons: "TRY AS GUEST ›" and "Create an account".
 - **Footer:** Ends with the standard site footer ("Not financial advice. Signals follow your rules." and the legal links).
@@ -247,7 +248,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Top bar: "DASHBOARD" · "1 / 5"
 - Eyebrow: "Welcome to Strategy Trading Lab" (left out when reached from the dashboard)
 - H1: "Pick a strategy template"
-- Intro: "Each template is a few simple rules with tested defaults. See how it did in the past, tune it, then run it as a simulation or live."
+- Intro: "Each template is a few simple rules with tested defaults. See how it did in the past, tune it, then run it as a simulation or live. How it works ›" (links to `/welcome?from=new`)
 - Button: "Continue"
 - Under the button: "Pick one to start. You can add more strategies later, from any template."
 

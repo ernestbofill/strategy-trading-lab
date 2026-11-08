@@ -87,4 +87,12 @@ describe('PickTemplate', () => {
     expect(screen.getByText('1 / 5')).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'LOG IN' })).toBeNull()
   })
+
+  it('renders How it works link pointing to /welcome?from=new', () => {
+    renderPickTemplate()
+
+    const howItWorksLink = screen.getByRole('link', { name: 'How it works ›' })
+    expect(howItWorksLink).toBeTruthy()
+    expect(howItWorksLink.getAttribute('href')).toBe('/welcome?from=new')
+  })
 })

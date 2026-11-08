@@ -11,6 +11,7 @@ export const newStrategy = {
   'newStrategy.pick.title': 'Pick a strategy template',
   'newStrategy.pick.lead':
     'Each template is a few simple rules with tested defaults. See how it did in the past, tune it, then run it as a simulation or live.',
+  'newStrategy.pick.howItWorks': 'How it works \u203A',
   'newStrategy.pick.loading': 'Loading templates…',
   'newStrategy.pick.loadError': 'Could not load the templates. Try again later.',
   'newStrategy.pick.listLabel': 'Strategy templates',

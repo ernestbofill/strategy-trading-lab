@@ -9,9 +9,12 @@ namespace StrategyTradingLab.Api.Ai;
 public record AiScore(Guid AssetId, decimal Overall, decimal? News, decimal? Mood, decimal? Figures, string Reason);
 
 /// <summary>What was read from an answer: one score per stock found, and what stops it from being used.</summary>
-public record AiReading(IReadOnlyList<AiScore> Scores, IReadOnlyList<string> Problems)
+public record AiReading(IReadOnlyList<AiScore> Scores, IReadOnlyList<string> Problems, IReadOnlyList<string>? Warnings = null)
 {
-    /// <summary>Every stock scored once, every score from 0 to 100, nothing else.</summary>
+    /// <summary>Warnings never stop the scores from being used: a stock without a score, or a score for a stock that isn't listed.</summary>
+    public IReadOnlyList<string> Warnings { get; init; } = Warnings ?? [];
+
+    /// <summary>At least one stock scored, every score from 0 to 100, none twice. A missing or extra stock only warns.</summary>
     public bool Ok => Problems.Count == 0 && Scores.Count > 0;
 }
 
@@ -44,13 +47,14 @@ public static partial class AiAnswerReader
             return new([], [Messages.NoScoresTable.In(locale)]);
 
         var problems = new List<string>();
+        var warnings = new List<string>();
         var scores = new Dictionary<Guid, AiScore>();
         var refused = new HashSet<Guid>();
         foreach (var row in rows)
         {
             if (Match(row.Stock, stocks) is not { } stock)
             {
-                problems.Add(Messages.NotYourStock.In(locale, Shorten(Clean(row.Stock), 40)));
+                warnings.Add(Messages.NotYourStock.In(locale, Shorten(Clean(row.Stock), 40)));
                 continue;
             }
             if (scores.ContainsKey(stock.AssetId) || refused.Contains(stock.AssetId))
@@ -69,14 +73,15 @@ public static partial class AiAnswerReader
         }
         // A stock refused above has its own problem already.
         foreach (var stock in stocks.Where(s => !scores.ContainsKey(s.AssetId) && !refused.Contains(s.AssetId)))
-            problems.Add(Messages.NoScore.In(locale, stock.Name));
+            warnings.Add(Messages.NoScore.In(locale, stock.Name));
+        if (scores.Count == 0 && problems.Count == 0) problems.Add(Messages.NoneMatched.In(locale));
 
-        var shown = problems.Count > MaxProblems
-            ? [.. problems.Take(MaxProblems - 1), Messages.MoreProblems.In(locale, problems.Count - (MaxProblems - 1))]
-            : problems;
         // In the stocks' order, so the screen lists them as the prompt did.
-        return new([.. stocks.Where(s => scores.ContainsKey(s.AssetId)).Select(s => scores[s.AssetId])], shown);
+        return new([.. stocks.Where(s => scores.ContainsKey(s.AssetId)).Select(s => scores[s.AssetId])], Cap(problems, locale), Cap(warnings, locale));
     }
+
+    static IReadOnlyList<string> Cap(List<string> lines, string locale) =>
+        lines.Count > MaxProblems ? [.. lines.Take(MaxProblems - 1), Messages.MoreProblems.In(locale, lines.Count - (MaxProblems - 1))] : lines;
 
     /// <summary>
     /// The first Markdown table whose header has a stock column and an overall column, up to the first line that isn't part
@@ -221,7 +226,7 @@ public static partial class AiAnswerReader
     /// </summary>
     static AiStock? Match(string cell, IReadOnlyList<AiStock> stocks)
     {
-        var text = Clean(cell);
+        var text = Clean(cell.Replace("\\", ""));
         var tokens = new List<string> { text };
         var bracket = Bracketed().Match(text);
         if (bracket.Success) tokens.Add(bracket.Groups[1].Value.Trim());

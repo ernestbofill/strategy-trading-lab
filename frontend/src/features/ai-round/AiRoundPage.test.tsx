@@ -47,6 +47,7 @@ const reading: AiReading = {
     { assetId: 'vrt', symbol: 'VRT', name: 'Vertiv', overall: 61, news: 60, mood: null, figures: null, reason: 'Quiet', step: null },
   ],
   problems: [],
+  warnings: [],
   ok: true,
   maxSteps: 5,
   stepAmount: 100,

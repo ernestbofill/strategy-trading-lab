@@ -96,7 +96,7 @@ function open(s: StrategyDetail, assetId = 'zs') {
 }
 
 describe('StockPage', () => {
-  it('shows candidate since date, recovery context, visual bars, and a collapsible next-steps preview', async () => {
+  it('shows the candidate state, recovery context, visual bars, and a collapsible next-steps preview', async () => {
     open(strategy([zs]))
 
     expect(await screen.findByRole('heading', { name: 'ZS' })).toBeTruthy()
@@ -104,7 +104,6 @@ describe('StockPage', () => {
     expect(screen.getByText('Volume 0.84× (needs 1.1×)')).toBeTruthy()
     expect(screen.getAllByText('$237.62').length).toBeGreaterThan(0)
     expect(screen.getByText('Close on Oct 30')).toBeTruthy()
-    expect(screen.getByText('Candidate since Sep 11')).toBeTruthy()
     // The chart's axis: a candidate's buy area, from the buy line to the chase limit.
     expect(await screen.findByText('$252.61')).toBeTruthy()
     expect(screen.getAllByText('$237.62')).toHaveLength(2)

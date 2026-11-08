@@ -5,6 +5,8 @@ import { InfoTip } from '../../components/InfoTip'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
+import { Stat, Stats } from '../../components/Stats'
+import { Columns } from '../../components/Columns'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
@@ -34,11 +36,24 @@ function Figure({ label, value, highlight, tip }: { label: string; value: number
   )
 }
 
-/** The summary box: results, chart, budget used and (live) how the signals were answered. */
+/** The summary: results, chart, budget used and (live) how the signals were answered, as figures rather than a box. */
 function Summary({ s }: { s: StrategyDetail }) {
   const t = useT()
   const live = s.mode === 'live'
   const { results, pastResult, budget, signals } = s
+  const stats = (
+    <Stats>
+      <Stat label={t('strategy.budgetUsed')}>
+        {t('strategy.budgetRatio', { used: money(budget.used, s.currency), amount: money(budget.amount, s.currency) })}
+        {budget.totalSteps !== null && ` · ${t('strategy.budgetSteps', { steps: budget.steps ?? 0, total: budget.totalSteps })}`}
+      </Stat>
+      {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
+      {signals && (
+        <Stat label={t('strategy.signals')}>{t('strategy.signalsCount', { did: signals.did, skipped: signals.skipped, missed: signals.missed })}</Stat>
+      )}
+    </Stats>
+  )
+  // With results the figures lead; before any, the budget and signals do, and what was tested follows as context.
   return (
     <div className={styles.summary}>
       {results ? (
@@ -63,49 +78,35 @@ function Summary({ s }: { s: StrategyDetail }) {
               })}
             </p>
           )}
+          {stats}
         </>
       ) : (
-        <p className={styles.text}>
-          {budget.used > 0
-            ? t('strategy.noResults.budget')
-            : s.aiRounds?.done === 0
-              ? t('strategy.noResults.ai')
-              : live
-                ? t('strategy.noResults.live')
-                : t('strategy.noResults.sim')}
-          {pastResult && (
-            <>
-              {' '}
-              {pastResult.isCustomized
-                ? t('strategy.pastSummary.custom')
-                : t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
-              <span className={styles.mono}>{signedPct(pastResult.templatePerYear, 1)}</span> {t('strategy.pastSummary.vs')}{' '}
-              <span className={styles.mono}>{signedPct(pastResult.indexPerYear, 1)}</span> {t('strategy.pastSummary.after')}{' '}
-              <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>{t('strategy.pastSummary.indexWorst')}{' '}
-              <span className={styles.mono}>{signedPct(pastResult.indexWorstYear)}</span>.
-              {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
-            </>
-          )}
-        </p>
+        <>
+          {stats}
+          <p className={styles.text}>
+            {budget.used > 0
+              ? t('strategy.noResults.budget')
+              : s.aiRounds?.done === 0
+                ? t('strategy.noResults.ai')
+                : live
+                  ? t('strategy.noResults.live')
+                  : t('strategy.noResults.sim')}
+            {pastResult && (
+              <>
+                {' '}
+                {pastResult.isCustomized
+                  ? t('strategy.pastSummary.custom')
+                  : t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
+                <span className={styles.mono}>{signedPct(pastResult.templatePerYear, 1)}</span> {t('strategy.pastSummary.vs')}{' '}
+                <span className={styles.mono}>{signedPct(pastResult.indexPerYear, 1)}</span> {t('strategy.pastSummary.after')}{' '}
+                <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>{t('strategy.pastSummary.indexWorst')}{' '}
+                <span className={styles.mono}>{signedPct(pastResult.indexWorstYear)}</span>.
+                {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
+              </>
+            )}
+          </p>
+        </>
       )}
-      <dl className={styles.facts}>
-        <div>
-          <dt>{t('strategy.budgetUsed')}</dt>
-          <dd>
-            {t('strategy.budgetRatio', { used: money(budget.used, s.currency), amount: money(budget.amount, s.currency) })}
-            {budget.totalSteps !== null && ` · ${t('strategy.budgetSteps', { steps: budget.steps ?? 0, total: budget.totalSteps })}`}
-          </dd>
-        </div>
-        {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
-        {signals && (
-          <div>
-            <dt>{t('strategy.signals')}</dt>
-            <dd>
-              {t('strategy.signalsCount', { did: signals.did, skipped: signals.skipped, missed: signals.missed })}
-            </dd>
-          </div>
-        )}
-      </dl>
     </div>
   )
 }
@@ -116,28 +117,22 @@ function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummar
   const { locale } = useI18n()
   return (
     <>
-      <div>
-        <dt>{t('strategy.ai.round')}</dt>
-        <dd>
-          {rounds.due ? (
-            <Link to={aiRoundPath(s.id)}>{t('strategy.ai.dueNow')}</Link>
-          ) : rounds.nextDueOn ? (
-            t('strategy.ai.nextOn', { date: shortDate(rounds.nextDueOn, locale) })
-          ) : (
-            '–'
-          )}
-          {` · ${t('strategy.ai.done', { n: rounds.done })}`}
-          {rounds.skipped > 0 && ` · ${t('strategy.ai.skipped', { n: rounds.skipped })}`}
-        </dd>
-      </div>
+      <Stat label={t('strategy.ai.round')}>
+        {rounds.due ? (
+          <Link to={aiRoundPath(s.id)}>{t('strategy.ai.dueNow')}</Link>
+        ) : rounds.nextDueOn ? (
+          t('strategy.ai.nextOn', { date: shortDate(rounds.nextDueOn, locale) })
+        ) : (
+          '–'
+        )}
+        {` · ${t('strategy.ai.done', { n: rounds.done })}`}
+        {rounds.skipped > 0 && ` · ${t('strategy.ai.skipped', { n: rounds.skipped })}`}
+      </Stat>
       {rounds.picksVsRest && (
-        <div>
-          <dt>{t('strategy.ai.picksVsRest')}</dt>
-          <dd>
-            <span className={styles.mono}>{signedPct(rounds.picksVsRest.picks, 1)}</span> {t('strategy.ai.vs')}{' '}
-            <span className={styles.mono}>{signedPct(rounds.picksVsRest.rest, 1)}</span>
-          </dd>
-        </div>
+        <Stat label={t('strategy.ai.picksVsRest')}>
+          <span className={styles.mono}>{signedPct(rounds.picksVsRest.picks, 1)}</span> {t('strategy.ai.vs')}{' '}
+          <span className={styles.mono}>{signedPct(rounds.picksVsRest.rest, 1)}</span>
+        </Stat>
       )}
     </>
   )
@@ -241,7 +236,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
               <span className={styles.fundSymbol}>{fund.symbol}</span> · {fund.name}
               {fund.exchange && <span className={styles.muted}> · {fund.exchange}</span>}
             </div>
-            {fund.what && <p className={styles.what}>{fund.what}</p>}
+            {fund.what && fund.what !== fund.name && <p className={styles.what}>{fund.what}</p>}
           </>
         )}
         <div className={styles.sub}>
@@ -257,9 +252,14 @@ function StrategyView({ s }: { s: StrategyDetail }) {
           </p>
         )}
       </div>
-      <Summary s={s} />
-      {fund ? <StockRules s={s} row={fund} /> : <Stocks s={s} />}
-      <SignalsAndTrades s={s} />
+      {fund ? (
+        <StockRules s={s} row={fund} stats={<Summary s={s} />} aside={<SignalsAndTrades s={s} />} />
+      ) : (
+        <>
+          <Summary s={s} />
+          <Columns main={<Stocks s={s} />} aside={<SignalsAndTrades s={s} />} />
+        </>
+      )}
       {(running || s.aiRounds) && (
         <div className={styles.tiles}>
           {running && (

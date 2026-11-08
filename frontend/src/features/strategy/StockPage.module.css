@@ -66,44 +66,35 @@
 .mono {
   font-family: var(--font-mono);
 }
-.mono[data-tone="up"],
 .mono[data-state="met"],
 .mono[data-state="used"] {
   color: var(--success);
 }
-.mono[data-tone="down"],
 .mono[data-state="past"] {
   color: var(--warning);
 }
 
+/* The stock's state under the rules: a line with an accent in the pill's colour, not a box. */
 .status {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: 12px var(--space-3);
-  background: var(--surface-deep);
-  border: 1px solid var(--border-hairline);
-}
-
-.statusLine {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.statusMeta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1) var(--space-2);
+  padding: 6px 0 6px 12px;
+  border-left: 3px solid var(--ink-muted);
+  font-size: 14px;
+  line-height: 20px;
 }
-
-.candidateBadge {
-  font: 500 12px/16px var(--font-mono);
-  color: var(--primary);
+.status[data-tone="waiting"] {
+  border-left-color: var(--hot-pink);
+}
+.status[data-tone="signal"],
+.status[data-tone="building"] {
+  border-left-color: var(--info);
+}
+.status[data-tone="holding"],
+.status[data-tone="watching"] {
+  border-left-color: var(--primary);
 }
 
 .group {
@@ -170,15 +161,14 @@
   color: var(--ink-sidebar);
 }
 
+/* A divided list, not cards: the price chart is the page's one boxed block. */
 .checks {
   margin: var(--space-1) 0 0;
   padding: 0;
   list-style: none;
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
 }
-.checks > li + li {
-  border-top: 1px solid var(--surface-editor);
+.checks > li {
+  border-top: 1px solid var(--border-hairline);
 }
 
 .check {
@@ -186,7 +176,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 10px var(--space-3);
+  padding: 12px 0;
 }
 
 .checkMain {
@@ -250,7 +240,7 @@
 .bar {
   position: relative;
   flex: 1;
-  height: 6px;
+  height: 4px;
   background: var(--surface-editor);
   border-radius: var(--radius-pill);
   overflow: hidden;

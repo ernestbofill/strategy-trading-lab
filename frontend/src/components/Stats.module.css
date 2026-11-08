@@ -1,0 +1,35 @@
+/* Tiles of one width, wide enough for "0 did · 0 skipped · 0 missed": one per row on a phone, a few side by side on desktop. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--surface-sidebar);
+  border-radius: var(--radius-sm);
+}
+
+.label {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-sidebar);
+}
+
+.value {
+  margin: 0;
+  font: 600 14px/20px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.value[data-tone="up"] {
+  color: var(--success);
+}
+.value[data-tone="down"] {
+  color: var(--danger-ink);
+}

@@ -1,10 +1,12 @@
+import type { ReactNode } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type { CheckGroup, CheckTexts, RuleCheck, StockRow, StrategyDetail } from '../../api'
 import { InfoTip } from '../../components/InfoTip'
-import { KeyValueList } from '../../components/Lists'
+import { Columns } from '../../components/Columns'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
+import { Stat, Stats } from '../../components/Stats'
 import { Tag } from '../../components/Tag'
 import { useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
@@ -255,26 +257,30 @@ function Rules({
   )
 }
 
-/** A stock's status line, price chart and rule checks (used on the stock page, and directly on a fund strategy's page). */
-export function StockRules({ s, row }: { s: StrategyDetail; row: StockRow }) {
+/**
+ * A stock's status line, figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's
+ * page). From 1024px the rules sit beside `aside` (the signals and trades).
+ */
+export function StockRules({ s, row, stats, aside }: { s: StrategyDetail; row: StockRow; stats?: ReactNode; aside: ReactNode }) {
   const t = useT()
   const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
   const isCandidate = isCandidateOn(row.checks)
   const since = isCandidate && row.checks.some((c) => c.group === 'candidate' && c.met !== null) ? candidateDateOf(row) : null
   const trades = s.trades.filter((x) => x.assetId === row.assetId)
+  // Without enough price history the rules say nothing yet: the status line says so.
+  const rules = s.checkTexts && row.status !== 'notEnoughData' && (
+    <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
+      <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />
+    </Section>
+  )
   return (
     <>
-      <div className={styles.status}>
-        <div className={styles.statusLine}>
-          <StockPill tone={line.tone}>{line.pill}</StockPill>
-          <span>{line.detail}</span>
-        </div>
-        {since && (
-          <div className={styles.statusMeta}>
-            <span className={styles.candidateBadge}>{t('stock.candidateSince', { date: shortDate(since) })}</span>
-          </div>
-        )}
+      <div className={styles.status} data-tone={line.tone}>
+        <StockPill tone={line.tone}>{line.pill}</StockPill>
+        <span>{line.detail}</span>
       </div>
+
+      {stats}
 
       <PriceChart
         strategyId={s.id}
@@ -285,12 +291,7 @@ export function StockRules({ s, row }: { s: StrategyDetail; row: StockRow }) {
         texts={s.checkTexts}
       />
 
-      {/* Without enough price history the rules say nothing yet: the status line says so. */}
-      {s.checkTexts && row.status !== 'notEnoughData' && (
-        <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
-          <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />
-        </Section>
-      )}
+      {rules ? <Columns main={rules} aside={aside} /> : aside}
     </>
   )
 }
@@ -346,33 +347,29 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
           {row.name}
           {row.exchange && <span className={styles.muted}> · {row.exchange}</span>}
         </div>
-        {row.what && <p className={styles.what}>{row.what}</p>}
+        {row.what && row.what !== row.name && <p className={styles.what}>{row.what}</p>}
         <div className={styles.strategy}>
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
           <Link to={strategyPath(s.id)}>{s.name}</Link>
         </div>
       </div>
 
-      <StockRules s={s} row={row} />
-
-      {row.result !== null && (
-        <Section title={live ? t('stock.position') : t('stock.position.sim')}>
-          <KeyValueList
-            rows={[
-              ...(row.maxSteps !== null && HOLDS.includes(row.status) ? [[t('stock.position.steps'), line.detail] as [string, string]] : []),
-              [t('stock.position.invested'), <span key="invested" className={styles.mono}>{money(row.invested, s.currency)}</span>],
-              [
-                t('stock.position.result'),
-                <span key="result" className={styles.mono} data-tone={pctTone(row.result)}>
-                  {line.result}
-                </span>,
-              ],
-            ]}
-          />
-        </Section>
-      )}
-
-      <SignalsAndTrades s={own} />
+      <StockRules
+        s={s}
+        row={row}
+        stats={
+          row.result !== null && (
+            <Stats>
+              {row.maxSteps !== null && HOLDS.includes(row.status) && <Stat label={t('stock.position.steps')}>{line.detail}</Stat>}
+              <Stat label={t('stock.position.invested')}>{money(row.invested, s.currency)}</Stat>
+              <Stat label={t('stock.position.result')} tone={pctTone(row.result)}>
+                {line.result}
+              </Stat>
+            </Stats>
+          )
+        }
+        aside={<SignalsAndTrades s={own} />}
+      />
     </Screen>
   )
 }

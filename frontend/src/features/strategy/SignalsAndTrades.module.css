@@ -2,19 +2,17 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
 }
 
-.list > li + li {
-  border-top: 1px solid var(--surface-editor);
+.list > li {
+  border-top: 1px solid var(--border-hairline);
 }
 
 .row {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: 12px var(--space-3);
+  padding: 12px var(--space-2);
   color: var(--ink);
   text-decoration: none;
 }
@@ -23,7 +21,7 @@ a.row {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: 12px var(--space-3);
+  padding: 12px var(--space-2);
   color: var(--ink);
   text-decoration: none;
 }
@@ -139,12 +137,8 @@ a.row:hover {
 
 .empty {
   margin: 0;
-  padding: var(--space-4) var(--space-3);
-  text-align: center;
   font-size: 13px;
   color: var(--ink-muted);
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
 }
 
 .formCard {

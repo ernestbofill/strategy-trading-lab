@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-08 · Single-fund strategies (*Index trend* and *Bear markets*, `investsIn !== 'stockList'`) combine the strategy page and the stock page into `/strategies/{id}`: the fund's ticker, name and latest close sit in the top header, and its status box, price chart and rule checks sit directly below the summary box (without repeating the position section or showing a one-item `Funds · 1` list); `/strategies/{id}/stocks/{assetId}` redirects to `/strategies/{id}`. (Ernest)
 - 2026-11-08 · "How it works" on /new links to /welcome?from=new; authenticated users never see the guest CTA banner ("Ready to test your first strategy?") on /welcome, and navigating with ?from=new shows "← BACK" to /new instead of "DASHBOARD". ROADMAP item 27 marked obsolete. (#181)
 - 2026-11-08 · Feedback review is accessed via its dedicated `/feedback` page (linked from the Management section on `/admin`), and removed from the bottom of `/admin` to keep the settings page focused. (#172)
 - 2026-11-02 · The new-strategy draft is kept in the tab's sessionStorage (not localStorage), tagged with its owner: a reload mid-flow keeps it, closing the tab drops it, and it is never shown to another user or after the session ends. While the account is still loading the draft is held, not reset. (#139)

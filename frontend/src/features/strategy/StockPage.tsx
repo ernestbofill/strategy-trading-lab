@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import type { CheckGroup, CheckTexts, RuleCheck, StockRow, StrategyDetail } from '../../api'
 import { InfoTip } from '../../components/InfoTip'
 import { KeyValueList } from '../../components/Lists'
@@ -257,6 +257,46 @@ function Rules({
   )
 }
 
+/** A stock's status line, price chart and rule checks (used on the stock page, and directly on a fund strategy's page). */
+export function StockRules({ s, row }: { s: StrategyDetail; row: StockRow }) {
+  const t = useT()
+  const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
+  const isCandidate = isCandidateOn(row.checks)
+  const since = isCandidate && row.checks.some((c) => c.group === 'candidate' && c.met !== null) ? candidateDateOf(row) : null
+  const trades = s.trades.filter((x) => x.assetId === row.assetId)
+  return (
+    <>
+      <div className={styles.status}>
+        <div className={styles.statusLine}>
+          <StockPill tone={line.tone}>{line.pill}</StockPill>
+          <span>{line.detail}</span>
+        </div>
+        {since && (
+          <div className={styles.statusMeta}>
+            <span className={styles.candidateBadge}>{t('stock.candidateSince', { date: shortDate(since) })}</span>
+          </div>
+        )}
+      </div>
+
+      <PriceChart
+        strategyId={s.id}
+        assetId={row.assetId}
+        isCandidate={row.checks.length > 0 ? isCandidate : null}
+        currency={row.currency}
+        trades={trades}
+        texts={s.checkTexts}
+      />
+
+      {/* Without enough price history the rules say nothing yet: the status line says so. */}
+      {s.checkTexts && row.status !== 'notEnoughData' && (
+        <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
+          <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />
+        </Section>
+      )}
+    </>
+  )
+}
+
 /** The stock page: one stock under one strategy's rules, its position and its signals and trades. */
 export function StockPage() {
   const t = useT()
@@ -271,6 +311,7 @@ export function StockPage() {
 
 function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   const t = useT()
+  if (s.investsIn !== 'stockList') return <Navigate to={strategyPath(s.id)} replace />
   const top = <TopBar up={strategyPath(s.id)} upLabel="common.up.strategy" />
   const row = s.stocks.find((r) => r.assetId === assetId)
   if (!row) {
@@ -282,9 +323,6 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   }
   const live = s.mode === 'live'
   const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
-  const candidate = row.checks.filter((c) => c.group === 'candidate' && c.met !== null)
-  const isCandidate = isCandidateOn(row.checks)
-  const since = candidate.length > 0 && isCandidate ? candidateDateOf(row) : null
   const answer =
     row.status === 'waitingForYou' && row.signalId ? <PrimaryAction to={signalPath(s.id, row.signalId)}>{t('stock.answer')}</PrimaryAction> : undefined
   // This stock's own history; the trade form offers only this stock.
@@ -317,26 +355,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
         </div>
       </div>
 
-      <div className={styles.status}>
-        <div className={styles.statusLine}>
-          <StockPill tone={line.tone}>{line.pill}</StockPill>
-          <span>{line.detail}</span>
-        </div>
-        {since && (
-          <div className={styles.statusMeta}>
-            <span className={styles.candidateBadge}>{t('stock.candidateSince', { date: shortDate(since) })}</span>
-          </div>
-        )}
-      </div>
-
-      <PriceChart strategyId={s.id} assetId={row.assetId} isCandidate={row.checks.length > 0 ? isCandidate : null} currency={row.currency} trades={own.trades} texts={s.checkTexts} />
-
-      {/* Without enough price history the rules say nothing yet: the status line says so. */}
-      {s.checkTexts && row.status !== 'notEnoughData' && (
-        <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
-          <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />
-        </Section>
-      )}
+      <StockRules s={s} row={row} />
 
       {row.result !== null && (
         <Section title={live ? t('stock.position') : t('stock.position.sim')}>

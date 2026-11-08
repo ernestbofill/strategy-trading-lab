@@ -164,7 +164,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         {
             var tag = item.Tag is null ? ""
                 : $"<span style=\"display:inline-block;padding:1px 6px;margin-right:8px;font-family:{Mono};font-size:11px;line-height:16px;font-weight:700;" +
-                  $"background:{(item.Live ? HotPink : Hairline)};color:{Ink};border-radius:2px;\">{Encode(item.Tag)}</span>";
+                  $"background:{(item.Live ? HotPink : Hairline)};color:{Ink};border-radius:2px;\">{Encode(item.Tag)}</span> ";
             var body = item.Url is null ? Encode(item.Text)
                 : $"<a href=\"{Encode(item.Url)}\" style=\"color:{Primary};text-decoration:underline;\">{Encode(item.Text)}</a>";
             html.Append($"<tr><td style=\"padding:10px 0;border-bottom:1px solid {Hairline};font-size:15px;line-height:22px;\">{tag}{body}</td></tr>");

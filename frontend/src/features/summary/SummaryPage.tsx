@@ -10,6 +10,8 @@ import { pickPath } from '../new-strategy/paths'
 import styles from './SummaryPage.module.css'
 import { useSummary } from './useSummary'
 
+const isLive = (mode: string) => mode?.toLowerCase() === 'live'
+
 export function SummaryPage() {
   const t = useT()
   const { locale } = useCurrentAccount()
@@ -97,8 +99,8 @@ export function SummaryPage() {
                     {data.whatChanged.map((c) => (
                       <li key={c.signalId}>
                         <Link to={`/strategies/${c.strategyId}/signals/${c.signalId}`} className={styles.row}>
-                          <Tag tone={c.mode === 'live' ? 'live' : 'sim'}>
-                            {c.mode === 'live' ? 'LIVE' : 'SIM'}
+                          <Tag tone={isLive(c.mode) ? 'live' : 'sim'}>
+                            {isLive(c.mode) ? 'LIVE' : 'SIM'}
                           </Tag>
                           <div className={styles.rowContent}>
                             <span className={styles.name}>{c.text}</span>
@@ -123,8 +125,8 @@ export function SummaryPage() {
                     {data.stockChanges.map((c) => (
                       <li key={`${c.strategyId}-${c.assetId}-${c.kind}`}>
                         <Link to={`/strategies/${c.strategyId}/stocks/${c.assetId}`} className={styles.row}>
-                          <Tag tone={c.mode === 'live' ? 'live' : 'sim'}>
-                            {c.mode === 'live' ? 'LIVE' : 'SIM'}
+                          <Tag tone={isLive(c.mode) ? 'live' : 'sim'}>
+                            {isLive(c.mode) ? 'LIVE' : 'SIM'}
                           </Tag>
                           <div className={styles.rowContent}>
                             <span className={styles.name}>{c.text}</span>
@@ -148,8 +150,8 @@ export function SummaryPage() {
                     {data.strategies.map((s) => (
                       <li key={s.strategyId}>
                         <Link to={`/strategies/${s.strategyId}`} className={styles.row}>
-                          <Tag tone={s.mode === 'live' ? 'live' : 'sim'}>
-                            {s.mode === 'live' ? 'LIVE' : 'SIM'}
+                          <Tag tone={isLive(s.mode) ? 'live' : 'sim'}>
+                            {isLive(s.mode) ? 'LIVE' : 'SIM'}
                           </Tag>
                           <div className={styles.rowContent}>
                             <div className={styles.rowMain}>

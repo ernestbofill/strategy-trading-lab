@@ -527,7 +527,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
         var ids = runningStrategies.Select(s => s.Id).ToList();
         var latestEval = await db.DailyEvaluations.AsNoTracking().Where(e => ids.Contains(e.StrategyId)).MaxAsync(e => (DateOnly?)e.Date, cancellationToken);
-        var sessionDate = latestEval is not null && latestEval < lastSession ? latestEval.Value : lastSession;
+        var sessionDate = latestEval ?? lastSession;
 
         var local = LocalTime(now, timeZone);
         var today = DateOnly.FromDateTime(local.DateTime);

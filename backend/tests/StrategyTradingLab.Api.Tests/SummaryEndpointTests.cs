@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Templates;
 
@@ -123,6 +125,8 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         db.Assets.Add(asset);
         await db.SaveChangesAsync();
 
+        var sessionDate = UsSession.LastComplete(DateTimeOffset.UtcNow);
+
         var strategy = new Strategy
         {
             UserId = user.Id,
@@ -130,7 +134,7 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             Name = $"Summary {tag}",
             Mode = StrategyMode.Live,
             Status = StrategyStatus.Running,
-            StartedOn = new DateOnly(2026, 10, 1),
+            StartedOn = sessionDate.AddMonths(-1),
             Currency = "EUR",
             Budget = new Budget(3000, 100, 5),
             Params = TemplateCatalog.Dip.ParamsJson(),
@@ -138,9 +142,6 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         };
         db.Strategies.Add(strategy);
         await db.SaveChangesAsync();
-
-        var now = DateTimeOffset.UtcNow;
-        var today = DateOnly.FromDateTime(now.DateTime);
 
         var waitingSignal = new Signal
         {
@@ -150,22 +151,45 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             StepNo = 1,
             MaxSteps = 5,
             StepAmount = 100,
-            SignalDate = today,
+            SignalDate = sessionDate,
             ClosePrice = 150m,
             Facts = JsonDocument.Parse("""{"belowPeakPct":8.2}"""),
             Status = SignalStatus.Waiting,
         };
-        db.Signals.Add(waitingSignal);
 
-        // Daily evaluation for today with distance
-        db.DailyEvaluations.Add(new DailyEvaluation
+        var changedSignal = new Signal
         {
             StrategyId = strategy.Id,
             AssetId = asset.Id,
-            Date = today,
-            Status = EvaluationStatus.Watching,
-            Facts = JsonDocument.Parse("{\"distancePct\":3.2}"),
-        });
+            Side = TradeSide.Buy,
+            StepNo = 2,
+            MaxSteps = 5,
+            StepAmount = 100,
+            SignalDate = sessionDate,
+            ClosePrice = 145m,
+            Facts = JsonDocument.Parse("""{"belowPeakPct":10.5}"""),
+            Status = SignalStatus.Confirmed,
+            AnsweredAt = DateTimeOffset.UtcNow,
+        };
+        db.Signals.AddRange(waitingSignal, changedSignal);
+
+        db.DailyEvaluations.AddRange(
+            new DailyEvaluation
+            {
+                StrategyId = strategy.Id,
+                AssetId = asset.Id,
+                Date = sessionDate.AddDays(-1),
+                Status = EvaluationStatus.NotCandidate,
+                Facts = JsonDocument.Parse("{}"),
+            },
+            new DailyEvaluation
+            {
+                StrategyId = strategy.Id,
+                AssetId = asset.Id,
+                Date = sessionDate,
+                Status = EvaluationStatus.Watching,
+                Facts = JsonDocument.Parse("{\"distancePct\":3.2}"),
+            });
         await db.SaveChangesAsync();
 
         var summary = await client.GetFromJsonAsync<DailySummaryDto>("/summary");
@@ -180,7 +204,7 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         Assert.Equal("Test asset", summary.StockChanges[0].StockName);
         Assert.Single(summary.Strategies);
         Assert.Equal(strategy.Name, summary.Strategies[0].StrategyName);
-        Assert.Equal(1, summary.Strategies[0].SignalsCount);
+        Assert.Equal(2, summary.Strategies[0].SignalsCount);
     }
 
     [NeonFact]

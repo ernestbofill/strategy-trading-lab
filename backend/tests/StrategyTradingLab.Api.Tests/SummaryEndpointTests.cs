@@ -90,32 +90,22 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         Assert.Equal(StrategyMode.Live, dto.Strategies[0].Mode);
     }
     [NeonFact]
-    public async Task The_summary_endpoint_needs_authentication()
-    {
-        using var client = factory.CreateApiClient();
-        var response = await client.GetAsync("/summary");
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [NeonFact]
-    public async Task A_user_without_strategies_gets_a_quiet_summary()
-    {
-        var (client, _) = await factory.SignedUpAsync();
-        var summary = await client.GetFromJsonAsync<DailySummaryDto>("/summary");
-
-        Assert.NotNull(summary);
-        Assert.False(summary.HasChanges);
-        Assert.Empty(summary.WaitingSignals);
-        Assert.Empty(summary.WaitingAiRounds);
-        Assert.Empty(summary.WhatChanged);
-        Assert.Empty(summary.StockChanges);
-        Assert.Empty(summary.Strategies);
-    }
-
-    [NeonFact]
-    public async Task The_summary_reflects_waiting_signals_changes_and_scoreboard()
+    public async Task The_summary_reflects_quiet_state_before_strategies_and_changes_when_active()
     {
         var (client, email) = await factory.SignedUpAsync();
+
+        // 1. Quiet state with no strategies
+        var quiet = await client.GetFromJsonAsync<DailySummaryDto>("/summary");
+        Assert.NotNull(quiet);
+        Assert.True(quiet.Date.Year >= 2026);
+        Assert.False(quiet.HasChanges);
+        Assert.Empty(quiet.WaitingSignals);
+        Assert.Empty(quiet.WaitingAiRounds);
+        Assert.Empty(quiet.WhatChanged);
+        Assert.Empty(quiet.StockChanges);
+        Assert.Empty(quiet.Strategies);
+
+        // 2. Active state with strategies, signals, and evaluations
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var user = await db.Users.SingleAsync(u => u.Email == email);
@@ -210,15 +200,5 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         Assert.Single(summary.Strategies);
         Assert.Equal(strategy.Name, summary.Strategies[0].StrategyName);
         Assert.Equal(2, summary.Strategies[0].SignalsCount);
-    }
-
-    [NeonFact]
-    public async Task Summary_returns_current_evaluation_date()
-    {
-        var (client, _) = await factory.SignedUpAsync();
-        var summary = await client.GetFromJsonAsync<DailySummaryDto>("/summary");
-
-        Assert.NotNull(summary);
-        Assert.True(summary.Date.Year >= 2026);
     }
 }

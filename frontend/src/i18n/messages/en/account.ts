@@ -128,6 +128,14 @@ export const account = {
   'account.page.currencySaved': 'Saved. New strategies use it; running ones keep theirs.',
   'account.page.reloadFailed': 'Could not reload the account.',
   'account.page.notifications': 'Notifications',
+  'account.page.timeZone': 'Time zone',
+  'account.page.timeZoneHint': 'Dates follow it. The daily summary comes from 07:00 your time, with the figures from the last US market close.',
+  'account.page.timeZoneSave': 'Save time zone',
+  'account.page.timeZoneSaved': 'Saved.',
+
+  // Settings page
+  'settings.page.title': 'Settings',
+  'settings.page.accountLine': 'Email, name, password and your data',
   'account.notify.alerts': "Signals and reminders",
   'account.notify.alertsHint': "When a signal or an AI round needs you.",
   'account.notify.summary': "Summary",
@@ -140,7 +148,7 @@ export const account = {
   'account.push.turnOn': 'Turn on',
   'account.push.turnOff': 'Turn off',
   'account.push.unsupported': "This browser can't show notifications. Alerts come by email.",
-  'account.push.homeScreen': 'On iPhone, add the app to your home screen first (Account → App), open it from there and turn notifications on here.',
+  'account.push.homeScreen': 'On iPhone, add the app to your home screen first (Settings → App), open it from there and turn notifications on here.',
   'account.push.blocked': 'Notifications are blocked for this app in your browser settings. Alerts still come by email.',
   'account.push.refused': 'Not allowed. Alerts still come by email.',
   'account.push.failed': "Couldn't turn them on. Try again.",

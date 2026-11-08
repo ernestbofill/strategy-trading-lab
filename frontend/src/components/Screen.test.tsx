@@ -34,7 +34,7 @@ describe('TopBar', () => {
     expect(screen.getByText('STL // LOG IN')).toBeDefined()
   })
 
-  it('links home with no arrow, and to the account on the right, for a signed-in user', async () => {
+  it('links home with no arrow, and to settings on the right, for a signed-in user', async () => {
     vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
     render(
       <MemoryRouter>
@@ -45,7 +45,7 @@ describe('TopBar', () => {
     )
 
     expect((await screen.findByRole('link', { name: 'DASHBOARD' })).getAttribute('href')).toBe('/')
-    expect(screen.getByRole('link', { name: 'ACCOUNT' }).getAttribute('href')).toBe('/account')
+    expect(screen.getByRole('link', { name: 'SETTINGS' }).getAttribute('href')).toBe('/settings')
   })
 
   it('names home WELCOME and offers log in, back to this page, for a guest', async () => {

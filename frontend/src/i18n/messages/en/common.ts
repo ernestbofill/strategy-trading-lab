@@ -18,6 +18,7 @@ export const common = {
   'common.home.welcome': 'WELCOME',
   /** The top bar's right side: the default links, and the admin pages' link to /admin. */
   'common.account': 'ACCOUNT',
+  'common.settings': 'SETTINGS',
   'common.logIn': 'LOG IN',
   'common.admin': 'ADMIN',
   /** Tooltip of the DEV tag in the top bar. */
@@ -43,6 +44,7 @@ export const common = {
   'footer.dashboard': 'Dashboard',
   'footer.newStrategy': 'New strategy',
   'footer.account': 'Account',
+  'footer.settings': 'Settings',
   'footer.notifications': 'Notifications',
   'footer.admin': 'Admin',
   'footer.alerts': 'Alerts',

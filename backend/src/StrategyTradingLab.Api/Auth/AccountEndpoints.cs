@@ -18,6 +18,7 @@ public record ChangePasswordRequest(string? CurrentPassword, string? NewPassword
 public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
 public record LocaleRequest(string? Locale);
+public record TimeZoneRequest(string? TimeZone);
 /// <summary>An on/off switch of the account (the notification boxes); a missing value is refused, not read as off.</summary>
 public record SwitchRequest(bool? Enabled);
 public record NameRequest(string? FirstName, string? LastName);
@@ -224,6 +225,19 @@ public static class AccountEndpoints
         })
         .RequireUser()
         .WithSummary("Sets the language of the user's account and emails.");
+
+        group.MapPost("/time-zone", async Task<Results<NoContent, ValidationProblem>> (TimeZoneRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
+            if (!AccountRules.IsTimeZone(request.TimeZone))
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["timeZone"] = [Messages.PickTimeZone.In(reqLocale)] });
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.TimeZone, request.TimeZone!), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Sets the user's time zone: their dates and when their emails and reminders come.");
 
         group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>

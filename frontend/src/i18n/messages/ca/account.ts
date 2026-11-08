@@ -130,6 +130,14 @@ export const account: Record<keyof typeof en, string> = {
   'account.page.currencySaved': 'Desat. Les estratègies noves la faran servir; les que ja funcionen mantenen la seva.',
   'account.page.reloadFailed': 'No s’ha pogut tornar a carregar el compte.',
   'account.page.notifications': 'Notificacions',
+  'account.page.timeZone': 'Zona horària',
+  'account.page.timeZoneHint': "Les dates la segueixen. El resum diari arriba a partir de les 07:00 a la teva hora, amb les xifres de l'últim tancament del mercat dels EUA.",
+  'account.page.timeZoneSave': 'Desa la zona horària',
+  'account.page.timeZoneSaved': 'Desat.',
+
+  // Settings page
+  'settings.page.title': 'Configuració',
+  'settings.page.accountLine': 'Correu, nom, contrasenya i les teves dades',
   'account.notify.alerts': "Senyals i recordatoris",
   'account.notify.alertsHint': "Quan un senyal o una ronda d’IA et necessita.",
   'account.notify.summary': "Resum",
@@ -142,7 +150,7 @@ export const account: Record<keyof typeof en, string> = {
   'account.push.turnOn': 'Activa',
   'account.push.turnOff': 'Desactiva',
   'account.push.unsupported': 'Aquest navegador no pot mostrar notificacions. Els avisos arriben per mail.',
-  'account.push.homeScreen': "A l'iPhone, primer afegeix l'app a la pantalla d'inici (Compte → Aplicació), obre-la des d'allà i activa aquí les notificacions.",
+  'account.push.homeScreen': "A l'iPhone, primer afegeix l'app a la pantalla d'inici (Configuració → Aplicació), obre-la des d'allà i activa aquí les notificacions.",
   'account.push.blocked': "Les notificacions d'aquesta app estan bloquejades a la configuració del navegador. Els avisos continuen arribant per mail.",
   'account.push.refused': 'No permeses. Els avisos continuen arribant per mail.',
   'account.push.failed': "No s'han pogut activar. Torna-ho a provar.",

@@ -12,7 +12,7 @@ import { welcomePath } from '../welcome/paths'
 import { useCurrentAccount } from '../account/AccountContext'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
-import { accountPath } from './paths'
+import { settingsPath } from './paths'
 import styles from './Dashboard.module.css'
 import { StrategyCard } from './StrategyCard'
 import { useDashboard } from './useDashboard'
@@ -61,7 +61,7 @@ export function Dashboard() {
             )}
             {emailVerified && (
               <p className={styles.feedback}>
-                <TextAction to={`${accountPath}${SEND_FEEDBACK_HASH}`}>{t('feedback.send.title')}</TextAction>
+                <TextAction to={`${settingsPath}${SEND_FEEDBACK_HASH}`}>{t('feedback.send.title')}</TextAction>
               </p>
             )}
           </Screen>

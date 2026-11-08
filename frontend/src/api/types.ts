@@ -1094,6 +1094,8 @@ export interface Api {
   setCurrency(currency: Currency): Promise<void>
   /** Sets the language of the user's account and emails. Rejects with `InvalidFieldsError`. */
   setLocale(locale: Locale): Promise<void>
+  /** Sets the user's time zone (an IANA name). Rejects with `InvalidFieldsError`. */
+  setTimeZone(timeZone: string): Promise<void>
   /** Turns the summary email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
   setAlertEmails(enabled: boolean): Promise<void>

@@ -11,7 +11,7 @@ import { useT } from '../../i18n/I18n'
 import { resolveBudget } from '../../lib/budget'
 import { money } from '../../lib/format'
 import { useOptionalAccount } from '../account/AccountContext'
-import { accountNotificationsPath, signUpPathFor } from '../account/paths'
+import { settingsNotificationsPath, signUpPathFor } from '../account/paths'
 import { usePushAsk } from '../account/usePushAsk'
 import { Checkbox } from '../../components/Field'
 import { invalidate } from '../../lib/useLoadable'
@@ -161,7 +161,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
     {
       label: t('newStrategy.confirm.row.notifications'),
       value: t(notifyKey),
-      to: isGuest ? undefined : accountNotificationsPath,
+      to: isGuest ? undefined : settingsNotificationsPath,
     },
     ...(template.aiRound
       ? [

@@ -15,7 +15,7 @@ import { errorText } from './copy'
 import { InviteWelcome } from './InviteWelcome'
 import { INVITE_PARAM, logInPath, logInPathFor, safeNext } from './paths'
 import { privacyPath, termsPath } from '../legal/paths'
-import { guessTimeZone, timeZones } from './timeZones'
+import { guessTimeZone, timeZoneOptions } from './timeZones'
 
 export const TERMS_VERSION = '2026-10-31'
 
@@ -47,7 +47,7 @@ export function SignUp() {
   const nextParam = searchParams.get('next')
   const next = nextParam ? safeNext(nextParam) : (signedUp ? pickPath : dashboardPath)
   // Built once: the list holds the guessed zone, and any zone picked comes from it.
-  const zones = useMemo(() => timeZones(guessTimeZone()).map((z) => ({ value: z, label: z.replaceAll('_', ' ') })), [])
+  const zones = useMemo(() => timeZoneOptions(guessTimeZone()), [])
   const currOptions = useMemo(() => currencyOptionsWith(t), [t])
 
   // Asked once: whether a code is needed, and who the link's invite is for. Without an answer the form still works.

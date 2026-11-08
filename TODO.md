@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] Spaceship (domain → Email forwarding): forward `contact@strategytradinglab.com` to your inbox and send it a test mail. Claude then puts the address on the legal notice and the privacy policy (item 26). (#187)
 - [x] GitHub, Settings → Branches (or Rules) for `main`: untick "Require branches to be up to date before merging", keeping the `backend` and `frontend` required checks. Versions no longer clash, so it's not needed (done by Ernest, 2026-11-08). (#185)
 - [x] QA sessions (`qa/`): in the browser the agent will drive (the desktop app's built-in browser, or Chrome with Claude in Chrome), sign in once to `https://strategytradinglab.com` with the vip QA account and save its password in the browser. Check the account's email is confirmed. Then start a session with `/qa-session <account email>` from the desktop app. Optional: add `Bash(git push -u origin qa/*)` to `.claude/settings.json`'s allow list, so the agent pushes its session branch without a prompt (Claude's own edit of the settings was refused). (#153)
 - [x] Sender avatar (the grey circle next to `noreply@strategytradinglab.com`): Brevo can't set it; mail apps find it through the domain. Now: create a Google account with the existing address `noreply@strategytradinglab.com` (accounts.google.com → Create account → *Use your existing email*; it must receive one verification code) and set `frontend/public/icon-mail.png` as its picture, so Gmail shows it. Later (public beta): BIMI at your DNS host, not in Brevo: set DMARC to `p=quarantine` (Brevo's default `p=none` isn't enough), then add the TXT record `default._bimi.strategytradinglab.com` = `v=BIMI1; l=https://strategytradinglab.com/icon-mail.svg;` (Yahoo and others show it; Gmail and Apple Mail also need a paid CMC or VMC, whose URL goes in `a=`). (#147)
@@ -52,7 +53,6 @@
 - [x] ~~If branch protection on `main` requires CI checks: require `frontend` and `backend` only where they run.~~ Not needed: `main` has no branch protection. (#71)
 
 ## General
-- [ ] Split FE and BE repos?
 - [x] Instructions from STAB
 - [x] CI / CD on github
 
@@ -68,7 +68,7 @@
 ## Ideas
 - [ ] AI automation for continuous improvement.
 - [ ] Referral program
-- [ ] Agent to test the live app and review it as a user
 - [ ] Playwright for e2e testing
+- [x] Agent to test the live app and review it as a user
 - [x] User can give feedback
 - [x] Claude test user: created a dev-only browser account; credentials are in the ignored root `.env.local`. (#50)

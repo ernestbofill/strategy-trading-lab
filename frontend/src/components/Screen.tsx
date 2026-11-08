@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useRole } from '../features/account/AccountContext'
 import { logInPathFor } from '../features/account/paths'
-import { accountPath } from '../features/dashboard/paths'
+import { settingsPath } from '../features/dashboard/paths'
 import { homePath } from '../features/new-strategy/paths'
 import { useT } from '../i18n/I18n'
 import type { MessageKey } from '../i18n/messages/en'
@@ -23,7 +23,7 @@ interface TopBarProps {
   upLabel?: MessageKey
   /** The right side as a label: "2 / 5", the strategy's name. */
   step?: string
-  /** The right side as links or a label. Left out, it is "ACCOUNT" (signed in) or "LOG IN" (guest); `null` for nothing. */
+  /** The right side as links or a label. Left out, it is "SETTINGS" (signed in) or "LOG IN" (guest); `null` for nothing. */
   aside?: ReactNode
 }
 
@@ -61,13 +61,13 @@ export function TopBar({ title, titleLink, home, up, upLabel = 'common.back', st
   )
 }
 
-/** The default right side: the account, or log in (coming back here) for a guest. Nothing while the account loads. */
+/** The default right side: settings, or log in (coming back here) for a guest. Nothing while the account loads. */
 function UserLink({ role }: { role: ReturnType<typeof useRole> }) {
   const t = useT()
   const { pathname } = useLocation()
   if (role === undefined) return null
   return role ? (
-    <TextAction to={accountPath}>{t('common.account')}</TextAction>
+    <TextAction to={settingsPath}>{t('common.settings')}</TextAction>
   ) : (
     <TextAction to={logInPathFor(pathname)}>{t('common.logIn')}</TextAction>
   )

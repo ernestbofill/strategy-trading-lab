@@ -52,19 +52,20 @@ public class TrendRules : IBuyRules
             up = false;
         }
 
+        var aboveBuy = price > buyLine;
         var waiting = day.Cooling || day.ActedNow;
         RuleStatus status;
         string? reason = null;
         if (!day.HasPosition)
         {
-            if (up && !waiting)
+            if (aboveBuy && !waiting)
             {
                 status = RuleStatus.BuySignal;
             }
-            else if (!up && day.Previous == RuleStatus.BuySignal && !waiting)
+            else if (!aboveBuy && day.Previous == RuleStatus.BuySignal && !waiting)
             {
                 status = RuleStatus.SignalEnded;
-                reason = "The trend turned down before buying.";
+                reason = up ? "Price fell back below the buy line." : "The trend turned down before buying.";
             }
             else
             {
@@ -109,13 +110,13 @@ public class TrendRules : IBuyRules
             // How far the price still has to rise to reach the buy line (0 at or above it): "close to the line".
             ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(buyLine, price)), 2),
         };
-        // Out of the market: the buy line. In it: the sell line. Inside the band the trend stays what it was, so "met" is the trend.
+        // Out of the market: the buy line. In it: the sell line (inside the band the position stays held).
         var vsSma = Math.Round(vsSmaPct, 1);
         List<RuleCheck> checks = day.HasPosition
             ? [new("sellLine", CheckGroup.Sell, !up, Math.Round(Indicators.PctFrom(price, sellLine), 1), p.BandPct,
                 Level: Math.Round(sellLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(buyLine, 2), SubValue: vsSma)]
-            : [new("buyLine", CheckGroup.Buy, up, Math.Round(Indicators.PctFrom(price, buyLine), 1), p.BandPct,
+            : [new("buyLine", CheckGroup.Buy, aboveBuy, Math.Round(Indicators.PctFrom(price, buyLine), 1), p.BandPct,
                 Level: Math.Round(buyLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(sellLine, 2), SubValue: vsSma)];
-        return new RuleDecision(status, reason, facts, WindowOpen: up) { Checks = checks };
+        return new RuleDecision(status, reason, facts, WindowOpen: aboveBuy) { Checks = checks };
     }
 }

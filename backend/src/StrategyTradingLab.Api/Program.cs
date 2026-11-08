@@ -272,7 +272,8 @@ app.Run();
 record HealthResponse(string Postgres, string ObjectStorage);
 
 /// <summary>
-/// Version from backend/Directory.Build.props; Commit and BuiltAt are stamped into the assembly at build time.
+/// Version: deploy/backend/deploy.ps1 publishes with 0.&lt;main's commit count&gt;.0-alpha, local builds have
+/// Directory.Build.props's 0.0.0-dev. Commit and BuiltAt are stamped into the assembly at build time.
 /// BuiltAt is null in Debug builds, where stamping it would rebuild the project every time. Database is the one in use.
 /// </summary>
 record VersionResponse(string Version, string? Commit, DateTimeOffset? BuiltAt, DatabaseName Database = default)

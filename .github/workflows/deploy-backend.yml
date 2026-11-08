@@ -21,6 +21,9 @@ permissions:
 
 jobs:
   deploy:
+    # Only main: its commit count is the version, and a branch's would claim a number a later merge gets. A branch
+    # goes out through the VS Code task, which doesn't tag.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       # The whole history: deploy.ps1 makes the version from the number of commits.
@@ -54,13 +57,18 @@ jobs:
         shell: pwsh
         run: ./deploy/backend/deploy.ps1
 
-      # A re-run deploys the same commit, so the same version.
+      # A re-run deploys the same commit, so the same version. The tag on another commit means main's history was
+      # rewritten or merged without squashing: the version is no longer unique, so the run fails to show it.
       - name: Tag the version
         env:
           TAG: backend-v${{ steps.deploy.outputs.version }}
         run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+          tagged=$(git ls-remote --tags origin "refs/tags/$TAG" | cut -f1)
+          if [ -z "$tagged" ]; then
+            git tag "$TAG" && git push origin "$TAG"
+          elif [ "$tagged" = "$GITHUB_SHA" ]; then
             echo "$TAG already exists (a re-run)."
           else
-            git tag "$TAG" && git push origin "$TAG"
+            echo "::error::Deployed, but $TAG is already on $tagged: the version isn't unique. Check main's history."
+            exit 1
           fi

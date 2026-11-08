@@ -2,7 +2,7 @@
 
 The API runs on the Oracle server (Ubuntu 24.04, arm64) as the systemd service `strategy-trading-lab-api`, on `127.0.0.1:5080`. nginx serves it at `https://strategytradinglab.com/api/` (`/api/health`, `/api/version`).
 
-- **On merge to `main`**: the [Deploy backend](../../.github/workflows/deploy-backend.yml) workflow runs when `backend/` (not its tests or Markdown) or `deploy/backend/` changes, after building and testing it, then tags the commit `backend-v<version>`. It can also be run by hand from the Actions tab.
+- **On merge to `main`**: the [Deploy backend](../../.github/workflows/deploy-backend.yml) workflow runs when `backend/` (not its tests or Markdown) or `deploy/backend/` changes, after building and testing it, then tags the commit `backend-v<version>`. It can also be run by hand from the Actions tab, on `main` only.
 - **From VS Code**: *Terminal → Run Task → Deploy backend to Oracle*. It deploys your working copy, so use it for hotfixes and checks, not instead of a PR. It doesn't tag.
 
 Both run [deploy.ps1](deploy.ps1): it publishes the API self-contained for `linux-arm64` (the server has no .NET), builds the EF migrations bundle, uploads both and runs [install.sh](install.sh) on the server. That applies the migrations, installs the release under `/opt/strategy-trading-lab-api/releases/`, points `current` at it, restarts the service and waits for `/health`. If the new release isn't healthy it switches back to the previous one (the migrations stay applied). The last 5 releases are kept.

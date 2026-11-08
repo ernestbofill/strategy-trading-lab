@@ -121,8 +121,9 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         var user = await db.Users.SingleAsync(u => u.Email == email);
 
         var tag = Guid.NewGuid().ToString("N")[..10];
-        var asset = new Asset { Symbol = $"S{tag}", Exchange = "TEST", Name = "Test asset", Currency = "USD" };
-        db.Assets.Add(asset);
+        var asset1 = new Asset { Symbol = $"S1{tag}", Exchange = "TEST", Name = "Asset One", Currency = "USD" };
+        var asset2 = new Asset { Symbol = $"S2{tag}", Exchange = "TEST", Name = "Asset Two", Currency = "USD" };
+        db.Assets.AddRange(asset1, asset2);
         await db.SaveChangesAsync();
 
         var sessionDate = UsSession.LastComplete(DateTimeOffset.UtcNow);
@@ -138,7 +139,11 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             Currency = "EUR",
             Budget = new Budget(3000, 100, 5),
             Params = TemplateCatalog.Dip.ParamsJson(),
-            Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = DateTimeOffset.UtcNow }],
+            Assets =
+            [
+                new StrategyAsset { AssetId = asset1.Id, Active = true, AddedAt = DateTimeOffset.UtcNow },
+                new StrategyAsset { AssetId = asset2.Id, Active = true, AddedAt = DateTimeOffset.UtcNow },
+            ],
         };
         db.Strategies.Add(strategy);
         await db.SaveChangesAsync();
@@ -146,7 +151,7 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         var waitingSignal = new Signal
         {
             StrategyId = strategy.Id,
-            AssetId = asset.Id,
+            AssetId = asset1.Id,
             Side = TradeSide.Buy,
             StepNo = 1,
             MaxSteps = 5,
@@ -160,7 +165,7 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         var changedSignal = new Signal
         {
             StrategyId = strategy.Id,
-            AssetId = asset.Id,
+            AssetId = asset2.Id,
             Side = TradeSide.Buy,
             StepNo = 2,
             MaxSteps = 5,
@@ -177,7 +182,7 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             new DailyEvaluation
             {
                 StrategyId = strategy.Id,
-                AssetId = asset.Id,
+                AssetId = asset1.Id,
                 Date = sessionDate.AddDays(-1),
                 Status = EvaluationStatus.NotCandidate,
                 Facts = JsonDocument.Parse("{}"),
@@ -185,7 +190,7 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             new DailyEvaluation
             {
                 StrategyId = strategy.Id,
-                AssetId = asset.Id,
+                AssetId = asset1.Id,
                 Date = sessionDate,
                 Status = EvaluationStatus.Watching,
                 Facts = JsonDocument.Parse("{\"distancePct\":3.2}"),
@@ -197,11 +202,11 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
         Assert.NotNull(summary);
         Assert.True(summary.HasChanges);
         Assert.Single(summary.WaitingSignals);
-        Assert.Equal("Test asset", summary.WaitingSignals[0].StockName);
+        Assert.Equal("Asset One", summary.WaitingSignals[0].StockName);
         Assert.Single(summary.WhatChanged);
-        Assert.Equal("Test asset", summary.WhatChanged[0].StockName);
+        Assert.Equal("Asset Two", summary.WhatChanged[0].StockName);
         Assert.Single(summary.StockChanges);
-        Assert.Equal("Test asset", summary.StockChanges[0].StockName);
+        Assert.Equal("Asset One", summary.StockChanges[0].StockName);
         Assert.Single(summary.Strategies);
         Assert.Equal(strategy.Name, summary.Strategies[0].StrategyName);
         Assert.Equal(2, summary.Strategies[0].SignalsCount);

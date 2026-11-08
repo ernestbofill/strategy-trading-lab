@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, type AdminAlert, type AlertSource } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
-import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { Screen, ScreenMessage } from '../../components/Screen'
+import { AdminTopBar } from './AdminTopBar'
 import { Section } from '../../components/Section'
 import { isoDate } from '../../lib/format'
 import styles from './AdminAlerts.module.css'
@@ -95,7 +96,7 @@ export function AdminAlerts() {
   const cleared = of('cleared')
 
   return (
-    <Screen top={<TopBar back="/admin" step="ADMIN" />}>
+    <Screen top={<AdminTopBar />}>
       <PageHeader title="Alerts" lead="Problems the daily jobs found. Each clears itself once a later run finds it fixed." />
       {state.status === 'loading' && <ScreenMessage>Loading the alerts…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the alerts. Try again later.</ScreenMessage>}

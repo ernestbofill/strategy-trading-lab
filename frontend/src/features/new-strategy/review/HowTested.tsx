@@ -18,7 +18,7 @@ export function HowTested() {
   const t = useT()
   const { key } = useParams<{ key: TemplateKey }>()
   return (
-    <LoadableScreen state={useTemplate(key)} top={<TopBar back={key ? reviewPath(key) : '/'} />} what={t('newStrategy.what.test')}>
+    <LoadableScreen state={useTemplate(key)} top={<TopBar up={key ? reviewPath(key) : '/'} />} what={t('newStrategy.what.test')}>
       {(template) => <HowTestedContent template={template} />}
     </LoadableScreen>
   )
@@ -26,7 +26,7 @@ export function HowTested() {
 
 function HowTestedContent({ template }: { template: TemplateDetail }) {
   const t = useT()
-  const top = <TopBar back={reviewPath(template.key)} step={template.name} />
+  const top = <TopBar up={reviewPath(template.key)} step={template.name} />
   const b = template.backtest
   if (!b) {
     return (

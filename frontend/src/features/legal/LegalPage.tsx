@@ -24,7 +24,7 @@ export function LegalPage({ section }: { section: Section }) {
   const { title, lead } = sections[section]
 
   return (
-    <Screen top={<TopBar title={t('legal.topBar')} back="/" />}>
+    <Screen top={<TopBar home />}>
       <PageHeader title={t(title)} lead={t(lead)} />
       <LegalNav />
       {section === 'notice' && <LegalNoticeContent />}

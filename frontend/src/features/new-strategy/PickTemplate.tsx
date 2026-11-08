@@ -7,10 +7,10 @@ import { Tagline } from '../../components/Tagline'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { useOptionalAccount } from '../account/AccountContext'
-import { logInPathFor, signUpPath } from '../account/paths'
+import { logInPathFor } from '../account/paths'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { homePath, pickPath, reviewPath } from './paths'
+import { pickPath, reviewPath } from './paths'
 import styles from './PickTemplate.module.css'
 import { useTemplates } from './useTemplate'
 
@@ -21,21 +21,20 @@ export function PickTemplate() {
   const templates = useTemplates()
   const account = useOptionalAccount()
   const isGuest = !account
-  // Back only when there is somewhere to go back to (the confirm screen's Edit template), not on a fresh start.
+  // A fresh start (no screen before this one) shows the welcome eyebrow.
   const hasHistory = useLocation().key !== 'default'
 
   return (
     <Screen
       top={
         <TopBar
-          title={t('newStrategy.pick.topBar')}
-          back={hasHistory ? (isGuest ? signUpPath : homePath) : undefined}
+          home
           step={isGuest ? undefined : '1 / 5'}
           aside={
             isGuest ? (
               <>
                 <LanguageSwitch />
-                <TextAction to={logInPathFor(pickPath)}>{t('newStrategy.pick.logIn')}</TextAction>
+                <TextAction to={logInPathFor(pickPath)}>{t('common.logIn')}</TextAction>
               </>
             ) : undefined
           }

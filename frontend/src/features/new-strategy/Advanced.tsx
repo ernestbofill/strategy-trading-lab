@@ -25,7 +25,7 @@ export function Advanced() {
   const { key } = useParams<{ key: TemplateKey }>()
   const back = key ? reviewPath(key) : '/'
   return (
-    <LoadableScreen state={useTemplate(key)} top={<TopBar back={back} />} what={t('newStrategy.what.template')}>
+    <LoadableScreen state={useTemplate(key)} top={<TopBar up={back} aside={null} />} what={t('newStrategy.what.template')}>
       {(template) => <AdvancedContent key={template.key} template={template} />}
     </LoadableScreen>
   )
@@ -38,7 +38,7 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   // The draft's changes belong to its template; another template's screen starts from its own tested values.
   const ownDraft = draft.templateKey === template.key
   const [values, setValues] = useState<SettingValues>(() => settingValues(template, ownDraft ? draft.settings : {}))
-  const top = <TopBar back={reviewPath(template.key)} step={template.name} />
+  const top = <TopBar up={reviewPath(template.key)} step={template.name} />
 
   if (template.settings.length === 0) {
     return (

@@ -1,7 +1,6 @@
 export const dashboard = {
   'dashboard.what': 'your strategies',
-  'dashboard.title': 'STL // DASHBOARD',
-  'dashboard.account': 'Account',
+  'dashboard.title': 'STL // WELCOME',
   'dashboard.heading': 'Your strategies',
   'dashboard.newStrategy': '+ New strategy',
   'dashboard.strategiesFull': 'You run {max} strategies, the most for now. Archive one to start another.',

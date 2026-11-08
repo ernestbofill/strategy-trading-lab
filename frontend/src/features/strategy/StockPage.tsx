@@ -263,7 +263,7 @@ export function StockPage() {
   const { id = '', assetId = '' } = useParams()
   const strategy = useStrategy(id)
   return (
-    <LoadableScreen state={strategy} top={<TopBar back={strategyPath(id)} />} what={t('stock.what')}>
+    <LoadableScreen state={strategy} top={<TopBar up={strategyPath(id)} upLabel="common.up.strategy" />} what={t('stock.what')}>
       {(s) => <StockView s={s} assetId={assetId} />}
     </LoadableScreen>
   )
@@ -271,7 +271,7 @@ export function StockPage() {
 
 function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   const t = useT()
-  const top = <TopBar back={strategyPath(s.id)} />
+  const top = <TopBar up={strategyPath(s.id)} upLabel="common.up.strategy" />
   const row = s.stocks.find((r) => r.assetId === assetId)
   if (!row) {
     return (

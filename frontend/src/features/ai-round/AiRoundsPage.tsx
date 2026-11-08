@@ -19,7 +19,7 @@ export function AiRoundsPage() {
   const t = useT()
   const { locale } = useI18n()
   const history = useAiRounds(id)
-  const top = <TopBar back={strategyPath(id)} aside={<span>{t('aiRound.history.topBar')}</span>} />
+  const top = <TopBar up={strategyPath(id)} upLabel="common.up.strategy" aside={<span>{t('aiRound.history.topBar')}</span>} />
   return (
     <LoadableScreen state={history} top={top} what={t('aiRound.historyWhat')}>
       {(h) => (

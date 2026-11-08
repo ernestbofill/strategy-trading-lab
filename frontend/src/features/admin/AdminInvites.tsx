@@ -10,7 +10,8 @@ import {
 } from '../../api'
 import { FormMessage, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
-import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { Screen, ScreenMessage } from '../../components/Screen'
+import { AdminTopBar } from './AdminTopBar'
 import styles from './AdminInvites.module.css'
 
 /** The admin setting that gates sign-up (backend Admin/SettingDefinitions.cs). */
@@ -48,7 +49,7 @@ export function AdminInvites() {
   }
 
   return (
-    <Screen top={<TopBar title="STL // INVITES" titleLink="/admin" back="/admin" />}>
+    <Screen top={<AdminTopBar />}>
       <PageHeader title="Invites" lead="Each invite is for one person and gives the vip role. Only you can invite for now." />
       <SignUpGate />
       <section className={styles.group} aria-labelledby="new-invite">

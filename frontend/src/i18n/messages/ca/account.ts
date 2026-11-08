@@ -67,7 +67,6 @@ export const account: Record<keyof typeof en, string> = {
   'account.logIn.create': 'Crea un compte',
 
   // Forgot password
-  'account.forgot.topBar': 'STL // CONTRASENYA',
   'account.forgot.title': 'Has oblidat la contrasenya?',
   'account.forgot.lead': 'T’enviarem per mail un enllaç per triar-ne una de nova.',
   'account.forgot.sent': 'Si aquest mail té un compte, hi hem enviat un enllaç. Funciona durant 1 hora.',
@@ -116,7 +115,6 @@ export const account: Record<keyof typeof en, string> = {
   'account.install.button': 'Instal·la l’aplicació',
 
   // Account page
-  'account.page.step': 'COMPTE',
   'account.page.title': 'Compte',
   'account.page.email': 'Correu electrònic',
   'account.page.name': 'Nom',

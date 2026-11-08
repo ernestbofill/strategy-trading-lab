@@ -4,8 +4,6 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.what.template': 'la plantilla',
   'newStrategy.what.test': 'la prova',
 
-  'newStrategy.pick.topBar': 'STL // NOVA ESTRATÈGIA',
-  'newStrategy.pick.logIn': 'INICIA SESSIÓ',
   'newStrategy.pick.continue': 'Continua',
   'newStrategy.pick.note': "Tria'n una per començar. Més endavant podràs afegir més estratègies, a partir de qualsevol plantilla.",
   'newStrategy.pick.eyebrow': 'Et donem la benvinguda a Strategy Trading Lab',

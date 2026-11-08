@@ -27,7 +27,7 @@ export function SetBudget() {
   const t = useT()
   const { templateKey } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
-  const top = <TopBar back={modePath} step="4 / 5" />
+  const top = <TopBar up={modePath} step="4 / 5" />
 
   return (
     <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>

@@ -25,7 +25,7 @@ export function SignalPage() {
   const { id = '', signalId = '' } = useParams()
   const signal = useLoadable(signalCacheKey(signalId), () => api.getSignal(signalId))
   const top = (s?: SignalDetail) => (
-    <TopBar back={strategyPath(s?.strategyId ?? id)} aside={s && <span>{t('signal.title', { date: shortDate(s.signalDate).toUpperCase() })}</span>} />
+    <TopBar up={strategyPath(s?.strategyId ?? id)} upLabel="common.up.strategy" aside={s ? <span>{t('signal.title', { date: shortDate(s.signalDate).toUpperCase() })}</span> : null} />
   )
 
   return (

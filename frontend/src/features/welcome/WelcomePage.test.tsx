@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { I18nProvider } from '../../i18n/I18n'
 import { WelcomePage } from './WelcomePage'
+
+// A guest: the page shows the guest top bar (the language and LOG IN).
+vi.mock('../account/AccountContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../account/AccountContext')>()),
+  useRole: () => null,
+}))
 
 function renderPage(locale: 'en' | 'ca' = 'en') {
   if (locale === 'ca') {
@@ -39,7 +45,7 @@ describe('WelcomePage', () => {
     const registerLink = screen.getByRole('link', { name: 'Create an account' })
     expect(registerLink.getAttribute('href')).toBe('/sign-up')
 
-    const loginLink = screen.getByRole('link', { name: 'Log in' })
+    const loginLink = screen.getByRole('link', { name: 'LOG IN' })
     expect(loginLink.getAttribute('href')).toBe('/log-in')
   })
 

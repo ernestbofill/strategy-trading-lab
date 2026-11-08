@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api, UnauthorizedError, type AdminAsset, type AssetKind } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
-import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { Screen, ScreenMessage } from '../../components/Screen'
+import { AdminTopBar } from './AdminTopBar'
 import styles from './AdminAssets.module.css'
 import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
 import { AddAssetForm, EditAssetForm } from './AssetForms'
@@ -119,7 +120,7 @@ export function AdminAssets() {
   }
 
   return (
-    <Screen top={<TopBar back="/admin" step="ADMIN" />}>
+    <Screen top={<AdminTopBar />}>
       <PageHeader title="Assets" lead="Stocks, funds and indexes. Prices are fetched daily for those a running strategy watches, and for the index fund (SPY) always." />
       {state.status === 'loading' && <ScreenMessage>Loading the assets…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the assets. Try again later.</ScreenMessage>}

@@ -205,7 +205,7 @@ export default function App() {
                     <Route
                       path="/admin"
                       element={
-                        <LazyPage back="/">
+                        <LazyPage>
                           <AdminSettings />
                         </LazyPage>
                       }
@@ -213,7 +213,7 @@ export default function App() {
                     <Route
                       path="/admin/alerts"
                       element={
-                        <LazyPage back="/admin">
+                        <LazyPage>
                           <AdminAlerts />
                         </LazyPage>
                       }
@@ -221,7 +221,7 @@ export default function App() {
                     <Route
                       path="/admin/users"
                       element={
-                        <LazyPage back="/admin">
+                        <LazyPage>
                           <AdminUsers />
                         </LazyPage>
                       }
@@ -229,7 +229,7 @@ export default function App() {
                     <Route
                       path="/admin/assets"
                       element={
-                        <LazyPage back="/admin">
+                        <LazyPage>
                           <AdminAssets />
                         </LazyPage>
                       }
@@ -237,7 +237,7 @@ export default function App() {
                     <Route
                       path="/admin/templates"
                       element={
-                        <LazyPage back="/admin">
+                        <LazyPage>
                           <AdminTemplates />
                         </LazyPage>
                       }
@@ -245,7 +245,7 @@ export default function App() {
                     <Route
                       path="/admin/invites"
                       element={
-                        <LazyPage back="/admin">
+                        <LazyPage>
                           <AdminInvites />
                         </LazyPage>
                       }

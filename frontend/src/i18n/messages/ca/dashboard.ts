@@ -2,8 +2,7 @@ import type { dashboard as en } from '../en/dashboard'
 
 export const dashboard: Record<keyof typeof en, string> = {
   'dashboard.what': 'les teves estratègies',
-  'dashboard.title': 'STL // DASHBOARD',
-  'dashboard.account': 'Compte',
+  'dashboard.title': 'STL // BENVINGUDA',
   'dashboard.heading': 'Les teves estratègies',
   'dashboard.newStrategy': '+ Nova estratègia',
   'dashboard.strategiesFull': 'Tens {max} estratègies en marxa, el màxim per ara. Arxiva\'n una per començar-ne una altra.',

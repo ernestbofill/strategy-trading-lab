@@ -54,8 +54,8 @@ export function AdminSettings() {
   }, [])
 
   return (
-    <Screen top={<TopBar title="STL // ADMIN" titleLink="/" />}>
-      <PageHeader title="Settings" lead="Values set here win over the server's. Secrets are never shown." />
+    <Screen top={<TopBar home />}>
+      <PageHeader title="Admin" lead="Values set here win over the server's. Secrets are never shown." />
       <section className={styles.group}>
         <h2 className={styles.groupTitle}>Management</h2>
         <NavRow

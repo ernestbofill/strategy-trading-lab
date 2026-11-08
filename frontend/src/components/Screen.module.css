@@ -15,7 +15,7 @@
   }
 }
 
-/* One line: the back link or title on the left, the step on the right. Text too long for it ends in "…", never wraps. */
+/* One line: the home or up link (or a title) on the left, a label or links on the right. Text too long for it ends in "…", never wraps. */
 .topBar {
   display: flex;
   justify-content: space-between;
@@ -30,16 +30,25 @@
   color: var(--ink-muted);
 }
 
-.back,
-.titleLink {
+/* The left link: home, up or the title. A flex box, so the drawn arrow sits on the text's middle on every browser. */
+.left {
   color: var(--ink-muted);
   text-decoration: none;
-  display: block;
-  line-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
 }
-.back:hover,
-.titleLink:hover {
+.left:hover {
   color: var(--primary);
+}
+.arrow {
+  flex: none;
+}
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* The left side keeps its full text first; the step gives way, then both end in "…". */
@@ -114,6 +123,6 @@
   font: 13px/20px var(--font-ui);
 }
 
-.step {
+.right {
   text-align: right;
 }

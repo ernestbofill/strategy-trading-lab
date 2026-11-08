@@ -24,6 +24,7 @@ export const isCandidateOn = (checks: RuleCheck[]) => checks.every((c) => c.grou
  * One day's levels from its checks' keys (not the template's): a candidate's buy area or discount zone, else the line that
  * would make it a candidate (beaten down, proven growth); a held stock's next milestone; a bear's market fall line, and its
  * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks.
+ * The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest, 2026-11-08).
  */
 export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(checks)): ChartMark[] {
   const marks: ChartMark[] = []
@@ -55,7 +56,7 @@ export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(chec
         break
       // The comeback has it only while not a candidate (the beaten-down line); a bear always (the market fall).
       case 'drop':
-        if (c.level !== null && c.min !== null)
+        if ((bear || !isCandidate) && c.level !== null && c.min !== null)
           marks.push({ id: 'drop', label: bear ? 'stock.chart.fall' : 'stock.chart.beaten', tone: bear ? 'sell' : 'watch', from: below(c.level, c.min) })
         break
       // Only once a drop started: before, there is no low to bounce off.
@@ -77,10 +78,11 @@ export interface ChartSeries {
   points: { i: number; from: number; to?: number }[]
 }
 
-export function chartSeries(days: ChartDay[]): ChartSeries[] {
+/** Each level across the days, drawn as the stock's verdict today has it: a candidate's areas, else its watch lines. */
+export function chartSeries(days: ChartDay[], isCandidate: boolean): ChartSeries[] {
   const byId = new Map<string, ChartSeries>()
   days.forEach((day, i) => {
-    for (const { from, to, ...mark } of chartMarks(day.checks)) {
+    for (const { from, to, ...mark } of chartMarks(day.checks, isCandidate)) {
       let series = byId.get(mark.id)
       if (!series) byId.set(mark.id, (series = { mark, area: to !== undefined, points: [] }))
       series.points.push({ i, from, to })
@@ -115,4 +117,19 @@ export function priceRange(values: number[]): [number, number] {
   const max = Math.max(...values)
   const pad = (max - min) * 0.06 || max * 0.01 || 1
   return [min - pad, max + pad]
+}
+
+/**
+ * Labels' positions on the right axis, in the order given: each at its own height where it can, pushed apart so none
+ * overlap, and kept between `top` and `bottom`.
+ */
+export function spreadLabels(ys: number[], gap: number, top: number, bottom: number): number[] {
+  const order = ys.map((_, k) => k).sort((a, b) => ys[a] - ys[b])
+  const at = order.map((k) => Math.min(Math.max(ys[k], top), bottom))
+  for (let n = 1; n < at.length; n++) at[n] = Math.max(at[n], at[n - 1] + gap)
+  at[at.length - 1] = Math.min(at[at.length - 1], bottom)
+  for (let n = at.length - 2; n >= 0; n--) at[n] = Math.min(at[n], at[n + 1] - gap)
+  const result = [...ys]
+  order.forEach((k, n) => (result[k] = at[n]))
+  return result
 }

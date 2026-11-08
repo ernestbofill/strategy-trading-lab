@@ -76,6 +76,7 @@ const owner: LinkGroup = {
     { to: '/admin/users', label: 'footer.users' },
     { to: '/admin/assets', label: 'footer.assets' },
     { to: '/admin/invites', label: 'footer.invites' },
+    { to: '/admin/templates', label: 'footer.adminTemplates' },
     { to: '/feedback', label: 'footer.feedback' },
   ],
 }

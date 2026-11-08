@@ -7,7 +7,7 @@ import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/S
 import { useLeave } from '../../components/useLeave'
 import { strategyPath } from '../dashboard/paths'
 import { AdvancedSettingsBody } from '../new-strategy/AdvancedSettingsBody'
-import { changedSettings, settingValues, type SettingValues } from '../new-strategy/settings'
+import { settingValues, type SettingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
 import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
@@ -27,7 +27,8 @@ export function StrategySettings() {
 
 function StrategySettingsWithTemplate({ strategy }: { strategy: StrategyDetail }) {
   const t = useT()
-  const template = useTemplate(strategy.templateKey)
+  // As the version it started from, so "Tested" and "Reset to tested" match what "tuned" on its page compares with.
+  const template = useTemplate(strategy.templateKey, strategy.defaultsVersion)
   const top = <TopBar back={strategyPath(strategy.id)} step={strategy.name} />
   return (
     <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>
@@ -58,7 +59,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
     setSaving(true)
     setError(null)
     try {
-      await api.updateStrategySettings(strategy.id, changedSettings(template, values))
+      await api.updateStrategySettings(strategy.id, values)
       invalidateAll()
       leave()
     } catch (err) {

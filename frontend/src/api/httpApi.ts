@@ -274,7 +274,7 @@ export const httpApi: Api = {
     if (!response.ok) throw new Error(`Couldn't turn the emails off (${response.status}).`)
   },
   getTemplates: () => getRequired('/templates'),
-  getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
+  getTemplate: (key, version) => get(`/templates/${encodeURIComponent(key)}${version === undefined ? '' : `?version=${version}`}`),
   getDashboard: () => getRequired('/dashboard'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
   getStockChart: (id, assetId) => get(`/strategies/${encodeURIComponent(id)}/stocks/${encodeURIComponent(assetId)}/chart`),
@@ -334,6 +334,10 @@ export const httpApi: Api = {
   getAdminUsers: async () => (await admin('GET', '/users')).json(),
   getAdminAlerts: async () => (await admin('GET', '/alerts')).json(),
   dismissAdminAlert: async (id) => void (await admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
+  getAdminTemplates: async () => (await admin('GET', '/templates')).json(),
+  saveAdminTemplateVersion: async (key, change) => (await admin('POST', `/templates/${encodeURIComponent(key)}/versions`, change)).json(),
+  activateAdminTemplateVersion: async (key, version) =>
+    (await admin('PUT', `/templates/${encodeURIComponent(key)}/active`, { version })).json(),
   setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
   addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
   updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),

@@ -21,7 +21,7 @@ public static class StrategyEndpoints
 
     public static void MapStrategies(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
+        app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var all = await db.Strategies.AsNoTracking().Where(strategy => strategy.UserId == user.Id).Include(strategy => strategy.Assets).ToListAsync(cancellationToken);
@@ -56,13 +56,17 @@ public static class StrategyEndpoints
                 .ToListAsync(cancellationToken)).ToDictionary(r => (r.StrategyId, r.AssetId));
             var aiScores = new Dictionary<Guid, Dictionary<Guid, decimal>>();
             foreach (var s in running.Where(AiRounds.IsAi)) aiScores[s.Id] = await rounds.LastScoresAsync(s.Id, cancellationToken);
-            var counts = running.ToDictionary(s => s.Id, s => CountsOf(s, book, signals[s.Id], latest, aiScores.GetValueOrDefault(s.Id)));
+            var templates = (await store.AllAsync(cancellationToken)).ToDictionary(t => t.Key);
+            var counts = running.ToDictionary(s => s.Id, s => CountsOf(s, templates[s.TemplateKey], book, signals[s.Id], latest, aiScores.GetValueOrDefault(s.Id)));
             // The fund a fund template follows, named on its card.
-            var fundIds = strategies.Where(s => TemplateCatalog.Find(s.TemplateKey)!.InvestsIn != InvestsIn.StockList)
+            var fundIds = strategies.Where(s => templates[s.TemplateKey].InvestsIn != InvestsIn.StockList)
                 .SelectMany(s => Followed(s).Select(a => a.AssetId)).Distinct().ToList();
             var symbols = await db.Assets.AsNoTracking().Where(a => fundIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Symbol, cancellationToken);
             string? FundOf(Strategy s) => Followed(s).Select(a => symbols.GetValueOrDefault(a.AssetId)).FirstOrDefault(n => n is not null);
-            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user, (book, today)) with
+            // Each strategy as the template version it started from, for "tuned".
+            var startedWith = new Dictionary<Guid, Template>();
+            foreach (var s in strategies) startedWith[s.Id] = await store.VersionAsync(s.TemplateKey, s.DefaultsVersion, cancellationToken);
+            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user, startedWith[strategy.Id], (book, today)) with
                 {
                     Stocks = counts.GetValueOrDefault(strategy.Id),
                     Fund = FundOf(strategy),
@@ -77,7 +81,7 @@ public static class StrategyEndpoints
         .WithSummary("The user's strategies, running ones first, with their results, and the live signals and AI rounds waiting for an answer.");
 
         app.MapGet("/strategies/{id:guid}", async Task<Results<Ok<StrategyDetail>, NotFound>> (
-            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
@@ -85,7 +89,9 @@ public static class StrategyEndpoints
             if (strategy is null) return TypedResults.NotFound();
             var today = Today(user, time);
             var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : default;
-            return TypedResults.Ok(await DetailAsync(db, strategy, user, today, cancellationToken, ai.Summary, ai.LastScores));
+            // The version it started from: "tuned" compares with that.
+            var template = await store.VersionAsync(strategy.TemplateKey, strategy.DefaultsVersion, cancellationToken);
+            return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores));
         })
         .RequireUser()
         .WithTags("Strategies")
@@ -120,9 +126,9 @@ public static class StrategyEndpoints
         .WithSummary("The stock page's chart: a stock's daily closes over the last 90 days with the rules' checks of each day, for a stock in one of the user's strategies.");
 
         group.MapPost("/", async Task<Results<Created<StrategySummary>, ValidationProblem, Conflict<string>, NotFound>> (
-            NewStrategy request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            NewStrategy request, AppDbContext db, Sessions sessions, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            if (TemplateCatalog.Find(request.TemplateKey ?? "") is not { } template) return TypedResults.NotFound();
+            if (await store.FindAsync(request.TemplateKey ?? "", cancellationToken) is not { } template) return TypedResults.NotFound();
 
             var user = await CurrentUser(sessions, cancellationToken);
             var ids = request.AssetIds ?? [];
@@ -137,10 +143,13 @@ public static class StrategyEndpoints
                 errors["sourceStrategyId"] = [Messages.NotYourSimulation.In(user.Locale)];
             var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             // The AI template's prompt choices (Review: "What the AI reads", Edit prompt).
-            if (parameters is not null && template == TemplateCatalog.Ai)
+            if (parameters is not null && template.Key == TemplateCatalog.Ai.Key)
                 parameters = AiRoundEndpoints.Apply(parameters, request.Ai, (field, message) => errors[$"ai.{field}"] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
+            // The version the screens showed, which the settings sent come from; the active one when the client didn't say.
+            var defaultsVersion = request.DefaultsVersion is { } seen && await store.ExistsAsync(template.Key, seen, cancellationToken)
+                ? seen : template.DefaultsVersion;
             await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
             await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM users WHERE id = {user.Id} FOR NO KEY UPDATE", cancellationToken);
             var running = await db.Strategies.CountAsync(s => s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
@@ -154,7 +163,7 @@ public static class StrategyEndpoints
             {
                 UserId = user.Id,
                 TemplateKey = template.Key,
-                DefaultsVersion = template.DefaultsVersion,
+                DefaultsVersion = defaultsVersion,
                 Name = request.Name.Trim(),
                 Mode = request.Mode!.Value,
                 Status = StrategyStatus.Running,
@@ -168,7 +177,7 @@ public static class StrategyEndpoints
             };
             db.Strategies.Add(strategy);
             // Its first AI round is due now (spec: Confirm, "Your first AI round is due now").
-            if (template == TemplateCatalog.Ai) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, DueOn = strategy.StartedOn, Status = AiRoundStatus.Due });
+            if (template.Key == TemplateCatalog.Ai.Key) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, DueOn = strategy.StartedOn, Status = AiRoundStatus.Due });
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
@@ -179,22 +188,29 @@ public static class StrategyEndpoints
             {
                 return TypedResults.Conflict(Messages.NameTaken.In(user.Locale));
             }
-            return TypedResults.Created($"/strategies/{strategy.Id}", Summary(strategy, user));
+            return TypedResults.Created($"/strategies/{strategy.Id}", Summary(strategy, user, template));
         })
         .WithName("StartStrategy")
         .WithSummary("Starts a strategy from a template, in simulation or live, with the user's budget and stocks.");
 
         group.MapPut("/{id:guid}/settings", async Task<Results<NoContent, NotFound, ValidationProblem>> (
-            Guid id, UpdateStrategySettings request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+            Guid id, UpdateStrategySettings request, AppDbContext db, Sessions sessions, TemplateStore store, CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
 
-            if (TemplateCatalog.Find(strategy.TemplateKey) is not { } template) return TypedResults.NotFound();
+            if (await store.FindAsync(strategy.TemplateKey, cancellationToken) is not { } template) return TypedResults.NotFound();
 
             var errors = new Dictionary<string, string[]>();
-            var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale, strategy.Params);
+            // A setting the request leaves out keeps the strategy's own value, never the template's default, which the owner
+            // may have changed since it started (/admin/templates).
+            var root = strategy.Params.RootElement;
+            var settings = template.Settings
+                .Where(s => root.TryGetProperty(s.Key, out var value) && value.ValueKind == JsonValueKind.Number)
+                .ToDictionary(s => s.Key, s => root.GetProperty(s.Key).GetDecimal());
+            foreach (var (key, value) in request.Settings ?? new Dictionary<string, decimal>()) settings[key] = value;
+            var parameters = TemplateSettings.Apply(template, settings, (field, message) => errors[field] = [message], user.Locale, strategy.Params);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
             strategy.Params = parameters;
@@ -377,9 +393,8 @@ public static class StrategyEndpoints
     static DateOnly ResultsDay(Strategy strategy, User user, DateOnly today) => EndedOn(strategy, user) is { } ended && ended < today ? ended : today;
 
     /// <summary>A strategy's card; without <paramref name="trades"/> (a new strategy) it has no results and nothing used.</summary>
-    static StrategySummary Summary(Strategy strategy, User user, (StrategyBook Book, DateOnly Today)? trades = null)
+    static StrategySummary Summary(Strategy strategy, User user, Template template, (StrategyBook Book, DateOnly Today)? trades = null)
     {
-        var template = TemplateCatalog.Find(strategy.TemplateKey)!;
         var texts = TemplateTexts.For(template, user.Locale);
         var book = trades?.Book;
         var figures = trades is { } t ? t.Book.Figures(strategy, ResultsDay(strategy, user, t.Today)) : null;
@@ -392,7 +407,7 @@ public static class StrategyEndpoints
     static IEnumerable<StrategyAsset> Followed(Strategy strategy) => strategy.Assets.Where(a => a.Active && a.RemovedAt is null);
 
     /// <summary>A running strategy's followed stocks counted by pill, for its dashboard card.</summary>
-    static StockCounts CountsOf(Strategy strategy, StrategyBook book, IEnumerable<Signal> signals,
+    static StockCounts CountsOf(Strategy strategy, Template template, StrategyBook book, IEnumerable<Signal> signals,
         IReadOnlyDictionary<(Guid, Guid), DailyEvaluation> latest, IReadOnlyDictionary<Guid, decimal>? aiScores)
     {
         var you = book.You(strategy);
@@ -402,7 +417,7 @@ public static class StrategyEndpoints
             .ToList();
         // Bear markets' distance is above the low, not from a buy rule, so it is never "close".
         bool Close(StockState s) => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket && strategy.TemplateKey != "bear"
-            && s.Distance is > 0 and <= StockCounts.ClosePct;
+            && s.Distance is > 0 && s.Distance <= template.ClosePct;
         return new StockCounts(
             states.Count(s => s.Status is StockStatus.WaitingForYou or StockStatus.Signal),
             states.Count(Close),
@@ -410,7 +425,9 @@ public static class StrategyEndpoints
             states.Count(s => s.Status is StockStatus.Holding or StockStatus.Building or StockStatus.Done),
             states.Count(s => s.Status == StockStatus.NotCandidate));
     }
-
+    // "Customized" compares with the template version the strategy started from (it is passed that version), so it reads as
+    // tuned only when the user changed something, whatever the owner made active since on /admin/templates.
+    // owner's changes on /admin/templates: a running strategy doesn't flip when the owner edits a template.
     static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
         template.Backtest?.LastOrDefault() is { TemplatePerYear: { } tmpl, IndexPerYear: { } idx, WorstYear: { } worst, IndexWorstYear: { } idxWorst } && texts.Backtest is { } words
             ? new PastResult(words.Years, tmpl, idx, worst, idxWorst,
@@ -439,16 +456,15 @@ public static class StrategyEndpoints
             : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
         return template.Watches switch
         {
-            StarterList starter => activeIds.Any(id => !starter.Stocks.Any(stock => stock.Id == id)),
-            DefaultFund defaultFund => activeIds.Any(id => id != defaultFund.Fund.Id),
+            StarterList starter => activeIds.Any(id => !starter.StockIds.Contains(id)),
+            DefaultFund defaultFund => activeIds.Any(id => id != defaultFund.FundId),
             _ => false,
         };
     }
 
-    static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, User user, DateOnly today, CancellationToken cancellationToken,
+    static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, Template template, User user, DateOnly today, CancellationToken cancellationToken,
         AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null)
     {
-        var template = TemplateCatalog.Find(strategy.TemplateKey)!;
         var texts = TemplateTexts.For(template, user.Locale);
         var book = await StrategyBook.LoadAsync(db, [strategy], today, cancellationToken);
         var live = strategy.Mode == StrategyMode.Live;
@@ -607,7 +623,7 @@ public static class StrategyEndpoints
                 settings[s.Key] = prop.GetDecimal();
         }
 
-        var aiSetup = template == TemplateCatalog.Ai && strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) is { } aiParams
+        var aiSetup = template.Key == TemplateCatalog.Ai.Key && strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) is { } aiParams
             ? new AiSetup(aiParams.News, aiParams.Mood, aiParams.Figures, aiParams.Instructions)
             : null;
         var sourceName = strategy.SourceStrategyId is { } sourceId
@@ -618,7 +634,7 @@ public static class StrategyEndpoints
             EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
-            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks };
+            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion };
     }
 
     /// <summary>Where a stock stands today: its pill, the steps and signal behind it, and how far the price is from the rules.</summary>

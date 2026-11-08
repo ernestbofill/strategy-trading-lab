@@ -8,13 +8,15 @@ const stock = (symbol: string): Security => ({ id: `id-${symbol}`, symbol, name:
 const dip = {
   key: 'dip',
   watches: { kind: 'stocks', starterList: [stock('NVDA'), stock('AVGO'), stock('META')] },
-  defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: {} },
+  defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: { peakDays: 60, zoneEndPct: 15 } },
+  settings: [{ key: 'peakDays' }, { key: 'zoneEndPct' }],
 } as unknown as TemplateDetail
 
 const trend = {
   key: 'trend',
   watches: { kind: 'fund', fund: stock('CSPX') },
   defaults: { version: 1, budget: { amount: 3000, step: null, maxSteps: null }, params: {} },
+  settings: [],
 } as unknown as TemplateDetail
 
 describe('newStrategyFrom', () => {
@@ -26,13 +28,14 @@ describe('newStrategyFrom', () => {
       currency: 'EUR',
       budget: { amount: 3000, step: 100, maxSteps: 5 },
       assetIds: ['id-NVDA', 'id-AVGO', 'id-META'],
-      settings: {},
+      settings: { peakDays: 60, zoneEndPct: 15 },
+      defaultsVersion: 1,
     })
   })
 
-  it('sends the settings the user changed', () => {
+  it('sends every setting, the user changes over the defaults shown', () => {
     const draft = { ...initialDraft, settings: { peakDays: 40 } }
-    expect(newStrategyFrom(draft, dip, 'Mine', 'EUR').settings).toEqual({ peakDays: 40 })
+    expect(newStrategyFrom(draft, dip, 'Mine', 'EUR').settings).toEqual({ peakDays: 40, zoneEndPct: 15 })
   })
 
   it('sends the mode, the budget the user set and only the ticked stocks', () => {

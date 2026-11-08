@@ -207,7 +207,7 @@ export interface StrategySummary {
   fund: string | null
 }
 
-/** A strategy's stocks by pill, for its card. `close`: candidates within 3% of the buy rule, not counted again in `candidates`. */
+/** A strategy's stocks by pill, for its card. `close`: candidates within the template's getting close % (3 unless the owner changed it) of the buy rule, not counted again in `candidates`. */
 export interface StockCounts {
   signals: number
   close: number
@@ -417,6 +417,8 @@ export interface StrategyDetail {
   sourceStrategyName?: string | null
   /** The template's words for each rule check, by key. */
   checkTexts?: Record<string, CheckTexts> | null
+  /** The template version it started from: its settings screen shows that version's values as tested. */
+  defaultsVersion?: number
 }
 
 /** What the AI prompt asks for: the sources on, and the user's own instructions (null for the suggested ones). */
@@ -696,12 +698,14 @@ export interface NewStrategy {
   currency: Currency
   /** The stocks to watch, or the one fund. */
   assetIds: string[]
-  /** The Advanced settings the user changed (setting key → value); the rest keep the tested defaults. */
+  /** Every Advanced setting (setting key → value): the user's changes over the defaults shown. */
   settings: Record<string, number>
   /** Templates driven by AI rounds: what the prompt asks for. */
   ai?: AiSetup
   /** A live strategy copied from one of the user's simulations ("Go live with these settings"). */
   sourceStrategyId?: string
+  /** The template version the screens showed: the strategy is stamped with it. */
+  defaultsVersion?: number
 }
 
 /** What the browser's `PushSubscription.toJSON()` gives: backend Notifications/WebPushEndpoints.cs. */
@@ -972,6 +976,56 @@ export interface AdminAlert {
   closedAt: string | null
 }
 
+
+/** A template on /admin/templates: backend Admin/AdminTemplates.cs (AdminTemplate). Its settings and every version, newest first. */
+export interface AdminTemplate {
+  key: string
+  name: string
+  investsIn: InvestsIn
+  /** False for a template whose stocks have no buy rule (the AI's): no "getting close". */
+  hasClosePct: boolean
+  settings: AdminTemplateSetting[]
+  versions: AdminTemplateVersion[]
+}
+
+/** A setting of Advanced settings, with its words (`sentence` with `{value}`, `value` with `{n}`) and range. */
+export interface AdminTemplateSetting {
+  key: string
+  sentence: string
+  value: string
+  step: number
+  min: number
+  max: number
+  below?: string | null
+}
+
+/** A version of what new strategies start with. Version 1 is the tested one; one version is active. */
+export interface AdminTemplateVersion {
+  version: number
+  active: boolean
+  createdAt: string
+  defaults: Record<string, number>
+  /** The starter list, or the one fund, sorted by name. */
+  assets: AdminTemplateAsset[]
+  closePct: number
+  /** How many strategies started from it. */
+  strategies: number
+}
+
+export interface AdminTemplateAsset {
+  id: string
+  symbol: string
+  name: string
+  active: boolean
+}
+
+/** A new version: every setting's default, the stocks or the fund, "getting close". */
+export interface AdminTemplateChange {
+  defaults: Record<string, number>
+  assetIds: string[]
+  closePct: number | null
+}
+
 /** An asset on the admin assets page: backend Admin/AdminEndpoints.cs (AdminAsset). */
 export interface AdminAsset {
   id: string
@@ -1044,7 +1098,8 @@ export interface Api {
   /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */
   unsubscribe(token: string, kind: 'overview' | 'alerts'): Promise<void>
   getTemplates(): Promise<StrategyTemplate[]>
-  getTemplate(key: TemplateKey): Promise<TemplateDetail | undefined>
+  /** The template as its active version, or as `version` (a strategy's own, for its settings screen). */
+  getTemplate(key: TemplateKey, version?: number): Promise<TemplateDetail | undefined>
   /** Rejects with `UnauthorizedError` when the session has ended (also for `startStrategy`). */
   getDashboard(): Promise<Dashboard>
   /** The strategy page; undefined when the user has no such strategy. */
@@ -1120,6 +1175,12 @@ export interface Api {
   getAdminAlerts(): Promise<AdminAlert[]>
   /** Dismisses an open alert: it stays quiet while its problem lasts. */
   dismissAdminAlert(id: string): Promise<void>
+  /** Every template: what new strategies start with, next to the tested values. */
+  getAdminTemplates(): Promise<AdminTemplate[]>
+  /** Saves a new version and makes it active. Rejects with `InvalidFieldsError` (`settings.<key>`, `assetIds`, `closePct`). */
+  saveAdminTemplateVersion(key: string, change: AdminTemplateChange): Promise<AdminTemplate>
+  /** Makes a version active: new strategies of the template start with it. */
+  activateAdminTemplateVersion(key: string, version: number): Promise<AdminTemplate>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */

@@ -242,6 +242,23 @@ public class AppSetting : IHasUpdatedAt
     public DateTimeOffset UpdatedAt { get; set; }
 }
 
+/// <summary>
+/// A version of what a template's new strategies start with (/admin/templates, Templates/TemplateStore.cs): a fixed snapshot,
+/// never edited. <c>Defaults</c> holds every Advanced settings default by setting key, <c>AssetIds</c> the starter list or the
+/// one fund. Version 1 is the catalogue's tested values (seeded by migration); one version per template is active, the one new
+/// strategies take. A strategy keeps the number it started from (<see cref="Strategy.DefaultsVersion"/>).
+/// </summary>
+public class TemplateVersion
+{
+    public required string TemplateKey { get; set; }
+    public int Version { get; set; }
+    public required JsonDocument Defaults { get; set; }
+    public required List<Guid> AssetIds { get; set; }
+    public decimal ClosePct { get; set; }
+    public bool Active { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
 public class Notification
 {
     public Guid Id { get; set; }

@@ -119,6 +119,13 @@ describe('SignalPage', () => {
     expect(await screen.findByText("We'll remind you on Oct 26.")).toBeTruthy()
   })
 
+  it('does not offer snooze when canSnooze is false', async () => {
+    open(detail({ canSnooze: false }))
+
+    expect(await screen.findByRole('button', { name: 'Save the trade' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Remind me next trading day' })).toBeNull()
+  })
+
   it('shows an answered signal without the form', async () => {
     open(detail({ status: 'skipped', answer: { status: 'skipped', skipReason: 'noCash', date: null, price: null, amount: null, shares: null, fee: null } }))
 

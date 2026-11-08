@@ -16,7 +16,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
     static readonly DateOnly SignalDay = new(2026, 9, 22);
 
     /// <summary>A signed-up user's strategy on a euro stock (no exchange rate needed), with two waiting signals and the next day's price.</summary>
-    async Task<(HttpClient Client, Guid StrategyId, Guid AssetId, Guid First, Guid Second)> SeedAsync(StrategyMode mode = StrategyMode.Live)
+    async Task<(HttpClient Client, Guid StrategyId, Guid AssetId, Guid First, Guid Second)> SeedAsync(StrategyMode mode = StrategyMode.Live, string templateKey = "dip")
     {
         var (client, email) = await factory.SignedUpAsync();
         using var scope = factory.Services.CreateScope();
@@ -32,7 +32,7 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             new PriceDaily { AssetId = asset.Id, Date = SignalDay.AddDays(1), Open = 190, High = 191, Low = 189, Close = 190.5m, Volume = 1000 });
         var strategy = new Strategy
         {
-            UserId = user.Id, TemplateKey = "dip", Name = $"Signals {tag}", Mode = mode, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 9, 1),
+            UserId = user.Id, TemplateKey = templateKey, Name = $"Signals {tag}", Mode = mode, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 9, 1),
             Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
             Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = DateTimeOffset.UtcNow }],
         };
@@ -246,6 +246,25 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
             var waiting = await db.Signals.SingleAsync(s => s.Id == first);
             Assert.Equal((SignalStatus.Waiting, until), (waiting.Status, waiting.SnoozedUntil));
             Assert.Empty(await db.UserTrades.Where(t => t.SignalId == second).ToListAsync());
+        }
+        finally
+        {
+            await CleanAsync(assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task Signals_from_ai_rounds_cannot_be_snoozed()
+    {
+        var (client, _, assetId, first, _) = await SeedAsync(templateKey: "ai");
+        try
+        {
+            var detail = await (await client.GetAsync($"/signals/{first}")).Content.ReadFromJsonAsync<JsonElement>();
+            Assert.False(detail.GetProperty("canSnooze").GetBoolean());
+
+            var snooze = await client.PostAsync($"/signals/{first}/snooze", null);
+            Assert.Equal(HttpStatusCode.Conflict, snooze.StatusCode);
+            Assert.Contains("Signals from AI rounds can't be snoozed.", await snooze.Content.ReadAsStringAsync());
         }
         finally
         {

@@ -66,12 +66,10 @@
 .mono {
   font-family: var(--font-mono);
 }
-.mono[data-tone="up"],
 .mono[data-state="met"],
 .mono[data-state="used"] {
   color: var(--success);
 }
-.mono[data-tone="down"],
 .mono[data-state="past"] {
   color: var(--warning);
 }

@@ -119,6 +119,15 @@ describe('app routes', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Legal notice' })).toBeTruthy()
   })
+
+  it('says a page is not found instead of opening the home page', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/no-such-page')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/no-such-page')
+  })
 })
 
 describe('links with a language', () => {

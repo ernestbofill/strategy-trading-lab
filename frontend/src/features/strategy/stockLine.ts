@@ -23,6 +23,15 @@ const fillN = (text: string, d: number | null) =>
 
 type Texts = Record<string, CheckTexts> | null | undefined
 
+/**
+ * Steps left but no milestone to earn them (*The comeback*, as in the POC, #58): the rules hold the stock with every next-step
+ * sign already used.
+ */
+const milestonesUsed = (row: StockRow) => {
+  const next = row.checks.filter((c) => c.group === 'next' && !c.preview)
+  return row.maxSteps !== null && row.steps < row.maxSteps && next.length > 0 && next.every((c) => c.used === true)
+}
+
 function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, t: Translate): string {
   const stepOf = (n: number) => (row.maxSteps === null ? String(n) : t('signal.stepOf', { n, max: row.maxSteps }))
   const fromZone = (d: number, zone: string) => t('strategy.stock.fromZone', { dist: pct(d), zone })
@@ -51,7 +60,11 @@ function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, 
     case 'building':
       return (
         rulesAndYou ??
-        (row.maxSteps === null ? (words?.holding ?? t('strategy.stock.inMarket')) : steps(row.steps, row.maxSteps, t))
+        (row.maxSteps === null
+          ? (words?.holding ?? t('strategy.stock.inMarket'))
+          : milestonesUsed(row)
+            ? t('strategy.stock.milestonesUsed', { steps: steps(row.steps, row.maxSteps, t) })
+            : steps(row.steps, row.maxSteps, t))
       )
     case 'noBudget':
       return t(row.maxSteps === null ? 'strategy.stock.noBudgetShort' : 'strategy.stock.noBudget')

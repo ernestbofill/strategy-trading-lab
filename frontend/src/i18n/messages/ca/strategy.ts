@@ -68,6 +68,7 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.stock.rulesAndYou': 'Regles: {rules} · Tu: {you}',
   'strategy.stock.steps': '{n, plural, one {# fase} other {# fases}}',
   'strategy.stock.stepsOf': '{n} de {max} fases',
+  'strategy.stock.milestonesUsed': "{steps} · ja n'ha fet servir totes les fites",
   'strategy.stock.noBudget': 'Sense pressupost per a les seves fases',
   'strategy.stock.noBudgetShort': 'Sense pressupost',
   'strategy.stock.sellWaiting': 'Senyal de venda en espera',

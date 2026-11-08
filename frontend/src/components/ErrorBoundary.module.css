@@ -1,0 +1,29 @@
+.crash {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(var(--space-4) * 2) var(--space-4);
+}
+
+.title {
+  margin: 0;
+  font: 700 28px/34px var(--font-mono);
+  color: var(--primary);
+}
+
+.line {
+  margin: 0;
+  font: 16px/24px var(--font-ui);
+  color: var(--ink);
+}
+
+.home {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--primary);
+  text-decoration: underline;
+}

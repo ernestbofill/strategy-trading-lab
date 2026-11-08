@@ -5,6 +5,9 @@ import { I18nProvider, useI18n } from './i18n/I18n'
 import { LOCALES } from './i18n/locale'
 import { AccountProvider, useAccount, useOptionalAccount } from './features/account/AccountContext'
 import { AccountPage } from './features/account/AccountPage'
+import { NotFoundPage } from './features/errors/NotFoundPage'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { OfflineBanner } from './components/OfflineBanner'
 import { SettingsPage } from './features/account/SettingsPage'
 import { ForgotPassword } from './features/account/ForgotPassword'
 import { LogIn } from './features/account/LogIn'
@@ -149,12 +152,15 @@ function HomeRoute() {
   return state.account ? <Dashboard /> : <WelcomePage />
 }
 
-/** Root layout providing in-app feedback capture across all screens for logged-in users with verified email. */
+/** Root layout: the offline line, each screen behind an error boundary, and in-app feedback capture for logged-in users with verified email. */
 function AppLayout() {
   const { pathname } = useLocation()
   return (
     <>
-      <Outlet />
+      <OfflineBanner />
+      <ErrorBoundary key={pathname}>
+        <Outlet />
+      </ErrorBoundary>
       <FeedbackCaptureIfLoggedIn key={pathname} />
     </>
   )
@@ -267,7 +273,7 @@ export default function App() {
                   <Route path="/strategies/:id/ai-rounds" element={<AiRoundsPage />} />
                   <Route path="/strategies/:id/prompt" element={<StrategyPromptEditor />} />
                 </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Routes>
           </DraftPerUser>

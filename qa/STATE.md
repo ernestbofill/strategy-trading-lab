@@ -183,3 +183,4 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | X7 | Accessibility: keyboard, labels, focus, targets, contrast | untested | 2026-11-06-1 | Spot checks only. F-018. C5.12 |
 | X8 | Console errors, slow pages, the PWA (install, offline) | smoke | 2026-11-06-1 | Offline: L-007. C5.11 |
 | X9 | Results consistency: dashboard vs strategy vs stock vs signal | smoke | 2026-11-06-1 | Agree so far. F-005, F-020. C3.8 |
+| X10 | A wrong address shows Page not found; offline shows the offline line | untested | | Item 26. |

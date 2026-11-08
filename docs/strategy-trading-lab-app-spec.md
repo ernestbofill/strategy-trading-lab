@@ -130,6 +130,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Index trend (`index_trend`)**
 - Buy signal: the close is more than 3% above the SMA 200. Sell signal: the close is more than 3% below it. In between, the trend stays what it was.
+- Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200).
 - All in, all out: one buy of the whole budget; after a sale, the next buy reinvests what the sale returned. Cooldown 5 days. One buy signal per uptrend.
 - No stop-loss: the sell line is the stop.
 

@@ -11,6 +11,7 @@ import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
 import { errorText } from './copy'
 import { APP_HASH, NOTIFICATIONS_HASH, logInPath, settingsPath } from './paths'
+import { homePath } from '../new-strategy/paths'
 import { ResendLink } from './ResendLink'
 import { unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
@@ -91,6 +92,10 @@ export function AccountPage() {
         {loggingOut ? t('account.page.loggingOut') : t('account.page.logOut')}
       </button>
       {logOutError && <FormMessage tone="error">{logOutError}</FormMessage>}
+
+      <Section title={t('account.delete.title')}>
+        {account.role === 'owner' ? <p className={styles.line}>{t('account.delete.owner')}</p> : <DeleteAccount email={account.email} />}
+      </Section>
     </Screen>
   )
 }
@@ -214,5 +219,61 @@ function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Prom
       <AiSharingDetails />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
     </div>
+  )
+}
+
+/** Delete my account (spec: Account): asks for the password, then deletes everything; the API ends every session and sends one last email. */
+function DeleteAccount({ email }: { email: string }) {
+  const t = useT()
+  const [asking, setAsking] = useState(false)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      // This device stops its alerts first (best effort): its subscription goes with the account anyway.
+      await unsubscribeDevice().catch(() => {})
+      await api.deleteAccount(password)
+      // A full load as a guest: no cached load of the deleted account survives, and no screen that needs it renders on the way.
+      window.location.replace(homePath)
+      return
+    } catch (err) {
+      if (err instanceof InvalidFieldsError && err.fields.password) setError(err.fields.password)
+      else setMessage(errorText(err))
+    }
+    setBusy(false)
+  }
+
+  if (!asking)
+    return (
+      <div className={styles.form}>
+        <p className={styles.line}>{t('account.delete.line')}</p>
+        <button type="button" className={`ui-strong ${styles.button} ${styles.danger}`} onClick={() => setAsking(true)}>
+          {t('account.delete.title')}
+        </button>
+      </div>
+    )
+
+  return (
+    <form className={styles.form} onSubmit={submit} noValidate>
+      <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
+      <PasswordField label={t('account.delete.password')} autoComplete="current-password" value={password} onChange={setPassword} error={error} />
+      {message && <FormMessage tone="error">{message}</FormMessage>}
+      <div className={styles.links}>
+        <button type="submit" className={`ui-strong ${styles.button} ${styles.danger}`} disabled={busy || !password}>
+          {busy ? t('account.delete.deleting') : t('account.delete.confirm')}
+        </button>
+        <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => { setAsking(false); setPassword(''); setError(null) }}>
+          {t('account.delete.cancel')}
+        </button>
+      </div>
+    </form>
   )
 }

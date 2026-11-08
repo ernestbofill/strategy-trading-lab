@@ -64,6 +64,7 @@ All JSON, under `/api`. State-changing ones follow the CSRF rule above.
 | `POST /account/forgot-password` | email. Always the same answer |
 | `POST /account/reset-password` | token, new password. Ends all the user's sessions, then logs in this device |
 | `POST /account/change-password` | current password, new password. Ends the other sessions |
+| `POST /account/delete` | password. Deletes the user and everything about them (shared AI rounds first, then the row, which cascades), ends every session (their rows go with it; this device's cookie is dropped) and sends one last email. Refused for an owner |
 
 Every token is single-use and checked in constant time through its hash. Passwords and tokens are never logged.
 

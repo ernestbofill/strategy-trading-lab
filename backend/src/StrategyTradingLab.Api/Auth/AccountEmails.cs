@@ -62,6 +62,23 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
                 .Build("Choose a new password for Strategy Trading Lab")));
     }
 
+    /// <summary>The last email: the account was deleted at the user's request (spec: Account, Delete my account).</summary>
+    public void Deleted(string to, string? firstName, string locale = "en")
+    {
+        var named = !string.IsNullOrWhiteSpace(firstName);
+        queue.Enqueue(new(to, locale == "ca"
+            ? Email(locale)
+                .Paragraph(named ? $"Hola, {firstName}: hem eliminat el teu compte de Strategy Trading Lab, tal com has demanat." : "Hem eliminat el teu compte de Strategy Trading Lab, tal com has demanat.")
+                .Paragraph("Les teves estratègies, senyals, operacions i dades s'han esborrat, i totes les sessions s'han tancat. Aquest és l'últim mail que t'enviem.")
+                .Paragraph("Si no has estat tu, algú tenia la teva contrasenya: canvia-la als altres llocs on la facis servir.")
+                .Build("El teu compte s'ha eliminat")
+            : Email(locale)
+                .Paragraph(named ? $"Hi {firstName}, we deleted your Strategy Trading Lab account, as you asked." : "We deleted your Strategy Trading Lab account, as you asked.")
+                .Paragraph("Your strategies, signals, trades and data are gone, and every session has ended. This is the last email we send you.")
+                .Paragraph("If this wasn't you, someone had your password: change it wherever else you use it.")
+                .Build("Your account is deleted")));
+    }
+
     /// <summary>Warns that an unconfirmed account will be deleted in 7 days unless its email is confirmed.</summary>
     public void UnconfirmedWarning(string to, string token, string locale = "en")
     {

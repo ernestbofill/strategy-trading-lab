@@ -28,6 +28,8 @@ public static class Messages
     public static readonly Message PickCurrency = new("Pick a currency from the list.", "Tria una moneda de la llista.");
     public static readonly Message PickTimeZone = new("Pick your time zone.", "Tria la teva zona horària.");
     public static readonly Message PickNotifyHour = new("Pick an hour.", "Tria una hora.");
+    public static readonly Message WrongPassword = new("That isn't your password.", "Aquesta no és la teva contrasenya.");
+    public static readonly Message OwnerCantDelete = new("An owner account can't be deleted here.", "Un compte de propietari no es pot eliminar des d'aquí.");
     public static readonly Message TickTheBox = new("Tick the box to go on.", "Marca la casella per continuar.");
     public static readonly Message InvalidTermsVersion = new("Please accept the current version of the terms.", "Accepta la versió actual de les condicions.");
     public static readonly Message CheckYourEmail = new("Check your email.", "Revisa el teu mail.");

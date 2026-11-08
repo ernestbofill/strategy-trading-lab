@@ -170,4 +170,11 @@ export const account: Record<keyof typeof en, string> = {
   'account.page.passwordChanged': 'Contrasenya canviada. S’ha tancat la sessió als teus altres dispositius.',
   'account.page.logOut': 'Tanca sessió',
   'account.page.loggingOut': 'Tancant sessió…',
+  'account.delete.title': 'Elimina el meu compte',
+  'account.delete.line': "Elimina el teu compte, estratègies, senyals i operacions, i tanca la sessió a tot arreu. No es pot desfer.",
+  'account.delete.owner': "Un compte de propietari no es pot eliminar des d'aquí.",
+  'account.delete.password': 'La teva contrasenya',
+  'account.delete.confirm': 'Elimina-ho definitivament',
+  'account.delete.deleting': 'Eliminant…',
+  'account.delete.cancel': 'Cancel·la',
 }

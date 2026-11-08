@@ -1155,6 +1155,8 @@ export interface Api {
   resetPassword(token: string, password: string): Promise<void>
   /** Rejects with `InvalidFieldsError` (`currentPassword`, `newPassword`). */
   changePassword(currentPassword: string, newPassword: string): Promise<void>
+  /** Deletes the account and everything about it, ending every session. Rejects with `InvalidFieldsError` (`password`). */
+  deleteAccount(password: string): Promise<void>
   /** Sets the currency of the user's new strategies. Rejects with `InvalidFieldsError`. */
   setCurrency(currency: Currency): Promise<void>
   /** Sets the language of the user's account and emails. Rejects with `InvalidFieldsError`. */

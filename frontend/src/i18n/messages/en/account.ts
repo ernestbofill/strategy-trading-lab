@@ -168,4 +168,11 @@ export const account = {
   'account.page.passwordChanged': 'Password changed. Your other devices are logged out.',
   'account.page.logOut': 'Log out',
   'account.page.loggingOut': 'Logging out…',
+  'account.delete.title': 'Delete my account',
+  'account.delete.line': "Deletes your account, strategies, signals and trades, and logs you out everywhere. It can't be undone.",
+  'account.delete.owner': "An owner account can't be deleted here.",
+  'account.delete.password': 'Your password',
+  'account.delete.confirm': 'Delete for good',
+  'account.delete.deleting': 'Deleting…',
+  'account.delete.cancel': 'Cancel',
 } as const

@@ -464,9 +464,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         bool HasChanges,
         bool Complete);
 
-    async Task<SummaryData> LoadSummaryDataAsync(Guid userId, DateOnly today, DateOnly sessionDate, CancellationToken cancellationToken)
+    async Task<SummaryData> LoadSummaryDataAsync(Guid userId, DateOnly today, DateOnly sessionDate, CancellationToken cancellationToken, IReadOnlyList<Strategy>? running = null)
     {
-        var strategies = await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
+        var strategies = running ?? await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var ids = strategies.Select(s => s.Id).ToList();
         if (ids.Count == 0)
             return new SummaryData([], [], [], [], [], [], false, true);
@@ -495,7 +495,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             .OrderBy(r => r.DueOn).Select(r => new { r.StrategyId, Name = byId[r.StrategyId].Name }).ToListAsync(cancellationToken);
         var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
-        var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id))).ToList();
+        var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id), s.Id)).ToList();
 
         return new SummaryData(strategies, waiting, changed, stockChanges, scoreboard, [.. roundsDue.Select(r => (r.StrategyId, r.Name))], hasChanges, complete);
     }
@@ -532,9 +532,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var local = LocalTime(now, timeZone);
         var today = DateOnly.FromDateTime(local.DateTime);
 
-        var data = await LoadSummaryDataAsync(userId, today, sessionDate, cancellationToken);
-        var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
-            .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
+        var data = await LoadSummaryDataAsync(userId, today, sessionDate, cancellationToken, runningStrategies);
 
         return new DailySummaryDto(
             sessionDate,
@@ -543,7 +541,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             [.. data.AiRoundsDue.Select(r => new SummaryWaitingAiRound(r.StrategyId, r.Name))],
             [.. data.Changed.Select(c => new SummaryChangedSignal(c.SignalId, c.StrategyId, c.StrategyName, c.Mode, c.StockName, c.Side, c.Date, c.ClosePrice, c.StepNo, c.MaxSteps, EmailTexts.SignalText(c, locale).Replace("\n", " ")))],
             [.. data.StockChanges.Select(c => new SummaryStockChange(c.StrategyId, c.AssetId, c.StrategyName, c.Mode, c.StockName, c.Kind, c.DistancePct, EmailTexts.StockChangeText(c, locale)))],
-            [.. runningStrategies.OrderBy(s => s.Name).Select(s => new SummaryStrategyScore(s.Id, s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id)))]);
+            [.. data.Scoreboard.Select(s => new SummaryStrategyScore(s.StrategyId, s.Name, s.Mode, s.StartedOn, s.Signals))]);
     }
 
     /// <summary>

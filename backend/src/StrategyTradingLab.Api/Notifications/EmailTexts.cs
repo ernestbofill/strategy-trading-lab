@@ -17,7 +17,7 @@ public record SignalLine(Guid StrategyId, Guid SignalId, string StrategyName, St
 }
 
 /// <summary>One strategy in the scoreboard.</summary>
-public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals);
+public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals, Guid StrategyId = default);
 
 /// <summary>
 /// The words of the notification emails (spec: Notifications), in English and Catalan. They describe

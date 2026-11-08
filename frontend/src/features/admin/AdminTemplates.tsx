@@ -190,7 +190,7 @@ function TemplateCard({ template, onChanged }: { template: AdminTemplate; onChan
         <h2 id={`template-${template.key}`} className={styles.title}>
           {template.name}
         </h2>
-        <span className={`ui-strong ${styles.state}`} data-changed={active?.version !== 1}>
+        <span className={`ui-strong ${styles.state}`} data-retuned={active?.version !== 1}>
           v{active?.version} active
         </span>
       </div>

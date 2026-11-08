@@ -79,7 +79,7 @@ public sealed record Template(
     IReadOnlyList<PeriodResult>? Backtest,
     object Params)
 {
-    /// <summary>Bumped when the tested defaults are retuned; strategies record the one they started from.</summary>
+    /// <summary>The template version (/admin/templates, <see cref="TemplateStore"/>); 1 is the catalogue's. Strategies record the one they started from.</summary>
     public int DefaultsVersion { get; init; } = 1;
 
     /// <summary>The rules the user can tune on Advanced settings, in screen order. Empty until the template's are designed.</summary>

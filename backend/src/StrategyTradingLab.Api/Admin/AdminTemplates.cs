@@ -131,11 +131,11 @@ public static class AdminTemplates
         db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({"template_versions:" + key}))", cancellationToken);
 
     /// <summary>The catalogue's settings by key, with <paramref name="version"/>'s saved values over them.</summary>
-    static Dictionary<string, decimal> Values(Template template, TemplateVersion? version = null)
+    static Dictionary<string, decimal> Values(Template template, TemplateVersion version)
     {
         var root = template.ParamsJson().RootElement;
         var values = template.Settings.ToDictionary(s => s.Key, s => root.GetProperty(s.Key).GetDecimal());
-        foreach (var (key, value) in version?.Defaults.Deserialize<Dictionary<string, decimal>>(JsonSerializerOptions.Web) ?? [])
+        foreach (var (key, value) in version.Defaults.Deserialize<Dictionary<string, decimal>>(JsonSerializerOptions.Web) ?? [])
             if (values.ContainsKey(key)) values[key] = value;
         return values;
     }

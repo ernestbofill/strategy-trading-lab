@@ -10,8 +10,8 @@ namespace StrategyTradingLab.Api.Strategies;
 
 /// <summary>
 /// What the Confirm screen sends. <c>Currency</c> is the one the user saw while setting the budget; without it the user's
-/// current one is used. <c>Settings</c> are the Advanced settings the user changed (setting key → value); the rest keep the
-/// template's tested defaults. <c>SourceStrategyId</c> is the simulation a live copy came from ("Go live with these settings"):
+/// current one is used. <c>Settings</c> are the Advanced settings (setting key → value): the app sends every one, and any left out
+/// takes the template's default. <c>SourceStrategyId</c> is the simulation a live copy came from ("Go live with these settings"):
 /// one of the user's simulations, kept for a live strategy only. <c>DefaultsVersion</c> is the template version the screens
 /// showed (/admin/templates): the strategy is stamped with it, so "tuned" compares with what the user saw.
 /// </summary>

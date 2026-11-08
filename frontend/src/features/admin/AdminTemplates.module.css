@@ -28,7 +28,8 @@
 .state {
   color: var(--ink-muted);
 }
-.state[data-changed="true"] {
+/* Another version than the tested one is active. */
+.state[data-retuned="true"] {
   color: var(--warning);
 }
 

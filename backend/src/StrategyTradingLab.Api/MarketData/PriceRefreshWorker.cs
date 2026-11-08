@@ -271,7 +271,10 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             using var scope = scopes.CreateScope();
             var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
             if (await notifications.EnabledAsync(stoppingToken))
+            {
                 logger.LogInformation("Sent {Count} daily overviews.", await notifications.SendOverviewsAsync(time.GetUtcNow(), stoppingToken));
+                logger.LogInformation("Pushed {Count} daily overviews.", await notifications.PushOverviewsAsync(time.GetUtcNow(), stoppingToken));
+            }
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

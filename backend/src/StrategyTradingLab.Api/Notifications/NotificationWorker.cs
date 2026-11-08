@@ -38,7 +38,8 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     var pushed = await service.PushSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken)
                         + await service.PushSignalEndedAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken)
                         + await service.PushSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken)
-                        + await service.PushAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
+                        + await service.PushAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken)
+                        + await service.PushOverviewsAsync(time.GetUtcNow(), stoppingToken);
                     if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);
                 }
             }

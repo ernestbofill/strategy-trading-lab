@@ -127,7 +127,7 @@ Both modes work end to end for every template the pick screen offers.
 40. **Warn before a step goes over the budget.** Normal. *Spec: gap.* A late answer to a missed signal counts its step again, since it is real money spent, so "Budget used" can read over 100% (#57). Keep that, and have Confirm a signal say "This step takes you over your budget." before saving, without blocking it (Ernest, 2026-11-01).
 41. **Fees on top of the budget, as brokers do.** High risk (budget calculations). *Spec: gap.* Today a step is amount plus fee and the fee counts in "Budget used" (#49, #56). Change it to how brokers work (Ernest, 2026-11-01): a step is the amount, the fee comes on top, "Budget used" leaves fees out and shows them on their own line, and returns still subtract them. The fee is an Advanced setting, a percentage and a fixed amount (default the tested 0.2% + 1); simulations use the setting, live strategies the fee the user enters. Check the backtest figures and the index fund comparison still use the same fee.
 
-43. **Today on the dashboard, and the summary by app.** Normal. *Spec: gap.* A small "Today" box on the dashboard with the summary's lines (what changed, stock changes), so a summary push has a page to open; then the summary's App box on the account page (hidden until then, Ernest, #135).
+43. ~~**Daily summary page and summary push.**~~ Built (user decision: dedicated `/summary` page instead of a box on dashboard; links only from summary push and footer sitemap; "No changes today" on quiet days; up to date from most recent evaluations; summary push enabled on account page).
 
 ## After launch
 

@@ -17,7 +17,7 @@ public record SignalLine(Guid StrategyId, Guid SignalId, string StrategyName, St
 }
 
 /// <summary>One strategy in the scoreboard.</summary>
-public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals);
+public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals, Guid StrategyId = default);
 
 /// <summary>
 /// The words of the notification emails (spec: Notifications), in English and Catalan. They describe
@@ -107,7 +107,7 @@ public static class EmailTexts
     /// <summary>A number with a dot, whatever the server's culture (the texts are English).</summary>
     static string Pct(decimal value) => value.ToString("0.#", CultureInfo.InvariantCulture);
 
-    static string Date(DateOnly date, string locale = "en")
+    public static string Date(DateOnly date, string locale = "en")
     {
         if (locale == "ca")
         {
@@ -259,6 +259,19 @@ public static class EmailTexts
             _ => LineBelowBuy,
         }).In(locale);
 
+    public static string OverviewTitleText(DateOnly day, string locale) => OverviewTitle.In(locale, Date(day, locale));
+
+    public static string StockChangeText(StockChangeLine c, string locale)
+    {
+        var change = c.Kind switch
+        {
+            StockChangeKind.BecameCandidate => StockBecameCandidate.In(locale),
+            StockChangeKind.NoLongerCandidate => StockNoLongerCandidate.In(locale),
+            _ => StockCloseDistance.In(locale, Pct(c.DistancePct ?? 0), LineName(c.TemplateKey, locale)),
+        };
+        return $"{c.StockName}, {c.StrategyName}: {change}.";
+    }
+
     /// <summary>The summary: what waits, what changed, the stock changes, and one line per strategy. Sent only on days something changed.</summary>
     public static EmailContent Overview(DateOnly day, IReadOnlyList<SignalLine> waiting, IReadOnlyList<SignalLine> changed,
         IReadOnlyList<ScoreLine> scoreboard, string appUrl, string locale = "en",
@@ -266,7 +279,7 @@ public static class EmailTexts
     {
         aiRoundsDue ??= [];
         stockChanges ??= [];
-        var title = OverviewTitle.In(locale, Date(day, locale));
+        var title = OverviewTitleText(day, locale);
         var email = new EmailDocument(locale, appUrl).Eyebrow(OverviewEyebrow.In(locale)).Heading(title + ".");
 
         if (waiting.Count > 0 || aiRoundsDue.Count > 0)
@@ -284,15 +297,7 @@ public static class EmailTexts
 
         if (stockChanges.Count > 0)
             email.Section(OverviewStockChangesSection.In(locale), stockChanges.Select(c =>
-            {
-                var change = c.Kind switch
-                {
-                    StockChangeKind.BecameCandidate => StockBecameCandidate.In(locale),
-                    StockChangeKind.NoLongerCandidate => StockNoLongerCandidate.In(locale),
-                    _ => StockCloseDistance.In(locale, Pct(c.DistancePct ?? 0), LineName(c.TemplateKey, locale)),
-                };
-                return new EmailItem($"{c.StockName}, {c.StrategyName}: {change}.", Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live);
-            }));
+                new EmailItem(StockChangeText(c, locale), Tag: ModeName(c.Mode, locale), Live: c.Mode == StrategyMode.Live)));
 
         email.Section(OverviewYourStrategiesSection.In(locale), scoreboard.Select(s => new EmailItem(
             (s.Signals == 1 ? OverviewStrategyScoreOne : OverviewStrategyScoreMany)

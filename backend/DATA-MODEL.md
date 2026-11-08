@@ -102,6 +102,7 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
 | role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip comes from an owner's invite |
 | overview_email | bool, not null, default true | The summary by email on/off |
+| overview_push | bool, not null, default true | The summary by web push, to the devices the user turned on on/off |
 | alert_emails | bool, not null, default true | Signals and reminders (signal alerts, snooze reminders, AI round reminders) by email on/off |
 | alert_push | bool, not null, default true | Signals and reminders by web push, to the devices the user turned on (the account's App box) on/off |
 | unsubscribe_token | text, not null, unique | Private random token in the unsubscribe links of this user's emails; it can only turn emails off |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatRate, formatShares, isoDate, money, shortDate, signedPct } from './format'
+import { formatRate, formatShares, fullDate, isoDate, money, shortDate, signedPct } from './format'
 
 describe('signedPct', () => {
   it('writes a true minus sign and a plus sign', () => {
@@ -35,6 +35,9 @@ describe('money', () => {
 describe('dates', () => {
   it('formats a local date as a short date', () => {
     expect(shortDate('2026-10-13')).toBe('Oct 13')
+  })
+  it('formats a local date as a full date', () => {
+    expect(fullDate('2026-10-13')).toBe('13 Oct 2026')
   })
   it('round-trips through isoDate', () => {
     expect(isoDate(new Date(2026, 0, 5))).toBe('2026-01-05')

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import styles from './Stats.module.css'
 
-/** A row of small figure tiles (budget used, signals, invested): one per row on a phone, side by side on desktop. */
+/** A row of small figure tiles (budget used, signals, invested): one per row on a phone, sharing the row on desktop. */
 export function Stats({ children }: { children: ReactNode }) {
   return <dl className={styles.stats}>{children}</dl>
 }

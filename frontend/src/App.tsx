@@ -27,6 +27,8 @@ import { RequireOwner } from './features/account/RequireOwner'
 import { FeedbackCapture } from './features/feedback/FeedbackCapture'
 import { FeedbackPage } from './features/feedback/FeedbackSection'
 import { Dashboard } from './features/dashboard/Dashboard'
+import { SummaryPage } from './features/summary/SummaryPage'
+import { summaryPath } from './features/summary/paths'
 import { Advanced } from './features/new-strategy/Advanced'
 import { SetBudget } from './features/new-strategy/SetBudget'
 import { ChooseMode } from './features/new-strategy/ChooseMode'
@@ -202,6 +204,7 @@ export default function App() {
                 {/* Routes requiring an authenticated account */}
                 <Route element={<RequireAccount />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path={summaryPath} element={<SummaryPage />} />
                   <Route path={settingsPath} element={<SettingsPage />} />
                   <Route path={accountPath} element={<AccountPage />} />
                   <Route element={<RequireOwner />}>

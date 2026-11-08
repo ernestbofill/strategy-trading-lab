@@ -99,6 +99,35 @@ public class NotificationTests
     }
 
     [Fact]
+    public void The_summary_push_opens_the_summary_page_with_its_tag_and_localized_text()
+    {
+        var day = new DateOnly(2026, 10, 23);
+        var en = PushTexts.Summary(day, "en");
+        Assert.Equal("/summary", en.Url);
+        Assert.Equal("summary-2026-10-23", en.Tag);
+        Assert.Equal("Your summary, 23 Oct 2026", en.Title);
+        Assert.Equal("What changed today across your strategies.", en.Body);
+
+        var ca = PushTexts.Summary(day, "ca");
+        Assert.Equal("/summary", ca.Url);
+        Assert.Equal("summary-2026-10-23", ca.Tag);
+        Assert.Equal("El teu resum, 23 oct. 2026", ca.Title);
+        Assert.Equal("Què ha canviat avui a les teves estratègies.", ca.Body);
+    }
+
+    [Fact]
+    public void Stock_change_text_formats_candidate_and_distance_changes()
+    {
+        var candidate = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Apple", StockChangeKind.BecameCandidate);
+        Assert.Equal("Apple, Strat: now a candidate, the rules watch it.", EmailTexts.StockChangeText(candidate, "en"));
+        Assert.Equal("Apple, Strat: ara és candidata, les regles la vigilen.", EmailTexts.StockChangeText(candidate, "ca"));
+
+        var close = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Tesla", StockChangeKind.CameClose, 2.5m);
+        Assert.Equal("Tesla, Strat: now 2.5% above the discount zone.", EmailTexts.StockChangeText(close, "en"));
+        Assert.Equal("Tesla, Strat: ara un 2.5% per sobre de la zona de descompte.", EmailTexts.StockChangeText(close, "ca"));
+    }
+
+    [Fact]
     public void An_email_with_a_token_has_an_unsubscribe_link_and_the_one_click_address()
     {
         var alert = EmailTexts.SignalAlert(Dip(), "https://app.example", "en", "tok3n");
@@ -340,6 +369,45 @@ public class NotificationTests
             Assert.Equal(1, await db.PushSubscriptions.CountAsync(p => p.UserId == userId));
             var row = await db.Notifications.SingleAsync(n => n.UserId == userId);
             Assert.Equal((NotificationKind.Signal, NotificationChannel.Push), (row.Kind, row.Channel));
+            Assert.NotNull(row.SentAt);
+        }
+        finally
+        {
+            await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task Summary_is_pushed_once_to_each_device_when_there_are_changes_and_not_when_quiet()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var (userId, strategyId, assetId, _, _) = await SeedAsync(db);
+        try
+        {
+            var tag = Guid.NewGuid().ToString("N");
+            db.PushSubscriptions.Add(new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{tag}", P256dh = "p", Auth = "a" });
+            await db.SaveChangesAsync();
+            var push = new FakePush();
+
+            // When user has OverviewPush off: nothing pushed.
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewPush, false));
+            var morning = new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero);
+            Assert.Equal(0, await Service(scope, push).PushOverviewsAsync(morning, default));
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewPush, true));
+
+            // With changes (the seeded signal is from Thursday Oct 22): sends push
+            var first = await Service(scope, push).PushOverviewsAsync(morning, default);
+            var second = await Service(scope, push).PushOverviewsAsync(morning, default);
+            Assert.Equal((1, 0), (first, second));
+            var (endpoint, payload) = Assert.Single(push.Sent);
+            Assert.EndsWith(tag, endpoint);
+            using var message = JsonDocument.Parse(payload);
+            Assert.Equal("/summary", message.RootElement.GetProperty("url").GetString());
+            Assert.StartsWith("Your summary", message.RootElement.GetProperty("title").GetString());
+
+            var row = await db.Notifications.SingleAsync(n => n.UserId == userId && n.Channel == NotificationChannel.Push && n.Kind == NotificationKind.Overview);
             Assert.NotNull(row.SentAt);
         }
         finally

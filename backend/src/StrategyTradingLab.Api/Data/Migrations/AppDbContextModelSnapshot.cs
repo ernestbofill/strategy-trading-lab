@@ -1897,6 +1897,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("overview_email");
 
+                    b.Property<bool>("OverviewPush")
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("overview_push");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("password_hash");

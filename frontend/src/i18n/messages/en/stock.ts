@@ -2,6 +2,7 @@ export const stock = {
   'stock.what': 'this stock',
   'stock.notInStrategy': "This stock isn't in this strategy.",
   'stock.close': 'Close on {date}',
+  'stock.status': 'Status',
   'stock.chart.period': 'Period',
   'stock.chart.days': '{days} days',
   'stock.chart.price': 'Price',
@@ -49,7 +50,6 @@ export const stock = {
   'stock.bar.sell': 'Sell {price}',
   'stock.bar.sma': 'SMA {price}',
   'stock.bar.buy': 'Buy {price}',
-  'stock.position.steps': 'Steps',
   'stock.position.invested': 'Invested',
   'stock.position.result': 'Result',
 }

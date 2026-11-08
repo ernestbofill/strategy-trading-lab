@@ -6,6 +6,9 @@ export { accountPath, settingsPath }
 /** The hash of the Settings page's Notifications section, and the link that opens the page at it (Confirm's "Edit" on Notifications). */
 export const NOTIFICATIONS_HASH = '#notifications'
 export const settingsNotificationsPath = `${settingsPath}${NOTIFICATIONS_HASH}`
+/** The hash of the Settings page's App (mobile install) section, and the link that opens the page at it. */
+export const APP_HASH = '#app'
+export const settingsAppPath = `${settingsPath}${APP_HASH}`
 export const signUpPath = '/sign-up'
 /** The invite code in an invite link: /sign-up?invite=ABCD-EFGH. */
 export const INVITE_PARAM = 'invite'

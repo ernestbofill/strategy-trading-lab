@@ -249,6 +249,7 @@ app.MapGet("/health", async Task<Results<Ok<HealthResponse>, ProblemHttpResult>>
 
 app.MapTemplates();
 app.MapStrategies();
+app.MapSummary();
 app.MapSignals();
 app.MapAiRounds();
 app.MapTrades();

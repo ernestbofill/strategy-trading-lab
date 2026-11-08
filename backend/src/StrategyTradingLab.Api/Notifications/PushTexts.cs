@@ -40,5 +40,12 @@ public static class PushTexts
             $"ai-round-{dueOn:yyyy-MM-dd}");
     }
 
+    /// <summary>Summary push notification: opens the dedicated daily summary page.</summary>
+    public static PushMessage Summary(DateOnly day, string locale) => new(
+        EmailTexts.OverviewTitleText(day, locale),
+        locale == "ca" ? "Què ha canviat avui a les teves estratègies." : "What changed today across your strategies.",
+        "/summary",
+        $"summary-{day:yyyy-MM-dd}");
+
     static string SignalPath(SignalLine s) => $"/strategies/{s.StrategyId}/signals/{s.SignalId}";
 }

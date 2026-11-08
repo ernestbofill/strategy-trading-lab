@@ -51,10 +51,12 @@
   line-height: 16px;
 }
 
+/* A 44px tap target that takes only its line's height, so this header spaces like the strategy page's. */
 .strategy a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  margin: -14px 0;
 }
 
 .muted {
@@ -74,27 +76,14 @@
   color: var(--warning);
 }
 
-/* The stock's state under the rules: a line with an accent in the pill's colour, not a box. */
+/* The status tile's value: the pill and its sentence on one line when they fit, the sentence in the UI font, not the
+   tiles' mono figures. */
 .status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1) var(--space-2);
-  padding: 6px 0 6px 12px;
-  border-left: 3px solid var(--ink-muted);
-  font-size: 14px;
-  line-height: 20px;
-}
-.status[data-tone="waiting"] {
-  border-left-color: var(--hot-pink);
-}
-.status[data-tone="signal"],
-.status[data-tone="building"] {
-  border-left-color: var(--info);
-}
-.status[data-tone="holding"],
-.status[data-tone="watching"] {
-  border-left-color: var(--primary);
+  font: 400 14px/20px var(--font-ui);
 }
 
 .group {
@@ -161,14 +150,16 @@
   color: var(--ink-sidebar);
 }
 
-/* A divided list, not cards: the price chart is the page's one boxed block. */
+/* A box like the stock list: its violet is what the bars' empty track shows against. */
 .checks {
   margin: var(--space-1) 0 0;
   padding: 0;
   list-style: none;
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
 }
-.checks > li {
-  border-top: 1px solid var(--border-hairline);
+.checks > li + li {
+  border-top: 1px solid var(--surface-editor);
 }
 
 .check {
@@ -176,7 +167,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 0;
+  padding: 10px var(--space-3);
 }
 
 .checkMain {

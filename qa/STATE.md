@@ -23,7 +23,7 @@ The account's settings before any session changed them. Restore them before endi
 | Language | English |
 | Currency | USD |
 | Signals and reminders: App / Email | On / On |
-| Summary: Email | On |
+| Summary: App / Email | On / On |
 | This device (push) | Off for this device (Chrome) |
 | AI data sharing | Off. Answered "no" on the first round |
 | Strategies not starting with `QA ` (leave alone) | None |
@@ -128,7 +128,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 
 | ID | Area | Spec | Depth | Last | Notes |
 | --- | --- | --- | --- | --- | --- |
-| E1 | Status box, position, its signals and trades | §6 Stock page | smoke | 2026-11-06-1 | C2.18, C3.17 |
+| E1 | Status, position, its signals and trades | §6 Stock page | smoke | 2026-11-06-1 | C2.18, C3.17 |
 | E2 | Rules on [date]: badges and gauges, per template | §6 Stock page | untested | | Needs a daily check: L-002 |
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | smoke | 2026-11-06-1 | C3.18 |
 | E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours | §6 Stock page | untested | | |

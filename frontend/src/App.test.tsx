@@ -13,6 +13,7 @@ const account: Account = {
   locale: 'en',
   timeZone: 'UTC',
   overviewEmail: true,
+  overviewPush: true,
   alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',
@@ -28,6 +29,7 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   localStorage.clear()
+  document.documentElement.lang = 'en'
   window.history.replaceState({}, '', '/')
 })
 
@@ -56,6 +58,23 @@ describe('app routes', () => {
     open('/new')
 
     expect(await screen.findByText('Pick template screen')).toBeTruthy()
+  })
+
+  it('opens the daily summary for a signed-in user at /summary', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(account)
+    vi.spyOn(api, 'getSummary').mockResolvedValue({
+      date: '2026-10-23',
+      hasChanges: false,
+      waitingSignals: [],
+      waitingAiRounds: [],
+      whatChanged: [],
+      stockChanges: [],
+      strategies: [],
+    })
+
+    open('/summary')
+
+    expect(await screen.findByText('No changes')).toBeTruthy()
   })
 
   it('goes to the template picker after sign-up', async () => {

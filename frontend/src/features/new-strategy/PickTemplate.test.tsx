@@ -78,7 +78,7 @@ describe('PickTemplate', () => {
       emailVerified: true,
       locale: 'en',
       timeZone: 'UTC',
-      overviewEmail: true, alertEmails: true, alertPush: true,
+      overviewEmail: true, overviewPush: true, alertEmails: true, alertPush: true,
       currency: 'EUR',
       role: 'user',
       aiSharing: false, notifyHour: 7,

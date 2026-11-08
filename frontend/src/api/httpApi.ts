@@ -268,6 +268,7 @@ export const httpApi: Api = {
   setTimeZone: async (timeZone) => void (await account('/time-zone', { timeZone }, { session: true })),
   setNotifyHour: async (hour) => void (await account('/notify-hour', { hour }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
+  setOverviewPush: async (enabled) => void (await account('/overview-push', { enabled }, { session: true })),
   setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
   setAlertPush: async (enabled) => void (await account('/alert-push', { enabled }, { session: true })),
   unsubscribe: async (token, kind) => {
@@ -278,6 +279,7 @@ export const httpApi: Api = {
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key, version) => get(`/templates/${encodeURIComponent(key)}${version === undefined ? '' : `?version=${version}`}`),
   getDashboard: () => getRequired('/dashboard'),
+  getSummary: () => getRequired('/summary'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
   getStockChart: (id, assetId) => get(`/strategies/${encodeURIComponent(id)}/stocks/${encodeURIComponent(assetId)}/chart`),
   updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),

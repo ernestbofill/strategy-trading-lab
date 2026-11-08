@@ -771,6 +771,67 @@ export interface FeedbackPatch {
   text?: string
 }
 
+export interface SummaryWaitingSignal {
+  signalId: string
+  strategyId: string
+  strategyName: string
+  stockName: string
+  side: 'buy' | 'sell'
+  signalDate: string
+  stepNo: number | null
+  maxSteps: number | null
+  closePrice: number
+}
+
+export interface SummaryWaitingAiRound {
+  strategyId: string
+  strategyName: string
+}
+
+export interface SummaryChangedSignal {
+  signalId: string
+  strategyId: string
+  strategyName: string
+  mode: StrategyMode
+  stockName: string
+  side: 'buy' | 'sell'
+  signalDate: string
+  closePrice: number
+  stepNo: number | null
+  maxSteps: number | null
+  text: string
+}
+
+export interface SummaryStockChange {
+  strategyId: string
+  assetId: string
+  strategyName: string
+  mode: StrategyMode
+  stockName: string
+  kind: 'becameCandidate' | 'noLongerCandidate' | 'cameClose'
+  distancePct: number | null
+  text: string
+}
+
+export interface SummaryStrategyScore {
+  strategyId: string
+  strategyName: string
+  mode: StrategyMode
+  startedOn: string
+  signalsCount: number
+}
+
+/** The daily summary: backend Notifications/DailySummaryDtos.cs (DailySummaryDto). */
+export interface DailySummary {
+  date: string
+  hasChanges: boolean
+  waitingSignals: SummaryWaitingSignal[]
+  waitingAiRounds: SummaryWaitingAiRound[]
+  whatChanged: SummaryChangedSignal[]
+  stockChanges: SummaryStockChange[]
+  strategies: SummaryStrategyScore[]
+}
+
 /** The logged-in user: backend Auth/AccountEndpoints.cs (AccountDto). */
 export interface Account {
   email: string
@@ -782,6 +843,8 @@ export interface Account {
   timeZone: string
   /** The summary by email, after the US market close on days something changed. */
   overviewEmail: boolean
+  /** The summary by web push, on the devices the user turned on. */
+  overviewPush: boolean
   /** Signal alerts and reminders by email. */
   alertEmails: boolean
   /** Signal alerts and reminders by web push, on the devices the user turned on. */
@@ -1102,6 +1165,8 @@ export interface Api {
   setNotifyHour(hour: number | null): Promise<void>
   /** Turns the summary email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
+  /** Turns the summary web push notification on or off. */
+  setOverviewPush(enabled: boolean): Promise<void>
   setAlertEmails(enabled: boolean): Promise<void>
   setAlertPush(enabled: boolean): Promise<void>
   /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */
@@ -1111,6 +1176,8 @@ export interface Api {
   getTemplate(key: TemplateKey, version?: number): Promise<TemplateDetail | undefined>
   /** Rejects with `UnauthorizedError` when the session has ended (also for `startStrategy`). */
   getDashboard(): Promise<Dashboard>
+  /** The daily summary for the dedicated daily summary page. */
+  getSummary(): Promise<DailySummary>
   /** The strategy page; undefined when the user has no such strategy. */
   getStrategy(id: string): Promise<StrategyDetail | undefined>
   /** A stock's last 90 days with each day's rule checks, oldest first; undefined when it isn't in the user's strategy. */

@@ -47,11 +47,22 @@ export const isoDate = (d: Date) =>
 const shortDateEn = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
 const shortDateCa = new Intl.DateTimeFormat('ca-ES', { month: 'short', day: 'numeric' })
 
+const fullDateEn = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+const fullDateCa = new Intl.DateTimeFormat('ca-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+
 /** "Oct 13" (or "13 d’oct." in ca), from a local date like "2026-10-13". */
 export const shortDate = (iso: string, locale?: Locale) => {
   const [y, m, d] = iso.split('-').map(Number)
   const loc = locale ?? currentLocale()
   const format = loc === 'ca' ? shortDateCa : shortDateEn
+  return format.format(new Date(y, m - 1, d))
+}
+
+/** "13 Oct 2026" (or "13 d’oct. 2026" in ca), from a local date like "2026-10-13". */
+export const fullDate = (iso: string, locale?: Locale) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  const loc = locale ?? currentLocale()
+  const format = loc === 'ca' ? fullDateCa : fullDateEn
   return format.format(new Date(y, m - 1, d))
 }
 

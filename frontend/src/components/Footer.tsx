@@ -7,6 +7,7 @@ import { accountPath, settingsPath } from '../features/dashboard/paths'
 import { settingsNotificationsPath, logInPath, signUpPath } from '../features/account/paths'
 import { aboutPath, disclaimerPath, legalNoticePath, privacyPath, termsPath } from '../features/legal/paths'
 import { homePath, pickPath } from '../features/new-strategy/paths'
+import { summaryPath } from '../features/summary/paths'
 import { welcomePath } from '../features/welcome/paths'
 import { useBackendVersion } from '../lib/backendVersion'
 import styles from './Footer.module.css'
@@ -57,6 +58,7 @@ const user: LinkGroup[] = [
       { to: welcomePath, label: 'footer.welcome' },
       { to: homePath, label: 'footer.dashboard' },
       { to: pickPath, label: 'footer.newStrategy' },
+      { to: summaryPath, label: 'footer.summary' },
     ],
   },
   {

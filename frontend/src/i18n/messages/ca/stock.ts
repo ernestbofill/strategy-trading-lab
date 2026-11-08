@@ -4,6 +4,7 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.what': 'aquesta acció',
   'stock.notInStrategy': 'Aquesta acció no és en aquesta estratègia.',
   'stock.close': 'Tancament del {date}',
+  'stock.status': 'Estat',
   'stock.chart.period': 'Període',
   'stock.chart.days': '{days} dies',
   'stock.chart.price': 'Preu',
@@ -51,7 +52,6 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.bar.sell': 'Venda {price}',
   'stock.bar.sma': 'SMA {price}',
   'stock.bar.buy': 'Compra {price}',
-  'stock.position.steps': 'Fases',
   'stock.position.invested': 'Invertit',
   'stock.position.result': 'Resultat',
 }

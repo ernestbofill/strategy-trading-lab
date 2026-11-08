@@ -34,6 +34,7 @@ export const common: Record<keyof typeof en, string> = {
   'footer.logIn': 'Inicia sessió',
   'footer.dashboard': 'Dashboard',
   'footer.newStrategy': 'Nova estratègia',
+  'footer.summary': 'Resum diari',
   'footer.account': 'Compte',
   'footer.settings': 'Configuració',
   'footer.notifications': 'Notificacions',

@@ -104,7 +104,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     {
         var users = await db.Users.AsNoTracking()
             .Where(u => u.OverviewEmail && u.EmailVerifiedAt != null && db.Strategies.Any(s => s.UserId == u.Id && s.Status == StrategyStatus.Running)
-                && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.ForDate == lastSession)
+                && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.Channel == NotificationChannel.Email && x.ForDate == lastSession)
                 // Only once the daily check has evaluated that session for them: an overview of stale data would say nothing happened.
                 && db.Strategies.Any(s => s.UserId == u.Id && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == lastSession)))
             .Select(u => new { u.Id, u.Email, u.TimeZone, u.Locale, u.UnsubscribeToken, u.NotifyHour }).ToListAsync(cancellationToken);
@@ -128,6 +128,59 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                     return content;
                 }, cancellationToken)) sent++;
             else if (incomplete) await ReleaseAsync(claimed);
+        }
+        return sent;
+    }
+
+    /// <summary>
+    /// The push twin of <see cref="SendOverviewsAsync"/>: pushes the summary of the last finished US session, once, to every user
+    /// with summary push on and registered devices, on days something changed (a signal on the session or a stock change), at the
+    /// same time as the email (the user's notification hour, with the same late rule).
+    /// </summary>
+    public async Task<int> PushOverviewsAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (push.PublicKey is null) return 0;
+        var lastSession = UsSession.LastComplete(now);
+        var lateFrom = UsSession.FinalAt(lastSession) - LateSummaryWindow;
+        return await PushOverviewsForAsync(UsSession.Before(lastSession), now, due => due >= lateFrom, cancellationToken)
+            + await PushOverviewsForAsync(lastSession, now, _ => true, cancellationToken);
+    }
+
+    async Task<int> PushOverviewsForAsync(DateOnly lastSession, DateTimeOffset now, Func<DateTimeOffset, bool> looked, CancellationToken cancellationToken)
+    {
+        var users = await db.Users.AsNoTracking()
+            .Where(u => u.OverviewPush && db.Strategies.Any(s => s.UserId == u.Id && s.Status == StrategyStatus.Running)
+                && db.PushSubscriptions.Any(p => p.UserId == u.Id)
+                && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.Channel == NotificationChannel.Push && x.ForDate == lastSession)
+                && db.Strategies.Any(s => s.UserId == u.Id && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == lastSession)))
+            .Select(u => new { u.Id, u.TimeZone, u.Locale, u.NotifyHour }).ToListAsync(cancellationToken);
+        var sent = 0;
+        foreach (var user in users)
+        {
+            var due = NotifyTime.DueAt(lastSession, user.NotifyHour, user.TimeZone);
+            if (now < due || !looked(due)) continue;
+            var local = LocalTime(now, user.TimeZone);
+            if (await ClaimAsync(user.Id, null, NotificationKind.Overview, lastSession, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
+
+            var today = DateOnly.FromDateTime(local.DateTime);
+            var data = await LoadSummaryDataAsync(user.Id, today, lastSession, cancellationToken);
+            if (!data.HasChanges)
+            {
+                if (data.Complete)
+                {
+                    await db.Notifications.Where(n => n.Id == claimed)
+                        .ExecuteUpdateAsync(n => n.SetProperty(x => x.Error, "Not sent: nothing changed."), CancellationToken.None);
+                    db.ChangeTracker.Clear();
+                }
+                else
+                {
+                    await ReleaseAsync(claimed);
+                }
+                continue;
+            }
+
+            if (await PushAsync(claimed, user.Id, PushTexts.Summary(lastSession, user.Locale), cancellationToken))
+                sent++;
         }
         return sent;
     }
@@ -425,6 +478,52 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { return now; } // UTC, as the dashboard does.
     }
 
+    record SummaryData(
+        IReadOnlyList<Strategy> Strategies,
+        IReadOnlyList<SignalLine> Waiting,
+        IReadOnlyList<SignalLine> Changed,
+        IReadOnlyList<StockChangeLine> StockChanges,
+        IReadOnlyList<ScoreLine> Scoreboard,
+        IReadOnlyList<(Guid StrategyId, string Name)> AiRoundsDue,
+        bool HasChanges,
+        bool Complete);
+
+    async Task<SummaryData> LoadSummaryDataAsync(Guid userId, DateOnly today, DateOnly sessionDate, CancellationToken cancellationToken, IReadOnlyList<Strategy>? running = null)
+    {
+        var strategies = running ?? await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
+        var ids = strategies.Select(s => s.Id).ToList();
+        if (ids.Count == 0)
+            return new SummaryData([], [], [], [], [], [], false, true);
+
+        var signals = await (from signal in db.Signals.AsNoTracking()
+                             join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
+                             where ids.Contains(signal.StrategyId) && (signal.Status == SignalStatus.Waiting || signal.SignalDate == sessionDate)
+                             select new { signal, asset }).ToListAsync(cancellationToken);
+        var byId = strategies.ToDictionary(s => s.Id);
+        SignalLine ToLine(Signal s, Asset a) => Line(s, byId[s.StrategyId], a);
+        var waiting = signals.Where(x => x.signal.Status == SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).OrderBy(l => l.Date).ToList();
+        var changed = signals.Where(x => x.signal.SignalDate == sessionDate && x.signal.Status != SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).ToList();
+
+        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
+                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
+                            where ids.Contains(eval.StrategyId) && eval.Date >= sessionDate.AddDays(-RecentDays)
+                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
+        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
+        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), sessionDate, byId, closePct);
+        var hasChanges = stockChanges.Count > 0 || signals.Any(x => x.signal.SignalDate == sessionDate);
+        var complete = hasChanges || strategies.Where(s => s.StartedOn <= sessionDate
+                && (s.StartedOn >= sessionDate.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
+            .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == sessionDate));
+
+        var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
+            .OrderBy(r => r.DueOn).Select(r => new { r.StrategyId, Name = byId[r.StrategyId].Name }).ToListAsync(cancellationToken);
+        var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
+            .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
+        var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id), s.Id)).ToList();
+
+        return new SummaryData(strategies, waiting, changed, stockChanges, scoreboard, [.. roundsDue.Select(r => (r.StrategyId, r.Name))], hasChanges, complete);
+    }
+
     /// <summary>
     /// The summary's email, or null on a quiet day: no signal on the session and no stock change. <c>Complete</c> says whether every
     /// running strategy the daily check has been checking (any day of the recent window) was checked for the session, so a
@@ -432,37 +531,41 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// </summary>
     async Task<(EmailContent? Content, bool Complete)> ComposeSummaryAsync(Guid userId, DateOnly today, DateOnly lastSession, string locale, string unsubscribeToken, CancellationToken cancellationToken)
     {
-        var strategies = await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
-        var ids = strategies.Select(s => s.Id).ToList();
-        var signals = await (from signal in db.Signals.AsNoTracking()
-                             join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
-                             where ids.Contains(signal.StrategyId) && (signal.Status == SignalStatus.Waiting || signal.SignalDate == lastSession)
-                             select new { signal, asset }).ToListAsync(cancellationToken);
-        var byId = strategies.ToDictionary(s => s.Id);
-        SignalLine ToLine(Signal s, Asset a) => Line(s, byId[s.StrategyId], a);
-        var waiting = signals.Where(x => x.signal.Status == SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).OrderBy(l => l.Date).ToList();
-        var changed = signals.Where(x => x.signal.SignalDate == lastSession && x.signal.Status != SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).ToList();
+        var data = await LoadSummaryDataAsync(userId, today, lastSession, cancellationToken);
+        if (!data.HasChanges)
+            return (null, data.Complete);
 
-        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
-                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
-                            where ids.Contains(eval.StrategyId) && eval.Date >= lastSession.AddDays(-RecentDays)
-                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
-        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
-        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), lastSession, byId, closePct);
-        if (stockChanges.Count == 0 && !signals.Any(x => x.signal.SignalDate == lastSession))
-            // Only strategies the check is still due to reach count: those checked in the recent days, or started in them (not
-            // checked yet). One that has nothing to check (every stock unticked) or keeps failing would otherwise hold the
-            // verdict, and its hourly retry, forever.
-            return (null, strategies.Where(s => s.StartedOn <= lastSession
-                    && (s.StartedOn >= lastSession.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
-                .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == lastSession)));
+        return (EmailTexts.Overview(lastSession, data.Waiting, data.Changed, data.Scoreboard, AppUrl, locale, data.AiRoundsDue, unsubscribeToken, data.StockChanges), true);
+    }
 
-        var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
-            .OrderBy(r => r.DueOn).Select(r => r.StrategyId).ToListAsync(cancellationToken);
-        var counts = await db.Signals.AsNoTracking().Where(s => ids.Contains(s.StrategyId)).GroupBy(s => s.StrategyId)
-            .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
-        var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id))).ToList();
-        return (EmailTexts.Overview(lastSession, waiting, changed, scoreboard, AppUrl, locale, [.. roundsDue.Select(id => (id, byId[id].Name))], unsubscribeToken, stockChanges), true);
+    /// <summary>
+    /// Summary data for the dedicated daily summary page, up to date from the most recent price check session.
+    /// </summary>
+    public async Task<DailySummaryDto> GetDailySummaryAsync(Guid userId, string timeZone, string locale, TimeProvider time, CancellationToken cancellationToken)
+    {
+        var now = time.GetUtcNow();
+        var lastSession = UsSession.LastComplete(now);
+        var runningStrategies = await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
+        if (runningStrategies.Count == 0)
+            return new DailySummaryDto(lastSession, false, [], [], [], [], []);
+
+        var ids = runningStrategies.Select(s => s.Id).ToList();
+        var latestEval = await db.DailyEvaluations.AsNoTracking().Where(e => ids.Contains(e.StrategyId)).MaxAsync(e => (DateOnly?)e.Date, cancellationToken);
+        var sessionDate = latestEval ?? lastSession;
+
+        var local = LocalTime(now, timeZone);
+        var today = DateOnly.FromDateTime(local.DateTime);
+
+        var data = await LoadSummaryDataAsync(userId, today, sessionDate, cancellationToken, runningStrategies);
+
+        return new DailySummaryDto(
+            sessionDate,
+            data.HasChanges,
+            [.. data.Waiting.Select(w => new SummaryWaitingSignal(w.SignalId, w.StrategyId, w.StrategyName, w.StockName, w.Side, w.Date, w.StepNo, w.MaxSteps, w.ClosePrice))],
+            [.. data.AiRoundsDue.Select(r => new SummaryWaitingAiRound(r.StrategyId, r.Name))],
+            [.. data.Changed.Select(c => new SummaryChangedSignal(c.SignalId, c.StrategyId, c.StrategyName, c.Mode, c.StockName, c.Side, c.Date, c.ClosePrice, c.StepNo, c.MaxSteps, EmailTexts.SignalText(c, locale).Replace("\n", " ")))],
+            [.. data.StockChanges.Select(c => new SummaryStockChange(c.StrategyId, c.AssetId, c.StrategyName, c.Mode, c.StockName, c.Kind, c.DistancePct, EmailTexts.StockChangeText(c, locale)))],
+            [.. data.Scoreboard.Select(s => new SummaryStrategyScore(s.StrategyId, s.Name, s.Mode, s.StartedOn, s.Signals))]);
     }
 
     /// <summary>

@@ -32,6 +32,11 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.NoContent, (await stranger.PostAsJsonAsync("/account/verify-email", new { token })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/account/me")).StatusCode); // The link logs no one in.
         Assert.True((await Me(client)).GetProperty("emailVerified").GetBoolean());
+        var welcome = await api.Emails.WaitForAsync(email, "Welcome to Strategy Trading Lab");
+        Assert.NotNull(welcome);
+        Assert.Contains("/welcome", welcome!.Body);
+        Assert.Contains("/settings#app", welcome.Body);
+        Assert.DoesNotContain("your email address is confirmed", welcome.Body, StringComparison.OrdinalIgnoreCase);
 
         var again = await client.PostAsJsonAsync("/account/verify-email", new { token });
         Assert.Equal(HttpStatusCode.BadRequest, again.StatusCode);
@@ -145,18 +150,28 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
-    public async Task Alerts_by_push_are_on_by_default_and_can_be_switched_off_and_on()
+    public async Task Push_notifications_are_on_by_default_and_can_be_switched_off_and_on()
     {
         var (client, _) = await api.SignedUpAsync();
-        Assert.True((await Me(client)).GetProperty("alertPush").GetBoolean());
+        var me = await Me(client);
+        Assert.True(me.GetProperty("alertPush").GetBoolean());
+        Assert.True(me.GetProperty("overviewPush").GetBoolean());
 
         Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-push", new { enabled = false })).StatusCode);
         Assert.False((await Me(client)).GetProperty("alertPush").GetBoolean());
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/alert-push", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-push", new { enabled = true })).StatusCode);
         Assert.True((await Me(client)).GetProperty("alertPush").GetBoolean());
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-push", new { enabled = false })).StatusCode);
+        Assert.False((await Me(client)).GetProperty("overviewPush").GetBoolean());
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/overview-push", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-push", new { enabled = true })).StatusCode);
+        Assert.True((await Me(client)).GetProperty("overviewPush").GetBoolean());
+
         using var visitor = api.CreateApiClient();
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/alert-push", new { enabled = false })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/overview-push", new { enabled = false })).StatusCode);
     }
 
     [NeonFact]
@@ -289,6 +304,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         using var visitor = api.CreateApiClient();
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.GetAsync("/dashboard")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.GetAsync("/summary")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/strategies", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.GetAsync("/account/me")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsync("/account/resend-verification", null)).StatusCode);

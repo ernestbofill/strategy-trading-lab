@@ -57,6 +57,8 @@ public class User : IHasUpdatedAt
     public UserRole Role { get; set; } = UserRole.User;
     /// <summary>The summary by email (spec: Notifications), sent after the US market close on days something changed.</summary>
     public bool OverviewEmail { get; set; } = true;
+    /// <summary>The summary by web push, sent after the US market close on days something changed.</summary>
+    public bool OverviewPush { get; set; } = true;
     /// <summary>Signal alerts and reminders (snoozed signals, AI rounds due) by email.</summary>
     public bool AlertEmails { get; set; } = true;
     /// <summary>Signal alerts and reminders by web push, to every device the user turned on (the account page's "App" box).</summary>

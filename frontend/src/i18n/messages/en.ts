@@ -8,6 +8,7 @@ import { newStrategy } from './en/newStrategy'
 import { signal } from './en/signal'
 import { stock } from './en/stock'
 import { strategy } from './en/strategy'
+import { summary } from './en/summary'
 import { trades } from './en/trades'
 import { welcome } from './en/welcome'
 
@@ -23,6 +24,7 @@ export const en = {
   ...signal,
   ...stock,
   ...strategy,
+  ...summary,
   ...trades,
   ...welcome,
 }

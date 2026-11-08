@@ -48,6 +48,8 @@ Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sente
 | guess the bottom | endevinar quan ha tocat fons |
 | waves (markets) | onades |
 | long-term trend | tendència a llarg termini (short: tendència a llarg) |
+| Golden cross | 'Golden cross' (en cometes simples o dobles) |
+| Met | Compleix |
 
 Template names and taglines (Ernest, 2026-11-03):
 

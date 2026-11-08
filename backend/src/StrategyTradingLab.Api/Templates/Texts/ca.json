@@ -266,10 +266,10 @@
         "info": "Fita: recuperar la mitjana de 200 dies confirma la recuperació a llarg termini i dona una fase si es compra dins de +{max}%."
       },
       "golden": {
-        "label": "Creu daurada",
+        "label": "Golden cross",
         "detail": "La SMA 50 ({level}) està a {+subValue}% respecte a la SMA 200 ({midLevel}). Preu {+value}% respecte a la SMA 50 (finestra de 0% a +{max}%, fins a {endLevel}).",
         "past": "La SMA 50 ({level}) està a {+subValue}% respecte a la SMA 200 ({midLevel}), però el preu està a {+value}% per sobre de la SMA 50 (el límit és +{max}%, {endLevel}).",
-        "short": "encara sense creu daurada",
+        "short": "encara sense 'Golden cross'",
         "pastShort": "massa lluny de la SMA 50 ({+value}%)",
         "info": "Fita: la mitjana de 50 dies creua per sobre de la mitjana de 200 dies, confirmant una tendència alcista a mitjà termini."
       },

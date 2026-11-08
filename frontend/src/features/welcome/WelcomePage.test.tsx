@@ -5,20 +5,22 @@ import { MemoryRouter } from 'react-router-dom'
 import { I18nProvider } from '../../i18n/I18n'
 import { WelcomePage } from './WelcomePage'
 
-// A guest: the page shows the guest top bar (the language and LOG IN).
+let mockRole: string | null = null
+
+// A guest by default: the page shows the guest top bar (the language and LOG IN).
 vi.mock('../account/AccountContext', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../account/AccountContext')>()),
-  useRole: () => null,
+  useRole: () => mockRole,
 }))
 
-function renderPage(locale: 'en' | 'ca' = 'en') {
+function renderPage(locale: 'en' | 'ca' = 'en', initialEntries = ['/welcome']) {
   if (locale === 'ca') {
     localStorage.setItem('stl.locale', 'ca')
   } else {
     localStorage.removeItem('stl.locale')
   }
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <I18nProvider>
         <WelcomePage />
       </I18nProvider>
@@ -29,6 +31,7 @@ function renderPage(locale: 'en' | 'ca' = 'en') {
 afterEach(() => {
   cleanup()
   localStorage.clear()
+  mockRole = null
 })
 
 describe('WelcomePage', () => {
@@ -224,6 +227,37 @@ describe('WelcomePage', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: 'Ready to test your first strategy?' })).toBeTruthy()
     expect(screen.getByText('Not financial advice. Signals follow your rules.')).toBeTruthy()
+  })
+
+  it('replaces DASHBOARD with BACK on top bar when navigated with ?from=new for authenticated users', () => {
+    mockRole = 'user'
+    renderPage('en', ['/welcome?from=new'])
+
+    const backLink = screen.getByRole('link', { name: 'BACK' })
+    expect(backLink.getAttribute('href')).toBe('/new')
+    expect(screen.queryByRole('link', { name: 'DASHBOARD' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'ACCOUNT' })).toBeTruthy()
+    // Authenticated users never see the guest CTA
+    expect(screen.queryByRole('heading', { level: 2, name: 'Ready to test your first strategy?' })).toBeNull()
+  })
+
+  it('hides bottom CTA banner for authenticated users and shows DASHBOARD when not ?from=new', () => {
+    mockRole = 'user'
+    renderPage('en', ['/welcome'])
+
+    expect(screen.getByRole('link', { name: 'DASHBOARD' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'BACK' })).toBeNull()
+    expect(screen.queryByRole('heading', { level: 2, name: 'Ready to test your first strategy?' })).toBeNull()
+  })
+
+  it('shows BACK on top bar and keeps bottom CTA for guests when navigated with ?from=new', () => {
+    mockRole = null
+    renderPage('en', ['/welcome?from=new'])
+
+    const backLink = screen.getByRole('link', { name: 'BACK' })
+    expect(backLink.getAttribute('href')).toBe('/new')
+    expect(screen.getByRole('link', { name: 'LOG IN' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Ready to test your first strategy?' })).toBeTruthy()
   })
 })
 

@@ -49,6 +49,7 @@ public static class Messages
     // Signals
     public static readonly Message AlreadyAnswered = new("This signal is already answered.", "Aquest senyal ja té resposta.");
     public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot posposar un senyal que encara espera.");
+    public static readonly Message AiSignalsCannotSnooze = new("Signals from AI rounds can't be snoozed.", "Els senyals de rondes d'IA no es poden posposar.");
     public static readonly Message StrategyEnded = new("This strategy is archived, so there is no reminder to send.",
         "Aquesta estratègia està arxivada, així que no hi ha cap recordatori per enviar.");
     public static readonly Message ReminderEmailsOff = new("A reminder can't reach you: turn on reminder emails in your account.",

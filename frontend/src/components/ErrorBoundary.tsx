@@ -3,14 +3,23 @@ import { useT } from '../i18n/I18n'
 import styles from './ErrorBoundary.module.css'
 
 /**
- * Catches a screen that crashes while rendering, so the user gets a way out instead of a blank page. Keyed by the path where
- * it is used, so opening another page starts clean. The fallback stays plain (no footer, no account): it must not crash too.
+ * Catches a screen that crashes while rendering, so the user gets a way out instead of a blank page. Opening another page
+ * (`resetKey`, the path) clears the crash. Never key it by the path instead: navigations run as transitions, and remounting
+ * the whole tree in one left the old screen on the page above the new one (#196). The fallback stays plain (no footer, no
+ * account): it must not crash too.
  */
-export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false }
+type Props = { resetKey: string; children: ReactNode }
+type State = { failed: boolean; key: string }
+
+export class ErrorBoundary extends Component<Props, State> {
+  state: State = { failed: false, key: this.props.resetKey }
 
   static getDerivedStateFromError() {
     return { failed: true }
+  }
+
+  static getDerivedStateFromProps(props: Props, state: State) {
+    return props.resetKey === state.key ? null : { failed: false, key: props.resetKey }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {

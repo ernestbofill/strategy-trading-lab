@@ -158,7 +158,7 @@ function AppLayout() {
   return (
     <>
       <OfflineBanner />
-      <ErrorBoundary key={pathname}>
+      <ErrorBoundary resetKey={pathname}>
         <Outlet />
       </ErrorBoundary>
       <FeedbackCaptureIfLoggedIn key={pathname} />

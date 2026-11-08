@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from './api'
 import App from './App'
@@ -118,6 +118,18 @@ describe('app routes', () => {
     open('/legal')
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Legal notice' })).toBeTruthy()
+  })
+
+  it('replaces the page when a link opens another one, never adding it below', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
+
+    open('/legal/notice')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Legal notice' })).toBeTruthy()
+    fireEvent.click(screen.getAllByRole('link', { name: 'Privacy policy' })[0])
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Privacy policy' })).toBeTruthy()
+    await waitFor(() => expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1))
+    expect(screen.getAllByRole('banner')).toHaveLength(1)
   })
 
   it('says a page is not found instead of opening the home page', async () => {

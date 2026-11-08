@@ -15,6 +15,41 @@
   box-shadow: var(--glow-primary);
 }
 
+/* The plot with its price axis on the right, wide enough for a price such as $12,345.67. */
+.frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10ch;
+  column-gap: var(--space-2);
+  font-family: var(--font-mono);
+}
+
+.axis {
+  position: relative;
+  font-size: 11px;
+}
+
+.axisLabel {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  line-height: 16px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.axisLabel[data-tone='price'] {
+  color: var(--chart-price);
+  font-weight: 700;
+}
+.axisLabel[data-tone='buy'] {
+  color: var(--info);
+}
+.axisLabel[data-tone='sell'] {
+  color: var(--hot-pink);
+}
+.axisLabel[data-tone='watch'] {
+  color: var(--warning);
+}
+
 .plot {
   position: relative;
   border-bottom: 1px solid var(--border-tab);
@@ -74,9 +109,11 @@
   position: absolute;
   top: 0;
   margin-left: 4px;
+  padding: 0 2px;
   font: 11px/16px var(--font-mono);
   color: var(--ink-muted);
   white-space: nowrap;
+  background: var(--surface-deep);
 }
 
 /* Near the right edge the label goes left of the line, so it never runs off the chart. */
@@ -138,10 +175,6 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.value {
-  font-family: var(--font-mono);
 }
 
 .key {

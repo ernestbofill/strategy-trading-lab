@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RuleCheck } from '../../api'
-import { chartMarks, chartSeries, lastDays, segments } from './priceChartMarks'
+import { chartMarks, chartSeries, lastDays, segments, spreadLabels } from './priceChartMarks'
 
 const check = (fields: Partial<RuleCheck> & Pick<RuleCheck, 'key' | 'group' | 'met'>): RuleCheck => ({
   value: null, min: null, max: null, level: null, progress: null, used: null, ...fields,
@@ -13,6 +13,8 @@ describe('chartMarks', () => {
       check({ key: 'drop', group: 'candidate', met: false, min: 30, level: 300 }),
     ])
     expect(marks).toEqual([{ id: 'drop', label: 'stock.chart.beaten', tone: 'watch', from: 210 }])
+    // A candidate today draws its buy area on every day, never this line.
+    expect(chartMarks([check({ key: 'beaten', group: 'candidate', met: false }), check({ key: 'drop', group: 'candidate', met: false, min: 30, level: 300 })], true)).toEqual([])
   })
 
   it('shows a bear its fall line, and its bounce line only once a drop started', () => {
@@ -33,6 +35,8 @@ describe('chartMarks', () => {
     ]
     expect(chartMarks(checks)).toEqual([{ id: 'zone', label: 'stock.chart.zone', tone: 'buy', from: 190, to: 170 }])
     expect(chartMarks([{ ...checks[0], met: false }, checks[1]])).toEqual([{ id: 'growth', label: 'stock.chart.growth', tone: 'watch', from: 150 }])
+    // A day that was a candidate, drawn for a stock that isn't one today: the growth line, not the zone.
+    expect(chartMarks(checks, false).map((m) => m.id)).toEqual(['growth'])
   })
 
   it("shows a held comeback stock its next milestone's buy area, not a used one", () => {
@@ -53,7 +57,7 @@ describe('chartSeries', () => {
   it('follows a level day by day, in pieces where it stops', () => {
     const beaten = (level: number) => [check({ key: 'beaten', group: 'candidate', met: false }), check({ key: 'drop', group: 'candidate', met: false, min: 25, level })]
     const days = [beaten(200), beaten(240), [], beaten(220)].map((checks, i) => ({ date: `2026-10-0${i + 1}`, close: 100, checks }))
-    const [series] = chartSeries(days)
+    const [series] = chartSeries(days, false)
     expect(series.points.map((p) => [p.i, p.from])).toEqual([[0, 150], [1, 180], [3, 165]])
     expect(segments(series.points).map((run) => run.length)).toEqual([2, 1])
   })
@@ -63,5 +67,12 @@ describe('lastDays', () => {
   it('keeps the calendar days up to the latest close', () => {
     const points = ['2026-09-01', '2026-10-24', '2026-10-30'].map((date) => ({ date, close: 1 }))
     expect(lastDays(points, 7).map((p) => p.date)).toEqual(['2026-10-24', '2026-10-30'])
+  })
+})
+
+describe('spreadLabels', () => {
+  it('pushes overlapping labels apart and keeps them in the plot', () => {
+    expect(spreadLabels([50, 52, 150], 16, 8, 152)).toEqual([50, 66, 150])
+    expect(spreadLabels([150, 151], 16, 8, 152)).toEqual([136, 152])
   })
 })

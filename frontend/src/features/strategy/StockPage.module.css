@@ -51,10 +51,12 @@
   line-height: 16px;
 }
 
+/* A 44px tap target that takes only its line's height, so this header spaces like the strategy page's. */
 .strategy a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  margin: -14px 0;
 }
 
 .muted {

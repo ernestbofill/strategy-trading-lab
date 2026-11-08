@@ -18,12 +18,13 @@ const TRUST_CARDS: Array<{ title: MessageKey; text: MessageKey }> = [
 
 export function WelcomePage() {
   const t = useT()
-  const signedIn = Boolean(useRole())
+  const role = useRole()
 
   return (
     <Screen
       top={
-        signedIn ? (
+        // Signed in, or still loading: the home bar ("STL" with nothing on the right while it loads), never the guest bar first.
+        role !== null ? (
           <TopBar home />
         ) : (
           <TopBar

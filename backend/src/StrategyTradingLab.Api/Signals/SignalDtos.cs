@@ -42,7 +42,8 @@ public record SignalDetail(
     TradePrefill Prefill,
     IReadOnlyList<RateDay> Rates,
     SignalAnswer? Answer,
-    TradeSide Side = TradeSide.Buy);
+    TradeSide Side = TradeSide.Buy,
+    bool CanSnooze = true);
 
 /// <summary>
 /// "I did it". <c>EnteredAs</c> says which of <c>Amount</c> and <c>Shares</c> the user typed; the other is worked out.

@@ -83,6 +83,8 @@ public static class SignalEndpoints
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             // Only a waiting signal can be snoozed (the table's check): a missed one has nothing left to remind of.
             if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict(Messages.OnlyWaitingCanSnooze.In(user.Locale));
+            // AI round signals cannot be snoozed: they remain due until they expire.
+            if (found.Strategy.TemplateKey == "ai") return TypedResults.Conflict(Messages.AiSignalsCannotSnooze.In(user.Locale));
             // A snooze promises a reminder: refuse it when none could be sent.
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyEnded.In(user.Locale));
             // By email (switched on and confirmed) or by push (switched on, sent by this server, with a device that gets it).
@@ -209,8 +211,9 @@ public static class SignalEndpoints
         else if (signal.Status == SignalStatus.Skipped) answer = new SignalAnswer(signal.Status, signal.SkipReason, null, null, null, null, null);
 
         var reason = EmailTexts.FactSentence(SignalLine.From(signal, strategy, asset), user.Locale);
+        var canSnooze = strategy.TemplateKey != "ai";
         return new SignalDetail(signal.Id, strategy.Id, strategy.Name, texts.Name, strategy.Currency, asset.Name, asset.Currency, signal.StepNo,
             signal.MaxSteps, signal.StepAmount, signal.SignalDate, signal.ClosePrice, reason, signal.Status, signal.SnoozedUntil, signal.EndedOn,
-            today, prefill, rates, answer, signal.Side);
+            today, prefill, rates, answer, signal.Side, canSnooze);
     }
 }

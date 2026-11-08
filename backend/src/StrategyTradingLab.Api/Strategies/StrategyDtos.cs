@@ -12,10 +12,12 @@ namespace StrategyTradingLab.Api.Strategies;
 /// What the Confirm screen sends. <c>Currency</c> is the one the user saw while setting the budget; without it the user's
 /// current one is used. <c>Settings</c> are the Advanced settings the user changed (setting key → value); the rest keep the
 /// template's tested defaults. <c>SourceStrategyId</c> is the simulation a live copy came from ("Go live with these settings"):
-/// one of the user's simulations, kept for a live strategy only.
+/// one of the user's simulations, kept for a live strategy only. <c>DefaultsVersion</c> is the template version the screens
+/// showed (/admin/templates): the strategy is stamped with it, so "tuned" compares with what the user saw.
 /// </summary>
 public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, Budget Budget, IReadOnlyList<Guid> AssetIds,
-    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null);
+    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null,
+    int? DefaultsVersion = null);
 
 /// <summary>New settings (rules) for a running strategy.</summary>
 public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
@@ -230,4 +232,7 @@ public record StrategyDetail(
 {
     /// <summary>The template's words for each rule check (<see cref="StockRow.Checks"/>), by its key.</summary>
     public IReadOnlyDictionary<string, CheckTexts>? CheckTexts { get; init; }
+
+    /// <summary>The template version it started from (/admin/templates): its settings screen shows that version as tested.</summary>
+    public int DefaultsVersion { get; init; }
 }

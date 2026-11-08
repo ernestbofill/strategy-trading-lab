@@ -61,6 +61,8 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
     } catch (e) {
       if (e instanceof InvalidFieldsError) setErrors(e.fields)
       else setFailed(true)
+    } finally {
+      // Also after a success that keeps this form (making a version active, a save that changed nothing).
       setBusy(false)
     }
   }

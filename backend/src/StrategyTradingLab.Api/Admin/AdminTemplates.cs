@@ -59,14 +59,17 @@ public static class AdminTemplates
         {
             if (TemplateCatalog.Find(key) is not { } tested) return TypedResults.NotFound();
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            // Locked, so two saves at once make two versions one after the other.
-            var versions = await db.TemplateVersions.FromSql($"SELECT * FROM template_versions WHERE template_key = {key} FOR UPDATE")
-                .AsNoTracking().ToListAsync(cancellationToken);
+            await Lock(db, key, cancellationToken);
+            var versions = await db.TemplateVersions.AsNoTracking().Where(v => v.TemplateKey == key).ToListAsync(cancellationToken);
             var active = versions.Single(v => v.Active);
 
             var errors = new Dictionary<string, string[]>();
             void Fail(string field, string message) => errors[field] = [message];
-            TemplateSettings.Apply(tested, change.Defaults, Fail);
+            // Every setting, so a version stays what it was even when the catalogue's defaults change later. Checked as a whole:
+            // a change is checked with the active version's other values, which it is stored with.
+            var defaults = Values(tested, active);
+            foreach (var (setting, value) in change.Defaults ?? new Dictionary<string, decimal>()) defaults[setting] = value;
+            TemplateSettings.Apply(tested, defaults, Fail);
             var ids = change.AssetIds ?? active.AssetIds;
             var found = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
             // An asset of the active version may have been hidden since: it can stay (new strategies don't get it), so saving
@@ -79,9 +82,6 @@ public static class AdminTemplates
                 Fail("closePct", $"Use {MinClosePct} to {MaxClosePct}, in steps of {CloseStep}.");
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
-            // Every setting, so a version stays what it was even when the catalogue's defaults change later.
-            var defaults = Values(tested, active);
-            foreach (var (setting, value) in change.Defaults ?? new Dictionary<string, decimal>()) defaults[setting] = value;
             var same = Values(tested, active).All(d => defaults[d.Key] == d.Value)
                 && ids.ToHashSet().SetEquals(active.AssetIds) && closePct == active.ClosePct;
             if (!same)
@@ -109,6 +109,7 @@ public static class AdminTemplates
         {
             if (TemplateCatalog.Find(key) is not { } tested) return TypedResults.NotFound();
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            await Lock(db, key, cancellationToken);
             if (!await db.TemplateVersions.AnyAsync(v => v.TemplateKey == key && v.Version == request.Version, cancellationToken))
                 return TypedResults.NotFound();
             // Off first, then on: the unique index allows one active version per template at any moment.
@@ -121,6 +122,13 @@ public static class AdminTemplates
         })
         .WithSummary("Makes a version active: new strategies of the template start with it.");
     }
+
+    /// <summary>
+    /// Holds the template's versions for the transaction: saves and activations of one template go one after the other, each
+    /// seeing what the one before it committed (a row lock would leave the second with the rows it read before waiting).
+    /// </summary>
+    static Task Lock(AppDbContext db, string key, CancellationToken cancellationToken) =>
+        db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtext({"template_versions:" + key}))", cancellationToken);
 
     /// <summary>The catalogue's settings by key, with <paramref name="version"/>'s saved values over them.</summary>
     static Dictionary<string, decimal> Values(Template template, TemplateVersion? version = null)

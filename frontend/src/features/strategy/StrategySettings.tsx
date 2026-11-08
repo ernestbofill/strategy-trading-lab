@@ -27,7 +27,8 @@ export function StrategySettings() {
 
 function StrategySettingsWithTemplate({ strategy }: { strategy: StrategyDetail }) {
   const t = useT()
-  const template = useTemplate(strategy.templateKey)
+  // As the version it started from, so "Tested" and "Reset to tested" match what "tuned" on its page compares with.
+  const template = useTemplate(strategy.templateKey, strategy.defaultsVersion)
   const top = <TopBar back={strategyPath(strategy.id)} step={strategy.name} />
   return (
     <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>

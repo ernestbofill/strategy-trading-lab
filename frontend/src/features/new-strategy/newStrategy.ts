@@ -21,6 +21,8 @@ export function newStrategyFrom(draft: DraftState, template: TemplateDetail, nam
     assetIds: watches.kind === 'fund' ? [fundOf(draft, template)!.id] : tickedStocks(draft, template).map((s) => s.id),
     // Every setting, not only the changed ones: the API never fills one from a default this screen didn't show.
     settings: settingValues(template, draft.settings),
+    // The template version those defaults came from: the strategy is stamped with it.
+    defaultsVersion: defaults.version,
     // What the prompt asks for, for templates driven by AI rounds.
     ...(template.aiRound ? { ai: { ...draft.aiSources, instructions: draft.aiInstructions } } : {}),
     // Only a live strategy keeps the simulation it was copied from.

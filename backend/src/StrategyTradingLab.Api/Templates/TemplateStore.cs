@@ -13,36 +13,39 @@ namespace StrategyTradingLab.Api.Templates;
 public class TemplateStore(AppDbContext db)
 {
     List<TemplateVersion>? rows;
-    HashSet<Guid>? activeAssets;
+    IReadOnlyList<Template>? active;
+    readonly Dictionary<(string, int), Template> versions = [];
 
-    async Task<List<TemplateVersion>> Rows(CancellationToken cancellationToken)
-    {
-        if (rows is not null) return rows;
-        var loaded = await db.TemplateVersions.AsNoTracking().ToListAsync(cancellationToken);
-        // A stock or fund hidden since (on /admin/assets) can't be picked, so the active versions don't offer it.
-        var saved = loaded.Where(r => r.Active).SelectMany(r => r.AssetIds).Distinct().ToList();
-        activeAssets = saved.Count == 0 ? [] : (await db.Assets.AsNoTracking().Where(a => saved.Contains(a.Id) && a.Active)
-            .Select(a => a.Id).ToListAsync(cancellationToken)).ToHashSet();
-        return rows = loaded;
-    }
+    async Task<List<TemplateVersion>> Rows(CancellationToken cancellationToken) =>
+        rows ??= await db.TemplateVersions.AsNoTracking().ToListAsync(cancellationToken);
 
     /// <summary>Every template as its active version, in catalogue order.</summary>
     public async Task<IReadOnlyList<Template>> AllAsync(CancellationToken cancellationToken)
     {
-        var all = await Rows(cancellationToken);
-        return [.. TemplateCatalog.All.Select(template =>
-            Effective(template, all.FirstOrDefault(r => r.TemplateKey == template.Key && r.Active), activeAssets!.Contains))];
+        if (active is not null) return active;
+        var current = (await Rows(cancellationToken)).Where(r => r.Active).ToList();
+        // A stock or fund hidden since (on /admin/assets) can't be picked, so the active versions don't offer it.
+        var saved = current.SelectMany(r => r.AssetIds).Distinct().ToList();
+        var available = saved.Count == 0 ? [] : (await db.Assets.AsNoTracking().Where(a => saved.Contains(a.Id) && a.Active)
+            .Select(a => a.Id).ToListAsync(cancellationToken)).ToHashSet();
+        return active = [.. TemplateCatalog.All.Select(template =>
+            Effective(template, current.FirstOrDefault(r => r.TemplateKey == template.Key), available.Contains))];
     }
 
     /// <summary>The template as its active version: what a new strategy starts with.</summary>
     public async Task<Template?> FindAsync(string key, CancellationToken cancellationToken) =>
         (await AllAsync(cancellationToken)).FirstOrDefault(template => template.Key == key);
 
+    /// <summary>Whether the template has that version.</summary>
+    public async Task<bool> ExistsAsync(string key, int version, CancellationToken cancellationToken) =>
+        (await Rows(cancellationToken)).Any(r => r.TemplateKey == key && r.Version == version);
+
     /// <summary>The template as one of its versions (a strategy's own, for "tuned"); the catalogue's when that version isn't stored.</summary>
     public async Task<Template> VersionAsync(string key, int version, CancellationToken cancellationToken)
     {
-        var all = await Rows(cancellationToken);
-        return Effective(TemplateCatalog.Find(key)!, all.FirstOrDefault(r => r.TemplateKey == key && r.Version == version));
+        if (versions.TryGetValue((key, version), out var known)) return known;
+        var row = (await Rows(cancellationToken)).FirstOrDefault(r => r.TemplateKey == key && r.Version == version);
+        return versions[(key, version)] = Effective(TemplateCatalog.Find(key)!, row);
     }
 
     /// <summary>

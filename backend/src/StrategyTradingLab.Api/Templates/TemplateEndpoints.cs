@@ -21,17 +21,22 @@ public static class TemplateEndpoints
         .WithName("GetTemplates")
         .WithSummary("The templates for the pick screen, in catalogue order.");
 
-        group.MapGet("/{key}", async Task<Results<Ok<TemplateDetail>, NotFound>> (string key, AppDbContext db,
+        group.MapGet("/{key}", async Task<Results<Ok<TemplateDetail>, NotFound>> (string key, int? version, AppDbContext db,
             Sessions sessions, TemplateStore store, CancellationToken cancellationToken) =>
         {
-            if (await store.FindAsync(key, cancellationToken) is not { } template) return TypedResults.NotFound();
+            if (TemplateCatalog.Find(key) is null) return TypedResults.NotFound();
+            // A strategy's settings screen asks for the version it started from, so its "tested" values are that version's.
+            var template = version is { } v
+                ? await store.ExistsAsync(key, v, cancellationToken) ? await store.VersionAsync(key, v, cancellationToken) : null
+                : await store.FindAsync(key, cancellationToken);
+            if (template is null) return TypedResults.NotFound();
 
             var locale = await UserLocale(sessions, cancellationToken);
             var securities = await Securities(db, template, locale, cancellationToken);
             return TypedResults.Ok(Detail(template, TemplateTexts.For(template, locale), securities));
         })
         .WithName("GetTemplate")
-        .WithSummary("One template with its rules, starter list or fund, backtest and defaults (the owner's changes on /admin/templates included).");
+        .WithSummary("One template with its rules, starter list or fund, backtest and defaults: the active version, or the one asked for (/admin/templates).");
     }
 
     /// <summary>The logged-in user's language; visitors get the default (the templates are public).</summary>

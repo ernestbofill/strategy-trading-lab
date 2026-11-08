@@ -29,6 +29,7 @@ describe('newStrategyFrom', () => {
       budget: { amount: 3000, step: 100, maxSteps: 5 },
       assetIds: ['id-NVDA', 'id-AVGO', 'id-META'],
       settings: { peakDays: 60, zoneEndPct: 15 },
+      defaultsVersion: 1,
     })
   })
 

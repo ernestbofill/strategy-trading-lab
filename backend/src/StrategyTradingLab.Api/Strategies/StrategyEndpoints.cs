@@ -147,6 +147,9 @@ public static class StrategyEndpoints
                 parameters = AiRoundEndpoints.Apply(parameters, request.Ai, (field, message) => errors[$"ai.{field}"] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
+            // The version the screens showed, which the settings sent come from; the active one when the client didn't say.
+            var defaultsVersion = request.DefaultsVersion is { } seen && await store.ExistsAsync(template.Key, seen, cancellationToken)
+                ? seen : template.DefaultsVersion;
             await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
             await db.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM users WHERE id = {user.Id} FOR NO KEY UPDATE", cancellationToken);
             var running = await db.Strategies.CountAsync(s => s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
@@ -160,7 +163,7 @@ public static class StrategyEndpoints
             {
                 UserId = user.Id,
                 TemplateKey = template.Key,
-                DefaultsVersion = template.DefaultsVersion,
+                DefaultsVersion = defaultsVersion,
                 Name = request.Name.Trim(),
                 Mode = request.Mode!.Value,
                 Status = StrategyStatus.Running,
@@ -422,8 +425,8 @@ public static class StrategyEndpoints
             states.Count(s => s.Status is StockStatus.Holding or StockStatus.Building or StockStatus.Done),
             states.Count(s => s.Status == StockStatus.NotCandidate));
     }
-
-    // The past result was tested with the catalogue's defaults and list, so "customized" compares with those, not with the
+    // "Customized" compares with the template version the strategy started from (it is passed that version), so it reads as
+    // tuned only when the user changed something, whatever the owner made active since on /admin/templates.
     // owner's changes on /admin/templates: a running strategy doesn't flip when the owner edits a template.
     static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
         template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
@@ -631,7 +634,7 @@ public static class StrategyEndpoints
             EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
-            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks };
+            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion };
     }
 
     /// <summary>Where a stock stands today: its pill, the steps and signal behind it, and how far the price is from the rules.</summary>

@@ -274,7 +274,7 @@ export const httpApi: Api = {
     if (!response.ok) throw new Error(`Couldn't turn the emails off (${response.status}).`)
   },
   getTemplates: () => getRequired('/templates'),
-  getTemplate: (key) => get(`/templates/${encodeURIComponent(key)}`),
+  getTemplate: (key, version) => get(`/templates/${encodeURIComponent(key)}${version === undefined ? '' : `?version=${version}`}`),
   getDashboard: () => getRequired('/dashboard'),
   getStrategy: (id) => get(`/strategies/${encodeURIComponent(id)}`),
   getStockChart: (id, assetId) => get(`/strategies/${encodeURIComponent(id)}/stocks/${encodeURIComponent(assetId)}/chart`),

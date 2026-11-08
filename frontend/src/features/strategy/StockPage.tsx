@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type { CheckGroup, CheckTexts, RuleCheck, StockRow, StrategyDetail } from '../../api'
 import { InfoTip } from '../../components/InfoTip'
-import { Columns } from '../../components/Columns'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
@@ -259,9 +258,9 @@ function Rules({
 
 /**
  * A stock's status line, figures, price chart and rule checks (used on the stock page, and directly on a fund strategy's
- * page). From 1024px the rules sit beside `aside` (the signals and trades).
+ * page). `stats` sits between the status line and the chart.
  */
-export function StockRules({ s, row, stats, aside }: { s: StrategyDetail; row: StockRow; stats?: ReactNode; aside: ReactNode }) {
+export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow; stats?: ReactNode }) {
   const t = useT()
   const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
   const isCandidate = isCandidateOn(row.checks)
@@ -291,7 +290,7 @@ export function StockRules({ s, row, stats, aside }: { s: StrategyDetail; row: S
         texts={s.checkTexts}
       />
 
-      {rules ? <Columns main={rules} aside={aside} /> : aside}
+      {rules}
     </>
   )
 }
@@ -368,8 +367,8 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
             </Stats>
           )
         }
-        aside={<SignalsAndTrades s={own} />}
       />
+      <SignalsAndTrades s={own} />
     </Screen>
   )
 }

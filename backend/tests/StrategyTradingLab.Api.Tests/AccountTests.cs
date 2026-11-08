@@ -32,6 +32,11 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.NoContent, (await stranger.PostAsJsonAsync("/account/verify-email", new { token })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/account/me")).StatusCode); // The link logs no one in.
         Assert.True((await Me(client)).GetProperty("emailVerified").GetBoolean());
+        var welcome = await api.Emails.WaitForAsync(email, "Welcome to Strategy Trading Lab");
+        Assert.NotNull(welcome);
+        Assert.Contains("/welcome", welcome!.Body);
+        Assert.Contains("/settings#app", welcome.Body);
+        Assert.DoesNotContain("your email address is confirmed", welcome.Body, StringComparison.OrdinalIgnoreCase);
 
         var again = await client.PostAsJsonAsync("/account/verify-email", new { token });
         Assert.Equal(HttpStatusCode.BadRequest, again.StatusCode);

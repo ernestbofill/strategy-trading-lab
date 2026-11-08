@@ -11,7 +11,7 @@ import { logInPathFor, signUpPath } from './paths'
  */
 export function RequireAccount() {
   const { state, refresh } = useAccount()
-  const { pathname, search } = useLocation()
+  const { pathname, search, hash } = useLocation()
 
   if (state.status === 'loading')
     return (
@@ -29,7 +29,7 @@ export function RequireAccount() {
       </Screen>
     )
   if (!state.account) {
-    const from = `${pathname}${search}`
+    const from = `${pathname}${search}${hash}`
     return <Navigate to={hasLoggedInHere() || from !== '/' ? logInPathFor(from) : signUpPath} replace />
   }
   return <Outlet />

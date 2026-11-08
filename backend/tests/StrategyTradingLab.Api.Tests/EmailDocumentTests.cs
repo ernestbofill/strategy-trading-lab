@@ -12,15 +12,15 @@ public class EmailDocumentTests
             .Box("Your rules are met.\nClose on 22 Oct 2026: $187.5")
             .Action("See it:", "See the signal", "https://app.example/s/1")
             .Code("Your code", "DVN6-2PTF")
-            .Section("Your strategies", [new("Dips (Live): since 1 Oct 2026", Tag: "Live", Live: true)])
+            .Section("Your strategies", [new("Dips (Live): since 1 Oct 2026", Tag: "Live", Live: true)], url: "https://app.example/s")
             .Disclaimer("Not financial advice. Signals follow your rules.")
             .Build("Subject");
 
         Assert.Equal("You asked to be reminded.\n\nYour rules are met.\nClose on 22 Oct 2026: $187.5\n\nSee it:\nhttps://app.example/s/1\n\n" +
             "Your code: DVN6-2PTF\n\n" +
-            "Your strategies\n- (Live) Dips (Live): since 1 Oct 2026\n\nNot financial advice. Signals follow your rules.", email.Text);
+            "Your strategies: https://app.example/s\n- (Live) Dips (Live): since 1 Oct 2026\n\nNot financial advice. Signals follow your rules.", email.Text);
         foreach (var part in new[] { "lang=\"en\"", "Signal &#183; Live", "Close on 22 Oct 2026: $187.5", "href=\"https://app.example/s/1\"", "See the signal",
-                     "Your code", "DVN6-2PTF", "Your strategies", ">Live</span>", "Not financial advice. Signals follow your rules.", "href=\"https://app.example/en\"" })
+                     "Your code", "DVN6-2PTF", "href=\"https://app.example/s\"", ">Your strategies</a>", ">Live</span>", "Not financial advice. Signals follow your rules.", "href=\"https://app.example/en\"" })
             Assert.Contains(part, email.Html);
         Assert.DoesNotContain("&#9650;", email.Html);
         Assert.DoesNotContain("Or open this link:", email.Html);

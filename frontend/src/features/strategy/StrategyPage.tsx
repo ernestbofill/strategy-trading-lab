@@ -10,7 +10,6 @@ import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
 import { aiRoundPath, aiRoundsPath, stockPath, strategyListPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
-import { dashboardPath } from '../new-strategy/paths'
 import { DeleteStrategy } from './DeleteStrategy'
 import { ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
@@ -194,7 +193,7 @@ export function StrategyPage() {
   const t = useT()
   const { id = '' } = useParams()
   const strategy = useStrategy(id)
-  const top = <TopBar back={dashboardPath} />
+  const top = <TopBar home aside={null} />
 
   return (
     <LoadableScreen state={strategy} top={top} what={t('strategy.what')}>
@@ -216,8 +215,8 @@ function StrategyView({ s }: { s: StrategyDetail }) {
   const source = live ? t('strategy.source.live') : t('strategy.source.sim')
   const top = (
     <TopBar
-      back={dashboardPath}
-      aside={renaming ? undefined : <TextAction onClick={() => setRenaming(true)}>{t('strategy.rename')}</TextAction>}
+      home
+      aside={renaming ? null : <TextAction onClick={() => setRenaming(true)}>{t('strategy.rename')}</TextAction>}
     />
   )
   return (

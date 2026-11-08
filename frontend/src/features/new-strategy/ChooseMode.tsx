@@ -55,7 +55,7 @@ export function ChooseMode() {
 
   return (
     <Screen
-      top={<TopBar back={reviewPath(templateKey)} step="3 / 5" />}
+      top={<TopBar up={reviewPath(templateKey)} step="3 / 5" />}
       action={<PrimaryAction to={budgetPath}>{t('newStrategy.mode.continue')}</PrimaryAction>}
       note={
         isLive && (

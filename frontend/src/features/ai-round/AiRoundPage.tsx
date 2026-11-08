@@ -29,7 +29,7 @@ export function AiRoundPage() {
   const t = useT()
   const { locale } = useI18n()
   const top = (date?: string) => (
-    <TopBar back={strategyPath(id)} aside={date && <span>{t('aiRound.topBar', { date: shortDate(date, locale).toUpperCase() })}</span>} />
+    <TopBar up={strategyPath(id)} upLabel="common.up.strategy" aside={date ? <span>{t('aiRound.topBar', { date: shortDate(date, locale).toUpperCase() })}</span> : null} />
   )
   return (
     <LoadableScreen state={round} top={top()} what={t('aiRound.what')}>

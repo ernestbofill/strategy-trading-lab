@@ -17,7 +17,7 @@ export function DraftPromptEditor() {
   const draft = useNewStrategyDraft()
   const t = useT()
   const leave = useLeave(reviewPath(key ?? ''))
-  const top = <TopBar back={reviewPath(key ?? '')} aside={<span>{t('aiRound.editor.topBar')}</span>} />
+  const top = <TopBar up={reviewPath(key ?? '')} aside={<span>{t('aiRound.editor.topBar')}</span>} />
   return (
     <LoadableScreen state={useTemplate(key)} top={top} what={t('newStrategy.what.template')}>
       {(template) => {

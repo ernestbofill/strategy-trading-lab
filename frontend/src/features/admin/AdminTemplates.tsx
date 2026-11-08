@@ -5,7 +5,8 @@ import { SelectField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Tabs } from '../../components/Tabs'
 import { tabPanel } from '../../components/tabPanel'
-import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { Screen, ScreenMessage } from '../../components/Screen'
+import { AdminTopBar } from './AdminTopBar'
 import { formatRate, isoDate } from '../../lib/format'
 import { invalidate } from '../../lib/useLoadable'
 import { AssetPicker } from '../new-strategy/review/AssetPicker'
@@ -246,7 +247,7 @@ export function AdminTemplates() {
   }
 
   return (
-    <Screen top={<TopBar back="/admin" step="ADMIN" />}>
+    <Screen top={<AdminTopBar />}>
       <PageHeader
         title="Templates"
         lead="What new strategies start with, by version. Saving makes a new version; any version can be made active again. Strategies keep the version they started from."

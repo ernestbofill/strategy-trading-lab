@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { api, type AdminUser, type AdminUsers as AdminUsersPage, type Role } from '../../api'
 import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
 import { PageHeader } from '../../components/PageHeader'
-import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { Screen, ScreenMessage } from '../../components/Screen'
+import { AdminTopBar } from './AdminTopBar'
 import { isoDate } from '../../lib/format'
 import styles from './AdminUsers.module.css'
 
@@ -108,7 +109,7 @@ export function AdminUsers() {
   }, [])
 
   return (
-    <Screen top={<TopBar back="/admin" step="ADMIN" />}>
+    <Screen top={<AdminTopBar />}>
       <PageHeader title="Users" lead="Every account, newest first. Blocking, deleting and invites come later." />
       {state.status === 'loading' && <ScreenMessage>Loading the users…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the users. Try again later.</ScreenMessage>}

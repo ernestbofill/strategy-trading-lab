@@ -27,7 +27,7 @@ import { aiPromptScope, aiSources as aiSourcesOf } from './aiSources'
 import styles from './Review.module.css'
 import { TestedBox } from './TestedBox'
 
-const top = <TopBar back={pickPath} step="2 / 5" />
+const top = <TopBar up={pickPath} step="2 / 5" />
 
 /** 2 · Review a template (wireframes `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI`). */
 export function ReviewTemplate() {

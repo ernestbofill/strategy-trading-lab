@@ -4,6 +4,7 @@ import { Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
+import { useRole } from '../account/AccountContext'
 import { logInPath, signUpPath } from '../account/paths'
 import { pickPath } from '../new-strategy/paths'
 import { InteractiveFeatures } from './InteractiveFeatures'
@@ -17,20 +18,25 @@ const TRUST_CARDS: Array<{ title: MessageKey; text: MessageKey }> = [
 
 export function WelcomePage() {
   const t = useT()
+  const signedIn = Boolean(useRole())
 
   return (
     <Screen
       top={
-        <TopBar
-          title={t('welcome.topBar')}
-          titleLink="/"
-          aside={
-            <>
-              <LanguageSwitch />
-              <TextAction to={logInPath}>{t('welcome.logIn')}</TextAction>
-            </>
-          }
-        />
+        signedIn ? (
+          <TopBar home />
+        ) : (
+          <TopBar
+            title={t('welcome.topBar')}
+            titleLink="/"
+            aside={
+              <>
+                <LanguageSwitch />
+                <TextAction to={logInPath}>{t('common.logIn')}</TextAction>
+              </>
+            }
+          />
+        )
       }
     >
       <div className={styles.page}>

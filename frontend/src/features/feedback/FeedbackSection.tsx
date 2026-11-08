@@ -8,7 +8,8 @@ import {
   type FeedbackKind,
 } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
-import { Screen, TopBar } from '../../components/Screen'
+import { Screen } from '../../components/Screen'
+import { AdminTopBar } from '../admin/AdminTopBar'
 import { feedbackMarkdown, isAppPath, kindMeta } from './feedback'
 import { FEEDBACK_SUBMITTED_EVENT } from './FeedbackCapture'
 import styles from './Feedback.module.css'
@@ -353,7 +354,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
 /** Dedicated owner feedback screen (`/feedback`). */
 export function FeedbackPage() {
   return (
-    <Screen top={<TopBar title="STL // FEEDBACK" back="/admin" />}>
+    <Screen top={<AdminTopBar />}>
       <PageHeader
         title="Feedback"
         lead="Comments submitted by users with a confirmed email from selected text across the app."

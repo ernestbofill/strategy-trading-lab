@@ -7,15 +7,19 @@ export const common = {
   'common.pastResults': "Past results don't promise future ones.",
   'common.indexTip.label': 'What is the S&P 500 fund?',
   'common.indexTip.text': 'Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold.',
-  /** The top bar's link to the screen before. */
-  'common.back': '\u2190 BACK',
-  /** The top bar's link up to the parent, on a screen opened directly (a notification, an email link). */
-  'common.up.dashboard': '\u2190 DASHBOARD',
-  'common.up.strategy': '\u2190 STRATEGY',
-  'common.up.admin': '\u2190 ADMIN',
-  'common.up.home': '\u2190 HOME',
-  /** Tooltip and accessible name for the header version link to the admin page. */
-  'common.admin': 'Admin',
+  /** The top bar's up link, after a drawn arrow: the new-strategy steps, whose parent is the step before. */
+  'common.back': 'BACK',
+  /** The top bar's up link, after a drawn arrow, named after the parent. */
+  'common.up.strategy': 'STRATEGY',
+  'common.up.aiRound': 'AI ROUND',
+  'common.up.logIn': 'LOG IN',
+  /** The top bar's direct link home, no arrow. */
+  'common.home.dashboard': 'DASHBOARD',
+  'common.home.welcome': 'WELCOME',
+  /** The top bar's right side: the default links, and the admin pages' link to /admin. */
+  'common.account': 'ACCOUNT',
+  'common.logIn': 'LOG IN',
+  'common.admin': 'ADMIN',
   /** Tooltip of the DEV tag in the top bar. */
   'common.devDatabase': 'The API uses the dev database',
   /** The password toggle: the visible word, then the part only a screen reader hears ("Show password"). */
@@ -64,6 +68,5 @@ export const common = {
   'legal.about.lead': 'About Strategy Trading Lab.',
   'legal.about.content':
     'A strategy lab and monitoring side app. Pick a strategy template, tune its rules, and follow it as a simulation or live. The app never places orders and never connects to a broker.',
-  'legal.topBar': 'STL // LEGAL',
   'legal.laterStep': 'This page comes in a later step.',
 } as const

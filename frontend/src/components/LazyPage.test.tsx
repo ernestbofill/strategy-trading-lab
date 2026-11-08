@@ -23,7 +23,7 @@ function show(load: () => Promise<() => React.ReactNode>) {
   const Page = lazyPage(load)
   render(
     <MemoryRouter>
-      <LazyPage back="/admin">
+      <LazyPage>
         <Page />
       </LazyPage>
     </MemoryRouter>,

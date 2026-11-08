@@ -37,7 +37,7 @@ export function Confirm() {
   const t = useT()
   const { templateKey } = useNewStrategyDraft()
   const template = useTemplate(templateKey)
-  const top = <TopBar back={budgetPath} step="5 / 5" />
+  const top = <TopBar up={budgetPath} step="5 / 5" />
 
   return (
     <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>

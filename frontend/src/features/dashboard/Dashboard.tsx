@@ -8,6 +8,7 @@ import { useT } from '../../i18n/I18n'
 import { MAX_RUNNING_STRATEGIES } from '../new-strategy/draftState'
 import { useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
 import { pickPath } from '../new-strategy/paths'
+import { welcomePath } from '../welcome/paths'
 import { useCurrentAccount } from '../account/AccountContext'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
@@ -23,7 +24,7 @@ export function Dashboard() {
   const dashboard = useDashboard()
   const { emailVerified } = useCurrentAccount()
   const draft = useNewStrategyDraft()
-  const top = <TopBar title={t('dashboard.title')} aside={<TextAction to={accountPath}>{t('dashboard.account')}</TextAction>} />
+  const top = <TopBar title={t('dashboard.title')} titleLink={welcomePath} />
 
   return (
     <LoadableScreen state={dashboard} top={top} what={t('dashboard.what')}>

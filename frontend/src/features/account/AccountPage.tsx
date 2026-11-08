@@ -5,9 +5,9 @@ import { Checkbox, FormMessage, PasswordField, SegmentedField, TextField, type F
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
+import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { LOCALES } from '../../i18n/locale'
-import { dashboardPath } from '../new-strategy/paths'
 import styles from './Account.module.css'
 import { useAccount, useCurrentAccount } from './AccountContext'
 import { currencyOptionsWith } from './currencies'
@@ -55,7 +55,7 @@ export function AccountPage() {
   }
 
   return (
-    <Screen top={<TopBar back={dashboardPath} step={t('account.page.step')} />}>
+    <Screen top={<TopBar home aside={account.role === 'owner' ? <TextAction to="/admin">{t('common.admin')}</TextAction> : null} />}>
       <PageHeader title={t('account.page.title')} />
 
       <Section title={t('account.page.email')}>

@@ -39,7 +39,7 @@ describe('WelcomePage', () => {
     const registerLink = screen.getByRole('link', { name: 'Create an account' })
     expect(registerLink.getAttribute('href')).toBe('/sign-up')
 
-    const loginLink = screen.getByRole('link', { name: 'Log in' })
+    const loginLink = screen.getByRole('link', { name: 'LOG IN' })
     expect(loginLink.getAttribute('href')).toBe('/log-in')
   })
 

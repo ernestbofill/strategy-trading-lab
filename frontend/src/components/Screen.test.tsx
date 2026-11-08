@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../api'
 import { AccountProvider } from '../features/account/AccountContext'
@@ -23,64 +23,58 @@ const makeAccount = (role: 'user' | 'owner'): Account => ({
 })
 
 describe('TopBar', () => {
-  it('renders title as a link when titleLink is provided', () => {
-    render(
-      <MemoryRouter>
-        <TopBar title="STL // ADMIN" titleLink="/" />
-      </MemoryRouter>,
-    )
-
-    const link = screen.getByRole('link', { name: 'STL // ADMIN, home' })
-    expect(link.getAttribute('href')).toBe('/')
-  })
-
-  it('renders title as plain div when titleLink is not provided', () => {
+  it('shows a plain title with no right side on a screen like Log in', () => {
     render(
       <MemoryRouter>
         <TopBar title="STL // LOG IN" />
       </MemoryRouter>,
     )
 
-    expect(screen.queryByRole('link', { name: 'STL // LOG IN' })).toBeNull()
+    expect(screen.queryByRole('link')).toBeNull()
     expect(screen.getByText('STL // LOG IN')).toBeDefined()
   })
 
-  it('goes up and names the parent on a screen opened directly, without looping back', async () => {
+  it('links home with no arrow, and to the account on the right, for a signed-in user', async () => {
     vi.spyOn(api, 'getAccount').mockResolvedValue(makeAccount('user'))
     render(
-      <MemoryRouter initialEntries={['/strategies/s1/signals/g1']}>
+      <MemoryRouter>
         <AccountProvider>
-          <Routes>
-            <Route path="/" element={<p>Dashboard page</p>} />
-            <Route
-              path="/strategies/:id"
-              element={<TopBar back="/" />}
-            />
-            <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
-          </Routes>
+          <TopBar home />
         </AccountProvider>
       </MemoryRouter>,
     )
 
-    // Opened from a notification: up to the strategy, which goes on up to the dashboard, not back to the signal.
-    fireEvent.click(screen.getByRole('link', { name: '\u2190 STRATEGY' }))
-    fireEvent.click(await screen.findByRole('link', { name: '\u2190 DASHBOARD' }))
-    expect(screen.getByText('Dashboard page')).toBeDefined()
+    expect((await screen.findByRole('link', { name: 'DASHBOARD' })).getAttribute('href')).toBe('/')
+    expect(screen.getByRole('link', { name: 'ACCOUNT' }).getAttribute('href')).toBe('/account')
   })
 
-  it('goes back in the history when the screen was opened from inside the app', () => {
+  it('names home WELCOME and offers log in, back to this page, for a guest', async () => {
+    vi.spyOn(api, 'getAccount').mockResolvedValue(null)
     render(
-      <MemoryRouter initialEntries={['/strategies/s1']}>
+      <MemoryRouter initialEntries={['/legal/terms']}>
+        <AccountProvider>
+          <TopBar home />
+        </AccountProvider>
+      </MemoryRouter>,
+    )
+
+    expect((await screen.findByRole('link', { name: 'WELCOME' })).getAttribute('href')).toBe('/')
+    expect(screen.getByRole('link', { name: 'LOG IN' }).getAttribute('href')).toBe('/log-in?next=%2Flegal%2Fterms')
+  })
+
+  it('goes up to the named parent, whatever screen came before', () => {
+    render(
+      <MemoryRouter initialEntries={['/', '/strategies/s1/signals/g1']} initialIndex={1}>
         <Routes>
-          <Route path="/strategies/:id" element={<Link to="/strategies/s1/signals/g1">Open signal</Link>} />
-          <Route path="/strategies/:id/signals/:sid" element={<TopBar back="/strategies/s1" />} />
+          <Route path="/" element={<p>Dashboard page</p>} />
+          <Route path="/strategies/:id" element={<p>Strategy page</p>} />
+          <Route path="/strategies/:id/signals/:sid" element={<TopBar up="/strategies/s1" upLabel="common.up.strategy" aside={null} />} />
         </Routes>
       </MemoryRouter>,
     )
 
-    fireEvent.click(screen.getByRole('link', { name: 'Open signal' }))
-    fireEvent.click(screen.getByRole('link', { name: '\u2190 BACK' }))
-    expect(screen.getByRole('link', { name: 'Open signal' })).toBeDefined()
+    fireEvent.click(screen.getByRole('link', { name: 'STRATEGY' }))
+    expect(screen.getByText('Strategy page')).toBeDefined()
   })
 })
 

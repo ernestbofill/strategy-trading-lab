@@ -32,7 +32,7 @@ export function ForgotPassword() {
 
   return (
     <Screen
-      top={<TopBar title={t('account.forgot.topBar')} back={logInPath} />}
+      top={<TopBar up={logInPath} upLabel="common.up.logIn" aside={null} />}
       action={
         <PrimaryAction form="forgot-password" disabled={busy || !email}>
           {busy ? t('account.forgot.submitting') : t('account.forgot.submit')}

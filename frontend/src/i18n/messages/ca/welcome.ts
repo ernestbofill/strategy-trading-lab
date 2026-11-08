@@ -2,7 +2,6 @@ import type { welcome as welcomeEn } from '../en/welcome'
 
 export const welcome: Record<keyof typeof welcomeEn, string> = {
   'welcome.topBar': 'STL // STRATEGY TRADING LAB',
-  'welcome.logIn': 'Inicia sessió',
   'welcome.hero.title': 'Opera segons regles, no per emocions.',
   'welcome.hero.lead':
     'Un laboratori d’estratègies transparent. Tria plantilles provades, executa simulacions en temps real sense risc i segueix senyals en mode real sense connexió al broker.',

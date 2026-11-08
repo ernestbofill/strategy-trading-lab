@@ -65,7 +65,6 @@ export const account = {
   'account.logIn.create': 'Create an account',
 
   // Forgot password
-  'account.forgot.topBar': 'STL // PASSWORD',
   'account.forgot.title': 'Forgot your password?',
   'account.forgot.lead': "We'll email you a link to choose a new one.",
   'account.forgot.sent': 'If that email has an account, we sent a link. It works for 1 hour.',
@@ -114,7 +113,6 @@ export const account = {
   'account.install.button': 'Install the app',
 
   // Account page
-  'account.page.step': 'ACCOUNT',
   'account.page.title': 'Account',
   'account.page.email': 'Email',
   'account.page.name': 'Name',

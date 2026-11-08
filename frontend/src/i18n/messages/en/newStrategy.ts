@@ -5,8 +5,6 @@ export const newStrategy = {
   'newStrategy.what.test': 'the test',
 
   // 1 / 5 Pick a template
-  'newStrategy.pick.topBar': 'STL // NEW STRATEGY',
-  'newStrategy.pick.logIn': 'LOG IN',
   'newStrategy.pick.continue': 'Continue',
   'newStrategy.pick.note': 'Pick one to start. You can add more strategies later, from any template.',
   'newStrategy.pick.eyebrow': 'Welcome to Strategy Trading Lab',

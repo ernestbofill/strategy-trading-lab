@@ -21,7 +21,7 @@ export function EditList() {
   const t = useT()
   const { id = '' } = useParams<{ id: string }>()
   return (
-    <LoadableScreen state={useStrategy(id)} top={<TopBar back={strategyPath(id)} />} what={t('strategy.what')}>
+    <LoadableScreen state={useStrategy(id)} top={<TopBar up={strategyPath(id)} upLabel="common.up.strategy" aside={null} />} what={t('strategy.what')}>
       {(s) => <EditListContent s={s} />}
     </LoadableScreen>
   )
@@ -42,7 +42,7 @@ function EditListContent({ s }: { s: StrategyDetail }) {
   const [adding, setAdding] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const top = <TopBar back={strategyPath(s.id)} step={s.name} />
+  const top = <TopBar up={strategyPath(s.id)} upLabel="common.up.strategy" step={s.name} />
   const full = ticked.length >= MAX_STOCKS
 
   // Opened directly on an archived strategy or a fund template's: nothing to edit (the page shows no link).

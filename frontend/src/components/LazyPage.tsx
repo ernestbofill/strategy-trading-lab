@@ -2,16 +2,14 @@ import { Component, Suspense, type ReactNode } from 'react'
 import { Screen, ScreenMessage, TopBar } from './Screen'
 
 interface LazyPageProps {
-  /** Where the top bar's back goes on the loading and error screens. */
-  back: string
   children: ReactNode
 }
 
-/** A page from `lazyPage`: a loading screen while its chunk downloads, and a message instead of a blank app if it can't. */
-export function LazyPage({ back, children }: LazyPageProps) {
+/** A page from `lazyPage` (the admin pages): a loading screen while its chunk downloads, and a message instead of a blank app if it can't. */
+export function LazyPage({ children }: LazyPageProps) {
   return (
-    <LoadBoundary back={back}>
-      <Suspense fallback={<Message back={back}>Loading…</Message>}>{children}</Suspense>
+    <LoadBoundary>
+      <Suspense fallback={<Message>Loading…</Message>}>{children}</Suspense>
     </LoadBoundary>
   )
 }
@@ -25,13 +23,13 @@ class LoadBoundary extends Component<LazyPageProps, { failed: boolean }> {
 
   render() {
     if (!this.state.failed) return this.props.children
-    return <Message back={this.props.back}>Couldn't load this page. Reload to try again.</Message>
+    return <Message>Couldn't load this page. Reload to try again.</Message>
   }
 }
 
-function Message({ back, children }: { back: string; children: ReactNode }) {
+function Message({ children }: { children: ReactNode }) {
   return (
-    <Screen top={<TopBar back={back} />}>
+    <Screen top={<TopBar home />}>
       <ScreenMessage>{children}</ScreenMessage>
     </Screen>
   )

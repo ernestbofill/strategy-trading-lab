@@ -175,7 +175,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | X1 | Product rules sweep (GUIDE, *Oracles*) on every screen | smoke | 2026-11-06-1 | F-009, F-021. C5.10 |
 | X2 | Catalan on every screen | smoke | 2026-11-06-1 | F-011 to F-016. C5.2 |
 | X3 | 390px, 360px and desktop on every screen; long names | smoke | 2026-11-06-1 | Guest screens only: L-005. F-012 |
-| X4 | Back and up: ← links, browser Back, direct addresses (§4) | smoke | 2026-11-06-1 | Links read on direct opens; browser Back not pressed |
+| X4 | Top bar: DASHBOARD / WELCOME home link, ← up links, the right side's ACCOUNT / LOG IN / ADMIN, browser Back, direct addresses (§4) | untested | | Reworked 2026-11-08 (home and up links replace history back). Check the arrow sits centred on iPhone |
 | X5 | Reloads, two tabs, a stale tab, double submits | smoke | 2026-11-06-1 | Double submit and reload only: L-007 |
 | X6 | Access control: other IDs, `/admin` as a vip, signed out | smoke | 2026-11-06-1 | Signed out: L-009. Only through the address bar. C5.7, C5.9 |
 | X7 | Accessibility: keyboard, labels, focus, targets, contrast | untested | 2026-11-06-1 | Spot checks only. F-018. C5.12 |

@@ -87,9 +87,16 @@ These apply to every screen, email and alert.
 
 **Going live from a simulation (built, #92; not drawn):** "Go live with these settings" on a running simulation's page fills the new-strategy draft from it and opens Choose the mode with Live selected. The draft takes its template, its stocks (starter-list stocks it doesn't watch come unticked, stocks it added come added), its fund, the settings that differ from the tested defaults, its budget, step and max steps, an AI strategy's sources and instructions, and its currency (the copy keeps it, whatever the account's). The name is the simulation's with " live" (Catalan " en directe"), numbered while a running strategy has it ("Zscaler & friends live 2"). Every screen of the flow can still change it. An account without a confirmed email falls back to Simulation on Choose the mode, which says why. `POST /strategies` keeps `sourceStrategyId` for a live strategy only, and refuses one that isn't the user's own simulation (`errors.sourceStrategyId`). The simulation keeps running or can be archived; the two keep separate histories. A live copy's page shows "Copied from [simulation name]", a link to it, while the simulation exists.
 
-**Headers.** Every screen of the new-strategy flow has a top bar with "← BACK" on the left and the step ("1 / 5" to "5 / 5") on the right. The first screen shows "STL // NEW STRATEGY" instead of a back link (when reached from the dashboard, show "← BACK" to the dashboard). Back goes to the previous screen.
+**Headers.** Pick a template (1 / 5) has "DASHBOARD" on the left ("WELCOME" for a guest, with the language and "LOG IN" on the right instead of the step). Steps 2 to 5, and the template's How we tested, Advanced and prompt screens, have "← BACK" on the left, up to the step before, and the step or the template's name on the right.
 
-**Back and up (every screen, #152).** Opened from inside the app, "← BACK" goes to the previous screen. Opened directly (a notification, an email link, a typed address), there is no previous screen, so the link goes up to the screen's parent and names it: "← STRATEGY" (a signal, stock, AI round, the strategy's settings or stock list), "← DASHBOARD" (a strategy, the account), "← ADMIN" (the admin pages), "← HOME" (the legal pages for a guest; "← DASHBOARD" when signed in; "← BACK" while the account loads). Other parents keep "← BACK". Going up replaces the screen in the history, so the parent goes on up rather than back to it: signal → strategy → dashboard. The top bar is one line with two sides, the link or title on the left and the step on the right; text too long for it ends in "…" and never wraps, the step giving way first. (Ernest, 2026-11-04)
+**The top bar (every screen, Ernest 2026-11-08, replaces #152's back and up).** One line with two sides; text too long for it ends in "…" and never wraps, the right side giving way first.
+
+- **Left: home, up, or a title.**
+  - *Home*, a direct link with no arrow: "DASHBOARD" signed in, "WELCOME" for a guest ("STL" for the moment the account loads). It is on every screen whose parent is home: the account, `/admin` and the admin pages, the legal pages, Pick a template, a strategy, and Welcome when signed in.
+  - *Up*, "← [PARENT]": one level up inside a section, always to the same parent, never back in the history. "← STRATEGY" on a signal, stock, AI round, AI rounds, and the strategy's settings and stock list; "← AI ROUND" on the strategy's prompt; "← LOG IN" on Forgot password; "← BACK" on the new-strategy steps, whose parent is the step before. The browser's own Back still goes to the previous screen.
+  - *Title*: the dashboard shows "STL // WELCOME", a link to Welcome. The sign-in screens (log in, sign up, password, email) and Welcome for a guest show their name.
+- **Right: one label or one or two links.** Labels are muted (the step, a date, the strategy's name); links are text actions. Left empty, it is "ACCOUNT" signed in or "LOG IN" for a guest (coming back to the page). The account shows "ADMIN" for the owner and nothing for others; the admin pages show "ADMIN", a link to `/admin`; a strategy shows "RENAME".
+- The arrow is drawn, not the "←" character, so it sits on the text's middle on iPhone too.
 
 ## 5. The templates
 
@@ -156,7 +163,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Welcome (marketing highlights) (not drawn)
 
 - **Entry point:** `/` for unauthenticated visitors, and `/welcome`. Authenticated visitors navigating to `/` continue directly to the Dashboard.
-- **Top bar:** "STL // STRATEGY TRADING LAB" on the left; "LOG IN" text action on the right.
+- **Top bar:** "STL // STRATEGY TRADING LAB" on the left; the language and "LOG IN" on the right. Signed in: "DASHBOARD" · "ACCOUNT".
 - **Hero:**
   - Headline: "Trade rules, not emotions."
   - Lead: "A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access."
@@ -236,7 +243,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### 1 · Pick a strategy template (`Main`)
 
 **Copy**
-- Top bar: "STL // NEW STRATEGY" · "1 / 5"
+- Top bar: "DASHBOARD" · "1 / 5"
 - Eyebrow: "Welcome to Strategy Trading Lab" (left out when reached from the dashboard)
 - H1: "Pick a strategy template"
 - Intro: "Each template is a few simple rules with tested defaults. See how it did in the past, tune it, then run it as a simulation or live."
@@ -534,7 +541,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 ### Dashboard (`Home`)
 
 **Copy**
-- Top bar: "STL // DASHBOARD" · "ACCOUNT" (link to the account page, not drawn)
+- Top bar: "STL // WELCOME" (link to Welcome) · "ACCOUNT" (link to the account page, not drawn)
 - H1: "Your strategies"
 - Bottom: the site footer (short disclaimer).
 
@@ -557,7 +564,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 ### Strategy page (`StrategyDetail`, drawn in its Live variant)
 
 **Copy and layout**
-- Top bar: "← STRATEGIES" · "RENAME" (built #91, not drawn): the heading becomes a "Name" field with "Save" and "Cancel". Confirm's rules: trimmed, 1 to 60 characters, unique among the user's running strategies ignoring capitals; a taken name reads "You already run a strategy with this name. Pick another." under the field. An archived strategy can be renamed too.
+- Top bar: "DASHBOARD" · "RENAME" (built #91, not drawn): the heading becomes a "Name" field with "Save" and "Cancel". Confirm's rules: trimmed, 1 to 60 characters, unique among the user's running strategies ignoring capitals; a taken name reads "You already run a strategy with this name. Pick another." under the field. An archived strategy can be renamed too.
 - H1: the strategy name; under it the mode tag, "Archived on [date]" for an archived strategy, and "*[template]* · since [date]".
 - **Summary box**
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"); a chart with three lines (You solid and highlighted, The rules alone solid, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
@@ -624,7 +631,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page.
 
-- Top bar: "← BACK" to the strategy page.
+- Top bar: "← STRATEGY" to the strategy page.
 - H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
 - **Status box:** the same pill and line as its row on the strategy page, and when the stock is a candidate, "Candidate since [date]".
 - **Price chart** (under the status box), not interactive: the daily closes, with "90 days", "30 days" (the default) and "7 days" buttons, and the rules' levels drawn as they moved day by day, as lines or shaded areas. Every day draws the levels of the stock's verdict today: a candidate's buy area or zone, else the line that would make it one, never both (Ernest, 2026-11-08). A price axis on the right gives the latest close and each level's latest value (both edges of an area), when it shows on the latest day the rules checked, pushed apart so they don't overlap. A legend under the chart names each level.
@@ -661,7 +668,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 ### Confirm a signal (`Signal`, live only)
 
 **Copy**
-- Top bar: "← BACK" · "SIGNAL · [DATE]"
+- Top bar: "← STRATEGY" · "SIGNAL · [DATE]"
 - Above the H1: the "LIVE" tag and "[strategy name] · *[template]*"
 - H1: the stock's name
 - Signal box: "Your rules for **[strategy name]** are met for [stock]: [8]% below its recent peak, still above its 50-day average. Under your settings that's step [2] of [5] ([€100])." Then "Close on [date]: $[XXX.XX]". The fact list depends on the template's rules.
@@ -699,7 +706,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 ### AI round (`AIRound`, drawn in its Simulation variant; built, both modes)
 
 **Copy**
-- Top bar: "← BACK" · "AI ROUND · [DATE]"
+- Top bar: "← STRATEGY" · "AI ROUND · [DATE]"
 - Above the H1: the mode tag and "[strategy name] · *[template]*"
 - H1: "Time for the AI round"
 - Intro: "It takes about two minutes. The app doesn't connect to your AI."
@@ -727,7 +734,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 ### AI rounds (history, built, not drawn)
 
 - Reached from the strategy page's "AI rounds" tile (it replaces "Backtest" for AI strategies) and the AI round screen.
-- Top bar "← BACK" · "AI ROUNDS"; H1 "AI rounds"; the strategy's name.
+- Top bar "← STRATEGY" · "AI ROUNDS"; H1 "AI rounds"; the strategy's name.
 - **"Picks vs the rest"** (once a done round has later prices): "Since each round, the stocks that got a step moved [+x.x%] on average, the others [+y.y%] ([n] rounds)." Caption: "Price changes in each stock's own currency, without fees. It shows whether the scores picked well, not your results." This is the spec's *Picks vs the rest* metric: each done round compares the average change of its picks' closes and of the others' from the round's session to the latest close; the line averages the rounds.
 - One card per round, newest first, with its due date and status (DUE, DONE, SKIPPED; an extra round "DONE · EXTRA"): a due one links to the round once it can be run ("Run it now") or reads "The next round."; a skipped one "Skipped: no signal that round."; a done one its AI model and day, "your prompt" when edited, its picks vs the rest, the scores (top first, the picks marked "STEP [n]"), and "The prompt" and "Your AI's answer" opening in place.
 - Bottom: the site footer (short disclaimer).
@@ -740,7 +747,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 
 ### Admin settings (`/admin`, not drawn, for Ernest)
 
-Like the POC's settings page. Not linked from the app; reached by its address. Only the **owner** (the account role, below) can open it: a visitor who isn't logged in goes to Log-in and comes back; a user or vip goes to the start page, as if the page weren't there. The API answers 401 and 403 the same way. Besides the settings it has the build, the database in use, a test email, a Prices box (next and last refresh, *Refresh now*, *Test Yahoo*, and the daily schedule), and a link to **Assets** (`/admin/assets`).
+Like the POC's settings page. Its heading is "Admin", the name the account's top bar link and the admin pages' "ADMIN" use too (Ernest, 2026-11-08). Linked from the account's top bar and the footer, for the owner only. Only the **owner** (the account role, below) can open it: a visitor who isn't logged in goes to Log-in and comes back; a user or vip goes to the start page, as if the page weren't there. The API answers 401 and 403 the same way. Besides the settings it has the build, the database in use, a test email, a Prices box (next and last refresh, *Refresh now*, *Test Yahoo*, and the daily schedule), and a link to **Assets** (`/admin/assets`).
 
 - **Roles:** every account has one: *user* (everyone), *vip* (people Ernest invites; they get special privileges later) or *owner* (Ernest). The account's role is in `GET /account/me`. The owner is the account whose verified email is `OWNER_EMAIL` on the server; a vip comes from an owner's invite (or is set in the database).
 - **Invites (`/admin/invites`, linked from `/admin` as "Invites · invite people and choose who can sign up"):** for the owner only; English, like the rest of admin.

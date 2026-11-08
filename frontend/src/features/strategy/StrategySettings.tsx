@@ -19,7 +19,7 @@ export function StrategySettings() {
   const { id = '' } = useParams<{ id: string }>()
   const strategy = useStrategy(id)
   return (
-    <LoadableScreen state={strategy} top={<TopBar back={strategyPath(id)} />} what={t('strategy.what')}>
+    <LoadableScreen state={strategy} top={<TopBar up={strategyPath(id)} upLabel="common.up.strategy" aside={null} />} what={t('strategy.what')}>
       {(loadedStrategy) => <StrategySettingsWithTemplate strategy={loadedStrategy} />}
     </LoadableScreen>
   )
@@ -29,7 +29,7 @@ function StrategySettingsWithTemplate({ strategy }: { strategy: StrategyDetail }
   const t = useT()
   // As the version it started from, so "Tested" and "Reset to tested" match what "tuned" on its page compares with.
   const template = useTemplate(strategy.templateKey, strategy.defaultsVersion)
-  const top = <TopBar back={strategyPath(strategy.id)} step={strategy.name} />
+  const top = <TopBar up={strategyPath(strategy.id)} upLabel="common.up.strategy" step={strategy.name} />
   return (
     <LoadableScreen state={template} top={top} what={t('newStrategy.what.template')}>
       {(loadedTemplate) => <StrategySettingsContent strategy={strategy} template={loadedTemplate} />}
@@ -43,7 +43,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
   const [values, setValues] = useState<SettingValues>(() => settingValues(template, strategy.settings ?? {}))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const top = <TopBar back={strategyPath(strategy.id)} step={strategy.name} />
+  const top = <TopBar up={strategyPath(strategy.id)} upLabel="common.up.strategy" step={strategy.name} />
 
   if (template.settings.length === 0) {
     return (

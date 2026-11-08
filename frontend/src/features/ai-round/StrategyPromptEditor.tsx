@@ -15,7 +15,7 @@ export function StrategyPromptEditor() {
   const t = useT()
   const leave = useLeave(aiRoundPath(id))
   const round = useAiRound(id)
-  const top = <TopBar back={aiRoundPath(id)} aside={<span>{t('aiRound.editor.topBar')}</span>} />
+  const top = <TopBar up={aiRoundPath(id)} upLabel="common.up.aiRound" aside={<span>{t('aiRound.editor.topBar')}</span>} />
   return (
     <LoadableScreen state={round} top={top} what={t('aiRound.promptWhat')}>
       {(r) => (

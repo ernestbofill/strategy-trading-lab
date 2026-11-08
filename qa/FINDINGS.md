@@ -298,3 +298,31 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
   - Guest pages log 4 `/account/me` 401s in the console on each load.
 - **How often:** every time
 - **Notes:** **idea:** Start with an empty name quietly uses the template's name; say so, or keep the button off. **Question:** AI cards show no worst year, having no backtest to quote; is that the intended exception to the product rule?
+
+## F-023 · Daily summary page renders SIM tag for live strategies in the scoreboard
+
+- **Severity:** S1 (modes mixed) / S3 · **Area:** H8, D1 · **Status:** open
+- **Found:** 2026-11-08-1 · **Seen again:** –
+- **Version:** v0.198.0-alpha · **Width / language:** 1280px and 390px, English
+- **Steps:**
+  1. Have one or more live strategies running with signals (e.g. `QA fixture · Index · Live`, `QA fixture · Comeback · Live`, `QA fixture · AI · Live`).
+  2. Navigate to the Daily Summary page at `/summary`.
+  3. Inspect the "YOUR STRATEGIES" section list at the bottom of the page.
+- **Expected:** Live strategies display a green `LIVE` tag (`<Tag tone="live">LIVE</Tag>`), and simulation strategies display a gray `SIM` tag (`<Tag tone="sim">SIM</Tag>`), matching their actual mode.
+- **Actual:** Every strategy in the scoreboard is rendered with a gray `SIM` badge (e.g. `SIM QA FIXTURE · INDEX · LIVE`, `SIM QA FIXTURE · COMEBACK · LIVE`, `SIM QA FIXTURE · AI · LIVE`).
+- **How often:** every time (3 of 3 live strategies shown as SIM)
+- **Notes:** Root cause is in `backend/src/StrategyTradingLab.Api/Notifications/DailySummaryDtos.cs`: `[property: JsonConverter(typeof(JsonStringEnumConverter))] StrategyMode Mode` serializes enum as PascalCase (`"Live"` / `"Simulation"`). In `frontend/src/features/summary/SummaryPage.tsx` lines 151-153: `<Tag tone={s.mode === 'live' ? 'live' : 'sim'}>{s.mode === 'live' ? 'LIVE' : 'SIM'}</Tag>`. Because `s.mode` is `"Live"`, `s.mode === 'live'` evaluates to `false`, falling back to `'sim'`. The same pattern applies to `SummaryChangedSignal` and `SummaryStockChange` tags if they contain live events. Lead L-010.
+
+## F-024 · Daily summary email HTML tag span lacks whitespace separator before body text
+
+- **Severity:** S4 · **Area:** H2, H8 · **Status:** open
+- **Found:** 2026-11-08-1 · **Seen again:** –
+- **Version:** v0.198.0-alpha · **Width / language:** Gmail web client, English
+- **Steps:**
+  1. Trigger or receive the Daily Summary email containing changed signals or stock changes.
+  2. Inspect the plain-text fallback, notification preview snippet, or email client text extraction.
+- **Expected:** Clear word spacing between the mode label and the notification sentence: "(Simulation) Your rules for QA fixture · AI · Sim are met...".
+- **Actual:** In plain text and notification previews, the tag and sentence collide without whitespace: `SimulationYour rules for QA fixture · AI · Sim are met...`.
+- **How often:** every time
+- **Notes:** In `EmailDocument.cs` line 166-170, the HTML table cell inserts `<span style="...margin-right:8px;...">{Encode(item.Tag)}</span>{body}`. Without a literal space character or explicit separator between the span and the text, clients parsing HTML to text or notification push snippets strip HTML tags and concatenate the span inner text directly with the body text.
+

@@ -18,7 +18,12 @@ function Invoke-Native([scriptblock]$Command) {
 
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $backend = Join-Path $repo 'backend'
-$version = dotnet msbuild (Join-Path $backend 'Directory.Build.props') -getProperty:Version
+# main is linear with one squashed commit per PR, so its commit count goes up by one per merge and never repeats.
+# .github/workflows/deploy.yml makes the frontend's the same way. A shallow clone would count too few.
+if ((git -C $repo rev-parse --is-shallow-repository) -eq 'true') { throw 'A shallow clone: the version needs the whole history.' }
+$version = "0.$(git -C $repo rev-list --count HEAD).0-alpha"
+# The deploy workflow tags the commit with it.
+if ($env:GITHUB_OUTPUT) { Add-Content $env:GITHUB_OUTPUT "version=$version" }
 $out = Join-Path $backend 'artifacts/deploy'
 $package = Join-Path $backend "artifacts/strategy-trading-lab-api-$version.tar.gz"
 Write-Host "Deploying backend $version to $SshHost"
@@ -28,7 +33,7 @@ Push-Location $backend
 try {
     Invoke-Native { dotnet tool restore }
     # Self-contained: the server has no .NET installed.
-    Invoke-Native { dotnet publish src/StrategyTradingLab.Api -c Release -r linux-arm64 --self-contained -o "$out/app" }
+    Invoke-Native { dotnet publish src/StrategyTradingLab.Api -c Release -r linux-arm64 --self-contained -o "$out/app" "-p:Version=$version" }
     Invoke-Native { dotnet ef migrations bundle --project src/StrategyTradingLab.Api --configuration Release -r linux-arm64 --self-contained -o "$out/efbundle" --force }
 }
 finally {

@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// The deploy workflow sets APP_VERSION from main's commit count; local builds keep package.json's 0.0.0-dev.
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
+const appVersion = process.env.APP_VERSION || version
 
 // As nginx does in production: /api/templates reaches the API's /templates (`dotnet run` in backend/src/StrategyTradingLab.Api).
 // STL_API_URL points it at an API on another port, e.g. a second worktree's while the first one holds 5184.
@@ -12,7 +14,7 @@ const proxy = { '/api': { target: process.env.STL_API_URL ?? 'http://localhost:5
 
 // https://vite.dev/config/
 export default defineConfig({
-  define: { __APP_VERSION__: JSON.stringify(version) },
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
   server: { proxy },
   preview: { proxy },
   plugins: [

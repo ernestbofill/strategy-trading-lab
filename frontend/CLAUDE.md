@@ -52,8 +52,7 @@
 
 ## Versioning
 
-- Bump the version in `frontend/package.json` (and `package-lock.json`) in every PR that changes the app, above `main`'s. CI fails without it. It is shown at the end of the site footer and nothing bumps it automatically.
-- Bump the minor number for a new screen or feature (`0.1.0-alpha` → `0.2.0-alpha`) and the patch number for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`). Keep the `-alpha` suffix.
+- Don't bump it. The deploy workflow builds with `APP_VERSION=0.<main's commit count>.0-alpha`, shown at the end of the site footer; local builds show `package.json`'s `0.0.0-dev`, which stays as it is.
 
 ## Testing (Vitest + Testing Library)
 

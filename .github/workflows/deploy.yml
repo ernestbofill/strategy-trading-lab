@@ -22,7 +22,10 @@ jobs:
       run:
         working-directory: frontend
     steps:
+      # The whole history, for the version below.
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v6
         with:
@@ -31,7 +34,12 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
-      - run: npm run build
+      # main is linear with one squashed commit per PR, so its commit count goes up by one per merge and never repeats.
+      # deploy/backend/deploy.ps1 makes the backend's the same way: a merge that deploys both gives them the same number.
+      - run: |
+          export APP_VERSION="0.$(git rev-list --count HEAD).0-alpha"
+          echo "Frontend version: $APP_VERSION"
+          npm run build
 
       - name: Set up SSH
         working-directory: .

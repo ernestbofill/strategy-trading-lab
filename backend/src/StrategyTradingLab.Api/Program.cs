@@ -61,6 +61,7 @@ else if (!builder.Environment.IsDevelopment())
     // every restart would lose the saved secrets. Fail the deploy's health check instead.
     throw new InvalidOperationException("STATE_DIRECTORY isn't set: run the API from its systemd unit (StateDirectory=).");
 builder.Services.AddScoped<SettingsStore>();
+builder.Services.AddScoped<TemplateStore>();
 builder.Services.AddScoped<AdminAlerts>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddHttpClient<IPushSender, WebPushSender>(client => client.Timeout = TimeSpan.FromSeconds(15));

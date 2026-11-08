@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using StrategyTradingLab.Api.Templates;
 
@@ -190,5 +192,73 @@ public class TemplateSettingsTests
 
         Assert.StartsWith("Use ", Refused("en"));
         Assert.StartsWith("Fes servir ", Refused("ca"));
+    }
+}
+
+/// <summary>/admin/templates: template versions over the catalogue, and what the page refuses. Nothing is saved, as other tests start strategies from the same templates.</summary>
+public class TemplateVersionTests(AdminFixture fixture) : IClassFixture<AdminFixture>
+{
+    static Data.Entities.TemplateVersion Version(string key, string defaults, List<Guid> assetIds, decimal closePct = Template.DefaultClosePct) =>
+        new() { TemplateKey = key, Version = 2, Defaults = JsonDocument.Parse(defaults), AssetIds = assetIds, ClosePct = closePct, Active = true };
+
+    [Fact]
+    public void A_versions_defaults_list_and_getting_close_replace_the_catalogues()
+    {
+        var dip = TemplateCatalog.Dip;
+        var stocks = new List<Guid> { TemplateAssets.Eaton.Id, TemplateAssets.Tesla.Id };
+        var inUse = TemplateStore.Effective(dip, Version(dip.Key, """{"zoneEndPct": 12}""", stocks, 4.5m));
+        Assert.Equal(12, ((DipParams)inUse.Params).ZoneEndPct);
+        Assert.Equal(((DipParams)dip.Params).ZoneStartPct, ((DipParams)inUse.Params).ZoneStartPct);
+        Assert.Equal(stocks, inUse.Watches.AssetIds);
+        Assert.Equal(4.5m, inUse.ClosePct);
+        Assert.Equal(2, inUse.DefaultsVersion);
+
+        // A saved default the code no longer accepts leaves every default as the catalogue's; a fund template keeps one fund.
+        Assert.Equal(dip.Params, TemplateStore.Effective(dip, Version(dip.Key, """{"zoneEndPct": 99}""", stocks)).Params);
+        var trend = TemplateStore.Effective(TemplateCatalog.Trend, Version("trend", "{}", [TemplateAssets.Spy.Id]));
+        Assert.Equal(new DefaultFund(TemplateAssets.Spy), trend.Watches);
+
+        // A fund hidden since is left out: the catalogue's fund again.
+        var hidden = TemplateStore.Effective(TemplateCatalog.Trend, Version("trend", "{}", [TemplateAssets.Spy.Id]), _ => false);
+        Assert.Equal(TemplateCatalog.Trend.Watches, hidden.Watches);
+    }
+
+    [NeonFact]
+    public async Task Version_1_is_the_catalogues_tested_template()
+    {
+        // The migration seeds version 1 with literal values: it must stay what the catalogue tested.
+        var store = new TemplateStore(fixture.Db());
+        foreach (var tested in TemplateCatalog.All)
+        {
+            var v1 = await store.VersionAsync(tested.Key, 1, CancellationToken.None);
+            Assert.Equal(1, v1.DefaultsVersion);
+            Assert.Equal(tested.ParamsJson().RootElement.GetRawText(), v1.ParamsJson().RootElement.GetRawText());
+            Assert.Equal(tested.Watches.AssetIds, v1.Watches.AssetIds);
+            Assert.Equal(tested.ClosePct, v1.ClosePct);
+        }
+    }
+
+    [NeonFact]
+    public async Task The_page_is_the_owners_and_refuses_values_new_strategies_could_not_start_with()
+    {
+        using var user = await fixture.SignedUpAsync(Data.Entities.UserRole.User);
+        Assert.Equal(HttpStatusCode.Forbidden, (await user.GetAsync("/admin/templates")).StatusCode);
+
+        var listed = await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/templates");
+        Assert.Equal(TemplateCatalog.Keys, listed.EnumerateArray().Select(t => t.GetProperty("key").GetString()));
+        Assert.All(listed.EnumerateArray(), t => Assert.Contains(t.GetProperty("versions").EnumerateArray(), v => v.GetProperty("version").GetInt32() == 1));
+
+        var response = await fixture.Admin.PostAsJsonAsync("/admin/templates/trend/versions", new
+        {
+            defaults = new Dictionary<string, decimal> { ["bandPct"] = 0.3m },
+            assetIds = new[] { TemplateAssets.Eaton.Id },
+            closePct = 11m,
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var errors = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("errors");
+        Assert.True(errors.TryGetProperty("settings.bandPct", out _));
+        Assert.True(errors.TryGetProperty("assetIds", out _));
+        Assert.True(errors.TryGetProperty("closePct", out _));
+        Assert.Equal(HttpStatusCode.NotFound, (await fixture.Admin.PutAsJsonAsync("/admin/templates/trend/active", new { version = 999 })).StatusCode);
     }
 }

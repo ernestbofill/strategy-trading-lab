@@ -17,7 +17,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
         templateKey, name, mode,
         budget = templateKey == "trend" ? (object)new { amount = 3000, step = (int?)null, maxSteps = (int?)null }
                                         : new { amount = 3000, step = 100, maxSteps = 5 },
-        assetIds = TemplateCatalog.Find(templateKey)!.Watches.Assets.Select(asset => asset.Id).Take(templateKey == "trend" ? 1 : 3),
+        assetIds = TemplateCatalog.Find(templateKey)!.Watches.AssetIds.Take(templateKey == "trend" ? 1 : 3),
     };
 
     async Task Remove(string name)
@@ -110,8 +110,8 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
         {
             var created = await (await client.PostAsJsonAsync("/strategies", Request("dip", name))).Content.ReadFromJsonAsync<JsonElement>();
             var id = created.GetProperty("id").GetGuid();
-            var stock = TemplateCatalog.Find("dip")!.Watches.Assets.First().Id;
-            var notInIt = TemplateCatalog.Find("dip")!.Watches.Assets.Last().Id;
+            var stock = TemplateCatalog.Find("dip")!.Watches.AssetIds[0];
+            var notInIt = TemplateCatalog.Find("dip")!.Watches.AssetIds[^1];
 
             var chart = await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}/stocks/{stock}/chart");
             Assert.Equal(JsonValueKind.Array, chart.GetProperty("days").ValueKind);
@@ -191,7 +191,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
             {
                 templateKey = "dip", name, mode = "simulation",
                 budget = new { amount = 3000, step = 100, maxSteps = 5 },
-                assetIds = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).Take(2),
+                assetIds = TemplateCatalog.Dip.Watches.AssetIds.Take(2),
                 settings = new Dictionary<string, decimal> { ["peakDays"] = 40 },
             });
 
@@ -232,7 +232,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
     {
         templateKey = "dip", name, mode,
         budget = new { amount = 3000, step = 100, maxSteps = 5 },
-        assetIds = TemplateCatalog.Find("dip")!.Watches.Assets.Select(asset => asset.Id).Take(3),
+        assetIds = TemplateCatalog.Find("dip")!.Watches.AssetIds.Take(3),
         sourceStrategyId = sourceId,
     };
 
@@ -310,7 +310,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
         {
             templateKey = "dip", name = $"Test {Guid.NewGuid()}", mode = "simulation",
             budget = new { amount = 3000, step = 100, maxSteps = 5 },
-            assetIds = TemplateCatalog.Dip.Watches.Assets.Select(asset => asset.Id).Take(1),
+            assetIds = TemplateCatalog.Dip.Watches.AssetIds.Take(1),
             settings = new Dictionary<string, decimal> { ["peakDays"] = 200 },
         });
 

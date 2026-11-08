@@ -380,6 +380,19 @@ The admin page's settings (`Admin/SettingDefinitions.cs` lists which). One row p
 | value | text, null | Plain text, except secrets: encrypted with ASP.NET Core Data Protection (keys in the service's systemd `StateDirectory`, not in the database). Null: cleared, which hides the server's value too |
 | created_at, updated_at | timestamptz | |
 
+### `template_versions`
+
+Versions of what a template's new strategies start with, made on `/admin/templates` (`Admin/AdminTemplates.cs`, read by `Templates/TemplateStore.cs`). A version is a fixed snapshot, never edited or deleted. Version 1 of each template is the catalogue's tested values, seeded by the migration. Saving on the page adds the next version and makes it active; any version can be made active again. A strategy keeps the version it started from in `strategies.defaults_version` (not a foreign key), and "tuned" on its page compares with that version. Only `close_pct` of the active version reaches running strategies.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| template_key, version | text, integer, PK | One of the catalogue's keys (CHECK); version from 1 |
+| defaults | jsonb | Every Advanced settings default by setting key, `{"zoneEndPct": 12, …}`. A value the code no longer accepts makes every default the catalogue's |
+| asset_ids | uuid[] | The starter list, or the one fund of a fund template. Assets hidden since are left out of new strategies |
+| close_pct | numeric(4,1) | "Getting close": a candidate within this % of its buy rule (dashboard card, summary's stock changes). 0.5 to 10 |
+| active | boolean | The version new strategies take: one per template (unique partial index `ux_template_versions_active`) |
+| created_at | timestamptz | |
+
 ### `feedback_items`
 
 In-app feedback notes (`bug` | `idea` | `note` | `feature`). Any logged-in user with a verified email (`email_verified_at IS NOT NULL`) can submit one (from selected text on any screen, or as a general comment); only the owner lists, edits, closes/reopens or deletes them on `/admin` and `/feedback`. Cascades from `users`.

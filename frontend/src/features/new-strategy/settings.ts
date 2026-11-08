@@ -24,7 +24,7 @@ export function rulesWithSettings(template: TemplateDetail, changed: SettingValu
   }))
 }
 
-/** Only the values that differ from the tested ones: what the draft keeps and the API gets. */
+/** Only the values that differ from the tested ones: what the draft keeps (the API gets every value, `settingValues`). */
 export function changedSettings(template: TemplateDetail, values: SettingValues): SettingValues {
   const tested = testedValues(template)
   return Object.fromEntries(Object.entries(values).filter(([key, value]) => key in tested && value !== tested[key]))

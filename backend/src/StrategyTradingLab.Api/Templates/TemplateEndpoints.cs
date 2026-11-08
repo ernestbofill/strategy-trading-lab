@@ -13,25 +13,30 @@ public static class TemplateEndpoints
     {
         var group = app.MapGroup("/templates").WithTags("Templates").RequireRateLimiting(TemplatesLimit);
 
-        group.MapGet("/", async (Sessions sessions, CancellationToken cancellationToken) =>
+        group.MapGet("/", async (Sessions sessions, TemplateStore store, CancellationToken cancellationToken) =>
         {
             var locale = await UserLocale(sessions, cancellationToken);
-            return TemplateCatalog.All.Select(template => Summary(template, TemplateTexts.For(template, locale))).ToList();
+            return (await store.AllAsync(cancellationToken)).Select(template => Summary(template, TemplateTexts.For(template, locale))).ToList();
         })
         .WithName("GetTemplates")
         .WithSummary("The templates for the pick screen, in catalogue order.");
 
-        group.MapGet("/{key}", async Task<Results<Ok<TemplateDetail>, NotFound>> (string key, AppDbContext db,
-            Sessions sessions, CancellationToken cancellationToken) =>
+        group.MapGet("/{key}", async Task<Results<Ok<TemplateDetail>, NotFound>> (string key, int? version, AppDbContext db,
+            Sessions sessions, TemplateStore store, CancellationToken cancellationToken) =>
         {
-            if (TemplateCatalog.Find(key) is not { } template) return TypedResults.NotFound();
+            if (TemplateCatalog.Find(key) is null) return TypedResults.NotFound();
+            // A strategy's settings screen asks for the version it started from, so its "tested" values are that version's.
+            var template = version is { } v
+                ? await store.ExistsAsync(key, v, cancellationToken) ? await store.VersionAsync(key, v, cancellationToken) : null
+                : await store.FindAsync(key, cancellationToken);
+            if (template is null) return TypedResults.NotFound();
 
             var locale = await UserLocale(sessions, cancellationToken);
             var securities = await Securities(db, template, locale, cancellationToken);
             return TypedResults.Ok(Detail(template, TemplateTexts.For(template, locale), securities));
         })
         .WithName("GetTemplate")
-        .WithSummary("One template with its rules, starter list or fund, backtest and tested defaults.");
+        .WithSummary("One template with its rules, starter list or fund, backtest and defaults: the active version, or the one asked for (/admin/templates).");
     }
 
     /// <summary>The logged-in user's language; visitors get the default (the templates are public).</summary>
@@ -42,7 +47,7 @@ public static class TemplateEndpoints
     static async Task<List<SecurityDto>> Securities(AppDbContext db, Template template, string locale,
         CancellationToken cancellationToken)
     {
-        var ids = template.Watches.Assets.Select(asset => asset.Id).ToList();
+        var ids = template.Watches.AssetIds;
         var securities = await db.Assets
             .Where(asset => ids.Contains(asset.Id))
             .Select(asset => new SecurityDto(asset.Id, asset.Symbol, asset.Name,

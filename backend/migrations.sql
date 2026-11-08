@@ -2102,3 +2102,74 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261108071756_AddTemplateVersions') THEN
+    CREATE TABLE template_versions (
+        template_key text NOT NULL,
+        version integer NOT NULL,
+        defaults jsonb NOT NULL,
+        asset_ids uuid[] NOT NULL,
+        close_pct numeric(4,1) NOT NULL,
+        active boolean NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT (now()),
+        CONSTRAINT pk_template_versions PRIMARY KEY (template_key, version),
+        CONSTRAINT ck_template_versions_template_key CHECK (template_key IN ('dip', 'comeback', 'bear', 'trend', 'ai')),
+        CONSTRAINT ck_template_versions_version CHECK (version >= 1)
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261108071756_AddTemplateVersions') THEN
+    CREATE UNIQUE INDEX ux_template_versions_active ON template_versions (template_key) WHERE active;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261108071756_AddTemplateVersions') THEN
+    INSERT INTO template_versions (template_key, version, defaults, asset_ids, close_pct, active) VALUES
+    ('dip', 1,
+     '{"minGainPct":50,"gainDays":168,"trendDays":200,"peakDays":60,"zoneStartPct":5,"zoneEndPct":15,"floorDays":50,"cooldownDays":10}',
+     ARRAY['019a0000-0000-7000-8001-000000000016','019a0000-0000-7000-8001-000000000001','019a0000-0000-7000-8001-000000000002',
+           '019a0000-0000-7000-8001-000000000003','019a0000-0000-7000-8001-000000000004','019a0000-0000-7000-8001-000000000017',
+           '019a0000-0000-7000-8001-000000000005','019a0000-0000-7000-8001-000000000006','019a0000-0000-7000-8001-000000000007']::uuid[],
+     3, true),
+    ('comeback', 1,
+     '{"drawdownPct":30,"candidateDays":60,"aboveSma50Pct":15,"volumeRatio":1.2,"maxChasePct":8,"nearHighPct":15,"breakoutPullbackPct":8,"cooldownDays":5}',
+     ARRAY['019a0000-0000-7000-8001-000000000018','019a0000-0000-7000-8001-000000000016','019a0000-0000-7000-8001-000000000001',
+           '019a0000-0000-7000-8001-000000000002','019a0000-0000-7000-8001-000000000008','019a0000-0000-7000-8001-000000000019',
+           '019a0000-0000-7000-8001-000000000003','019a0000-0000-7000-8001-000000000009','019a0000-0000-7000-8001-000000000010',
+           '019a0000-0000-7000-8001-000000000011','019a0000-0000-7000-8001-000000000012','019a0000-0000-7000-8001-000000000013',
+           '019a0000-0000-7000-8001-000000000006','019a0000-0000-7000-8001-000000000007','019a0000-0000-7000-8001-000000000014',
+           '019a0000-0000-7000-8001-000000000015']::uuid[],
+     3, true),
+    ('bear', 1, '{"drawdownPct":20,"highDays":126,"reboundPct":5,"stepEveryDays":10}',
+     ARRAY['019a0000-0000-7000-8001-000000001002']::uuid[], 3, true),
+    ('trend', 1, '{"smaDays":200,"bandPct":3,"cooldownDays":5}',
+     ARRAY['019a0000-0000-7000-8001-000000001002']::uuid[], 3, true),
+    ('ai', 1, '{"everyDays":14,"topN":1}',
+     ARRAY['019a0000-0000-7000-8001-000000000016','019a0000-0000-7000-8001-000000000001','019a0000-0000-7000-8001-000000000002',
+           '019a0000-0000-7000-8001-000000000003','019a0000-0000-7000-8001-000000000004','019a0000-0000-7000-8001-000000000017',
+           '019a0000-0000-7000-8001-000000000005','019a0000-0000-7000-8001-000000000006','019a0000-0000-7000-8001-000000000007',
+           '019a0000-0000-7000-8001-000000000018','019a0000-0000-7000-8001-000000000008','019a0000-0000-7000-8001-000000000019',
+           '019a0000-0000-7000-8001-000000000009','019a0000-0000-7000-8001-000000000010','019a0000-0000-7000-8001-000000000011',
+           '019a0000-0000-7000-8001-000000000012','019a0000-0000-7000-8001-000000000013','019a0000-0000-7000-8001-000000000014',
+           '019a0000-0000-7000-8001-000000000015']::uuid[],
+     3, true);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261108071756_AddTemplateVersions') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261108071756_AddTemplateVersions', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

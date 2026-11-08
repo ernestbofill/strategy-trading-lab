@@ -2,6 +2,7 @@ using System.Text.Json;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Notifications;
 
@@ -17,8 +18,7 @@ public record StockChangeLine(Guid StrategyId, Guid AssetId, string StrategyName
 /// </summary>
 public static class StockChanges
 {
-    /// <summary>"Close": the stock is a candidate and within this many percent of its signal's line.</summary>
-    public const decimal ClosePct = 3m;
+    // "Close": the stock is a candidate and within closePct percent of its signal's line (the template's, Template.ClosePct).
 
     /// <summary>Whether the rules watch the stock: true or false, or null when it says nothing about that (a signal, steps held, too little history).</summary>
     public static bool? Candidate(EvaluationStatus status, JsonElement facts)
@@ -47,10 +47,11 @@ public static class StockChanges
     /// latest earlier day that says whether the stock was a candidate: a signal or steps held in between say nothing about it, so
     /// candidate → signal → not a candidate still reads as "no longer a candidate".
     /// </summary>
-    public static (StockChangeKind Kind, decimal? DistancePct)? Latest(IReadOnlyList<(EvaluationStatus Status, JsonElement Facts)> newestFirst)
+    public static (StockChangeKind Kind, decimal? DistancePct)? Latest(IReadOnlyList<(EvaluationStatus Status, JsonElement Facts)> newestFirst,
+        decimal closePct = Template.DefaultClosePct)
     {
         for (var i = 1; i < newestFirst.Count; i++)
-            if (Candidate(newestFirst[i].Status, newestFirst[i].Facts) is not null) return Between(newestFirst[i], newestFirst[0]);
+            if (Candidate(newestFirst[i].Status, newestFirst[i].Facts) is not null) return Between(newestFirst[i], newestFirst[0], closePct);
         return null;
     }
 
@@ -58,7 +59,8 @@ public static class StockChanges
     /// What changed between <paramref name="before"/> and <paramref name="now"/>, or null. Becoming a candidate wins over coming
     /// close, and a stock already close the day before isn't reported again.
     /// </summary>
-    public static (StockChangeKind Kind, decimal? DistancePct)? Between((EvaluationStatus Status, JsonElement Facts) before, (EvaluationStatus Status, JsonElement Facts) now)
+    public static (StockChangeKind Kind, decimal? DistancePct)? Between((EvaluationStatus Status, JsonElement Facts) before, (EvaluationStatus Status, JsonElement Facts) now,
+        decimal closePct = Template.DefaultClosePct)
     {
         var was = Candidate(before.Status, before.Facts);
         var isNow = Candidate(now.Status, now.Facts);
@@ -67,7 +69,7 @@ public static class StockChanges
         if (was == true && isNow == false) return (StockChangeKind.NoLongerCandidate, null);
         if (isNow == false) return null;
         var distance = Distance(now.Facts);
-        if (distance is not { } close || close > ClosePct) return null;
-        return Distance(before.Facts) is { } earlier && earlier <= ClosePct ? null : (StockChangeKind.CameClose, close);
+        if (distance is not { } close || close > closePct) return null;
+        return Distance(before.Facts) is { } earlier && earlier <= closePct ? null : (StockChangeKind.CameClose, close);
     }
 }

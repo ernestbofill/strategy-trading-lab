@@ -35,6 +35,22 @@ public static class NotifyTime
         return due >= final ? due : At(day.AddDays(1), h, zone);
     }
 
+    /// <summary>How long before the next session's close a held alert goes out at the latest.</summary>
+    public static readonly TimeSpan AlertMargin = TimeSpan.FromHours(2);
+
+    /// <summary>
+    /// When a signal alert (or its "ended") from <paramref name="session"/> may go out: <see cref="DueAt"/>, but never later than
+    /// <see cref="AlertMargin"/> before the next session's close. The next check can end the signal, and an alert of an ended
+    /// signal is never sent: this leaves at least one hourly run before it (an hour 45 minutes off the hour, or one just before
+    /// the close, comes a little early instead of never).
+    /// </summary>
+    public static DateTimeOffset AlertDueAt(DateOnly session, int? hour, string timeZone)
+    {
+        var due = DueAt(session, hour, timeZone);
+        var latest = UsSession.FinalAt(UsSession.After(session)) - AlertMargin;
+        return due < latest ? due : latest;
+    }
+
     /// <summary>The user's zone; UTC for a name this server doesn't know, as the dashboard does.</summary>
     public static TimeZoneInfo Zone(string timeZone) =>
         TimeZoneInfo.TryFindSystemTimeZoneById(timeZone, out var zone) ? zone : TimeZoneInfo.Utc;

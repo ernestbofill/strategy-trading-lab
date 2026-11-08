@@ -38,7 +38,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
     /// <summary>
     /// An alert for each live signal of the last <see cref="AlertDays"/> days that is still waiting, of a user with alert emails
-    /// on, whose notification hour has come (<see cref="NotifyTime.DueAt"/>), and that has none yet. Looking back (instead of at the signals a run just made) is what retries an alert a run
+    /// on, whose notification hour has come (<see cref="NotifyTime.AlertDueAt"/>), and that has none yet. Looking back (instead of at the signals a run just made) is what retries an alert a run
     /// couldn't send (email not set up yet, a shutdown) without ever sending one twice.
     /// </summary>
     public async Task<int> SendSignalAlertsAsync(DateOnly today, CancellationToken cancellationToken)
@@ -61,7 +61,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var now = time.GetUtcNow();
         var sent = 0;
         var seen = new HashSet<(Guid, Guid, TradeSide)>();
-        foreach (var row in rows.Where(r => now >= NotifyTime.DueAt(r.signal.SignalDate, r.NotifyHour, r.TimeZone)).OrderBy(r => r.signal.CreatedAt))
+        foreach (var row in rows.Where(r => now >= NotifyTime.AlertDueAt(r.signal.SignalDate, r.NotifyHour, r.TimeZone)).OrderBy(r => r.signal.CreatedAt))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken) is not { } claimed) continue;
             // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
@@ -213,7 +213,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var now = time.GetUtcNow();
         var sent = 0;
         var seen = new HashSet<(Guid, Guid, TradeSide)>();
-        foreach (var row in rows.Where(r => now >= NotifyTime.DueAt(r.signal.SignalDate, r.NotifyHour, r.TimeZone)).OrderBy(r => r.signal.CreatedAt))
+        foreach (var row in rows.Where(r => now >= NotifyTime.AlertDueAt(r.signal.SignalDate, r.NotifyHour, r.TimeZone)).OrderBy(r => r.signal.CreatedAt))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
             // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
@@ -254,7 +254,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
         var now = time.GetUtcNow();
         var sent = 0;
-        foreach (var row in rows.Where(r => now >= NotifyTime.DueAt(r.signal.EndedOn!.Value, r.NotifyHour, r.TimeZone)))
+        foreach (var row in rows.Where(r => now >= NotifyTime.AlertDueAt(r.signal.EndedOn!.Value, r.NotifyHour, r.TimeZone)))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.SignalEnded, row.signal.EndedOn!.Value, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SignalEnded(Line(row.signal, row.strategy, row.asset), row.signal.EndedOn!.Value, AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
@@ -281,7 +281,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           select new { signal, strategy, user.Id, user.Locale, user.TimeZone, user.NotifyHour, asset }).ToListAsync(cancellationToken);
         var now = time.GetUtcNow();
         var sent = 0;
-        foreach (var row in rows.Where(r => now >= NotifyTime.DueAt(r.signal.EndedOn!.Value, r.NotifyHour, r.TimeZone)))
+        foreach (var row in rows.Where(r => now >= NotifyTime.AlertDueAt(r.signal.EndedOn!.Value, r.NotifyHour, r.TimeZone)))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.SignalEnded, row.signal.EndedOn!.Value, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
             if (await PushAsync(claimed, row.Id, PushTexts.SignalEnded(Line(row.signal, row.strategy, row.asset), row.signal.EndedOn!.Value, row.Locale), cancellationToken)) sent++;

@@ -28,6 +28,14 @@ public static class UsSession
         return day;
     }
 
+    /// <summary>The weekday session after <paramref name="session"/>.</summary>
+    public static DateOnly After(DateOnly session)
+    {
+        var day = session.AddDays(1);
+        while (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) day = day.AddDays(1);
+        return day;
+    }
+
     /// <summary>The weekday session before <paramref name="session"/> (holidays aren't known: a holiday simply has no check).</summary>
     public static DateOnly Before(DateOnly session)
     {

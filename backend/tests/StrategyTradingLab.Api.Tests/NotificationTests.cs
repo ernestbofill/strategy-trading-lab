@@ -764,6 +764,12 @@ public class NotificationTests
         // Friday 23 October's summary in Madrid comes on Saturday, and reminders keep 07:00 for "as soon as ready".
         Assert.Equal(new DateTimeOffset(2026, 10, 24, 5, 0, 0, TimeSpan.Zero), NotifyTime.DueAt(new DateOnly(2026, 10, 23), 7, "Europe/Madrid"));
         Assert.Equal((7, 9), (NotifyTime.ReminderHour(null), NotifyTime.ReminderHour(9)));
+        // An alert never waits past 2 hours before the next close (Friday 20:30 UTC), when the next check could end its signal:
+        // Kathmandu's 02:00 (20:15 UTC on Friday) becomes 18:30 UTC; Madrid's 07:00 is long before.
+        Assert.Equal(new DateTimeOffset(2026, 10, 23, 18, 30, 0, TimeSpan.Zero), NotifyTime.AlertDueAt(thursday, 2, "Asia/Kathmandu"));
+        Assert.Equal(NotifyTime.DueAt(thursday, 7, "Europe/Madrid"), NotifyTime.AlertDueAt(thursday, 7, "Europe/Madrid"));
+        // Friday's alerts may wait over the weekend until 2 hours before Monday's close.
+        Assert.Equal(NotifyTime.DueAt(new DateOnly(2026, 10, 23), 7, "Europe/Madrid"), NotifyTime.AlertDueAt(new DateOnly(2026, 10, 23), 7, "Europe/Madrid"));
         Assert.False(NotifyTime.IsHour(24));
     }
 

@@ -74,16 +74,23 @@ export function timeZoneLabel(zone: string, now = new Date()): string {
   return `${offsetOf(zone, now).text} · ${cities}`
 }
 
+/** Whether two zones keep the same clock: the same offset in winter and in summer. */
+const sameClock = (a: string, b: string) =>
+  [new Date('2026-01-15T12:00:00Z'), new Date('2026-07-15T12:00:00Z')].every((d) => offsetOf(a, d).minutes === offsetOf(b, d).minutes)
+
 /**
- * The rows to pick from, west to east by their offset today, always including `current` (a zone the browser guessed, or an
- * account saved before this list, that it lacks).
+ * The rows to pick from, west to east by their offset today. `current` (a zone the browser guessed, or one saved before this
+ * list) is always offered: as the value of the row that keeps the same clock ("Europe/Paris" on Barcelona's row, so no row
+ * repeats), or as a row of its own when none does.
  */
 export function timeZoneOptions(current: string): { value: string; label: string }[] {
   const now = new Date()
-  const zones = ZONES.map(([z]) => z)
-  if (!zones.includes(current)) zones.push(current)
-  return zones
-    .map((zone) => ({ zone, minutes: offsetOf(zone, now).minutes }))
+  const listed = ZONES.some(([z]) => z === current)
+  const twin = listed ? undefined : ZONES.find(([z]) => sameClock(z, current))?.[0]
+  const rows = ZONES.map(([zone]) => ({ value: zone === twin ? current : zone, label: timeZoneLabel(zone, now), zone }))
+  if (!listed && !twin) rows.push({ value: current, label: timeZoneLabel(current, now), zone: current })
+  return rows
+    .map((row) => ({ ...row, minutes: offsetOf(row.zone, now).minutes }))
     .sort((a, b) => a.minutes - b.minutes)
-    .map(({ zone }) => ({ value: zone, label: timeZoneLabel(zone, now) }))
+    .map(({ value, label }) => ({ value, label }))
 }

@@ -8,8 +8,12 @@ describe('timeZones', () => {
     expect(options.filter((o) => o.value === 'Europe/Madrid')).toHaveLength(1)
     expect(options[0].value).toBe('Pacific/Honolulu')
     expect(options.at(-1)?.value).toBe('Pacific/Auckland')
-    // A zone off the list (guessed by a browser, or saved before it) is still there, by its own name.
-    expect(timeZoneOptions('Europe/Vienna').find((o) => o.value === 'Europe/Vienna')?.label).toMatch(/· Europe\/Vienna$/)
+    // A zone off the list (guessed by a browser, or saved before it) takes the row with its clock, so no row repeats...
+    const vienna = timeZoneOptions('Europe/Vienna')
+    expect(vienna).toHaveLength(options.length)
+    expect(vienna.find((o) => o.value === 'Europe/Vienna')?.label).toMatch(/· Barcelona, Madrid/)
+    // ...or a row of its own when no row keeps its clock.
+    expect(timeZoneOptions('Australia/Lord_Howe').find((o) => o.value === 'Australia/Lord_Howe')?.label).toMatch(/· Australia\/Lord Howe$/)
   })
 
   it('names rows after cities, Spain after Barcelona first, and keeps the IANA name as the value', () => {

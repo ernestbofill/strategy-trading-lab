@@ -10,6 +10,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.pick.title': 'Tria una plantilla d’estratègia',
   'newStrategy.pick.lead':
     "Cada plantilla són unes poques regles simples amb valors provats. Mira com ha anat en el passat, ajusta-la i després fes-la servir en simulació o en mode real.",
+  'newStrategy.pick.howItWorks': 'Com funciona \u203A',
   'newStrategy.pick.loading': 'Carregant les plantilles…',
   'newStrategy.pick.loadError': 'No s’han pogut carregar les plantilles. Torna-ho a provar més tard.',
   'newStrategy.pick.listLabel': 'Plantilles d’estratègia',

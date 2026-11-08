@@ -329,7 +329,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>
 
-      {s.status === 'waiting' && (
+      {s.status === 'waiting' && s.canSnooze !== false && (
         <div className={styles.snooze}>
           {snoozedUntil && snoozedUntil > s.today ? (
             <p role="status" className={styles.plain}>

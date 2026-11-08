@@ -674,6 +674,7 @@ export interface SignalDetail {
   rates: { date: string; rate: number }[]
   answer: SignalAnswer | null
   side?: TradeSide
+  canSnooze?: boolean
 }
 
 /** "I did it". `fxRate` is only read when `fxSource` is 'user'. */

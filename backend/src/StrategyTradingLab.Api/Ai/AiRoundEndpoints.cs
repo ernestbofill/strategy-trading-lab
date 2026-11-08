@@ -208,7 +208,7 @@ public static class AiRoundEndpoints
     }
 
     public static AiReadingDto ReadingOf(AiPlan plan) =>
-        new(AiRounds.ScoresOf(plan), plan.Reading.Problems, plan.Reading.Ok, plan.Budget.MaxSteps, plan.Budget.Step, plan.Reading.Ok ? plan.Short : null);
+        new(AiRounds.ScoresOf(plan), plan.Reading.Problems, plan.Reading.Ok, plan.Budget.MaxSteps, plan.Budget.Step, plan.Reading.Ok ? plan.Short : null, plan.Reading.Warnings);
 
     public static AiSetup SetupOf(AiParams parameters) => new(parameters.News, parameters.Mood, parameters.Figures, parameters.Instructions);
 

@@ -497,6 +497,8 @@ export interface AiScore {
 export interface AiReading {
   scores: AiScore[]
   problems: string[]
+  /** A stock without a score or one that isn't yours: shown, but the scores can still be used. */
+  warnings: string[]
   ok: boolean
   maxSteps: number | null
   stepAmount: number | null

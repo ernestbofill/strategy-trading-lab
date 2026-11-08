@@ -67,7 +67,7 @@ public record AiScoreDto(Guid AssetId, string Symbol, string Name, decimal Overa
 /// they give, and why there are fewer than the top N (<c>Short</c>).
 /// </summary>
 public record AiReadingDto(IReadOnlyList<AiScoreDto> Scores, IReadOnlyList<string> Problems, bool Ok, int? MaxSteps, decimal? StepAmount,
-    AiNoStep? Short);
+    AiNoStep? Short, IReadOnlyList<string> Warnings);
 
 /// <summary>The round is done: its signals (simulation: already bought), the first of which live opens on Confirm a signal.</summary>
 public record AiRoundResult(Guid RoundId, IReadOnlyList<Guid> SignalIds, StrategyMode Mode);

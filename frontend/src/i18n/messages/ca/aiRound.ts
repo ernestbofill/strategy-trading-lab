@@ -31,6 +31,7 @@ export const aiRound: Record<keyof typeof en, string> = {
   'aiRound.modelOther': 'Un altre…',
   'aiRound.modelName': 'Quin model d’IA?',
   'aiRound.askAgain': 'Torna-ho a demanar a la teva IA',
+  'aiRound.checkAnswer': 'Val la pena revisar-ho',
   'aiRound.allScored': '✓ Totes les accions puntuades, totes les puntuacions entre 0 i 100.',
   'aiRound.gets': '{stock} rep la fase {step}',
   'aiRound.getsAmount': '{picks} ({amount}).',

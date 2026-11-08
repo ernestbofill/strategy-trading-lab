@@ -18,7 +18,7 @@ public record AiSource(string Key, string Title, string Criteria);
 public static class AiPrompt
 {
     /// <summary>The suggested prompt's version: bump it when its words change, so rounds say which one they ran.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
     public static readonly IReadOnlyList<AiSource> Sources =
     [
@@ -56,8 +56,9 @@ public static class AiPrompt
         text.Append($"Today is {today.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)}. Search the web for news and data from the last {period}, ");
         text.Append("plus each company's latest quarterly figures. Use what you find, not what you remember.\n\n");
         text.Append((parameters.Instructions ?? SuggestedInstructions(sources)).Trim());
-        text.Append("\n\nAnswer only with this table, one row per stock below, scores as whole numbers from 0 to 100. ");
-        text.Append("In the Stock column, write the stock's symbol as listed below.\n");
+        text.Append("\n\nAnswer only with this Markdown table (pipes and a dashes row), in a code block so nothing gets changed. ");
+        text.Append("One row per stock below, scores as whole numbers from 0 to 100. ");
+        text.Append("In the Stock column, copy the stock's symbol exactly as listed below, with no escapes or backslashes.\n");
         text.Append(TableHeader(sources));
         text.Append("\n\nStocks:\n");
         foreach (var stock in stocks) text.Append($"- {stock.Symbol}: {stock.Name}\n");

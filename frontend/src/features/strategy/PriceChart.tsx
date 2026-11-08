@@ -86,6 +86,7 @@ export function PriceChart({
       <SegmentedField
         label={t('stock.chart.period')}
         hideLabel
+        compact
         value={days}
         onChange={setDays}
         options={PERIODS.map((d) => ({ value: d, label: t('stock.chart.days', { days: d }) }))}

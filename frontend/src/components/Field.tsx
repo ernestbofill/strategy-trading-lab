@@ -214,16 +214,18 @@ interface SegmentedFieldProps {
   options: { value: string; label: string; detail?: string }[]
   error?: string | null
   hideLabel?: boolean
+  /** A small control sized to its choices (a chart's period), instead of full-width buttons. */
+  compact?: boolean
 }
 
 /**
  * A row of radio buttons for a few short choices (currency, language): one tap, and it looks the same on every
  * device, unlike a select's menu. A long list (time zones) stays a `SelectField`.
  */
-export function SegmentedField({ label, value, onChange, options, error, hideLabel }: SegmentedFieldProps) {
+export function SegmentedField({ label, value, onChange, options, error, hideLabel, compact }: SegmentedFieldProps) {
   const id = useId()
   return (
-    <fieldset className={styles.segmentedField} aria-describedby={error ? `${id}-error` : undefined}>
+    <fieldset className={styles.segmentedField} data-compact={compact || undefined} aria-describedby={error ? `${id}-error` : undefined}>
       <legend className={hideLabel ? 'visually-hidden' : `ui-strong ${styles.legend}`}>{label}</legend>
       <div className={styles.segments}>
         {options.map((o) => (

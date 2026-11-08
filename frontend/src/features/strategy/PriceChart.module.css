@@ -8,6 +8,11 @@
   background: var(--surface-deep);
 }
 
+/* The period sits small at the top right, so the chart keeps the room. */
+.chart > fieldset {
+  align-self: flex-end;
+}
+
 /* A candidate reads green, a stock that isn't one violet. */
 .chart[data-candidate='true'] {
   --chart-price: var(--primary);

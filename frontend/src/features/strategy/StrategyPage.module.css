@@ -74,9 +74,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: var(--space-3);
-  background: var(--surface-deep);
-  border: 1px solid var(--border-hairline);
 }
 
 .figures {
@@ -161,10 +158,15 @@
   color: var(--ink-muted);
 }
 
+/* What was tested is context for the figures above it, so it reads quieter. */
 .text {
   margin: 0;
-  font-size: 14px;
-  line-height: 22px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-sidebar);
+}
+.text .mono {
+  color: var(--ink);
 }
 
 .worst {
@@ -178,36 +180,13 @@
   font-family: var(--font-mono);
 }
 
-.facts {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-hairline);
-  font-size: 13px;
-  line-height: 20px;
-}
-.facts > div {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
-}
-.facts dd {
-  margin: 0;
-  font-family: var(--font-mono);
-}
-
 .stocks {
   margin: 0;
   padding: 0;
   list-style: none;
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
 }
-.stocks > li + li {
-  border-top: 1px solid var(--surface-editor);
+.stocks > li {
+  border-top: 1px solid var(--border-hairline);
 }
 
 .stock {
@@ -215,7 +194,7 @@
   align-items: center;
   gap: 12px;
   min-height: 64px;
-  padding: 10px var(--space-3);
+  padding: 10px var(--space-2);
   color: var(--ink);
   text-decoration: none;
 }

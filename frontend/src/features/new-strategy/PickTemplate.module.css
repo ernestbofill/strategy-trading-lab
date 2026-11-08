@@ -7,3 +7,8 @@
   padding: 12px 12px 12px 0;
   margin: -12px 0;
 }
+
+.howItWorks {
+  white-space: nowrap;
+  text-decoration: underline;
+}

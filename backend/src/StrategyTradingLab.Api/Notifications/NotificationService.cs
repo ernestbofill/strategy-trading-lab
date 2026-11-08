@@ -54,6 +54,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
                               && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email)
                           // A second check the same day (a re-run, a price that came in late) can signal the same stock again: it was alerted already.
                           let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email && x.SentAt > recent
@@ -132,6 +133,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest && signal.SnoozedUntil >= earliest
                               && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
                                   && x.Channel == NotificationChannel.Email && x.ForDate == signal.SnoozedUntil)
                           select new { signal, strategy, user.Id, user.Email, user.TimeZone, user.Locale, user.UnsubscribeToken, asset }).ToListAsync(cancellationToken);
@@ -191,6 +193,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
                               && user.AlertPush && strategy.Status == StrategyStatus.Running && db.PushSubscriptions.Any(p => p.UserId == user.Id)
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push)
                           let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt > recent
                               && db.Signals.Any(o => o.Id == x.SignalId && o.StrategyId == signal.StrategyId && o.AssetId == signal.AssetId && o.Side == signal.Side))
@@ -231,6 +234,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && asset.Active
                               && db.StrategyAssets.Any(a => a.StrategyId == strategy.Id && a.AssetId == asset.Id && a.Active && a.RemovedAt == null)
                               && user.EmailVerifiedAt != null && user.AlertEmails
+                              && strategy.TemplateKey != "ai"
                               && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email && x.SentAt != null)
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == NotificationChannel.Email)
                           select new { signal, strategy, user.Id, user.Email, user.Locale, user.UnsubscribeToken, asset }).ToListAsync(cancellationToken);
@@ -257,6 +261,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && asset.Active
                               && db.StrategyAssets.Any(a => a.StrategyId == strategy.Id && a.AssetId == asset.Id && a.Active && a.RemovedAt == null)
                               && user.AlertPush && db.PushSubscriptions.Any(p => p.UserId == user.Id)
+                              && strategy.TemplateKey != "ai"
                               && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt != null)
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == NotificationChannel.Push)
                           select new { signal, strategy, user.Id, user.Locale, asset }).ToListAsync(cancellationToken);
@@ -281,6 +286,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest && signal.SnoozedUntil >= earliest
                               && strategy.Mode == StrategyMode.Live && user.AlertPush && strategy.Status == StrategyStatus.Running
                               && db.PushSubscriptions.Any(p => p.UserId == user.Id)
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
                                   && x.Channel == NotificationChannel.Push && x.ForDate == signal.SnoozedUntil)
                           select new { signal, strategy, user.Id, user.TimeZone, user.Locale, asset }).ToListAsync(cancellationToken);

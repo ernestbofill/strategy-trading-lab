@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { LanguageSwitch } from '../../components/LanguageSwitch'
 import { Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
@@ -19,12 +19,25 @@ const TRUST_CARDS: Array<{ title: MessageKey; text: MessageKey }> = [
 export function WelcomePage() {
   const t = useT()
   const role = useRole()
+  const [params] = useSearchParams()
+  const fromNew = params.get('from') === 'new'
 
   return (
     <Screen
       top={
-        // Signed in, or still loading: the home bar ("STL" with nothing on the right while it loads), never the guest bar first.
-        role !== null ? (
+        fromNew ? (
+          <TopBar
+            up={pickPath}
+            aside={
+              role === null ? (
+                <>
+                  <LanguageSwitch />
+                  <TextAction to={logInPath}>{t('common.logIn')}</TextAction>
+                </>
+              ) : undefined
+            }
+          />
+        ) : role !== null ? (
           <TopBar home />
         ) : (
           <TopBar
@@ -79,22 +92,24 @@ export function WelcomePage() {
           </div>
         </section>
 
-        {/* Bottom CTA Banner */}
-        <section className={styles.bottomCta} aria-labelledby="section-bottom-cta">
-          <h2 id="section-bottom-cta" className={styles.bottomTitle}>
-            {t('welcome.bottom.title')}
-          </h2>
-          <p className={styles.bottomLead}>{t('welcome.bottom.lead')}</p>
+        {/* Bottom CTA Banner (only shown to guests) */}
+        {role === null && (
+          <section className={styles.bottomCta} aria-labelledby="section-bottom-cta">
+            <h2 id="section-bottom-cta" className={styles.bottomTitle}>
+              {t('welcome.bottom.title')}
+            </h2>
+            <p className={styles.bottomLead}>{t('welcome.bottom.lead')}</p>
 
-          <div className={styles.actionRow}>
-            <Link to={pickPath} className={styles.primaryBtn}>
-              {t('welcome.bottom.tryGuest')}
-            </Link>
-            <Link to={signUpPath} className={styles.secondaryBtn}>
-              {t('welcome.bottom.register')}
-            </Link>
-          </div>
-        </section>
+            <div className={styles.actionRow}>
+              <Link to={pickPath} className={styles.primaryBtn}>
+                {t('welcome.bottom.tryGuest')}
+              </Link>
+              <Link to={signUpPath} className={styles.secondaryBtn}>
+                {t('welcome.bottom.register')}
+              </Link>
+            </div>
+          </section>
+        )}
       </div>
     </Screen>
   )

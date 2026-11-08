@@ -9,8 +9,8 @@ export function guessTimeZone(): string {
 
 /**
  * The short list to pick from (Ernest, 2026-11-08): one row per clock, named after a few known cities, as most apps do,
- * instead of every IANA zone. Cities that keep the same time all year share a row (Paris and Berlin are Barcelona's).
- * Spain is Barcelona first (Ernest's home city); the stored value is the IANA name, which the API checks.
+ * instead of every IANA zone. Cities that keep the same time all year share a row (Paris and Copenhagen are Barcelona's).
+ * Spain's row names Barcelona, Paris and Copenhagen, Ernest's favourites; the stored value is the IANA name, which the API checks.
  */
 const ZONES: [zone: string, cities: string][] = [
   ['Pacific/Honolulu', 'Honolulu'],
@@ -31,7 +31,7 @@ const ZONES: [zone: string, cities: string][] = [
   ['UTC', 'UTC'],
   ['Europe/London', 'London, Lisbon, Dublin, Canary Islands'],
   ['Africa/Lagos', 'Lagos, Algiers'],
-  ['Europe/Madrid', 'Barcelona, Madrid, Paris, Berlin, Rome'],
+  ['Europe/Madrid', 'Barcelona, Paris, Copenhagen'],
   ['Africa/Johannesburg', 'Johannesburg'],
   ['Africa/Cairo', 'Cairo'],
   ['Europe/Athens', 'Athens, Helsinki, Kyiv, Bucharest'],
@@ -68,7 +68,7 @@ function offsetOf(zone: string, now: Date): { text: string; minutes: number } {
   }
 }
 
-/** One row's name: "GMT+1 · Barcelona, Madrid, Paris, Berlin, Rome"; a zone off the list by its IANA name. */
+/** One row's name: "GMT+1 · Barcelona, Paris, Copenhagen"; a zone off the list by its IANA name. */
 export function timeZoneLabel(zone: string, now = new Date()): string {
   const cities = ZONES.find(([z]) => z === zone)?.[1] ?? zone.replaceAll('_', ' ')
   return `${offsetOf(zone, now).text} · ${cities}`

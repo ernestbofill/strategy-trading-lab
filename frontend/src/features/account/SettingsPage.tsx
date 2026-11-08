@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { api, InvalidFieldsError, type Currency, type Locale } from '../../api'
 import { FormMessage, SegmentedField, SelectField, type FormMessageState } from '../../components/Field'
@@ -99,12 +99,17 @@ function useSave<T>(current: T, save: (value: T) => Promise<void>, onSaved: Save
   return { value, setValue, message, busy, submit, changed: value !== current }
 }
 
-function SaveButton({ busy, changed, label }: { busy: boolean; changed: boolean; label: string }) {
+/** The shell of one setting's form: its field(s) as children, then the "Saved." line and the save button. */
+function SettingForm({ form, saveLabel, children }: { form: Omit<ReturnType<typeof useSave>, 'value' | 'setValue'>; saveLabel: string; children: ReactNode }) {
   const t = useT()
   return (
-    <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !changed}>
-      {busy ? t('account.saving') : label}
-    </button>
+    <form className={styles.form} onSubmit={form.submit} noValidate>
+      {children}
+      {form.message && <FormMessage tone={form.message.tone}>{form.message.text}</FormMessage>}
+      <button type="submit" className={`ui-strong ${styles.button}`} disabled={form.busy || !form.changed}>
+        {form.busy ? t('account.saving') : saveLabel}
+      </button>
+    </form>
   )
 }
 
@@ -118,11 +123,9 @@ function LanguageForm({ current, onSaved }: { current: Locale; onSaved: Saved })
   const form = useSave(current, save, onSaved, 'locale', t('account.page.languageSaved'))
 
   return (
-    <form className={styles.form} onSubmit={form.submit} noValidate>
+    <SettingForm form={form} saveLabel={t('account.page.languageSave')}>
       <SegmentedField label={t('account.page.language')} hideLabel value={form.value} onChange={(v) => form.setValue(v as Locale)} options={LOCALES} />
-      {form.message && <FormMessage tone={form.message.tone}>{form.message.text}</FormMessage>}
-      <SaveButton busy={form.busy} changed={form.changed} label={t('account.page.languageSave')} />
-    </form>
+    </SettingForm>
   )
 }
 
@@ -131,11 +134,9 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: Saved 
   const form = useSave(current, api.setCurrency, onSaved, 'currency', t('account.page.currencySaved'))
 
   return (
-    <form className={styles.form} onSubmit={form.submit} noValidate>
+    <SettingForm form={form} saveLabel={t('account.page.currencySave')}>
       <SegmentedField label={t('account.page.currency')} hideLabel value={form.value} onChange={(v) => form.setValue(v as Currency)} options={currencyOptionsWith(t)} />
-      {form.message && <FormMessage tone={form.message.tone}>{form.message.text}</FormMessage>}
-      <SaveButton busy={form.busy} changed={form.changed} label={t('account.page.currencySave')} />
-    </form>
+    </SettingForm>
   )
 }
 
@@ -145,11 +146,9 @@ function TimeZoneForm({ current, onSaved }: { current: string; onSaved: Saved })
   const form = useSave(current, api.setTimeZone, onSaved, 'timeZone', t('account.page.timeZoneSaved'))
 
   return (
-    <form className={styles.form} onSubmit={form.submit} noValidate>
+    <SettingForm form={form} saveLabel={t('account.page.timeZoneSave')}>
       <SelectField label={t('account.page.timeZone')} hideLabel value={form.value} onChange={form.setValue} options={options} />
       <p className={styles.line}>{t('account.page.timeZoneHint')}</p>
-      {form.message && <FormMessage tone={form.message.tone}>{form.message.text}</FormMessage>}
-      <SaveButton busy={form.busy} changed={form.changed} label={t('account.page.timeZoneSave')} />
-    </form>
+    </SettingForm>
   )
 }

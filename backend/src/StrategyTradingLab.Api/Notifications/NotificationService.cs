@@ -89,6 +89,19 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     public async Task<int> SendOverviewsAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
         var lastSession = UsSession.LastComplete(now);
+        // A summary held for an hour close to the next session's close gets few hourly runs before that close, or none (a time zone
+        // 45 minutes off the hour): the previous session's is still looked at for those, while it is unclaimed.
+        var lateFrom = UsSession.FinalAt(lastSession) - LateSummaryWindow;
+        var sent = await SendOverviewsForAsync(UsSession.Before(lastSession), now, due => due >= lateFrom, cancellationToken)
+            + await SendOverviewsForAsync(lastSession, now, _ => true, cancellationToken);
+        return await SettledAsync(sent);
+    }
+
+    /// <summary>How close to the next session's close a summary's time can come and still be sent after that close.</summary>
+    static readonly TimeSpan LateSummaryWindow = TimeSpan.FromHours(2);
+
+    async Task<int> SendOverviewsForAsync(DateOnly lastSession, DateTimeOffset now, Func<DateTimeOffset, bool> looked, CancellationToken cancellationToken)
+    {
         var users = await db.Users.AsNoTracking()
             .Where(u => u.OverviewEmail && u.EmailVerifiedAt != null && db.Strategies.Any(s => s.UserId == u.Id && s.Status == StrategyStatus.Running)
                 && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.ForDate == lastSession)
@@ -98,7 +111,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var sent = 0;
         foreach (var user in users)
         {
-            if (now < NotifyTime.DueAt(lastSession, user.NotifyHour, user.TimeZone)) continue;
+            var due = NotifyTime.DueAt(lastSession, user.NotifyHour, user.TimeZone);
+            if (now < due || !looked(due)) continue;
             var local = LocalTime(now, user.TimeZone);
             if (await ClaimAsync(user.Id, null, NotificationKind.Overview, lastSession, cancellationToken) is not { } claimed) continue;
 
@@ -115,7 +129,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                 }, cancellationToken)) sent++;
             else if (incomplete) await ReleaseAsync(claimed);
         }
-        return await SettledAsync(sent);
+        return sent;
     }
 
     /// <summary>

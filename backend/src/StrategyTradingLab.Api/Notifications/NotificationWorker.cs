@@ -55,6 +55,9 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
         }
     }
 
-    /// <summary>The wait until the next top of the hour (UTC offsets are whole hours or half hours, so every user's 07:00 is reached within the hour that holds it).</summary>
+    /// <summary>
+/// The wait until the next top of the hour. A user's chosen hour is reached at most 45 minutes late (time zones 45 minutes off the
+/// hour); a summary that comes due after the next close is still sent (<see cref="NotificationService.SendOverviewsAsync"/>).
+/// </summary>
     public static TimeSpan UntilNextHour(DateTimeOffset now) => TimeSpan.FromHours(1) - TimeSpan.FromTicks(now.UtcTicks % TimeSpan.TicksPerHour);
 }

@@ -520,6 +520,9 @@ public class NotificationTests
         var off = await SeedAsync(db, overview: false);
         var unverified = await SeedAsync(db, verified: false);
         var tokyo = await SeedAsync(db, timeZone: "Asia/Tokyo", notifyHour: 7);
+        // Kathmandu is UTC+5:45: Thursday's summary at 02:00 there is due at 20:15 UTC on Friday, after no hourly run and just
+        // before Friday's close (20:30 UTC); it still goes out once Friday's session is the last one.
+        var kathmandu = await SeedAsync(db, timeZone: "Asia/Kathmandu", notifyHour: 2);
         try
         {
             var sender = new Captured();
@@ -542,7 +545,8 @@ public class NotificationTests
             Assert.True(thursday >= 1);
             Assert.DoesNotContain(sender.Sent, m => m.Subject.EndsWith("23 Oct 2026"));
             Assert.DoesNotContain(sender.Sent, m => m.To == off.Email || m.To == unverified.Email);
-            Assert.Equal((0, 0, 0), (friday, saturday, monday));
+            Assert.Equal((1, 0, 0), (friday, saturday, monday));
+            Assert.Single(sender.Sent, m => m.To == kathmandu.Email && m.Subject == "Your summary, 22 Oct 2026");
             var mail = sender.Sent.First(m => m.To == wanted.Email);
             Assert.Contains("Waiting for you", mail.Body); // The seeded live signal is still waiting.
             foreach (var user in new[] { wanted, asap })
@@ -554,7 +558,7 @@ public class NotificationTests
         }
         finally
         {
-            foreach (var seeded in new[] { wanted, asap, off, unverified, tokyo }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
+            foreach (var seeded in new[] { wanted, asap, off, unverified, tokyo, kathmandu }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
         }
     }
 

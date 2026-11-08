@@ -380,17 +380,18 @@ The admin page's settings (`Admin/SettingDefinitions.cs` lists which). One row p
 | value | text, null | Plain text, except secrets: encrypted with ASP.NET Core Data Protection (keys in the service's systemd `StateDirectory`, not in the database). Null: cleared, which hides the server's value too |
 | created_at, updated_at | timestamptz | |
 
-### `template_overrides`
+### `template_versions`
 
-The owner's changes to a template on `/admin/templates` (`Admin/AdminTemplates.cs`, read by `Templates/TemplateStore.cs`): what a new strategy of it starts with. One row per changed template; only what differs from the tested values (the code's) is stored, and no row means the tested values. A running strategy keeps the rules and stocks it started with (its own `params` and `strategy_assets`); `close_pct` applies to it too.
+Versions of what a template's new strategies start with, made on `/admin/templates` (`Admin/AdminTemplates.cs`, read by `Templates/TemplateStore.cs`). A version is a fixed snapshot, never edited or deleted. Version 1 of each template is the catalogue's tested values, seeded by the migration. Saving on the page adds the next version and makes it active; any version can be made active again. A strategy keeps the version it started from in `strategies.defaults_version` (not a foreign key), and "tuned" on its page compares with that version. Only `close_pct` of the active version reaches running strategies.
 
 | Column | Type | Notes |
 | --- | --- | --- |
-| template_key | text PK | One of the catalogue's keys (CHECK) |
-| defaults | jsonb, null | Advanced settings' defaults by setting key, `{"zoneEndPct": 12}`. A value the code no longer accepts makes every default the tested one |
-| asset_ids | uuid[], null | The starter list, or the one fund of a fund template |
-| close_pct | numeric(4,1), null | "Getting close": a candidate within this % of its buy rule (dashboard card, summary's stock changes), for every strategy of the template, running ones too. 0.5 to 10 |
-| created_at, updated_at | timestamptz | |
+| template_key, version | text, integer, PK | One of the catalogue's keys (CHECK); version from 1 |
+| defaults | jsonb | Every Advanced settings default by setting key, `{"zoneEndPct": 12, …}`. A value the code no longer accepts makes every default the catalogue's |
+| asset_ids | uuid[] | The starter list, or the one fund of a fund template. Assets hidden since are left out of new strategies |
+| close_pct | numeric(4,1) | "Getting close": a candidate within this % of its buy rule (dashboard card, summary's stock changes). 0.5 to 10 |
+| active | boolean | The version new strategies take: one per template (unique partial index `ux_template_versions_active`) |
+| created_at | timestamptz | |
 
 ### `feedback_items`
 

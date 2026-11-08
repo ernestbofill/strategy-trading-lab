@@ -63,7 +63,10 @@ public static class StrategyEndpoints
                 .SelectMany(s => Followed(s).Select(a => a.AssetId)).Distinct().ToList();
             var symbols = await db.Assets.AsNoTracking().Where(a => fundIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, a => a.Symbol, cancellationToken);
             string? FundOf(Strategy s) => Followed(s).Select(a => symbols.GetValueOrDefault(a.AssetId)).FirstOrDefault(n => n is not null);
-            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user, templates[strategy.TemplateKey], (book, today)) with
+            // Each strategy as the template version it started from, for "tuned".
+            var startedWith = new Dictionary<Guid, Template>();
+            foreach (var s in strategies) startedWith[s.Id] = await store.VersionAsync(s.TemplateKey, s.DefaultsVersion, cancellationToken);
+            return new Dashboard(today, [.. strategies.Select(strategy => Summary(strategy, user, startedWith[strategy.Id], (book, today)) with
                 {
                     Stocks = counts.GetValueOrDefault(strategy.Id),
                     Fund = FundOf(strategy),
@@ -86,7 +89,8 @@ public static class StrategyEndpoints
             if (strategy is null) return TypedResults.NotFound();
             var today = Today(user, time);
             var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : default;
-            var template = (await store.FindAsync(strategy.TemplateKey, cancellationToken))!;
+            // The version it started from: "tuned" compares with that.
+            var template = await store.VersionAsync(strategy.TemplateKey, strategy.DefaultsVersion, cancellationToken);
             return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores));
         })
         .RequireUser()
@@ -424,7 +428,7 @@ public static class StrategyEndpoints
     static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
         template.Backtest?.LastOrDefault() is { } all && texts.Backtest is { } words
             ? new PastResult(words.Years, all.TemplatePerYear, all.IndexPerYear, all.WorstYear, all.IndexWorstYear,
-                IsCustomized(strategy, TemplateCatalog.Find(template.Key)!, activeAssetIds))
+                IsCustomized(strategy, template, activeAssetIds))
             : null;
 
     internal static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds = null)

@@ -967,21 +967,18 @@ export interface AdminAlert {
 }
 
 
-/** A template on /admin/templates: backend Admin/AdminTemplates.cs (AdminTemplate). What new strategies start with, next to the tested values. */
+/** A template on /admin/templates: backend Admin/AdminTemplates.cs (AdminTemplate). Its settings and every version, newest first. */
 export interface AdminTemplate {
   key: string
   name: string
   investsIn: InvestsIn
-  changed: boolean
+  /** False for a template whose stocks have no buy rule (the AI's): no "getting close". */
+  hasClosePct: boolean
   settings: AdminTemplateSetting[]
-  /** The starter list, or the one fund, sorted by name. */
-  assets: AdminTemplateAsset[]
-  /** "Getting close" in %; null for a template whose stocks have no buy rule (the AI's). */
-  closePct: number | null
-  testedClosePct: number
+  versions: AdminTemplateVersion[]
 }
 
-/** A setting of Advanced settings, with its words (`sentence` with `{value}`, `value` with `{n}`), range and defaults. */
+/** A setting of Advanced settings, with its words (`sentence` with `{value}`, `value` with `{n}`) and range. */
 export interface AdminTemplateSetting {
   key: string
   sentence: string
@@ -990,8 +987,19 @@ export interface AdminTemplateSetting {
   min: number
   max: number
   below?: string | null
-  tested: number
-  current: number
+}
+
+/** A version of what new strategies start with. Version 1 is the tested one; one version is active. */
+export interface AdminTemplateVersion {
+  version: number
+  active: boolean
+  createdAt: string
+  defaults: Record<string, number>
+  /** The starter list, or the one fund, sorted by name. */
+  assets: AdminTemplateAsset[]
+  closePct: number
+  /** How many strategies started from it. */
+  strategies: number
 }
 
 export interface AdminTemplateAsset {
@@ -1001,7 +1009,7 @@ export interface AdminTemplateAsset {
   active: boolean
 }
 
-/** What new strategies of a template should start with: every setting's default, the stocks or the fund, "getting close". */
+/** A new version: every setting's default, the stocks or the fund, "getting close". */
 export interface AdminTemplateChange {
   defaults: Record<string, number>
   assetIds: string[]
@@ -1158,10 +1166,10 @@ export interface Api {
   dismissAdminAlert(id: string): Promise<void>
   /** Every template: what new strategies start with, next to the tested values. */
   getAdminTemplates(): Promise<AdminTemplate[]>
-  /** Sets what new strategies of a template start with. Rejects with `InvalidFieldsError` (`settings.<key>`, `assetIds`, `closePct`). */
-  setAdminTemplate(key: string, change: AdminTemplateChange): Promise<AdminTemplate>
-  /** Back to the tested values; resolves with the template as tested. */
-  resetAdminTemplate(key: string): Promise<AdminTemplate>
+  /** Saves a new version and makes it active. Rejects with `InvalidFieldsError` (`settings.<key>`, `assetIds`, `closePct`). */
+  saveAdminTemplateVersion(key: string, change: AdminTemplateChange): Promise<AdminTemplate>
+  /** Makes a version active: new strategies of the template start with it. */
+  activateAdminTemplateVersion(key: string, version: number): Promise<AdminTemplate>
   /** Hides or restores an asset. */
   setAdminAssetActive(id: string, active: boolean): Promise<void>
   /** Adds an asset by its Yahoo symbol and loads its prices. Rejects with `InvalidFieldsError` (`symbol`), or `InvalidValueError` when Yahoo fails. */

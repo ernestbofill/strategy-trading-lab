@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { api, InvalidFieldsError, type AdminTemplate, type AdminTemplateAsset } from '../../api'
-import { TextField } from '../../components/Field'
+import { api, InvalidFieldsError, type AdminTemplate, type AdminTemplateAsset, type AdminTemplateVersion } from '../../api'
+import { SelectField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
-import { formatRate } from '../../lib/format'
+import { formatRate, isoDate } from '../../lib/format'
 import { invalidate } from '../../lib/useLoadable'
 import { AssetPicker } from '../new-strategy/review/AssetPicker'
 import styles from './AdminTemplates.module.css'
@@ -24,29 +24,43 @@ const labelOf = (sentence: string, value: string) => sentence.replace('{value}',
 /** The typed text as a number, or NaN: the API says what is wrong with it. */
 const numberOf = (text: string) => (text.trim() === '' ? Number.NaN : Number(text.replace(',', '.')))
 
-function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved: (next: AdminTemplate, reset?: boolean) => void }) {
+/** "v3 · 2026-11-08 · active · 4 strategies": what the version picker lists. */
+function versionLabel(v: AdminTemplateVersion): string {
+  const parts = [`v${v.version}`, v.version === 1 ? 'tested' : isoDate(new Date(v.createdAt))]
+  if (v.active) parts.push('active')
+  if (v.strategies > 0) parts.push(`${v.strategies} ${v.strategies === 1 ? 'strategy' : 'strategies'}`)
+  return parts.join(' · ')
+}
+
+interface VersionFormProps {
+  template: AdminTemplate
+  version: AdminTemplateVersion
+  /** Called with the template as the server now has it, and the version to show. */
+  onChanged: (next: AdminTemplate, show: number) => void
+}
+
+/** One version's values, editable: Save makes them a new version, and an older one can be made active again. */
+function VersionForm({ template, version, onChanged }: VersionFormProps) {
   const fund = template.investsIn !== 'stockList'
+  const tested = template.versions.find((v) => v.version === 1)
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(template.settings.map((s) => [s.key, String(s.current)])),
+    Object.fromEntries(template.settings.map((s) => [s.key, String(version.defaults[s.key] ?? '')])),
   )
-  const [close, setClose] = useState(template.closePct === null ? '' : String(template.closePct))
-  const [assets, setAssets] = useState<AdminTemplateAsset[]>(template.assets)
+  const [close, setClose] = useState(String(version.closePct))
+  const [assets, setAssets] = useState<AdminTemplateAsset[]>(version.assets)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [failed, setFailed] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true)
     setFailed(false)
-    setSaved(false)
     setErrors({})
     try {
       await action()
     } catch (e) {
       if (e instanceof InvalidFieldsError) setErrors(e.fields)
       else setFailed(true)
-    } finally {
       setBusy(false)
     }
   }
@@ -54,27 +68,25 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
   const save = (e: FormEvent) => {
     e.preventDefault()
     const defaults = Object.fromEntries(template.settings.map((s) => [s.key, numberOf(values[s.key] ?? '')]))
-    const closePct = template.closePct === null ? null : numberOf(close)
-    // A blank or a word would reach the API as null, which it reads as "tested": stop it here instead.
+    const closePct = template.hasClosePct ? numberOf(close) : null
+    // A blank or a word would reach the API as null: stop it here instead.
     const notNumbers = Object.fromEntries([
       ...Object.entries(defaults).filter(([, n]) => Number.isNaN(n)).map(([key]) => [`settings.${key}`, 'Type a number.']),
       ...(closePct !== null && Number.isNaN(closePct) ? [['closePct', 'Type a number.']] : []),
     ])
     if (Object.keys(notNumbers).length > 0) {
-      setSaved(false)
       setErrors(notNumbers)
       return
     }
     void run(async () => {
-      const next = await api.setAdminTemplate(template.key, { defaults, assetIds: assets.map((a) => a.id), closePct })
-      onSaved(next)
-      setSaved(true)
+      const next = await api.saveAdminTemplateVersion(template.key, { defaults, assetIds: assets.map((a) => a.id), closePct })
+      onChanged(next, next.versions.find((v) => v.active)?.version ?? version.version)
     })
   }
 
-  const reset = () =>
+  const activate = () =>
     void run(async () => {
-      onSaved(await api.resetAdminTemplate(template.key), true)
+      onChanged(await api.activateAdminTemplateVersion(template.key, version.version), version.version)
     })
 
   const add = (picked: { id: string; symbol: string; name: string }) => {
@@ -82,17 +94,10 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
     setAssets((list) => (fund ? [asset] : list.some((a) => a.id === asset.id) ? list : [...list, asset]))
   }
 
-  return (
-    <form className={`well ${styles.card}`} onSubmit={save} aria-labelledby={`template-${template.key}`}>
-      <div className={styles.head}>
-        <h2 id={`template-${template.key}`} className={styles.title}>
-          {template.name}
-        </h2>
-        <span className={`ui-strong ${styles.state}`} data-changed={template.changed}>
-          {template.changed ? 'Changed' : 'As tested'}
-        </span>
-      </div>
+  const v1 = (n: number | undefined) => (tested && n !== undefined ? `v1 ${formatRate(n)} · ` : '')
 
+  return (
+    <form className={styles.form} onSubmit={save}>
       {template.settings.length > 0 && (
         <fieldset className={styles.group}>
           <legend className="ui-strong">Defaults</legend>
@@ -103,7 +108,7 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
               label={labelOf(s.sentence, s.value)}
               value={values[s.key] ?? ''}
               onChange={(text) => setValues((v) => ({ ...v, [s.key]: text }))}
-              hint={`Tested ${formatRate(s.tested)} · ${formatRate(s.min)} to ${formatRate(s.max)}, steps of ${formatRate(s.step)}`}
+              hint={`${v1(tested?.defaults[s.key])}${formatRate(s.min)} to ${formatRate(s.max)}, steps of ${formatRate(s.step)}`}
               error={errors[`settings.${s.key}`]}
             />
           ))}
@@ -111,13 +116,13 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
         </fieldset>
       )}
 
-      {template.closePct !== null && (
+      {template.hasClosePct && (
         <TextField
           type="decimal"
           label="Getting close: within _% of the buy rule"
           value={close}
           onChange={setClose}
-          hint={`Tested ${formatRate(template.testedClosePct)} · every strategy of this template, running ones too: the dashboard card (never for Bear markets) and the summary`}
+          hint={`${v1(tested?.closePct)}the active version's applies to every strategy of this template, running ones too: the dashboard card (never for Bear markets) and the summary`}
           error={errors.closePct}
         />
       )}
@@ -149,14 +154,13 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
       </fieldset>
 
       {failed && <p className={styles.error} role="alert">Could not save. Try again.</p>}
-      {saved && <p className={styles.saved} role="status">Saved. New strategies start with these.</p>}
       <div className={styles.actions}>
         <button type="submit" className={`ui-strong ${styles.primary}`} disabled={busy}>
-          Save
+          Save as new version
         </button>
-        {template.changed && (
-          <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={reset}>
-            Back to tested
+        {!version.active && (
+          <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={activate}>
+            Make v{version.version} active
           </button>
         )}
       </div>
@@ -164,15 +168,57 @@ function TemplateCard({ template, onSaved }: { template: AdminTemplate; onSaved:
   )
 }
 
+/** A template's card: the version picker, and the picked version's values. */
+function TemplateCard({ template, onChanged }: { template: AdminTemplate; onChanged: (next: AdminTemplate) => void }) {
+  const active = template.versions.find((v) => v.active) ?? template.versions[0]
+  const [shown, setShown] = useState(active?.version ?? 1)
+  const [note, setNote] = useState<string | null>(null)
+  const version = template.versions.find((v) => v.version === shown) ?? active
+  if (!version) return null
+
+  const changed = (next: AdminTemplate, show: number) => {
+    onChanged(next)
+    setShown(show)
+    setNote(`v${show} is active. New strategies start with it.`)
+  }
+
+  return (
+    <section className={`well ${styles.card}`} aria-labelledby={`template-${template.key}`}>
+      <div className={styles.head}>
+        <h2 id={`template-${template.key}`} className={styles.title}>
+          {template.name}
+        </h2>
+        <span className={`ui-strong ${styles.state}`} data-changed={active?.version !== 1}>
+          v{active?.version} active
+        </span>
+      </div>
+      <SelectField
+        label="Version"
+        value={String(version.version)}
+        onChange={(v) => {
+          setShown(Number(v))
+          setNote(null)
+        }}
+        options={template.versions.map((v) => ({ value: String(v.version), label: versionLabel(v) }))}
+      />
+      {note && (
+        <p className={styles.saved} role="status">
+          {note}
+        </p>
+      )}
+      {/* Keyed by version, so picking another one loads its values. */}
+      <VersionForm key={`${version.version}-${template.versions.length}`} template={template} version={version} onChanged={changed} />
+    </section>
+  )
+}
+
 /**
- * Admin templates (/admin/templates): what new strategies of each template start with — the defaults of Advanced settings,
- * the starter list or fund, and "getting close". Running strategies keep what they started with; past results stay the tested ones.
+ * Admin templates (/admin/templates): versions of what new strategies of each template start with: the defaults of Advanced
+ * settings, the starter list or fund, and "getting close". Saving makes a new version; any version can be made active again.
+ * A strategy keeps the version it started from.
  */
 export function AdminTemplates() {
   const [state, setState] = useState<State>({ status: 'loading' })
-  // A reset brings the tested template back, and its card (only) starts over from the tested values: other cards keep
-  // their unsaved edits.
-  const [resets, setResets] = useState<Record<string, number>>({})
 
   useEffect(() => {
     let current = true
@@ -182,26 +228,25 @@ export function AdminTemplates() {
     }
   }, [])
 
-  const saved = (key: string, next: AdminTemplate, reset?: boolean) => {
-    // This tab's new-strategy screens keep templates until a deploy: load them again with the owner's change.
+  const changed = (next: AdminTemplate) => {
+    // This tab's new-strategy screens keep templates until a deploy: load them again with the new active version.
     invalidate('templates')
-    invalidate(`template:${key}`)
-    setState((s) => (s.status === 'ready' ? { ...s, templates: s.templates.map((t) => (t.key === key ? next : t)) } : s))
-    if (reset) setResets((r) => ({ ...r, [key]: (r[key] ?? 0) + 1 }))
+    invalidate(`template:${next.key}`)
+    setState((s) => (s.status === 'ready' ? { ...s, templates: s.templates.map((t) => (t.key === next.key ? next : t)) } : s))
   }
 
   return (
     <Screen top={<TopBar back="/admin" step="ADMIN" />}>
       <PageHeader
         title="Templates"
-        lead="What new strategies start with. Running strategies keep their own rules and stocks; getting close applies to all."
+        lead="What new strategies start with, by version. Saving makes a new version; any version can be made active again. Strategies keep the version they started from."
       />
       {state.status === 'loading' && <ScreenMessage>Loading the templates…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the templates. Try again later.</ScreenMessage>}
       {state.status === 'ready' && (
         <div className={styles.list}>
           {state.templates.map((t) => (
-            <TemplateCard key={`${t.key}-${resets[t.key] ?? 0}`} template={t} onSaved={(next, reset) => saved(t.key, next, reset)} />
+            <TemplateCard key={t.key} template={t} onChanged={changed} />
           ))}
         </div>
       )}

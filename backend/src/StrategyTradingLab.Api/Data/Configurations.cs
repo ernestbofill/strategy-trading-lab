@@ -270,14 +270,20 @@ class AppSettingConfiguration : IEntityTypeConfiguration<AppSetting>
     }
 }
 
-class TemplateOverrideConfiguration : IEntityTypeConfiguration<TemplateOverride>
+class TemplateVersionConfiguration : IEntityTypeConfiguration<TemplateVersion>
 {
-    public void Configure(EntityTypeBuilder<TemplateOverride> entity)
+    public void Configure(EntityTypeBuilder<TemplateVersion> entity)
     {
-        entity.ToTable("template_overrides", table => table.HasInCheck("template_key", TemplateCatalog.Keys));
-        entity.HasKey(row => row.TemplateKey);
+        entity.ToTable("template_versions", table =>
+        {
+            table.HasInCheck("template_key", TemplateCatalog.Keys);
+            table.HasCheckConstraint("ck_template_versions_version", "version >= 1");
+        });
+        entity.HasKey(row => new { row.TemplateKey, row.Version });
         entity.Property(row => row.Defaults).HasColumnType("jsonb");
         entity.Property(row => row.ClosePct).HasPrecision(4, 1);
+        // One active version per template: the one new strategies take.
+        entity.HasIndex(row => row.TemplateKey).IsUnique().HasFilter("active").HasDatabaseName("ux_template_versions_active");
     }
 }
 

@@ -335,8 +335,9 @@ export const httpApi: Api = {
   getAdminAlerts: async () => (await admin('GET', '/alerts')).json(),
   dismissAdminAlert: async (id) => void (await admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
   getAdminTemplates: async () => (await admin('GET', '/templates')).json(),
-  setAdminTemplate: async (key, change) => (await admin('PUT', `/templates/${encodeURIComponent(key)}`, change)).json(),
-  resetAdminTemplate: async (key) => (await admin('DELETE', `/templates/${encodeURIComponent(key)}`)).json(),
+  saveAdminTemplateVersion: async (key, change) => (await admin('POST', `/templates/${encodeURIComponent(key)}/versions`, change)).json(),
+  activateAdminTemplateVersion: async (key, version) =>
+    (await admin('PUT', `/templates/${encodeURIComponent(key)}/active`, { version })).json(),
   setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
   addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
   updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),

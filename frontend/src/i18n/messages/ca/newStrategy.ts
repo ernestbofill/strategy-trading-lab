@@ -79,7 +79,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.results.alpha': 'Alfa',
   'newStrategy.results.alphaTip.label': 'Què és l’alfa?',
   'newStrategy.results.alphaTip.text':
-    'Alfa directa: l’avantatge anual respecte a posar els mateixos diners a l’índex els mateixos dies.',
+    'Quant més (o menys) ha guanyat la plantilla per any respecte a l’índex (Plantilla menys l’índex). Quan una plantilla compra per fases en dies diferents, la columna de l’índex inverteix els mateixos diners aquells mateixos dies perquè la comparació sigui justa.',
   'newStrategy.results.story': 'Història',
   'newStrategy.results.indexTabs': 'Índexs provats',
   'newStrategy.how.noBacktest': 'Aquesta plantilla no té backtest.',

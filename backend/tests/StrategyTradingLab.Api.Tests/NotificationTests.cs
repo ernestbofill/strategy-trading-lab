@@ -186,11 +186,12 @@ public class NotificationTests
     }
 
     static async Task<(Guid UserId, Guid StrategyId, Guid AssetId, Guid SignalId, string Email)> SeedAsync(AppDbContext db, bool verified = true, bool overview = true,
-        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid", bool evaluated = true, bool alerts = true, string templateKey = "dip")
+        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid", bool evaluated = true, bool alerts = true, string templateKey = "dip",
+        int? notifyHour = null)
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         var asset = new Asset { Symbol = $"N{tag}", Exchange = "TEST", Name = "Test asset", Currency = "USD" };
-        var user = new User { Email = $"notify-{tag}@example.com", TimeZone = timeZone, Locale = "en", OverviewEmail = overview, AlertEmails = alerts, EmailVerifiedAt = verified ? DateTimeOffset.UtcNow : null };
+        var user = new User { Email = $"notify-{tag}@example.com", TimeZone = timeZone, Locale = "en", OverviewEmail = overview, AlertEmails = alerts, EmailVerifiedAt = verified ? DateTimeOffset.UtcNow : null, NotifyHour = notifyHour };
         db.Assets.Add(asset);
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -225,6 +226,14 @@ public class NotificationTests
 
     static NotificationService Service(IServiceScope scope, IEmailSender sender) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
+
+    static NotificationService Service(IServiceScope scope, IEmailSender sender, DateTimeOffset now) =>
+        ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender, (TimeProvider)new FixedTime(now));
+
+    sealed class FixedTime(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
+    }
 
     static NotificationService Service(IServiceScope scope, IPushSender push) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)new Captured(), push);
@@ -340,15 +349,18 @@ public class NotificationTests
     }
 
     [NeonFact]
-    public async Task A_live_signal_is_alerted_once_and_recorded()
+    public async Task A_live_signal_is_alerted_once_at_the_users_hour_and_recorded()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var (userId, _, assetId, signalId, email) = await SeedAsync(db);
+        var (userId, _, assetId, signalId, email) = await SeedAsync(db, notifyHour: 7);
         try
         {
             var sender = new Captured();
+            // Thursday 22 October's signal waits for 07:00 on Friday in Madrid (05:00 UTC): at 23:00 there, nothing goes out.
+            Assert.Equal(0, await Service(scope, sender, new DateTimeOffset(2026, 10, 22, 21, 0, 0, TimeSpan.Zero)).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Empty(sender.Sent);
             var first = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
             var second = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
 
@@ -498,46 +510,51 @@ public class NotificationTests
     }
 
     [NeonFact]
-    public async Task The_summary_goes_out_once_a_session_right_after_the_check_not_in_the_users_night_and_not_on_a_quiet_day()
+    public async Task The_summary_goes_out_once_a_session_at_the_users_hour_or_right_after_the_check_and_not_on_a_quiet_day()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var wanted = await SeedAsync(db);
+        var wanted = await SeedAsync(db, notifyHour: 7);
+        var asap = await SeedAsync(db);
         var off = await SeedAsync(db, overview: false);
         var unverified = await SeedAsync(db, verified: false);
-        var tokyo = await SeedAsync(db, timeZone: "Asia/Tokyo");
+        var tokyo = await SeedAsync(db, timeZone: "Asia/Tokyo", notifyHour: 7);
         try
         {
             var sender = new Captured();
-            // New York is UTC-4 on 2026-10-22: the bar is final at 20:30 UTC. 21:00 UTC is 23:00 in Madrid, before its next morning.
+            // New York is UTC-4 on 2026-10-22: the bar is final at 20:30 UTC. At 21:00 UTC only "as soon as ready" gets Thursday's
+            // summary: it is 23:00 in Madrid and 06:00 in Tokyo, before their 07:00.
             var thursday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 22, 21, 0, 0, TimeSpan.Zero), default);
-            // 21:00 UTC is 06:00 in Tokyo: Thursday's overview waits for 07:00 there, then goes out once.
-            Assert.DoesNotContain(sender.Sent, m => m.To == tokyo.Email && m.Subject.EndsWith("22 Oct 2026"));
+            Assert.Contains(sender.Sent, m => m.To == asap.Email && m.Subject == "Your summary, 22 Oct 2026");
+            Assert.DoesNotContain(sender.Sent, m => m.To == wanted.Email || m.To == tokyo.Email);
             var tokyoMorning = new Captured();
             await Service(scope, tokyoMorning).SendOverviewsAsync(new DateTimeOffset(2026, 10, 22, 22, 30, 0, TimeSpan.Zero), default);
             Assert.Single(tokyoMorning.Sent, m => m.To == tokyo.Email);
-            var morning = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero), default);
-            // Friday evening: Friday's session had no signal and no stock change, so nobody gets a summary; its claim says why.
+            // 05:30 UTC on Friday is 07:30 in Madrid.
+            await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero), default);
+            Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your summary, 22 Oct 2026");
+            // Friday's session had no signal and no stock change, so nobody gets a summary; its claim says why.
             var friday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 23, 21, 0, 0, TimeSpan.Zero), default);
             var saturday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 24, 6, 0, 0, TimeSpan.Zero), default);
             var monday = await Service(scope, sender).SendOverviewsAsync(new DateTimeOffset(2026, 10, 26, 6, 0, 0, TimeSpan.Zero), default);
 
             Assert.True(thursday >= 1);
-            Assert.Contains(sender.Sent, m => m.To == wanted.Email && m.Subject == "Your summary, 22 Oct 2026");
             Assert.DoesNotContain(sender.Sent, m => m.Subject.EndsWith("23 Oct 2026"));
             Assert.DoesNotContain(sender.Sent, m => m.To == off.Email || m.To == unverified.Email);
-            Assert.Equal(0, morning);
             Assert.Equal((0, 0, 0), (friday, saturday, monday));
             var mail = sender.Sent.First(m => m.To == wanted.Email);
             Assert.Contains("Waiting for you", mail.Body); // The seeded live signal is still waiting.
-            Assert.Equal(2, await db.Notifications.CountAsync(n => n.UserId == wanted.UserId && n.Kind == NotificationKind.Overview));
-            var quiet = await db.Notifications.SingleAsync(n => n.UserId == wanted.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));
-            Assert.Equal((null, "Not sent: nothing changed."), (quiet.SentAt, quiet.Error));
+            foreach (var user in new[] { wanted, asap })
+            {
+                Assert.Equal(2, await db.Notifications.CountAsync(n => n.UserId == user.UserId && n.Kind == NotificationKind.Overview));
+                var quiet = await db.Notifications.SingleAsync(n => n.UserId == user.UserId && n.Kind == NotificationKind.Overview && n.ForDate == new DateOnly(2026, 10, 23));
+                Assert.Equal((null, "Not sent: nothing changed."), (quiet.SentAt, quiet.Error));
+            }
         }
         finally
         {
-            foreach (var seeded in new[] { wanted, off, unverified, tokyo }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
+            foreach (var seeded in new[] { wanted, asap, off, unverified, tokyo }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
         }
     }
 
@@ -725,6 +742,25 @@ public class NotificationTests
         {
             await CleanAsync(db, userId, assetId);
         }
+    }
+
+    [Fact]
+    public void What_a_check_finds_waits_for_the_first_chosen_hour_after_the_close()
+    {
+        // Thursday 22 October 2026: the bar is final at 20:30 UTC (16:30 in New York).
+        var thursday = new DateOnly(2026, 10, 22);
+        var final = new DateTimeOffset(2026, 10, 22, 20, 30, 0, TimeSpan.Zero);
+        Assert.Equal(final, NotifyTime.DueAt(thursday, null, "Europe/Madrid"));
+        // 07:00 on Friday in Madrid (UTC+2) and in New York (UTC-4); 07:00 on Friday in Tokyo comes 90 minutes after the close.
+        Assert.Equal(new DateTimeOffset(2026, 10, 23, 5, 0, 0, TimeSpan.Zero), NotifyTime.DueAt(thursday, 7, "Europe/Madrid"));
+        Assert.Equal(new DateTimeOffset(2026, 10, 23, 11, 0, 0, TimeSpan.Zero), NotifyTime.DueAt(thursday, 7, "America/New_York"));
+        Assert.Equal(new DateTimeOffset(2026, 10, 22, 22, 0, 0, TimeSpan.Zero), NotifyTime.DueAt(thursday, 7, "Asia/Tokyo"));
+        // 23:00 in Madrid is after that night's close (22:30 there): the same evening.
+        Assert.Equal(new DateTimeOffset(2026, 10, 22, 21, 0, 0, TimeSpan.Zero), NotifyTime.DueAt(thursday, 23, "Europe/Madrid"));
+        // Friday 23 October's summary in Madrid comes on Saturday, and reminders keep 07:00 for "as soon as ready".
+        Assert.Equal(new DateTimeOffset(2026, 10, 24, 5, 0, 0, TimeSpan.Zero), NotifyTime.DueAt(new DateOnly(2026, 10, 23), 7, "Europe/Madrid"));
+        Assert.Equal((7, 9), (NotifyTime.ReminderHour(null), NotifyTime.ReminderHour(9)));
+        Assert.False(NotifyTime.IsHour(24));
     }
 
     [Fact]

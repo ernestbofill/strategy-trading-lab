@@ -6,6 +6,7 @@ using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Invites;
+using StrategyTradingLab.Api.Notifications;
 
 namespace StrategyTradingLab.Api.Auth;
 
@@ -19,6 +20,8 @@ public record EmailRequest(string? Email);
 public record CurrencyRequest(string? Currency);
 public record LocaleRequest(string? Locale);
 public record TimeZoneRequest(string? TimeZone);
+/// <summary>The notification hour, 0 to 23, or null for "as soon as they're ready".</summary>
+public record NotifyHourRequest(int? Hour);
 /// <summary>An on/off switch of the account (the notification boxes); a missing value is refused, not read as off.</summary>
 public record SwitchRequest(bool? Enabled);
 public record NameRequest(string? FirstName, string? LastName);
@@ -35,7 +38,7 @@ public record SignUpOptions(bool InviteOnly, SignUpInvite? Invite);
 public record ResetRecipient(string Email, string Locale);
 
 /// <summary>The logged-in user, for the app's start-up check.</summary>
-public record AccountDto(string Email, string? FirstName, string? LastName, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, bool AlertEmails, string Currency, UserRole Role, bool AlertPush, bool AiSharing = false, string? TermsVersionAccepted = null, DateTimeOffset? TermsAcceptedAt = null);
+public record AccountDto(string Email, string? FirstName, string? LastName, bool EmailVerified, string Locale, string TimeZone, bool OverviewEmail, bool AlertEmails, string Currency, UserRole Role, bool AlertPush, bool AiSharing = false, string? TermsVersionAccepted = null, DateTimeOffset? TermsAcceptedAt = null, int? NotifyHour = NotifyTime.DefaultHour);
 
 /// <summary>A message for the user, the same whatever the email (sign-up, forgot password).</summary>
 public record AccountMessage(string Message);
@@ -179,7 +182,7 @@ public static class AccountEndpoints
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.AlertEmails, user.Currency, user.Role, user.AlertPush, user.AiSharing, user.TermsVersionAccepted, user.TermsAcceptedAt));
+            return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.AlertEmails, user.Currency, user.Role, user.AlertPush, user.AiSharing, user.TermsVersionAccepted, user.TermsAcceptedAt, user.NotifyHour));
         })
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");
@@ -238,6 +241,19 @@ public static class AccountEndpoints
         })
         .RequireUser()
         .WithSummary("Sets the user's time zone: their dates and when their emails and reminders come.");
+
+        group.MapPost("/notify-hour", async Task<Results<NoContent, ValidationProblem>> (NotifyHourRequest request, AppDbContext db,
+            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
+            if (!NotifyTime.IsHour(request.Hour))
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["hour"] = [Messages.PickNotifyHour.In(reqLocale)] });
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.NotifyHour, request.Hour), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary("Sets when the user's alerts, summary and reminders come: an hour in their time zone, or null for as soon as they're ready.");
 
         group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>

@@ -19,7 +19,7 @@ const makeAccount = (role: 'user' | 'owner'): Account => ({
   overviewEmail: true, alertEmails: true, alertPush: true,
   currency: 'EUR',
   role,
-  aiSharing: false,
+  aiSharing: false, notifyHour: 7,
 })
 
 describe('TopBar', () => {

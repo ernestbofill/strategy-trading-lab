@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Data;
@@ -63,6 +64,7 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
         entity.Property(user => user.AlertEmails).HasColumnDefault(true);
         entity.Property(user => user.AlertPush).HasColumnDefault(true);
+        entity.Property(user => user.NotifyHour).HasColumnDefault<int?>(NotifyTime.DefaultHour);
         entity.Property(user => user.UnsubscribeToken).HasValueGenerator<UnsubscribeTokenGenerator>();
         entity.HasIndex(user => user.UnsubscribeToken).IsUnique();
         entity.Property(user => user.AiSharing).HasColumnDefault(false);

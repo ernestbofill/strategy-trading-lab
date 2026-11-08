@@ -4,8 +4,8 @@ using StrategyTradingLab.Api.Evaluation;
 namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>
-/// Looks every hour for users whose morning has begun and who haven't had a snoozed signal's or an AI round's reminder, and for an
-/// overview the send right after the daily check couldn't deliver (see <see cref="NotificationService"/>).
+/// Looks every hour for users whose notification hour has come: signal alerts and the summary held for it (or that the send right
+/// after the daily check couldn't deliver), and snoozed signals' and AI rounds' reminders (see <see cref="NotificationService"/>, <see cref="NotifyTime"/>).
 /// </summary>
 public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory scopes, TimeProvider time, ILogger<NotificationWorker> logger) : BackgroundService
 {
@@ -28,6 +28,10 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                 var service = scope.ServiceProvider.GetRequiredService<NotificationService>();
                 if (await service.EnabledAsync(stoppingToken))
                 {
+                    // Alerts held for the user's notification hour (and any a run couldn't send) go out here, before the summary.
+                    var session = UsSession.LastComplete(time.GetUtcNow());
+                    var alerts = await service.SendSignalAlertsAsync(session, stoppingToken) + await service.SendSignalEndedAsync(session, stoppingToken);
+                    if (alerts > 0) logger.LogInformation("Sent {Count} signal alerts.", alerts);
                     var sent = await service.SendOverviewsAsync(time.GetUtcNow(), stoppingToken);
                     if (sent > 0) logger.LogInformation("Sent {Count} summaries.", sent);
                     var reminders = await service.SendSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken);
@@ -35,8 +39,8 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     var rounds = await service.SendAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
                     if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
                     // Push after email. A signal alert a run couldn't push (a push service down) is retried here, every hour.
-                    var pushed = await service.PushSignalAlertsAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken)
-                        + await service.PushSignalEndedAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken)
+                    var pushed = await service.PushSignalAlertsAsync(session, stoppingToken)
+                        + await service.PushSignalEndedAsync(session, stoppingToken)
                         + await service.PushSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken)
                         + await service.PushAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
                     if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);

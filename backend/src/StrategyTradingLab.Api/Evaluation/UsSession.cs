@@ -6,7 +6,11 @@ public static class UsSession
     /// <summary>The market's time zone.</summary>
     public static readonly TimeZoneInfo NewYork = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
     /// <summary>The close is 16:00 in New York; the bar is final a little later.</summary>
-    static readonly TimeOnly FinalAt = new(16, 30);
+    static readonly TimeOnly FinalTime = new(16, 30);
+
+    /// <summary>When a session's bar is final (16:30 in New York that day): its check can run, and what it finds can go out.</summary>
+    public static DateTimeOffset FinalAt(DateOnly session) =>
+        new(TimeZoneInfo.ConvertTimeToUtc(session.ToDateTime(FinalTime), NewYork), TimeSpan.Zero);
 
     /// <summary>The market's calendar day in New York: the spec's "day" for snoozes and the next day.</summary>
     public static DateOnly Today(DateTimeOffset now) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, NewYork).DateTime);
@@ -19,7 +23,7 @@ public static class UsSession
     {
         var local = TimeZoneInfo.ConvertTime(now, NewYork);
         var day = DateOnly.FromDateTime(local.DateTime);
-        if (TimeOnly.FromDateTime(local.DateTime) < FinalAt) day = day.AddDays(-1);
+        if (TimeOnly.FromDateTime(local.DateTime) < FinalTime) day = day.AddDays(-1);
         while (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) day = day.AddDays(-1);
         return day;
     }

@@ -89,7 +89,7 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var tag = Guid.NewGuid().ToString("N")[..10];
         var asset = new Asset { Symbol = $"C{tag}", Exchange = "TEST", Name = "Change asset", Currency = "USD" };
-        var user = new User { Email = $"changes-{tag}@example.com", TimeZone = "Europe/Madrid", Locale = "en", EmailVerifiedAt = DateTimeOffset.UtcNow };
+        var user = new User { Email = $"changes-{tag}@example.com", TimeZone = "Europe/Madrid", Locale = "en", EmailVerifiedAt = DateTimeOffset.UtcNow, NotifyHour = null }; // As soon as ready: the summary goes right after the check.
         db.Assets.Add(asset);
         db.Users.Add(user);
         await db.SaveChangesAsync();

@@ -175,7 +175,6 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
   )
 }
 
-
 const GROUPS: { group: CheckGroup; title: MessageKey }[] = [
   { group: 'candidate', title: 'stock.group.candidate' },
   { group: 'buy', title: 'stock.group.buy' },
@@ -279,7 +278,7 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
   const isCandidate = isCandidateOn(row.checks)
   const since = isCandidate && row.checks.some((c) => c.group === 'candidate' && c.met !== null) ? candidateDateOf(row) : null
   const trades = s.trades.filter((x) => x.assetId === row.assetId)
-  // Without enough price history the rules say nothing yet: the status in the header says so.
+  // Without enough price history the rules say nothing yet: the status tile says so.
   const rules = s.checkTexts && row.status !== 'notEnoughData' && (
     <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
       <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />

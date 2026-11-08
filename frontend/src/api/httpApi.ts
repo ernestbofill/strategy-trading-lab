@@ -261,6 +261,7 @@ export const httpApi: Api = {
   resendVerification: async () => void (await account('/resend-verification', undefined, { session: true })),
   forgotPassword: async (email) => void (await account('/forgot-password', { email })),
   resetPassword: async (token, password) => void (await account('/reset-password', { token, password }, { link: true })),
+  deleteAccount: async (password) => void (await account('/delete', { password }, { session: true })),
   changePassword: async (currentPassword, newPassword) =>
     void (await account('/change-password', { currentPassword, newPassword }, { session: true })),
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),

@@ -5,6 +5,7 @@ using Npgsql;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Admin;
+using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Invites;
 using StrategyTradingLab.Api.Notifications;
 
@@ -22,6 +23,7 @@ public record LocaleRequest(string? Locale);
 public record TimeZoneRequest(string? TimeZone);
 /// <summary>The notification hour, 0 to 23, or null for "as soon as they're ready".</summary>
 public record NotifyHourRequest(int? Hour);
+public record DeleteAccountRequest(string? Password);
 /// <summary>An on/off switch of the account (the notification boxes); a missing value is refused, not read as off.</summary>
 public record SwitchRequest(bool? Enabled);
 public record NameRequest(string? FirstName, string? LastName);
@@ -241,6 +243,35 @@ public static class AccountEndpoints
         })
         .RequireUser()
         .WithSummary("Sets the user's time zone: their dates and when their emails and reminders come.");
+
+        group.MapPost("/delete", async Task<Results<NoContent, ValidationProblem>> (DeleteAccountRequest request, AppDbContext db,
+            IPasswordHasher<User> hasher, Sessions sessions, AiRounds aiRounds, AccountEmails emails, HttpContext context, CancellationToken cancellationToken) =>
+        {
+            var reqLocale = RequestLocale.From(context.Request);
+            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            // The app must keep an owner: an owner's account is removed by hand, not from the page.
+            if (user.Role == UserRole.Owner)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [Messages.OwnerCantDelete.In(reqLocale)] });
+            if (user.PasswordHash is not { } hash || (request.Password?.Length ?? 0) > AccountRules.PasswordMax
+                || hasher.VerifyHashedPassword(user, hash, request.Password ?? "") == PasswordVerificationResult.Failed)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [Messages.WrongPassword.In(reqLocale)] });
+
+            var (email, firstName, locale) = (user.Email, user.FirstName, user.Locale);
+            // Everything else about the user goes with the row (strategies, signals, trades, sessions, devices, notifications,
+            // feedback); the shared AI rounds have no key to it, so they go first, in the same transaction.
+            await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
+            {
+                await aiRounds.ForgetSharedAsync(user.Id, cancellationToken);
+                await db.Users.Where(u => u.Id == user.Id).ExecuteDeleteAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            await sessions.EndAsync(cancellationToken); // Its row went with the user: this drops the cookie.
+            emails.Deleted(email, firstName, locale);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .RequireRateLimiting(PasswordLimit)
+        .WithSummary("Deletes the logged-in user and everything about them, after their password; ends every session and sends one last email.");
 
         group.MapPost("/notify-hour", async Task<Results<NoContent, ValidationProblem>> (NotifyHourRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>

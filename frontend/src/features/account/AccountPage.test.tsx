@@ -61,6 +61,32 @@ describe('AccountPage', () => {
 
     expect(screen.queryByRole('link', { name: /Admin settings/i })).toBeNull()
   })
+
+  it('deletes the account only after the password, and not for an owner', async () => {
+    currentRole = 'user'
+    const remove = vi.spyOn(api, 'deleteAccount').mockResolvedValue()
+    render(
+      <MemoryRouter>
+        <AccountPage />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete my account' }))
+    const confirm = screen.getByRole('button', { name: 'Delete for good' }) as HTMLButtonElement
+    expect(confirm.disabled).toBe(true)
+    fireEvent.change(screen.getByLabelText('Your password'), { target: { value: 'a long password' } })
+    fireEvent.click(confirm)
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('a long password'))
+
+    cleanup()
+    currentRole = 'owner'
+    render(
+      <MemoryRouter>
+        <AccountPage />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByRole('button', { name: 'Delete my account' })).toBeNull()
+  })
 })
 
 describe('SettingsPage', () => {

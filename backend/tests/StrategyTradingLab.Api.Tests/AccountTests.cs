@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
+using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Tests;
 
@@ -299,6 +300,56 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
+    public async Task Deleting_the_account_needs_the_password_and_removes_everything_ends_every_session_and_says_goodbye()
+    {
+        var (client, email) = await api.SignedUpAsync();
+        using var otherDevice = api.CreateApiClient();
+        Assert.Equal(HttpStatusCode.NoContent, (await otherDevice.PostAsJsonAsync("/account/log-in", new { email, password = "a long password" })).StatusCode);
+        Guid sharedId, strategyId;
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var userId = await db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync();
+            var shared = new SharedAiRound { RoundOn = new DateOnly(2026, 11, 2), AiModel = "test", PromptVersion = 1, Sources = JsonDocument.Parse("[]"), Stocks = JsonDocument.Parse("[]"), Answer = "-", Scores = JsonDocument.Parse("[]") };
+            var strategy = new Strategy
+            {
+                UserId = userId, TemplateKey = "ai", Name = $"Delete {Guid.NewGuid():N}"[..20], Mode = StrategyMode.Simulation, Status = StrategyStatus.Running,
+                StartedOn = new DateOnly(2026, 11, 2), Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = JsonDocument.Parse("{}"),
+            };
+            db.SharedAiRounds.Add(shared);
+            db.Strategies.Add(strategy);
+            await db.SaveChangesAsync();
+            db.AiRounds.Add(new AiRound
+            {
+                StrategyId = strategy.Id, DueOn = new DateOnly(2026, 11, 2), Status = AiRoundStatus.Done, DoneAt = DateTimeOffset.UtcNow, SessionDate = new DateOnly(2026, 10, 30),
+                AiModel = "test", Answer = "-", Scores = JsonDocument.Parse("[]"), SharedRoundId = shared.Id,
+            });
+            await db.SaveChangesAsync();
+            (sharedId, strategyId) = (shared.Id, strategy.Id);
+        }
+
+        var wrong = await client.PostAsJsonAsync("/account/delete", new { password = "not my password" });
+        Assert.Equal(HttpStatusCode.BadRequest, wrong.StatusCode);
+        Assert.Equal(email, (await Me(client)).GetProperty("email").GetString());
+        var owner = await api.SignedUpAsync(UserRole.Owner);
+        Assert.Equal(HttpStatusCode.BadRequest, (await owner.PostAsJsonAsync("/account/delete", new { password = "a long password" })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/delete", new { password = "a long password" })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/account/me")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await otherDevice.GetAsync("/account/me")).StatusCode);
+        using (var scope = api.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.False(await db.Users.AnyAsync(u => u.Email == email));
+            Assert.False(await db.Strategies.AnyAsync(s => s.Id == strategyId));
+            Assert.False(await db.SharedAiRounds.AnyAsync(r => r.Id == sharedId));
+        }
+        Assert.NotNull(await api.Emails.WaitForAsync(email, "Your account is deleted"));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/account/log-in", new { email, password = "a long password" })).StatusCode);
+    }
+
+    [NeonFact]
     public async Task Protected_routes_need_a_session_and_templates_dont()
     {
         using var visitor = api.CreateApiClient();
@@ -312,6 +363,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/currency", new { currency = "USD" })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/locale", new { locale = "ca" })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/time-zone", new { timeZone = "Europe/Madrid" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/delete", new { password = "a long password" })).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await visitor.GetAsync("/templates")).StatusCode);
     }
 

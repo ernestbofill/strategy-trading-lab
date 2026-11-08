@@ -253,7 +253,8 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### Account (not drawn)
 
-- Reached from Settings' first row (`/account`); the top bar's left is "← SETTINGS". Shows the email (with "Not verified yet" and "Send the link again" when it applies), "Name", for owners "Admin", "Data and privacy" (see below), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. Old links to `/account#notifications` and `/account#feedback` go on to Settings. Delete my account is roadmap item 18, still in *Not designed yet*.
+- Reached from Settings' first row (`/account`); the top bar's left is "← SETTINGS". Shows the email (with "Not verified yet" and "Send the link again" when it applies), "Name", for owners "Admin", "Data and privacy" (see below), "Change password" (current password, new password, a "Change password" button; ends the user's other sessions: "Password changed. Your other devices are logged out."), and a "Log out" button, which goes to Log-in. Old links to `/account#notifications` and `/account#feedback` go on to Settings.
+- "Delete my account", last: "Deletes your account, strategies, signals and trades, and logs you out everywhere. It can't be undone." and a "Delete my account" button (in the danger colour). It opens in place "Your password", "Delete for good" and "Cancel"; a wrong password says "That isn't your password." On success the app opens the home page as a guest. The API deletes everything about the user (their shared AI rounds too), ends every session and sends one last email, "Your account is deleted" ("We deleted your Strategy Trading Lab account, as you asked. … This is the last email we send you. If this wasn't you, someone had your password: change it wherever else you use it."). Invites they sent and stocks they added stay, without their name; an address on the email block list stays on it. An owner sees "An owner account can't be deleted here." instead (assumed: the app must keep an owner).
 
 ### 1 · Pick a strategy template (`Main`)
 
@@ -865,7 +866,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 
 ## 9. Not designed yet
 
-- The rest of the account page: delete my account (item 18; no data download, Ernest, 2026-11-08). Settings, language, time zone and notifications are designed above; how they work is in [backend/AUTH.md](../backend/AUTH.md). Built: "Data and privacy" with "Share my AI rounds anonymously, to learn which AIs score stocks best." and "What we keep".
+- ~~The rest of the account page.~~ Delete my account is built (item 18; no data download, Ernest, 2026-11-08). Settings, language, time zone and notifications are designed above; how they work is in [backend/AUTH.md](../backend/AUTH.md). Built: "Data and privacy" with "Share my AI rounds anonymously, to learn which AIs score stocks best." and "What we keep".
 - Simulation variants of Set your budget, Confirm and the strategy page. (The AI round's Live variant is built: it opens Confirm a signal for the first pick.)
 - Pick screen when adding a strategy (back link, "You run [n] from this template").
 - Budget variants for *Index trend* and *Bear markets*.
@@ -887,7 +888,7 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 - ~~Statuses for *Bear markets*; the "Signals and trades" list on the strategy page.~~ (both built: #60, #61)
 - ~~Ended strategies.~~ (built #91; since #96 ending is archiving: kept read-only under Archived, and can then be deleted)
 - ~~The legal pages' text (legal notice, terms, privacy, About with conflicts of interest); the footer and placeholder pages are built (#100).~~ (built #104)
-- Account: delete my account, "Invite a friend".
+- Account: "Invite a friend". (Delete my account is built, item 18.)
 - ~~Unsubscribe links in emails.~~ (built, item 19): the summary and the signals and reminders (signal alerts, snooze reminders, AI round reminders) carry a "Turn off …" link and the `List-Unsubscribe` one-click headers. The link opens a page with one button (opening a link never changes anything, since mail scanners open every link) that turns that kind off without logging in; an Email box for each kind is on the Settings page's Notifications. Account emails (confirmation, password) have none.
 - Admin: users (block, delete), invites and test invites, adding and editing assets, an audit log of owner actions, and feedback.
 - Owner access for Claude: an owner account of its own on dev and production, for testing and validation.

@@ -168,6 +168,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | H6 | `/feedback` page | §6 Admin, Feedback | smoke | 2026-11-06-1 | Refused for a vip, as it should be. C5.7 |
 | H7 | Unsubscribe page (an invalid token) | §7 | smoke | 2026-11-06-1 | Don't use a real token. C5.8 |
 | H8 | Settings page: the Account row, install the app, time zone (Barcelona), notification time | §6 Settings, §7 | untested | | Notifications, currency and language moved here (H2–H4). Restore the baseline time zone and notification time (07:00). |
+| H9 | Delete my account (a throwaway account only: never `qaagent`) | §6 Account | untested | | Wrong password refused; then deleted, logged out, last email. |
 
 ### X · Across the app
 

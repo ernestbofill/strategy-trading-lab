@@ -116,7 +116,8 @@ public class TrendRules : IBuyRules
             ? [new("sellLine", CheckGroup.Sell, !up, Math.Round(Indicators.PctFrom(price, sellLine), 1), p.BandPct,
                 Level: Math.Round(sellLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(buyLine, 2), SubValue: vsSma)]
             : [new("buyLine", CheckGroup.Buy, aboveBuy, Math.Round(Indicators.PctFrom(price, buyLine), 1), p.BandPct,
-                Level: Math.Round(buyLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(sellLine, 2), SubValue: vsSma)];
+                Level: Math.Round(buyLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(sellLine, 2), SubValue: vsSma,
+                Progress: RuleCheck.ProgressOf(price, buyLine))];
         return new RuleDecision(status, reason, facts, WindowOpen: aboveBuy) { Checks = checks };
     }
 }

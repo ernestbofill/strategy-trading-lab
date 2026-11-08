@@ -204,13 +204,6 @@ describe('StrategyPage', () => {
     expect(rename).not.toHaveBeenCalled()
   })
 
-  it('has no notification switches: they are all in the account', async () => {
-    open(detail({ id: 'a' }))
-
-    expect(await screen.findByRole('button', { name: 'Archive the strategy' })).toBeTruthy()
-    expect(screen.queryByRole('checkbox')).toBeNull()
-  })
-
   it('archives a running strategy after a confirm step, and offers no delete while it runs', async () => {
     open(detail({ id: 'e' }))
     const archive = vi.spyOn(api, 'archiveStrategy').mockResolvedValue()

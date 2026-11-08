@@ -54,17 +54,15 @@ function CheckGauge({ check, currency }: { check: RuleCheck; currency: string })
     )
   }
 
-  // 3. Index trend 3-level band (Sell line | SMA 200 | Buy line).
-  if ((check.key === 'buyLine' || check.key === 'sellLine') && check.max === null && check.level !== null && check.midLevel != null && check.endLevel != null) {
-    const sellPrice = check.key === 'buyLine' ? check.endLevel : check.level
-    const buyPrice = check.key === 'buyLine' ? check.level : check.endLevel
+  // 3. Index trend sell line 3-level band (Sell line | SMA 200 | Buy line).
+  if (check.key === 'sellLine' && check.max === null && check.level !== null && check.midLevel != null && check.endLevel != null) {
     return (
       <div className={styles.stackStrip} aria-hidden="true">
-        <span className={styles.stackChip}>{t('stock.bar.sell', { price: exact(sellPrice, currency) })}</span>
+        <span className={styles.stackChip}>{t('stock.bar.sell', { price: exact(check.level, currency) })}</span>
         <span className={styles.stackRel} data-ok={true}>·</span>
         <span className={styles.stackChip}>{t('stock.bar.sma', { price: exact(check.midLevel, currency) })}</span>
         <span className={styles.stackRel} data-ok={true}>·</span>
-        <span className={styles.stackChip}>{t('stock.bar.buy', { price: exact(buyPrice, currency) })}</span>
+        <span className={styles.stackChip}>{t('stock.bar.buy', { price: exact(check.endLevel, currency) })}</span>
       </div>
     )
   }

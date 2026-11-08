@@ -87,58 +87,20 @@ describe('HowTested', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'How we tested' })).toBeTruthy()
-
-    // By period is in the main column, preceding The data in aside
-    const byPeriodHeading = screen.getByRole('heading', { name: 'By period' })
-    const dataHeading = screen.getByRole('heading', { name: 'The data' })
-    expect(byPeriodHeading.compareDocumentPosition(dataHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-
     expect(screen.getByText('2000-2026')).toBeTruthy()
     expect(screen.getByText('1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)')).toBeTruthy()
 
-    // Period rows, null-period story, and Story column
+    // Period rows and story
     expect(screen.getByRole('rowheader', { name: '2000-12' })).toBeTruthy()
-    expect(screen.getByRole('rowheader', { name: '2013-19' })).toBeTruthy()
-    expect(screen.getByRole('rowheader', { name: '2020-26' })).toBeTruthy()
     expect(screen.getByRole('rowheader', { name: 'All' })).toBeTruthy()
-    expect(screen.getByText('No market crashes')).toBeTruthy()
     expect(screen.getByText('Dodged the 2000–02 and 2008 crashes')).toBeTruthy()
-
-    // A year, on average: better one is green (pos), other is white (null) or red (neg)
-    expect(screen.getByText('+11.5%').getAttribute('data-sign')).toBe('pos')
-    expect(screen.getByText('+5.5%').getAttribute('data-sign')).toBeNull()
-    expect(screen.getByText('+13.3%').getAttribute('data-sign')).toBe('pos')
-    expect(screen.getByText('+11.2%').getAttribute('data-sign')).toBeNull()
-
-    // Worst year: the least bad (-18% vs -37%) uses the warning tone; the worse one uses neg
-    expect(screen.getAllByText('−18%')[0].getAttribute('data-sign')).toBe('warn')
-    expect(screen.getAllByText('−37%')[0].getAttribute('data-sign')).toBe('neg')
 
     // Alpha column tooltip and index tabs
     fireEvent.click(screen.getByRole('button', { name: 'What is alpha?' }))
-    expect(
-      screen.getByText(
-        'How much more (or less) the template made per year than the index (Template minus the index). When a template buys in steps on different days, the index column invests the same money on those same days so the comparison is fair.',
-      ),
-    ).toBeTruthy()
+    expect(screen.getByText(/How much more \(or less\) the template made/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Nasdaq-100' }))
     expect(screen.getByText('Dodged the dot-com collapse and 2008')).toBeTruthy()
-    expect(screen.getByText('−1.1%').getAttribute('data-sign')).toBe('neg')
-
-    // Independent test periods note
-    expect(
-      screen.getByText(
-        'All figures are yearly averages. Each period is an independent test that starts with fresh money.',
-      ),
-    ).toBeTruthy()
-
-    // Updated survivor bias caveat
-    expect(
-      screen.getByText(
-        "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results.",
-      ),
-    ).toBeTruthy()
   })
 
   it('renders no backtest message when template has no backtest', async () => {

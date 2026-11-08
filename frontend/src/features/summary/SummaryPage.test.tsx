@@ -59,13 +59,16 @@ describe('SummaryPage', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('No changes today')).toBeTruthy()
+    expect(await screen.findByText('No changes')).toBeTruthy()
+    expect(
+      screen.getByText('Latest trading day, after the US market close.'),
+    ).toBeTruthy()
     expect(
       screen.getByText('Your strategies keep running with no new signals or stock changes.'),
     ).toBeTruthy()
 
     expect(screen.queryByText('Waiting for you')).toBeNull()
-    expect(screen.queryByText('What changed today')).toBeNull()
+    expect(screen.queryByText('What changed')).toBeNull()
     expect(screen.queryByText('Stock changes')).toBeNull()
 
     const stratLink = screen.getByRole('link', { name: /Alpha Dip/i })
@@ -143,7 +146,7 @@ describe('SummaryPage', () => {
     )
 
     expect(await screen.findByText('Waiting for you')).toBeTruthy()
-    expect(screen.queryByText('No changes today')).toBeNull()
+    expect(screen.queryByText('No changes')).toBeNull()
 
     const signalLink = screen.getByRole('link', { name: /Apple: your rules for Alpha Dip are met/i })
     expect(signalLink.getAttribute('href')).toBe('/strategies/strat-1/signals/sig-1')
@@ -152,7 +155,7 @@ describe('SummaryPage', () => {
     const aiLink = screen.getByRole('link', { name: /Time for the AI round of AI Growth/i })
     expect(aiLink.getAttribute('href')).toBe('/strategies/strat-ai/ai-round')
 
-    expect(screen.getByText('What changed today')).toBeTruthy()
+    expect(screen.getByText('What changed')).toBeTruthy()
     const changedLink = screen.getByRole('link', { name: /Apple: rules for Alpha Dip are met/i })
     expect(changedLink.getAttribute('href')).toBe('/strategies/strat-1/signals/sig-1')
 

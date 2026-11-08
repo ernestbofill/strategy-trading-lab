@@ -29,6 +29,7 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   localStorage.clear()
+  document.documentElement.lang = 'en'
   window.history.replaceState({}, '', '/')
 })
 
@@ -73,7 +74,7 @@ describe('app routes', () => {
 
     open('/summary')
 
-    expect(await screen.findByText('No changes today')).toBeTruthy()
+    expect(await screen.findByText('No changes')).toBeTruthy()
   })
 
   it('goes to the template picker after sign-up', async () => {

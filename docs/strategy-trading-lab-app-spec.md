@@ -818,7 +818,7 @@ There is no ask on the dashboard. Afterwards, Settings → Notifications → *Th
 4. **Your strategies**: one line per strategy, with its name, mode and result so far.
 5. Every item links to its page. The disclaimer at the bottom.
 
-**Daily summary page (`/summary`)**: a dedicated page reached only from the web push notification and the footer sitemap (`App` group). On days with no changes, it shows "No changes today" ("Your strategies keep running with no new signals or stock changes."). On days with changes, it shows what is waiting (signals to confirm, AI rounds due), what changed today (rules met descriptions with mode tags), stock changes (candidate status and distance with mode tags), and a scoreboard of running strategies (started date, signals count). Top bar links directly to the dashboard.
+**Daily summary page (`/summary`)**: a dedicated page reached only from the web push notification and the footer sitemap (`App` group), titled with the latest evaluated trading day and lead text "Latest trading day, after the US market close." On days with no changes, it shows "No changes" ("Your strategies keep running with no new signals or stock changes."). On days with changes, it shows what is waiting (signals to confirm, AI rounds due), what changed (rules met descriptions with mode tags), stock changes (candidate status and distance with mode tags), and a scoreboard of running strategies (started date, signals count). Top bar links directly to the dashboard.
 
 *Close to the line* is gone: the "comes within 3%" stock change says it once, when it happens, instead of every day.
 

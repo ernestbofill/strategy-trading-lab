@@ -23,7 +23,10 @@ export function SummaryPage() {
         return (
           <Screen top={top}>
             <div className={styles.page}>
-              <PageHeader title={t('summary.heading', { date: fullDate(data.date, locale) })} />
+              <PageHeader
+                title={t('summary.heading', { date: fullDate(data.date, locale) })}
+                lead={t('summary.lead')}
+              />
 
               {!data.hasChanges && (
                 <div className={styles.quietCard}>

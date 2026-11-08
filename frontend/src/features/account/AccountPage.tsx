@@ -241,7 +241,9 @@ function DeleteAccount({ email }: { email: string }) {
       await api.deleteAccount(password)
       // Only once deleted (a wrong password must leave this device's alerts on): the browser forgets its subscription, whose
       // server row went with the account (best effort).
-      await deviceSubscription().then((subscription) => subscription?.unsubscribe()).catch(() => {})
+      // At most 2 seconds: without a service worker (cleared site data) the wait never ends, and the account is gone anyway.
+      const forget = deviceSubscription().then((subscription) => subscription?.unsubscribe()).catch(() => {})
+      await Promise.race([forget, new Promise((done) => setTimeout(done, 2000))])
       // A full load as a guest: no cached load of the deleted account survives, and no screen that needs it renders on the way.
       window.location.replace(homePath)
       return

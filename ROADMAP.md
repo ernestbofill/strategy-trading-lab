@@ -151,6 +151,7 @@ Roughly in the order they become useful:
 
 ## Ideas
 
+- **Log out can hang on a device without its service worker.** `unsubscribeDevice` waits on `navigator.serviceWorker.ready`, which never settles when notifications are allowed but no worker is registered (dev server, cleared site data): cap it as Delete my account does (found in the review of #195).
 - **Ask before leaving Advanced settings with unsaved changes.** Moved from item 26 (Ernest, 2026-11-08): it needs a data router (`createBrowserRouter`) for `useBlocker`, which rewrites `App.tsx`.
 
 - **An outside uptime check** (was in item 21, Ernest 2026-11-01): a free monitor that calls `/api/health` every few minutes and tells Ernest when the server is down, which the app's own alerts can't (they need the server running). A manual step when it's wanted.

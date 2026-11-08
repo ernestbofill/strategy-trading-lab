@@ -12,8 +12,8 @@ export function PrivacyPolicyContent() {
         </p>
         <p>
           Contact email:{' '}
-          <a href="mailto:contact@strategytradinglab.local" className="link">
-            contact@strategytradinglab.local
+          <a href="mailto:contact@strategytradinglab.com" className="link">
+            contact@strategytradinglab.com
           </a>
         </p>
       </Section>

@@ -29,20 +29,21 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                 if (await service.EnabledAsync(stoppingToken))
                 {
                     // Alerts held for the user's notification hour (and any a run couldn't send) go out here, before the summary.
-                    var session = UsSession.LastComplete(time.GetUtcNow());
+                    var now = time.GetUtcNow();
+                    var session = UsSession.LastComplete(now);
                     var alerts = await service.SendSignalAlertsAsync(session, stoppingToken) + await service.SendSignalEndedAsync(session, stoppingToken);
                     if (alerts > 0) logger.LogInformation("Sent {Count} signal alerts.", alerts);
-                    var sent = await service.SendOverviewsAsync(time.GetUtcNow(), stoppingToken);
+                    var sent = await service.SendOverviewsAsync(now, stoppingToken);
                     if (sent > 0) logger.LogInformation("Sent {Count} summaries.", sent);
-                    var reminders = await service.SendSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken);
+                    var reminders = await service.SendSnoozeRemindersAsync(now, stoppingToken);
                     if (reminders > 0) logger.LogInformation("Sent {Count} snooze reminders.", reminders);
-                    var rounds = await service.SendAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
+                    var rounds = await service.SendAiRoundRemindersAsync(now, stoppingToken);
                     if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
                     // Push after email. A signal alert a run couldn't push (a push service down) is retried here, every hour.
                     var pushed = await service.PushSignalAlertsAsync(session, stoppingToken)
                         + await service.PushSignalEndedAsync(session, stoppingToken)
-                        + await service.PushSnoozeRemindersAsync(time.GetUtcNow(), stoppingToken)
-                        + await service.PushAiRoundRemindersAsync(time.GetUtcNow(), stoppingToken);
+                        + await service.PushSnoozeRemindersAsync(now, stoppingToken)
+                        + await service.PushAiRoundRemindersAsync(now, stoppingToken);
                     if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);
                 }
             }

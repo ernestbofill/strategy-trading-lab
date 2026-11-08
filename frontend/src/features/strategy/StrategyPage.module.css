@@ -76,6 +76,16 @@
   gap: 12px;
 }
 
+/* The results and their chart: framed like a stock's price chart, the one boxed block on a strategy page. */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-tab);
+  background: var(--surface-deep);
+}
+
 .figures {
   position: relative;
   display: grid;

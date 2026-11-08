@@ -1,7 +1,8 @@
-/* Tiles of one width, wide enough for "0 did · 0 skipped · 0 missed": one per row on a phone, a few side by side on desktop. */
+/* Tiles at least wide enough for "0 did · 0 skipped · 0 missed": one per row on a phone, side by side on desktop, where
+   they share the whole row (auto-fit drops the empty columns, so two tiles take half each). */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   gap: var(--space-2);
   margin: 0;
 }

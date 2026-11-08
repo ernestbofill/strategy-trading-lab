@@ -45,7 +45,7 @@ const templateWithBacktest: TemplateDetail = {
         periods: [
           { period: '2000-12', templatePerYear: 11.5, indexPerYear: 5.5, worstYear: -18, indexWorstYear: -37, alpha: 6.0, story: 'Dodged the 2000–02 and 2008 crashes' },
           { period: '2013-19', templatePerYear: null, indexPerYear: null, worstYear: null, indexWorstYear: null, alpha: null, story: 'No market crashes' },
-          { period: '2020-26', templatePerYear: 16.3, indexPerYear: 14.3, worstYear: -21, indexWorstYear: -18, alpha: 2.0, story: 'Sideways 2022, rode 2023–25' },
+          { period: '2020-26', templatePerYear: 11.2, indexPerYear: 13.3, worstYear: -21, indexWorstYear: -18, alpha: -2.1, story: 'Sideways 2022, rode 2023–25' },
           { period: 'All', templatePerYear: 14.3, indexPerYear: 9.8, worstYear: -21, indexWorstYear: -37, alpha: 4.5, story: 'Same return, half the worst fall' },
         ],
       },
@@ -104,6 +104,12 @@ describe('HowTested', () => {
     expect(screen.getByText('No market crashes')).toBeTruthy()
     expect(screen.getByText('Dodged the 2000–02 and 2008 crashes')).toBeTruthy()
 
+    // A year, on average: better one is green (pos), other is white (null) or red (neg)
+    expect(screen.getByText('+11.5%').getAttribute('data-sign')).toBe('pos')
+    expect(screen.getByText('+5.5%').getAttribute('data-sign')).toBeNull()
+    expect(screen.getByText('+13.3%').getAttribute('data-sign')).toBe('pos')
+    expect(screen.getByText('+11.2%').getAttribute('data-sign')).toBeNull()
+
     // Worst year: the least bad (-18% vs -37%) uses the warning tone; the worse one uses neg
     expect(screen.getAllByText('−18%')[0].getAttribute('data-sign')).toBe('warn')
     expect(screen.getAllByText('−37%')[0].getAttribute('data-sign')).toBe('neg')
@@ -118,6 +124,7 @@ describe('HowTested', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Nasdaq-100' }))
     expect(screen.getByText('Dodged the dot-com collapse and 2008')).toBeTruthy()
+    expect(screen.getByText('−1.1%').getAttribute('data-sign')).toBe('neg')
 
     // Independent test periods note
     expect(

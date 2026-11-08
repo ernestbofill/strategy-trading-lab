@@ -7,21 +7,28 @@ import { useT } from '../../../i18n/I18n'
 import { signedPct } from '../../../lib/format'
 import styles from './Results.module.css'
 
+/** Sign tone for "A year, on average": better one green, other white (or red if negative). */
+function averageSign(value: number, other: number): 'pos' | 'neg' | null {
+  if (value < 0) return 'neg'
+  if (value >= other) return 'pos'
+  return null
+}
+
 /** A result in percent; the sign is always written, colour only repeats it. */
 function Pct({
   value,
-  plain,
   lessBad,
+  sign,
   digits,
 }: {
   value: number
-  plain?: boolean
   lessBad?: boolean
+  sign?: 'pos' | 'warn' | 'neg' | null
   digits?: number
 }) {
-  const sign = plain ? undefined : value < 0 ? (lessBad ? 'warn' : 'neg') : 'pos'
+  const dataSign = sign !== undefined ? (sign ?? undefined) : value < 0 ? (lessBad ? 'warn' : 'neg') : 'pos'
   return (
-    <span className={styles.pct} data-sign={sign}>
+    <span className={styles.pct} data-sign={dataSign}>
       {signedPct(value, digits)}
     </span>
   )
@@ -30,6 +37,8 @@ function Pct({
 /** The Tested box's figures: the template next to the S&P 500 fund, a year on average and in the worst year. */
 export function ResultFigures({ result }: { result: PeriodResult }) {
   const t = useT()
+  const perYear = result.templatePerYear ?? 0
+  const indexPerYear = result.indexPerYear ?? 0
   const worst = result.worstYear ?? 0
   const indexWorst = result.indexWorstYear ?? 0
   return (
@@ -48,10 +57,10 @@ export function ResultFigures({ result }: { result: PeriodResult }) {
         <tr>
           <th scope="row">{t('newStrategy.results.perYear')}</th>
           <td>
-            <Pct value={result.templatePerYear ?? 0} digits={1} />
+            <Pct value={perYear} digits={1} sign={averageSign(perYear, indexPerYear)} />
           </td>
           <td>
-            <Pct value={result.indexPerYear ?? 0} digits={1} plain />
+            <Pct value={indexPerYear} digits={1} sign={averageSign(indexPerYear, perYear)} />
           </td>
         </tr>
         <tr>
@@ -134,37 +143,43 @@ export function PeriodTable({
           </tr>
         </thead>
         <tbody>
-          {activePeriods.map((p) => (
-            <tr key={p.period}>
-              <th scope="row">{p.period}</th>
-              {p.templatePerYear === null ? (
-                <td colSpan={dataCols} className={styles.emptyPeriod}>
-                  {p.story}
-                </td>
-              ) : (
-                <>
-                  <td>
-                    <Pct value={p.templatePerYear} digits={1} />
+          {activePeriods.map((p) => {
+            const tplYear = p.templatePerYear ?? 0
+            const idxYear = p.indexPerYear ?? 0
+            const worst = p.worstYear ?? 0
+            const indexWorst = p.indexWorstYear ?? 0
+            return (
+              <tr key={p.period}>
+                <th scope="row">{p.period}</th>
+                {p.templatePerYear === null ? (
+                  <td colSpan={dataCols} className={styles.emptyPeriod}>
+                    {p.story}
                   </td>
-                  <td>
-                    <Pct value={p.indexPerYear ?? 0} digits={1} plain />
-                  </td>
-                  <td>
-                    <Pct value={p.worstYear ?? 0} lessBad={(p.worstYear ?? 0) > (p.indexWorstYear ?? 0)} />
-                  </td>
-                  <td>
-                    <Pct value={p.indexWorstYear ?? 0} lessBad={(p.indexWorstYear ?? 0) > (p.worstYear ?? 0)} />
-                  </td>
-                  {hasAlpha && (
+                ) : (
+                  <>
                     <td>
-                      <Pct value={p.alpha ?? 0} digits={1} />
+                      <Pct value={tplYear} digits={1} sign={averageSign(tplYear, idxYear)} />
                     </td>
-                  )}
-                  {hasStory && <td className={styles.storyCell}>{p.story}</td>}
-                </>
-              )}
-            </tr>
-          ))}
+                    <td>
+                      <Pct value={idxYear} digits={1} sign={averageSign(idxYear, tplYear)} />
+                    </td>
+                    <td>
+                      <Pct value={worst} lessBad={worst > indexWorst} />
+                    </td>
+                    <td>
+                      <Pct value={indexWorst} lessBad={indexWorst > worst} />
+                    </td>
+                    {hasAlpha && (
+                      <td>
+                        <Pct value={p.alpha ?? 0} digits={1} />
+                      </td>
+                    )}
+                    {hasStory && <td className={styles.storyCell}>{p.story}</td>}
+                  </>
+                )}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>

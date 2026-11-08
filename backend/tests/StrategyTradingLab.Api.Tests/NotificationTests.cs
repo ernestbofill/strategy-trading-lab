@@ -186,7 +186,7 @@ public class NotificationTests
     }
 
     static async Task<(Guid UserId, Guid StrategyId, Guid AssetId, Guid SignalId, string Email)> SeedAsync(AppDbContext db, bool verified = true, bool overview = true,
-        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid", bool evaluated = true, bool alerts = true)
+        StrategyMode mode = StrategyMode.Live, string timeZone = "Europe/Madrid", bool evaluated = true, bool alerts = true, string templateKey = "dip")
     {
         var tag = Guid.NewGuid().ToString("N")[..10];
         var asset = new Asset { Symbol = $"N{tag}", Exchange = "TEST", Name = "Test asset", Currency = "USD" };
@@ -196,7 +196,7 @@ public class NotificationTests
         await db.SaveChangesAsync();
         var strategy = new Strategy
         {
-            UserId = user.Id, TemplateKey = "dip", Name = $"Notify {tag}", Mode = mode, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 10, 1),
+            UserId = user.Id, TemplateKey = templateKey, Name = $"Notify {tag}", Mode = mode, Status = StrategyStatus.Running, StartedOn = new DateOnly(2026, 10, 1),
             Currency = "EUR", Budget = new Budget(3000, 100, 5), Params = TemplateCatalog.Dip.ParamsJson(),
             Assets = [new StrategyAsset { AssetId = asset.Id, Active = true, AddedAt = DateTimeOffset.UtcNow }],
         };
@@ -470,6 +470,30 @@ public class NotificationTests
         finally
         {
             foreach (var seeded in new[] { unverified, simulation, off }) await CleanAsync(db, seeded.UserId, seeded.AssetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task No_alert_or_snooze_reminder_for_an_ai_strategy_signal()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var ai = await SeedAsync(db, templateKey: "ai");
+        try
+        {
+            await db.Signals.Where(s => s.Id == ai.SignalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, new DateOnly(2026, 10, 23)));
+            var sender = new Captured();
+
+            var alerts = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var snoozes = await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 23, 7, 30, 0, TimeSpan.Zero), default);
+
+            Assert.Equal((0, 0), (alerts, snoozes));
+            Assert.Empty(sender.Sent);
+        }
+        finally
+        {
+            await CleanAsync(db, ai.UserId, ai.AssetId);
         }
     }
 

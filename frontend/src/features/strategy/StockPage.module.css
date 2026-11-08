@@ -140,12 +140,17 @@
 .nextSummary::-webkit-details-marker {
   display: none;
 }
+/* A drawn ▸ that turns to ▾ when open: Fira Code has neither, and a fallback font's sits off on iPhone. */
 .nextSummary::before {
-  content: "▸";
-  font-family: var(--font-mono);
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 .nextPreview[open] > .nextSummary::before {
-  content: "▾";
+  transform: rotate(90deg);
 }
 .nextPreview[open] > .group {
   margin-top: var(--space-1);

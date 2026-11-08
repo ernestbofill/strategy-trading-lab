@@ -10,10 +10,15 @@
   display: flex;
   gap: var(--space-2);
 }
+/* A drawn ▸, centred on the first line: Fira Code has no ▸, and a fallback font's sits off on iPhone. */
 .bullets li::before {
-  content: "▸";
-  font-family: var(--font-mono);
-  color: var(--accent);
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 8px;
+  margin-top: calc(0.5lh - 4px);
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
 .kv {

@@ -38,6 +38,7 @@
 - **Copy:** take the spec's strings. Put copy used on several screens in `src/lib/copy.ts`.
 - **Format:** numbers and identifiers use the mono font. Use `money(n, currency)` (a strategy's or the account's currency; `eur()` for what was tested in euro) and `signedPct()` from `lib/format.ts`; `signedPct` writes a true minus sign (−).
   - Decimals: prices and amounts to the cent (`exact`); every other number to at most 3 decimals (`formatShares`, `formatRate`, `signedPct`). Never print a raw number or `toFixed(4)`.
+  - Symbols in mono text: Google's Fira Code subsets leave out arrows, ≥ ≤ and ✓, so `global.css` asks for them (`&text=`); add a new one there. Symbols Fira Code lacks (▸ ▾ ✦) are drawn in CSS or kept out of mono text: a fallback font's glyph sits low on iPhone.
 - **Accessibility:**
   - Use native inputs (radio, checkbox), visually hidden, inside a `<label>`.
   - Show visible focus with the `--border-focus` outline.

@@ -1,4 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap");
+/* Symbols Fira Code has but Google's default subsets leave out: ← → ↕ ≥ ≤ ✓ ⟳. Without this, mono text
+   takes them from a fallback font, which sits low on iPhone. A new such symbol in mono text goes in this list;
+   one Fira Code lacks (▸ ▾ ▴ ✦ ✉) is drawn in CSS or kept out of mono text. */
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap&text=%E2%86%90%E2%86%92%E2%86%95%E2%89%A5%E2%89%A4%E2%9C%93%E2%9F%B3");
 @import "./tokens.css";
 
 *,

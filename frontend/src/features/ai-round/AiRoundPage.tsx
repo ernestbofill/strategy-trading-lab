@@ -235,7 +235,7 @@ function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string)
               </ul>
             </Callout>
           )}
-          {shown.warnings.length > 0 && (
+          {shown.ok && shown.warnings.length > 0 && (
             <Callout tone="warning" title={t('aiRound.checkAnswer')}>
               <ul className={styles.problems}>
                 {shown.warnings.map((p) => (

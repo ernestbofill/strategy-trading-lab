@@ -173,6 +173,15 @@ public class AiAnswerReaderTests
     }
 
     [Fact]
+    public void Reads_a_table_inside_a_code_fence()
+    {
+        var reading = AiAnswerReader.Read("Here you go:\n```markdown\n| Stock | Overall |\n|---|---|\n| ZS | 70 |\n| VRT | 60 |\n| SU.PA | 50 |\n```", Stocks);
+
+        Assert.True(reading.Ok, string.Join(" ", reading.Problems));
+        Assert.Equal(3, reading.Scores.Count);
+    }
+
+    [Fact]
     public void A_very_long_answer_is_refused()
     {
         var reading = AiAnswerReader.Read(new string('|', AiAnswerReader.MaxLength + 1), Stocks);

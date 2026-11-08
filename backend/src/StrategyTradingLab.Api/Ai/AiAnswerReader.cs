@@ -226,7 +226,7 @@ public static partial class AiAnswerReader
     /// </summary>
     static AiStock? Match(string cell, IReadOnlyList<AiStock> stocks)
     {
-        var text = Clean(cell);
+        var text = Clean(cell.Replace("\\", ""));
         var tokens = new List<string> { text };
         var bracket = Bracketed().Match(text);
         if (bracket.Success) tokens.Add(bracket.Groups[1].Value.Trim());
@@ -256,7 +256,7 @@ public static partial class AiAnswerReader
     static string Clean(string text)
     {
         var plain = MarkdownLink().Replace(text, "$1");
-        plain = new string([.. plain.Where(c => !char.IsControl(c) && c is not ('*' or '`' or '_' or '\\'))]);
+        plain = new string([.. plain.Where(c => !char.IsControl(c) && c is not ('*' or '`' or '_'))]);
         return Whitespace().Replace(plain, " ").Trim();
     }
 

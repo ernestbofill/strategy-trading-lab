@@ -227,8 +227,8 @@ export function AdminTemplates() {
   const tabsId = useId()
   // The template shown is in the address (?template=dip), so a reload or a shared link opens it; the first one otherwise.
   const [params, setParams] = useSearchParams()
-  const shown = (templates: AdminTemplate[]) =>
-    templates.find((t) => t.key === params.get('template'))?.key ?? templates[0].key
+  const templates = state.status === 'ready' ? state.templates : []
+  const shown = templates.find((t) => t.key === params.get('template'))?.key ?? templates[0]?.key
 
   useEffect(() => {
     let current = true
@@ -253,18 +253,26 @@ export function AdminTemplates() {
       />
       {state.status === 'loading' && <ScreenMessage>Loading the templates…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the templates. Try again later.</ScreenMessage>}
-      {state.status === 'ready' && state.templates.length > 0 && (
+      {shown !== undefined && (
         <div className={styles.list}>
           <Tabs
             id={tabsId}
             label="Template"
-            items={state.templates.map((t) => ({ key: t.key, label: t.name }))}
-            selected={shown(state.templates)}
-            onSelect={(key) => setParams({ template: key }, { replace: true })}
+            items={templates.map((t) => ({ key: t.key, label: t.name }))}
+            selected={shown}
+            onSelect={(key) =>
+              setParams(
+                (p) => {
+                  p.set('template', key)
+                  return p
+                },
+                { replace: true },
+              )
+            }
           />
           {/* Every card stays mounted, the others hidden, so switching templates keeps unsaved edits. */}
-          {state.templates.map((t) => (
-            <div key={t.key} {...tabPanel(tabsId, t.key)} hidden={t.key !== shown(state.templates)}>
+          {templates.map((t) => (
+            <div key={t.key} {...tabPanel(tabsId, t.key)} hidden={t.key !== shown}>
               <TemplateCard template={t} onChanged={changed} />
             </div>
           ))}

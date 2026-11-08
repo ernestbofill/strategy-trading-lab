@@ -1,5 +1,6 @@
 import type { KeyboardEvent, ReactNode } from 'react'
 import styles from './Tabs.module.css'
+import { tabPanel } from './tabPanel'
 
 export interface TabItem {
   key: string
@@ -14,13 +15,15 @@ interface TabsProps {
   onSelect: (key: string) => void
   /** Unique on the page (`useId()`): ties each tab to its panel, see `tabPanel`. */
   id: string
+  /** One panel whose content follows the tab (How we tested's table), instead of a panel per tab: every tab controls it. */
+  sharedPanel?: boolean
 }
 
 /**
  * A row of tabs (ARIA tablist): click one, or move with ←/→, Home and End. The tabs wrap onto more rows rather than scroll
- * sideways. Each panel takes `tabPanel(id, key)` (tabPanel.ts).
+ * sideways. Each panel takes `tabPanel(id, key, sharedPanel)` (tabPanel.ts).
  */
-export function Tabs({ label, items, selected, onSelect, id }: TabsProps) {
+export function Tabs({ label, items, selected, onSelect, id, sharedPanel }: TabsProps) {
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     let next = -1
     if (e.key === 'ArrowRight') next = (index + 1) % items.length
@@ -44,7 +47,7 @@ export function Tabs({ label, items, selected, onSelect, id }: TabsProps) {
             type="button"
             role="tab"
             aria-selected={isSelected}
-            aria-controls={`${id}-panel-${item.key}`}
+            aria-controls={tabPanel(id, item.key, sharedPanel).id}
             tabIndex={isSelected ? 0 : -1}
             className={styles.tab}
             onClick={() => onSelect(item.key)}
@@ -57,4 +60,3 @@ export function Tabs({ label, items, selected, onSelect, id }: TabsProps) {
     </div>
   )
 }
-

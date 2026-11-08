@@ -85,7 +85,7 @@ export function PeriodTable({
   const table = (
     <div
       className={`well ${styles.tableWrap}`}
-      {...(activeBenchmark ? tabPanel(tabsId, activeBenchmark.key) : {})}
+      {...(activeBenchmark ? tabPanel(tabsId, activeBenchmark.key, true) : {})}
     >
       <table className={styles.periods}>
         <thead>
@@ -167,6 +167,7 @@ export function PeriodTable({
         items={benchmarks.map((b) => ({ key: b.key, label: b.name }))}
         selected={activeBenchmark.key}
         onSelect={setActiveKey}
+        sharedPanel
       />
       {table}
     </div>

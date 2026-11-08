@@ -76,16 +76,14 @@
   color: var(--warning);
 }
 
-/* The stock's state under the rules: the header's last line, in white and a step larger than the meta line above it. */
+/* The status tile's value: the pill and its sentence on one line when they fit, the sentence in the UI font, not the
+   tiles' mono figures. */
 .status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1) var(--space-2);
-  margin-top: var(--space-2);
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--ink);
+  font: 400 14px/20px var(--font-ui);
 }
 
 .group {

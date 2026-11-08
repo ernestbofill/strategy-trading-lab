@@ -35,78 +35,73 @@ function Figure({ label, value, highlight, tip }: { label: string; value: number
   )
 }
 
-/** The summary: results, chart, budget used and (live) how the signals were answered, as figures rather than a box. */
-function Summary({ s }: { s: StrategyDetail }) {
+/**
+ * The summary: tiles first (a fund's status, budget used and, live, how the signals were answered), then the results
+ * box, or what was tested before the first buy.
+ */
+function Summary({ s, status }: { s: StrategyDetail; status?: ReactNode }) {
   const t = useT()
   const live = s.mode === 'live'
   const { results, pastResult, budget, signals } = s
-  const stats = (
-    <Stats>
-      <Stat label={t('strategy.budgetUsed')}>
-        {t('strategy.budgetRatio', { used: money(budget.used, s.currency), amount: money(budget.amount, s.currency) })}
-        {budget.totalSteps !== null && ` · ${t('strategy.budgetSteps', { steps: budget.steps ?? 0, total: budget.totalSteps })}`}
-      </Stat>
-      {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
-      {signals && (
-        <Stat label={t('strategy.signals')}>{t('strategy.signalsCount', { did: signals.did, skipped: signals.skipped, missed: signals.missed })}</Stat>
-      )}
-    </Stats>
-  )
-  // With results the figures lead; before any, the budget and signals do, and what was tested follows as context.
   return (
     <div className={styles.summary}>
+      <Stats>
+        {status}
+        <Stat label={t('strategy.budgetUsed')}>
+          {t('strategy.budgetRatio', { used: money(budget.used, s.currency), amount: money(budget.amount, s.currency) })}
+          {budget.totalSteps !== null && ` · ${t('strategy.budgetSteps', { steps: budget.steps ?? 0, total: budget.totalSteps })}`}
+        </Stat>
+        {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
+        {signals && (
+          <Stat label={t('strategy.signals')}>{t('strategy.signalsCount', { did: signals.did, skipped: signals.skipped, missed: signals.missed })}</Stat>
+        )}
+      </Stats>
       {results ? (
-        <>
-          <div className={styles.results}>
-            <div className={styles.figures} data-count={live ? 3 : 2}>
-              <Figure label={live ? t('strategy.figure.you') : t('strategy.figure.sinceStart')} value={results.you} highlight />
-              {live && <Figure label={t('strategy.figure.rules')} value={results.rules} />}
-              <Figure
-                label={t('strategy.figure.index')}
-                value={results.index}
-                tip={<InfoTip label={t('common.indexTip.label')} text={t('common.indexTip.text')} />}
-              />
-            </div>
-            <ResultsChart history={results.history} live={live} />
-            {pastResult && (
-              // The strategy has no worst year of its own until it has run a year: the template's stands in.
-              <p className={styles.worst}>
-                {t('strategy.worstYear', {
-                  years: pastResult.years,
-                  pct: signedPct(pastResult.worstYear),
-                  index: signedPct(pastResult.indexWorstYear),
-                })}
-              </p>
-            )}
+        <div className={styles.results}>
+          <div className={styles.figures} data-count={live ? 3 : 2}>
+            <Figure label={live ? t('strategy.figure.you') : t('strategy.figure.sinceStart')} value={results.you} highlight />
+            {live && <Figure label={t('strategy.figure.rules')} value={results.rules} />}
+            <Figure
+              label={t('strategy.figure.index')}
+              value={results.index}
+              tip={<InfoTip label={t('common.indexTip.label')} text={t('common.indexTip.text')} />}
+            />
           </div>
-          {stats}
-        </>
+          <ResultsChart history={results.history} live={live} />
+          {pastResult && (
+            // The strategy has no worst year of its own until it has run a year: the template's stands in.
+            <p className={styles.worst}>
+              {t('strategy.worstYear', {
+                years: pastResult.years,
+                pct: signedPct(pastResult.worstYear),
+                index: signedPct(pastResult.indexWorstYear),
+              })}
+            </p>
+          )}
+        </div>
       ) : (
-        <>
-          {stats}
-          <p className={styles.text}>
-            {budget.used > 0
-              ? t('strategy.noResults.budget')
-              : s.aiRounds?.done === 0
-                ? t('strategy.noResults.ai')
-                : live
-                  ? t('strategy.noResults.live')
-                  : t('strategy.noResults.sim')}
-            {pastResult && (
-              <>
-                {' '}
-                {pastResult.isCustomized
-                  ? t('strategy.pastSummary.custom')
-                  : t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
-                <span className={styles.mono}>{signedPct(pastResult.templatePerYear, 1)}</span> {t('strategy.pastSummary.vs')}{' '}
-                <span className={styles.mono}>{signedPct(pastResult.indexPerYear, 1)}</span> {t('strategy.pastSummary.after')}{' '}
-                <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>{t('strategy.pastSummary.indexWorst')}{' '}
-                <span className={styles.mono}>{signedPct(pastResult.indexWorstYear)}</span>.
-                {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
-              </>
-            )}
-          </p>
-        </>
+        <p className={styles.text}>
+          {budget.used > 0
+            ? t('strategy.noResults.budget')
+            : s.aiRounds?.done === 0
+              ? t('strategy.noResults.ai')
+              : live
+                ? t('strategy.noResults.live')
+                : t('strategy.noResults.sim')}
+          {pastResult && (
+            <>
+              {' '}
+              {pastResult.isCustomized
+                ? t('strategy.pastSummary.custom')
+                : t('strategy.pastSummary.before', { years: pastResult.years })}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.templatePerYear, 1)}</span> {t('strategy.pastSummary.vs')}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.indexPerYear, 1)}</span> {t('strategy.pastSummary.after')}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>{t('strategy.pastSummary.indexWorst')}{' '}
+              <span className={styles.mono}>{signedPct(pastResult.indexWorstYear)}</span>.
+              {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
+            </>
+          )}
+        </p>
       )}
     </div>
   )
@@ -252,10 +247,13 @@ function StrategyView({ s }: { s: StrategyDetail }) {
             {t('strategy.copiedFrom')} <Link to={strategyPath(s.sourceStrategyId)}>{s.sourceStrategyName}</Link>
           </p>
         )}
-        {fund && <StockStatus line={stockLine(fund, s.mode, s.currency, s.words, s.checkTexts, t)} />}
       </div>
       {fund ? (
-        <StockRules s={s} row={fund} stats={<Summary s={s} />} />
+        <StockRules
+          s={s}
+          row={fund}
+          stats={<Summary s={s} status={<StockStatus line={stockLine(fund, s.mode, s.currency, s.words, s.checkTexts, t)} />} />}
+        />
       ) : (
         <>
           <Summary s={s} />

@@ -175,8 +175,6 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
   )
 }
 
-/** The statuses whose line counts the steps held. */
-const HOLDS: StockRow['status'][] = ['building', 'holding', 'done']
 
 const GROUPS: { group: CheckGroup; title: MessageKey }[] = [
   { group: 'candidate', title: 'stock.group.candidate' },
@@ -257,15 +255,18 @@ function Rules({
 }
 
 /**
- * A stock's state under the rules, as the header's last line: the same pill and sentence as its row in the stock list,
- * with no box of its own (on the stock page, and on a fund strategy's page).
+ * A stock's state under the rules as the first tile: the same pill and sentence as its row in the stock list, on one
+ * line when they fit (on the stock page, and on a fund strategy's page).
  */
 export function StockStatus({ line }: { line: StockLine }) {
+  const t = useT()
   return (
-    <div className={styles.status}>
-      <StockPill tone={line.tone}>{line.pill}</StockPill>
-      <span>{line.detail}</span>
-    </div>
+    <Stat label={t('stock.status')}>
+      <span className={styles.status}>
+        <StockPill tone={line.tone}>{line.pill}</StockPill>
+        <span>{line.detail}</span>
+      </span>
+    </Stat>
   )
 }
 
@@ -358,22 +359,24 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
           <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
           <Link to={strategyPath(s.id)}>{s.name}</Link>
         </div>
-        <StockStatus line={line} />
       </div>
 
       <StockRules
         s={s}
         row={row}
         stats={
-          row.result !== null && (
-            <Stats>
-              {row.maxSteps !== null && HOLDS.includes(row.status) && <Stat label={t('stock.position.steps')}>{line.detail}</Stat>}
-              <Stat label={t('stock.position.invested')}>{money(row.invested, s.currency)}</Stat>
-              <Stat label={t('stock.position.result')} tone={pctTone(row.result)}>
-                {line.result}
-              </Stat>
-            </Stats>
-          )
+          // While it holds the stock, the status already says the steps ("2 of 4 steps"), so there's no Steps tile.
+          <Stats>
+            <StockStatus line={line} />
+            {row.result !== null && (
+              <>
+                <Stat label={t('stock.position.invested')}>{money(row.invested, s.currency)}</Stat>
+                <Stat label={t('stock.position.result')} tone={pctTone(row.result)}>
+                  {line.result}
+                </Stat>
+              </>
+            )}
+          </Stats>
         }
       />
       <SignalsAndTrades s={own} />

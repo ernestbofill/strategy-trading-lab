@@ -141,20 +141,24 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
     }
 
     /// <summary>A titled list ("Waiting for you"): "- " lines in the text, rows with mode tags and links in the HTML.</summary>
-    public EmailDocument Section(string title, IEnumerable<EmailItem> items)
+    public EmailDocument Section(string title, IEnumerable<EmailItem> items, string? url = null)
     {
         var list = items.ToList();
-        var text = new StringBuilder(title);
+        var text = new StringBuilder(url is null ? title : $"{title}: {url}");
         foreach (var item in list)
         {
             var tag = item.Tag is null ? "" : $"({item.Tag}) ";
-            var url = item.Url is null ? "" : $" {item.Url}";
-            text.Append($"\n- {tag}{item.Text}{url}");
+            var itemUrl = item.Url is null ? "" : $" {item.Url}";
+            text.Append($"\n- {tag}{item.Text}{itemUrl}");
         }
+
+        var titleHtml = url is null
+            ? Encode(title)
+            : $"<a href=\"{Encode(url)}\" style=\"color:{Accent};text-decoration:underline;\">{Encode(title)}</a>";
 
         var html = new StringBuilder(
             $"<p style=\"margin:20px 0 8px;font-family:{Mono};font-size:13px;line-height:18px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:{Accent};\">" +
-            $"{Encode(title)}</p>" +
+            $"{titleHtml}</p>" +
             "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"margin:0 0 16px;\">");
         foreach (var item in list)
         {

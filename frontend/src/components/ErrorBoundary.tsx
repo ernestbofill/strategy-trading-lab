@@ -9,17 +9,19 @@ import styles from './ErrorBoundary.module.css'
  * account): it must not crash too.
  */
 type Props = { resetKey: string; children: ReactNode }
-type State = { failed: boolean; key: string }
 
-export class ErrorBoundary extends Component<Props, State> {
-  state: State = { failed: false, key: this.props.resetKey }
+export class ErrorBoundary extends Component<Props, { failed: boolean }> {
+  state = { failed: false }
 
   static getDerivedStateFromError() {
     return { failed: true }
   }
 
-  static getDerivedStateFromProps(props: Props, state: State) {
-    return props.resetKey === state.key ? null : { failed: false, key: props.resetKey }
+  // After the update, not in getDerivedStateFromProps: a page that crashes as it opens would have its crash wiped there
+  // (React retries the render with the new path) and the error would take the whole app down.
+  componentDidUpdate(previous: Props) {
+    // oxlint-disable-next-line react/no-did-update-set-state -- one guarded reset when the path changes, as react-error-boundary does
+    if (this.state.failed && previous.resetKey !== this.props.resetKey) this.setState({ failed: false })
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {

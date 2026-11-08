@@ -17,7 +17,7 @@ const account: Account = {
   alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',
-  aiSharing: false,
+  aiSharing: false, notifyHour: 7,
 }
 
 function open(path: string) {

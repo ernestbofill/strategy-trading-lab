@@ -18,7 +18,7 @@ const baseAccount: Account = {
   alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',
-  aiSharing: false,
+  aiSharing: false, notifyHour: 7,
 }
 
 const push = vi.hoisted(() => ({ offered: false }))
@@ -97,6 +97,21 @@ describe('SettingsPage', () => {
 
     expect(screen.getByRole('link', { name: /user@example.com/ }).getAttribute('href')).toBe('/account')
     expect((screen.getByRole('combobox', { name: 'Time zone' }) as HTMLSelectElement).selectedOptions[0].textContent).toMatch(/^Europe\/Barcelona/)
+  })
+
+  it('sends notifications at 07:00 by default, or as soon as they are ready', async () => {
+    const setHour = vi.spyOn(api, 'setNotifyHour').mockResolvedValue()
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    )
+
+    const hour = screen.getByRole('combobox', { name: 'Notification time' }) as HTMLSelectElement
+    expect(hour.selectedOptions[0].textContent).toBe('07:00')
+    fireEvent.change(hour, { target: { value: 'asap' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save time' }))
+    await waitFor(() => expect(setHour).toHaveBeenCalledWith(null))
   })
 
   it('leaves the App box out where the app offers no push', () => {

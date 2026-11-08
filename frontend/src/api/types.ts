@@ -854,6 +854,8 @@ export interface Account {
   role: Role
   /** Shares AI rounds anonymously. */
   aiSharing: boolean
+  /** The hour (0 to 23, the user's time zone) alerts, the summary and reminders come; null: as soon as they're ready. */
+  notifyHour: number | null
   termsVersionAccepted?: string | null
   termsAcceptedAt?: string | null
 }
@@ -1159,6 +1161,8 @@ export interface Api {
   setLocale(locale: Locale): Promise<void>
   /** Sets the user's time zone (an IANA name). Rejects with `InvalidFieldsError`. */
   setTimeZone(timeZone: string): Promise<void>
+  /** Sets when alerts, the summary and reminders come: an hour, or null for as soon as they're ready. */
+  setNotifyHour(hour: number | null): Promise<void>
   /** Turns the summary email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
   /** Turns the summary web push notification on or off. */

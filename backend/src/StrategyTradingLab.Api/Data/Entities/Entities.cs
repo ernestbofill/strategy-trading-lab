@@ -1,4 +1,5 @@
 using System.Text.Json;
+using StrategyTradingLab.Api.Notifications;
 
 namespace StrategyTradingLab.Api.Data.Entities;
 
@@ -62,6 +63,11 @@ public class User : IHasUpdatedAt
     public bool AlertEmails { get; set; } = true;
     /// <summary>Signal alerts and reminders by web push, to every device the user turned on (the account page's "App" box).</summary>
     public bool AlertPush { get; set; } = true;
+    /// <summary>
+    /// The hour, in the user's time zone, when signal alerts, the summary and reminders come (07:00 by default; Settings), or null for
+    /// "as soon as they're ready": alerts and the summary right after the daily check, reminders still at 07:00. See <c>NotifyTime</c>.
+    /// </summary>
+    public int? NotifyHour { get; set; } = NotifyTime.DefaultHour;
     /// <summary>Private: it is the whole credential of the unsubscribe links in this user's emails, which can only turn emails off.</summary>
     public string UnsubscribeToken { get; set; } = null!; // Given on add by the model (UnsubscribeTokenGenerator), so reading a user draws nothing.
     public DateTimeOffset? DisclaimerAcceptedAt { get; set; }

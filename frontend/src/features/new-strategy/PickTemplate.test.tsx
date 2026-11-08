@@ -81,7 +81,7 @@ describe('PickTemplate', () => {
       overviewEmail: true, overviewPush: true, alertEmails: true, alertPush: true,
       currency: 'EUR',
       role: 'user',
-      aiSharing: false,
+      aiSharing: false, notifyHour: 7,
     }
     renderPickTemplate()
 

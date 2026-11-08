@@ -105,6 +105,7 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | overview_push | bool, not null, default true | The summary by web push, to the devices the user turned on on/off |
 | alert_emails | bool, not null, default true | Signals and reminders (signal alerts, snooze reminders, AI round reminders) by email on/off |
 | alert_push | bool, not null, default true | Signals and reminders by web push, to the devices the user turned on (the account's App box) on/off |
+| notify_hour | int, null, default 7 | The hour (0–23, the user's time zone) alerts, the summary and reminders come; null: as soon as they're ready (Settings → Notification time) |
 | unsubscribe_token | text, not null, unique | Private random token in the unsubscribe links of this user's emails; it can only turn emails off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
 | terms_version_accepted | varchar(32), null | The version of the legal terms accepted by the user (e.g. `2026-10-31`) |

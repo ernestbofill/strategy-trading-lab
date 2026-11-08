@@ -62,6 +62,10 @@ export function SettingsPage() {
         <TimeZoneForm current={account.timeZone} onSaved={refresh} />
       </Section>
 
+      <Section title={t('settings.notifyHour')}>
+        <NotifyHourForm current={account.notifyHour} onSaved={refresh} />
+      </Section>
+
       <Section id={NOTIFICATIONS_HASH.slice(1)} title={t('account.page.notifications')}>
         <NotificationSettings account={account} onSaved={refresh} />
       </Section>
@@ -149,6 +153,28 @@ function TimeZoneForm({ current, onSaved }: { current: string; onSaved: Saved })
     <SettingForm form={form} saveLabel={t('account.page.timeZoneSave')}>
       <SelectField label={t('account.page.timeZone')} hideLabel value={form.value} onChange={form.setValue} options={options} />
       <p className={styles.line}>{t('account.page.timeZoneHint')}</p>
+    </SettingForm>
+  )
+}
+
+/** The select's value for "as soon as they're ready" (no hour). */
+const ASAP = 'asap'
+const pad = (hour: number) => `${String(hour).padStart(2, '0')}:00`
+
+/** When alerts, the summary and reminders come (spec: Settings): an hour of the user's day, or as soon as they're ready. */
+function NotifyHourForm({ current, onSaved }: { current: number | null; onSaved: Saved }) {
+  const t = useT()
+  const options = useMemo(
+    () => [{ value: ASAP, label: t('settings.notifyHour.asap') }, ...Array.from({ length: 24 }, (_, h) => ({ value: String(h), label: pad(h) }))],
+    [t],
+  )
+  const save = (value: string) => api.setNotifyHour(value === ASAP ? null : Number(value))
+  const form = useSave(current === null ? ASAP : String(current), save, onSaved, 'hour', t('settings.notifyHour.saved'))
+
+  return (
+    <SettingForm form={form} saveLabel={t('settings.notifyHour.save')}>
+      <SelectField label={t('settings.notifyHour')} hideLabel value={form.value} onChange={form.setValue} options={options} />
+      <p className={styles.line}>{t(form.value === ASAP ? 'settings.notifyHour.hintAsap' : 'settings.notifyHour.hint')}</p>
     </SettingForm>
   )
 }

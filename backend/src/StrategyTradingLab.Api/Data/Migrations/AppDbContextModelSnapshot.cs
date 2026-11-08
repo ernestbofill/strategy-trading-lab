@@ -1887,6 +1887,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("locale");
 
+                    b.Property<int?>("NotifyHour")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(7)
+                        .HasColumnName("notify_hour");
+
                     b.Property<bool>("OverviewEmail")
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)

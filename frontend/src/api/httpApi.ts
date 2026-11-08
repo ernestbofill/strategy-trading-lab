@@ -266,6 +266,7 @@ export const httpApi: Api = {
   setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
   setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
   setTimeZone: async (timeZone) => void (await account('/time-zone', { timeZone }, { session: true })),
+  setNotifyHour: async (hour) => void (await account('/notify-hour', { hour }, { session: true })),
   setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
   setOverviewPush: async (enabled) => void (await account('/overview-push', { enabled }, { session: true })),
   setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),

@@ -94,7 +94,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
-    public async Task The_locale_is_english_unless_picked_at_sign_up_and_it_and_the_time_zone_can_be_changed()
+    public async Task The_locale_time_zone_and_notification_hour_can_be_changed_in_settings()
     {
         var (client, _) = await api.SignedUpAsync();
         Assert.Equal("en", (await Me(client)).GetProperty("locale").GetString());
@@ -115,6 +115,13 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal("America/New_York", (await Me(client)).GetProperty("timeZone").GetString());
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/time-zone", new { timeZone = "Mars/Olympus" })).StatusCode);
         Assert.Equal("America/New_York", (await Me(client)).GetProperty("timeZone").GetString());
+
+        Assert.Equal(7, (await Me(client)).GetProperty("notifyHour").GetInt32());
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/notify-hour", new { hour = (int?)null })).StatusCode);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, (await Me(client)).GetProperty("notifyHour").ValueKind);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/notify-hour", new { hour = 24 })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/notify-hour", new { hour = 9 })).StatusCode);
+        Assert.Equal(9, (await Me(client)).GetProperty("notifyHour").GetInt32());
     }
 
     [NeonFact]

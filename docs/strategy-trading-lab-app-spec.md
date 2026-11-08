@@ -569,8 +569,8 @@ The same three settings can be changed later from the strategy page (not drawn).
 **Copy and layout**
 - Top bar: "DASHBOARD" · "RENAME" (built #91, not drawn): the heading becomes a "Name" field with "Save" and "Cancel". Confirm's rules: trimmed, 1 to 60 characters, unique among the user's running strategies ignoring capitals; a taken name reads "You already run a strategy with this name. Pick another." under the field. An archived strategy can be renamed too.
 - H1: the strategy name; for a single-fund strategy (`investsIn !== 'stockList'`), the fund's latest close (with "Close on [date]" under it) sits on the right of the H1 and the fund's symbol, name, exchange and one-line description sit right below it; under them the mode tag, "Archived on [date]" for an archived strategy, and "*[template]* · since [date]".
-- **Summary** (no box: the price chart is a page's one framed block, Ernest 2026-11-08)
-  - Budget used, signals and the AI rows are small tiles (label over a mono value), one per row on a phone and side by side on desktop. With results they follow the figures and the chart; before the first buy they come first and the template's past follows as quieter text.
+- **Summary** (Ernest 2026-11-08: only the charts are framed, the results with their chart and a stock's price chart; the page is one column at every width)
+  - Budget used, signals and the AI rows are small tiles (label over a mono value), one per row on a phone and side by side on desktop. With results they follow the framed figures and chart; before the first buy they come first and the template's past follows as quieter text.
   - Live: three figures, "You" `[+X%]`, "The rules alone" `[+X%]`, "S&P 500 fund" `[+X%]` (with its "i"); a chart with three lines (You solid and highlighted, The rules alone solid, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
   - Under the chart, until the strategy has a year of its own: "Worst year, [years]: the template [−X%], an S&P 500 fund [−X%]" (product rule: results next to the worst year).
@@ -665,7 +665,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
   - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.
 - **Position** once it has buys: steps, invested and result as tiles between the status line and the chart (no section title).
-- **Signals and trades** for this stock only; "+ Log a trade by hand" (live) offers only this stock. From 1024px it sits beside "Rules on [date]" (on a strategy page with a stock list, beside the list). Rules, stocks and signals are divided lists, not boxes.
+- **Signals and trades** for this stock only; "+ Log a trade by hand" (live) offers only this stock. Rules, stocks and signals are divided lists, not boxes; a row's pill or Edit/Delete stays on its first line, at the right.
 - A waiting signal (live): the primary action "Answer the signal" opens Confirm a signal.
 - Bottom: "Not financial advice. Signals follow your rules."
 - A stock that isn't in the strategy: "This stock isn't in this strategy."

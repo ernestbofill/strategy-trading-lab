@@ -6,7 +6,6 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Stat, Stats } from '../../components/Stats'
-import { Columns } from '../../components/Columns'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
@@ -58,26 +57,28 @@ function Summary({ s }: { s: StrategyDetail }) {
     <div className={styles.summary}>
       {results ? (
         <>
-          <div className={styles.figures} data-count={live ? 3 : 2}>
-            <Figure label={live ? t('strategy.figure.you') : t('strategy.figure.sinceStart')} value={results.you} highlight />
-            {live && <Figure label={t('strategy.figure.rules')} value={results.rules} />}
-            <Figure
-              label={t('strategy.figure.index')}
-              value={results.index}
-              tip={<InfoTip label={t('common.indexTip.label')} text={t('common.indexTip.text')} />}
-            />
+          <div className={styles.results}>
+            <div className={styles.figures} data-count={live ? 3 : 2}>
+              <Figure label={live ? t('strategy.figure.you') : t('strategy.figure.sinceStart')} value={results.you} highlight />
+              {live && <Figure label={t('strategy.figure.rules')} value={results.rules} />}
+              <Figure
+                label={t('strategy.figure.index')}
+                value={results.index}
+                tip={<InfoTip label={t('common.indexTip.label')} text={t('common.indexTip.text')} />}
+              />
+            </div>
+            <ResultsChart history={results.history} live={live} />
+            {pastResult && (
+              // The strategy has no worst year of its own until it has run a year: the template's stands in.
+              <p className={styles.worst}>
+                {t('strategy.worstYear', {
+                  years: pastResult.years,
+                  pct: signedPct(pastResult.worstYear),
+                  index: signedPct(pastResult.indexWorstYear),
+                })}
+              </p>
+            )}
           </div>
-          <ResultsChart history={results.history} live={live} />
-          {pastResult && (
-            // The strategy has no worst year of its own until it has run a year: the template's stands in.
-            <p className={styles.worst}>
-              {t('strategy.worstYear', {
-                years: pastResult.years,
-                pct: signedPct(pastResult.worstYear),
-                index: signedPct(pastResult.indexWorstYear),
-              })}
-            </p>
-          )}
           {stats}
         </>
       ) : (
@@ -253,13 +254,14 @@ function StrategyView({ s }: { s: StrategyDetail }) {
         )}
       </div>
       {fund ? (
-        <StockRules s={s} row={fund} stats={<Summary s={s} />} aside={<SignalsAndTrades s={s} />} />
+        <StockRules s={s} row={fund} stats={<Summary s={s} />} />
       ) : (
         <>
           <Summary s={s} />
-          <Columns main={<Stocks s={s} />} aside={<SignalsAndTrades s={s} />} />
+          <Stocks s={s} />
         </>
       )}
+      <SignalsAndTrades s={s} />
       {(running || s.aiRounds) && (
         <div className={styles.tiles}>
           {running && (

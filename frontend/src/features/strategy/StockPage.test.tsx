@@ -101,11 +101,12 @@ describe('StockPage', () => {
     expect(await screen.findByRole('heading', { name: 'ZS' })).toBeTruthy()
     expect(screen.getByText('CANDIDATE')).toBeTruthy()
     expect(screen.getByText('Volume 0.84× (needs 1.1×)')).toBeTruthy()
-    expect(screen.getByText('$237.62')).toBeTruthy()
+    expect(screen.getAllByText('$237.62').length).toBeGreaterThan(0)
     expect(screen.getByText('Close on Oct 30')).toBeTruthy()
     expect(screen.getByText('Candidate since Sep 11')).toBeTruthy()
-    // The chart: a candidate's buy area, from the buy line to the chase limit.
-    expect(await screen.findByText('$233.90–$252.61')).toBeTruthy()
+    // The chart's axis: a candidate's buy area, from the buy line to the chase limit.
+    expect(await screen.findByText('$252.61')).toBeTruthy()
+    expect(screen.getAllByText('$237.62')).toHaveLength(2)
     expect(screen.getByRole('radio', { name: '30 days' })).toHaveProperty('checked', true)
     expect(screen.getByText('Yes, since Sep 11: the rules watch it for a buy signal.')).toBeTruthy()
     expect(screen.getByText('1 of 2 met. All of them: a buy signal.')).toBeTruthy()

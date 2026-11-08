@@ -2,14 +2,14 @@
 
 The API runs on the Oracle server (Ubuntu 24.04, arm64) as the systemd service `strategy-trading-lab-api`, on `127.0.0.1:5080`. nginx serves it at `https://strategytradinglab.com/api/` (`/api/health`, `/api/version`).
 
-- **On merge to `main`**: the [Deploy backend](../../.github/workflows/deploy-backend.yml) workflow runs when `backend/` (not its tests or Markdown) or `deploy/backend/` changes, after building and testing it, then tags the commit `backend-v<version>`. It can also be run by hand from the Actions tab.
+- **On merge to `main`**: the [Deploy backend](../../.github/workflows/deploy-backend.yml) workflow runs when `backend/` (not its tests or Markdown) or `deploy/backend/` changes, after building and testing it, then tags the commit `backend-v<version>`. It can also be run by hand from the Actions tab, on `main` only.
 - **From VS Code**: *Terminal → Run Task → Deploy backend to Oracle*. It deploys your working copy, so use it for hotfixes and checks, not instead of a PR. It doesn't tag.
 
 Both run [deploy.ps1](deploy.ps1): it publishes the API self-contained for `linux-arm64` (the server has no .NET), builds the EF migrations bundle, uploads both and runs [install.sh](install.sh) on the server. That applies the migrations, installs the release under `/opt/strategy-trading-lab-api/releases/`, points `current` at it, restarts the service and waits for `/health`. If the new release isn't healthy it switches back to the previous one (the migrations stay applied). The last 5 releases are kept.
 
 ## Versions
 
-The version is `<Version>` in [backend/Directory.Build.props](../../backend/Directory.Build.props). It follows the frontend's scheme: minor for a new feature or endpoint (`0.1.0-alpha` → `0.2.0-alpha`), patch for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`), keeping `-alpha`. Every PR that changes the backend (not only its tests or Markdown) bumps it; CI fails if it doesn't, and the workflow refuses to deploy a version already tagged on another commit.
+deploy.ps1 makes the version from the number of commits on the deployed commit: `0.<count>.0-alpha`. `main` is linear with one squashed commit per PR, so it goes up by one per merge and never repeats, and the frontend's deploy makes its own the same way. Nobody bumps it; `<Version>` in [backend/Directory.Build.props](../../backend/Directory.Build.props) stays `0.0.0-dev` for local builds. The VS Code task counts your local `HEAD`, so a deploy from a branch with commits not on `main` reports a number a later merge will reuse.
 
 `GET /api/version` is for the client to show which API it talks to:
 

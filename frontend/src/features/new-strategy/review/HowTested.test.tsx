@@ -87,6 +87,12 @@ describe('HowTested', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'How we tested' })).toBeTruthy()
+
+    // By period is in the main column, preceding The data in aside
+    const byPeriodHeading = screen.getByRole('heading', { name: 'By period' })
+    const dataHeading = screen.getByRole('heading', { name: 'The data' })
+    expect(byPeriodHeading.compareDocumentPosition(dataHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
     expect(screen.getByText('2000-2026')).toBeTruthy()
     expect(screen.getByText('1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)')).toBeTruthy()
 

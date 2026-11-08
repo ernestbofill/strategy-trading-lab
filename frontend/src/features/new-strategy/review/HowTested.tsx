@@ -47,15 +47,9 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
       <Columns
         main={
           <>
-            <Section title={t('newStrategy.how.data')}>
-              <KeyValueList
-                rows={[
-                  [t('newStrategy.how.prices'), t('newStrategy.how.pricesValue', { provider: b.provider })],
-                  [t('newStrategy.how.period'), b.years],
-                  [template.watches.kind === 'fund' ? t('newStrategy.how.fund') : t('newStrategy.how.stocks'), b.universe],
-                  [t('newStrategy.how.adjusted'), t('newStrategy.how.adjustedValue')],
-                ]}
-              />
+            <Section title={t('newStrategy.how.byPeriod')}>
+              <PeriodTable periods={b.periods} benchmarks={b.benchmarks} />
+              <p className="caption">{t('newStrategy.how.independentPeriods')}</p>
             </Section>
             <Section title={t('newStrategy.how.run')}>
               <BulletList
@@ -73,9 +67,15 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
         }
         aside={
           <>
-            <Section title={t('newStrategy.how.byPeriod')}>
-              <PeriodTable periods={b.periods} benchmarks={b.benchmarks} />
-              <p className="caption">{t('newStrategy.how.independentPeriods')}</p>
+            <Section title={t('newStrategy.how.data')}>
+              <KeyValueList
+                rows={[
+                  [t('newStrategy.how.prices'), t('newStrategy.how.pricesValue', { provider: b.provider })],
+                  [t('newStrategy.how.period'), b.years],
+                  [template.watches.kind === 'fund' ? t('newStrategy.how.fund') : t('newStrategy.how.stocks'), b.universe],
+                  [t('newStrategy.how.adjusted'), t('newStrategy.how.adjustedValue')],
+                ]}
+              />
             </Section>
             <Callout tone="warning" title={t('newStrategy.how.cantShow')}>
               <p>{t('newStrategy.how.survivors')}</p>

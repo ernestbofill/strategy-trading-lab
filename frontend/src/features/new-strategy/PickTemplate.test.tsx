@@ -59,13 +59,14 @@ function renderPickTemplate() {
 }
 
 describe('PickTemplate', () => {
-  it('shows LOG IN top bar link and welcome eyebrow for guests', () => {
+  it('shows LOG IN top bar link, welcome eyebrow for guests, and How it works link', () => {
     currentAccount = null
     renderPickTemplate()
 
     expect(screen.getByText('Welcome to Strategy Trading Lab')).toBeTruthy()
     const logInLink = screen.getByRole('link', { name: 'LOG IN' })
     expect(logInLink.getAttribute('href')).toBe('/log-in?next=%2Fnew')
+    expect(screen.getByRole('link', { name: 'How it works ›' }).getAttribute('href')).toBe('/welcome?from=new')
     expect(screen.queryByText('1 / 5')).toBeNull()
   })
 
@@ -86,13 +87,5 @@ describe('PickTemplate', () => {
 
     expect(screen.getByText('1 / 5')).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'LOG IN' })).toBeNull()
-  })
-
-  it('renders How it works link pointing to /welcome?from=new', () => {
-    renderPickTemplate()
-
-    const howItWorksLink = screen.getByRole('link', { name: 'How it works ›' })
-    expect(howItWorksLink).toBeTruthy()
-    expect(howItWorksLink.getAttribute('href')).toBe('/welcome?from=new')
   })
 })

@@ -660,7 +660,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
       - **Threshold bar (with `> 100%` overflow):** shown whether met or not, with a `100%` target tick at 75% of the bar width so values that exceed the threshold (e.g. `238%` on *Proven growth*) visibly pass the target tick.
       - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`) and *The comeback*'s buy line and milestones (`0% to +8%`), showing both the entry threshold and the upper limit past which the signal is cancelled.
       - *Beaten down lately* has no bar: a bar of days read as "more is better". Its sentence says since when it is a candidate, and `Window closed` shows once the window has passed.
-      - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Mid $Y > Long $Z`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* (`Sell $X · SMA $Y · Buy $Z`).
+      - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Mid $Y > Long $Z`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* sell line (`Sell $X · SMA $Y · Buy $Z`). *Index trend* buy line uses a threshold progress bar.
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
   - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.
 - **"Your position"** (simulation: "Trades"), once it has buys: steps, invested, result.

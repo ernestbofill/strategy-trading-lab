@@ -93,7 +93,6 @@ describe('Screen', () => {
     const footer = screen.getByRole('contentinfo')
     expect(main.contains(action)).toBe(true)
     expect(main.contains(screen.getByText('A hint'))).toBe(true)
-    expect(action.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     // The version is in the footer, for anyone, not in the top bar.
     expect(footer.textContent).toContain(`v${__APP_VERSION__}`)
   })

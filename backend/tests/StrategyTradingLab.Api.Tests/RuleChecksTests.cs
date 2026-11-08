@@ -108,7 +108,18 @@ public class RuleChecksTests
 
         foreach (var day in days)
         {
-            if (day.Status == RuleStatus.BuySignal) Holds(day.Checks.Single().Key == "buyLine" && day.Checks.Single().Met == true, day, "a buy is above the buy line");
+            if (day.Status == RuleStatus.BuySignal)
+            {
+                var check = day.Checks.Single();
+                Holds(check.Key == "buyLine" && check.Met == true, day, "a buy is above the buy line");
+                Holds(check.Progress > 0, day, "a buy has progress toward the buy line");
+            }
+            if (day.Status == RuleStatus.Watching)
+            {
+                var check = day.Checks.Single();
+                Holds(check.Key == "buyLine" && check.Met == false, day, "watching is below the buy line");
+                Holds(check.Progress is > 0 and <= 1, day, "watching has progress toward the buy line");
+            }
             if (day.Status == RuleStatus.SellSignal) Holds(day.Checks.Single().Key == "sellLine" && day.Checks.Single().Met == true, day, "a sale is below the sell line");
             if (day.Status == RuleStatus.Holding) Holds(day.Checks.Single().Met == false, day, "holding is above the sell line");
         }

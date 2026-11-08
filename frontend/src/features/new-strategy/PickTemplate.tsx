@@ -11,6 +11,7 @@ import { logInPathFor } from '../account/paths'
 import { VerifyNotice } from '../account/VerifyNotice'
 import { useNewStrategyDraft } from './NewStrategyDraft'
 import { pickPath, reviewPath } from './paths'
+import { welcomePath } from '../welcome/paths'
 import styles from './PickTemplate.module.css'
 import { useTemplates } from './useTemplate'
 
@@ -47,7 +48,14 @@ export function PickTemplate() {
       <PageHeader
         eyebrow={isGuest || !hasHistory ? t('newStrategy.pick.eyebrow') : undefined}
         title={t('newStrategy.pick.title')}
-        lead={t('newStrategy.pick.lead')}
+        lead={
+          <>
+            {t('newStrategy.pick.lead')}{' '}
+            <Link to={`${welcomePath}?from=new`} className={styles.howItWorks}>
+              {t('newStrategy.pick.howItWorks')}
+            </Link>
+          </>
+        }
       />
 
       {templates.status === 'loading' && <ScreenMessage>{t('newStrategy.pick.loading')}</ScreenMessage>}

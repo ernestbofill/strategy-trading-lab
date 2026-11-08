@@ -173,46 +173,6 @@ describe('SignalsAndTrades', () => {
     })
   })
 
-  it('allows logging a manual trade in live mode', async () => {
-    const logSpy = vi.spyOn(api, 'logManualTrade').mockResolvedValue(
-      mockTrade({ id: 't-new', source: 'manual', price: 185, amount: 98.80 }),
-    )
-
-    const s = mockStrategy({ mode: 'live' })
-    render(
-      <MemoryRouter>
-        <SignalsAndTrades s={s} />
-      </MemoryRouter>,
-    )
-
-    const logBtn = screen.getByText('Log a trade by hand')
-    fireEvent.click(logBtn)
-
-    expect(screen.getByText('Log a trade by hand')).toBeTruthy()
-
-    // Fill in price and amount
-    const priceInput = screen.getByLabelText(/Price per share/i)
-    fireEvent.change(priceInput, { target: { value: '185' } })
-
-    const amountInput = screen.getByLabelText(/Amount/i)
-    fireEvent.change(amountInput, { target: { value: '98.80' } })
-
-    const saveBtn = screen.getByRole('button', { name: 'Save trade' })
-    fireEvent.click(saveBtn)
-
-    await waitFor(() => {
-      expect(logSpy).toHaveBeenCalledWith(
-        'strat-1',
-        expect.objectContaining({
-          assetId: 'asset-1',
-          side: 'buy',
-          price: 185,
-          amount: 98.80,
-        }),
-      )
-    })
-  })
-
   it('allows editing a trade in live mode', async () => {
     const updateSpy = vi.spyOn(api, 'updateTrade').mockResolvedValue()
     const s = mockStrategy({

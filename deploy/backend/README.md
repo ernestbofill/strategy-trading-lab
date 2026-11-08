@@ -9,7 +9,7 @@ Both run [deploy.ps1](deploy.ps1): it publishes the API self-contained for `linu
 
 ## Versions
 
-The version is `<Version>` in [backend/Directory.Build.props](../../backend/Directory.Build.props). It follows the frontend's scheme: minor for a new feature or endpoint (`0.1.0-alpha` → `0.2.0-alpha`), patch for a fix or small tweak (`0.2.0-alpha` → `0.2.1-alpha`), keeping `-alpha`. Every PR that changes the backend (not only its tests or Markdown) bumps it; CI fails if it doesn't, and the workflow refuses to deploy a version already tagged on another commit.
+deploy.ps1 makes the version from the number of commits on the deployed commit: `0.<count>.0-alpha`. `main` is linear with one squashed commit per PR, so it goes up by one per merge and never repeats, and the frontend's deploy makes its own the same way. Nobody bumps it; `<Version>` in [backend/Directory.Build.props](../../backend/Directory.Build.props) stays `0.0.0-dev` for local builds. The VS Code task counts your local `HEAD`, so a deploy from a branch with commits not on `main` reports a number a later merge will reuse.
 
 `GET /api/version` is for the client to show which API it talks to:
 

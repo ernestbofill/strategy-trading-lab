@@ -18,7 +18,6 @@
 
 - [ ] Frontend: `npm run lint`, `npm test`, `npm run build`
 - [ ] Backend: `dotnet build`, `dotnet test` (say if `[NeonFact]` tests were skipped)
-- [ ] Version bumped (frontend and/or backend), or not needed
 - [ ] Changed screens checked at phone and desktop width, or why not (e.g. cloud session)
 - [ ] `ROADMAP.md` and docs updated
 

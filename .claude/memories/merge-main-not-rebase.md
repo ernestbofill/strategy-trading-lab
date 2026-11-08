@@ -4,4 +4,4 @@ Force-pushing is refused by Claude Code's auto mode (as destructive), so a pushe
 
 **Why:** a rebase plus `--force-with-lease` was refused in the Milestone 1 loop (2026-10-28, #88); merging main into a stacked branch after its base was squash-merged conflicted on every file of the base PR (#92).
 
-**How to apply:** for a pushed branch, `gh pr update-branch <PR>` (or `git merge origin/main` on a conflict); for an unpushed stacked branch, replay its diff onto `origin/main`. When versions conflict, the branch's version must end above `main`'s: bump again if `main` caught up (CI checks both, #142/#143).
+**How to apply:** for a pushed branch, `gh pr update-branch <PR>` (or `git merge origin/main` on a conflict); for an unpushed stacked branch, replay its diff onto `origin/main`.

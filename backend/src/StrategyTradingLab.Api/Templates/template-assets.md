@@ -60,7 +60,7 @@ Such an asset can't be in a template's starter list (the list points at a fixed 
    dotnet ef database update --project src/StrategyTradingLab.Api
    ```
 
-5. Bump `<Version>` in [Directory.Build.props](../../../Directory.Build.props). Merging to `main` deploys the change and applies the migration on the server.
+5. Merging to `main` deploys the change and applies the migration on the server.
 
 ## Change a seeded stock's name or text
 

@@ -89,7 +89,8 @@ Ask for a credential when you need one.
 - One logical change per commit, with an imperative subject line ("Add Choose the mode screen").
 - Changes Ernest has staged go into your next commit, together with yours. Don't unstage or stash them.
 - Merge PRs with **squash merge** (`gh pr merge --squash --delete-branch`), so `main` stays linear with one commit per PR. Write the PR title as the final commit subject (imperative, with `(#number)`), because the squash uses it. Merge only when asked, or in a loop (see *Iterating*).
-- **`main` is protected** (Ernest, 2026-11-02): GitHub merges a PR only when the `backend` and `frontend` checks pass and the branch is up to date with `main`. Each check skips its steps when its folder didn't change, and fails when that folder's version isn't above `main`'s: bump it and push.
+- **`main` is protected** (Ernest, 2026-11-02): GitHub merges a PR only when the `backend` and `frontend` checks pass. Each check skips its steps when its folder didn't change. The branch doesn't have to be up to date with `main` (Ernest, 2026-11-08).
+- **Versions:** never bump one. Each deploy makes it from `main`'s commit count (`0.<count>.0-alpha`), so concurrent PRs can't clash (#185).
 - **A branch behind `main`:** `gh pr update-branch <PR>` merges `main` into it on GitHub (never rebase). Only on a conflict, merge `origin/main` locally, fix it and push.
 - **Merge with auto-merge:** when a merge is due (Ernest said yes, or in a loop), `gh pr merge <PR> --auto --squash --delete-branch`. GitHub merges once CI is green, so don't watch CI. Never turn it on before the reviews are done: CI passes in minutes and would merge first.
 
@@ -108,14 +109,14 @@ Defaults:
 
 ### Kinds of change
 
-- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, READMEs, instructions, `.claude/`, comments): no version bump (CI skips its steps), no `/simplify`, no `/code-review`. Steps 1, 4 and 7 only.
+- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, READMEs, instructions, `.claude/`, comments): no `/simplify`, no `/code-review`. Steps 1, 4 and 7 only.
 - **Normal** (UI, an isolated fix or feature): steps 1–5, with one review round. Run `/simplify` only when the diff has real new code (about 50+ changed lines); a one-line fix skips it.
 - **High risk**: strategy and budget calculations (signals, steps, results, backtests), authentication, and security. Also foundational work that much else will build on. All steps, an `opus` review, and a second round after any real finding.
 
 ### Steps
 
 1. **Analyze and orchestrate.** Read the relevant code, docs and `ROADMAP.md`, then state the plan in a few lines: what changes, which files, the kind of change, and any risks. Ask only when a decision is really Ernest's to make.
-2. **Implement.** Work on the session's branch. A merge that changes the application or its runtime is a release: bump the version as the frontend and backend instructions say. Update existing tests when behaviour changes, and only add new tests for critical business logic or complex calculations (don't overly add tests; keep CI/CD light and fast). Keep `ROADMAP.md`, the spec and these instructions up to date.
+2. **Implement.** Work on the session's branch. Update existing tests when behaviour changes, and only add new tests for critical business logic or complex calculations (don't overly add tests; keep CI/CD light and fast). Keep `ROADMAP.md`, the spec and these instructions up to date.
 3. **Simplify.** Before the first push, run `/simplify` in a subagent on the branch's changes. Keep the cleanups that make the code clearer and commit them; the PR then opens on the simplified code, with one CI run fewer.
 4. **PR.** Run the checks in the frontend and backend instructions, then commit, push, and open a pull request into `main`. Don't wait to be asked. Fill in the PR template. If step 3 ran, post a PR comment listing what simplify changed, what was left out, and why.
 5. **Code review.** Run `/code-review <PR> --comment` in a subagent, so the findings land as inline PR comments. Fix the real ones, run the checks again, and push all of the round's fixes at once. Reply on each finding's thread with the fixing commit, or with why it stays as is, then resolve it. It runs after simplify, so it reviews the final code.

@@ -10,12 +10,14 @@ namespace StrategyTradingLab.Api.Strategies;
 
 /// <summary>
 /// What the Confirm screen sends. <c>Currency</c> is the one the user saw while setting the budget; without it the user's
-/// current one is used. <c>Settings</c> are the Advanced settings the user changed (setting key → value); the rest keep the
-/// template's tested defaults. <c>SourceStrategyId</c> is the simulation a live copy came from ("Go live with these settings"):
-/// one of the user's simulations, kept for a live strategy only.
+/// current one is used. <c>Settings</c> are the Advanced settings (setting key → value): the app sends every one, and any left out
+/// takes the template's default. <c>SourceStrategyId</c> is the simulation a live copy came from ("Go live with these settings"):
+/// one of the user's simulations, kept for a live strategy only. <c>DefaultsVersion</c> is the template version the screens
+/// showed (/admin/templates): the strategy is stamped with it, so "tuned" compares with what the user saw.
 /// </summary>
 public record NewStrategy(string TemplateKey, string Name, StrategyMode? Mode, Budget Budget, IReadOnlyList<Guid> AssetIds,
-    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null);
+    string? Currency = null, IReadOnlyDictionary<string, decimal>? Settings = null, AiSetup? Ai = null, Guid? SourceStrategyId = null,
+    int? DefaultsVersion = null);
 
 /// <summary>New settings (rules) for a running strategy.</summary>
 public record UpdateStrategySettings(IReadOnlyDictionary<string, decimal>? Settings);
@@ -52,13 +54,10 @@ public record StrategySummary(
 
 /// <summary>
 /// A strategy's stocks by pill, for its dashboard card: a signal (waiting or today's), a candidate within
-/// <see cref="StockCounts.ClosePct"/> of its buy rule (<c>Close</c>, not counted again in <c>Candidates</c>), any other
+/// the template's <see cref="Template.ClosePct"/> of its buy rule (<c>Close</c>, not counted again in <c>Candidates</c>), any other
 /// candidate, held (or building), and not a candidate. Stocks not checked yet aren't counted.
 /// </summary>
-public record StockCounts(int Signals, int Close, int Candidates, int Holding, int NotCandidates)
-{
-    public const decimal ClosePct = 3;
-}
+public record StockCounts(int Signals, int Close, int Candidates, int Holding, int NotCandidates);
 
 /// <summary>What a strategy has earned since it started, in percent, next to the index fund (null when its prices are missing). Null until it has trades.</summary>
 public record StrategyResults(decimal Strategy, decimal? Index, IReadOnlyList<decimal> History);
@@ -233,4 +232,7 @@ public record StrategyDetail(
 {
     /// <summary>The template's words for each rule check (<see cref="StockRow.Checks"/>), by its key.</summary>
     public IReadOnlyDictionary<string, CheckTexts>? CheckTexts { get; init; }
+
+    /// <summary>The template version it started from (/admin/templates): its settings screen shows that version as tested.</summary>
+    public int DefaultsVersion { get; init; }
 }

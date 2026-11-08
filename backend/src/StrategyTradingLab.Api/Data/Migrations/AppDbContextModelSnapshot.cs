@@ -1766,6 +1766,57 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.TemplateVersion", b =>
+                {
+                    b.Property<string>("TemplateKey")
+                        .HasColumnType("text")
+                        .HasColumnName("template_key");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean")
+                        .HasColumnName("active");
+
+                    b.PrimitiveCollection<List<Guid>>("AssetIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("asset_ids");
+
+                    b.Property<decimal>("ClosePct")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)")
+                        .HasColumnName("close_pct");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<JsonDocument>("Defaults")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("defaults");
+
+                    b.HasKey("TemplateKey", "Version")
+                        .HasName("pk_template_versions");
+
+                    b.HasIndex("TemplateKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_template_versions_active")
+                        .HasFilter("active");
+
+                    b.ToTable("template_versions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_template_versions_template_key", "template_key IN ('dip', 'comeback', 'bear', 'trend', 'ai')");
+
+                            t.HasCheckConstraint("ck_template_versions_version", "version >= 1");
+                        });
+                });
+
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")

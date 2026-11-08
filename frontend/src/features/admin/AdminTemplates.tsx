@@ -1,7 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api, InvalidFieldsError, type AdminTemplate, type AdminTemplateAsset, type AdminTemplateVersion } from '../../api'
 import { SelectField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
+import { Tabs } from '../../components/Tabs'
+import { tabPanel } from '../../components/tabPanel'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { formatRate, isoDate } from '../../lib/format'
 import { invalidate } from '../../lib/useLoadable'
@@ -221,6 +224,11 @@ function TemplateCard({ template, onChanged }: { template: AdminTemplate; onChan
  */
 export function AdminTemplates() {
   const [state, setState] = useState<State>({ status: 'loading' })
+  const tabsId = useId()
+  // The template shown is in the address (?template=dip), so a reload or a shared link opens it; the first one otherwise.
+  const [params, setParams] = useSearchParams()
+  const templates = state.status === 'ready' ? state.templates : []
+  const shown = templates.find((t) => t.key === params.get('template'))?.key ?? templates[0]?.key
 
   useEffect(() => {
     let current = true
@@ -245,10 +253,28 @@ export function AdminTemplates() {
       />
       {state.status === 'loading' && <ScreenMessage>Loading the templates…</ScreenMessage>}
       {state.status === 'error' && <ScreenMessage>Could not load the templates. Try again later.</ScreenMessage>}
-      {state.status === 'ready' && (
+      {shown !== undefined && (
         <div className={styles.list}>
-          {state.templates.map((t) => (
-            <TemplateCard key={t.key} template={t} onChanged={changed} />
+          <Tabs
+            id={tabsId}
+            label="Template"
+            items={templates.map((t) => ({ key: t.key, label: t.name }))}
+            selected={shown}
+            onSelect={(key) =>
+              setParams(
+                (p) => {
+                  p.set('template', key)
+                  return p
+                },
+                { replace: true },
+              )
+            }
+          />
+          {/* Every card stays mounted, the others hidden, so switching templates keeps unsaved edits. */}
+          {templates.map((t) => (
+            <div key={t.key} {...tabPanel(tabsId, t.key)} hidden={t.key !== shown}>
+              <TemplateCard template={t} onChanged={changed} />
+            </div>
           ))}
         </div>
       )}

@@ -21,6 +21,7 @@
   - `PageHeader`, `Section`, `Columns` (main + aside from 1024px), `Tag`, `Tagline`.
   - `ChoiceCard`/`ChoiceList` (single choice, radio), `CheckList` (multi choice), `ToggleTiles` (`aria-pressed`), `ItemRow`, `NavRow`, `TextAction`.
   - `InfoTip`: a small "i" after a label that opens a short explanation, hidden until asked for (the S&P 500 fund).
+  - `Tabs` (with `tabPanel` for each panel): a row of tabs that wraps instead of scrolling, with arrow keys (How we tested's index tabs, `/admin/templates`).
   - `Callout`/`LabelledLine`, `RuleList` and `RichText` (`**label**` and `` `term` `` markup), `BulletList`, `KeyValueList`.
 - `src/features/<flow>/`: one folder per flow; the new-strategy flow is in `features/new-strategy/`.
   - `paths.ts` holds the route builders.

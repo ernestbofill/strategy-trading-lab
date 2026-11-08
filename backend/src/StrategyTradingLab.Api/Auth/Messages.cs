@@ -118,10 +118,12 @@ public static class Messages
         "Aquesta resposta és massa llarga per llegir-la. Demana a la teva IA només la taula.");
     public static readonly Message NoScoresTable = new("We couldn't find the scores table. Ask your AI to answer only with the table.",
         "No hem trobat la taula de puntuacions. Demana a la teva IA que respongui només amb la taula.");
-    public static readonly Message NotYourStock = new("\"{0}\" isn't one of your stocks.", "«{0}» no és cap de les teves accions.");
+    public static readonly Message NotYourStock = new("\"{0}\" isn't one of your stocks, so it was left out.", "«{0}» no és cap de les teves accions, així que s'ha deixat fora.");
     public static readonly Message ScoredTwice = new("{0} is scored more than once.", "{0} està puntuada més d'una vegada.");
     public static readonly Message BadScore = new("{0}: the overall score isn't a number from 0 to 100.", "{0}: la puntuació global no és un número entre 0 i 100.");
-    public static readonly Message NoScore = new("{0} has no score.", "{0} no té puntuació.");
+    public static readonly Message NoScore = new("{0} has no score, so it can't get a step.", "{0} no té puntuació, així que no pot tenir cap pas.");
+    public static readonly Message NoneMatched = new("None of the stocks in the answer are yours. Check the Stock column.",
+        "Cap de les accions de la resposta és teva. Revisa la columna Acció.");
     public static readonly Message MoreProblems = new("And {0} more.", "I {0} més.");
     public static readonly Message PickAiModel = new("Pick the AI model you used, or name it.", "Tria el model d'IA que has fet servir, o escriu-ne el nom.");
     public static readonly Message RoundNotDue = new("This AI round isn't due yet.", "Encara no és l'hora d'aquesta ronda d'IA.");

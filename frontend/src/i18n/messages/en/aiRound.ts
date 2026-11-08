@@ -30,6 +30,7 @@ export const aiRound = {
   'aiRound.modelOther': 'Other…',
   'aiRound.modelName': 'Which AI model?',
   'aiRound.askAgain': 'Ask your AI again',
+  'aiRound.checkAnswer': 'Worth a look',
   'aiRound.allScored': '✓ Every stock scored, all scores 0-100.',
   'aiRound.gets': '{stock} gets step {step}',
   'aiRound.getsAmount': '{picks} ({amount}).',

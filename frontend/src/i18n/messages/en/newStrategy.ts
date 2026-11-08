@@ -82,7 +82,7 @@ export const newStrategy = {
   'newStrategy.results.alpha': 'Alpha',
   'newStrategy.results.alphaTip.label': 'What is alpha?',
   'newStrategy.results.alphaTip.text':
-    'Direct alpha: the yearly advantage over putting the same money into the index on the same days.',
+    'How much more (or less) the template made per year than the index (Template minus the index). When a template buys in steps on different days, the index column invests the same money on those same days so the comparison is fair.',
   'newStrategy.results.story': 'Story',
   'newStrategy.results.indexTabs': 'Tested indexes',
   'newStrategy.how.noBacktest': 'There is no backtest for this template.',

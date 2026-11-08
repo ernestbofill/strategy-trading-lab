@@ -1,6 +1,9 @@
 .pct[data-sign="pos"] {
   color: var(--success);
 }
+.pct[data-sign="warn"] {
+  color: var(--warning);
+}
 .pct[data-sign="neg"] {
   color: var(--danger-ink);
 }

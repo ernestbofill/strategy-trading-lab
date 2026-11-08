@@ -87,6 +87,12 @@ describe('HowTested', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'How we tested' })).toBeTruthy()
+
+    // By period is in the main column, preceding The data in aside
+    const byPeriodHeading = screen.getByRole('heading', { name: 'By period' })
+    const dataHeading = screen.getByRole('heading', { name: 'The data' })
+    expect(byPeriodHeading.compareDocumentPosition(dataHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
     expect(screen.getByText('2000-2026')).toBeTruthy()
     expect(screen.getByText('1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)')).toBeTruthy()
 
@@ -98,10 +104,16 @@ describe('HowTested', () => {
     expect(screen.getByText('No market crashes')).toBeTruthy()
     expect(screen.getByText('Dodged the 2000–02 and 2008 crashes')).toBeTruthy()
 
+    // Worst year: the least bad (-18% vs -37%) uses the warning tone; the worse one uses neg
+    expect(screen.getAllByText('−18%')[0].getAttribute('data-sign')).toBe('warn')
+    expect(screen.getAllByText('−37%')[0].getAttribute('data-sign')).toBe('neg')
+
     // Alpha column tooltip and index tabs
     fireEvent.click(screen.getByRole('button', { name: 'What is alpha?' }))
     expect(
-      screen.getByText('Direct alpha: the yearly advantage over putting the same money into the index on the same days.'),
+      screen.getByText(
+        'How much more (or less) the template made per year than the index (Template minus the index). When a template buys in steps on different days, the index column invests the same money on those same days so the comparison is fair.',
+      ),
     ).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Nasdaq-100' }))

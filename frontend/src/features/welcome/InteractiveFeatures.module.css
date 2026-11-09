@@ -9,8 +9,9 @@
   display: contents;
 }
 
+/* Same look and states as ChoiceCard (the template and mode pickers). */
 .featureCard {
-  background: var(--surface-hover);
+  background: var(--surface-sidebar);
   border: 1px solid var(--border-hairline);
   padding: var(--space-3);
   text-align: left;
@@ -68,9 +69,8 @@
   }
 }
 
-/* The background no longer changes on hover: a purple edge says the card opens. */
 .featureCard:hover {
-  border-color: var(--ink-sidebar);
+  background: var(--surface-hover);
 }
 .featureCard:focus-visible {
   outline: 1px solid var(--border-focus);
@@ -86,7 +86,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 16px;
-  /* A touch lighter than --ink-sidebar, for AA contrast on the lighter card. */
+  /* A touch lighter than --ink-sidebar, for AA contrast on the hover surface too. */
   color: color-mix(in srgb, var(--ink-sidebar) 85%, var(--ink));
   letter-spacing: 0.5px;
 }
@@ -117,9 +117,6 @@
   color: var(--ink);
 }
 
-.featureCard[data-active='true'] .cardTitle {
-  color: var(--primary);
-}
 
 .tagline {
   margin: 0;

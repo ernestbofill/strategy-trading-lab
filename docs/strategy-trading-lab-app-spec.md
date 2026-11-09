@@ -168,7 +168,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - **Hero:**
   - Headline: "Trade rules, not emotions."
   - Lead: "A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access."
-- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile, where the expanded detail panel renders inline directly below the active card). All three start collapsed (Ernest, 2026-11-03). Clicking any card expands its full details and interactive simulated widget (clicking an expanded card collapses it; no carousel):
+- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile, where the expanded detail panel renders inline directly below the active card). All three start collapsed (Ernest, 2026-11-03). Each card shows its number tag ("01 // BUILD"), title, tagline and summary, with no pill in the top-right corner (Ernest, 2026-11-09). Clicking any card expands its full details and interactive simulated widget (clicking an expanded card collapses it; no carousel):
   - **01 Strategy builder:**
     - Tagline: "Define your rules before the market opens"
     - Points: Tested mathematical templates with transparent logic (moving averages, pullbacks, turnarounds); user-controlled stock universes and step budgets; plain language rules with no black-box algorithms.

@@ -11,7 +11,6 @@ export const welcome = {
 
   // Pillar 1: Strategy builder
   'welcome.builder.tag': '01 // BUILD',
-  'welcome.builder.badge': 'TEMPLATES & RULES',
   'welcome.builder.title': 'Strategy builder',
   'welcome.builder.tagline': 'Define your rules before the market opens',
   'welcome.builder.summary':
@@ -40,7 +39,6 @@ export const welcome = {
 
   // Pillar 2: Simulation
   'welcome.sim.tag': '02 // SIMULATE',
-  'welcome.sim.badge': 'SIMULATED TRADES',
   'welcome.sim.title': 'Real-time simulation',
   'welcome.sim.tagline': 'Forward-test on real prices with zero financial risk',
   'welcome.sim.summary':
@@ -63,7 +61,6 @@ export const welcome = {
 
   // Pillar 3: Trading tracker
   'welcome.tracker.tag': '03 // TRACK',
-  'welcome.tracker.badge': 'MANUAL TRACKING',
   'welcome.tracker.title': 'Trading tracker',
   'welcome.tracker.tagline': 'Execute at your broker. 100% private & non-custodial',
   'welcome.tracker.summary':

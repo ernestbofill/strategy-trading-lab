@@ -13,7 +13,6 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
 
   // Pillar 1: Strategy builder
   'welcome.builder.tag': '01 // CONSTRUEIX',
-  'welcome.builder.badge': 'PLANTILLES I REGLES',
   'welcome.builder.title': 'Constructor d’estratègies',
   'welcome.builder.tagline': 'Defineix les teves regles abans que obri el mercat',
   'welcome.builder.summary':
@@ -42,7 +41,6 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
 
   // Pillar 2: Simulation
   'welcome.sim.tag': '02 // SIMULA',
-  'welcome.sim.badge': 'SIMULACIÓ',
   'welcome.sim.title': 'Simulació en temps real',
   'welcome.sim.tagline': 'Posa-la a prova amb preus reals i zero risc financer',
   'welcome.sim.summary':
@@ -65,7 +63,6 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
 
   // Pillar 3: Trading tracker
   'welcome.tracker.tag': '03 // SEGUIMENT',
-  'welcome.tracker.badge': 'SEGUIMENT MANUAL',
   'welcome.tracker.title': 'Seguiment d’operacions',
   'welcome.tracker.tagline': 'Opera al teu broker. 100% privat i no custodi',
   'welcome.tracker.summary':

@@ -19,6 +19,7 @@
   - `Field`: `TextField`, `PasswordField` (show/hide), `SelectField` (long lists), `SegmentedField` (two to four short choices, as buttons), `Checkbox` and `FormMessage`, with the error under the field.
   - `LoadableScreen`: renders the loading, error and not-found states for screens that load data.
   - `PageHeader`, `Section`, `Columns` (main + aside from 1024px), `Tag`, `Tagline`.
+  - `Card`: the app's card surface and states (hover, selected, disabled, focus), as any element (`as={Link}`, `as="button"`). Build every card on it so they stay alike; the caller adds only its layout.
   - `ChoiceCard`/`ChoiceList` (single choice, radio), `CheckList` (multi choice), `ToggleTiles` (`aria-pressed`), `ItemRow`, `NavRow`, `TextAction`.
   - `InfoTip`: a small "i" after a label that opens a short explanation, hidden until asked for (the S&P 500 fund).
   - `Tabs` (with `tabPanel` for each panel): a row of tabs that wraps instead of scrolling, with arrow keys (How we tested's index tabs, `/admin/templates`).

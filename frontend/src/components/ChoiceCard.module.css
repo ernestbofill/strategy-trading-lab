@@ -14,15 +14,9 @@
 
 .card {
   position: relative;
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
-  padding: var(--space-3);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-.card:hover {
-  background: var(--surface-hover);
 }
 .card[data-disabled] .main {
   cursor: not-allowed;
@@ -31,17 +25,6 @@
 .card[data-disabled] .badge,
 .card[data-disabled] .radio {
   opacity: 0.4;
-}
-.card[data-disabled]:hover {
-  background: var(--surface-sidebar);
-}
-.card[data-selected] {
-  border-color: var(--primary);
-  box-shadow: var(--glow-primary);
-}
-.card:has(input:focus-visible) {
-  outline: 1px solid var(--border-focus);
-  outline-offset: 2px;
 }
 
 .main {

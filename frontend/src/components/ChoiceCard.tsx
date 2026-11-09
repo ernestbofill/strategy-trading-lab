@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react'
+import { Card } from './Card'
 import styles from './ChoiceCard.module.css'
 
 /** Single-choice list of cards (template picker, mode picker). Flows into columns on wider screens. */
@@ -33,7 +34,7 @@ interface ChoiceCardProps {
 export function ChoiceCard({ name, value, checked, onSelect, title, badge, subtitle, children, footer, disabled }: ChoiceCardProps) {
   const footerId = useId()
   return (
-    <div className={styles.card} data-selected={checked || undefined} data-disabled={disabled || undefined}>
+    <Card className={styles.card} interactive selected={checked} disabled={disabled}>
       <label className={styles.main}>
         <input
           type="radio"
@@ -60,6 +61,6 @@ export function ChoiceCard({ name, value, checked, onSelect, title, badge, subti
           {footer}
         </div>
       )}
-    </div>
+    </Card>
   )
 }

@@ -63,14 +63,14 @@ describe('ChooseMode', () => {
       </AccountProvider>,
     )
 
-    const live = await screen.findByRole('radio', { name: /Manual/ })
+    const live = await screen.findByRole('radio', { name: /MANUAL/ })
     expect((live as HTMLInputElement).disabled).toBe(false)
   })
 
   it('keeps Manual off until the email is confirmed, and falls back to a simulation', async () => {
     open(false)
 
-    const live = await screen.findByRole('radio', { name: /Manual/ })
+    const live = await screen.findByRole('radio', { name: /MANUAL/ })
     expect((live as HTMLInputElement).disabled).toBe(true)
     await waitFor(() => expect((screen.getByRole('radio', { name: /Simulation/ }) as HTMLInputElement).checked).toBe(true))
     expect(screen.getByText('Confirm your email to use Manual.')).toBeTruthy()
@@ -80,11 +80,11 @@ describe('ChooseMode', () => {
   it('lets a confirmed account pick Manual', async () => {
     open(true)
 
-    const live = (await screen.findByRole('radio', { name: /Manual/ })) as HTMLInputElement
+    const live = (await screen.findByRole('radio', { name: /MANUAL/ })) as HTMLInputElement
     expect(live.disabled).toBe(false)
     fireEvent.click(live)
     expect(live.checked).toBe(true)
-    expect(await screen.findByText('Get an alert for each buy signal')).toBeTruthy()
+    expect(await screen.findByText('one for each buy signal')).toBeTruthy()
     expect(screen.queryByText('Confirm your email to use Manual.')).toBeNull()
   })
 })

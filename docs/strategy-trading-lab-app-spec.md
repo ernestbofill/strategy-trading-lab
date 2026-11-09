@@ -168,7 +168,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - **Hero:**
   - Headline: "Trade rules, not emotions."
   - Lead: "A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access."
-- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile, where the expanded detail panel renders inline directly below the active card). All three start collapsed (Ernest, 2026-11-03). Clicking any card expands its full details and interactive simulated widget (clicking an expanded card collapses it; no carousel):
+- **Interactive 3-pillar feature deck:** All three core capabilities displayed side-by-side on desktop (stacked on mobile, where the expanded detail panel renders inline directly below the active card). All three start collapsed (Ernest, 2026-11-03). Each card shows its number tag ("01 // BUILD"), title, tagline and summary, with no pill in the top-right corner (Ernest, 2026-11-09). Clicking any card expands its full details and interactive simulated widget (clicking an expanded card collapses it; no carousel):
   - **01 Strategy builder:**
     - Tagline: "Define your rules before the market opens"
     - Points: Tested mathematical templates with transparent logic (moving averages, pullbacks, turnarounds); user-controlled stock universes and step budgets; plain language rules with no black-box algorithms.
@@ -479,14 +479,14 @@ Content is per template (period, scope, figures). *Index trend* is all in, all o
 - Under the cards, above the button: "You can start a manual copy of a simulation later."
 - Button: "Continue"
 
-**Two option cards**, single choice, *Simulation* selected by default. Each has the name (no mode tag: the name is the mode), a bold line and three bullets. The two differences that matter are who records the trades and whether each signal sends an alert; neither mode moves money (Ernest, 2026-11-09).
+**Two option cards**, single choice, *Simulation* selected by default. Each starts with its mode tag (SIM, MANUAL) and a bold line, then three rows with a purple label on the left (no card name: the tag names the mode). The two differences that matter are who records the trades and whether each signal sends an alert; neither mode moves money (Ernest, 2026-11-09).
 
-| | Simulation | Manual |
+| | Simulation (tag "SIM") | Manual (tag "MANUAL") |
 | --- | --- | --- |
-| Line | "The app follows the strategy for you." | "Follow a strategy yourself." |
-| • | "Records simulated trades on its own" | By template: "Get an alert for each buy or sell signal" (it sells), "Get an alert for each buy signal" (buys only), "Get a reminder for each AI round" (*Your AI's top picks*) |
-| • | "No alerts, just a daily summary" | "You record your trades in the app" |
-| • | "For testing a strategy hands-off" | "The app works as a tracker" |
+| Line | "Simulation. The app follows the strategy for you." | "Follow the strategy yourself." |
+| Alerts: | "none, just a daily summary" | By template: "one for each buy or sell signal" (it sells), "one for each buy signal" (buys only), "a reminder for each AI round" (*Your AI's top picks*) |
+| Trades: | "the app records simulated trades" | "you record them in the app" |
+| Good for: | "testing a strategy hands-off" | "tracking, with or without real money" |
 
 **Until the email is confirmed** (built, #89): the Manual card can't be picked; under it, "Confirm your email to use Manual." and "Send the link again". A draft that arrives as Manual falls back to Simulation. `POST /strategies` refuses a manual strategy from an unconfirmed account (`errors.mode`).
 

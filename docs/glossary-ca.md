@@ -17,8 +17,8 @@ Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sente
 | template | plantilla |
 | budget | pressupost |
 | Simulation (mode) | Simulació |
-| Live (mode) | Real |
-| trade (noun) | operació |
+| Manual (mode; Live until 2026-11-09) | Manual |
+| trade (noun) | operació; *inversió* where people would say it (the mode cards, Confirm) |
 | buy / sell | compra / venda |
 | broker | broker |
 | dashboard | dashboard |

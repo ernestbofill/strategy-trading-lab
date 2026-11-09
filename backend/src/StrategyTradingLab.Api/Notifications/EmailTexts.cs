@@ -33,7 +33,7 @@ public static class EmailTexts
     static string DisclaimerFor(string locale) => DisclaimerMsg.In(locale);
 
     // Modes
-    static readonly Message ModeLive = new("Live", "Real");
+    static readonly Message ModeLive = new("Manual", "Manual");
     static readonly Message ModeSimulation = new("Simulation", "Simulació");
     static string ModeName(StrategyMode mode, string locale) =>
         (mode == StrategyMode.Live ? ModeLive : ModeSimulation).In(locale);

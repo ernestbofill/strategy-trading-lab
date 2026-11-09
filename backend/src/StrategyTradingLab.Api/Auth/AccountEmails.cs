@@ -112,10 +112,10 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
             .Eyebrow(ca ? "Benvinguda" : "Welcome")
             .Heading(title)
             .Paragraph(ca
-                ? "Strategy Trading Lab t'ajuda a provar i seguir estratègies d'inversió amb regles senzilles i provades: executa-les en simulació o en directe amb el teu propi bròquer. L'app mai no opera per tu ni es connecta al teu bròquer."
-                : "Strategy Trading Lab helps you test and follow investing strategies with simple, tested rules — run them in simulation or live with your own broker. The app never places orders and never connects to a broker.")
-            .Action(ca ? "Descobreix com funcionen el creador d'estratègies, la simulació i el seguiment en directe:"
-                       : "Learn how the strategy builder, simulation, and live tracking work:",
+                ? "Strategy Trading Lab t'ajuda a provar i seguir estratègies d'inversió amb regles senzilles i provades: fes-les servir en simulació o segueix-les manualment al teu broker. L'app mai no opera per tu ni es connecta al teu broker."
+                : "Strategy Trading Lab helps you test and follow investing strategies with simple, tested rules — run them as a simulation or follow them manually at your own broker. The app never places orders and never connects to a broker.")
+            .Action(ca ? "Descobreix com funcionen el creador d'estratègies, la simulació i el seguiment manual:"
+                       : "Learn how the strategy builder, simulation, and manual tracking work:",
                     ca ? "Descobreix com funciona" : "See how it works", welcomeUrl)
             .Section(ca ? "Instal·la l'aplicació al mòbil" : "Install on your phone",
             [

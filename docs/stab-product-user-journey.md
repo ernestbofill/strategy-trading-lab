@@ -145,15 +145,14 @@ The picked template opens its review page, already filled in with its defaults, 
 
 ## 4. Choose the mode
 
-A screen with two options, *Simulation* selected by default. Intro: "You can start a live copy of a simulation later."
+A screen with two options, *Simulation* selected by default. Intro: "The app never trades or touches your money." Neither mode moves money: the difference is who records the trades and whether each signal sends an alert.
 
-| | Simulation | Live |
+| | Simulation | Manual |
 | --- | --- | --- |
-| In one line | "Test it on paper. No real money." | "Follow it with real money at your own broker." |
-| Who trades | The app, on paper, every time the rules say so | The user, at their broker, if and when they choose |
-| What the app does | Records every trade the rules call for, at the next day's opening price | Alerts the user to each signal and records what they confirm |
-| What the user does | Nothing; read the daily overview | Confirm each signal: *I did it* or *I skipped it* |
-| Results show | How the rules do on their own | How the user's real trades do, next to how the rules would have done |
+| In one line | "The app follows the strategy for you." | "Follow a strategy yourself." |
+| Who records the trades | The app, every trade the rules call for, at the next day's opening price | The user, at their broker with real money or just to track |
+| Signals | No alerts; the daily summary says what changed | An alert for each signal (a reminder for each AI round) |
+| Results show | How the rules do on their own | How the user's trades do, next to how the rules would have done |
 
 Choosing *Live* adds two things to the setup:
 

@@ -3,7 +3,6 @@ import type { signal as en } from '../en/signal'
 export const signal: Record<keyof typeof en, string> = {
   'signal.what': 'aquest senyal',
   'signal.title': 'SENYAL · {date}',
-  'signal.live': 'REAL',
   'signal.rules': 'Les teves regles per a {strategy} es compleixen per a {stock}: {reason}.',
   'signal.step': 'Segons la teva configuració, és la fase {step}.',
   'signal.stepAmount': 'Segons la teva configuració, és la fase {step} ({amount}).',

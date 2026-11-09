@@ -6,7 +6,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Stat, Stats } from '../../components/Stats'
-import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { exact, formatRate, money, pctTone, shortDate, signedPct } from '../../lib/format'
@@ -355,7 +355,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
         </div>
         {row.what && row.what !== row.name && <p className={styles.what}>{row.what}</p>}
         <div className={styles.strategy}>
-          <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
+          <ModeTag live={live} />
           <Link to={strategyPath(s.id)}>{s.name}</Link>
         </div>
       </div>

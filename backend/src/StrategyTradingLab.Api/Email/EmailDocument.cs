@@ -60,7 +60,7 @@ public sealed class EmailDocument(string locale = "en", string? appUrl = null)
         return this;
     }
 
-    /// <summary>The small uppercase label above the content (HTML only), e.g. "Signal · Live".</summary>
+    /// <summary>The small uppercase label above the content (HTML only), e.g. "Signal · Manual".</summary>
     public EmailDocument Eyebrow(string text)
     {
         eyebrow = text;

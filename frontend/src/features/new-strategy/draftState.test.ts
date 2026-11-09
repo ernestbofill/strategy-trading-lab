@@ -11,7 +11,7 @@ const changed: DraftState = {
 }
 
 describe('withTemplate', () => {
-  it('starts over after a Go live copy, even on the same template', () => {
+  it('starts over after a manual copy, even on the same template', () => {
     const copy: DraftState = { ...initialDraft, templateKey: 'dip', mode: 'live', name: 'Mine live', sourceStrategyId: 's1', currency: 'USD' }
     expect(withTemplate(copy, 'dip')).toEqual({ ...initialDraft, templateKey: 'dip' })
   })

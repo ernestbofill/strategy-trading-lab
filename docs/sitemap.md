@@ -2,11 +2,11 @@
 
 Updated Oct 13, 2026, to match `stab-product-user-journey.md`. The visual version is the [Strategy Trading Lab Sitemap](Sitemap.html) artifact.
 
-> A strategy lab and monitoring side app. The user picks a **strategy template**, tunes it, and runs it as **their strategy** in one of two **modes**: Simulation (paper) or Live (they trade at their own broker and confirm each signal).
+> A strategy lab and monitoring side app. The user picks a **strategy template**, tunes it, and runs it as **their strategy** in one of two **modes**: Simulation or Manual (they trade at their own broker and confirm each signal).
 > No broker sync, no order placement, no trading advice. US-listed stocks and funds; budgets and results in euro. Free for now.
 
 Legend: 🌐 public · 🔒 requires account · 🧩 shared component · ✏️ still to design · ⏳ later · ➕ implied (not in the journey, but needed) · ❓ open decision
-Mode/template tags: **[Sim]** simulation strategies only · **[Live]** live strategies only · **[AI]** strategies from *Your AI's top picks* only
+Mode/template tags: **[Sim]** simulation strategies only · **[Live]** manual strategies only (the Manual mode, `live` in the code) · **[AI]** strategies from *Your AI's top picks* only
 
 Paths are suggestions.
 
@@ -41,8 +41,8 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 
 | Page | Purpose | Key content |
 |---|---|---|
-| **Home** | Explain the lab in seconds | Pick a template, test and tune it, run it as a simulation or live; template teasers with taglines; sample daily overview; disclaimer |
-| **How it works** | Set expectations | Templates vs strategies, Simulation vs Live, "the app never trades for you or connects to your broker", daily check after the US close |
+| **Home** | Explain the lab in seconds | Pick a template, test and tune it, run it as a simulation or manually; template teasers with taglines; sample daily overview; disclaimer |
+| **How it works** | Set expectations | Templates vs strategies, Simulation vs Manual, "the app never trades for you or connects to your broker", daily check after the US close |
 | **Template preview** | Understand one template | Tagline, the idea, the rules ("It buys when…"), backtest with index comparison and worst year, what can go wrong |
 | **Sign up** | Account in under a minute | Email and password, time zone (guessed), daily overview on, disclaimer accepted once |
 
@@ -60,14 +60,14 @@ Marketing pages are outside the user journey's scope; kept here from the earlier
 
 ## 2. New strategy flow (🔒, journey steps 2–6)
 
-Entered from sign-up (first run), from **+ New strategy** on the dashboard, and from **Go live with these settings** on a simulation (joins at step 4, prefilled).
+Entered from sign-up (first run), from **+ New strategy** on the dashboard, and from **Follow it manually** on a simulation (joins at step 4, prefilled).
 
 ```
 /app/new
 ├── 2. /app/new                    Pick a strategy template (5 cards, single choice)
 ├── 3. /app/new/[template]         Template review (one page per template)
 │      └── /advanced               Advanced settings (re-runs the backtest on every change)
-├── 4. /app/new/mode               Choose the mode: Simulation (default) or Live
+├── 4. /app/new/mode               Choose the mode: Simulation (default) or Manual
 ├── 5. /app/new/budget             Set your budget: budget, step size, max steps per stock
 └── 6. /app/new/confirm            Name, preview and confirm
         → Dashboard ([AI] the first AI round waits there)
@@ -95,7 +95,7 @@ Entered from sign-up (first run), from **+ New strategy** on the dashboard, and 
 │   ├── /backtest                      Backtest ✏️
 │   ├── /rounds                        [AI] AI rounds history ✏️ (replaces Backtest)
 │   ├── /history                       History ✏️ (signals, trades, skips, rounds, status changes)
-│   ├── Go live with these settings    [Sim] ✏️ → new live strategy at step 4
+│   ├── Follow it manually             [Sim] ✏️ → new manual strategy at step 4
 │   └── Rename · pause · end           ✏️
 │
 ├── /app/signals/[id]                  [Live] Confirm signal sheet ✏️
@@ -147,8 +147,8 @@ All sent after the US market close.
 
 - Public top navigation; app navigation (Dashboard · New strategy · Account)
 - Disclaimer line wherever results or signals appear, and in the footer: "Not financial advice. Signals follow your rules." The legal page and the places where the user commits use the full one (spec, section 3).
-- Mode label (Simulation / Live) on every strategy
-- Strategy name with template, mode and start date, e.g. "Zscaler & friends · *Winners at a discount* · Live · since Oct 13"
+- Mode label (Simulation / Manual) on every strategy
+- Strategy name with template, mode and start date, e.g. "Zscaler & friends · *Winners at a discount* · Manual · since Oct 13"
 - Template card (name, tagline, idea, Learn more)
 - Result block: result vs index fund, worst year, "Past results don't promise future ones"
 - Stock status pill: Watching · Signal · Building · Holding · Waiting for you

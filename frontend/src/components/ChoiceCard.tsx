@@ -17,7 +17,7 @@ interface ChoiceCardProps {
   checked: boolean
   onSelect: () => void
   title: ReactNode
-  /** Small tag before the title, e.g. a SIM / LIVE badge. */
+  /** Small tag before the title, e.g. a template's tag. */
   badge?: ReactNode
   /** Line under the title, e.g. a template's Tagline. */
   subtitle?: ReactNode

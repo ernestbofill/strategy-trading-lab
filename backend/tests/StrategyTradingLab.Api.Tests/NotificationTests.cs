@@ -93,7 +93,7 @@ public class NotificationTests
         Assert.Equal("El teu resum, 23 oct. 2026", subject);
         Assert.DoesNotContain("T’espera a tu", body);
         foreach (var section in new[] { "T'espera a tu", "Què ha canviat avui", "Les teves estratègies" }) Assert.Contains(section, body);
-        Assert.Contains("Zscaler & friends (Real): des del 1 oct. 2026, 1 senyal", body);
+        Assert.Contains("Zscaler & friends (Manual): des del 1 oct. 2026, 1 senyal", body);
         Assert.Contains("The comeback (Simulació): des del 5 oct. 2026, 0 senyals", body);
         Assert.EndsWith(EmailTexts.DisclaimerCa, body);
     }
@@ -808,7 +808,7 @@ public class NotificationTests
 
             Assert.Equal(0, before);
             Assert.True(after >= 1);
-            Assert.Contains("(Live)", sender.Sent.Single(m => m.Subject.StartsWith("Your summary")).Body.Replace("Waiting for you", ""));
+            Assert.Contains("(Manual)", sender.Sent.Single(m => m.Subject.StartsWith("Your summary")).Body.Replace("Waiting for you", ""));
         }
         finally
         {

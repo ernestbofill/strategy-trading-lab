@@ -4,7 +4,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
-import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { isoDate, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
@@ -26,7 +26,7 @@ export function AiRoundsPage() {
         <Screen top={top}>
           <PageHeader title={t('aiRound.history.title')} />
           <p className={styles.eyebrow}>
-            <Tag tone={h.mode === 'live' ? 'live' : 'sim'}>{h.mode === 'live' ? 'LIVE' : 'SIM'}</Tag>
+            <ModeTag live={h.mode === 'live'} />
             <span>{h.strategyName}</span>
           </p>
           {h.picksVsRest && (

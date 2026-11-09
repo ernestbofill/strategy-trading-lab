@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Card } from '../../components/Card'
 import { InfoTip } from '../../components/InfoTip'
 import { useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
@@ -170,7 +171,8 @@ export function InteractiveFeatures() {
           const isActive = activeFeature === pillar.key
           const isTabbable = isActive || (activeFeature === null && index === 0)
           return (
-            <button
+            <Card
+              as="button"
               key={pillar.key}
               type="button"
               role="tab"
@@ -181,7 +183,8 @@ export function InteractiveFeatures() {
               aria-controls="panel-feature-detail"
               className={styles.featureCard}
               data-feature={pillar.key}
-              data-active={isActive}
+              interactive
+              selected={isActive}
               onClick={() => setActiveFeature((prev) => (prev === pillar.key ? null : pillar.key))}
               onKeyDown={(e) => handleTabKeyDown(e, index)}
             >
@@ -192,7 +195,7 @@ export function InteractiveFeatures() {
               <div className={styles.expandToggle}>
                 <span>{isActive ? t('welcome.collapse') : t('welcome.expand')}</span>
               </div>
-            </button>
+            </Card>
           )
         })}
       </div>

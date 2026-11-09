@@ -51,7 +51,8 @@ export function ChooseMode() {
     <Screen
       top={<TopBar up={reviewPath(templateKey)} step="3 / 5" />}
       action={<PrimaryAction to={budgetPath}>{t('newStrategy.mode.continue')}</PrimaryAction>}
-      note={t('newStrategy.mode.later')}
+      // Not for a manual copy already on its way ("Follow it manually").
+      note={sourceStrategyId ? undefined : t('newStrategy.mode.later')}
       noteAbove
     >
       <PageHeader title={t('newStrategy.mode.title')} lead={t('newStrategy.mode.lead')} />
@@ -63,7 +64,7 @@ export function ChooseMode() {
             name="mode"
             value={m.id}
             checked={mode === m.id}
-            // A "Go live" copy switched to Simulation is a new simulation: no source, and the template's name.
+            // A "Follow it manually" copy switched to Simulation is a new simulation: no source, and the template's name.
             onSelect={() => update(m.id === 'simulation' && sourceStrategyId ? { mode: m.id, sourceStrategyId: null, name: null } : { mode: m.id })}
             title={m.name}
             disabled={m.id === 'live' && !emailVerified}

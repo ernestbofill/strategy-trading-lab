@@ -161,10 +161,8 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
     <Screen
       top={top}
       action={
-        <PrimaryAction
-          to={modePath}
-          disabled={!canContinue}
-        >
+        // Opened by its address, the draft can still be another template's: make it this one's.
+        <PrimaryAction to={modePath} onClick={own} disabled={!canContinue}>
           {t('newStrategy.review.useTemplate')}
         </PrimaryAction>
       }

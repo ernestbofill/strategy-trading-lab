@@ -76,7 +76,7 @@ function Counts({ counts }: { counts: AdminUsersPage['counts'] }) {
           <tr>
             <th scope="col">Template</th>
             <th scope="col">Simulation</th>
-            <th scope="col">Live</th>
+            <th scope="col">Manual</th>
           </tr>
         </thead>
         <tbody>

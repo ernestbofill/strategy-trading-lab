@@ -5,7 +5,7 @@ import { Callout } from '../../components/Callout'
 import { FormMessage, TextField, type FormMessageState } from '../../components/Field'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
-import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { TextAction } from '../../components/TextAction'
 import { exact, formatRate, formatShares, money, shortDate, symbolOf } from '../../lib/format'
 import { invalidate, useLoadable } from '../../lib/useLoadable'
@@ -41,7 +41,7 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
   const header = (
     <div className={styles.header}>
       <div className={styles.eyebrow}>
-        <Tag tone="live">{t('signal.live')}</Tag>
+        <ModeTag live />
         <span>
           {s.strategyName} · <em>{s.templateName}</em>
         </span>

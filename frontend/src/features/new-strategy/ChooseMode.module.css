@@ -2,14 +2,22 @@
   font: 600 14px/22px var(--font-ui);
 }
 
-.facts {
+.points {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.label {
-  color: var(--ink-sidebar);
+.points > span {
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+
+.points > span::before {
+  content: '•';
+  display: inline-block;
+  width: 1.2em;
+  text-indent: 0;
 }
 
 .confirmFirst {
@@ -19,8 +27,4 @@
 }
 .confirmFirst p {
   margin: 0;
-}
-
-.inkNote {
-  color: var(--ink);
 }

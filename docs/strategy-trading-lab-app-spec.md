@@ -20,8 +20,8 @@ This is the brief for the agent building the Strategy Trading Lab app. It descri
 
 Strategy Trading Lab is a strategy lab and a monitoring side app. A user picks a **strategy template**, sees how it did in the past, tunes its rules, gives it a budget and a name, and runs it as their own **strategy** in one of two **modes**:
 
-- **Simulation:** the app trades on paper, on real prices, and shows how the strategy does from today. Nothing happens outside the app.
-- **Live:** the user follows the strategy with real money at their own broker. The app sends each signal, the user says whether they acted on it or skipped it (or snoozes it until the next day), and the app records those trades and tracks the results.
+- **Simulation:** the app records simulated trades on real prices, every time the rules call for one, and shows how the strategy does from today. No signal alerts, just the daily summary. Nothing happens outside the app.
+- **Manual** (`live` in the code, the API and the database; called *Live* until 2026-11-09): the user follows the strategy themselves, at their own broker with real money or just to track it. The app sends each signal, the user says whether they acted on it or skipped it (or snoozes it until the next day), and the app records those trades and tracks the results.
 
 There is no broker sync in either mode. The app never places orders and never reads the user's broker account; in live mode it knows only what the user confirms. It gives no trading advice.
 
@@ -31,7 +31,7 @@ There is no broker sync in either mode. The app never places orders and never re
 | --- | --- |
 | **Strategy template** | An idea and its rules, as offered in the catalogue, with our tested defaults. Picked, reviewed, backtested and tuned. Templates never change because of what a user does. |
 | **Strategy** | The user's own copy of a template: their name for it, their stocks, settings and budget, running in one mode from the day they start it. It keeps its own trades and results. A user can run any number of strategies, several from the same template. |
-| **Mode** | *Simulation* or *Live*. Fixed for the life of a strategy; going live means starting a new strategy. |
+| **Mode** | *Simulation* or *Manual*. Fixed for the life of a strategy; following a simulation manually means starting a new strategy. |
 | **Signal** | The moment a strategy's rules are met for a stock: a buy step, or, for *Index trend*, a sale. In simulation the app acts on it by itself; in live it asks the user. |
 | **Step** | One buy of the step size, fee included: a €100 step is about €98.80 of shares and a €1.20 fee. A stock gets at most the max steps per stock. |
 | **Discount zone** | For *Winners at a discount*: the range 5-15% below a stock's recent peak, where its rules signal. |
@@ -54,7 +54,7 @@ These apply to every screen, email and alert.
 - **Plain language.** Real trading terms stay, each explained in brackets the first time it appears, e.g. "SMA 200 (average price over the last 200 days)".
 - **Mostly US markets, euro results.** v1 covers the POC's stocks and funds (mostly US-listed, a few listed in Europe and Hong Kong), plus any stock or fund a user adds from the same exchanges. Budgets, steps and results are in euro (`€3,000`), converted at the day's exchange rate; stock prices are shown in the listing's currency (`$412.30`), as at the user's broker. Other currencies may follow; the data already records the currency of every amount.
 - **English and Catalan.** v1 ships in both. The user picks the language (nothing is guessed from the browser) and can change it in the account. Before log-in, the Welcome and Pick a template screens show the other language in the top bar ("Català" or "English"), one tap to switch. Emails and notifications follow it, and so do their links: every link in an email or invite message starts with its language (`/ca/sign-up?invite=…`, `/en/strategies/…`), so it opens the app in the language the email was written in, before anyone logs in. The app keeps that language on the device and drops the prefix from the address; a signed-in account's own language still wins. `/en` and `/ca` alone open the app's home in that language. Quoted copy in this spec is the English; the Catalan copy is still to be written.
-- **Mode always labelled.** Every strategy shows *Simulation* or *Live*; results of different modes are never mixed.
+- **Mode always labelled.** Every strategy shows *Simulation* or *Manual*; results of different modes are never mixed.
 - **Free for now.** No paywall, plans or pricing.
 - **Mobile first.** The wireframes are 390 px wide. Every screen must also work on desktop, with no horizontal scrolling at any width.
 - **Functional style rules.** One primary action per screen, at the bottom. Selected items look clearly different from unselected ones. Touch targets at least 44 × 44 px, including − / + steppers. Status is never shown by colour alone: every status has a text label. Text meets WCAG AA contrast.
@@ -71,7 +71,7 @@ These apply to every screen, email and alert.
 | 2 · Review a template (one per template) | `Review`, `ReviewComeback`, `ReviewDrop`, `ReviewTrend`, `ReviewAI` | Pick screen "Continue" or "Learn more"; Edit links on Confirm | Advanced settings, How we tested, Choose the mode |
 | 2b · Advanced settings | `Advanced` | Review; "Tune the settings" on the strategy page; Confirm | Back to where it came from |
 | 2c · How we tested | `HowTested` | "How we tested ›" on a review (not on the AI review) | Back to that review |
-| 3 · Choose the mode | `Mode` | Review "Use this template"; "Go live with these settings" (built, #92; not drawn) | Set your budget |
+| 3 · Choose the mode | `Mode` | Review "Use this template"; "Follow it manually" (built, #92; not drawn) | Set your budget |
 | 4 · Set your budget | `Budget` | Choose the mode; Confirm | Confirm |
 | 5 · Name, preview and confirm | `Confirm` | Set your budget | Dashboard |
 | Dashboard (home) | `Home` | Confirm; app start for returning users | Strategy page, Confirm a signal, AI round, Pick a template |
@@ -85,7 +85,7 @@ These apply to every screen, email and alert.
 
 **Adding a strategy:** dashboard "+ New strategy" → the same screens. All templates are shown, with "You run [n] from this template" on templates already in use (not drawn).
 
-**Going live from a simulation (built, #92; not drawn):** "Go live with these settings" on a running simulation's page fills the new-strategy draft from it and opens Choose the mode with Live selected. The draft takes its template, its stocks (starter-list stocks it doesn't watch come unticked, stocks it added come added), its fund, the settings that differ from the tested defaults, its budget, step and max steps, an AI strategy's sources and instructions, and its currency (the copy keeps it, whatever the account's). The name is the simulation's with " live" (Catalan " en directe"), numbered while a running strategy has it ("Zscaler & friends live 2"). Every screen of the flow can still change it. An account without a confirmed email falls back to Simulation on Choose the mode, which says why. `POST /strategies` keeps `sourceStrategyId` for a live strategy only, and refuses one that isn't the user's own simulation (`errors.sourceStrategyId`). The simulation keeps running or can be archived; the two keep separate histories. A live copy's page shows "Copied from [simulation name]", a link to it, while the simulation exists.
+**Following a simulation manually (built, #92; not drawn):** "Follow it manually" / "With these settings" on a running simulation's page fills the new-strategy draft from it and opens Choose the mode with Manual selected. The draft takes its template, its stocks (starter-list stocks it doesn't watch come unticked, stocks it added come added), its fund, the settings that differ from the tested defaults, its budget, step and max steps, an AI strategy's sources and instructions, and its currency (the copy keeps it, whatever the account's). The name is the simulation's with " (manual)" (the same in Catalan), numbered while a running strategy has it ("Zscaler & friends (manual) 2"). Every screen of the flow can still change it. An account without a confirmed email falls back to Simulation on Choose the mode, which says why. `POST /strategies` keeps `sourceStrategyId` for a live strategy only, and refuses one that isn't the user's own simulation (`errors.sourceStrategyId`). The simulation keeps running or can be archived; the two keep separate histories. A live copy's page shows "Copied from [simulation name]", a link to it, while the simulation exists.
 
 **Headers.** Pick a template (1 / 5) has "DASHBOARD" on the left ("WELCOME" for a guest, with the language and "LOG IN" on the right instead of the step). Steps 2 to 5, and the template's How we tested, Advanced and prompt screens, have "← BACK" on the left, up to the step before, and the step or the template's name on the right.
 
@@ -188,7 +188,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
   - Three cards: Zero broker access, Uncompromising benchmark honesty, and Disciplined systematic rules.
 - **Bottom CTA banner:**
   - Only displayed for guests (authenticated users do not see this banner).
-  - "Ready to test your first strategy? Explore all templates, customize settings, and run paper simulations with zero commitment. No credit card required."
+  - "Ready to test your first strategy? Explore all templates, customize settings, and run simulations with zero commitment. No credit card required."
   - Dual action buttons: "TRY AS GUEST ›" and "Create an account".
 - **Footer:** Ends with the standard site footer ("Not financial advice. Signals follow your rules." and the legal links).
 
@@ -263,7 +263,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - Top bar: "DASHBOARD" · "1 / 5"
 - Eyebrow: "Welcome to Strategy Trading Lab" (left out when reached from the dashboard)
 - H1: "Pick a strategy template"
-- Intro: "Each template is a few simple rules with tested defaults. See how it did in the past, tune it, then run it as a simulation or live. How it works ›" (links to `/welcome?from=new`)
+- Intro: "Each template is a few simple rules with tested defaults. See how it did in the past, tune it, then run it as a simulation or manually. How it works ›" (links to `/welcome?from=new`)
 - Button: "Continue"
 - Under the button: "Pick one to start. You can add more strategies later, from any template."
 
@@ -475,22 +475,20 @@ Content is per template (period, scope, figures). *Index trend* is all in, all o
 **Copy**
 - Top bar: "← BACK" · "3 / 5"
 - H1: "How do you want to run it?"
-- Intro: "You can start a live copy of a simulation later."
+- Intro: "The app never trades or touches your money."
+- Under the cards, above the button: "You can start a manual copy of a simulation later."
 - Button: "Continue"
 
-**Two option cards**, single choice, *Simulation* selected by default. Each has a mode tag, the name, a bold line and three rows:
+**Two option cards**, single choice, *Simulation* selected by default. Each has the name (no mode tag: the name is the mode), a bold line and three bullets. The two differences that matter are who records the trades and whether each signal sends an alert; neither mode moves money (Ernest, 2026-11-09).
 
-| | Simulation (tag "SIM") | Live (tag "LIVE") |
+| | Simulation | Manual |
 | --- | --- | --- |
-| Line | "Test it on paper. No real money." | "Follow it with real money at your own broker." |
-| Who trades: | "the app, on paper, every time the rules say so." | "you, at your broker, if and when you choose." |
-| The app: | "records each trade at the next day's opening price." | "alerts you to each signal and records what you confirm." |
-| You: | "nothing. Read the summary." | "confirm each signal: I did it, or I skipped it." |
+| Line | "The app follows the strategy for you." | "Follow a strategy yourself." |
+| • | "Records simulated trades on its own" | By template: "Get an alert for each buy or sell signal" (it sells), "Get an alert for each buy signal" (buys only), "Get a reminder for each AI round" (*Your AI's top picks*) |
+| • | "No alerts, just a daily summary" | "You record your trades in the app" |
+| • | "For testing a strategy hands-off" | "The app works as a tracker" |
 
-**Until the email is confirmed** (built, #89): the Live card can't be picked; under it, "Confirm your email to go live." and "Send the link again". A draft that arrives live falls back to Simulation. `POST /strategies` refuses a live strategy from an unconfirmed account (`errors.mode`).
-
-**When Live is selected**
-- Above the button: "The app never trades for you or connects to your broker. It records only what you confirm."
+**Until the email is confirmed** (built, #89): the Manual card can't be picked; under it, "Confirm your email to use Manual." and "Send the link again". A draft that arrives as Manual falls back to Simulation. `POST /strategies` refuses a manual strategy from an unconfirmed account (`errors.mode`).
 
 **No Alerts box** (removed 2026-11-01): notifications are set only in the account, and app notifications are asked for on Confirm (see Notifications).
 
@@ -502,7 +500,7 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 - Top bar: "← BACK" · "4 / 5"
 - Above the H1: the mode tag and the template name.
 - H1: "Set your budget"
-- Intro, Live: "The amount you plan to put into this strategy at your broker. The app doesn't move or hold any money."
+- Intro, Manual: "The amount you'd invest at your broker. The app doesn't move or hold any money."
 - Intro, Simulation (not drawn): "A what-if amount. No real money moves."
 - Button: "Continue"
 - Under the button: "Amounts in [euro / US dollar / British pound]. Dollar prices convert at the day's rate." (the user's currency)
@@ -540,7 +538,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 | Label | Value | Edit → |
 | --- | --- | --- |
 | Template | "[template name]" | Pick a template |
-| Mode | Live: "Live: you trade at your broker and confirm each signal" · Simulation: "Simulation: the app trades on paper" (draft) | Choose the mode |
+| Mode | Manual: "Manual: alerts for each signal; you record your trades" (*Your AI's top picks*: "Manual: a reminder for each AI round; you record your trades") · Simulation: "Simulation: the app records simulated trades" | Choose the mode |
 | Stocks | "[first stock] and [n] more" (fund templates: the fund's name) | Review |
 | Settings | "Tested defaults", or "[n] changed" | Advanced settings |
 | Budget | "€[budget] · steps of €[step] · up to [max] per stock" | Set your budget |
@@ -552,7 +550,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Simulation (not drawn): "You see right away how the template did in the past." / "From today it runs on real prices and records its own trades." / "A summary comes after the US market close on days something changes."
   - *Your AI's top picks* (not drawn): "There are no past results for this template." / "Your first AI round is due now." / then the mode's line.
 - Above the button: nothing; the site footer has the disclaimer.
-- Button, Live: "Start following it live". Simulation (not drawn): "Start the simulation".
+- Button, Manual: "Start following it". Simulation (not drawn): "Start the simulation".
 - The button creates the strategy and opens the dashboard, in place of Confirm in the history, so going back never shows Confirm again. For *Your AI's top picks*, the first AI round waits there under *Waiting for you*.
 - While it saves, the button reads "Starting…" and can't be pressed twice. If it fails, the user stays on this screen and sees, under the name: "You already run a strategy with this name. Pick another." when another running strategy took the name, else "We couldn't start it. Try again." (assumed copy)
 
@@ -564,12 +562,12 @@ The same three settings can be changed later from the strategy page (not drawn).
 - Bottom: the site footer (short disclaimer).
 
 **"Waiting for you"** (shown only when something is waiting), with a count badge. One row per item, newest first, each a link:
-- Live signal, tag "LIVE": "Your rules for **[strategy name]** are met for [stock]. Did you act on it?" → Confirm a signal.
+- Manual signal, tag "MANUAL": "Your rules for **[strategy name]** are met for [stock]. Did you act on it?" → Confirm a signal.
 - Live sell signal (not drawn): "Your rules for **[strategy name]** are met for a sale. Did you act on it?"
 - AI round due, tag "AI": "Time for the AI round of **[strategy name]**." → AI round.
 
 **Strategy cards**, one per strategy; the whole card links to its strategy page.
-- Header: the strategy name; under it "*[template]* · since [date]" or "*[template]* · started today"; on the right the mode tag ("LIVE" or "SIM"). A small glowing dot before the tag marks a card with something waiting, with an accessible label ("Signal waiting" or "AI round due"). The Waiting for you list carries the detail; the dot only points to the card.
+- Header: the strategy name; under it "*[template]* · since [date]" or "*[template]* · started today"; on the right the mode tag ("MANUAL" or "SIM"). A small glowing dot before the tag marks a card with something waiting, with an accessible label ("Signal waiting" or "AI round due"). The Waiting for you list carries the detail; the dot only points to the card.
 - A fund template names the fund it follows after the template: "*[template]* · [fund symbol] · since [date]".
 - The card is short (Ernest, 2026-11-07), with no past results or template text:
   - The gain since start, big, "[+X.X%]": "0.0%", greyed, before the first buy (the money hasn't moved), "–" while bought trades have no price yet. Under it "S&P 500: [+X.X%]" (just "S&P 500" on the card, to keep it short; Ernest, 2026-11-07): with trades, the same money put in on the same days, as on the strategy page; before the first buy, the fund since the start day. Once it has trades, a small line chart of its gain sits on the right.
@@ -624,7 +622,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
   - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
 - Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
-- For running simulations, a third tile: "Go live" / "With these settings" (built, #92; not drawn), see *Going live from a simulation*. A live copy shows "Copied from [simulation name]" under its name.
+- For running simulations, a third tile: "Follow it manually" / "With these settings" (built, #92; not drawn), see *Following a simulation manually*. A manual copy shows "Copied from [simulation name]" under its name.
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - **No notification switches** (removed 2026-11-01): they are all in the account's Notifications. With signals and reminders off there, a strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
 - **One action out of each state** (#96, Ernest's feedback: one word, not *End*, *Archive* and *Delete*): a running strategy can only be archived, and only an archived strategy can be deleted.
@@ -689,7 +687,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 
 **Copy**
 - Top bar: "← STRATEGY" · "SIGNAL · [DATE]"
-- Above the H1: the "LIVE" tag and "[strategy name] · *[template]*"
+- Above the H1: the "MANUAL" tag and "[strategy name] · *[template]*"
 - H1: the stock's name
 - Signal box: "Your rules for **[strategy name]** are met for [stock]: [8]% below its recent peak, still above its 50-day average. Under your settings that's step [2] of [5] ([€100])." Then "Close on [date]: $[XXX.XX]". The fact list depends on the template's rules.
 - Sell signal for *Index trend* (not drawn): "Your rules for **[strategy name]** are met for a sale: the market closed [3.2]% below its 200-day average."
@@ -798,7 +796,7 @@ Like the POC's settings page. Its heading is "Admin", the name the account's top
 
 ## 7. Notifications
 
-**Email layout** (issue #79): every email the app sends (account, notifications, feedback to the owner, the admin test email, invites) uses one layout in the app's cyberpunk style, built by `EmailDocument`: a "STRATEGY TRADING LAB" brand line, a card on the dark ground with a mint top edge, a small uppercase label for the kind of email ("Signal · Live", "Summary", "Your account", "Invitation · Closed alpha"), then the content, the short disclaimer at the foot of the card wherever signals or results appear, and a footer with "Open the app". The main link is a button (plain-text clients get the address in the multipart text); the overview's sections are lists with *Live* (pink) and *Simulation* (cyan) tags, and each waiting item links to its page. Invites show a dedicated code badge ("Your code") for manual entry. Each email is sent as HTML and as plain text (multipart/alternative) built from the same blocks, so both say the same thing; clients that don't show HTML show the text. Tables and inline styles only (mail clients drop `<style>`), the text 16px, buttons at least 44px tall, at most 560px wide. Dark only, like the app: assumed, since mail apps that force a light theme may recolour it. The footer doesn't say "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.
+**Email layout** (issue #79): every email the app sends (account, notifications, feedback to the owner, the admin test email, invites) uses one layout in the app's cyberpunk style, built by `EmailDocument`: a "STRATEGY TRADING LAB" brand line, a card on the dark ground with a mint top edge, a small uppercase label for the kind of email ("Signal · Manual", "Summary", "Your account", "Invitation · Closed alpha"), then the content, the short disclaimer at the foot of the card wherever signals or results appear, and a footer with "Open the app". The main link is a button (plain-text clients get the address in the multipart text); the overview's sections are lists with *Manual* (pink) and *Simulation* (cyan) tags, and each waiting item links to its page. Invites show a dedicated code badge ("Your code") for manual entry. Each email is sent as HTML and as plain text (multipart/alternative) built from the same blocks, so both say the same thing; clients that don't show HTML show the text. Tables and inline styles only (mail clients drop `<style>`), the text 16px, buttons at least 44px tall, at most 560px wide. Dark only, like the app: assumed, since mail apps that force a light theme may recolour it. The footer doesn't say "you get this because you have an account": a sign-up confirmation can reach someone who never signed up.
 
 **Two kinds, set in one place** (redesigned from scratch, Ernest, 2026-11-01): the user gets fewer options and less explanation, and can't control everything.
 - **Signals and reminders**: something needs the user. The live signal alert, the snooze reminder and the AI round reminder. By app (web push) and by email.

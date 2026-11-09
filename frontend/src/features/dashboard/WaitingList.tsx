@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { WaitingItem } from '../../api'
 import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { useT } from '../../i18n/I18n'
 import { aiRoundPath, signalPath } from './paths'
 import styles from './WaitingList.module.css'
@@ -38,7 +39,7 @@ export function WaitingList({ items }: { items: WaitingItem[] }) {
         {items.map((item) => (
           <li key={item.id}>
             <Link to={target(item)} className={styles.row}>
-              <Tag tone={item.kind === 'aiRound' ? 'ai' : 'live'}>{item.kind === 'aiRound' ? 'AI' : 'LIVE'}</Tag>
+              {item.kind === 'aiRound' ? <Tag tone="ai">AI</Tag> : <ModeTag live />}
               <span className={styles.text}>
                 <Message item={item} />
               </span>

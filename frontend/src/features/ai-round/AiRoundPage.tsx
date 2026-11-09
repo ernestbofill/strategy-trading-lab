@@ -5,7 +5,7 @@ import { Callout } from '../../components/Callout'
 import { Checkbox, FormMessage, SelectField, TextAreaField, TextField, type FormMessageState } from '../../components/Field'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
-import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT, type Translate } from '../../i18n/I18n'
 import { money, shortDate } from '../../lib/format'
@@ -42,7 +42,7 @@ function Header({ r, title }: { r: AiRoundDetail; title: string }) {
   return (
     <div className={styles.header}>
       <div className={styles.eyebrow}>
-        <Tag tone={r.mode === 'live' ? 'live' : 'sim'}>{r.mode === 'live' ? 'LIVE' : 'SIM'}</Tag>
+        <ModeTag live={r.mode === 'live'} />
         <span>
           {r.strategyName} · <em>{r.templateName}</em>
         </span>

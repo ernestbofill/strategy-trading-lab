@@ -59,13 +59,13 @@ public static class Messages
         "Un recordatori no et pot arribar: activa els mails de recordatoris al teu compte.");
     public static readonly Message NotificationsOff = new("A reminder can't reach you: turn on reminder emails, or notifications on this device, in your account.",
         "Un recordatori no et pot arribar: activa els mails de recordatoris, o les notificacions en aquest dispositiu, al teu compte.");
-    public static readonly Message ConfirmEmailToGoLive = new("Confirm your email to go live.", "Confirma el teu mail per començar en mode real.");
+    public static readonly Message ConfirmEmailForManual = new("Confirm your email to use Manual.", "Confirma el teu mail per fer servir el mode manual.");
     public static readonly Message NotYourSimulation = new("Pick one of your simulations to copy.", "Tria una de les teves simulacions per copiar-la.");
     public static readonly Message ConfirmEmailForReminders = new("Confirm your email address to get reminders.", "Confirma el teu mail per rebre recordatoris.");
 
-    public static readonly Message LiveOnlyLog = new("Trades can only be logged for live strategies.", "Només es poden registrar operacions en estratègies reals.");
-    public static readonly Message LiveOnlyEdit = new("Only live trades can be edited.", "Només es poden editar les operacions reals.");
-    public static readonly Message LiveOnlyDelete = new("Only live trades can be deleted.", "Només es poden eliminar les operacions reals.");
+    public static readonly Message LiveOnlyLog = new("Trades can only be logged for manual strategies.", "Només es poden registrar operacions en estratègies manuals.");
+    public static readonly Message LiveOnlyEdit = new("Only trades of manual strategies can be edited.", "Només es poden editar les operacions d'estratègies manuals.");
+    public static readonly Message LiveOnlyDelete = new("Only trades of manual strategies can be deleted.", "Només es poden eliminar les operacions d'estratègies manuals.");
     public static readonly Message PickStrategyStock = new("Pick one of the strategy's stocks.", "Tria una de les accions de l'estratègia.");
 
     public static readonly Message EnterTradeDay = new("Enter the day you traded.", "Indica el dia que vas operar.");
@@ -91,7 +91,7 @@ public static class Messages
     public static readonly Message ArchiveBeforeDelete = new("Archive the strategy before deleting it.", "Arxiva l’estratègia abans d’esborrar-la.");
     public static readonly Message NameTaken = new("You already have a running strategy with that name.", "Ja tens una estratègia en marxa amb aquest nom.");
     public static readonly Message UseNameLength = new("Use 1 to {0} characters.", "Fes servir d'1 a {0} caràcters.");
-    public static readonly Message PickMode = new("Pick simulation or live.", "Tria simulació o real.");
+    public static readonly Message PickMode = new("Pick simulation or manual.", "Tria simulació o manual.");
     public static readonly Message ListedOnce = new("Each stock or fund can be listed once.", "Cada acció o fons es pot afegir només un cop.");
     public static readonly Message PickTheFund = new("Pick the fund.", "Tria el fons.");
     public static readonly Message PickOneStock = new("Pick at least one stock.", "Tria almenys una acció.");

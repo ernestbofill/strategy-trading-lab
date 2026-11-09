@@ -6,7 +6,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Stat, Stats } from '../../components/Stats'
-import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { exact, money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
@@ -236,7 +236,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
           </>
         )}
         <div className={styles.sub}>
-          <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
+          <ModeTag live={live} />
           {s.endedOn && <span className={styles.ended}>{t('strategy.archivedOn', { date: shortDate(s.endedOn) })}</span>}
           <span>
             <em>{s.templateName}</em> · {since}

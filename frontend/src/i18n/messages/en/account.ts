@@ -31,7 +31,7 @@ export const account = {
   'account.signUp.topBar': 'STL // SIGN UP',
   'account.signUp.title': 'Create your account',
   'account.signUp.lead':
-    'Pick a strategy template, tune its rules, and run it as a simulation or live. The app never places orders and never connects to a broker.',
+    'Pick a strategy template, tune its rules, and run it as a simulation or manually. The app never places orders and never connects to a broker.',
   'account.signUp.skipLookAround': 'Skip for now, look around',
   'account.signUp.language': 'Language',
   'account.signUp.currency': 'Currency',
@@ -50,7 +50,7 @@ export const account = {
   'account.invite.title': 'Welcome, {name}',
   'account.invite.from': '{name} invited you to Strategy Trading Lab.',
   'account.invite.anonymous': 'You have an invite to Strategy Trading Lab.',
-  'account.invite.lead': 'Test strategies with your own rules, first in simulation with no real money. The app never trades for you or connects to your broker.',
+  'account.invite.lead': 'Test strategies with your own rules, as a simulation or with signal alerts. The app never trades for you or connects to your broker.',
   'account.invite.code': 'Your code',
   'account.invite.notValid': "This invite can't be used any more. Ask for a new one, or type another code below.",
 

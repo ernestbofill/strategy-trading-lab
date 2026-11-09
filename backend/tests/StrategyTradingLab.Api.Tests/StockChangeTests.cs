@@ -70,9 +70,9 @@ public class StockChangeTests(AccountsApi api) : IClassFixture<AccountsApi>
         var (_, ca, _) = EmailTexts.Overview(new DateOnly(2026, 10, 23), [], [], [], "https://app.example", "ca", stockChanges: changes);
 
         Assert.Contains("Stock changes", en);
-        Assert.Contains("(Live) S&P 500, Index trend: now a candidate, the rules watch it.", en);
-        Assert.Contains("(Live) S&P 500, Index trend: no longer a candidate.", en);
-        Assert.Contains("(Live) S&P 500, Index trend: now 2.5% above the discount zone.", en);
+        Assert.Contains("(Manual) S&P 500, Index trend: now a candidate, the rules watch it.", en);
+        Assert.Contains("(Manual) S&P 500, Index trend: no longer a candidate.", en);
+        Assert.Contains("(Manual) S&P 500, Index trend: now 2.5% above the discount zone.", en);
         Assert.Contains("Canvis de les teves accions", ca);
         Assert.Contains("S&P 500, Index trend: ara és candidata, les regles la vigilen.", ca);
         Assert.Contains("S&P 500, Index trend: ja no és candidata.", ca);

@@ -70,7 +70,7 @@ export const common = {
   'legal.about.title': 'About',
   'legal.about.lead': 'About Strategy Trading Lab.',
   'legal.about.content':
-    'A strategy lab and monitoring side app. Pick a strategy template, tune its rules, and follow it as a simulation or live. The app never places orders and never connects to a broker.',
+    'A strategy lab and monitoring side app. Pick a strategy template, tune its rules, and follow it as a simulation or manually. The app never places orders and never connects to a broker.',
   'legal.laterStep': 'This page comes in a later step.',
   'errors.goHome': 'Go home',
   'errors.notFound.title': 'Page not found',

@@ -103,7 +103,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | B4 | Advanced settings, per template | §6.2b | smoke | 2026-11-06-1 | Winners and AI only. C1.6 |
 | B5 | How we tested | §6.2c | smoke | 2026-11-06-1 | Winners only. F-010. C1.7 |
 | B6 | Prompt editor (AI draft) | §6.2 | untested | | |
-| B7 | Choose the mode (Live needs a confirmed email) | §6.3 | smoke | 2026-11-06-1 | Unconfirmed email not reachable with this account. C1.8 |
+| B7 | Choose the mode (Manual needs a confirmed email) | §6.3 | smoke | 2026-11-06-1 | Unconfirmed email not reachable with this account. C1.8 |
 | B8 | Set your budget: budget, step, max steps, currency | §6.4 | deep | 2026-11-06-1 | F-002, F-008. C1.9–13 |
 | B9 | Name, preview and confirm: name rules, Edit links, notifications ask | §6.5 | smoke | 2026-11-06-1 | C1.14–17 |
 | B10 | The draft across reloads, Back, and leaving and coming back | §4 | smoke | 2026-11-06-1 | Reload and direct address only. C1.18 |
@@ -131,7 +131,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | D8 | Rename | §6 Strategy page | smoke | 2026-11-06-1 | C3.4 |
 | D9 | Tune the settings while running | §6 Strategy page | smoke | 2026-11-06-1 | Not saved with a change: L-008. C3.12 |
 | D10 | Change the budget while running | §6 Strategy page | untested | | Not built yet (ROADMAP) |
-| D11 | Go live from a simulation | §4 Going live | smoke | 2026-11-06-1 | C2.15 |
+| D11 | Follow a simulation manually | §4 Going live | smoke | 2026-11-06-1 | C2.15 |
 | D12 | Archive, then delete | §6 Strategy page | deep | 2026-11-08-1 | Full lifecycle tested: create, archive, permanently delete throwaway. C3.4 |
 | D13 | An archived strategy is read-only | §6 Strategy page | smoke | 2026-11-06-1 | C3.16 |
 | D14 | Metrics arithmetic: budget used, fees, gains, vs the index | §6 Metrics, §5 Modes | smoke | 2026-11-06-1 | Sums by hand match. F-001, F-005. C2.6, C2.14, C3.5–6 |

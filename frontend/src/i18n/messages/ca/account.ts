@@ -32,7 +32,7 @@ export const account: Record<keyof typeof en, string> = {
   'account.signUp.topBar': 'STL // CREA UN COMPTE',
   'account.signUp.title': 'Crea el teu compte',
   'account.signUp.lead':
-    'Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en mode real. L’aplicació mai no posa ordres ni es connecta a cap broker.',
+    'Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en mode manual. L’aplicació mai no posa ordres ni es connecta a cap broker.',
   'account.signUp.skipLookAround': 'Salta-ho de moment, fes un cop d’ull',
   'account.signUp.language': 'Llengua',
   'account.signUp.currency': 'Moneda',
@@ -52,7 +52,7 @@ export const account: Record<keyof typeof en, string> = {
   'account.invite.title': 'Benvingut/da, {name}',
   'account.invite.from': "{name} t'ha convidat a Strategy Trading Lab.",
   'account.invite.anonymous': 'Tens una invitació a Strategy Trading Lab.',
-  'account.invite.lead': 'Prova estratègies amb les teves pròpies regles, primer en simulació i sense diners reals. L’aplicació mai no opera per tu ni es connecta al teu bròquer.',
+  'account.invite.lead': 'Prova estratègies amb les teves pròpies regles, en simulació o amb avisos de senyals. L’aplicació mai no opera per tu ni es connecta al teu broker.',
   'account.invite.code': 'El teu codi',
   'account.invite.notValid': "Aquesta invitació ja no es pot fer servir. Demana'n una de nova o escriu un altre codi a sota.",
 

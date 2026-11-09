@@ -2,7 +2,7 @@
 
 These are the instructions for every AI tool on this repo. Claude Code is the default, so this file is the single source of truth and the other tools point here (see *AI tools*). Edit the rules here, never in a vendor file; a vendor file only holds what is specific to its tool.
 
-Strategy Trading Lab (STL) is a strategy lab and monitoring side app. A user picks a strategy template, reviews and tunes it, gives it a budget and runs it as a **simulation** (the app records the trades the rules call for) or **live** (the user trades at their own broker and confirms each signal). The app never places orders and never connects to a broker.
+Strategy Trading Lab (STL) is a strategy lab and monitoring side app. A user picks a strategy template, reviews and tunes it, gives it a budget and runs it as a **simulation** (the app records the trades the rules call for) or **manual** (the user gets an alert for each signal and records their own trades, at their broker or just to track; `live` in the code). The app never places orders and never connects to a broker.
 
 The owner and engineer is Mr Ernest.
 
@@ -79,7 +79,7 @@ Ask for a credential when you need one.
 - **One disclaimer, in the site footer.** Every screen ends with "Not financial advice. Signals follow your rules." and the legal links; screens don't repeat it or add other disclaimer lines, because the app is already text heavy (Ernest, #105). The full one, "Not financial advice. Signals follow your rules; you decide and trade at your own broker.", is accepted once at sign-up and opens the Disclaimer and Terms pages, which hold the details (including "Past results don't promise future ones."). Emails, which have no app footer, keep the short one.
 - Results are always shown next to the index fund and the worst year. The dashboard card is the exception: it shows the index fund only, and the strategy page keeps the worst year (Ernest, 2026-11-07).
 - Words: say *stock* or *fund* and *step*, not *tranche*.
-- Every strategy shows its mode (*Simulation* or *Live*). Results of the two modes are never mixed.
+- Every strategy shows its mode (*Simulation* or *Manual*; Manual is `live` in the code). Results of the two modes are never mixed.
 - Mobile first (wireframes are 390px wide), but every screen must also work on desktop, with no horizontal scrolling.
 - Touch targets are at least 44 × 44px. Text meets WCAG AA contrast.
 

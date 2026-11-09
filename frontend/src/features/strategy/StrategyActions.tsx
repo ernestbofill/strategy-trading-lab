@@ -131,8 +131,9 @@ export function GoLive({ s, className, titleClassName, detailClassName }: {
   const goLive = () => {
     if (template.status !== 'ready' || atLimit) return
     const taken = running.map((x) => x.name)
-    // Cut before numbering, so a long name keeps its " 2".
-    const name = defaultName(t('strategy.goLive.name', { name: s.name }).slice(0, NAME_MAX_LENGTH - 3), taken)
+    // Cut the simulation's name, not the result, so a long name keeps its " (manual)" and room for a " 2".
+    const room = NAME_MAX_LENGTH - 3 - t('strategy.goLive.name', { name: '' }).length
+    const name = defaultName(t('strategy.goLive.name', { name: s.name.slice(0, room) }), taken)
     load(draftFromStrategy(s, template.data, name))
     navigate(modePath)
   }

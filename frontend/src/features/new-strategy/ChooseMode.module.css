@@ -2,15 +2,10 @@
   font: 600 14px/22px var(--font-ui);
 }
 
-/* Label and text side by side; the labels share one column so the texts line up. */
 .facts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 6px var(--space-1);
-}
-
-.fact {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .label {

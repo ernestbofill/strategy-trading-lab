@@ -139,11 +139,13 @@ export const newStrategy = {
   'newStrategy.mode.trades': 'Trades:',
   'newStrategy.mode.goodFor': 'Good for:',
   'newStrategy.mode.sim.name': 'Simulation',
-  'newStrategy.mode.sim.line': 'Simulation. The app follows the strategy for you.',
+  'newStrategy.mode.sim.line': 'The app follows the strategy for you.',
   'newStrategy.mode.sim.alerts': 'none, just a daily summary',
   'newStrategy.mode.sim.trades': 'the app records simulated trades',
   'newStrategy.mode.sim.goodFor': 'testing a strategy hands-off',
   'newStrategy.mode.manual.name': 'Manual',
+  /** The Manual card's title on Choose the mode; the mode is still called Manual everywhere else. */
+  'newStrategy.mode.manual.title': 'With alerts',
   'newStrategy.mode.manual.line': 'Follow the strategy yourself.',
   /** One of the three, by template: buys and sells, buys only, AI rounds. */
   'newStrategy.mode.manual.alertBuySell': 'one for each buy or sell signal',

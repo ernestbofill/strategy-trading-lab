@@ -10,7 +10,7 @@
 }
 
 .featureCard {
-  background: var(--surface-editor);
+  background: var(--surface-hover);
   border: 1px solid var(--border-hairline);
   padding: var(--space-3);
   text-align: left;
@@ -68,14 +68,16 @@
   }
 }
 
-.featureCard:hover,
+/* The background no longer changes on hover: a purple edge says the card opens. */
+.featureCard:hover {
+  border-color: var(--ink-sidebar);
+}
 .featureCard:focus-visible {
-  background: var(--surface-hover);
-  border-color: var(--border-tab);
+  outline: 1px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .featureCard[data-active='true'] {
-  background: var(--surface-sidebar);
   border-color: var(--primary);
   box-shadow: var(--glow-primary);
 }
@@ -84,7 +86,8 @@
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 16px;
-  color: var(--ink-sidebar);
+  /* A touch lighter than --ink-sidebar, for AA contrast on the lighter card. */
+  color: color-mix(in srgb, var(--ink-sidebar) 85%, var(--ink));
   letter-spacing: 0.5px;
 }
 

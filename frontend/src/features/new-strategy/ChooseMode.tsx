@@ -33,14 +33,16 @@ export function ChooseMode() {
     : shown?.signals === 'buysOnly'
       ? 'newStrategy.mode.manual.alertBuy'
       : 'newStrategy.mode.manual.alertBuySell'
-  const modes: { id: Mode; line: string; facts: [alerts: string, trades: string, goodFor: string] }[] = [
+  const modes: { id: Mode; title: string; line: string; facts: [alerts: string, trades: string, goodFor: string] }[] = [
     {
       id: 'simulation',
+      title: t('newStrategy.mode.sim.name'),
       line: t('newStrategy.mode.sim.line'),
       facts: [t('newStrategy.mode.sim.alerts'), t('newStrategy.mode.sim.trades'), t('newStrategy.mode.sim.goodFor')],
     },
     {
       id: 'live',
+      title: t('newStrategy.mode.manual.title'),
       line: t('newStrategy.mode.manual.line'),
       facts: [t(alert), t('newStrategy.mode.manual.trades'), t('newStrategy.mode.manual.goodFor')],
     },
@@ -67,7 +69,7 @@ export function ChooseMode() {
             // A "Follow it manually" copy switched to Simulation is a new simulation: no source, and the template's name.
             onSelect={() => update(m.id === 'simulation' && sourceStrategyId ? { mode: m.id, sourceStrategyId: null, name: null } : { mode: m.id })}
             badge={<ModeTag live={m.id === 'live'} />}
-            title={<span className={styles.line}>{m.line}</span>}
+            title={m.title}
             disabled={m.id === 'live' && !emailVerified}
             footer={
               m.id === 'live' && !emailVerified && (
@@ -78,11 +80,11 @@ export function ChooseMode() {
               )
             }
           >
+            <span className={styles.line}>{m.line}</span>
             <span className={styles.facts}>
               {m.facts.map((text, i) => (
-                <span key={labels[i]} className={styles.fact}>
-                  <span className={styles.label}>{labels[i]}</span>
-                  <span>{text}</span>
+                <span key={labels[i]}>
+                  <span className={styles.label}>{labels[i]}</span> {text}
                 </span>
               ))}
             </span>

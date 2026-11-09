@@ -2,22 +2,19 @@
   font: 600 14px/22px var(--font-ui);
 }
 
-.points {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Label and text side by side; the labels share one column so the texts line up. */
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px var(--space-1);
 }
 
-.points > span {
-  padding-left: 1.2em;
-  text-indent: -1.2em;
+.fact {
+  display: contents;
 }
 
-.points > span::before {
-  content: '•';
-  display: inline-block;
-  width: 1.2em;
-  text-indent: 0;
+.label {
+  color: var(--ink-sidebar);
 }
 
 .confirmFirst {

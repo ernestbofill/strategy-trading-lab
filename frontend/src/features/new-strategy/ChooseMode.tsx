@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { ChoiceCard, ChoiceList } from '../../components/ChoiceCard'
+import { ModeTag } from '../../components/ModeTag'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { useT } from '../../i18n/I18n'
@@ -32,20 +33,19 @@ export function ChooseMode() {
     : shown?.signals === 'buysOnly'
       ? 'newStrategy.mode.manual.alertBuy'
       : 'newStrategy.mode.manual.alertBuySell'
-  const modes: { id: Mode; name: string; line: string; points: string[] }[] = [
+  const modes: { id: Mode; line: string; facts: [alerts: string, trades: string, goodFor: string] }[] = [
     {
       id: 'simulation',
-      name: t('newStrategy.mode.sim.name'),
       line: t('newStrategy.mode.sim.line'),
-      points: [t('newStrategy.mode.sim.records'), t('newStrategy.mode.sim.summary'), t('newStrategy.mode.sim.for')],
+      facts: [t('newStrategy.mode.sim.alerts'), t('newStrategy.mode.sim.trades'), t('newStrategy.mode.sim.goodFor')],
     },
     {
       id: 'live',
-      name: t('newStrategy.mode.manual.name'),
       line: t('newStrategy.mode.manual.line'),
-      points: [t(alert), t('newStrategy.mode.manual.records'), t('newStrategy.mode.manual.tracker')],
+      facts: [t(alert), t('newStrategy.mode.manual.trades'), t('newStrategy.mode.manual.goodFor')],
     },
   ]
+  const labels = [t('newStrategy.mode.alerts'), t('newStrategy.mode.trades'), t('newStrategy.mode.goodFor')]
 
   return (
     <Screen
@@ -66,7 +66,8 @@ export function ChooseMode() {
             checked={mode === m.id}
             // A "Follow it manually" copy switched to Simulation is a new simulation: no source, and the template's name.
             onSelect={() => update(m.id === 'simulation' && sourceStrategyId ? { mode: m.id, sourceStrategyId: null, name: null } : { mode: m.id })}
-            title={m.name}
+            badge={<ModeTag live={m.id === 'live'} />}
+            title={<span className={styles.line}>{m.line}</span>}
             disabled={m.id === 'live' && !emailVerified}
             footer={
               m.id === 'live' && !emailVerified && (
@@ -77,11 +78,12 @@ export function ChooseMode() {
               )
             }
           >
-            <span className={styles.line}>{m.line}</span>
-            {/* Spans, not a list: the card body sits inside the radio's label, which takes only phrasing content. */}
-            <span className={styles.points}>
-              {m.points.map((point) => (
-                <span key={point}>{point}</span>
+            <span className={styles.facts}>
+              {m.facts.map((text, i) => (
+                <span key={labels[i]} className={styles.fact}>
+                  <span className={styles.label}>{labels[i]}</span>
+                  <span>{text}</span>
+                </span>
               ))}
             </span>
           </ChoiceCard>

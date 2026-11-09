@@ -479,14 +479,14 @@ Content is per template (period, scope, figures). *Index trend* is all in, all o
 - Under the cards, above the button: "You can start a manual copy of a simulation later."
 - Button: "Continue"
 
-**Two option cards**, single choice, *Simulation* selected by default. Each has the name (no mode tag: the name is the mode), a bold line and three bullets. The two differences that matter are who records the trades and whether each signal sends an alert; neither mode moves money (Ernest, 2026-11-09).
+**Two option cards**, single choice, *Simulation* selected by default. Each starts with its mode tag (SIM, MANUAL) and a bold line, then three rows with a purple label on the left (no card name: the tag names the mode). The two differences that matter are who records the trades and whether each signal sends an alert; neither mode moves money (Ernest, 2026-11-09).
 
-| | Simulation | Manual |
+| | Simulation (tag "SIM") | Manual (tag "MANUAL") |
 | --- | --- | --- |
-| Line | "The app follows the strategy for you." | "Follow a strategy yourself." |
-| • | "Records simulated trades on its own" | By template: "Get an alert for each buy or sell signal" (it sells), "Get an alert for each buy signal" (buys only), "Get a reminder for each AI round" (*Your AI's top picks*) |
-| • | "No alerts, just a daily summary" | "You record your trades in the app" |
-| • | "For testing a strategy hands-off" | "The app works as a tracker" |
+| Line | "Simulation. The app follows the strategy for you." | "Follow the strategy yourself." |
+| Alerts: | "none, just a daily summary" | By template: "one for each buy or sell signal" (it sells), "one for each buy signal" (buys only), "a reminder for each AI round" (*Your AI's top picks*) |
+| Trades: | "the app records simulated trades" | "you record them in the app" |
+| Good for: | "testing a strategy hands-off" | "tracking, with or without real money" |
 
 **Until the email is confirmed** (built, #89): the Manual card can't be picked; under it, "Confirm your email to use Manual." and "Send the link again". A draft that arrives as Manual falls back to Simulation. `POST /strategies` refuses a manual strategy from an unconfirmed account (`errors.mode`).
 

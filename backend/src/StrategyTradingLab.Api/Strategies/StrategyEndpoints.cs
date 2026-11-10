@@ -651,6 +651,10 @@ public static class StrategyEndpoints
         var maxSteps = strategy.Budget.MaxSteps;
         var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
         var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
+        // An AI simulation records its trade at once, dated the signal's day or later (spec §5, F-007): once it is in, the signal is
+        // a step, not a SIGNAL. Without an exchange rate it waits for the next open like the other templates, and stays a SIGNAL.
+        var pending = todays is not null && !(!live && AiRounds.IsAi(strategy)
+            && trades.Any(b => b.AssetId == assetId && b.Side == todays.Side && b.Date >= todays.SignalDate));
         var (doneSteps, cycleStart) = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
         var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
         int rulesSteps;
@@ -673,7 +677,7 @@ public static class StrategyEndpoints
             ?? (aiScores is null ? null : aiScores.ContainsKey(assetId) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
         var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
-            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
+            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, pending, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
         var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
         var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
         decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number

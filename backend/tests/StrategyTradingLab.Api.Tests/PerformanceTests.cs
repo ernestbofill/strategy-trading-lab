@@ -126,8 +126,6 @@ public class PerformanceTests
         Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.NotCandidate, false, false, 0, null, "trend"));
         Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 1, null, "trend"));
         Assert.Equal(StockStatus.Signal, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.SellSignal, false, true, 0, null, "trend"));
-        // An AI simulation buys at once (F-007): today's signal is already a step.
-        Assert.Equal(StockStatus.Building, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, true, 1, 5, "ai"));
         Assert.Equal(StockStatus.WaitingForYou, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.SellSignal, true, true, 1, null, "trend"));
         // Live, the buy skipped: the rules hold it, the user doesn't.
         Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 1, null, "trend", userSteps: 0));

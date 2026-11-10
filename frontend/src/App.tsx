@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import type { Locale } from './api/types'
 import { I18nProvider, useI18n } from './i18n/I18n'
@@ -153,13 +153,17 @@ function HomeRoute() {
 }
 
 /**
- * A new page opens at its top (F-026): the window keeps its scroll across routes otherwise. Back and Forward (POP) leave it
- * to the browser, which restores the earlier position, and a link to a section (`#notifications`) scrolls there itself.
+ * A new page opens at its top (F-026): the window keeps its scroll across routes otherwise. Only a new path counts: a tab or
+ * filter in the address stays where it is. Back and Forward (POP) leave it to the browser, which restores the earlier
+ * position, and a link to a section (`#notifications`) scrolls there itself.
  */
 function ScrollToTop() {
   const { pathname, hash } = useLocation()
   const type = useNavigationType()
+  const shown = useRef(pathname)
   useLayoutEffect(() => {
+    if (shown.current === pathname) return
+    shown.current = pathname
     if (type !== 'POP' && !hash) window.scrollTo(0, 0)
   }, [pathname, hash, type])
   return null

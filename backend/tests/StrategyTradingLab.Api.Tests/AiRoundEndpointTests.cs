@@ -144,6 +144,10 @@ public class AiRoundEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             var session = UsSession.LastComplete(DateTimeOffset.UtcNow);
             var trade = await db.SignalTrades.AsNoTracking().SingleAsync(t => t.SignalId == signalId);
             Assert.Equal((session, 98.80m, 1.20m, 100m, 0.988m), (trade.TradeDate, trade.Amount, trade.Fee, trade.Price, trade.Shares));
+            // So its row is a step at once, not a SIGNAL bought at the next open (F-007).
+            var bought = await s.Client.GetFromJsonAsync<JsonElement>($"/strategies/{s.StrategyId}");
+            Assert.Equal("building", bought.GetProperty("stocks").EnumerateArray()
+                .Single(x => x.GetProperty("assetId").GetGuid() == s.Alpha).GetProperty("status").GetString());
 
             // The daily check doesn't buy it again.
             var tradeDay = session.AddDays(1);

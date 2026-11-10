@@ -98,7 +98,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 
 ## F-007 · AI simulation row says "bought at the next open" after buying
 
-- **Severity:** S3 · **Area:** G7, D3 · **Status:** open
+- **Severity:** S3 · **Area:** G7, D3 · **Status:** open (fixed on branch `fix/qa-f007-f026-f028`; check in the next session)
 - **Found:** 2026-11-06-1 · **Seen again:** 2026-11-10-1 (Vertiv on AI · Sim; the dashboard card also reads "1 signal · 2 holding" after the buy)
 - **Version:** v0.52.0-alpha · **Width / language:** 1470px, English
 - **Steps:**
@@ -347,7 +347,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 
 ## F-026 · Some pages open scrolled down, under their heading
 
-- **Severity:** S3 · **Area:** B7, B8, B9, E1, X4 · **Status:** open
+- **Severity:** S3 · **Area:** B7, B8, B9, E1, X4 · **Status:** open (fixed on branch `fix/qa-f007-f026-f028`; check in the next session)
 - **Found:** 2026-11-10-1 · **Seen again:** –
 - **Version:** v0.214.0-alpha · **Width / language:** 658px (Chrome's narrowest), English
 - **Steps:**
@@ -374,7 +374,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 
 ## F-028 · AI simulation page says trades fill at the next open; they fill at once
 
-- **Severity:** S3 · **Area:** D1, G7 · **Status:** open
+- **Severity:** S3 · **Area:** D1, G7 · **Status:** open (fixed on branch `fix/qa-f007-f026-f028`; check in the next session)
 - **Found:** 2026-11-10-1 · **Seen again:** –
 - **Version:** v0.214.0-alpha · **Width / language:** 658px, English
 - **Steps:**

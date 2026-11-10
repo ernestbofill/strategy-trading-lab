@@ -203,7 +203,8 @@ function StrategyView({ s }: { s: StrategyDetail }) {
   const answer =
     fund?.status === 'waitingForYou' && fund.signalId ? <PrimaryAction to={signalPath(s.id, fund.signalId)}>{t('stock.answer')}</PrimaryAction> : undefined
   const since = s.startedOn === s.today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
-  const source = live ? t('strategy.source.live') : t('strategy.source.sim')
+  // An AI simulation trades at once, at the latest price (spec §5); the other templates' at the next open.
+  const source = t(live ? 'strategy.source.live' : s.aiRounds ? 'strategy.source.simAi' : 'strategy.source.sim')
   const top = (
     <TopBar
       home

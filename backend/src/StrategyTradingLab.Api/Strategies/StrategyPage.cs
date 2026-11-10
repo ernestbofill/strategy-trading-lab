@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Strategies;
 
@@ -43,7 +44,9 @@ public static class StrategyPage
             if (maxSteps is null || templateKey == "trend") return StockStatus.OutOfTheMarket;
             return latest == EvaluationStatus.NotCandidate ? StockStatus.NotCandidate : StockStatus.Watching;
         }
-        if (mode == StrategyMode.Simulation && latest is EvaluationStatus.BuySignal or EvaluationStatus.SellSignal && todaysSignal) return StockStatus.Signal;
+        // An AI simulation trades at once, at the latest price (spec §5), so its signal is already bought or sold: no SIGNAL pill.
+        if (mode == StrategyMode.Simulation && templateKey != TemplateCatalog.Ai.Key
+            && latest is EvaluationStatus.BuySignal or EvaluationStatus.SellSignal && todaysSignal) return StockStatus.Signal;
         if (templateKey == "bear")
         {
             if (rulesSteps > 0 && (latest == EvaluationStatus.Holding || (maxSteps is { } max && rulesSteps >= max))) return StockStatus.Done;

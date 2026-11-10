@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useLayoutEffect, type ReactNode } from 'react'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import type { Locale } from './api/types'
 import { I18nProvider, useI18n } from './i18n/I18n'
 import { LOCALES } from './i18n/locale'
@@ -152,11 +152,25 @@ function HomeRoute() {
   return state.account ? <Dashboard /> : <WelcomePage />
 }
 
+/**
+ * A new page opens at its top (F-026): the window keeps its scroll across routes otherwise. Back and Forward (POP) leave it
+ * to the browser, which restores the earlier position, and a link to a section (`#notifications`) scrolls there itself.
+ */
+function ScrollToTop() {
+  const { pathname, hash } = useLocation()
+  const type = useNavigationType()
+  useLayoutEffect(() => {
+    if (type !== 'POP' && !hash) window.scrollTo(0, 0)
+  }, [pathname, hash, type])
+  return null
+}
+
 /** Root layout: the offline line, each screen behind an error boundary, and in-app feedback capture for logged-in users with verified email. */
 function AppLayout() {
   const { pathname } = useLocation()
   return (
     <>
+      <ScrollToTop />
       <OfflineBanner />
       <ErrorBoundary resetKey={pathname}>
         <Outlet />

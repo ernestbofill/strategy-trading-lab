@@ -61,7 +61,7 @@ export const common: Record<keyof typeof en, string> = {
   'legal.about.title': 'Quant a',
   'legal.about.lead': 'Quant a Strategy Trading Lab.',
   'legal.about.content':
-    'Un laboratori d’estratègies i aplicació d’acompanyament. Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en mode real. L’aplicació mai no posa ordres ni es connecta a cap broker.',
+    'Un laboratori d’estratègies i aplicació d’acompanyament. Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en mode manual. L’aplicació mai no posa ordres ni es connecta a cap broker.',
   'legal.laterStep': 'Aquesta pàgina vindrà més endavant.',
   'errors.goHome': "Torna a l'inici",
   'errors.notFound.title': "No s'ha trobat la pàgina",

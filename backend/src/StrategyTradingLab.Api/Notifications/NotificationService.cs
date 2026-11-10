@@ -179,7 +179,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                 continue;
             }
 
-            if (await PushAsync(claimed, user.Id, PushTexts.Summary(lastSession, user.Locale), cancellationToken))
+            var signals = data.Changed.Count > 0 || data.Waiting.Any(w => w.Date == lastSession);
+            if (await PushAsync(claimed, user.Id, PushTexts.Summary(lastSession, user.Locale, data.StockChanges, signals), cancellationToken))
                 sent++;
         }
         return sent;

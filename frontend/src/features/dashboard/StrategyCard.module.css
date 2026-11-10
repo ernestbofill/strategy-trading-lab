@@ -3,14 +3,9 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  padding: var(--space-3);
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
-  color: var(--ink);
   text-decoration: none;
 }
 .card:hover {
-  background: var(--surface-hover);
   color: var(--ink);
 }
 

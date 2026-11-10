@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, ForbiddenError, InvalidValueError, type Security, type TemplateDetail } from '../../../api'
 import { invalidateAll } from '../../../lib/useLoadable'
-import { NewStrategyDraftProvider } from '../NewStrategyDraft'
+import { NewStrategyDraftProvider, useNewStrategyDraft } from '../NewStrategyDraft'
 import { ReviewTemplate } from './ReviewTemplate'
 
 afterEach(() => {
@@ -35,6 +35,11 @@ const stock = (symbol: string): Security => ({ id: `id-${symbol}`, symbol, name:
 const dip = (starterList: Security[]) =>
   ({ ...trend, key: 'dip', name: 'Winners at a discount', watches: { kind: 'stocks', starterList } }) as unknown as TemplateDetail
 
+/** Stands in for Choose the mode: shows which template the draft is for. */
+function DraftTemplate() {
+  return <p>Draft for {useNewStrategyDraft().templateKey}</p>
+}
+
 function open(template = trend) {
   vi.spyOn(api, 'getTemplate').mockResolvedValue(template)
   render(
@@ -42,11 +47,20 @@ function open(template = trend) {
       <MemoryRouter initialEntries={[`/new/templates/${template.key}`]}>
         <Routes>
           <Route path="/new/templates/:key" element={<ReviewTemplate />} />
+          <Route path="/new/mode" element={<DraftTemplate />} />
         </Routes>
       </MemoryRouter>
     </NewStrategyDraftProvider>,
   )
 }
+
+describe('"Use this template"', () => {
+  it('makes the draft this template, when the page was opened by its address', async () => {
+    open(trend)
+    fireEvent.click(await screen.findByRole('link', { name: 'Use this template' }))
+    expect(await screen.findByText('Draft for trend')).toBeTruthy()
+  })
+})
 
 describe('the fund picker', () => {
   it('replaces the tested fund with a searched one, adding it first, and goes back to the tested one', async () => {

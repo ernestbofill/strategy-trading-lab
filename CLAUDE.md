@@ -2,7 +2,7 @@
 
 These are the instructions for every AI tool on this repo. Claude Code is the default, so this file is the single source of truth and the other tools point here (see *AI tools*). Edit the rules here, never in a vendor file; a vendor file only holds what is specific to its tool.
 
-Strategy Trading Lab (STL) is a strategy lab and monitoring side app. A user picks a strategy template, reviews and tunes it, gives it a budget and runs it as a **simulation** (the app records the trades the rules call for) or **live** (the user trades at their own broker and confirms each signal). The app never places orders and never connects to a broker.
+Strategy Trading Lab (STL) is a strategy lab and monitoring side app. A user picks a strategy template, reviews and tunes it, gives it a budget and runs it as a **simulation** (the app records the trades the rules call for) or **manual** (the user gets an alert for each signal and records their own trades, at their broker or just to track; `live` in the code). The app never places orders and never connects to a broker.
 
 The owner and engineer is Mr Ernest.
 
@@ -38,7 +38,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 | OpenAI Codex | [AGENTS.md](AGENTS.md) | A pointer here, and the Codex specifics |
 | Google Antigravity (Gemini) | [AGENTS.md](AGENTS.md) (IDE 1.20.5 or later) | The same file as Codex, with a Gemini section |
 
-The workflow below names Claude's models and commands (`opus`, `sonnet`, `/simplify`, `/code-review`). Another tool does the same step with its own equivalent: its strongest model for analysis and high-risk work, a cheaper one for easy work, and its own review tool. It names the model in the step's PR comment, as Claude does.
+The workflow below names Claude's model and command (`opus`, `/code-review`). Another tool does the same step with its own equivalent: its strongest model, with more effort for complex or high-risk work, and its own review tool. It names the model in the step's PR comment, as Claude does.
 
 To add or change a rule, change it here. To add a tool, add a row and a pointer file that says "read `CLAUDE.md`".
 
@@ -79,7 +79,7 @@ Ask for a credential when you need one.
 - **One disclaimer, in the site footer.** Every screen ends with "Not financial advice. Signals follow your rules." and the legal links; screens don't repeat it or add other disclaimer lines, because the app is already text heavy (Ernest, #105). The full one, "Not financial advice. Signals follow your rules; you decide and trade at your own broker.", is accepted once at sign-up and opens the Disclaimer and Terms pages, which hold the details (including "Past results don't promise future ones."). Emails, which have no app footer, keep the short one.
 - Results are always shown next to the index fund and the worst year. The dashboard card is the exception: it shows the index fund only, and the strategy page keeps the worst year (Ernest, 2026-11-07).
 - Words: say *stock* or *fund* and *step*, not *tranche*.
-- Every strategy shows its mode (*Simulation* or *Live*). Results of the two modes are never mixed.
+- Every strategy shows its mode (*Simulation* or *Manual*; Manual is `live` in the code). Results of the two modes are never mixed.
 - Mobile first (wireframes are 390px wide), but every screen must also work on desktop, with no horizontal scrolling.
 - Touch targets are at least 44 × 44px. Text meets WCAG AA contrast.
 
@@ -98,30 +98,27 @@ Ask for a credential when you need one.
 
 Follow these steps for every change, without being asked. Questions and pure research don't need them. The PR is the record: the plan, every review finding and what happened to it go on the PR, not only in the chat. One session (chat) is one branch and one PR, except in a loop.
 
-Models: you choose the model and effort for each subagent, based on how complex and how risky the change is, and you name the model in that step's PR comment. Prefer cheaper models and lower effort unless the change is high risk or foundational. Most work sits between Sonnet medium and Opus medium; for easy work consider Haiku.
-
-Defaults:
-
-- Analyze and orchestrate: `opus`
-- Implement: `sonnet`, `opus` for complex work
-- `/simplify`: `sonnet`
-- `/code-review`: `sonnet` for small, low-risk changes (UI text, config, isolated helpers), `opus` for complex logic or large diffs. Size the review to the risk, so AI effort goes where a bug costs money.
+Models: `opus` for every step (analyze, implement, review), including subagents. Set the effort by complexity: `medium` by default, `high` for high-risk, foundational or complex work. When Ernest names a model or effort for a task or step (for example `fable`, or `opus` at `xhigh`), use it for that work instead. Name the model and effort in that step's PR comment.
 
 ### Kinds of change
 
-- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, READMEs, instructions, `.claude/`, comments): no `/simplify`, no `/code-review`. Steps 1, 4 and 7 only.
-- **Normal** (UI, an isolated fix or feature): steps 1–5, with one review round. Run `/simplify` only when the diff has real new code (about 50+ changed lines); a one-line fix skips it.
-- **High risk**: strategy and budget calculations (signals, steps, results, backtests), authentication, and security. Also foundational work that much else will build on. All steps, an `opus` review, and a second round after any real finding.
+- **Docs and tooling only** (`docs/`, `ROADMAP.md`, `CLAUDE.md`, `AGENTS.md`, READMEs, instructions, `.claude/`, comments): no `/code-review`. Steps 1, 3 and 6 only.
+- **Normal** (UI, an isolated fix or feature): steps 1–4, with one review round.
+- **High risk**: strategy and budget calculations (signals, steps, results, backtests), authentication, and security. Also foundational work that much else will build on. All steps, at `high` effort, and a second round after any real finding.
 
 ### Steps
 
 1. **Analyze and orchestrate.** Read the relevant code, docs and `ROADMAP.md`, then state the plan in a few lines: what changes, which files, the kind of change, and any risks. Ask only when a decision is really Ernest's to make.
 2. **Implement.** Work on the session's branch. Update existing tests when behaviour changes, and only add new tests for critical business logic or complex calculations (don't overly add tests; keep CI/CD light and fast). Keep `ROADMAP.md`, the spec and these instructions up to date.
-3. **Simplify.** Before the first push, run `/simplify` in a subagent on the branch's changes. Keep the cleanups that make the code clearer and commit them; the PR then opens on the simplified code, with one CI run fewer.
-4. **PR.** Run the checks in the frontend and backend instructions, then commit, push, and open a pull request into `main`. Don't wait to be asked. Fill in the PR template. If step 3 ran, post a PR comment listing what simplify changed, what was left out, and why.
-5. **Code review.** Run `/code-review <PR> --comment` in a subagent, so the findings land as inline PR comments. Fix the real ones, run the checks again, and push all of the round's fixes at once. Reply on each finding's thread with the fixing commit, or with why it stays as is, then resolve it. It runs after simplify, so it reviews the final code.
-6. **More review rounds (only when they pay off).** Run `/code-review <PR> --comment` again on the new head when the PR is large (roughly 400+ changed lines or 10+ files), high risk, or the last round found a real bug (not nits). Stop when a round finds nothing serious, or after 3 rounds in total; then list what is still open in the closing comment.
-7. **Report and stop.** Post a closing PR comment: what changed, what the reviews found and fixed, and the CI state. Then ask Ernest before merging (in a loop, see below); on his yes, turn on auto-merge.
+3. **PR.** Run the checks in the frontend and backend instructions, then commit, push, and open a pull request into `main`. Don't wait to be asked. Fill in the PR template.
+4. **Code review.** Run `/code-review <PR> --comment` in a subagent, so the findings land as inline PR comments. Besides bugs, ask it to pay particular attention to:
+   - duplication and reuse opportunities;
+   - unnecessary complexity;
+   - architecture and maintainability concerns.
+
+   Fix the real ones, run the checks again, and push all of the round's fixes at once. Reply on each finding's thread with the fixing commit, or with why it stays as is, then resolve it.
+5. **More review rounds (only when they pay off).** Run `/code-review <PR> --comment` again on the new head when the PR is large (roughly 400+ changed lines or 10+ files), high risk, or the last round found a real bug (not nits). Stop when a round finds nothing serious, or after 3 rounds in total; then list what is still open in the closing comment.
+6. **Report and stop.** Post a closing PR comment: what changed, what the reviews found and fixed, and the CI state. Then ask Ernest before merging (in a loop, see below); on his yes, turn on auto-merge.
 
 **Push in batches.** Every push re-runs CI on the whole PR (about two minutes), even a commit that only touches docs, because each check looks at the PR's whole diff. So push once per step, not once per commit: commit the `ROADMAP.md`, spec, `TODO.md` and memory edits together with the code they go with, and push a step's commits together. Never push a docs-only commit on its own while a code push is still to come in the same step.
 
@@ -131,7 +128,7 @@ At any time, be critical: point out inconsistencies, problems and possible impro
 
 When the goal needs several features, decide how to split it into PRs and run the steps above in a loop, one PR per item, taking items from `ROADMAP.md` in order.
 
-**In a loop, work on your own.** Ernest does not approve each step: don't ask "shall I merge?", don't stop to report between PRs, and don't wait for a go-ahead. Do the whole cycle for each item (plan, build, PR, simplify, reviews, fixes, merge, deploy check) and start the next one.
+**In a loop, work on your own.** Ernest does not approve each step: don't ask "shall I merge?", don't stop to report between PRs, and don't wait for a go-ahead. Do the whole cycle for each item (plan, build, PR, reviews, fixes, merge, deploy check) and start the next one.
 
 - Merge your own PRs yourself: once the reviews the kind of change requires are done and their fixes pushed, turn on auto-merge. This includes high-risk PRs, docs-only PRs and backend PRs, which deploy to production. After a backend merge, check that the deploy workflow passed and `/api/health` answers before starting the next item.
 - Stop only for a decision that is Ernest's (a product or money choice, a secret, a setting only he can change, something the PR couldn't verify that he must check), when you are stuck, or when the goal is reached. Say what the decision is and what you recommend, in the PR and in the chat, and keep working on anything that doesn't depend on it. A PR waiting on such a decision stays open; every other PR is merged.

@@ -219,7 +219,7 @@ public class StrategyEndpointTests(AccountsApi factory) : IClassFixture<Accounts
 
             Assert.Equal(HttpStatusCode.BadRequest, live.StatusCode);
             var problem = await live.Content.ReadFromJsonAsync<JsonElement>();
-            Assert.Equal("Confirm your email to go live.", problem.GetProperty("errors").GetProperty("mode")[0].GetString());
+            Assert.Equal("Confirm your email to use Manual.", problem.GetProperty("errors").GetProperty("mode")[0].GetString());
             Assert.Equal(HttpStatusCode.Created, simulation.StatusCode);
         }
         finally

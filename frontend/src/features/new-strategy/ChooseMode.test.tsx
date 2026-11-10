@@ -16,7 +16,7 @@ afterEach(() => {
   invalidateAll()
 })
 
-/** Sets the draft to live, as "Go live" or an earlier visit would. */
+/** Sets the draft to manual (the code's `live`), as "Follow it manually" or an earlier visit would. */
 function StartLive() {
   const { update } = useNewStrategyDraft()
   useEffect(() => update({ mode: 'live' }), [update])
@@ -28,7 +28,7 @@ function open(emailVerified: boolean) {
   vi.spyOn(api, 'getAccount').mockResolvedValue({
     email: 'a@example.com', firstName: null, lastName: null, emailVerified, locale: 'en', timeZone: 'UTC', overviewEmail: true, overviewPush: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false, notifyHour: 7,
   })
-  vi.spyOn(api, 'getTemplate').mockResolvedValue({ key: 'dip', name: 'Winners at a discount', backtest: {} } as unknown as TemplateDetail)
+  vi.spyOn(api, 'getTemplate').mockResolvedValue({ key: 'dip', name: 'Winners at a discount', signals: 'buysOnly', aiRound: null, backtest: {} } as unknown as TemplateDetail)
   render(
     <AccountProvider>
       <NewStrategyDraftProvider owner="a@example.com">
@@ -47,7 +47,7 @@ function open(emailVerified: boolean) {
 }
 
 describe('ChooseMode', () => {
-  it('opens for a guest, who may pick Live', async () => {
+  it('opens for a guest, who may pick Manual', async () => {
     vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
     vi.spyOn(api, 'getAccount').mockResolvedValue(null)
     vi.spyOn(api, 'getTemplate').mockResolvedValue({ key: 'dip', name: 'Winners at a discount', backtest: {} } as unknown as TemplateDetail)
@@ -63,27 +63,28 @@ describe('ChooseMode', () => {
       </AccountProvider>,
     )
 
-    const live = await screen.findByRole('radio', { name: /Live/ })
+    const live = await screen.findByRole('radio', { name: /With alerts/ })
     expect((live as HTMLInputElement).disabled).toBe(false)
   })
 
-  it('keeps Live off until the email is confirmed, and falls back to a simulation', async () => {
+  it('keeps Manual off until the email is confirmed, and falls back to a simulation', async () => {
     open(false)
 
-    const live = await screen.findByRole('radio', { name: /Live/ })
+    const live = await screen.findByRole('radio', { name: /With alerts/ })
     expect((live as HTMLInputElement).disabled).toBe(true)
     await waitFor(() => expect((screen.getByRole('radio', { name: /Simulation/ }) as HTMLInputElement).checked).toBe(true))
-    expect(screen.getByText('Confirm your email to go live.')).toBeTruthy()
+    expect(screen.getByText('Confirm your email to use Manual.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Send the link again' })).toBeTruthy()
   })
 
-  it('lets a confirmed account go live', async () => {
+  it('lets a confirmed account pick Manual', async () => {
     open(true)
 
-    const live = (await screen.findByRole('radio', { name: /Live/ })) as HTMLInputElement
+    const live = (await screen.findByRole('radio', { name: /With alerts/ })) as HTMLInputElement
     expect(live.disabled).toBe(false)
     fireEvent.click(live)
     expect(live.checked).toBe(true)
-    expect(screen.queryByText('Confirm your email to go live.')).toBeNull()
+    expect(await screen.findByText('one for each buy signal')).toBeTruthy()
+    expect(screen.queryByText('Confirm your email to use Manual.')).toBeNull()
   })
 })

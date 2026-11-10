@@ -2,7 +2,6 @@ export const signal = {
   'signal.what': 'this signal',
   /** "SIGNAL · OCT 22" in the top bar. */
   'signal.title': 'SIGNAL · {date}',
-  'signal.live': 'LIVE',
   'signal.rules': 'Your rules for {strategy} are met for {stock}: {reason}.',
   'signal.step': "Under your settings that's step {step}.",
   'signal.stepAmount': "Under your settings that's step {step} ({amount}).",

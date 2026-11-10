@@ -3,6 +3,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { useT } from '../../i18n/I18n'
 import { fullDate, shortDate } from '../../lib/format'
 import { useCurrentAccount } from '../account/AccountContext'
@@ -51,7 +52,7 @@ export function SummaryPage() {
                     {data.waitingSignals.map((s) => (
                       <li key={s.signalId}>
                         <Link to={`/strategies/${s.strategyId}/signals/${s.signalId}`} className={styles.row}>
-                          <Tag tone="live">LIVE</Tag>
+                          <ModeTag live />
                           <div className={styles.rowContent}>
                             <div className={styles.rowMain}>
                               <span className={`ui-strong ${styles.name}`}>
@@ -99,9 +100,7 @@ export function SummaryPage() {
                     {data.whatChanged.map((c) => (
                       <li key={c.signalId}>
                         <Link to={`/strategies/${c.strategyId}/signals/${c.signalId}`} className={styles.row}>
-                          <Tag tone={isLive(c.mode) ? 'live' : 'sim'}>
-                            {isLive(c.mode) ? 'LIVE' : 'SIM'}
-                          </Tag>
+                          <ModeTag live={isLive(c.mode)} />
                           <div className={styles.rowContent}>
                             <span className={styles.name}>{c.text}</span>
                           </div>
@@ -125,9 +124,7 @@ export function SummaryPage() {
                     {data.stockChanges.map((c) => (
                       <li key={`${c.strategyId}-${c.assetId}-${c.kind}`}>
                         <Link to={`/strategies/${c.strategyId}/stocks/${c.assetId}`} className={styles.row}>
-                          <Tag tone={isLive(c.mode) ? 'live' : 'sim'}>
-                            {isLive(c.mode) ? 'LIVE' : 'SIM'}
-                          </Tag>
+                          <ModeTag live={isLive(c.mode)} />
                           <div className={styles.rowContent}>
                             <span className={styles.name}>{c.text}</span>
                           </div>
@@ -150,9 +147,7 @@ export function SummaryPage() {
                     {data.strategies.map((s) => (
                       <li key={s.strategyId}>
                         <Link to={`/strategies/${s.strategyId}`} className={styles.row}>
-                          <Tag tone={isLive(s.mode) ? 'live' : 'sim'}>
-                            {isLive(s.mode) ? 'LIVE' : 'SIM'}
-                          </Tag>
+                          <ModeTag live={isLive(s.mode)} />
                           <div className={styles.rowContent}>
                             <div className={styles.rowMain}>
                               <span className={`ui-strong ${styles.name}`}>{s.strategyName}</span>

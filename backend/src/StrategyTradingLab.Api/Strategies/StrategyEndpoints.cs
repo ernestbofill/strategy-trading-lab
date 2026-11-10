@@ -135,7 +135,7 @@ public static class StrategyEndpoints
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
             var errors = NewStrategyValidation.Validate(request, template, assets, user.Locale);
             // Live signals are sent by email (spec: Choose the mode), so a live strategy needs a confirmed address.
-            if (request.Mode == StrategyMode.Live && user.EmailVerifiedAt is null) errors["mode"] = [Messages.ConfirmEmailToGoLive.In(user.Locale)];
+            if (request.Mode == StrategyMode.Live && user.EmailVerifiedAt is null) errors["mode"] = [Messages.ConfirmEmailForManual.In(user.Locale)];
             // "Go live with these settings": a live copy keeps the simulation it came from, which must be one of the user's.
             var source = request.Mode == StrategyMode.Live ? request.SourceStrategyId : null;
             if (source is { } sourceId && !await db.Strategies.AnyAsync(

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Card } from '../../components/Card'
 import { InfoTip } from '../../components/InfoTip'
 import { useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
@@ -14,8 +15,6 @@ type TrackerActionKey = 'didIt' | 'skipped' | 'snooze'
 interface Pillar {
   key: FeatureKey
   tagKey: MessageKey
-  badgeKey: MessageKey
-  badgeTone?: 'live'
   titleKey: MessageKey
   taglineKey: MessageKey
   summaryKey: MessageKey
@@ -27,7 +26,6 @@ const PILLARS: readonly Pillar[] = [
   {
     key: 'builder',
     tagKey: 'welcome.builder.tag',
-    badgeKey: 'welcome.builder.badge',
     titleKey: 'welcome.builder.title',
     taglineKey: 'welcome.builder.tagline',
     summaryKey: 'welcome.builder.summary',
@@ -37,7 +35,6 @@ const PILLARS: readonly Pillar[] = [
   {
     key: 'simulation',
     tagKey: 'welcome.sim.tag',
-    badgeKey: 'welcome.sim.badge',
     titleKey: 'welcome.sim.title',
     taglineKey: 'welcome.sim.tagline',
     summaryKey: 'welcome.sim.summary',
@@ -47,8 +44,6 @@ const PILLARS: readonly Pillar[] = [
   {
     key: 'tracker',
     tagKey: 'welcome.tracker.tag',
-    badgeKey: 'welcome.tracker.badge',
-    badgeTone: 'live',
     titleKey: 'welcome.tracker.title',
     taglineKey: 'welcome.tracker.tagline',
     summaryKey: 'welcome.tracker.summary',
@@ -176,7 +171,8 @@ export function InteractiveFeatures() {
           const isActive = activeFeature === pillar.key
           const isTabbable = isActive || (activeFeature === null && index === 0)
           return (
-            <button
+            <Card
+              as="button"
               key={pillar.key}
               type="button"
               role="tab"
@@ -187,23 +183,19 @@ export function InteractiveFeatures() {
               aria-controls="panel-feature-detail"
               className={styles.featureCard}
               data-feature={pillar.key}
-              data-active={isActive}
+              interactive
+              selected={isActive}
               onClick={() => setActiveFeature((prev) => (prev === pillar.key ? null : pillar.key))}
               onKeyDown={(e) => handleTabKeyDown(e, index)}
             >
-              <div className={styles.cardTop}>
-                <span className={styles.tag}>{t(pillar.tagKey)}</span>
-                <span className={styles.badge} data-tone={pillar.badgeTone}>
-                  {t(pillar.badgeKey)}
-                </span>
-              </div>
+              <span className={styles.tag}>{t(pillar.tagKey)}</span>
               <h3 className={styles.cardTitle}>{t(pillar.titleKey)}</h3>
               <p className={styles.tagline}>"{t(pillar.taglineKey)}"</p>
               <p className={styles.summary}>{t(pillar.summaryKey)}</p>
               <div className={styles.expandToggle}>
                 <span>{isActive ? t('welcome.collapse') : t('welcome.expand')}</span>
               </div>
-            </button>
+            </Card>
           )
         })}
       </div>

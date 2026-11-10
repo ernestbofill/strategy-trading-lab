@@ -4,7 +4,7 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   'welcome.topBar': 'STL // STRATEGY TRADING LAB',
   'welcome.hero.title': 'Opera segons regles, no per emocions.',
   'welcome.hero.lead':
-    'Un laboratori d’estratègies transparent. Tria plantilles provades, executa simulacions en temps real sense risc i segueix senyals en mode real sense connexió al broker.',
+    'Un laboratori d’estratègies transparent. Tria plantilles provades, executa simulacions en temps real sense risc i rep avisos de senyals sense connexió al broker.',
 
   'welcome.features.eyebrow': 'CAPACITATS PRINCIPALS',
   'welcome.features.title': 'Com funciona Strategy Trading Lab',
@@ -13,7 +13,6 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
 
   // Pillar 1: Strategy builder
   'welcome.builder.tag': '01 // CONSTRUEIX',
-  'welcome.builder.badge': 'PLANTILLES I REGLES',
   'welcome.builder.title': 'Constructor d’estratègies',
   'welcome.builder.tagline': 'Defineix les teves regles abans que obri el mercat',
   'welcome.builder.summary':
@@ -42,11 +41,10 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
 
   // Pillar 2: Simulation
   'welcome.sim.tag': '02 // SIMULA',
-  'welcome.sim.badge': 'SIMULACIÓ',
   'welcome.sim.title': 'Simulació en temps real',
   'welcome.sim.tagline': 'Posa-la a prova amb preus reals i zero risc financer',
   'welcome.sim.summary':
-    'Opera sobre el paper amb preus reals des d’avui mateix. Posa a prova l’execució i compara rendiments amb el fons de referència (S&P 500) i el pitjor any històric.',
+    'Simula operacions amb preus reals des d’avui mateix. Posa a prova l’execució i compara rendiments amb el fons de referència (S&P 500) i el pitjor any històric.',
   'welcome.sim.point1': 'Preus reals de tancament actualitzats diàriament després del tancament del mercat dels EUA.',
   'welcome.sim.point2': 'Registre automàtic d’operacions simulades segons les regles exactes de la teva estratègia.',
   'welcome.sim.point3': 'Mètriques de rendiment honestes al costat del fons de referència i el pitjor any històric.',
@@ -58,14 +56,13 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   'welcome.sim.mock.indexLabel': 'Fons S&P 500',
   'welcome.sim.mock.worstLabel': 'El pitjor any',
   'welcome.sim.mock.tabPerf': 'Comparació de rendiment',
-  'welcome.sim.mock.tabTrades': 'Registre d’operacions sobre el paper',
+  'welcome.sim.mock.tabTrades': 'Registre d’operacions simulades',
   'welcome.sim.mock.log1': '1 fase comprada · AAPL a 178,40 $',
   'welcome.sim.mock.log2': '1 fase comprada · MSFT a 412,10 $',
   'welcome.sim.mock.note': 'El seguiment de referència utilitza preus de tancament diaris.',
 
   // Pillar 3: Trading tracker
   'welcome.tracker.tag': '03 // SEGUIMENT',
-  'welcome.tracker.badge': 'EXECUCIÓ REAL',
   'welcome.tracker.title': 'Seguiment d’operacions',
   'welcome.tracker.tagline': 'Opera al teu broker. 100% privat i no custodi',
   'welcome.tracker.summary':
@@ -73,10 +70,10 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   'welcome.tracker.point1': 'Zero sincronització amb el broker: sense contrasenyes, OAuth, claus d’API ni accés als teus diners.',
   'welcome.tracker.point2': 'Avisos diaris de senyals que indiquen quina regla s’ha complert i quina fase representa segons la teva configuració.',
   'welcome.tracker.point3': 'Registra les operacions amb els preus reals d’execució del broker o omet senyals amb un motiu ràpid.',
-  'welcome.tracker.cta': 'Explora el flux de seguiment en mode real ›',
+  'welcome.tracker.cta': 'Explora el seguiment manual ›',
 
   // Mock interactive tracker widget
-  'welcome.tracker.mock.mode': 'REAL',
+  'welcome.tracker.mock.mode': 'MANUAL',
   'welcome.tracker.mock.signalWaiting': 'Senyal esperant',
   'welcome.tracker.mock.signalStock': 'Zscaler (ZS)',
   'welcome.tracker.mock.signalDetail': 'Baixada del 8,2% sota el màxim anual · Per sobre de SMA 200 · Fase 1 de 3',
@@ -109,7 +106,7 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   // Bottom CTA
   'welcome.bottom.title': 'A punt per provar la teva primera estratègia?',
   'welcome.bottom.lead':
-    'Explora totes les plantilles, personalitza la configuració i executa simulacions sobre el paper sense cap compromís. Sense targeta de crèdit.',
+    'Explora totes les plantilles, personalitza la configuració i executa simulacions sense cap compromís. Sense targeta de crèdit.',
   'welcome.bottom.tryGuest': 'PROVA COM A CONVIDAT ›',
   'welcome.bottom.register': 'Crea un compte',
 }

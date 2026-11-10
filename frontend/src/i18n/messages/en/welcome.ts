@@ -2,7 +2,7 @@ export const welcome = {
   'welcome.topBar': 'STL // STRATEGY TRADING LAB',
   'welcome.hero.title': 'Trade rules, not emotions.',
   'welcome.hero.lead':
-    'A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and track live signals with zero broker access.',
+    'A transparent strategy lab. Pick tested templates, run real-time simulations without risk, and get signal alerts with zero broker access.',
 
   'welcome.features.eyebrow': 'CORE CAPABILITIES',
   'welcome.features.title': 'How Strategy Trading Lab works',
@@ -11,7 +11,6 @@ export const welcome = {
 
   // Pillar 1: Strategy builder
   'welcome.builder.tag': '01 // BUILD',
-  'welcome.builder.badge': 'TEMPLATES & RULES',
   'welcome.builder.title': 'Strategy builder',
   'welcome.builder.tagline': 'Define your rules before the market opens',
   'welcome.builder.summary':
@@ -40,7 +39,6 @@ export const welcome = {
 
   // Pillar 2: Simulation
   'welcome.sim.tag': '02 // SIMULATE',
-  'welcome.sim.badge': 'PAPER TRADING',
   'welcome.sim.title': 'Real-time simulation',
   'welcome.sim.tagline': 'Forward-test on real prices with zero financial risk',
   'welcome.sim.summary':
@@ -63,7 +61,6 @@ export const welcome = {
 
   // Pillar 3: Trading tracker
   'welcome.tracker.tag': '03 // TRACK',
-  'welcome.tracker.badge': 'LIVE EXECUTION',
   'welcome.tracker.title': 'Trading tracker',
   'welcome.tracker.tagline': 'Execute at your broker. 100% private & non-custodial',
   'welcome.tracker.summary':
@@ -71,10 +68,10 @@ export const welcome = {
   'welcome.tracker.point1': 'Zero broker sync: no passwords, no OAuth, no API keys, and no access to your money.',
   'welcome.tracker.point2': 'Daily signal alerts report which rule was met and which step it represents under your settings.',
   'welcome.tracker.point3': 'Log trades with actual broker fill prices or skip signals with a quick reason.',
-  'welcome.tracker.cta': 'Explore live tracking flow \u203A',
+  'welcome.tracker.cta': 'Explore manual tracking \u203A',
 
   // Mock interactive tracker widget
-  'welcome.tracker.mock.mode': 'LIVE',
+  'welcome.tracker.mock.mode': 'MANUAL',
   'welcome.tracker.mock.signalWaiting': 'Signal waiting',
   'welcome.tracker.mock.signalStock': 'Zscaler (ZS)',
   'welcome.tracker.mock.signalDetail': 'Dipped 8.2% below 52-week peak \u00B7 Above SMA 200 \u00B7 Step 1 of 3',
@@ -107,7 +104,7 @@ export const welcome = {
   // Bottom CTA
   'welcome.bottom.title': 'Ready to test your first strategy?',
   'welcome.bottom.lead':
-    'Explore all templates, customize settings, and run paper simulations with zero commitment. No credit card required.',
+    'Explore all templates, customize settings, and run simulations with zero commitment. No credit card required.',
   'welcome.bottom.tryGuest': 'TRY AS GUEST \u203A',
   'welcome.bottom.register': 'Create an account',
 } as const

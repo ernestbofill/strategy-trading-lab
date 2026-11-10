@@ -73,12 +73,12 @@ describe('SummaryPage', () => {
 
     const stratLink = screen.getByRole('link', { name: /Alpha Dip/i })
     expect(stratLink.getAttribute('href')).toBe('/strategies/strat-1')
-    expect(screen.getByText('LIVE')).toBeTruthy()
+    expect(screen.getByText('MANUAL')).toBeTruthy()
     expect(screen.getByText('since Oct 1')).toBeTruthy()
     expect(screen.getByText(/3 signals/)).toBeTruthy()
   })
 
-  it('renders LIVE and SIM tags correctly regardless of PascalCase or lowercase mode', async () => {
+  it('renders MANUAL and SIM tags correctly regardless of PascalCase or lowercase mode', async () => {
     vi.spyOn(api, 'getSummary').mockResolvedValue(
       mockSummary({
         hasChanges: false,
@@ -108,7 +108,7 @@ describe('SummaryPage', () => {
     )
 
     expect(await screen.findByRole('link', { name: /Live Strat/i })).toBeTruthy()
-    expect(screen.getByText('LIVE')).toBeTruthy()
+    expect(screen.getByText('MANUAL')).toBeTruthy()
     expect(screen.getByText('SIM')).toBeTruthy()
   })
 

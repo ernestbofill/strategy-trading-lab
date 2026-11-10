@@ -266,23 +266,23 @@ describe('StrategyPage', () => {
     expect(screen.getByRole('button', { name: 'Delete the strategy' })).toBeTruthy()
   })
 
-  it('offers "Go live" on a running simulation only', async () => {
+  it('offers "Follow it manually" on a running simulation only', async () => {
     open(detail({ id: 'gl-live' }))
     expect(await screen.findByRole('button', { name: 'Archive the strategy' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /Go live/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Follow it manually/ })).toBeNull()
     cleanup()
 
     open(detail({ id: 'gl-ended', mode: 'simulation', signals: null, status: 'ended', endedOn: '2026-10-20' }))
     expect(await screen.findByRole('button', { name: 'Delete the strategy' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /Go live/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Follow it manually/ })).toBeNull()
   })
 
-  it('"Go live" fills the draft from the simulation and opens Choose the mode with Live picked', async () => {
+  it('"Follow it manually" fills the draft from the simulation and opens Choose the mode with Manual picked', async () => {
     invalidateAll()
     vi.spyOn(api, 'getTemplate').mockResolvedValue(dipTemplate)
     vi.spyOn(api, 'getDashboard').mockResolvedValue({
       today: '2026-10-24',
-      strategies: [{ name: 'Zscaler & friends live', status: 'running' }, { name: 'Old', status: 'ended' }],
+      strategies: [{ name: 'Zscaler & friends (manual)', status: 'running' }, { name: 'Old', status: 'ended' }],
       waiting: [],
     } as unknown as Dashboard)
     open(
@@ -308,7 +308,7 @@ describe('StrategyPage', () => {
       }),
     )
 
-    const goLive = await screen.findByRole('button', { name: /Go live With these settings/ })
+    const goLive = await screen.findByRole('button', { name: /Follow it manually With these settings/ })
     await vi.waitFor(() => expect((goLive as HTMLButtonElement).disabled).toBe(false))
     // The dashboard's names number the copy.
     await vi.waitFor(() => expect(api.getDashboard).toHaveBeenCalled())
@@ -327,7 +327,7 @@ describe('StrategyPage', () => {
       budget: 6000,
       step: 200,
       maxSteps: 4,
-      name: 'Zscaler & friends live 2',
+      name: 'Zscaler & friends (manual) 2',
       currency: 'USD',
       sourceStrategyId: 'gl-sim',
     })
@@ -340,7 +340,7 @@ describe('StrategyPage', () => {
     expect(screen.getByText(/Copied from/)).toBeTruthy()
   })
 
-  it('disables "Go live" when running strategies is at 10', async () => {
+  it('disables "Follow it manually" when running strategies is at 10', async () => {
     vi.spyOn(api, 'getTemplate').mockResolvedValue(dipTemplate)
     vi.spyOn(api, 'getDashboard').mockResolvedValue({
       today: '2026-10-28',
@@ -348,7 +348,7 @@ describe('StrategyPage', () => {
       strategies: Array.from({ length: 10 }, (_, i) => ({ id: `s${i}`, name: `S${i}`, status: 'running' as const } as unknown as StrategySummary)),
     })
     open(detail({ id: 'gl-sim', mode: 'simulation' }))
-    const goLive = await screen.findByRole('button', { name: /Go live You run 10 strategies/ })
+    const goLive = await screen.findByRole('button', { name: /Follow it manually You run 10 strategies/ })
     expect((goLive as HTMLButtonElement).disabled).toBe(true)
   })
 })

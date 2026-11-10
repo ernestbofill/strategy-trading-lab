@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import type { StockCounts, StrategySummary, WaitingItem } from '../../api'
 import { Sparkline } from '../../components/Sparkline'
 import { Tag } from '../../components/Tag'
+import { Card } from '../../components/Card'
+import { ModeTag } from '../../components/ModeTag'
 import { useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
@@ -57,7 +59,7 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
   const gain = s.results ? s.results.strategy : s.used > 0 ? null : 0
   const index = s.results ? s.results.index : s.indexSinceStart
   return (
-    <Link to={strategyPath(s.id)} className={styles.card}>
+    <Card as={Link} to={strategyPath(s.id)} className={styles.card} interactive>
       <div className={styles.head}>
         <div className={styles.titles}>
           <div className={styles.name}>{s.name}</div>
@@ -69,7 +71,7 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
         <span className={styles.badges}>
           {waiting && <WaitingDot item={waiting} />}
           {s.status === 'ended' && <Tag tone="ended">{t('dashboard.ended')}</Tag>}
-          <Tag tone={live ? 'live' : 'sim'}>{live ? 'LIVE' : 'SIM'}</Tag>
+          <ModeTag live={live} />
         </span>
       </div>
       <div className={styles.results}>
@@ -94,6 +96,6 @@ export function StrategyCard({ strategy: s, today, waiting }: { strategy: Strate
           {t('dashboard.card.budgetUsed', { used: money(s.used, s.currency), budget: money(s.budget, s.currency) })}
         </div>
       </div>
-    </Link>
+    </Card>
   )
 }

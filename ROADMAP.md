@@ -33,6 +33,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Roles (user, vip, owner); only the owner opens `/admin` (#39).
 - Phone installation: Account install prompt, manual iPhone and Android instructions, and home-screen icons (#50).
 - Currency: euro, US dollar or British pound, picked at sign-up and changed on the account page; new strategies start in it (#35, #51). Backtest figures and template texts stay in euro for now (Ernest's request).
+- Modes are *Simulation* and *Manual* (was *Live*, renamed 2026-11-09): Choose the mode's cards say who records the trades and whether signals send alerts; no "on paper" in the copy; the code keeps `live`.
 - New-strategy flow: Pick a template, Review a template (all five), How we tested, Choose the mode, Set your budget, Name, preview and confirm, in both modes (#1–#3, #10, #13, #19). Starting a strategy, `POST /strategies` (#24).
 - Advanced settings: tunable settings per template (`Template.Settings`), kept in the draft, stored in the strategy's params (#55, #64). Every template with rules exposes the POC's numeric rules, grouped into candidate, buy signal and pace, each explained (#74).
 - Prices: daily prices and euro exchange rates from Yahoo, refreshed after the US close, with the schedule, *Refresh now* and *Test Yahoo* on the admin page (#38). The exchange rates follow the assets' currencies. A history is two years of daily bars before the earliest strategy that lists the asset; Yahoo's coarse bars are refused, a failed fetch shows on `/admin/assets`, and the owner can download (1–30 years) or delete prices there, for all assets or one (#103).
@@ -112,6 +113,7 @@ Both modes work end to end for every template the pick screen offers.
 
 44. ~~**A Settings page, apart from Account.**~~ Built: `/settings` ("SETTINGS" on the top bar) holds how the app behaves: a row opening Account, App, Language, Currency, Time zone (new, Spain shown as Barcelona), Notifications and Send feedback. Account keeps email, name, admin, data and privacy, password and log out. Old `/account#notifications` and `#feedback` links go on to Settings.
 45. ~~**When emails and reminders come.**~~ Built: "Notification time" on Settings, an hour of the user's day (07:00 by default, existing accounts too) or "As soon as they're ready" (Ernest, 2026-11-08). Signal alerts, buy signal ended and the summary wait for the first such hour after the session's close; reminders come at it (07:00 for as soon as ready). The hourly check now also sends the email alerts. See the spec's *When notifications come*.
+46. ~~**Summary push names stocks getting close.**~~ Built (Ernest, 2026-11-10): on a day a stock came within the getting-close % of its line, the summary push says "Getting close: Tesla" with the line, instead of "Your summary". Ernest chose it over a separate getting-close push (#212, closed). (#213)
 
 **Quiet launch.** When Milestones 1 and 2 are done: switch sign-ups to *invite only* on `/admin`, Ernest invites friends, they invite a few more, and the feedback decides what comes next.
 

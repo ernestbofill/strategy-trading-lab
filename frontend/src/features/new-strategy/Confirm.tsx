@@ -60,7 +60,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   // Branch on what the template does, as the budget screen does.
   const allIn = template.signals === 'buysAndSells'
   const isFund = template.watches.kind === 'fund'
-  const modeName = isLive ? t('newStrategy.mode.live.name') : t('newStrategy.mode.sim.name')
+  const modeName = isLive ? t('newStrategy.mode.manual.name') : t('newStrategy.mode.sim.name')
   const inputId = useId()
   const navigate = useNavigate()
   const [starting, setStarting] = useState(false)
@@ -109,7 +109,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
           : e instanceof InvalidFieldsError
             ? e.message
             : isLive && !emailVerified
-              ? t('newStrategy.mode.live.confirmFirst')
+              ? t('newStrategy.mode.manual.confirmFirst')
               : t('newStrategy.confirm.startFailed'),
       )
       setStarting(false)

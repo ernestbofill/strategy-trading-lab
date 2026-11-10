@@ -7,7 +7,7 @@ OpenAI Codex and Google Antigravity (IDE 1.20.5 or later) read this file. GitHub
 ## For every tool that reads this file
 
 - These tools don't import files, so the links above are plain pointers: open them yourself.
-- Where `CLAUDE.md` names a Claude model or command (`opus`, `sonnet`, `/simplify`, `/code-review`), use your own equivalent: your strongest model for analysis and high-risk work, a cheaper one for easy work, and a review pass for the review steps. Post findings on the PR and name the model in the step's comment.
+- Where `CLAUDE.md` names a Claude model or command (`opus`, `/code-review`), use your own equivalent: your strongest model for every step, with more effort for complex or high-risk work, and a review pass for the review steps. Post findings on the PR and name the model in the step's comment.
 - Don't use `.claude/` (settings, hooks, launch configs) for your own setup. You may read `.claude/memories/` as notes.
 - Work on a `feature/<short-name>` or `fix/<short-name>` branch and open a PR into `main`, as `CLAUDE.md` says. A QA session is the exception: it uses a `qa/<yyyy-mm-dd>-<n>` branch ([qa/README.md](qa/README.md)).
 

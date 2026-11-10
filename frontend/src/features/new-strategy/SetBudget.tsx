@@ -4,7 +4,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { StepperCard } from '../../components/StepperCard'
-import { Tag } from '../../components/Tag'
+import { ModeTag } from '../../components/ModeTag'
 import { useT } from '../../i18n/I18n'
 import {
   BUDGET_LIMITS,
@@ -82,7 +82,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
       <PageHeader
         eyebrow={
           <>
-            <Tag tone={isLive ? 'live' : 'sim'}>{isLive ? 'LIVE' : 'SIM'}</Tag> {template.name}
+            <ModeTag live={isLive} /> {template.name}
           </>
         }
         title={t('newStrategy.budget.title')}

@@ -93,7 +93,7 @@ public class NotificationTests
         Assert.Equal("El teu resum, 23 oct. 2026", subject);
         Assert.DoesNotContain("T’espera a tu", body);
         foreach (var section in new[] { "T'espera a tu", "Què ha canviat avui", "Les teves estratègies" }) Assert.Contains(section, body);
-        Assert.Contains("Zscaler & friends (Real): des del 1 oct. 2026, 1 senyal", body);
+        Assert.Contains("Zscaler & friends (Manual): des del 1 oct. 2026, 1 senyal", body);
         Assert.Contains("The comeback (Simulació): des del 5 oct. 2026, 0 senyals", body);
         Assert.EndsWith(EmailTexts.DisclaimerCa, body);
     }
@@ -113,6 +113,25 @@ public class NotificationTests
         Assert.Equal("summary-2026-10-23", ca.Tag);
         Assert.Equal("El teu resum, 23 oct. 2026", ca.Title);
         Assert.Equal("Què ha canviat avui a les teves estratègies.", ca.Body);
+    }
+
+    [Fact]
+    public void The_summary_push_names_the_stocks_getting_close()
+    {
+        var day = new DateOnly(2026, 10, 23);
+        var tesla = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Tesla", StockChangeKind.CameClose, 2.5m);
+        var one = PushTexts.Summary(day, "en", [tesla, tesla with { Kind = StockChangeKind.BecameCandidate, AssetId = Guid.NewGuid() }]);
+        Assert.Equal(("Getting close: Tesla", "Tesla, Strat: now 2.5% above the discount zone. (Manual)"), (one.Title, one.Body));
+        Assert.Equal(("/summary", "summary-2026-10-23"), (one.Url, one.Tag));
+
+        // The same stock in two strategies is one stock; signals on the day get a last line.
+        var ca = PushTexts.Summary(day, "ca", [tesla, tesla with { StrategyName = "Other" }], signals: true);
+        Assert.Equal("A prop de la línia: Tesla", ca.Title);
+        Assert.EndsWith("\nTambé hi ha senyals al resum.", ca.Body);
+
+        var five = PushTexts.Summary(day, "en", [.. Enumerable.Range(1, 5).Select(i => tesla with { StockName = $"S{i}", AssetId = Guid.NewGuid() })]);
+        Assert.Equal("Getting close: S1, S2, S3 and 2 more", five.Title);
+        Assert.Equal(3, five.Body.Split('\n').Length);
     }
 
     [Fact]
@@ -808,7 +827,7 @@ public class NotificationTests
 
             Assert.Equal(0, before);
             Assert.True(after >= 1);
-            Assert.Contains("(Live)", sender.Sent.Single(m => m.Subject.StartsWith("Your summary")).Body.Replace("Waiting for you", ""));
+            Assert.Contains("(Manual)", sender.Sent.Single(m => m.Subject.StartsWith("Your summary")).Body.Replace("Waiting for you", ""));
         }
         finally
         {

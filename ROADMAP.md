@@ -113,6 +113,7 @@ Both modes work end to end for every template the pick screen offers.
 
 44. ~~**A Settings page, apart from Account.**~~ Built: `/settings` ("SETTINGS" on the top bar) holds how the app behaves: a row opening Account, App, Language, Currency, Time zone (new, Spain shown as Barcelona), Notifications and Send feedback. Account keeps email, name, admin, data and privacy, password and log out. Old `/account#notifications` and `#feedback` links go on to Settings.
 45. ~~**When emails and reminders come.**~~ Built: "Notification time" on Settings, an hour of the user's day (07:00 by default, existing accounts too) or "As soon as they're ready" (Ernest, 2026-11-08). Signal alerts, buy signal ended and the summary wait for the first such hour after the session's close; reminders come at it (07:00 for as soon as ready). The hourly check now also sends the email alerts. See the spec's *When notifications come*.
+46. ~~**Getting close push.**~~ Built (Ernest, 2026-11-10, #212): a push when a Manual strategy's stock comes within the template's getting-close % of its line, one per user and session, under the App box for signals and reminders. See the spec's *Getting close*.
 
 **Quiet launch.** When Milestones 1 and 2 are done: switch sign-ups to *invite only* on `/admin`, Ernest invites friends, they invite a few more, and the feedback decides what comes next.
 
@@ -128,7 +129,6 @@ Both modes work end to end for every template the pick screen offers.
 40. **Warn before a step goes over the budget.** Normal. *Spec: gap.* A late answer to a missed signal counts its step again, since it is real money spent, so "Budget used" can read over 100% (#57). Keep that, and have Confirm a signal say "This step takes you over your budget." before saving, without blocking it (Ernest, 2026-11-01).
 41. **Fees on top of the budget, as brokers do.** High risk (budget calculations). *Spec: gap.* Today a step is amount plus fee and the fee counts in "Budget used" (#49, #56). Change it to how brokers work (Ernest, 2026-11-01): a step is the amount, the fee comes on top, "Budget used" leaves fees out and shows them on their own line, and returns still subtract them. The fee is an Advanced setting, a percentage and a fixed amount (default the tested 0.2% + 1); simulations use the setting, live strategies the fee the user enters. Check the backtest figures and the index fund comparison still use the same fee.
 
-- ~~**Getting close push.**~~ Built (Ernest, 2026-11-10): a push when a Manual strategy's stock comes within the template's getting-close % of its line, one per user and session, under the App box for signals and reminders. See the spec's *Getting close*.
 43. ~~**Daily summary page and summary push.**~~ Built (user decision: dedicated `/summary` page instead of a box on dashboard; links only from summary push and footer sitemap; "No changes today" on quiet days; up to date from most recent evaluations; summary push enabled on account page).
 
 ## After launch

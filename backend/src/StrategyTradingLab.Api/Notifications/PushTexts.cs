@@ -40,6 +40,8 @@ public static class PushTexts
             $"ai-round-{dueOn:yyyy-MM-dd}");
     }
 
+    const int MaxCloseLines = 3;
+
     /// <summary>
     /// "Getting close": the Manual strategies' stocks that came within the template's getting-close % of their line on the session
     /// (spec: Notifications, Getting close). One stock opens its page; more open the summary, which lists them.
@@ -52,7 +54,9 @@ public static class PushTexts
             changes.Count == 1
                 ? ca ? $"{first.StockName} s'acosta a la línia" : $"{first.StockName} is getting close"
                 : ca ? $"{changes.Count} accions s'acosten a la línia" : $"{changes.Count} stocks are getting close",
-            string.Join("\n", changes.Select(c => EmailTexts.StockChangeText(c, locale))),
+            // A few lines at most: a push payload is capped at about 4 KB, and the summary lists them all.
+            string.Join("\n", changes.Take(MaxCloseLines).Select(c => EmailTexts.StockChangeText(c, locale)))
+                + (changes.Count > MaxCloseLines ? "\n" + (ca ? $"I {changes.Count - MaxCloseLines} més." : $"And {changes.Count - MaxCloseLines} more.") : ""),
             changes.Count == 1 ? $"/strategies/{first.StrategyId}/stocks/{first.AssetId}" : "/summary",
             $"close-{session:yyyy-MM-dd}");
     }

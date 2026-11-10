@@ -128,6 +128,10 @@ public class NotificationTests
         var two = PushTexts.GettingClose([tesla, tesla with { StockName = "Apple" }], day, "ca");
         Assert.Equal(("2 accions s'acosten a la línia", "/summary"), (two.Title, two.Url));
         Assert.Equal(2, two.Body.Split('\n').Length);
+
+        var five = PushTexts.GettingClose([.. Enumerable.Range(1, 5).Select(i => tesla with { StockName = $"S{i}" })], day, "en");
+        Assert.Equal("5 stocks are getting close", five.Title);
+        Assert.EndsWith("S3, Strat: now 2.5% above the discount zone.\nAnd 2 more.", five.Body);
     }
 
     [Fact]

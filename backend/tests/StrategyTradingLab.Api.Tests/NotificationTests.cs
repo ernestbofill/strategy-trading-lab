@@ -125,13 +125,13 @@ public class NotificationTests
         Assert.Equal($"/strategies/{tesla.StrategyId}/stocks/{tesla.AssetId}", one.Url);
         Assert.Equal("close-2026-10-23", one.Tag);
 
-        var two = PushTexts.GettingClose([tesla, tesla with { StockName = "Apple" }], day, "ca");
+        var two = PushTexts.GettingClose([tesla, tesla with { StockName = "Apple", AssetId = Guid.NewGuid() }], day, "ca");
         Assert.Equal(("2 accions s'acosten a la línia", "/summary"), (two.Title, two.Url));
         Assert.Equal(2, two.Body.Split('\n').Length);
 
-        var five = PushTexts.GettingClose([.. Enumerable.Range(1, 5).Select(i => tesla with { StockName = $"S{i}" })], day, "en");
+        var five = PushTexts.GettingClose([.. Enumerable.Range(1, 5).Select(i => tesla with { StockName = $"S{i}", AssetId = Guid.NewGuid() })], day, "en");
         Assert.Equal("5 stocks are getting close", five.Title);
-        Assert.EndsWith("S3, Strat: now 2.5% above the discount zone.\nAnd 2 more.", five.Body);
+        Assert.EndsWith("S3, Strat: now 2.5% above the discount zone.\nAnd 2 more in the summary.", five.Body);
     }
 
     [Fact]

@@ -51,14 +51,14 @@ public static class PushTexts
         var ca = locale == "ca";
         var first = changes[0];
         // A stock close in two strategies is one stock.
-        var stocks = changes.Select(c => c.StockName).Distinct().Count();
+        var stocks = changes.Select(c => c.AssetId).Distinct().Count();
         return new(
             stocks == 1
                 ? ca ? $"{first.StockName} s'acosta a la línia" : $"{first.StockName} is getting close"
                 : ca ? $"{stocks} accions s'acosten a la línia" : $"{stocks} stocks are getting close",
             // A few lines at most: a push payload is capped at about 4 KB, and the summary lists them all.
             string.Join("\n", changes.Take(MaxCloseLines).Select(c => EmailTexts.StockChangeText(c, locale)))
-                + (changes.Count > MaxCloseLines ? "\n" + (ca ? $"I {changes.Count - MaxCloseLines} més." : $"And {changes.Count - MaxCloseLines} more.") : ""),
+                + (changes.Count > MaxCloseLines ? "\n" + (ca ? $"I {changes.Count - MaxCloseLines} més al resum." : $"And {changes.Count - MaxCloseLines} more in the summary.") : ""),
             changes.Count == 1 ? $"/strategies/{first.StrategyId}/stocks/{first.AssetId}" : "/summary",
             $"close-{session:yyyy-MM-dd}");
     }

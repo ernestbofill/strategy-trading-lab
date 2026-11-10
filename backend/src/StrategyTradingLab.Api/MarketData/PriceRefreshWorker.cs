@@ -260,11 +260,22 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             // A buy signal that ended unanswered, after its alert (one this run just sent waits for its next day).
             logger.LogInformation("Sent {Count} ended signal alerts.", await notifications.SendSignalEndedAsync(session, stoppingToken));
             logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, stoppingToken));
-            logger.LogInformation("Pushed {Count} getting close alerts.", await notifications.PushGettingCloseAsync(session, stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
             logger.LogWarning("The signal alerts couldn't be sent: {Reason}", error.Message);
+        }
+        // Apart from the alerts, as in the hourly check: one failing doesn't hold back the other.
+        try
+        {
+            using var scope = scopes.CreateScope();
+            var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
+            if (await notifications.EnabledAsync(stoppingToken))
+                logger.LogInformation("Pushed {Count} getting close alerts.", await notifications.PushGettingCloseAsync(UsSession.LastComplete(time.GetUtcNow()), stoppingToken));
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The getting close push failed: {Reason}", error.Message);
         }
         // Apart from the alerts, so a failed alert doesn't hold the overviews back.
         try

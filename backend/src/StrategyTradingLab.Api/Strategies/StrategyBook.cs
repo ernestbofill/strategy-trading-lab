@@ -16,11 +16,12 @@ public sealed class StrategyBook
     public static readonly Guid IndexFundId = TemplateAssets.Spy.Id;
 
     readonly ILookup<Guid, Buy> signalBuys, userBuys;
+    readonly HashSet<Guid> tradedSignals;
 
     public PriceBook Prices { get; }
 
-    StrategyBook(ILookup<Guid, Buy> signalBuys, ILookup<Guid, Buy> userBuys, PriceBook prices) =>
-        (this.signalBuys, this.userBuys, Prices) = (signalBuys, userBuys, prices);
+    StrategyBook(ILookup<Guid, Buy> signalBuys, ILookup<Guid, Buy> userBuys, HashSet<Guid> tradedSignals, PriceBook prices) =>
+        (this.signalBuys, this.userBuys, this.tradedSignals, Prices) = (signalBuys, userBuys, tradedSignals, prices);
 
     public static async Task<StrategyBook> LoadAsync(AppDbContext db, IReadOnlyCollection<Strategy> strategies, DateOnly today,
         CancellationToken cancellationToken)
@@ -28,7 +29,7 @@ public sealed class StrategyBook
         var ids = strategies.Select(s => s.Id).ToList();
         var signalTrades = await db.SignalTrades.AsNoTracking()
             .Where(t => ids.Contains(t.StrategyId))
-            .Select(t => new { t.StrategyId, Buy = new Buy(t.AssetId, t.TradeDate, t.Shares, t.Amount, t.Fee, t.Side) })
+            .Select(t => new { t.StrategyId, t.SignalId, Buy = new Buy(t.AssetId, t.TradeDate, t.Shares, t.Amount, t.Fee, t.Side) })
             .ToListAsync(cancellationToken);
         var userTrades = await db.UserTrades.AsNoTracking()
             .Where(t => ids.Contains(t.StrategyId) && t.DeletedAt == null)
@@ -41,7 +42,8 @@ public sealed class StrategyBook
             ? new PriceBook(new Dictionary<Guid, (string, IReadOnlyList<DayPrice>)>(), new ExchangeRates([]))
             : await LoadPricesAsync(db, [.. buys.Select(b => b.AssetId).Append(IndexFundId).Distinct()],
                 buys.Select(b => b.Date).Concat(strategies.Select(s => s.StartedOn)).Min(), today, cancellationToken);
-        return new StrategyBook(signalTrades.ToLookup(t => t.StrategyId, t => t.Buy), userTrades.ToLookup(t => t.StrategyId, t => t.Buy), prices);
+        return new StrategyBook(signalTrades.ToLookup(t => t.StrategyId, t => t.Buy), userTrades.ToLookup(t => t.StrategyId, t => t.Buy),
+            [.. signalTrades.Select(t => t.SignalId)], prices);
     }
 
     static async Task<PriceBook> LoadPricesAsync(AppDbContext db, List<Guid> assetIds, DateOnly from, DateOnly today, CancellationToken cancellationToken)
@@ -58,6 +60,9 @@ public sealed class StrategyBook
         var assets = currencies.ToDictionary(a => a.Key, a => (a.Value, (IReadOnlyList<DayPrice>)[.. days[a.Key]]));
         return new PriceBook(assets, await ExchangeRates.LoadAsync(db, from, cancellationToken));
     }
+
+    /// <summary>Whether a signal's own trade is recorded: a simulation's waits for the next open, an AI simulation's is made at once.</summary>
+    public bool HasTrade(Guid signalId) => tradedSignals.Contains(signalId);
 
     /// <summary>The trades the strategy's own results come from.</summary>
     public IReadOnlyList<Buy> You(Strategy strategy) =>

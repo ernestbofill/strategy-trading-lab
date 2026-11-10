@@ -604,7 +604,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - One row per stock, each a link to that stock's page (not drawn):
   - The name, a status pill and a detail line:
     - "WAITING FOR YOU" (live; "Signal: step [n] of [max]") → Confirm a signal
-    - "SIGNAL" (simulation, a signal on the latest checked day; "Step [n] of [max], bought at the next open"). Not for an AI simulation, which buys at once: its stock reads BUILDING or HOLDING the same day, and counts as holding on the dashboard card (F-007).
+    - "SIGNAL" (simulation, a signal on the latest checked day whose trade isn't recorded yet; "Step [n] of [max], bought at the next open"). Once the trade is in, the stock reads BUILDING or HOLDING and counts as holding on the dashboard card: an AI simulation's the same day, as it buys at once (F-007).
     - "HOLDING" ("[n] of [max] steps"; also when the rules hold the stock with steps left, as *The comeback* does once its milestones are used, as in the POC: then "[n] of [max] steps · its milestones are used")
     - "BUILDING" ("[n] of [max] steps"; live when it differs: "Rules: [n] of [max] · You: [n] of [max]")
     - "CANDIDATE": the stock meets the template's candidate rules, so the rules watch it for a buy signal. The detail line names the buy rules it still misses, in a few words, from the stock page's checks (at most two, joined by " · "): "Volume 0.84× (needs 1.2×)", "24.7% below its peak (zone 5–15%) · below the floor average". Before the daily check has stored the checks: "[n]% from [the template's zone]" or "Rules not met today". There is no "WATCHING" any more: every active stock of a strategy is watched, so the pill says whether it is a candidate.

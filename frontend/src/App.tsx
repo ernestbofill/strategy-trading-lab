@@ -155,17 +155,17 @@ function HomeRoute() {
 /**
  * A new page opens at its top (F-026): the window keeps its scroll across routes otherwise. Only a new path counts: a tab or
  * filter in the address stays where it is. Back and Forward (POP) leave it to the browser, which restores the earlier
- * position, and a link to a section (`#notifications`) scrolls there itself.
+ * position. A page that opens at a section (`#notifications`) scrolls there in its own effect, which runs after this one.
  */
 function ScrollToTop() {
-  const { pathname, hash } = useLocation()
+  const { pathname } = useLocation()
   const type = useNavigationType()
   const shown = useRef(pathname)
   useLayoutEffect(() => {
     if (shown.current === pathname) return
     shown.current = pathname
-    if (type !== 'POP' && !hash) window.scrollTo(0, 0)
-  }, [pathname, hash, type])
+    if (type !== 'POP') window.scrollTo(0, 0)
+  }, [pathname, type])
   return null
 }
 

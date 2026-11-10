@@ -31,10 +31,10 @@ public static class StrategyPage
     /// or not checked yet.
     /// </summary>
     /// <param name="rulesSteps">The steps the rules currently hold: every buy signal, answered or not, since the rules carry on as if it was bought.</param>
-    /// <param name="todaysSignal">A signal on the day of <paramref name="latest"/> whose trade still waits (a simulation's, for the next open).</param>
+    /// <param name="signalPending">A simulation's signal on the day of <paramref name="latest"/> whose trade isn't recorded yet.</param>
     /// <param name="userSteps">Live: the steps the user bought. When they skipped every step the rules hold, the pill says where
     /// the user is (out of the market, or a candidate), not the rules; the line under it shows both.</param>
-    public static StockStatus Status(StrategyMode mode, EvaluationStatus? latest, bool waiting, bool todaysSignal, int rulesSteps, int? maxSteps,
+    public static StockStatus Status(StrategyMode mode, EvaluationStatus? latest, bool waiting, bool signalPending, int rulesSteps, int? maxSteps,
         string? templateKey = null, int? userSteps = null)
     {
         if (mode == StrategyMode.Live && waiting) return StockStatus.WaitingForYou;
@@ -43,7 +43,7 @@ public static class StrategyPage
             if (maxSteps is null || templateKey == "trend") return StockStatus.OutOfTheMarket;
             return latest == EvaluationStatus.NotCandidate ? StockStatus.NotCandidate : StockStatus.Watching;
         }
-        if (mode == StrategyMode.Simulation && latest is EvaluationStatus.BuySignal or EvaluationStatus.SellSignal && todaysSignal) return StockStatus.Signal;
+        if (mode == StrategyMode.Simulation && latest is EvaluationStatus.BuySignal or EvaluationStatus.SellSignal && signalPending) return StockStatus.Signal;
         if (templateKey == "bear")
         {
             if (rulesSteps > 0 && (latest == EvaluationStatus.Holding || (maxSteps is { } max && rulesSteps >= max))) return StockStatus.Done;

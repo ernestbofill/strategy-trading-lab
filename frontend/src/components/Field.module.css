@@ -58,6 +58,9 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   cursor: pointer;
+  /* Safari draws a long option's text past the box under the app's zoom, which scrolls the page sideways. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .select:focus-visible {
   outline-offset: 2px;

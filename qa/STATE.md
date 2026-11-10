@@ -4,23 +4,22 @@ What the next session reads first. The agent updates it at the end of every sess
 
 ## Handoff
 
-*Last session:* 2026-11-08-2, `v0.204.0-alpha`, `qaagent`.
+*Last session:* 2026-11-08-3, `v0.204.0-alpha`, `qaagent`.
 
-**Open S1 (modes mixed) / S3:** None. F-023 verified fixed in `v0.204.0-alpha` (LIVE and SIM tags correctly distinguish strategy modes on `/summary`).
+**Open S1 (modes mixed) / S3:** None open as S1. F-001 (oversold manual trades) remains open as S3; verified that if all buys are deleted, the Position card gracefully hides itself.
 
-**Completed in 2026-11-08-2:**
-- L-010 resolved: F-023 verified fixed on `/summary`; LIVE badges render in live tone (`rgb(255, 64, 129)`), SIM badges render in sim tone (`rgb(0, 195, 255)`) across scoreboard, waiting, and change feeds.
-- L-011 resolved: Push notifications tested on `/settings`; service worker and VAPID FCM registration work, baseline restored to "Off for this device".
-- L-004 resolved: "Picks vs the rest" on AI rounds history verified; "the rest –" filled in with +3.4% once other stocks had market close prices.
-- L-012 resolved: Stock list editing on running strategy tested via throwaway strategy `QA throwaway · List Test`; stock unticked and removed, full archive/delete lifecycle verified.
-- Pending Live signal for Palantir on `QA fixture · AI · Live` confirmed at $160.38 + $1.20 fee; holding count updated to 2, budget used updated to $199 of $3,000, Waiting for you cleared.
+**Completed in 2026-11-08-3:**
+- L-003 resolved: Edge-case trade entry tested via throwaway strategy (oversold sales, zero-buy sales, buy deletion).
+- L-008 resolved: "Tune the settings" and AI prompt editor verified on running strategies and new strategy flow.
+- L-007 resolved: Text-selection in-app feedback (`💬 Add comment`), `/settings#feedback` submission, and clean console audit verified.
+- Areas X10, G6, B6, E4, X7, D6, D9, D14, X8 raised to **deep**.
 - Baseline settings and all 6 long-running fixtures verified intact.
 
 **Next session, do first:**
 1. Check next AI round on `QA fixture · AI · Sim` and `QA fixture · AI · Live` when due on Nov 9.
-2. Follow **L-003**: Test edge-case trade entry (editing a buy down below what was sold, oversold row).
-3. Follow **L-008**: Test saving a changed setting on a running strategy (`TUNE THE SETTINGS`).
-4. Follow **L-007**: Test two tabs and stale tab acting on changed data, going offline, and in-app feedback via text selection.
+2. Follow **L-006**: Test wrong-password check with `qa-nobody@stl.invalid` on `/login`.
+3. Follow **L-005**: Test signed-in screens at 360px and 200% zoom.
+4. Follow **L-009**: Test signed-out direct access to a protected strategy URL.
 
 **How to sign in:** Chrome with Claude in Chrome / Antigravity browser agent signed in as `qaagent`. Don't log out of production as it breaks saved session credentials.
 
@@ -63,12 +62,12 @@ Open leads to follow, most important first. **next** means the next session take
 
 | ID | Area | What to try | From | Priority |
 | --- | --- | --- | --- | --- |
-| L-003 | D6, D14 | Follow F-001: a sale with no buy at all; editing a buy down below what was sold; deleting a buy after a sale; an oversold stock's row; the same in Confirm a sell signal | 2026-11-06-1 C3.7 | **next** |
-| L-008 | D9, B4, B5, G6 | Save a changed setting on a running strategy; Advanced and How we tested on Comeback, Bear and Trend (F-010 there?); edit and save a prompt; AI model "Other…"; the fee, amount and rate fields with malformed numbers (F-003) | 2026-11-06-1 | **next** |
-| L-005 | X3 | Signed-in screens at 390px and 360px, long names, 200% zoom. Chrome's window wouldn't resize below desktop; try the built-in browser with a saved login, or ask Ernest | 2026-11-06-1 C5 | |
-| L-006 | A4 | Real log-in, log-out and coming back to the page asked for, and the wrong-password check with `qa-nobody@stl.invalid`. Claude can't type a password on production, not even a made-up one, so these need Ernest, another tool or a saved login in the browser. **Log-out signs out the browser the session depends on** | 2026-11-06-1 C4.8 | |
-| L-007 | X5, X8, H5, B3 | Two tabs and a stale tab acting on changed data; going offline; select text → 💬 Add comment; adding a stock or fund the app doesn't have; the 60-stock limit; Back through the flow and after Start | 2026-11-06-1 | |
+| L-006 | A4 | Real log-in, log-out and coming back to the page asked for, and the wrong-password check with `qa-nobody@stl.invalid`. Claude can't type a password on production, not even a made-up one, so these need Ernest, another tool or a saved login in the browser. **Log-out signs out the browser the session depends on** | 2026-11-06-1 C4.8 | **next** |
+| L-005 | X3 | Signed-in screens at 390px and 360px, long names, 200% zoom. Chrome's window wouldn't resize below desktop; try the built-in browser with a saved login, or ask Ernest | 2026-11-06-1 C5 | **next** |
 | L-009 | X6 | Signed-out access to a signed-in page (Log-in, then back). A signal or stock ID from another strategy of the same account | 2026-11-06-1 | |
+| L-013 | X7 | Info button "i" touch target: computed `::after` hit area is 42.86×42.86px; inspect whether padding/min-size in CSS can guarantee >= 44×44px on all display DPI scalings | 2026-11-08-3 C5.3 | |
+| L-014 | H5 | In-app feedback: verify delivery to owner email for `qaagent`'s test note and confirm unconfirmed email state disables the section as specified in spec §6 | 2026-11-08-3 C6.2 | |
+| L-015 | D14, D6 | Oversold position daily evaluation: test if daily evaluator calculates gain/loss if an oversold trade remains at market close | 2026-11-08-3 C3.4 | |
 
 
 ## Coverage map
@@ -102,7 +101,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | B3 | Stock list on the review: tick, untick, + Add a stock | §6.2 | smoke | 2026-11-06-1 | Search only. Adding a new stock writes to shared assets: only a well-known symbol. C1.5 |
 | B4 | Advanced settings, per template | §6.2b | smoke | 2026-11-06-1 | Winners and AI only. C1.6 |
 | B5 | How we tested | §6.2c | smoke | 2026-11-06-1 | Winners only. F-010. C1.7 |
-| B6 | Prompt editor (AI draft) | §6.2 | untested | | |
+| B6 | Prompt editor (AI draft) | §6.2 | deep | 2026-11-08-3 | Prompt editor verified in new strategy flow; source toggles, live markdown preview, reset to suggested. C2.7–C2.8 |
 | B7 | Choose the mode (Manual needs a confirmed email) | §6.3 | smoke | 2026-11-06-1 | Unconfirmed email not reachable with this account. C1.8 |
 | B8 | Set your budget: budget, step, max steps, currency | §6.4 | deep | 2026-11-06-1 | F-002, F-008. C1.9–13 |
 | B9 | Name, preview and confirm: name rules, Edit links, notifications ask | §6.5 | smoke | 2026-11-06-1 | C1.14–17 |
@@ -126,15 +125,15 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | D3 | Stock rows: pills, detail lines, order, per template | §6 Strategy page | deep | 2026-11-08-1 | All stock rows evaluated after market close. L-002 closed. C1.8 |
 | D4 | Edit list on a running strategy | §6 Strategy page | deep | 2026-11-08-2 | Stock list edit on running strategy verified via throwaway (Coherent unticked, count updated 9->8). C5.2–C5.4 |
 | D5 | Signals and trades timeline | §6 Strategy page | smoke | 2026-11-06-1 | F-005 |
-| D6 | Log a trade by hand (live) | §6 Strategy page | smoke | 2026-11-06-1 | F-001. C3.5–7 |
+| D6 | Log a trade by hand (live) | §6 Strategy page | deep | 2026-11-08-3 | Oversold trades, 0-buy sales, buy/sale arithmetic, edit/delete lifecycle verified via throwaway. C3.2–C3.5 |
 | D7 | Edit and delete a trade (live) | §6 Strategy page | smoke | 2026-11-06-1 | C3.9 |
 | D8 | Rename | §6 Strategy page | smoke | 2026-11-06-1 | C3.4 |
-| D9 | Tune the settings while running | §6 Strategy page | smoke | 2026-11-06-1 | Not saved with a change: L-008. C3.12 |
+| D9 | Tune the settings while running | §6 Strategy page | deep | 2026-11-08-3 | Tune settings verified on Discount Sim; steppers, CHANGED badge, RESET TO TESTED, cancel return without changes. C2.9–C2.12 |
 | D10 | Change the budget while running | §6 Strategy page | untested | | Not built yet (ROADMAP) |
 | D11 | Follow a simulation manually | §4 Going live | smoke | 2026-11-06-1 | C2.15 |
 | D12 | Archive, then delete | §6 Strategy page | deep | 2026-11-08-1 | Full lifecycle tested: create, archive, permanently delete throwaway. C3.4 |
 | D13 | An archived strategy is read-only | §6 Strategy page | smoke | 2026-11-06-1 | C3.16 |
-| D14 | Metrics arithmetic: budget used, fees, gains, vs the index | §6 Metrics, §5 Modes | smoke | 2026-11-06-1 | Sums by hand match. F-001, F-005. C2.6, C2.14, C3.5–6 |
+| D14 | Metrics arithmetic: budget used, fees, gains, vs the index | §6 Metrics, §5 Modes | deep | 2026-11-08-3 | Oversold arithmetic verified: sales proceeds vs buy cost (+200% return), clamping of invested capital to $0. C3.3–C3.5 |
 
 ### E · Stock page
 
@@ -143,7 +142,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | E1 | Status, position, its signals and trades | §6 Stock page | smoke | 2026-11-06-1 | C2.18, C3.17 |
 | E2 | Rules on [date]: badges and gauges, per template | §6 Stock page | deep | 2026-11-08-1 | Evaluated rules, gauges, and detail lines verified across fixtures. L-002 closed. C1.8 |
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | smoke | 2026-11-06-1 | C3.18 |
-| E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours | §6 Stock page | untested | | |
+| E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours | §6 Stock page | deep | 2026-11-08-3 | Verified on PLTR and ZS: 90/30/7 day selectors, SVG start lines, buy area polygons, price polyline colors, 390px responsive rendering. C4.1–C4.3 |
 
 ### F · Confirm a signal (live)
 
@@ -165,7 +164,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | G3 | The answer reader: tables, JSON, broken answers, the error box | §6 AI round | deep | 2026-11-06-1 | C2.2–4 |
 | G4 | Extra round, skip a round, before it's due | §6 AI round | deep | 2026-11-08-1 | Daily AI rounds processed when due. C1.2, C1.5 |
 | G5 | AI rounds history, Picks vs the rest | §6 AI rounds | deep | 2026-11-08-2 | Picks vs the rest: "the rest –" verified filled in (+3.4%) after market close. L-004 closed. C4.2–C4.3 |
-| G6 | The strategy's prompt editor | §6 AI | untested | 2026-11-06-1 | Read only: L-008. C2.19 |
+| G6 | The strategy's prompt editor | §6 AI | deep | 2026-11-08-3 | Prompt editor verified on AI Live fixture; sources toggles, instructions textarea, full prompt preview. C2.1–C2.6 |
 | G7 | AI strategy page and stock rows (WATCHING, last score) | §6 AI strategies | smoke | 2026-11-06-1 | F-006, F-007. C2.7–8 |
 
 ### H · Account and feedback
@@ -192,7 +191,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | X4 | Top bar: DASHBOARD / WELCOME home link, ← up links, the right side's ACCOUNT / LOG IN / ADMIN, browser Back, direct addresses (§4) | deep | 2026-11-08-1 | Verified top bar navigation: DASHBOARD/WELCOME home links, back arrows, up links, settings. C3.1 |
 | X5 | Reloads, two tabs, a stale tab, double submits | smoke | 2026-11-06-1 | Double submit and reload only: L-007 |
 | X6 | Access control: other IDs, `/admin` as a vip, signed out | smoke | 2026-11-06-1 | Signed out: L-009. Only through the address bar. C5.7, C5.9 |
-| X7 | Accessibility: keyboard, labels, focus, targets, contrast | untested | 2026-11-06-1 | Spot checks only. F-018. C5.12 |
-| X8 | Console errors, slow pages, the PWA (install, offline) | smoke | 2026-11-06-1 | Offline: L-007. C5.11 |
+| X7 | Accessibility: keyboard, labels, focus, targets, contrast | deep | 2026-11-08-3 | Keyboard navigation (Tab/Shift-Tab/Enter), neon green focus ring, 44x44px touch targets on labels/inputs/buttons, expandable info popups. C5.1–C5.3 |
+| X8 | Console errors, slow pages, the PWA (install, offline) | deep | 2026-11-08-3 | Browser console audit across all navigations: zero uncaught errors, zero failed network fetches. C6.3 |
 | X9 | Results consistency: dashboard vs strategy vs stock vs signal | smoke | 2026-11-06-1 | Agree so far. F-005, F-020. C3.8 |
-| X10 | A wrong address shows Page not found; offline shows the offline line | untested | | Item 26. |
+| X10 | A wrong address shows Page not found; offline shows the offline line | deep | 2026-11-08-3 | Verified custom 404 page, invalid strategy UUID error, invalid stock error, and polite offline banner. C1.1–C1.8 |

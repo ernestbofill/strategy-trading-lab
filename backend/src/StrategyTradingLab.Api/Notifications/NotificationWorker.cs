@@ -42,11 +42,20 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     // Push after email. A signal alert a run couldn't push (a push service down) is retried here, every hour.
                     var pushed = await service.PushSignalAlertsAsync(session, stoppingToken)
                         + await service.PushSignalEndedAsync(session, stoppingToken)
-                        + await service.PushGettingCloseAsync(session, stoppingToken)
                         + await service.PushSnoozeRemindersAsync(now, stoppingToken)
                         + await service.PushAiRoundRemindersAsync(now, stoppingToken)
                         + await service.PushOverviewsAsync(now, stoppingToken);
                     if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);
+                    // Apart, so a failure here doesn't hold back the reminders and summaries above it next hour.
+                    try
+                    {
+                        var close = await service.PushGettingCloseAsync(session, stoppingToken);
+                        if (close > 0) logger.LogInformation("Pushed {Count} getting close alerts.", close);
+                    }
+                    catch (Exception error) when (error is not OperationCanceledException)
+                    {
+                        logger.LogWarning("The getting close push failed: {Reason}", error.Message);
+                    }
                 }
             }
             catch (Exception error) when (error is not OperationCanceledException)

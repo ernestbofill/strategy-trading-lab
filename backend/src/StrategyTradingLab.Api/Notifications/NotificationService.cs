@@ -190,7 +190,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// that came within the template's getting-close % of their line on <paramref name="session"/> (the summary's <c>CameClose</c>
     /// stock changes), with alert push on, at the signal alerts' time (<see cref="NotifyTime.AlertDueAt"/>). It waits until every
     /// such strategy was checked for the session, so a list isn't sent half made, but no longer than <see cref="CloseWait"/> after
-    /// that time: a strategy the check couldn't evaluate (prices that didn't load) doesn't hold back the others. Push only: the
+    /// the check's last result: a strategy the check couldn't evaluate (prices that didn't load) doesn't hold back the others. Push only: the
     /// summary email has the same lines. A day with nothing close keeps its claim, so later runs don't look again.
     /// </summary>
     public async Task<int> PushGettingCloseAsync(DateOnly session, CancellationToken cancellationToken)
@@ -210,9 +210,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var sent = 0;
         foreach (var user in due)
         {
-            var (changes, isChecked) = await LoadStockChangesAsync([.. byUser[user.Id]], session, cancellationToken);
-            // Until every strategy was checked, nothing is claimed and a later run looks again, for at most CloseWait.
-            if (!isChecked && now < NotifyTime.AlertDueAt(session, user.NotifyHour, user.TimeZone) + CloseWait) continue;
+            var (changes, isChecked, lastCheckedAt) = await LoadStockChangesAsync([.. byUser[user.Id]], session, cancellationToken);
+            // Until every strategy was checked, nothing is claimed and a later run looks again, while the daily check still stores
+            // results (one in the last CloseWait): a check running late isn't cut in half, and one that won't come doesn't hold the rest.
+            if (!isChecked && now < lastCheckedAt + CloseWait) continue;
             if (await ClaimAsync(user.Id, null, NotificationKind.GettingClose, session, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
             var close = changes.Where(c => c.Kind == StockChangeKind.CameClose).ToList();
             if (close.Count == 0) await NotSentAsync(claimed, "Not sent: nothing close.");
@@ -221,7 +222,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         return sent;
     }
 
-    /// <summary>How long a getting-close push waits, after its time, for strategies the daily check hasn't evaluated yet.</summary>
+    /// <summary>How long a getting-close push waits, after the check's last result, for strategies it hasn't evaluated yet.</summary>
     static readonly TimeSpan CloseWait = TimeSpan.FromHours(1);
 
     /// <summary>A running Manual strategy that isn't AI: the ones that alert.</summary>
@@ -547,7 +548,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var waiting = signals.Where(x => x.signal.Status == SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).OrderBy(l => l.Date).ToList();
         var changed = signals.Where(x => x.signal.SignalDate == sessionDate && x.signal.Status != SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).ToList();
 
-        var (stockChanges, isChecked) = await LoadStockChangesAsync(strategies, sessionDate, cancellationToken);
+        var (stockChanges, isChecked, _) = await LoadStockChangesAsync(strategies, sessionDate, cancellationToken);
         var hasChanges = stockChanges.Count > 0 || signals.Any(x => x.signal.SignalDate == sessionDate);
         var complete = hasChanges || isChecked;
 
@@ -563,24 +564,23 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// <summary>
     /// The stock changes of <paramref name="strategies"/> on the session, and whether every one of them the daily check has been
     /// checking (any day of the recent window, or started in it) was checked for the session, so no change can still come.
+    /// <c>LastCheckedAt</c> is when the newest check of the session was stored, if any.
     /// </summary>
-    /// <summary>Each template's getting-close %, read once per scope (a batch of users).</summary>
-    Dictionary<string, decimal>? closePcts;
-
-    async Task<(List<StockChangeLine> Changes, bool Checked)> LoadStockChangesAsync(IReadOnlyList<Strategy> strategies, DateOnly sessionDate, CancellationToken cancellationToken)
+    async Task<(List<StockChangeLine> Changes, bool Checked, DateTimeOffset? LastCheckedAt)> LoadStockChangesAsync(IReadOnlyList<Strategy> strategies, DateOnly sessionDate, CancellationToken cancellationToken)
     {
         var ids = strategies.Select(s => s.Id).ToList();
         var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
                             join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
                             where ids.Contains(eval.StrategyId) && eval.Date >= sessionDate.AddDays(-RecentDays)
                             select new { eval, asset.Name }).ToListAsync(cancellationToken);
-        closePcts ??= (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
-        var closePct = closePcts;
+        // TemplateStore keeps its templates for the scope, so this reads them once per batch.
+        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
         var changes = StockChangeLines(recent.Select(x => (x.eval, x.Name)), sessionDate, strategies.ToDictionary(s => s.Id), closePct);
         var isChecked = strategies.Where(s => s.StartedOn <= sessionDate
                 && (s.StartedOn >= sessionDate.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
             .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == sessionDate));
-        return (changes, isChecked);
+        var lastCheckedAt = recent.Where(x => x.eval.Date == sessionDate).Select(x => (DateTimeOffset?)x.eval.CreatedAt).Max();
+        return (changes, isChecked, lastCheckedAt);
     }
 
     /// <summary>

@@ -6,6 +6,7 @@ import { useCurrentAccount } from '../account/AccountContext'
 import { buttonSide, elementPath, feedbackErrorText, topOffset, type ButtonSide, type SelectionPosition } from './feedback'
 import styles from './Feedback.module.css'
 import { KindPicker } from './KindPicker'
+import { uiZoom } from '../../lib/uiZoom'
 
 interface CapturedSelection extends SelectionPosition {
   text: string
@@ -248,7 +249,7 @@ export function FeedbackCapture() {
           data-side={selection.side}
           style={
             selection.side === 'top'
-              ? { top: `${topOffset(selection.headerBottom)}px` }
+              ? { top: `${topOffset(selection.headerBottom) / uiZoom()}px` }
               : undefined
           }
           onMouseDown={(e) => e.preventDefault()}
@@ -263,7 +264,7 @@ export function FeedbackCapture() {
           role="menu"
           aria-label={t('feedback.selectionActions')}
           className={styles.contextMenu}
-          style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
+          style={{ left: `${contextMenu.x / uiZoom()}px`, top: `${contextMenu.y / uiZoom()}px` }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <button type="button" role="menuitem" className={styles.contextMenuItem} onClick={openModal}>

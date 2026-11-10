@@ -17,6 +17,7 @@ import { APP_HASH, NOTIFICATIONS_HASH, accountPath } from './paths'
 import { InstallApp } from './InstallApp'
 import { NotificationSettings } from './NotificationSettings'
 import { timeZoneOptions } from './timeZones'
+import { ZoomField } from './ZoomField'
 import { SendFeedback } from '../feedback/SendFeedback'
 
 /** Settings (spec: Settings): how the app behaves for the user. Who they are and their data are on Account, its first row. */
@@ -52,6 +53,10 @@ export function SettingsPage() {
 
       <Section title={t('account.page.language')}>
         <LanguageForm current={account.locale} onSaved={refresh} />
+      </Section>
+
+      <Section title={t('account.zoom')}>
+        <ZoomField hideLabel />
       </Section>
 
       <Section title={t('account.page.currency')}>

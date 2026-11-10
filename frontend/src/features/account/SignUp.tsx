@@ -13,6 +13,7 @@ import styles from './Account.module.css'
 import { useAccount } from './AccountContext'
 import { errorText } from './copy'
 import { InviteWelcome } from './InviteWelcome'
+import { ZoomField } from './ZoomField'
 import { INVITE_PARAM, logInPath, logInPathFor, safeNext } from './paths'
 import { privacyPath, termsPath } from '../legal/paths'
 import { guessTimeZone, timeZoneOptions } from './timeZones'
@@ -173,6 +174,7 @@ export function SignUp() {
           options={LOCALES}
           error={errors.locale}
         />
+        <ZoomField />
         <SegmentedField
           label={t('account.signUp.currency')}
           value={currency}

@@ -134,6 +134,8 @@ export const account: Record<keyof typeof en, string> = {
   'account.page.timeZoneHint': "Les teves dates i l'hora de les notificacions la segueixen.",
   'account.page.timeZoneSave': 'Desa la zona horària',
   'account.page.timeZoneSaved': 'Desat.',
+  'account.zoom': 'Zoom',
+  'account.zoom.hint': 'Ho fa tot més gran en aquest dispositiu, com el zoom del navegador.',
 
   // Settings page
   'settings.page.title': 'Configuració',

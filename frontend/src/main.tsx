@@ -5,9 +5,12 @@ import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 import { initializePwaInstall } from './lib/pwaInstall'
 import { refreshAll } from './lib/useLoadable'
+import { applyUiZoom, storedUiZoom } from './lib/uiZoom'
 
 // With autoUpdate, a new service worker takes over by itself and this reloads the page onto it,
 // so a deploy shows up without a hard reload. The hourly check covers tabs left open.
+// Before the first render, so the page never shows at the wrong size.
+applyUiZoom(storedUiZoom())
 initializePwaInstall()
 registerSW({
   immediate: true,

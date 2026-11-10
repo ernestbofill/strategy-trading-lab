@@ -54,8 +54,8 @@
 }
 
 .dialog {
-  width: min(520px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
+  width: min(520px, calc(100vw / var(--ui-zoom, 1) - 24px));
+  max-height: calc(100dvh / var(--ui-zoom, 1) - 24px);
   margin: auto;
   padding: 0;
   background: var(--surface-sidebar);

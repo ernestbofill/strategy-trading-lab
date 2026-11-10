@@ -260,6 +260,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             // A buy signal that ended unanswered, after its alert (one this run just sent waits for its next day).
             logger.LogInformation("Sent {Count} ended signal alerts.", await notifications.SendSignalEndedAsync(session, stoppingToken));
             logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, stoppingToken));
+            logger.LogInformation("Pushed {Count} getting close alerts.", await notifications.PushGettingCloseAsync(session, stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {

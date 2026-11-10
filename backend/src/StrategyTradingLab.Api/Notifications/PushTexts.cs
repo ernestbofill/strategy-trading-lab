@@ -40,6 +40,23 @@ public static class PushTexts
             $"ai-round-{dueOn:yyyy-MM-dd}");
     }
 
+    /// <summary>
+    /// "Getting close": the Manual strategies' stocks that came within the template's getting-close % of their line on the session
+    /// (spec: Notifications, Getting close). One stock opens its page; more open the summary, which lists them.
+    /// </summary>
+    public static PushMessage GettingClose(IReadOnlyList<StockChangeLine> changes, DateOnly session, string locale)
+    {
+        var ca = locale == "ca";
+        var first = changes[0];
+        return new(
+            changes.Count == 1
+                ? ca ? $"{first.StockName} s'acosta a la línia" : $"{first.StockName} is getting close"
+                : ca ? $"{changes.Count} accions s'acosten a la línia" : $"{changes.Count} stocks are getting close",
+            string.Join("\n", changes.Select(c => EmailTexts.StockChangeText(c, locale))),
+            changes.Count == 1 ? $"/strategies/{first.StrategyId}/stocks/{first.AssetId}" : "/summary",
+            $"close-{session:yyyy-MM-dd}");
+    }
+
     /// <summary>Summary push notification: opens the dedicated daily summary page.</summary>
     public static PushMessage Summary(DateOnly day, string locale) => new(
         EmailTexts.OverviewTitleText(day, locale),

@@ -186,6 +186,40 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     }
 
     /// <summary>
+    /// "Getting close" (spec: Notifications): one push per user and session listing the stocks of their running Manual strategies
+    /// that came within the template's getting-close % of their line on <paramref name="session"/> (the summary's <c>CameClose</c>
+    /// stock changes), with alert push on, at the signal alerts' time (<see cref="NotifyTime.AlertDueAt"/>). It waits until every
+    /// such strategy was checked for the session, so a list isn't sent half made. Push only: the summary email has the same lines.
+    /// </summary>
+    public async Task<int> PushGettingCloseAsync(DateOnly session, CancellationToken cancellationToken)
+    {
+        if (push.PublicKey is null) return 0;
+        var users = await db.Users.AsNoTracking()
+            .Where(u => u.AlertPush && db.PushSubscriptions.Any(p => p.UserId == u.Id)
+                && db.Strategies.Any(s => s.UserId == u.Id && s.Status == StrategyStatus.Running && s.Mode == StrategyMode.Live && s.TemplateKey != "ai"
+                    && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == session))
+                && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.GettingClose && x.Channel == NotificationChannel.Push && x.ForDate == session))
+            .Select(u => new { u.Id, u.TimeZone, u.Locale, u.NotifyHour }).ToListAsync(cancellationToken);
+        var now = time.GetUtcNow();
+        var sent = 0;
+        foreach (var user in users)
+        {
+            if (now < NotifyTime.AlertDueAt(session, user.NotifyHour, user.TimeZone)) continue;
+            var strategies = await db.Strategies.AsNoTracking()
+                .Where(s => s.UserId == user.Id && s.Status == StrategyStatus.Running && s.Mode == StrategyMode.Live && s.TemplateKey != "ai")
+                .ToListAsync(cancellationToken);
+            var (changes, isChecked) = await LoadStockChangesAsync(strategies, session, cancellationToken);
+            // Until every strategy was checked, nothing is claimed: a later run looks again. A day with none needs no row.
+            if (!isChecked) continue;
+            var close = changes.Where(c => c.Kind == StockChangeKind.CameClose).ToList();
+            if (close.Count == 0) continue;
+            if (await ClaimAsync(user.Id, null, NotificationKind.GettingClose, session, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
+            if (await PushAsync(claimed, user.Id, PushTexts.GettingClose(close, session, user.Locale), cancellationToken)) sent++;
+        }
+        return sent;
+    }
+
+    /// <summary>
     /// The reminder of each snoozed signal, once, from the reminder hour (<see cref="NotifyTime.ReminderHour"/>) of its snooze day in the user's time zone, while it still waits
     /// and its strategy runs (spec: Snooze). Snoozing again sets a later day, which gets its own reminder.
     /// </summary>
@@ -504,16 +538,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var waiting = signals.Where(x => x.signal.Status == SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).OrderBy(l => l.Date).ToList();
         var changed = signals.Where(x => x.signal.SignalDate == sessionDate && x.signal.Status != SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).ToList();
 
-        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
-                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
-                            where ids.Contains(eval.StrategyId) && eval.Date >= sessionDate.AddDays(-RecentDays)
-                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
-        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
-        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), sessionDate, byId, closePct);
+        var (stockChanges, isChecked) = await LoadStockChangesAsync(strategies, sessionDate, cancellationToken);
         var hasChanges = stockChanges.Count > 0 || signals.Any(x => x.signal.SignalDate == sessionDate);
-        var complete = hasChanges || strategies.Where(s => s.StartedOn <= sessionDate
-                && (s.StartedOn >= sessionDate.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
-            .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == sessionDate));
+        var complete = hasChanges || isChecked;
 
         var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
             .OrderBy(r => r.DueOn).Select(r => new { r.StrategyId, Name = byId[r.StrategyId].Name }).ToListAsync(cancellationToken);
@@ -522,6 +549,25 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id), s.Id)).ToList();
 
         return new SummaryData(strategies, waiting, changed, stockChanges, scoreboard, [.. roundsDue.Select(r => (r.StrategyId, r.Name))], hasChanges, complete);
+    }
+
+    /// <summary>
+    /// The stock changes of <paramref name="strategies"/> on the session, and whether every one of them the daily check has been
+    /// checking (any day of the recent window, or started in it) was checked for the session, so no change can still come.
+    /// </summary>
+    async Task<(List<StockChangeLine> Changes, bool Checked)> LoadStockChangesAsync(IReadOnlyList<Strategy> strategies, DateOnly sessionDate, CancellationToken cancellationToken)
+    {
+        var ids = strategies.Select(s => s.Id).ToList();
+        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
+                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
+                            where ids.Contains(eval.StrategyId) && eval.Date >= sessionDate.AddDays(-RecentDays)
+                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
+        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
+        var changes = StockChangeLines(recent.Select(x => (x.eval, x.Name)), sessionDate, strategies.ToDictionary(s => s.Id), closePct);
+        var isChecked = strategies.Where(s => s.StartedOn <= sessionDate
+                && (s.StartedOn >= sessionDate.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
+            .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == sessionDate));
+        return (changes, isChecked);
     }
 
     /// <summary>

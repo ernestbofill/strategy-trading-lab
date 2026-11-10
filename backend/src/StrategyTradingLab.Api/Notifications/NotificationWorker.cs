@@ -42,6 +42,7 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     // Push after email. A signal alert a run couldn't push (a push service down) is retried here, every hour.
                     var pushed = await service.PushSignalAlertsAsync(session, stoppingToken)
                         + await service.PushSignalEndedAsync(session, stoppingToken)
+                        + await service.PushGettingCloseAsync(session, stoppingToken)
                         + await service.PushSnoozeRemindersAsync(now, stoppingToken)
                         + await service.PushAiRoundRemindersAsync(now, stoppingToken)
                         + await service.PushOverviewsAsync(now, stoppingToken);

@@ -116,6 +116,21 @@ public class NotificationTests
     }
 
     [Fact]
+    public void The_getting_close_push_opens_the_stock_for_one_and_the_summary_for_more()
+    {
+        var day = new DateOnly(2026, 10, 23);
+        var tesla = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Tesla", StockChangeKind.CameClose, 2.5m);
+        var one = PushTexts.GettingClose([tesla], day, "en");
+        Assert.Equal(("Tesla is getting close", "Tesla, Strat: now 2.5% above the discount zone."), (one.Title, one.Body));
+        Assert.Equal($"/strategies/{tesla.StrategyId}/stocks/{tesla.AssetId}", one.Url);
+        Assert.Equal("close-2026-10-23", one.Tag);
+
+        var two = PushTexts.GettingClose([tesla, tesla with { StockName = "Apple" }], day, "ca");
+        Assert.Equal(("2 accions s'acosten a la línia", "/summary"), (two.Title, two.Url));
+        Assert.Equal(2, two.Body.Split('\n').Length);
+    }
+
+    [Fact]
     public void Stock_change_text_formats_candidate_and_distance_changes()
     {
         var candidate = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Apple", StockChangeKind.BecameCandidate);
@@ -413,6 +428,49 @@ public class NotificationTests
         finally
         {
             await CleanAsync(db, userId, assetId);
+        }
+    }
+
+    [NeonFact]
+    public async Task A_stock_getting_close_is_pushed_once_for_manual_strategies_only()
+    {
+        using var api = new AccountsApi();
+        using var scope = api.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var friday = new DateOnly(2026, 10, 23);
+        var live = await SeedAsync(db);
+        var simulation = await SeedAsync(db, mode: StrategyMode.Simulation);
+        try
+        {
+            var push = new FakePush();
+            foreach (var (userId, strategyId, _, _, _) in new[] { live, simulation })
+            {
+                db.PushSubscriptions.Add(new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{Guid.NewGuid():N}", P256dh = "p", Auth = "a" });
+                // Thursday 3.2% from the line, Friday 2.1%: it came within the 3% on Friday.
+                await db.DailyEvaluations.Where(e => e.StrategyId == strategyId && e.Date == friday)
+                    .ExecuteUpdateAsync(e => e.SetProperty(x => x.Facts, JsonDocument.Parse("{\"distancePct\":2.1}")));
+            }
+            await db.SaveChangesAsync();
+
+            // With the App box for signals off, nothing goes out.
+            await db.Users.Where(u => u.Id == live.UserId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, false));
+            Assert.Equal(0, await Service(scope, push).PushGettingCloseAsync(friday, default));
+            await db.Users.Where(u => u.Id == live.UserId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, true));
+
+            var first = await Service(scope, push).PushGettingCloseAsync(friday, default);
+            var second = await Service(scope, push).PushGettingCloseAsync(friday, default);
+            Assert.Equal((1, 0), (first, second));
+            var (_, payload) = Assert.Single(push.Sent);
+            using var message = JsonDocument.Parse(payload);
+            Assert.Equal($"/strategies/{live.StrategyId}/stocks/{live.AssetId}", message.RootElement.GetProperty("url").GetString());
+            Assert.EndsWith("is getting close", message.RootElement.GetProperty("title").GetString());
+            // The simulation's user gets none: simulations have no alerts.
+            Assert.False(await db.Notifications.AnyAsync(n => n.UserId == simulation.UserId));
+        }
+        finally
+        {
+            await CleanAsync(db, live.UserId, live.AssetId);
+            await CleanAsync(db, simulation.UserId, simulation.AssetId);
         }
     }
 

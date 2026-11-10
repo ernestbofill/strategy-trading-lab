@@ -1250,7 +1250,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_notifications_channel", "channel IN ('push', 'email')");
 
-                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended')");
+                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended', 'getting_close')");
 
                             t.HasCheckConstraint("ck_notifications_signal_id", "(kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL)");
                         });

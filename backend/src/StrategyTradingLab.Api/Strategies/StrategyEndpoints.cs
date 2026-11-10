@@ -650,9 +650,9 @@ public static class StrategyEndpoints
         var live = strategy.Mode == StrategyMode.Live;
         var maxSteps = strategy.Budget.MaxSteps;
         var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
-        var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
-        // A simulation's signal is a SIGNAL until its trade is in: the next open's, or at once for an AI round (spec §5, F-007).
-        var pending = todays is not null && !book.HasTrade(todays.Id);
+        // A simulation's signal of the latest checked day is a SIGNAL until its own trade is in: the next open's, or at once for an
+        // AI round (spec §5, F-007). Of several that day, the one still waiting.
+        var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date && !book.HasTrade(s.Id));
         var (doneSteps, cycleStart) = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
         var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
         int rulesSteps;
@@ -675,7 +675,7 @@ public static class StrategyEndpoints
             ?? (aiScores is null ? null : aiScores.ContainsKey(assetId) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
         var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
-            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, pending, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
+            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
         var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
         var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
         decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number

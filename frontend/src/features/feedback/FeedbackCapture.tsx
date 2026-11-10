@@ -110,9 +110,11 @@ export function FeedbackCapture() {
       if (!current) return
       e.preventDefault()
       setSelection(current)
+      // In the page's CSS pixels: the browser gives screen pixels, and the menu grows with the app's zoom.
+      const zoom = uiZoom()
       setContextMenu({
-        x: Math.min(e.clientX, Math.max(16, (window.innerWidth || 800) - 210)),
-        y: Math.min(e.clientY, Math.max(16, (window.innerHeight || 600) - 120)),
+        x: Math.min(e.clientX / zoom, Math.max(16, (window.innerWidth || 800) / zoom - 210)),
+        y: Math.min(e.clientY / zoom, Math.max(16, (window.innerHeight || 600) / zoom - 120)),
       })
     }
     const dismissMenu = (e: MouseEvent) => {
@@ -264,7 +266,7 @@ export function FeedbackCapture() {
           role="menu"
           aria-label={t('feedback.selectionActions')}
           className={styles.contextMenu}
-          style={{ left: `${contextMenu.x / uiZoom()}px`, top: `${contextMenu.y / uiZoom()}px` }}
+          style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <button type="button" role="menuitem" className={styles.contextMenuItem} onClick={openModal}>

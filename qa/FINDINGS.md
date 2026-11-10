@@ -99,7 +99,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 ## F-007 · AI simulation row says "bought at the next open" after buying
 
 - **Severity:** S3 · **Area:** G7, D3 · **Status:** open
-- **Found:** 2026-11-06-1 · **Seen again:** –
+- **Found:** 2026-11-06-1 · **Seen again:** 2026-11-10-1 (Vertiv on AI · Sim; the dashboard card also reads "1 signal · 2 holding" after the buy)
 - **Version:** v0.52.0-alpha · **Width / language:** 1470px, English
 - **Steps:**
   1. Use a round's scores on an AI simulation, then open the strategy page.
@@ -172,7 +172,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 ## F-013 · Catalan shows English number and money formats
 
 - **Severity:** S3 · **Area:** X2 · **Status:** open
-- **Found:** 2026-11-06-1 · **Seen again:** –
+- **Found:** 2026-11-06-1 · **Seen again:** 2026-11-10-1
 - **Version:** v0.52.0-alpha · **Width / language:** 1470px, Catalan
 - **Steps:**
   1. Set Catalan and read the dashboard.
@@ -183,7 +183,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 
 ## F-014 · Catalan mode tag mixes LIVE and REAL
 
-- **Severity:** S3 · **Area:** X2 · **Status:** open
+- **Severity:** S3 · **Area:** X2 · **Status:** fixed (2026-11-10-1: MANUAL on the signal, dashboard, strategy and summary in Catalan, after #205)
 - **Found:** 2026-11-06-1 · **Seen again:** –
 - **Version:** v0.52.0-alpha · **Width / language:** 1470px, Catalan
 - **Steps:**
@@ -208,7 +208,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 ## F-016 · Catalan "Millor accions" reads as "better stocks"
 
 - **Severity:** S3 · **Area:** X2, F1 · **Status:** open
-- **Found:** 2026-11-06-1 · **Seen again:** –
+- **Found:** 2026-11-06-1 · **Seen again:** 2026-11-10-1
 - **Version:** v0.52.0-alpha · **Width / language:** 1470px, Catalan
 - **Steps:**
   1. On Confirm a signal in Catalan, read the button by the amount.
@@ -281,7 +281,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 ## F-022 · Small copy and polish items, and ideas
 
 - **Severity:** S4 · **Area:** many · **Status:** open
-- **Found:** 2026-11-06-1 · **Seen again:** –
+- **Found:** 2026-11-06-1 · **Seen again:** 2026-11-10-1
 - **Version:** v0.52.0-alpha · **Width / language:** various
 - **Steps:** as listed.
 - **Expected / Actual:**
@@ -296,6 +296,12 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
   - Stock page position has no steps (§6: "steps, invested, result"). Exchange shows as "XNAS".
   - Catalan: "Saved." in English just after switching; "9 de nov.." with two dots; "Mail" for Email.
   - Guest pages log 4 `/account/me` 401s in the console on each load.
+  - 2026-11-10-1: Settings and Sign-up: the Zoom buttons stretch across the column while Language and Currency are compact. Picking a zoom grows the page above the buttons, so they slide away from the finger. Sign-up's time zone select is cut ("…Paris, Cop") at 360px / 125%.
+  - 2026-11-10-1: English dates: the summary heading reads "9 Nov 2026", everywhere else "Nov 6".
+  - 2026-11-10-1: Catalan: "1 perduts"; "del 6 de nov.." and "La propera és el 11 de nov.." (two dots, and "l'11"); "El que ha comprat accions." reads oddly; the Waiting list badge says "AI", not "IA".
+  - 2026-11-10-1: A signal opens under any of the user's strategies in the address (`/strategies/<other>/signals/<id>`); it shows the right strategy, but the address should be Page not found.
+  - 2026-11-10-1: **idea:** while the market is open, results use today's live price but the stock page's headline is the last close, so the result can't be checked against the page (Palantir: $169.20 close, +2.4% shown, +4.2% at that close). Show the price the result uses.
+  - 2026-11-10-1: Log out lands on `/log-in?next=%2Faccount`; logging straight back in opens Account. Signed out, `/admin` asks for log-in instead of Page not found.
 - **How often:** every time
 - **Notes:** **idea:** Start with an empty name quietly uses the template's name; say so, or keep the button off. **Question:** AI cards show no worst year, having no backtest to quote; is that the intended exception to the product rule?
 
@@ -325,4 +331,56 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 - **Actual:** In plain text and notification previews, the tag and sentence collide without whitespace: `SimulationYour rules for QA fixture · AI · Sim are met...`.
 - **How often:** every time
 - **Notes:** In `EmailDocument.cs` line 166-170, the HTML table cell inserts `<span style="...margin-right:8px;...">{Encode(item.Tag)}</span>{body}`. Without a literal space character or explicit separator between the span and the text, clients parsing HTML to text or notification push snippets strip HTML tags and concatenate the span inner text directly with the body text.
+
+## F-025 · Welcome's top bar loses LOG IN at 110–125% zoom on a phone
+
+- **Severity:** S3 · **Area:** A1, H10, X3 · **Status:** open
+- **Found:** 2026-11-10-1 · **Seen again:** –
+- **Version:** v0.214.0-alpha · **Width / language:** 360px and 390px, English
+- **Steps:**
+  1. Signed out, on a phone-width screen, set Zoom to 125% (Sign-up or Settings).
+  2. Open `/welcome`.
+- **Expected:** the top bar keeps LOG IN on screen, the brand giving way first (spec §6 Settings → Zoom offers 125%; CLAUDE.md product rules: every screen works at phone width).
+- **Actual:** "STL // STRATEGY TRADING LAB" keeps its width, "Català" is cut to "CATALÀ…" and LOG IN sits past the right edge (390px at 125%: LOG IN at 364–421px). No horizontal scroll, so it simply can't be reached from the top bar; the footer's "Log in" still works.
+- **How often:** every time. 360px: fits at 100%, cut at 110% and 125%. 390px: fits at 110%, cut at 125%.
+- **Notes:** `/new` as a guest fits at 360px / 125% because its top bar says WELCOME. Same family as F-012 (Catalan at 100%). Root guess: the brand doesn't shrink before the right-hand links.
+
+## F-026 · Some pages open scrolled down, under their heading
+
+- **Severity:** S3 · **Area:** B7, B8, B9, E1, X4 · **Status:** open
+- **Found:** 2026-11-10-1 · **Seen again:** –
+- **Version:** v0.214.0-alpha · **Width / language:** 658px (Chrome's narrowest), English
+- **Steps:**
+  1. On a template's Review, scroll down and tap "Use this template".
+  2. On Choose the mode, tap Continue; on Set your budget, tap Continue.
+  3. Separately: on a strategy page, scroll to a stock and tap its row.
+- **Expected:** each new page opens at its top, with its heading in view (spec §4: a page replaces the old one).
+- **Actual:** Choose the mode opens at scrollY 170 (its maximum, H1 102px above the screen), Set your budget at 170, Confirm at 424 (the name field off screen), a stock page at 215 (H1 147px above).
+- **How often:** every time on those routes. Dashboard card → strategy page opens at the top, correctly.
+- **Notes:** Browser Back restores the previous page's position, which is right. Root guess: the window keeps its scroll when the next page mounts, and only some routes reset it; maybe linked to #199.
+
+## F-027 · The AI score note in Signals and trades stays English in Catalan
+
+- **Severity:** S3 · **Area:** X2, D5, G7 · **Status:** open
+- **Found:** 2026-11-10-1 · **Seen again:** –
+- **Version:** v0.214.0-alpha · **Width / language:** 658px, Catalan
+- **Steps:**
+  1. Set Català.
+  2. Open `QA fixture · AI · Live` and read Senyals i operacions.
+- **Expected:** "la teva IA l'ha puntuat amb 88 sobre 100, la puntuació més alta de la ronda" (the text exists in `EmailTexts.AiScoreTopRank`).
+- **Actual:** "· your AI scored it 88 out of 100, the top score of the round" on every AI signal row, in a Catalan page.
+- **How often:** every time (3 of 3 signals)
+- **Notes:** the signal page shows the same sentence in Catalan. Root guess: the timeline shows a note stored with the signal in the language it was made in; the signal page builds it again. Not tried: a Sim timeline, a signal made while the account is in Catalan (L-017).
+
+## F-028 · AI simulation page says trades fill at the next open; they fill at once
+
+- **Severity:** S3 · **Area:** D1, G7 · **Status:** open
+- **Found:** 2026-11-10-1 · **Seen again:** –
+- **Version:** v0.214.0-alpha · **Width / language:** 658px, English
+- **Steps:**
+  1. Open `QA fixture · AI · Sim` and read the last line, then Signals and trades.
+- **Expected:** for an AI simulation, a line that matches how it trades: "The simulation buys at once, at the latest price." (what the AI round page says; spec §5, changed in #76).
+- **Actual:** "Results come from trades at the next day's opening price." while Vertiv's signal of Nov 9 was bought Nov 10 at $189.65 (the live price) and Palantir's of Nov 6 at $160.38 (that day's close).
+- **How often:** every time
+- **Notes:** the spec's own copy for that line (§6 Strategy page, bottom) only has the next-open wording, so the spec needs the AI case too.
 

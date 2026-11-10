@@ -116,6 +116,23 @@ public class NotificationTests
     }
 
     [Fact]
+    public void The_summary_push_names_the_stocks_getting_close()
+    {
+        var day = new DateOnly(2026, 10, 23);
+        var tesla = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Tesla", StockChangeKind.CameClose, 2.5m);
+        var one = PushTexts.Summary(day, "en", [tesla]);
+        Assert.Equal(("Tesla is getting close", "Tesla, Strat: now 2.5% above the discount zone."), (one.Title, one.Body));
+        Assert.Equal(("/summary", "summary-2026-10-23"), (one.Url, one.Tag));
+
+        // The same stock in two strategies is one stock.
+        Assert.Equal("Tesla s'acosta a la línia", PushTexts.Summary(day, "ca", [tesla, tesla with { StrategyName = "Other" }]).Title);
+
+        var five = PushTexts.Summary(day, "en", [.. Enumerable.Range(1, 5).Select(i => tesla with { StockName = $"S{i}", AssetId = Guid.NewGuid() })]);
+        Assert.Equal("5 stocks are getting close", five.Title);
+        Assert.EndsWith("S3, Strat: now 2.5% above the discount zone.\nAnd 2 more in the summary.", five.Body);
+    }
+
+    [Fact]
     public void Stock_change_text_formats_candidate_and_distance_changes()
     {
         var candidate = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Apple", StockChangeKind.BecameCandidate);

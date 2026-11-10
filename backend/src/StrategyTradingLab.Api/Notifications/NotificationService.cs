@@ -179,7 +179,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                 continue;
             }
 
-            if (await PushAsync(claimed, user.Id, PushTexts.Summary(lastSession, user.Locale), cancellationToken))
+            var close = data.StockChanges.Where(c => c.Kind == StockChangeKind.CameClose).ToList();
+            if (await PushAsync(claimed, user.Id, PushTexts.Summary(lastSession, user.Locale, close), cancellationToken))
                 sent++;
         }
         return sent;

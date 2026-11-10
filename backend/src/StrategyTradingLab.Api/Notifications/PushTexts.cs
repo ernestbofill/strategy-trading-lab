@@ -40,12 +40,33 @@ public static class PushTexts
             $"ai-round-{dueOn:yyyy-MM-dd}");
     }
 
-    /// <summary>Summary push notification: opens the dedicated daily summary page.</summary>
-    public static PushMessage Summary(DateOnly day, string locale) => new(
-        EmailTexts.OverviewTitleText(day, locale),
-        locale == "ca" ? "Què ha canviat avui a les teves estratègies." : "What changed today across your strategies.",
-        "/summary",
-        $"summary-{day:yyyy-MM-dd}");
+    const int MaxCloseLines = 3;
+
+    /// <summary>
+    /// Summary push notification: opens the dedicated daily summary page. On a day stocks came within the getting-close % of their
+    /// line (<paramref name="close"/>, the summary's <c>CameClose</c> stock changes), it names them instead of the generic words:
+    /// "Tesla is getting close" and the stock change lines, a few at most (a push payload is capped at about 4 KB).
+    /// </summary>
+    public static PushMessage Summary(DateOnly day, string locale, IReadOnlyList<StockChangeLine>? close = null)
+    {
+        var ca = locale == "ca";
+        var url = "/summary";
+        var tag = $"summary-{day:yyyy-MM-dd}";
+        if (close is not { Count: > 0 })
+            return new(EmailTexts.OverviewTitleText(day, locale),
+                ca ? "Què ha canviat avui a les teves estratègies." : "What changed today across your strategies.", url, tag);
+
+        // A stock close in two strategies is one stock.
+        var stocks = close.Select(c => c.AssetId).Distinct().Count();
+        var more = close.Count - MaxCloseLines;
+        return new(
+            stocks == 1
+                ? ca ? $"{close[0].StockName} s'acosta a la línia" : $"{close[0].StockName} is getting close"
+                : ca ? $"{stocks} accions s'acosten a la línia" : $"{stocks} stocks are getting close",
+            string.Join("\n", close.Take(MaxCloseLines).Select(c => EmailTexts.StockChangeText(c, locale)))
+                + (more > 0 ? "\n" + (ca ? $"I {more} més al resum." : $"And {more} more in the summary.") : ""),
+            url, tag);
+    }
 
     static string SignalPath(SignalLine s) => $"/strategies/{s.StrategyId}/signals/{s.SignalId}";
 }

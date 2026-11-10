@@ -98,7 +98,7 @@ Ask for a credential when you need one.
 
 Follow these steps for every change, without being asked. Questions and pure research don't need them. The PR is the record: the plan, every review finding and what happened to it go on the PR, not only in the chat. One session (chat) is one branch and one PR, except in a loop.
 
-Models: `opus` for every step (analyze, implement, review), including subagents. Set the effort by complexity: `medium` by default, `high` for high-risk, foundational or complex work. Name the model and effort in that step's PR comment.
+Models: `opus` for every step (analyze, implement, review), including subagents. Set the effort by complexity: `medium` by default, `high` for high-risk, foundational or complex work. When Ernest names a model or effort for a task or step (for example `fable`, or `opus` at `xhigh`), use it for that work instead. Name the model and effort in that step's PR comment.
 
 ### Kinds of change
 

@@ -26,6 +26,9 @@
   border-radius: var(--radius-sm);
   color: var(--success);
   font: 16px var(--font-mono);
+  /* Like Field's select: under the app's zoom, Safari draws a long option past the box and widens the page. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .searchInput {

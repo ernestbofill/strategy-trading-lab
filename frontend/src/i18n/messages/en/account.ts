@@ -132,6 +132,8 @@ export const account = {
   'account.page.timeZoneHint': 'Your dates and notification time follow it.',
   'account.page.timeZoneSave': 'Save time zone',
   'account.page.timeZoneSaved': 'Saved.',
+  'account.zoom': 'Zoom',
+  'account.zoom.hint': 'Makes everything bigger on this device, like the browser zoom.',
 
   // Settings page
   'settings.page.title': 'Settings',

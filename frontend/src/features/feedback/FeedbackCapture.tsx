@@ -6,6 +6,7 @@ import { useCurrentAccount } from '../account/AccountContext'
 import { buttonSide, elementPath, feedbackErrorText, topOffset, type ButtonSide, type SelectionPosition } from './feedback'
 import styles from './Feedback.module.css'
 import { KindPicker } from './KindPicker'
+import { uiZoom } from '../../lib/uiZoom'
 
 interface CapturedSelection extends SelectionPosition {
   text: string
@@ -109,9 +110,11 @@ export function FeedbackCapture() {
       if (!current) return
       e.preventDefault()
       setSelection(current)
+      // In the page's CSS pixels: the browser gives screen pixels, and the menu grows with the app's zoom.
+      const zoom = uiZoom()
       setContextMenu({
-        x: Math.min(e.clientX, Math.max(16, (window.innerWidth || 800) - 210)),
-        y: Math.min(e.clientY, Math.max(16, (window.innerHeight || 600) - 120)),
+        x: Math.min(e.clientX / zoom, Math.max(16, (window.innerWidth || 800) / zoom - 210)),
+        y: Math.min(e.clientY / zoom, Math.max(16, (window.innerHeight || 600) / zoom - 120)),
       })
     }
     const dismissMenu = (e: MouseEvent) => {
@@ -248,7 +251,7 @@ export function FeedbackCapture() {
           data-side={selection.side}
           style={
             selection.side === 'top'
-              ? { top: `${topOffset(selection.headerBottom)}px` }
+              ? { top: `${topOffset(selection.headerBottom) / uiZoom()}px` }
               : undefined
           }
           onMouseDown={(e) => e.preventDefault()}

@@ -43,29 +43,29 @@ public static class PushTexts
     const int MaxCloseLines = 3;
 
     /// <summary>
-    /// Summary push notification: opens the dedicated daily summary page. On a day stocks came within the getting-close % of their
-    /// line (<paramref name="close"/>, the summary's <c>CameClose</c> stock changes), it names them instead of the generic words:
-    /// "Tesla is getting close" and the stock change lines, a few at most (a push payload is capped at about 4 KB).
+    /// Summary push notification: opens the dedicated daily summary page. On a day a stock came within the getting-close % of its
+    /// line (a <c>CameClose</c> among <paramref name="stockChanges"/>), it names it instead of the generic words: "Getting close:
+    /// Tesla" and one stock change line per stock with its mode, a few at most (a push payload is capped at about 4 KB). With
+    /// signals on the session too (<paramref name="signals"/>), a last line says the summary has them.
     /// </summary>
-    public static PushMessage Summary(DateOnly day, string locale, IReadOnlyList<StockChangeLine>? close = null)
+    public static PushMessage Summary(DateOnly day, string locale, IReadOnlyList<StockChangeLine>? stockChanges = null, bool signals = false)
     {
         var ca = locale == "ca";
         var url = "/summary";
         var tag = $"summary-{day:yyyy-MM-dd}";
-        if (close is not { Count: > 0 })
+        // One line per stock: a stock close in two strategies is one stock.
+        var close = (stockChanges ?? []).Where(c => c.Kind == StockChangeKind.CameClose).DistinctBy(c => c.AssetId).ToList();
+        if (close.Count == 0)
             return new(EmailTexts.OverviewTitleText(day, locale),
                 ca ? "Què ha canviat avui a les teves estratègies." : "What changed today across your strategies.", url, tag);
 
-        // A stock close in two strategies is one stock.
-        var stocks = close.Select(c => c.AssetId).Distinct().Count();
-        var more = close.Count - MaxCloseLines;
-        return new(
-            stocks == 1
-                ? ca ? $"{close[0].StockName} s'acosta a la línia" : $"{close[0].StockName} is getting close"
-                : ca ? $"{stocks} accions s'acosten a la línia" : $"{stocks} stocks are getting close",
-            string.Join("\n", close.Take(MaxCloseLines).Select(c => EmailTexts.StockChangeText(c, locale)))
-                + (more > 0 ? "\n" + (ca ? $"I {more} més al resum." : $"And {more} more in the summary.") : ""),
-            url, tag);
+        var shown = close.Take(MaxCloseLines).ToList();
+        var more = close.Count - shown.Count;
+        var names = string.Join(", ", shown.Select(c => c.StockName))
+            + (more > 0 ? ca ? $" i {more} més" : $" and {more} more" : "");
+        var lines = shown.Select(c => $"{EmailTexts.StockChangeText(c, locale)} ({EmailTexts.ModeName(c.Mode, locale)})").ToList();
+        if (signals) lines.Add(ca ? "També hi ha senyals al resum." : "Signals too, in the summary.");
+        return new(ca ? $"A prop de la línia: {names}" : $"Getting close: {names}", string.Join("\n", lines), url, tag);
     }
 
     static string SignalPath(SignalLine s) => $"/strategies/{s.StrategyId}/signals/{s.SignalId}";

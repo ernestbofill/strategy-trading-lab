@@ -35,7 +35,7 @@ public static class EmailTexts
     // Modes
     static readonly Message ModeLive = new("Manual", "Manual");
     static readonly Message ModeSimulation = new("Simulation", "Simulació");
-    static string ModeName(StrategyMode mode, string locale) =>
+    internal static string ModeName(StrategyMode mode, string locale) =>
         (mode == StrategyMode.Live ? ModeLive : ModeSimulation).In(locale);
 
     // Fact sentence entries

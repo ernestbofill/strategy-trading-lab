@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] Getting close push: choose #212 (its own push, Manual only, under signals and reminders) or #213 (the summary push names the stocks getting close). Merge one and close the other. (#212, #213)
 - [x] Spaceship (domain → Email forwarding): forward `contact@strategytradinglab.com` to your inbox and send it a test mail. Claude then puts the address on the legal notice and the privacy policy (item 26). (#187) Done by Ernest, 2026-11-08; the address is on the legal pages since #198.
 - [x] GitHub, Settings → Branches (or Rules) for `main`: untick "Require branches to be up to date before merging", keeping the `backend` and `frontend` required checks. Versions no longer clash, so it's not needed (done by Ernest, 2026-11-08). (#185)
 - [x] QA sessions (`qa/`): in the browser the agent will drive (the desktop app's built-in browser, or Chrome with Claude in Chrome), sign in once to `https://strategytradinglab.com` with the vip QA account and save its password in the browser. Check the account's email is confirmed. Then start a session with `/qa-session <account email>` from the desktop app. Optional: add `Bash(git push -u origin qa/*)` to `.claude/settings.json`'s allow list, so the agent pushes its session branch without a prompt (Claude's own edit of the settings was refused). (#153)

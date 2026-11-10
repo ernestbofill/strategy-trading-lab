@@ -120,16 +120,18 @@ public class NotificationTests
     {
         var day = new DateOnly(2026, 10, 23);
         var tesla = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Tesla", StockChangeKind.CameClose, 2.5m);
-        var one = PushTexts.Summary(day, "en", [tesla]);
-        Assert.Equal(("Tesla is getting close", "Tesla, Strat: now 2.5% above the discount zone."), (one.Title, one.Body));
+        var one = PushTexts.Summary(day, "en", [tesla, tesla with { Kind = StockChangeKind.BecameCandidate, AssetId = Guid.NewGuid() }]);
+        Assert.Equal(("Getting close: Tesla", "Tesla, Strat: now 2.5% above the discount zone. (Manual)"), (one.Title, one.Body));
         Assert.Equal(("/summary", "summary-2026-10-23"), (one.Url, one.Tag));
 
-        // The same stock in two strategies is one stock.
-        Assert.Equal("Tesla s'acosta a la línia", PushTexts.Summary(day, "ca", [tesla, tesla with { StrategyName = "Other" }]).Title);
+        // The same stock in two strategies is one stock; signals on the day get a last line.
+        var ca = PushTexts.Summary(day, "ca", [tesla, tesla with { StrategyName = "Other" }], signals: true);
+        Assert.Equal("A prop de la línia: Tesla", ca.Title);
+        Assert.EndsWith("\nTambé hi ha senyals al resum.", ca.Body);
 
         var five = PushTexts.Summary(day, "en", [.. Enumerable.Range(1, 5).Select(i => tesla with { StockName = $"S{i}", AssetId = Guid.NewGuid() })]);
-        Assert.Equal("5 stocks are getting close", five.Title);
-        Assert.EndsWith("S3, Strat: now 2.5% above the discount zone.\nAnd 2 more in the summary.", five.Body);
+        Assert.Equal("Getting close: S1, S2, S3 and 2 more", five.Title);
+        Assert.Equal(3, five.Body.Split('\n').Length);
     }
 
     [Fact]

@@ -413,7 +413,7 @@ public static class StrategyEndpoints
         var you = book.You(strategy);
         var own = signals.ToList();
         var states = Followed(strategy).Select(a => StockStateOf(strategy, a.AssetId, false,
-            latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], aiScores))
+            latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], book, aiScores))
             .ToList();
         // Bear markets' distance is above the low, not from a buy rule, so it is never "close".
         bool Close(StockState s) => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket && strategy.TemplateKey != "bear"
@@ -504,7 +504,7 @@ public static class StrategyEndpoints
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
             var (status, rulesSteps, userSteps, distance, signal, checks) = StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
-                [.. signalEntities.Where(s => s.AssetId == asset.Id)], trades, aiScores);
+                [.. signalEntities.Where(s => s.AssetId == asset.Id)], trades, book, aiScores);
             DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
                 && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
                 ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
@@ -645,12 +645,14 @@ public static class StrategyEndpoints
     /// strategy, <paramref name="aiScores"/> holds the last round's scores (null for other templates).
     /// </summary>
     static StockState StockStateOf(Strategy strategy, Guid assetId, bool removed, DailyEvaluation? evaluation, IReadOnlyList<Signal> own,
-        IReadOnlyList<Buy> trades, IReadOnlyDictionary<Guid, decimal>? aiScores)
+        IReadOnlyList<Buy> trades, StrategyBook book, IReadOnlyDictionary<Guid, decimal>? aiScores)
     {
         var live = strategy.Mode == StrategyMode.Live;
         var maxSteps = strategy.Budget.MaxSteps;
         var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
-        var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date);
+        // A simulation's signal of the latest checked day is a SIGNAL until its own trade is in: the next open's, or at once for an
+        // AI round (spec §5, F-007). Of several that day, the one still waiting.
+        var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date && !book.HasTrade(s.Id));
         var (doneSteps, cycleStart) = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
         var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
         int rulesSteps;

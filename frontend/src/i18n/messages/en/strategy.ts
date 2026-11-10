@@ -7,6 +7,7 @@ export const strategy = {
   'strategy.since': 'since {date}',
   'strategy.source.live': 'Your results come from the trades you confirmed, at your prices.',
   'strategy.source.sim': "Results come from trades at the next day's opening price.",
+  'strategy.source.simAi': 'Results come from trades made at once, at the latest price.',
   'strategy.figure.you': 'You',
   'strategy.figure.sinceStart': 'Since start',
   'strategy.figure.rules': 'The rules alone',

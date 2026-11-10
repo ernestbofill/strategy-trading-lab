@@ -9,6 +9,7 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.since': 'des del {date}',
   'strategy.source.live': 'Els teus resultats provenen de les operacions que has confirmat, als teus preus.',
   'strategy.source.sim': 'Els resultats provenen d’operacions simulades al preu d’obertura de l’endemà.',
+  'strategy.source.simAi': 'Els resultats provenen d’operacions simulades fetes de seguida, al darrer preu.',
   'strategy.figure.you': 'Tu',
   'strategy.figure.sinceStart': 'Des de l’inici',
   'strategy.figure.rules': 'Només les regles',

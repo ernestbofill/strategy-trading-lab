@@ -113,8 +113,8 @@ public class PerformanceTests
     [InlineData(StrategyMode.Live, EvaluationStatus.NotEnoughData, false, false, 0, StockStatus.NotEnoughData)]
     [InlineData(StrategyMode.Live, null, false, false, 0, StockStatus.NotChecked)]
     public void A_stocks_pill_follows_the_waiting_signal_then_the_steps_then_the_rules(StrategyMode mode, EvaluationStatus? latest,
-        bool waiting, bool todaysSignal, int rulesSteps, StockStatus expected) =>
-        Assert.Equal(expected, StrategyPage.Status(mode, latest, waiting, todaysSignal, rulesSteps, maxSteps: 5));
+        bool waiting, bool signalPending, int rulesSteps, StockStatus expected) =>
+        Assert.Equal(expected, StrategyPage.Status(mode, latest, waiting, signalPending, rulesSteps, maxSteps: 5));
 
     [Fact]
     public void Bear_and_trend_pills_show_done_and_out_of_the_market()

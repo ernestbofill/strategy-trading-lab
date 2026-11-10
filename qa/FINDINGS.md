@@ -106,7 +106,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 - **Expected:** a row that says it is bought (§5: the simulation records the trade at once).
 - **Actual:** SIGNAL, "Step 1 of 5, bought at the next open", with the trade already listed and "$100 in".
 - **How often:** 1 of 1
-- **Notes:** check after the next daily check whether it moves to BUILDING.
+- **Notes:** check after the next daily check whether it moves to BUILDING. Fix in #216: check it in the next session.
 
 ## F-008 · AI frequency not reflected on Review's row and Budget's line
 
@@ -357,7 +357,7 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 - **Expected:** each new page opens at its top, with its heading in view (spec §4: a page replaces the old one).
 - **Actual:** Choose the mode opens at scrollY 170 (its maximum, H1 102px above the screen), Set your budget at 170, Confirm at 424 (the name field off screen), a stock page at 215 (H1 147px above).
 - **How often:** every time on those routes. Dashboard card → strategy page opens at the top, correctly.
-- **Notes:** Browser Back restores the previous page's position, which is right. Root guess: the window keeps its scroll when the next page mounts, and only some routes reset it; maybe linked to #199.
+- **Notes:** Browser Back restores the previous page's position, which is right. Root guess: the window keeps its scroll when the next page mounts, and only some routes reset it; maybe linked to #199. Fix in #216: check it in the next session.
 
 ## F-027 · The AI score note in Signals and trades stays English in Catalan
 
@@ -382,5 +382,5 @@ Status: **open** · **issue #n** · **fixed** (session) · **won't fix** (Ernest
 - **Expected:** for an AI simulation, a line that matches how it trades: "The simulation buys at once, at the latest price." (what the AI round page says; spec §5, changed in #76).
 - **Actual:** "Results come from trades at the next day's opening price." while Vertiv's signal of Nov 9 was bought Nov 10 at $189.65 (the live price) and Palantir's of Nov 6 at $160.38 (that day's close).
 - **How often:** every time
-- **Notes:** the spec's own copy for that line (§6 Strategy page, bottom) only has the next-open wording, so the spec needs the AI case too.
+- **Notes:** the spec's own copy for that line (§6 Strategy page, bottom) only has the next-open wording, so the spec needs the AI case too. Fix in #216: check it in the next session.
 

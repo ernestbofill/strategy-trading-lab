@@ -4,3 +4,4 @@ out/
 public/cine/*
 !public/cine/.gitkeep
 public/screens/
+.auth/

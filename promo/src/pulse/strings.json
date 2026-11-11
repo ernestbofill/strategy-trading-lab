@@ -1,0 +1,14 @@
+{
+  "hook": ["HOW MANY TIMES", "DID YOU CHECK", "THE PRICE TODAY?"],
+  "not": ["THAT'S NOT", "A STRATEGY."],
+  "pulse": ["IT'S A PULSE."],
+  "rules": ["WRITE YOUR RULES", "ONCE."],
+  "scan1": ["IT CHECKS", "YOUR STOCKS."],
+  "scan2": ["EVERY DAY."],
+  "one": ["ONE MESSAGE."],
+  "decide": ["YOU DECIDE."],
+  "code": [["WHEN", "a winner dips"], ["AND", "its trend holds"], ["THEN", "you get a signal"]],
+  "day": "DAY",
+  "card": { "label": "SIGNAL", "when": "now", "text": "Your rules are met." },
+  "chips": ["I did it", "I skipped it"]
+}

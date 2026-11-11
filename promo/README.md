@@ -24,6 +24,10 @@ Remotion brings its own ffmpeg, so none needs installing.
 - `src/theme.ts`: colours from the Cyberpunk tokens, the safe zone, and the `CINE` switches.
 - `public/screens/` and `out/` are not in git: capture and render again.
 
+## The second video (Pulse)
+
+A different angle, English only, with no app screens and no footage: `src/pulse/` draws every picture on a canvas, with a small 3D line renderer of its own (`engine.ts`). Its words are in `src/pulse/strings.json` and its cues in `src/pulse/timeline.json`. `npm run render:pulse` writes `out/pulse-en-nomusic.mp4`. It needs no capture and no running app.
+
 ## Cinematic shots
 
 Drop the Higgsfield clips into `public/cine/` as `a.mp4`, `b.mp4` and `c.mp4` (9:16), then set that shot to `true` in `CINE` in `src/theme.ts`. Until then each shot plays its coded fallback.

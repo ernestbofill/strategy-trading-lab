@@ -46,3 +46,20 @@ For A, make the still first (Nano Banana Pro) so the face can be chosen, then an
 
 - Tick the "AI-generated" label on Instagram and YouTube if a cinematic shot is used (shot 1 shows a realistic person).
 - Check that sign-ups are open, or put an invite link in the post.
+
+## Video 2: "Pulse" (English only, 22 s)
+
+A second angle, asked for on 2026-11-11: no app screens and no generated footage, every picture is drawn in code (`promo/src/pulse/`). Where the first video is "I built this", this one talks to the viewer: checking the price all day is a pulse, not a strategy.
+
+One line runs through the whole video. It starts as a racing red heartbeat on a monitor, turns into a falling price, then calms down into a slow green beat once the rules are written.
+
+| # | Time | Picture | Line |
+| --- | --- | --- | --- |
+| 1 | 0–2 s | A red heartbeat line in 3D, beating faster and faster, the screen flashing with it. | HOW MANY TIMES DID YOU CHECK THE PRICE TODAY? |
+| 2 | 2–4 s | The heartbeat breaks into a falling, jagged price. | THAT'S NOT A STRATEGY. IT'S A PULSE. |
+| 3 | 4–8 s | Glitch cut to calm: the line is green and slow. Three lines of "code" type themselves: WHEN a winner dips, AND its trend holds, THEN you get a signal. | WRITE YOUR RULES ONCE. |
+| 4 | 8–12 s | A flight over a field of price lines, one per stock. A green sweep crosses them again and again, a day counter races, and a light stays where a stock meets its rules. | IT CHECKS YOUR STOCKS. EVERY DAY. |
+| 5 | 12–16 s | One light pulses. A message card lands: "Your rules are met." Then two buttons, "I did it" and "I skipped it". | ONE MESSAGE. YOU DECIDE. |
+| 6 | 16–22 s | The same end card as video 1: logo, tagline, address, the alpha line and the disclaimer. | TRADE RULES, NOT EMOTIONS. |
+
+The "code" in shot 3 is a picture of the idea, not the app's screen: in the app the rules come from a template and its settings. The card and the two buttons use the app's own words.

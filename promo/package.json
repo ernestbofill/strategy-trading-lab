@@ -9,7 +9,8 @@
     "srt": "node scripts/srt.mjs",
     "render:en": "remotion render src/index.ts promo-en out/promo-en-nomusic.mp4",
     "render:ca": "remotion render src/index.ts promo-ca out/promo-ca-nomusic.mp4",
-    "render": "npm run render:en && npm run render:ca && npm run srt",
+    "render:pulse": "remotion render src/index.ts pulse-en out/pulse-en-nomusic.mp4",
+    "render": "npm run render:en && npm run render:ca && npm run render:pulse && npm run srt",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

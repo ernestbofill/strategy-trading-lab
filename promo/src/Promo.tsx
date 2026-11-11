@@ -3,16 +3,14 @@ import { AbsoluteFill, OffthreadVideo, Sequence, interpolate, random, spring, st
 import { Backdrop, Glitch, Grade, Pulse, Shake } from './components/Fx';
 import { Lines } from './components/Lines';
 import { Phone } from './components/Phone';
+import { EndCard } from './components/EndCard';
+import { ci, sp } from './anim';
 import { BEAT, C, CINE, FONT, FPS, H, Lang, STRINGS, Strings, W } from './theme';
 
 // Scene starts, in frames (see docs/promo/storyboard.md). One bar is 60 frames.
 const T = { hook: 0, reveal: 60, templates: 120, proof: 240, night: 360, signal: 420, ai: 540, end: 630 };
 const CUTS = [T.reveal, T.templates, T.proof, T.signal, T.ai, T.end];
 
-const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
-const ci = (f: number, input: number[], output: number[]) => interpolate(f, input, output, clamp);
-const sp = (f: number, at: number, damping = 13, stiffness = 140) =>
-  spring({ frame: f - at, fps: FPS, config: { damping, stiffness, mass: 0.7 } });
 
 type SceneProps = { lang: Lang; t: Strings };
 
@@ -358,98 +356,6 @@ const Ai: React.FC<SceneProps> = ({ lang, t }) => {
 };
 
 /** 7. Logo, the app's tagline, the URL and the small print. */
-const End: React.FC<SceneProps> = ({ t }) => {
-  const f = useCurrentFrame();
-  if (f < T.end) return null;
-  const logo = sp(f, T.end, 10, 150);
-  const url = sp(f, T.end + 60, 11, 170);
-  return (
-    <AbsoluteFill>
-      <Backdrop />
-      <div
-        style={{
-          position: 'absolute',
-          left: 540 - 140,
-          top: 430,
-          width: 280,
-          height: 280,
-          boxSizing: 'border-box',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: FONT,
-          fontSize: 98,
-          fontWeight: 700,
-          color: C.primary,
-          background: C.editor,
-          border: `12px solid ${C.primary}`,
-          boxShadow: `0 0 90px ${C.primary}aa, inset 0 0 40px ${C.primary}44`,
-          textShadow: `0 0 30px ${C.primary}`,
-          transform: `scale(${interpolate(logo, [0, 1], [3, 1])}) rotate(${interpolate(logo, [0, 1], [-20, 0])}deg)`,
-          opacity: Math.min(1, logo * 2),
-        }}
-      >
-        STL
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          top: 750,
-          width: W,
-          textAlign: 'center',
-          fontFamily: FONT,
-          fontSize: 40,
-          fontWeight: 700,
-          letterSpacing: ci(f, [T.end + 8, T.end + 30], [30, 7]),
-          color: C.lilac,
-          opacity: ci(f, [T.end + 8, T.end + 22], [0, 1]),
-        }}
-      >
-        STRATEGY TRADING LAB
-      </div>
-      <Lines lines={t.tagline} cue="tagline" top={890} maxSize={92} color={C.ink} center />
-      <div
-        style={{
-          position: 'absolute',
-          left: 150,
-          width: 780,
-          top: 1180,
-          height: 110,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: FONT,
-          fontSize: 50,
-          fontWeight: 700,
-          color: '#00140b',
-          background: C.primary,
-          boxShadow: `0 0 ${50 + Math.sin(f / 5) * 25}px ${C.primary}`,
-          transform: `scale(${url})`,
-          opacity: Math.min(1, url * 2),
-        }}
-      >
-        {t.url}
-      </div>
-      <Lines lines={t.alpha} cue="alpha" top={1345} maxSize={48} color={C.lilac} center />
-      <div
-        style={{
-          position: 'absolute',
-          left: 150,
-          width: 780,
-          top: 1475,
-          textAlign: 'center',
-          fontFamily: FONT,
-          fontSize: 26,
-          color: C.ink,
-          opacity: ci(f, [T.end + 90, T.end + 105], [0, 0.85]),
-        }}
-      >
-        {t.disclaimer}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 export const Promo: React.FC<{ lang: Lang }> = ({ lang }) => {
   const f = useCurrentFrame();
   const t = STRINGS[lang];
@@ -466,7 +372,7 @@ export const Promo: React.FC<{ lang: Lang }> = ({ lang }) => {
           <Proof {...props} />
           <Signal {...props} />
           <Ai {...props} />
-          <End {...props} />
+          <EndCard t={t} at={T.end} tagline="tagline" alpha="alpha" />
         </AbsoluteFill>
       </Shake>
       {CUTS.map((cut) => (

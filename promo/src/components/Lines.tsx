@@ -2,12 +2,15 @@ import React from 'react';
 import { interpolate, spring, useCurrentFrame } from 'remotion';
 import { C, CUES, CueKey, FONT, FPS, SAFE, W } from '../theme';
 
+/** A cue of the first video's timeline by name, or the frames a line is on screen. */
+export type Cue = CueKey | [number, number];
+
 const USABLE = W - SAFE.left - SAFE.right;
 
 /** Kinetic type: each word slams in with a colour split, and the line glitches out. */
 export const Lines: React.FC<{
   lines: string[];
-  cue: CueKey;
+  cue: Cue;
   top: number;
   color?: string;
   maxSize?: number;
@@ -15,7 +18,7 @@ export const Lines: React.FC<{
   center?: boolean; // centred in the frame, clear of both edges
 }> = ({ lines, cue, top, color = C.ink, maxSize = 132, stagger = 4, center = false }) => {
   const frame = useCurrentFrame();
-  const [from, to] = CUES[cue];
+  const [from, to] = typeof cue === 'string' ? CUES[cue] : cue;
   if (frame < from || frame >= to) return null;
 
   const longest = Math.max(...lines.map((l) => l.length));

@@ -1,0 +1,6 @@
+node_modules/
+out/
+# Cinematic clips are large and come from Higgsfield: keep them out of git.
+public/cine/*
+!public/cine/.gitkeep
+public/screens/

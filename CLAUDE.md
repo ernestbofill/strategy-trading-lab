@@ -25,6 +25,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 - `frontend/`: React + TypeScript PWA (Vite). It talks to the .NET API. Read [frontend/CLAUDE.md](frontend/CLAUDE.md) before changing it.
 - `backend/`: C# .NET API with PostgreSQL on Neon. Read [backend/CLAUDE.md](backend/CLAUDE.md) before changing it.
 - `deploy/`: the Oracle server setup and deploy scripts.
+- `promo/`: the promo video, built in code with Remotion. Its own npm package, outside CI. Read [promo/README.md](promo/README.md).
 - `docs/`: the spec and product docs. Keep them in step with what was built.
 - `qa/`: the manual QA sessions an AI agent runs on production (`/qa-session <account email>`). Read [qa/README.md](qa/README.md) before running one. When a feature ships or goes, add or remove its row in `qa/STATE.md`'s coverage map in the same PR.
 - `wireframes/`, `design-system/`: reference material. Don't edit them unless asked.
@@ -98,7 +99,7 @@ Ask for a credential when you need one.
 
 Follow these steps for every change, without being asked. Questions and pure research don't need them. The PR is the record: the plan, every review finding and what happened to it go on the PR, not only in the chat. One session (chat) is one branch and one PR, except in a loop.
 
-Models: `opus` for every step (analyze, implement, review), including subagents. Set the effort by complexity: `medium` by default, `high` for high-risk, foundational or complex work. When Ernest names a model or effort for a task or step (for example `fable`, or `opus` at `xhigh`), use it for that work instead. Name the model and effort in that step's PR comment.
+Models: `opus` for every step (analyze, implement, review), including subagents. Set the effort by complexity: `medium` by default, `high` for high-risk, foundational or complex work. When Ernest names a model or effort for a task or step (for example `fable`, or `opus` at `xhigh`), use it for that work instead. That model is for the main work only: pick each subagent's model by how hard its task is (a cheaper one for searches, captures and simple checks), never the strongest model for all of them (Ernest, 2026-11-11). Name the model and effort in that step's PR comment.
 
 ### Kinds of change
 

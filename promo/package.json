@@ -1,0 +1,28 @@
+{
+  "name": "stl-promo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "capture": "node scripts/capture.mjs",
+    "srt": "node scripts/srt.mjs",
+    "render:en": "remotion render src/index.ts promo-en out/promo-en-nomusic.mp4",
+    "render:ca": "remotion render src/index.ts promo-ca out/promo-ca-nomusic.mp4",
+    "render": "npm run render:en && npm run render:ca && npm run srt",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.543",
+    "@remotion/google-fonts": "^4.0.543",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.543"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.65.0",
+    "typescript": "^7.0.2"
+  }
+}

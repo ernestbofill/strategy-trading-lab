@@ -1,0 +1,16 @@
+{
+  "hook": ["HE DEIXAT", "DE MIRAR", "GRÀFICS."],
+  "reveal": ["I HE CREAT", "AIXÒ."],
+  "templates1": ["CINC ESTRATÈGIES."],
+  "templates2": ["ZERO IMPULSOS."],
+  "proof": ["PROVADES AMB", "25 ANYS DE", "PREUS REALS."],
+  "signal1": ["VIGILA", "EL MERCAT."],
+  "signal2": ["TU", "DECIDEIXES."],
+  "ai": ["O PORTA", "LA TEVA IA."],
+  "tagline": ["OPERA SEGONS REGLES,", "NO PER EMOCIONS."],
+  "alpha": ["ALFA GRATUÏTA.", "DIGUE'M QUÈ FALLA."],
+  "disclaimer": "No és assessorament financer. Els senyals segueixen les teves regles.",
+  "signalCard": { "label": "SENYAL", "text": "Les teves regles es compleixen" },
+  "templateNames": ["Líders amb descompte", "Empreses en remuntada", "Mercats baixistes", "Segueix un índex", "Les millors tries de la teva IA"],
+  "url": "strategytradinglab.com"
+}

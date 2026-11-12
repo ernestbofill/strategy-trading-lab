@@ -140,9 +140,11 @@ public static class SignalEndpoints
         // Before the next session opens there is no open to fetch.
         if (now < UsSession.OpenAt(UsSession.After(signal.SignalDate)) || asset.PricesCheckedAt > now - OpenEvery) return;
         if (await db.Prices.AnyAsync(p => p.AssetId == asset.Id && p.Date > signal.SignalDate, cancellationToken)) return;
-        if (!refreshes.TryFetchOpen(asset.Id, now, OpenEvery) || !refreshes.Writing.Wait(0)) return;
+        // The write lock first: a try is only counted once it can be made.
+        if (!refreshes.Writing.Wait(0)) return;
         try
         {
+            if (!refreshes.TryFetchOpen(asset.Id, now, OpenEvery)) return;
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(OpenTimeout);
             await prices.RefreshAssetAsync(asset, timeout.Token);

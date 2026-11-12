@@ -57,11 +57,12 @@ public class User : IHasUpdatedAt
     public UserRole Role { get; set; } = UserRole.User;
     /// <summary>The summary by email (spec: Notifications), sent after the US market close on days something changed.</summary>
     public bool OverviewEmail { get; set; } = true;
-    /// <summary>The summary by web push, sent after the US market close on days something changed.</summary>
-    public bool OverviewPush { get; set; } = true;
     /// <summary>Signal alerts and reminders (snoozed signals, AI rounds due) by email.</summary>
     public bool AlertEmails { get; set; } = true;
-    /// <summary>Signal alerts and reminders by web push, to every device the user turned on (the account page's "App" box).</summary>
+    /// <summary>
+    /// Web push, to every device the user turned on (the account page's "App" box): the one push switch. Signals, their end,
+    /// stocks becoming candidates or getting close, and reminders.
+    /// </summary>
     public bool AlertPush { get; set; } = true;
     /// <summary>
     /// The hour, in the user's time zone, when signal alerts, the summary and reminders come (07:00 by default; Settings), or null for
@@ -272,6 +273,9 @@ public class Notification
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public Guid? SignalId { get; set; }
+    /// <summary>With <see cref="AssetId"/>, the stock a stock change is about (<see cref="NotificationKind.StockCandidate"/>, <see cref="NotificationKind.StockClose"/>).</summary>
+    public Guid? StrategyId { get; set; }
+    public Guid? AssetId { get; set; }
     public NotificationKind Kind { get; set; }
     public NotificationChannel Channel { get; set; }
     public DateOnly ForDate { get; set; }

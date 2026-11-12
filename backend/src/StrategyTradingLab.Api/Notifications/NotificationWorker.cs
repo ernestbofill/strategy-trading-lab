@@ -4,8 +4,9 @@ using StrategyTradingLab.Api.Evaluation;
 namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>
-/// Looks every hour for users whose notification hour has come: signal alerts and the summary held for it (or that the send right
-/// after the daily check couldn't deliver), and snoozed signals' and AI rounds' reminders (see <see cref="NotificationService"/>, <see cref="NotifyTime"/>).
+/// Looks every hour for users whose notification hour has come: signal alert emails and the summary held for it (or that the send
+/// right after the daily check couldn't deliver), snoozed signals' and AI rounds' reminders, and the pushes the run right after the
+/// check couldn't deliver (see <see cref="NotificationService"/>, <see cref="NotifyTime"/>).
 /// </summary>
 public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory scopes, TimeProvider time, ILogger<NotificationWorker> logger) : BackgroundService
 {
@@ -39,12 +40,13 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     if (reminders > 0) logger.LogInformation("Sent {Count} snooze reminders.", reminders);
                     var rounds = await service.SendAiRoundRemindersAsync(now, stoppingToken);
                     if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
-                    // Push after email. A signal alert a run couldn't push (a push service down) is retried here, every hour.
+                    // Push after email. What a run couldn't push right after the check (a push service down) is retried here, every hour.
+                    // Stock changes last: the reminders don't depend on them.
                     var pushed = await service.PushSignalAlertsAsync(session, stoppingToken)
                         + await service.PushSignalEndedAsync(session, stoppingToken)
                         + await service.PushSnoozeRemindersAsync(now, stoppingToken)
                         + await service.PushAiRoundRemindersAsync(now, stoppingToken)
-                        + await service.PushOverviewsAsync(now, stoppingToken);
+                        + await service.PushStockChangesAsync(now, stoppingToken);
                     if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);
                 }
             }

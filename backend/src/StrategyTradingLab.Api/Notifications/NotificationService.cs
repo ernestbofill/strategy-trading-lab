@@ -306,21 +306,17 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         if (strategies.Count == 0) return 0;
         var byId = strategies.ToDictionary(s => s.Id);
         var ids = byId.Keys.ToList();
-        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
-                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
-                            where ids.Contains(eval.StrategyId) && eval.Date >= session.AddDays(-RecentDays) && eval.Date <= session
-                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
-        // Those already pushed for the session, so the hourly runs don't claim them again.
+        var (_, changes) = await LoadStockChangesAsync(byId, session, cancellationToken);
+        // Those already pushed for the session: the unique key would refuse them anyway, but this spares every hourly run a failed insert per stock.
         var pushed = (await db.Notifications.AsNoTracking()
                 .Where(n => n.Channel == NotificationChannel.Push && n.ForDate == session && n.StrategyId != null && ids.Contains(n.StrategyId.Value))
                 .Select(n => new { n.Kind, n.StrategyId, n.AssetId }).ToListAsync(cancellationToken))
             .Select(n => (n.Kind, n.StrategyId!.Value, n.AssetId!.Value)).ToHashSet();
         var userIds = strategies.Select(s => s.UserId).Distinct().ToList();
         var locales = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Locale, cancellationToken);
-        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
 
         var sent = 0;
-        foreach (var change in StockChangeLines(recent.Select(x => (x.eval, x.Name)), session, byId, closePct))
+        foreach (var change in changes)
         {
             // No longer a candidate isn't pushed: there is nothing to look at.
             NotificationKind? kind = change.Kind switch
@@ -499,16 +495,11 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var waiting = signals.Where(x => x.signal.Status == SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).OrderBy(l => l.Date).ToList();
         var changed = signals.Where(x => x.signal.SignalDate == sessionDate && x.signal.Status != SignalStatus.Waiting).Select(x => ToLine(x.signal, x.asset)).ToList();
 
-        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
-                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
-                            where ids.Contains(eval.StrategyId) && eval.Date >= sessionDate.AddDays(-RecentDays)
-                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
-        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
-        var stockChanges = StockChangeLines(recent.Select(x => (x.eval, x.Name)), sessionDate, byId, closePct);
+        var (recent, stockChanges) = await LoadStockChangesAsync(byId, sessionDate, cancellationToken);
         var hasChanges = stockChanges.Count > 0 || signals.Any(x => x.signal.SignalDate == sessionDate);
         var complete = hasChanges || strategies.Where(s => s.StartedOn <= sessionDate
-                && (s.StartedOn >= sessionDate.AddDays(-RecentDays) || recent.Any(x => x.eval.StrategyId == s.Id)))
-            .All(s => recent.Any(x => x.eval.StrategyId == s.Id && x.eval.Date == sessionDate));
+                && (s.StartedOn >= sessionDate.AddDays(-RecentDays) || recent.Any(x => x.StrategyId == s.Id)))
+            .All(s => recent.Any(x => x.StrategyId == s.Id && x.Date == sessionDate));
 
         var roundsDue = await db.AiRounds.AsNoTracking().Where(r => ids.Contains(r.StrategyId) && r.Status == AiRoundStatus.Due && r.DueOn <= today)
             .OrderBy(r => r.DueOn).Select(r => new { r.StrategyId, Name = byId[r.StrategyId].Name }).ToListAsync(cancellationToken);
@@ -564,8 +555,25 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     }
 
     /// <summary>
+    /// The stock changes of <paramref name="strategies"/> on <paramref name="session"/>, for the summary and the stock change
+    /// pushes alike, with the evaluations of the recent days they were found in.
+    /// </summary>
+    async Task<(List<DailyEvaluation> Recent, List<StockChangeLine> Changes)> LoadStockChangesAsync(Dictionary<Guid, Strategy> strategies,
+        DateOnly session, CancellationToken cancellationToken)
+    {
+        var ids = strategies.Keys.ToList();
+        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
+                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
+                            where ids.Contains(eval.StrategyId) && eval.Date >= session.AddDays(-RecentDays) && eval.Date <= session
+                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
+        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
+        return ([.. recent.Select(x => x.eval)], StockChangeLines(recent.Select(x => (x.eval, x.Name)), session, strategies, closePct));
+    }
+
+    /// <summary>
     /// The stock changes of every running strategy: each stock evaluated on the last session against its latest
     /// earlier evaluation of the recent days (see <see cref="StockChanges.Latest"/>). A stock without an earlier day (just added) has nothing to compare.
+    /// A template the store no longer has uses the default getting-close %.
     /// </summary>
     static List<StockChangeLine> StockChangeLines(IEnumerable<(DailyEvaluation Eval, string Name)> recent, DateOnly lastSession, Dictionary<Guid, Strategy> strategies,
         Dictionary<string, decimal> closePct) =>
@@ -573,7 +581,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             .Select(g => g.OrderByDescending(x => x.Eval.Date).ToList())
             .Where(days => days[0].Eval.Date == lastSession)
             .Select(days => (days, change: StockChanges.Latest([.. days.Select(d => (d.Eval.Status, d.Eval.Facts.RootElement))],
-                closePct[strategies[days[0].Eval.StrategyId].TemplateKey])))
+                closePct.GetValueOrDefault(strategies[days[0].Eval.StrategyId].TemplateKey, Template.DefaultClosePct))))
             .Where(x => x.change is not null)
             .Select(x =>
             {

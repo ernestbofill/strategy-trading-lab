@@ -145,7 +145,7 @@ export const account = {
   'settings.notifyHour.save': 'Save time',
   'settings.notifyHour.saved': 'Saved.',
   'account.notify.alerts': "Signals and reminders",
-  'account.notify.alertsHint': "When a signal, a stock getting close or an AI round needs you. App notifications come right after the check.",
+  'account.notify.alertsHint': "When a signal, a stock change or an AI round needs you. App notifications come right after the check.",
   'account.notify.summary': "Summary",
   'account.notify.summaryHint': "What changed, on days something did.",
   'account.notify.app': "App",

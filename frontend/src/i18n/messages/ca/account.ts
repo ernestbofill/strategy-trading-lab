@@ -147,7 +147,7 @@ export const account: Record<keyof typeof en, string> = {
   'settings.notifyHour.save': "Desa l'hora",
   'settings.notifyHour.saved': 'Desat.',
   'account.notify.alerts': "Senyals i recordatoris",
-  'account.notify.alertsHint': "Quan un senyal, una acció a prop de la línia o una ronda d’IA et necessita. Les notificacions de l’app arriben just després de la revisió.",
+  'account.notify.alertsHint': "Quan un senyal, un canvi en una acció o una ronda d’IA et necessita. Les notificacions de l’app arriben just després de la revisió.",
   'account.notify.summary': "Resum",
   'account.notify.summaryHint': "Què ha canviat, els dies que hi ha canvis.",
   'account.notify.app': "App",

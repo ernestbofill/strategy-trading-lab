@@ -41,11 +41,12 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     var rounds = await service.SendAiRoundRemindersAsync(now, stoppingToken);
                     if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
                     // Push after email. What a run couldn't push right after the check (a push service down) is retried here, every hour.
+                    // Stock changes last: the reminders don't depend on them.
                     var pushed = await service.PushSignalAlertsAsync(session, stoppingToken)
                         + await service.PushSignalEndedAsync(session, stoppingToken)
-                        + await service.PushStockChangesAsync(now, stoppingToken)
                         + await service.PushSnoozeRemindersAsync(now, stoppingToken)
-                        + await service.PushAiRoundRemindersAsync(now, stoppingToken);
+                        + await service.PushAiRoundRemindersAsync(now, stoppingToken)
+                        + await service.PushStockChangesAsync(now, stoppingToken);
                     if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);
                 }
             }

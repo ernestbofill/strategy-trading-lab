@@ -843,10 +843,9 @@ export interface Account {
   timeZone: string
   /** The summary by email, after the US market close on days something changed. */
   overviewEmail: boolean
-  /** The summary by web push, on the devices the user turned on. */
   /** Signal alerts and reminders by email. */
   alertEmails: boolean
-  /** Signal alerts and reminders by web push, on the devices the user turned on. */
+  /** Web push on the devices the user turned on: the one push switch (signals, stock changes, reminders). */
   alertPush: boolean
   /** Of the user's new strategies; running ones keep theirs. */
   currency: Currency
@@ -1162,12 +1161,13 @@ export interface Api {
   setLocale(locale: Locale): Promise<void>
   /** Sets the user's time zone (an IANA name). Rejects with `InvalidFieldsError`. */
   setTimeZone(timeZone: string): Promise<void>
-  /** Sets when alerts, the summary and reminders come: an hour, or null for as soon as they're ready. */
+  /** Sets when the emails and reminders come: an hour, or null for as soon as they're ready. Pushes don't wait for it. */
   setNotifyHour(hour: number | null): Promise<void>
   /** Turns the summary email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
-  /** Turns the summary web push notification on or off. */
+  /** Turns signal alerts and reminders by email on or off. */
   setAlertEmails(enabled: boolean): Promise<void>
+  /** Turns web push on or off: signals, stock changes and reminders. */
   setAlertPush(enabled: boolean): Promise<void>
   /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */
   unsubscribe(token: string, kind: 'overview' | 'alerts'): Promise<void>

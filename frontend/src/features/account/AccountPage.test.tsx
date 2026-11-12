@@ -14,7 +14,6 @@ const baseAccount: Account = {
   locale: 'en',
   timeZone: 'Europe/Madrid',
   overviewEmail: true,
- 
   alertEmails: true, alertPush: true,
   currency: 'EUR',
   role: 'user',

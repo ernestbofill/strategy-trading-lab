@@ -100,7 +100,7 @@ const Reveal: React.FC<SceneProps> = ({ lang, t }) => {
   );
 };
 
-/** 3. Five template cards fly out of the phone, one per beat. */
+/** 3. What the app does, in three cards that fly out of the phone: build, simulate, track (the welcome page's three pillars). */
 const Templates: React.FC<SceneProps> = ({ lang, t }) => {
   const f = useCurrentFrame();
   if (f < T.templates || f >= T.proof) return null;
@@ -117,37 +117,41 @@ const Templates: React.FC<SceneProps> = ({ lang, t }) => {
         rotateX={8}
         scroll={ci(f, [T.templates, T.proof], [0, 420])}
       />
-      {t.templateNames.map((name, i) => {
-        const at = T.templates + i * BEAT;
+      {t.pillars.map(([word, what], i) => {
+        const at = T.templates + i * BEAT * 2;
         if (f < at) return null;
         const s = sp(f, at, 12, 170) * (1 - back);
         const left = i % 2 === 0;
-        const lit = ci(f, [at, at + 4, at + BEAT], [1, 1, 0]);
-        const size = Math.min(40, Math.floor(500 / (name.length * 0.6)));
+        const lit = ci(f, [at, at + 4, at + BEAT * 2], [1, 1, 0]);
+        const color = lit > 0.1 ? C.pink : C.primary;
         return (
           <div
             key={i}
             style={{
               position: 'absolute',
-              left: interpolate(s, [0, 1], [540, left ? 310 : 700]) - 290,
-              top: interpolate(s, [0, 1], [1100, 660 + i * 172]) - 65,
-              width: 580,
-              height: 130,
+              left: interpolate(s, [0, 1], [540, left ? 400 : 600]) - 330,
+              top: interpolate(s, [0, 1], [1100, 720 + i * 250]) - 100,
+              width: 660,
+              height: 200,
               boxSizing: 'border-box',
-              padding: '0 30px',
+              padding: '0 36px',
               display: 'flex',
-              alignItems: 'center',
-              gap: 22,
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 10,
               fontFamily: FONT,
-              background: '#170f2eee',
-              border: `3px solid ${lit > 0.1 ? C.pink : C.primary}`,
-              boxShadow: `0 0 ${30 + lit * 70}px ${lit > 0.1 ? C.pink : C.primary}aa, 0 30px 60px #000a`,
-              transform: `scale(${s * (1 + lit * 0.12)}) rotate(${(left ? -5 : 5) * s}deg)`,
+              background: '#170f2ef2',
+              border: `3px solid ${color}`,
+              boxShadow: `0 0 ${30 + lit * 70}px ${color}aa, 0 30px 60px #000a`,
+              transform: `scale(${s * (1 + lit * 0.1)}) rotate(${(left ? -4 : 4) * s}deg)`,
               opacity: Math.min(1, s * 2),
             }}
           >
-            <span style={{ color: C.lilac, fontSize: 30, fontWeight: 700 }}>0{i + 1}</span>
-            <span style={{ color: C.ink, fontSize: size, fontWeight: 700, whiteSpace: 'nowrap' }}>{name}</span>
+            <div style={{ fontSize: 62, fontWeight: 700, whiteSpace: 'nowrap' }}>
+              <span style={{ color: C.lilac, fontSize: 34 }}>{`0${i + 1} // `}</span>
+              <span style={{ color, textShadow: `0 0 24px ${color}` }}>{word}</span>
+            </div>
+            <div style={{ color: C.ink, fontSize: Math.min(34, Math.floor(588 / (what.length * 0.6))), whiteSpace: 'nowrap' }}>{what}</div>
           </div>
         );
       })}

@@ -1,7 +1,7 @@
 {
   "hook": ["I STOPPED", "STARING", "AT CHARTS."],
   "reveal": ["I BUILT THIS", "INSTEAD."],
-  "templates1": ["FIVE STRATEGIES."],
+  "templates1": ["SET YOUR RULES."],
   "templates2": ["ZERO GUT FEELING."],
   "proof": ["TESTED ON", "25 YEARS OF", "REAL PRICES."],
   "signal1": ["IT WATCHES", "THE MARKET."],
@@ -10,7 +10,14 @@
   "tagline": ["TRADE RULES,", "NOT EMOTIONS."],
   "alpha": ["FREE EARLY ALPHA.", "TELL ME WHAT BREAKS."],
   "disclaimer": "Not financial advice. Signals follow your rules.",
-  "signalCard": { "label": "SIGNAL", "text": "Your rules are met" },
-  "templateNames": ["Winners at a discount", "The comeback", "Bear markets", "Index trend", "Your AI's top picks"],
+  "signalCard": {
+    "label": "SIGNAL",
+    "text": "Your rules are met"
+  },
+  "pillars": [
+    ["BUILD", "Rules before the market opens"],
+    ["SIMULATE", "Real prices, no money at risk"],
+    ["TRACK", "Alerts, with zero broker access"]
+  ],
   "url": "strategytradinglab.com"
 }

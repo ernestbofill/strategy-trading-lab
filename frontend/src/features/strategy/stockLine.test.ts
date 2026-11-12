@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { StockRow } from '../../api'
 import { stockLine } from './stockLine'
 
@@ -153,17 +153,8 @@ describe('stockLine', () => {
     expect(stockLine(row({ status: 'notCandidate' }), 'simulation', 'EUR', ai).detail).toBe('Not scored yet')
   })
 
-  describe('a stock not checked yet', () => {
-    afterEach(() => vi.useRealTimers())
-    const detail = () => stockLine(row({ status: 'notChecked' }), 'live', 'USD', null).detail
-
-    it('waits for the close while a US session is in progress', () => {
-      vi.useFakeTimers({ now: new Date('2026-11-12T20:45:00Z') }) // Thursday 15:45 New York
-      expect(detail()).toBe('Checked after the US market closes')
-      vi.setSystemTime(new Date('2026-11-12T21:45:00Z')) // 16:45, after the close
-      expect(detail()).toBe('Not checked yet')
-      vi.setSystemTime(new Date('2026-11-14T16:00:00Z')) // Saturday
-      expect(detail()).toBe('Not checked yet')
-    })
+  it('says a stock not checked yet waits for the US session to end when the server left it to the daily run', () => {
+    expect(stockLine(row({ status: 'notChecked' }), 'live', 'USD', null).detail).toBe('Not checked yet')
+    expect(stockLine(row({ status: 'notChecked', afterClose: true }), 'live', 'USD', null).detail).toBe('Checked after the US session ends')
   })
 })

@@ -2,7 +2,6 @@ import type { CheckTexts, Currency, StockRow, StockStatusWords, StrategyDetail, 
 import { tNow, type Translate } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { money, signedPct } from '../../lib/format'
-import { usSessionInProgress } from '../../lib/usMarket'
 import { unmetLine } from './checks'
 
 export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching' | 'muted'
@@ -95,8 +94,7 @@ function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, 
     case 'notEnoughData':
       return t('strategy.stock.notEnoughData')
     case 'notChecked':
-      // Added while the US market is open, it waits for the close (the API's check at once skips it then).
-      return t(usSessionInProgress() ? 'strategy.stock.afterClose' : 'strategy.stock.notChecked')
+      return notCheckedLine(row, t)
     case 'removed':
       return t('strategy.stock.removed')
   }
@@ -116,6 +114,10 @@ const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
   notChecked: ['strategy.pill.notChecked', 'muted'],
   removed: ['strategy.pill.removed', 'muted'],
 }
+
+/** A stock not checked yet: one added during a US session waits for the daily run after it ends. */
+export const notCheckedLine = (row: StockRow, t: Translate) =>
+  t(row.afterClose ? 'strategy.stock.afterClose' : 'strategy.stock.notChecked')
 
 /** The stocks a strategy follows: not those unticked with Edit list, whose rows stay while they have trades. */
 export const followedStocks = (s: StrategyDetail) => s.stocks.filter((row) => row.status !== 'removed')

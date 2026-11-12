@@ -156,7 +156,7 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         var (client, _) = await api.SignedUpAsync();
         var me = await Me(client);
         Assert.True(me.GetProperty("alertPush").GetBoolean());
-        Assert.True(me.GetProperty("overviewPush").GetBoolean());
+        Assert.False(me.TryGetProperty("overviewPush", out _)); // One push switch: alertPush.
 
         Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-push", new { enabled = false })).StatusCode);
         Assert.False((await Me(client)).GetProperty("alertPush").GetBoolean());
@@ -164,15 +164,8 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/alert-push", new { enabled = true })).StatusCode);
         Assert.True((await Me(client)).GetProperty("alertPush").GetBoolean());
 
-        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-push", new { enabled = false })).StatusCode);
-        Assert.False((await Me(client)).GetProperty("overviewPush").GetBoolean());
-        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/account/overview-push", new { })).StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/account/overview-push", new { enabled = true })).StatusCode);
-        Assert.True((await Me(client)).GetProperty("overviewPush").GetBoolean());
-
         using var visitor = api.CreateApiClient();
         Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/alert-push", new { enabled = false })).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsJsonAsync("/account/overview-push", new { enabled = false })).StatusCode);
     }
 
     [NeonFact]

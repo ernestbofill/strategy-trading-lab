@@ -62,7 +62,6 @@ class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(user => user.Currency).HasColumnType(Money.Currency).HasColumnDefault("EUR");
         entity.Property(user => user.Role).HasColumnDefault(UserRole.User);
         entity.Property(user => user.OverviewEmail).HasColumnDefault(true);
-        entity.Property(user => user.OverviewPush).HasColumnDefault(true);
         entity.Property(user => user.AlertEmails).HasColumnDefault(true);
         entity.Property(user => user.AlertPush).HasColumnDefault(true);
         entity.Property(user => user.NotifyHour).HasColumnDefault<int?>(NotifyTime.DefaultHour);
@@ -250,10 +249,12 @@ class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         {
             table.HasCheckConstraint("ck_notifications_signal_id",
                 "(kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL)");
+            table.HasCheckConstraint("ck_notifications_stock",
+                "(kind IN ('stock_candidate', 'stock_close')) = (strategy_id IS NOT NULL AND asset_id IS NOT NULL)");
         });
 
-        // The dedupe contract: once per user, kind, channel, day and subject, a null subject included.
-        entity.HasIndex(n => new { n.UserId, n.Kind, n.Channel, n.ForDate, n.SignalId })
+        // The dedupe contract: once per user, kind, channel, day and subject (a signal, or a strategy's stock), a null subject included.
+        entity.HasIndex(n => new { n.UserId, n.Kind, n.Channel, n.ForDate, n.SignalId, n.StrategyId, n.AssetId })
             .IsUnique()
             .AreNullsDistinct(false);
 
@@ -261,6 +262,10 @@ class NotificationConfiguration : IEntityTypeConfiguration<Notification>
             .HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);
         entity.HasOne<Signal>().WithMany()
             .HasForeignKey(n => n.SignalId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne<Strategy>().WithMany()
+            .HasForeignKey(n => n.StrategyId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne<Asset>().WithMany()
+            .HasForeignKey(n => n.AssetId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 

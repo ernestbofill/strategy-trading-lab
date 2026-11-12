@@ -1194,6 +1194,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
                     b.Property<string>("Channel")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1230,6 +1234,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("signal_id");
 
+                    b.Property<Guid?>("StrategyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("strategy_id");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
@@ -1237,22 +1245,30 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_notifications");
 
+                    b.HasIndex("AssetId")
+                        .HasDatabaseName("ix_notifications_asset_id");
+
                     b.HasIndex("SignalId")
                         .HasDatabaseName("ix_notifications_signal_id");
 
-                    b.HasIndex("UserId", "Kind", "Channel", "ForDate", "SignalId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_notifications_user_id_kind_channel_for_date_signal_id");
+                    b.HasIndex("StrategyId")
+                        .HasDatabaseName("ix_notifications_strategy_id");
 
-                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("UserId", "Kind", "Channel", "ForDate", "SignalId"), false);
+                    b.HasIndex("UserId", "Kind", "Channel", "ForDate", "SignalId", "StrategyId", "AssetId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notifications_user_id_kind_channel_for_date_signal_id_strat");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("UserId", "Kind", "Channel", "ForDate", "SignalId", "StrategyId", "AssetId"), false);
 
                     b.ToTable("notifications", null, t =>
                         {
                             t.HasCheckConstraint("ck_notifications_channel", "channel IN ('push', 'email')");
 
-                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended')");
+                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended', 'stock_candidate', 'stock_close')");
 
                             t.HasCheckConstraint("ck_notifications_signal_id", "(kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_notifications_stock", "(kind IN ('stock_candidate', 'stock_close')) = (strategy_id IS NOT NULL AND asset_id IS NOT NULL)");
                         });
                 });
 
@@ -1897,11 +1913,6 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("overview_email");
 
-                    b.Property<bool>("OverviewPush")
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("overview_push");
-
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
@@ -2218,11 +2229,23 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
             modelBuilder.Entity("StrategyTradingLab.Api.Data.Entities.Notification", b =>
                 {
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Asset", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_notifications_assets_asset_id");
+
                     b.HasOne("StrategyTradingLab.Api.Data.Entities.Signal", null)
                         .WithMany()
                         .HasForeignKey("SignalId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_notifications_signals_signal_id");
+
+                    b.HasOne("StrategyTradingLab.Api.Data.Entities.Strategy", null)
+                        .WithMany()
+                        .HasForeignKey("StrategyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_notifications_strategies_strategy_id");
 
                     b.HasOne("StrategyTradingLab.Api.Data.Entities.User", null)
                         .WithMany()

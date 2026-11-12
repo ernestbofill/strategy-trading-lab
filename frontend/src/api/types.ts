@@ -844,7 +844,6 @@ export interface Account {
   /** The summary by email, after the US market close on days something changed. */
   overviewEmail: boolean
   /** The summary by web push, on the devices the user turned on. */
-  overviewPush: boolean
   /** Signal alerts and reminders by email. */
   alertEmails: boolean
   /** Signal alerts and reminders by web push, on the devices the user turned on. */
@@ -1168,7 +1167,6 @@ export interface Api {
   /** Turns the summary email on or off. */
   setOverviewEmail(enabled: boolean): Promise<void>
   /** Turns the summary web push notification on or off. */
-  setOverviewPush(enabled: boolean): Promise<void>
   setAlertEmails(enabled: boolean): Promise<void>
   setAlertPush(enabled: boolean): Promise<void>
   /** The link in an email: turns that kind off for the user whose private token it holds. Rejects with `ExpiredLinkError` for an unknown token. */

@@ -99,39 +99,18 @@ public class NotificationTests
     }
 
     [Fact]
-    public void The_summary_push_opens_the_summary_page_with_its_tag_and_localized_text()
+    public void A_stock_change_push_names_the_stock_opens_its_page_and_has_one_tag_per_stock()
     {
-        var day = new DateOnly(2026, 10, 23);
-        var en = PushTexts.Summary(day, "en");
-        Assert.Equal("/summary", en.Url);
-        Assert.Equal("summary-2026-10-23", en.Tag);
-        Assert.Equal("Your summary, 23 Oct 2026", en.Title);
-        Assert.Equal("What changed today across your strategies.", en.Body);
-
-        var ca = PushTexts.Summary(day, "ca");
-        Assert.Equal("/summary", ca.Url);
-        Assert.Equal("summary-2026-10-23", ca.Tag);
-        Assert.Equal("El teu resum, 23 oct. 2026", ca.Title);
-        Assert.Equal("Què ha canviat avui a les teves estratègies.", ca.Body);
-    }
-
-    [Fact]
-    public void The_summary_push_names_the_stocks_getting_close()
-    {
-        var day = new DateOnly(2026, 10, 23);
         var tesla = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Tesla", StockChangeKind.CameClose, 2.5m);
-        var one = PushTexts.Summary(day, "en", [tesla, tesla with { Kind = StockChangeKind.BecameCandidate, AssetId = Guid.NewGuid() }]);
-        Assert.Equal(("Getting close: Tesla", "Tesla, Strat: now 2.5% above the discount zone. (Manual)"), (one.Title, one.Body));
-        Assert.Equal(("/summary", "summary-2026-10-23"), (one.Url, one.Tag));
+        var close = PushTexts.StockChange(tesla, "en");
+        Assert.Equal(("Getting close: Tesla", "Tesla, Strat: now 2.5% above the discount zone. (Manual)"), (close.Title, close.Body));
+        Assert.Equal($"/strategies/{tesla.StrategyId}/stocks/{tesla.AssetId}", close.Url);
 
-        // The same stock in two strategies is one stock; signals on the day get a last line.
-        var ca = PushTexts.Summary(day, "ca", [tesla, tesla with { StrategyName = "Other" }], signals: true);
-        Assert.Equal("A prop de la línia: Tesla", ca.Title);
-        Assert.EndsWith("\nTambé hi ha senyals al resum.", ca.Body);
-
-        var five = PushTexts.Summary(day, "en", [.. Enumerable.Range(1, 5).Select(i => tesla with { StockName = $"S{i}", AssetId = Guid.NewGuid() })]);
-        Assert.Equal("Getting close: S1, S2, S3 and 2 more", five.Title);
-        Assert.Equal(3, five.Body.Split('\n').Length);
+        // Becoming a candidate replaces getting close on the device, and the other way round: the same stock, the same tag.
+        var candidate = PushTexts.StockChange(tesla with { Kind = StockChangeKind.BecameCandidate, DistancePct = null, Mode = StrategyMode.Simulation }, "ca");
+        Assert.Equal(("Nova candidata: Tesla", "Tesla, Strat: ara és candidata, les regles la vigilen. (Simulació)"), (candidate.Title, candidate.Body));
+        Assert.Equal(close.Tag, candidate.Tag);
+        Assert.Equal("A prop de la línia: Tesla", PushTexts.StockChange(tesla, "ca").Title);
     }
 
     [Fact]
@@ -397,37 +376,50 @@ public class NotificationTests
     }
 
     [NeonFact]
-    public async Task Summary_is_pushed_once_to_each_device_when_there_are_changes_and_not_when_quiet()
+    public async Task A_stock_is_pushed_once_when_it_changes_state_and_not_again_while_it_stays_there()
     {
         using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var (userId, strategyId, assetId, _, _) = await SeedAsync(db);
+        // A simulation: stock changes are pushed for both modes.
+        var (userId, strategyId, assetId, _, _) = await SeedAsync(db, mode: StrategyMode.Simulation);
         try
         {
-            var tag = Guid.NewGuid().ToString("N");
-            db.PushSubscriptions.Add(new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{tag}", P256dh = "p", Auth = "a" });
+            db.PushSubscriptions.Add(new PushSubscription { UserId = userId, Endpoint = $"https://fcm.googleapis.com/fcm/send/{Guid.NewGuid():N}", P256dh = "p", Auth = "a" });
+            // Thursday not a candidate, Friday a candidate (3.2% away, not close yet).
+            await db.DailyEvaluations.Where(e => e.StrategyId == strategyId && e.Date == new DateOnly(2026, 10, 22))
+                .ExecuteUpdateAsync(e => e.SetProperty(x => x.Status, EvaluationStatus.NotCandidate));
             await db.SaveChangesAsync();
             var push = new FakePush();
+            async Task<int> Run(DateTimeOffset now) => await Service(scope, push).PushStockChangesAsync(now, default);
 
-            // When user has OverviewPush off: nothing pushed.
-            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewPush, false));
-            var morning = new DateTimeOffset(2026, 10, 23, 5, 30, 0, TimeSpan.Zero);
-            Assert.Equal(0, await Service(scope, push).PushOverviewsAsync(morning, default));
-            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewPush, true));
+            // With push off, nothing goes out and nothing is claimed.
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, false));
+            var saturday = new DateTimeOffset(2026, 10, 24, 5, 0, 0, TimeSpan.Zero);
+            Assert.Equal(0, await Run(saturday));
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, true));
 
-            // With changes (the seeded signal is from Thursday Oct 22): sends push
-            var first = await Service(scope, push).PushOverviewsAsync(morning, default);
-            var second = await Service(scope, push).PushOverviewsAsync(morning, default);
-            Assert.Equal((1, 0), (first, second));
-            var (endpoint, payload) = Assert.Single(push.Sent);
-            Assert.EndsWith(tag, endpoint);
-            using var message = JsonDocument.Parse(payload);
-            Assert.Equal("/summary", message.RootElement.GetProperty("url").GetString());
-            Assert.StartsWith("Your summary", message.RootElement.GetProperty("title").GetString());
+            // Not a candidate -> a candidate: once, whatever the hour, and not again on a second run for the session.
+            Assert.Equal((1, 0), (await Run(saturday), await Run(saturday.AddHours(1))));
+            using (var message = JsonDocument.Parse(Assert.Single(push.Sent).Payload))
+            {
+                Assert.StartsWith("New candidate: Test asset", message.RootElement.GetProperty("title").GetString());
+                Assert.Equal($"/strategies/{strategyId}/stocks/{assetId}", message.RootElement.GetProperty("url").GetString());
+            }
+            var row = await db.Notifications.SingleAsync(n => n.UserId == userId);
+            Assert.Equal((NotificationKind.StockCandidate, NotificationChannel.Push, strategyId, assetId), (row.Kind, row.Channel, row.StrategyId, row.AssetId));
 
-            var row = await db.Notifications.SingleAsync(n => n.UserId == userId && n.Channel == NotificationChannel.Push && n.Kind == NotificationKind.Overview);
-            Assert.NotNull(row.SentAt);
+            // Monday still a candidate, still 3.2% away: nothing changed, nothing pushed.
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = new DateOnly(2026, 10, 26), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{\"distancePct\":3.2}") });
+            await db.SaveChangesAsync();
+            Assert.Equal(0, await Run(new DateTimeOffset(2026, 10, 27, 5, 0, 0, TimeSpan.Zero)));
+
+            // Tuesday within 3%: getting close, once.
+            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = new DateOnly(2026, 10, 27), Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{\"distancePct\":1.5}") });
+            await db.SaveChangesAsync();
+            var wednesday = new DateTimeOffset(2026, 10, 28, 5, 0, 0, TimeSpan.Zero);
+            Assert.Equal((1, 0), (await Run(wednesday), await Run(wednesday)));
+            Assert.StartsWith("{\"title\":\"Getting close: Test asset\"", push.Sent[^1].Payload);
         }
         finally
         {

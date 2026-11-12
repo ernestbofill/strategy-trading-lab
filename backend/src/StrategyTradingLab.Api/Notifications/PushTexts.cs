@@ -12,7 +12,7 @@ public record PushMessage(string Title, string Body, string Url, string Tag)
     public string ToJson() => JsonSerializer.Serialize(this, JsonSerializerOptions.Web);
 }
 
-/// <summary>The words of the push notifications: the email's subject as the title and the signal box as the text (spec: Notifications).</summary>
+/// <summary>The words of the push notifications: the email's subject as the title and the signal box as the text, or the stock change line (spec: Notifications).</summary>
 public static class PushTexts
 {
     public static PushMessage SignalAlert(SignalLine s, string locale) => new(
@@ -40,32 +40,19 @@ public static class PushTexts
             $"ai-round-{dueOn:yyyy-MM-dd}");
     }
 
-    const int MaxCloseLines = 3;
-
     /// <summary>
-    /// Summary push notification: opens the dedicated daily summary page. On a day a stock came within the getting-close % of its
-    /// line (a <c>CameClose</c> among <paramref name="stockChanges"/>), it names it instead of the generic words: "Getting close:
-    /// Tesla" and one stock change line per stock with its mode, a few at most (a push payload is capped at about 4 KB). With
-    /// signals on the session too (<paramref name="signals"/>), a last line says the summary has them.
+    /// A stock that became a candidate or came within the getting-close % of its line: "Getting close: Tesla" or "New candidate:
+    /// Apple", with the stock change line and the strategy's mode. It opens the stock's page; a later change of the same stock
+    /// replaces it on the device (the same tag).
     /// </summary>
-    public static PushMessage Summary(DateOnly day, string locale, IReadOnlyList<StockChangeLine>? stockChanges = null, bool signals = false)
+    public static PushMessage StockChange(StockChangeLine c, string locale)
     {
         var ca = locale == "ca";
-        var url = "/summary";
-        var tag = $"summary-{day:yyyy-MM-dd}";
-        // One line per stock: a stock close in two strategies is one stock.
-        var close = (stockChanges ?? []).Where(c => c.Kind == StockChangeKind.CameClose).DistinctBy(c => c.AssetId).ToList();
-        if (close.Count == 0)
-            return new(EmailTexts.OverviewTitleText(day, locale),
-                ca ? "Què ha canviat avui a les teves estratègies." : "What changed today across your strategies.", url, tag);
-
-        var shown = close.Take(MaxCloseLines).ToList();
-        var more = close.Count - shown.Count;
-        var names = string.Join(", ", shown.Select(c => c.StockName))
-            + (more > 0 ? ca ? $" i {more} més" : $" and {more} more" : "");
-        var lines = shown.Select(c => $"{EmailTexts.StockChangeText(c, locale)} ({EmailTexts.ModeName(c.Mode, locale)})").ToList();
-        if (signals) lines.Add(ca ? "També hi ha senyals al resum." : "Signals too, in the summary.");
-        return new(ca ? $"A prop de la línia: {names}" : $"Getting close: {names}", string.Join("\n", lines), url, tag);
+        var title = c.Kind == StockChangeKind.CameClose
+            ? ca ? $"A prop de la línia: {c.StockName}" : $"Getting close: {c.StockName}"
+            : ca ? $"Nova candidata: {c.StockName}" : $"New candidate: {c.StockName}";
+        return new(title, $"{EmailTexts.StockChangeText(c, locale)} ({EmailTexts.ModeName(c.Mode, locale)})",
+            $"/strategies/{c.StrategyId}/stocks/{c.AssetId}", $"stock-{c.StrategyId}-{c.AssetId}");
     }
 
     static string SignalPath(SignalLine s) => $"/strategies/{s.StrategyId}/signals/{s.SignalId}";

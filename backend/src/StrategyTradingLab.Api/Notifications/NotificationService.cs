@@ -133,60 +133,6 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     }
 
     /// <summary>
-    /// The push twin of <see cref="SendOverviewsAsync"/>: pushes the summary of the last finished US session, once, to every user
-    /// with summary push on and registered devices, on days something changed (a signal on the session or a stock change), at the
-    /// same time as the email (the user's notification hour, with the same late rule).
-    /// </summary>
-    public async Task<int> PushOverviewsAsync(DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        if (push.PublicKey is null) return 0;
-        var lastSession = UsSession.LastComplete(now);
-        var lateFrom = UsSession.FinalAt(lastSession) - LateSummaryWindow;
-        return await PushOverviewsForAsync(UsSession.Before(lastSession), now, due => due >= lateFrom, cancellationToken)
-            + await PushOverviewsForAsync(lastSession, now, _ => true, cancellationToken);
-    }
-
-    async Task<int> PushOverviewsForAsync(DateOnly lastSession, DateTimeOffset now, Func<DateTimeOffset, bool> looked, CancellationToken cancellationToken)
-    {
-        var users = await db.Users.AsNoTracking()
-            .Where(u => u.OverviewPush && db.Strategies.Any(s => s.UserId == u.Id && s.Status == StrategyStatus.Running)
-                && db.PushSubscriptions.Any(p => p.UserId == u.Id)
-                && !db.Notifications.Any(x => x.UserId == u.Id && x.Kind == NotificationKind.Overview && x.Channel == NotificationChannel.Push && x.ForDate == lastSession)
-                && db.Strategies.Any(s => s.UserId == u.Id && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == lastSession)))
-            .Select(u => new { u.Id, u.TimeZone, u.Locale, u.NotifyHour }).ToListAsync(cancellationToken);
-        var sent = 0;
-        foreach (var user in users)
-        {
-            var due = NotifyTime.DueAt(lastSession, user.NotifyHour, user.TimeZone);
-            if (now < due || !looked(due)) continue;
-            var local = LocalTime(now, user.TimeZone);
-            if (await ClaimAsync(user.Id, null, NotificationKind.Overview, lastSession, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
-
-            var today = DateOnly.FromDateTime(local.DateTime);
-            var data = await LoadSummaryDataAsync(user.Id, today, lastSession, cancellationToken);
-            if (!data.HasChanges)
-            {
-                if (data.Complete)
-                {
-                    await db.Notifications.Where(n => n.Id == claimed)
-                        .ExecuteUpdateAsync(n => n.SetProperty(x => x.Error, "Not sent: nothing changed."), CancellationToken.None);
-                    db.ChangeTracker.Clear();
-                }
-                else
-                {
-                    await ReleaseAsync(claimed);
-                }
-                continue;
-            }
-
-            var signals = data.Changed.Count > 0 || data.Waiting.Any(w => w.Date == lastSession);
-            if (await PushAsync(claimed, user.Id, PushTexts.Summary(lastSession, user.Locale, data.StockChanges, signals), cancellationToken))
-                sent++;
-        }
-        return sent;
-    }
-
-    /// <summary>
     /// The reminder of each snoozed signal, once, from the reminder hour (<see cref="NotifyTime.ReminderHour"/>) of its snooze day in the user's time zone, while it still waits
     /// and its strategy runs (spec: Snooze). Snoozing again sets a later day, which gets its own reminder.
     /// </summary>
@@ -246,7 +192,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
     /// <summary>
     /// The push twin of <see cref="SendSignalAlertsAsync"/>: each waiting live signal, once, to all the devices of a user with
-    /// alert push on. It needs no confirmed email and ignores the email switches: push has its own.
+    /// push on, as soon as the check finds it (not at the notification hour, which is the emails'). It needs no confirmed email
+    /// and ignores the email switches: push has its own.
     /// </summary>
     public async Task<int> PushSignalAlertsAsync(DateOnly today, CancellationToken cancellationToken)
     {
@@ -263,11 +210,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push)
                           let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt > recent
                               && db.Signals.Any(o => o.Id == x.SignalId && o.StrategyId == signal.StrategyId && o.AssetId == signal.AssetId && o.Side == signal.Side))
-                          select new { signal, strategy, user.Id, user.Locale, user.TimeZone, user.NotifyHour, asset, repeat }).ToListAsync(cancellationToken);
-        var now = time.GetUtcNow();
+                          select new { signal, strategy, user.Id, user.Locale, asset, repeat }).ToListAsync(cancellationToken);
         var sent = 0;
         var seen = new HashSet<(Guid, Guid, TradeSide)>();
-        foreach (var row in rows.Where(r => now >= NotifyTime.AlertDueAt(r.signal.SignalDate, r.NotifyHour, r.TimeZone)).OrderBy(r => r.signal.CreatedAt))
+        foreach (var row in rows.OrderBy(r => r.signal.CreatedAt))
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
             // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
@@ -316,7 +262,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         return await SettledAsync(sent);
     }
 
-    /// <summary>The push twin of <see cref="SendSignalEndedAsync"/>: to the user's devices, after the signal's own push.</summary>
+    /// <summary>The push twin of <see cref="SendSignalEndedAsync"/>: to the user's devices, after the signal's own push, as soon as the check ends it.</summary>
     public async Task<int> PushSignalEndedAsync(DateOnly today, CancellationToken cancellationToken)
     {
         if (push.PublicKey is null) return 0;
@@ -332,13 +278,61 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.TemplateKey != "ai"
                               && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt != null)
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == NotificationChannel.Push)
-                          select new { signal, strategy, user.Id, user.Locale, user.TimeZone, user.NotifyHour, asset }).ToListAsync(cancellationToken);
-        var now = time.GetUtcNow();
+                          select new { signal, strategy, user.Id, user.Locale, asset }).ToListAsync(cancellationToken);
         var sent = 0;
-        foreach (var row in rows.Where(r => now >= NotifyTime.AlertDueAt(r.signal.EndedOn!.Value, r.NotifyHour, r.TimeZone)))
+        foreach (var row in rows)
         {
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.SignalEnded, row.signal.EndedOn!.Value, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
             if (await PushAsync(claimed, row.Id, PushTexts.SignalEnded(Line(row.signal, row.strategy, row.asset), row.signal.EndedOn!.Value, row.Locale), cancellationToken)) sent++;
+        }
+        return sent;
+    }
+
+    /// <summary>
+    /// A push for each stock of a running strategy (both modes) whose check of the last session made it a candidate or brought it
+    /// close to its line (<see cref="StockChanges.Latest"/>), to the devices of a user with push on, as soon as the check has run.
+    /// Once per stock, kind and session: a check run again on the same session, or the next one finding the stock as it was, sends
+    /// nothing; it is pushed again only after it changes state again (spec: Notifications, Stock changes).
+    /// </summary>
+    public async Task<int> PushStockChangesAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (push.PublicKey is null) return 0;
+        var session = UsSession.LastComplete(now);
+        var strategies = await db.Strategies.AsNoTracking()
+            .Where(s => s.Status == StrategyStatus.Running && db.Users.Any(u => u.Id == s.UserId && u.AlertPush)
+                && db.PushSubscriptions.Any(p => p.UserId == s.UserId)
+                && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == session))
+            .ToListAsync(cancellationToken);
+        if (strategies.Count == 0) return 0;
+        var byId = strategies.ToDictionary(s => s.Id);
+        var ids = byId.Keys.ToList();
+        var recent = await (from eval in db.DailyEvaluations.AsNoTracking()
+                            join asset in db.Assets.AsNoTracking() on eval.AssetId equals asset.Id
+                            where ids.Contains(eval.StrategyId) && eval.Date >= session.AddDays(-RecentDays) && eval.Date <= session
+                            select new { eval, asset.Name }).ToListAsync(cancellationToken);
+        // Those already pushed for the session, so the hourly runs don't claim them again.
+        var pushed = (await db.Notifications.AsNoTracking()
+                .Where(n => n.Channel == NotificationChannel.Push && n.ForDate == session && n.StrategyId != null && ids.Contains(n.StrategyId.Value))
+                .Select(n => new { n.Kind, n.StrategyId, n.AssetId }).ToListAsync(cancellationToken))
+            .Select(n => (n.Kind, n.StrategyId!.Value, n.AssetId!.Value)).ToHashSet();
+        var userIds = strategies.Select(s => s.UserId).Distinct().ToList();
+        var locales = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.Locale, cancellationToken);
+        var closePct = (await templates.AllAsync(cancellationToken)).ToDictionary(t => t.Key, t => t.ClosePct);
+
+        var sent = 0;
+        foreach (var change in StockChangeLines(recent.Select(x => (x.eval, x.Name)), session, byId, closePct))
+        {
+            // No longer a candidate isn't pushed: there is nothing to look at.
+            NotificationKind? kind = change.Kind switch
+            {
+                StockChangeKind.BecameCandidate => NotificationKind.StockCandidate,
+                StockChangeKind.CameClose => NotificationKind.StockClose,
+                _ => null,
+            };
+            if (kind is not { } k || pushed.Contains((k, change.StrategyId, change.AssetId))) continue;
+            var userId = byId[change.StrategyId].UserId;
+            if (await ClaimAsync(userId, null, k, session, cancellationToken, NotificationChannel.Push, (change.StrategyId, change.AssetId)) is not { } claimed) continue;
+            if (await PushAsync(claimed, userId, PushTexts.StockChange(change, locales[userId]), cancellationToken)) sent++;
         }
         return sent;
     }
@@ -595,9 +589,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
 
     /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>
     async Task<Guid?> ClaimAsync(Guid userId, Guid? signalId, NotificationKind kind, DateOnly forDate, CancellationToken cancellationToken,
-        NotificationChannel channel = NotificationChannel.Email)
+        NotificationChannel channel = NotificationChannel.Email, (Guid StrategyId, Guid AssetId)? stock = null)
     {
-        var notification = new Notification { UserId = userId, SignalId = signalId, Kind = kind, Channel = channel, ForDate = forDate };
+        var notification = new Notification
+        {
+            UserId = userId, SignalId = signalId, StrategyId = stock?.StrategyId, AssetId = stock?.AssetId, Kind = kind, Channel = channel, ForDate = forDate,
+        };
         db.Notifications.Add(notification);
         try
         {

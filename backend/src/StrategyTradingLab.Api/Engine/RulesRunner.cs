@@ -23,6 +23,20 @@ public static class RulesRunner
         return results;
     }
 
+    /// <summary>
+    /// The last day's checks as they read once its buy signal's step is bought, on <paramref name="buyDay"/> (the next open, still
+    /// to come): the same run as <see cref="Run"/>, on fresh <paramref name="rules"/>, with that step bought before the last day is
+    /// decided. The stock page shows them as soon as the step is taken (Ernest, 2026-11-12), instead of the signal's own checks
+    /// until the next check: the next steps and the cooldown, from the last close.
+    /// </summary>
+    public static IReadOnlyList<RuleCheck> ChecksAfterBuy(IBuyRules rules, IReadOnlyList<PriceBar> bars, StepPlan plan, int from, DateOnly buyDay)
+    {
+        if (rules.Length != bars.Count) throw new ArgumentException($"The rules cover {rules.Length} days but {bars.Count} bars were given.", nameof(bars));
+        var machine = new Machine(rules, plan);
+        for (var i = Math.Max(from, 0); i < bars.Count - 1; i++) machine.Step(i, bars[i].Date);
+        return machine.Step(bars.Count - 1, bars[^1].Date, boughtOn: buyDay).Checks;
+    }
+
     sealed class Machine(IBuyRules rules, StepPlan plan)
     {
         RuleStatus? previous;
@@ -33,15 +47,22 @@ public static class RulesRunner
         bool pendingBuy;
         bool pendingSell;
 
-        public DayEvaluation Step(int i, DateOnly day)
+        /// <param name="boughtOn">A step bought on that day before today is decided (<see cref="ChecksAfterBuy"/>).</param>
+        public DayEvaluation Step(int i, DateOnly day, DateOnly? boughtOn = null)
         {
             // 1) Yesterday's signal is acted on at today's open: a step is bought (or the position is sold), and the cooldown starts today.
+            if (boughtOn is not null)
+            {
+                pendingBuy = true;
+                pendingSell = false;
+            }
             var actedNow = pendingBuy || pendingSell;
             if (pendingBuy)
             {
+                var buyDay = boughtOn ?? day;
                 stepsBought++;
-                lastBuyDay = day;
-                cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
+                lastBuyDay = buyDay;
+                cooldownUntil = rules.CooldownDays > 0 ? buyDay.AddDays(rules.CooldownDays) : null;
                 pendingBuy = false;
             }
             else if (pendingSell)

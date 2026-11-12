@@ -132,7 +132,12 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var from = replayIndex < 0 ? bars.Count - 1 : replayIndex;
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
-            var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);
+            var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
+            var days = RulesRunner.Run(rules, bars, plan, from);
+            // A buy signal today: also where the rules stand once its step is bought, for the stock page to show when it's taken.
+            if (days[^1].NewBuy)
+                days = [.. days.SkipLast(1), days[^1] with { ChecksAfterBuy = RulesRunner.ChecksAfterBuy(
+                    TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from, UsSession.After(days[^1].Date)) }];
             if (days[^1].Status == RuleStatus.NotEnoughData)
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
             // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running: an Edit
@@ -334,12 +339,22 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
 
     static JsonDocument Facts(IReadOnlyDictionary<string, object> facts) => JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);
 
-    /// <summary>Where the stock stands today: the day's facts and, under <c>checks</c>, each rule's verdict (the stock page).</summary>
-    static JsonDocument TodaysFacts(DayEvaluation day) =>
-        JsonSerializer.SerializeToDocument(new Dictionary<string, object>(day.Facts) { [ChecksKey] = day.Checks }, JsonSerializerOptions.Web);
+    /// <summary>
+    /// Where the stock stands today: the day's facts and, under <c>checks</c>, each rule's verdict (the stock page); on a buy
+    /// signal's day, under <c>checksAfterBuy</c>, the verdicts once its step is bought.
+    /// </summary>
+    static JsonDocument TodaysFacts(DayEvaluation day)
+    {
+        var facts = new Dictionary<string, object>(day.Facts) { [ChecksKey] = day.Checks };
+        if (day.ChecksAfterBuy is { } after) facts[ChecksAfterBuyKey] = after;
+        return JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);
+    }
 
     /// <summary>The key of the checks in a daily evaluation's facts.</summary>
     public const string ChecksKey = "checks";
+
+    /// <summary>The key of the checks once the day's buy step is bought (<see cref="RulesRunner.ChecksAfterBuy"/>).</summary>
+    public const string ChecksAfterBuyKey = "checksAfterBuy";
 }
 
 /// <summary>The euro against each currency by day, and the rate between any two through it.</summary>

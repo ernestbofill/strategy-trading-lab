@@ -90,4 +90,7 @@ public record DayEvaluation(DateOnly Date, RuleStatus Status, int? StepNo, bool 
 {
     /// <summary>The rules' checks of the day (<see cref="RuleDecision.Checks"/>).</summary>
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
+
+    /// <summary>On a day that starts a buy signal, the checks once its step is bought (<see cref="RulesRunner.ChecksAfterBuy"/>).</summary>
+    public IReadOnlyList<RuleCheck>? ChecksAfterBuy { get; init; }
 }

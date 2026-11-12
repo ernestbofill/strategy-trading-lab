@@ -688,10 +688,9 @@ public static class StrategyEndpoints
         var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
             StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
-        // The latest check's buy signal is taken (answered, or the simulation's trade is in): the rules count its step as bought at
-        // the next open, so the page shows where they stand after it, its next steps and cooldown, without waiting for the next check.
-        if (evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date
-                && (live ? s.Status != SignalStatus.Waiting : book.HasTrade(s.Id)))
+        // The latest check's buy signal is answered: the rules count its step as bought at the next open, so the page shows where
+        // they stand after it, its next steps and cooldown, without waiting for the next check (stored for Manual signals only).
+        if (evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date && s.Status != SignalStatus.Waiting)
             && ChecksOf(evaluation.Facts, StrategyEvaluator.ChecksAfterBuyKey) is { Count: > 0 } afterBuy)
             checks = afterBuy;
         var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };

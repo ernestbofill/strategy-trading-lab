@@ -76,7 +76,7 @@ public class RuleChecksTests
         var bars = all.TakeWhile(b => b.Date <= turn.Date).ToList();
         var buyDay = turn.Date.AddDays(1);
 
-        var after = RulesRunner.ChecksAfterBuy(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5), 0, buyDay);
+        var after = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5), 0, boughtBeforeLast: buyDay)[^1].Checks;
 
         // The milestones count from the buy, no longer in preview, and the cooldown holds the next step back, all of it to wait.
         Assert.DoesNotContain(after, c => c.Group is CheckGroup.Candidate or CheckGroup.Buy);

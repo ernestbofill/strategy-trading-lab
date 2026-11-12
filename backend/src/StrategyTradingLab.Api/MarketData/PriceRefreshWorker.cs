@@ -11,6 +11,13 @@ public class PriceRefreshOptions
 {
     /// <summary>The first run after the API starts, so a release doesn't leave the prices a day old.</summary>
     public TimeSpan StartDelay { get; set; } = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Fetches from Yahoo outside the daily run: a strategy's check when it starts or its list gains a stock
+    /// (<see cref="PriceRefreshState.RequestCheck"/>), and a signal's next open when its page opens. The API tests turn it
+    /// off: it would reach Yahoo and run the rules behind their backs.
+    /// </summary>
+    public bool FetchOnDemand { get; set; } = true;
 }
 
 /// <summary>What the last refresh did and when the next one is, for the admin page. In memory: a restart forgets it.</summary>
@@ -18,6 +25,8 @@ public class PriceRefreshState
 {
     readonly SemaphoreSlim requested = new(0, 1);
     readonly SemaphoreSlim changed = new(0, 1);
+    readonly SemaphoreSlim checkRequested = new(0, 1);
+    readonly HashSet<Guid> checks = [];
     int pending;
     volatile bool running;
     volatile PriceRun last = new(null, null, [], null, null);
@@ -45,6 +54,27 @@ public class PriceRefreshState
         return true;
     }
 
+    /// <summary>
+    /// A strategy just started, or its list gained a stock: the worker fetches the prices it lacks and runs its rules now,
+    /// instead of leaving it "not checked yet" until the next daily run. In the worker's loop, so never at once with that run.
+    /// </summary>
+    public void RequestCheck(Guid strategyId)
+    {
+        lock (checks) checks.Add(strategyId);
+        Release(checkRequested);
+    }
+
+    /// <summary>The strategies asked to be checked since the last call.</summary>
+    public IReadOnlyList<Guid> TakeChecks()
+    {
+        lock (checks)
+        {
+            var taken = checks.ToList();
+            checks.Clear();
+            return taken;
+        }
+    }
+
     /// <summary>The schedule settings changed: the worker reads them again and recomputes the next run.</summary>
     public void ScheduleChanged() => Release(changed);
 
@@ -63,6 +93,8 @@ public class PriceRefreshState
     public Task WaitForRequestAsync(CancellationToken cancellationToken) => requested.WaitAsync(cancellationToken);
 
     public Task WaitForChangeAsync(CancellationToken cancellationToken) => changed.WaitAsync(cancellationToken);
+
+    public Task WaitForCheckAsync(CancellationToken cancellationToken) => checkRequested.WaitAsync(cancellationToken);
 
     /// <summary>The run was asked for but not made (see the worker).</summary>
     public void Skipped() => Interlocked.Exchange(ref pending, 0);
@@ -124,15 +156,22 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             var timer = Task.Delay(delay, time, wait.Token);
             var asked = state.WaitForRequestAsync(wait.Token);
             var changed = state.WaitForChangeAsync(wait.Token);
-            await Task.WhenAny(timer, asked, changed);
+            var check = state.WaitForCheckAsync(wait.Token);
+            await Task.WhenAny(timer, asked, changed, check);
             await wait.CancelAsync();
             if (stoppingToken.IsCancellationRequested) return;
             // More than one signal can have completed at once, and WhenAny names only one: a request must never be lost
             // (its count is used up), so it runs whatever else fired. A changed schedule or the retry only reads it again.
             var run = asked.IsCompletedSuccessfully || (timer.IsCompletedSuccessfully && !failed);
-            if (!run) continue;
+            if (!run)
+            {
+                // A strategy's own check; a run instead covers it (it fetches every watched asset and checks every strategy).
+                if (check.IsCompletedSuccessfully) await CheckAsync(stoppingToken);
+                continue;
+            }
             firstWait = false; // The start-up wait is over once it ended in a run (a schedule save during it starts it again).
 
+            state.TakeChecks();
             await RunAsync(stoppingToken);
         }
     }
@@ -191,6 +230,42 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             state.Finished(time.GetUtcNow(), results, evaluation);
         }
         await SendNotificationsAsync(stoppingToken);
+    }
+
+    /// <summary>
+    /// Checks the strategies asked for (<see cref="PriceRefreshState.RequestCheck"/>): fetches the prices their stocks lack,
+    /// then runs their rules up to the last finished session, as the daily run would. Best effort: a failure leaves it to that run.
+    /// </summary>
+    async Task CheckAsync(CancellationToken stoppingToken)
+    {
+        var ids = state.TakeChecks();
+        if (ids.Count == 0 || !options.Value.FetchOnDemand) return;
+        // As for the run: prices belong to the database this host owns.
+        if (databases.Active != databases.Home) return;
+        foreach (var id in ids)
+        {
+            try
+            {
+                using var scope = scopes.CreateScope();
+                IReadOnlyList<RefreshResult> fetched;
+                await state.Writing.WaitAsync(stoppingToken);
+                try
+                {
+                    fetched = await scope.ServiceProvider.GetRequiredService<PriceRefresher>().CatchUpAsync(id, stoppingToken);
+                }
+                finally
+                {
+                    state.Writing.Release();
+                }
+                var checkedNow = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, stoppingToken);
+                logger.LogInformation("Strategy {Strategy} checked at once: {Fetched} assets fetched ({Failed} failed), {Signals} new signals, {Trades} new trades.",
+                    id, fetched.Count, fetched.Count(r => r.Outcome == RefreshOutcome.Failed), checkedNow.NewSignals, checkedNow.NewTrades);
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                logger.LogWarning("Strategy {Strategy} couldn't be checked at once: {Reason}", id, error.Message);
+            }
+        }
     }
 
     const string DailyCheckKey = "daily-check";

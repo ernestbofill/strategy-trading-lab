@@ -95,6 +95,12 @@ export function refreshAll(olderThanMs = 0) {
   }
 }
 
+/** Reloads one key the open screens show, keeping it on screen meanwhile (a result the server is still working on). */
+export function reload(cacheKey: string) {
+  const load = loaderOf(cacheKey)
+  if (load) fetchKey(cacheKey, load)
+}
+
 /**
  * Loads `load()` for `cacheKey`, showing a kept result at once and reloading it; `undefined` from `load` means not found.
  * `fixed` data (templates) only changes with a deploy, so a kept result isn't loaded again.

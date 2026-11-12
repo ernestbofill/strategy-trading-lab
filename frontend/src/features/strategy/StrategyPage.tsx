@@ -134,15 +134,22 @@ function AiRoundFacts({ s, rounds }: { s: StrategyDetail; rounds: AiRoundsSummar
   )
 }
 
+/** A long list shows its first stocks (the most pressing come first), with a button for the rest. */
+const STOCKS_SHOWN = 5
+
 function Stocks({ s }: { s: StrategyDetail }) {
   const t = useT()
+  const [all, setAll] = useState(false)
+  // Collapsing to hide one or two rows saves nothing.
+  const long = s.stocks.length > STOCKS_SHOWN + 2
+  const shown = long && !all ? s.stocks.slice(0, STOCKS_SHOWN) : s.stocks
   return (
     <Section
       title={t('strategy.stocks', { count: followedStocks(s).length })}
       aside={s.status === 'running' ? <TextAction to={strategyListPath(s.id)}>{t('strategy.editList')}</TextAction> : undefined}
     >
       <ul className={styles.stocks}>
-        {s.stocks.map((row) => {
+        {shown.map((row) => {
           const line = stockLine(row, s.mode, s.currency, s.words, s.checkTexts, t)
           const content = (
             <>
@@ -171,6 +178,11 @@ function Stocks({ s }: { s: StrategyDetail }) {
           )
         })}
       </ul>
+      {long && (
+        <TextAction onClick={() => setAll(!all)}>
+          {all ? t('strategy.stocks.showFewer') : t('strategy.stocks.showAll', { count: s.stocks.length })}
+        </TextAction>
+      )}
     </Section>
   )
 }

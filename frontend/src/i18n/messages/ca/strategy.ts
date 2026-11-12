@@ -37,6 +37,8 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.signals': 'Senyals',
   'strategy.signalsCount': '{did} fets · {skipped} omesos · {missed} perduts',
   'strategy.stocks': 'Accions · {count}',
+  'strategy.stocks.showAll': 'Mostra-les totes ({count})',
+  'strategy.stocks.showFewer': 'Mostra’n menys',
   'strategy.funds': 'Fons · {count}',
   'strategy.editList': 'Edita la llista',
   'strategy.list.title': 'Edita la llista',

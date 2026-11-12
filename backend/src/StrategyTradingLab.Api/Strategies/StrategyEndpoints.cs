@@ -8,6 +8,7 @@ using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
@@ -126,7 +127,8 @@ public static class StrategyEndpoints
         .WithSummary("The stock page's chart: a stock's daily closes over the last 90 days with the rules' checks of each day, for a stock in one of the user's strategies.");
 
         group.MapPost("/", async Task<Results<Created<StrategySummary>, ValidationProblem, Conflict<string>, NotFound>> (
-            NewStrategy request, AppDbContext db, Sessions sessions, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
+            NewStrategy request, AppDbContext db, Sessions sessions, TemplateStore store, PriceRefreshState prices, TimeProvider time,
+            CancellationToken cancellationToken) =>
         {
             if (await store.FindAsync(request.TemplateKey ?? "", cancellationToken) is not { } template) return TypedResults.NotFound();
 
@@ -188,6 +190,8 @@ public static class StrategyEndpoints
             {
                 return TypedResults.Conflict(Messages.NameTaken.In(user.Locale));
             }
+            // Checked at once rather than at the next daily run: its stocks' missing prices fetched, its rules run.
+            prices.RequestCheck(strategy.Id);
             return TypedResults.Created($"/strategies/{strategy.Id}", Summary(strategy, user, template));
         })
         .WithName("StartStrategy")
@@ -221,7 +225,8 @@ public static class StrategyEndpoints
         .WithSummary("Updates the settings (rules) of a running strategy.");
 
         group.MapPut("/{id:guid}/assets", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (
-            Guid id, UpdateStrategyAssets request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, UpdateStrategyAssets request, AppDbContext db, Sessions sessions, PriceRefreshState prices, TimeProvider time,
+            CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -246,6 +251,7 @@ public static class StrategyEndpoints
             // Spec (strategy page, Edit list): an unticked stock stops its signals, and its trades stay. A stock ticked again
             // is checked from the day it comes back (no back-dating, #45): the daily check reads that day from AddedAt.
             var removed = new List<Guid>();
+            var gained = false;
             foreach (var listed in strategy.Assets)
             {
                 var ticked = ids.Contains(listed.AssetId);
@@ -253,6 +259,7 @@ public static class StrategyEndpoints
                 if (ticked && !following)
                 {
                     (listed.Active, listed.RemovedAt, listed.AddedAt) = (true, null, now);
+                    gained = true;
                 }
                 else if (!ticked && following)
                 {
@@ -261,7 +268,10 @@ public static class StrategyEndpoints
                 }
             }
             foreach (var added in ids.Where(assetId => strategy.Assets.All(a => a.AssetId != assetId)).ToList())
+            {
                 strategy.Assets.Add(new StrategyAsset { AssetId = added, Active = true, AddedAt = now });
+                gained = true;
+            }
             strategy.UpdatedAt = now;
             await db.SaveChangesAsync(cancellationToken);
 
@@ -281,6 +291,8 @@ public static class StrategyEndpoints
                         .SetProperty(x => x.AnsweredAt, (DateTimeOffset?)null)
                         .SetProperty(x => x.EndedOn, x => x.EndedOn ?? today), cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            // A stock added (or ticked again) is checked at once, as a new strategy is.
+            if (gained) prices.RequestCheck(id);
             return TypedResults.NoContent();
         })
         .WithName("UpdateStrategyAssets")

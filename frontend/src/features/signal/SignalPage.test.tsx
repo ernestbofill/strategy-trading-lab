@@ -44,26 +44,36 @@ function open(signal: SignalDetail) {
       <Routes>
         <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />
         <Route path="/strategies/:id" element={<p>Strategy page</p>} />
+        <Route path="/strategies/:id/stocks/:assetId" element={<p>Stock page</p>} />
       </Routes>
     </MemoryRouter>,
   )
 }
 
 describe('SignalPage', () => {
-  it('describes the signal and saves the trade as prefilled, then goes back to the strategy', async () => {
-    open(detail())
+  it('describes the signal and saves the trade as prefilled, then goes back to the stock', async () => {
+    open(detail({ assetId: 'zs', onStockList: true }))
     const confirm = vi.spyOn(api, 'confirmSignal').mockResolvedValue()
 
     expect(await screen.findByRole('heading', { name: 'Zscaler' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Zscaler' }).getAttribute('href')).toBe('/strategies/st/stocks/zs')
+    expect(screen.getByRole('link', { name: /STOCK/ }).getAttribute('href')).toBe('/strategies/st/stocks/zs')
     expect(screen.getByText(/8.2% below its recent peak/).textContent).toContain("Under your settings that's step 2 of 5 (€100).")
     expect(screen.getByText(/At/).textContent).toContain('$1.09 per €1')
     fireEvent.change(screen.getByLabelText('Fee (EUR, optional)'), { target: { value: '1.20' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the trade' }))
 
-    await screen.findByText('Strategy page')
+    await screen.findByText('Stock page')
     expect(confirm).toHaveBeenCalledWith('sig', {
       date: '2026-10-23', price: 190, enteredAs: 'amount', amount: 98.8, shares: null, fee: 1.2, fxSource: 'reference', fxRate: null,
     })
+  })
+
+  it('starts with the close, said as such, before the next open is in', async () => {
+    open(detail({ prefill: { date: '2026-10-23', price: 187.5, amount: 98.8, priceIsClose: true } }))
+
+    expect(((await screen.findByLabelText('Price per share (USD)')) as HTMLInputElement).value).toBe('187.5')
+    expect(screen.getByText(/No opening price yet: prefilled with the close on Oct 22/)).toBeTruthy()
   })
 
   it('describes a sell signal and defaults to shares prefilled with held shares', async () => {

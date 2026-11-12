@@ -136,9 +136,11 @@ public static class SignalEndpoints
         (Signal Signal, Strategy Strategy, Asset Asset) found, TimeProvider time, CancellationToken cancellationToken)
     {
         var (signal, _, asset) = found;
-        if (asset.PricesCheckedAt > time.GetUtcNow() - OpenEvery) return;
+        var now = time.GetUtcNow();
+        // Before the next session opens there is no open to fetch.
+        if (now < UsSession.OpenAt(UsSession.After(signal.SignalDate)) || asset.PricesCheckedAt > now - OpenEvery) return;
         if (await db.Prices.AnyAsync(p => p.AssetId == asset.Id && p.Date > signal.SignalDate, cancellationToken)) return;
-        if (!refreshes.Writing.Wait(0)) return;
+        if (!refreshes.TryFetchOpen(asset.Id, now, OpenEvery) || !refreshes.Writing.Wait(0)) return;
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

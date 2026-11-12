@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { api, type StrategyDetail } from '../../api'
 import { reload, useLoadable, type Loadable } from '../../lib/useLoadable'
 
@@ -18,15 +18,16 @@ export const awaitsCheck = (s: StrategyDetail) =>
  */
 export function useStrategy(id: string): Loadable<StrategyDetail> {
   const strategy = useLoadable(strategyCacheKey(id), () => api.getStrategy(id))
-  const polls = useRef(0)
   const waiting = strategy.status === 'ready' && awaitsCheck(strategy.data)
+  // On a timer, not after each load: a failed reload keeps the result shown, and must not end the polling.
   useEffect(() => {
-    if (!waiting || polls.current >= CHECK_POLLS) return
-    const timer = setTimeout(() => {
-      polls.current++
+    if (!waiting) return
+    let polls = 0
+    const timer = setInterval(() => {
+      if (++polls >= CHECK_POLLS) clearInterval(timer)
       reload(strategyCacheKey(id))
     }, CHECK_POLL_MS)
-    return () => clearTimeout(timer)
-  }, [waiting, id, strategy])
+    return () => clearInterval(timer)
+  }, [waiting, id])
   return strategy
 }

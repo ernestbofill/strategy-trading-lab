@@ -167,6 +167,7 @@ Roughly in the order they become useful:
 - A donation link to cover the server, once there are users (allowed by the regulation note).
 - Faster frontend tests: vitest with `isolate: false` runs in a third of the time (jsdom setup per file is half of it), once `FeedbackCapture.test.tsx` and `I18n.test.tsx` stop leaking state between files (#71).
 
+- **Check at once during market hours too** ([#220](https://github.com/ernestbofill/strategy-trading-lab/issues/220), Ernest 2026-11-12): a strategy started while a US session runs waits for the evening run today (#219); instead, fill its simulation signals at the latest price, fetched and not saved.
 - **A compact list view on the dashboard** (feedback 2026-11-12, skipped for now): the strategy cards as dense rows, as an option.
 - **Find indices such as the Nikkei 225 in the fund search** (feedback 2026-11-12, skipped for now): *Bear markets*' "Search funds" doesn't find it.
 - **One control for app notifications** (feedback 2026-11-12, skipped for now): on the account page the *App* tick and *This device · Turn off* say the same thing twice; combine them.

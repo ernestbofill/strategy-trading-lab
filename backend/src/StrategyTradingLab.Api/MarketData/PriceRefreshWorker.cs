@@ -27,6 +27,7 @@ public class PriceRefreshState
     readonly SemaphoreSlim changed = new(0, 1);
     readonly SemaphoreSlim checkRequested = new(0, 1);
     readonly HashSet<Guid> checks = [];
+    readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, DateTimeOffset> openFetches = new();
     int pending;
     volatile bool running;
     volatile PriceRun last = new(null, null, [], null, null);
@@ -62,6 +63,17 @@ public class PriceRefreshState
     {
         lock (checks) checks.Add(strategyId);
         Release(checkRequested);
+    }
+
+    /// <summary>
+    /// Whether a signal's page may ask the price source for an asset's next open now: once per <paramref name="every"/>, counted
+    /// from each try, so a source that fails or is slow isn't asked again on every page open.
+    /// </summary>
+    public bool TryFetchOpen(Guid assetId, DateTimeOffset now, TimeSpan every)
+    {
+        if (openFetches.TryGetValue(assetId, out var tried) && tried > now - every) return false;
+        openFetches[assetId] = now;
+        return true;
     }
 
     /// <summary>The strategies asked to be checked since the last call.</summary>
@@ -132,6 +144,9 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var firstWait = true;
+        // When the next run is due. Kept while the worker wakes for a strategy's check, so a check neither restarts the start-up
+        // wait nor, running past the daily time, pushes the run to the next day: a time already passed runs at once.
+        DateTimeOffset? due = null;
         while (!stoppingToken.IsCancellationRequested)
         {
             var delay = Timeout.InfiniteTimeSpan;
@@ -141,7 +156,13 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 using var scope = scopes.CreateScope();
                 var values = await scope.ServiceProvider.GetRequiredService<Admin.SettingsStore>().ValuesAsync(stoppingToken);
                 var schedule = PriceSchedule.From(values);
-                if (schedule.Enabled) delay = firstWait ? options.Value.StartDelay : schedule.UntilNext(time.GetUtcNow());
+                var now = time.GetUtcNow();
+                if (!schedule.Enabled) due = null;
+                else
+                {
+                    due ??= now + (firstWait ? options.Value.StartDelay : schedule.UntilNext(now));
+                    delay = due.Value > now ? due.Value - now : TimeSpan.Zero;
+                }
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {
@@ -165,11 +186,13 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             var run = asked.IsCompletedSuccessfully || (timer.IsCompletedSuccessfully && !failed);
             if (!run)
             {
+                if (changed.IsCompletedSuccessfully) due = null; // Read the schedule afresh.
                 // A strategy's own check; a run instead covers it (it fetches every watched asset and checks every strategy).
                 if (check.IsCompletedSuccessfully) await CheckAsync(stoppingToken);
                 continue;
             }
             firstWait = false; // The start-up wait is over once it ended in a run (a schedule save during it starts it again).
+            due = null;
 
             state.TakeChecks();
             await RunAsync(stoppingToken);
@@ -242,6 +265,13 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         if (ids.Count == 0 || !options.Value.FetchOnDemand) return;
         // As for the run: prices belong to the database this host owns.
         if (databases.Active != databases.Home) return;
+        // While a US session runs, the next open after the last finished session is already known: a simulation would buy at a
+        // price the user could see. The daily run after the close checks it, as before.
+        if (UsSession.InProgress(time.GetUtcNow()))
+        {
+            logger.LogInformation("{Count} strategies are left to the daily run: a US session is in progress.", ids.Count);
+            return;
+        }
         foreach (var id in ids)
         {
             try

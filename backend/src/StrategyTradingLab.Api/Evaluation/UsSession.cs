@@ -12,6 +12,20 @@ public static class UsSession
     public static DateTimeOffset FinalAt(DateOnly session) =>
         new(TimeZoneInfo.ConvertTimeToUtc(session.ToDateTime(FinalTime), NewYork), TimeSpan.Zero);
 
+    /// <summary>The open is 09:30 in New York.</summary>
+    static readonly TimeOnly OpenTime = new(9, 30);
+
+    /// <summary>When a session opens (09:30 in New York that day): its opening price is known from then on.</summary>
+    public static DateTimeOffset OpenAt(DateOnly session) =>
+        new(TimeZoneInfo.ConvertTimeToUtc(session.ToDateTime(OpenTime), NewYork), TimeSpan.Zero);
+
+    /// <summary>A weekday session has opened and its bar isn't final yet (holidays aren't known: one reads as in progress).</summary>
+    public static bool InProgress(DateTimeOffset now)
+    {
+        var day = Today(now);
+        return day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && now >= OpenAt(day) && now < FinalAt(day);
+    }
+
     /// <summary>The market's calendar day in New York: the spec's "day" for snoozes and the next day.</summary>
     public static DateOnly Today(DateTimeOffset now) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, NewYork).DateTime);
 

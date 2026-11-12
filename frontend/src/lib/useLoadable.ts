@@ -91,7 +91,7 @@ export function invalidateAll() {
 export function refreshAll(olderThanMs = 0) {
   const now = Date.now()
   for (const cacheKey of listeners.keys()) {
-    if (!fixed.has(cacheKey) && now - (loadedAt.get(cacheKey) ?? 0) >= olderThanMs) fetchKey(cacheKey, loaderOf(cacheKey)!)
+    if (!fixed.has(cacheKey) && now - (loadedAt.get(cacheKey) ?? 0) >= olderThanMs) reload(cacheKey)
   }
 }
 

@@ -35,50 +35,41 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
 
     public async Task<IReadOnlyList<RefreshResult>> RunAsync(CancellationToken cancellationToken)
     {
-        var results = new List<RefreshResult>();
         var assets = await Watched().OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
-        foreach (var asset in assets)
-        {
-            results.Add(await GuardedAsync(asset.Symbol, () => RefreshAssetAsync(asset, cancellationToken), cancellationToken));
-            await Task.Delay(Pause, cancellationToken);
-        }
-        foreach (var quote in Quotes(assets.Select(a => a.Currency)))
-        {
-            results.Add(await GuardedAsync($"{BaseCurrency}{quote}", () => RefreshRateAsync(quote, cancellationToken), cancellationToken));
-            await Task.Delay(Pause, cancellationToken);
-        }
-        return results;
+        return await RefreshAllAsync(assets, Quotes(assets.Select(a => a.Currency)), cancellationToken);
     }
 
-    /// <summary>A catch-up leaves alone an asset fetched this recently, so a stock whose exchange had no session doesn't fetch on every save.</summary>
-    public static readonly TimeSpan CatchUpAfter = TimeSpan.FromHours(1);
-
     /// <summary>
-    /// Fetches what one strategy's followed assets lack before the daily run would: an asset with no price of the last
-    /// finished US session (just listed, or nobody watched it), unless fetched within <see cref="CatchUpAfter"/>, and the
-    /// rates of a currency with none stored. One failing asset never stops the others.
+    /// Fetches what one strategy's followed assets lack before the daily run would: each asset not fetched since the last
+    /// finished US session's bar was final (just listed, nobody watched it, or fetched while that session ran), and the
+    /// rates of a currency with none stored.
     /// </summary>
     public async Task<IReadOnlyList<RefreshResult>> CatchUpAsync(Guid strategyId, CancellationToken cancellationToken)
     {
-        var now = Time.GetUtcNow();
-        var lastSession = UsSession.LastComplete(now);
-        var fetchedBefore = now - CatchUpAfter;
+        var finalAt = UsSession.FinalAt(UsSession.LastComplete(Time.GetUtcNow()));
         var assets = await db.Assets.AsNoTracking()
             .Where(a => a.Active
                 && db.StrategyAssets.Any(sa => sa.StrategyId == strategyId && sa.AssetId == a.Id && sa.Active && sa.RemovedAt == null)
-                && !db.Prices.Any(p => p.AssetId == a.Id && p.Date >= lastSession)
-                && (a.PricesCheckedAt == null || a.PricesCheckedAt < fetchedBefore))
+                && (a.PricesCheckedAt == null || a.PricesCheckedAt < finalAt))
             .OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
+        var stored = await db.FxRates.Where(r => r.Base == BaseCurrency).Select(r => r.Quote).Distinct().ToListAsync(cancellationToken);
+        return await RefreshAllAsync(assets, Quotes(assets.Select(a => a.Currency)).Except(stored), cancellationToken);
+    }
+
+    /// <summary>Each asset's prices, then each currency's rates, with a pause between; one failing never stops the others.</summary>
+    async Task<IReadOnlyList<RefreshResult>> RefreshAllAsync(IReadOnlyList<Asset> assets, IEnumerable<string> quotes,
+        CancellationToken cancellationToken)
+    {
         var results = new List<RefreshResult>();
         foreach (var asset in assets)
         {
             results.Add(await GuardedAsync(asset.Symbol, () => RefreshAssetAsync(asset, cancellationToken), cancellationToken));
             await Task.Delay(Pause, cancellationToken);
         }
-        foreach (var quote in Quotes(assets.Select(a => a.Currency)))
+        foreach (var quote in quotes)
         {
-            if (await db.FxRates.AnyAsync(r => r.Base == BaseCurrency && r.Quote == quote, cancellationToken)) continue;
             results.Add(await GuardedAsync($"{BaseCurrency}{quote}", () => RefreshRateAsync(quote, cancellationToken), cancellationToken));
+            await Task.Delay(Pause, cancellationToken);
         }
         return results;
     }

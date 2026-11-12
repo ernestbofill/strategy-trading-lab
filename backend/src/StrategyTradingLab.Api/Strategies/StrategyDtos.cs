@@ -124,7 +124,7 @@ public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Sta
     public decimal? Close { get; init; }
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
 
-    /// <summary>A stock not checked yet that waits for the daily run: added while a US session is in progress, when the check at once skips it.</summary>
+    /// <summary>A stock not checked yet while a US session is in progress: nothing checks it before the daily run after the session (the check at once skips it).</summary>
     public bool AfterClose { get; init; }
 }
 

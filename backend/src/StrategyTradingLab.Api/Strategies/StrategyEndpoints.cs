@@ -92,11 +92,10 @@ public static class StrategyEndpoints
             var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : default;
             // The version it started from: "tuned" compares with that.
             var template = await store.VersionAsync(strategy.TemplateKey, strategy.DefaultsVersion, cancellationToken);
-            var detail = await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores);
-            // The check at once skips a strategy while a US session is in progress (PriceRefreshWorker.CheckAsync): its new stocks wait for the daily run.
-            if (strategy.Status == StrategyStatus.Running && TemplateRules.Supports(strategy.TemplateKey) && UsSession.InProgress(time.GetUtcNow()))
-                detail = detail with { Stocks = [.. detail.Stocks.Select(r => r.Status == StockStatus.NotChecked ? r with { AfterClose = true } : r)] };
-            return TypedResults.Ok(detail);
+            // Nothing checks a strategy while a US session is in progress (the check at once skips it, PriceRefreshWorker.CheckAsync):
+            // a stock not checked yet waits for the daily run after it.
+            var waitsForClose = strategy.Status == StrategyStatus.Running && TemplateRules.Supports(strategy.TemplateKey) && UsSession.InProgress(time.GetUtcNow());
+            return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores, waitsForClose));
         })
         .RequireUser()
         .WithTags("Strategies")
@@ -479,7 +478,7 @@ public static class StrategyEndpoints
     }
 
     static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, Template template, User user, DateOnly today, CancellationToken cancellationToken,
-        AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null)
+        AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null, bool waitsForClose = false)
     {
         var texts = TemplateTexts.For(template, user.Locale);
         var book = await StrategyBook.LoadAsync(db, [strategy], today, cancellationToken);
@@ -541,6 +540,7 @@ public static class StrategyEndpoints
                 CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 Checks = checks,
+                AfterClose = waitsForClose && status == StockStatus.NotChecked,
             };
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)

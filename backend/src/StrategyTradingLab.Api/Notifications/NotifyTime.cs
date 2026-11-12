@@ -4,8 +4,9 @@ namespace StrategyTradingLab.Api.Notifications;
 
 /// <summary>
 /// When a user's notifications come (spec: Settings, Notifications). The user picks an hour in their own time zone (07:00 by
-/// default) or "as soon as they're ready" (no hour). What a daily check finds, the signal alerts and the summary, waits for the
-/// first such hour after the session's close; reminders (snoozed signals, AI rounds due) come at that hour on their day.
+/// default) or "as soon as they're ready" (no hour). What a daily check finds by email, the signal alerts and the summary, waits
+/// for the first such hour after the session's close; its pushes go right after the check. Reminders (snoozed signals, AI rounds
+/// due) come at that hour on their day, by email and push.
 /// </summary>
 public static class NotifyTime
 {

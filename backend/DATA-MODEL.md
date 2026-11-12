@@ -102,9 +102,8 @@ Every asset has an `en` row; a missing `ca` row falls back to `en`.
 | currency | char(3), not null, default `EUR` | Default currency for new strategies |
 | role | text, not null, default `user` | `user` \| `vip` \| `owner`. Only the owner opens the admin page; vip comes from an owner's invite |
 | overview_email | bool, not null, default true | The summary by email on/off |
-| overview_push | bool, not null, default true | The summary by web push, to the devices the user turned on on/off |
 | alert_emails | bool, not null, default true | Signals and reminders (signal alerts, snooze reminders, AI round reminders) by email on/off |
-| alert_push | bool, not null, default true | Signals and reminders by web push, to the devices the user turned on (the account's App box) on/off |
+| alert_push | bool, not null, default true | Web push on/off, to the devices the user turned on (the account's App box): the one push switch, for signals, stock changes and reminders |
 | notify_hour | int, null, default 7 | The hour (0–23, the user's time zone) alerts, the summary and reminders come; null: as soon as they're ready (Settings → Notification time) |
 | unsubscribe_token | text, not null, unique | Private random token in the unsubscribe links of this user's emails; it can only turn emails off |
 | disclaimer_accepted_at | timestamptz, null | Accepted once at sign-up |
@@ -355,8 +354,10 @@ Every notification the app sends, one row per channel. A notification goes out *
 | --- | --- | --- |
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade | |
-| signal_id | uuid FK → signals, cascade, null | What the notification is about, for `signal` and `snoozed`. Null for kinds about nothing in particular (`overview`, later) |
-| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the summary, no signal; a quiet day keeps its claim with "Not sent: nothing changed.") \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) |
+| signal_id | uuid FK → signals, cascade, null | What the notification is about, for `signal`, `snoozed` and `signal_ended`. Null for kinds about nothing in particular (`overview`, `ai_round`) |
+| strategy_id | uuid FK → strategies, cascade, null | With `asset_id`, the stock a stock change push is about (`stock_candidate`, `stock_close`) |
+| asset_id | uuid FK → assets, cascade, null | See `strategy_id` |
+| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the summary, no signal; a quiet day keeps its claim with "Not sent: nothing changed.") \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) \| `signal_ended` (a buy signal ended unanswered) \| `stock_candidate`, `stock_close` (push only: a strategy's stock became a candidate or came close on the session `for_date`) |
 | channel | text, not null | `push` \| `email` |
 | for_date | date, not null | The day it is for: the signal day, or the `snoozed_until` day |
 | sent_at | timestamptz, null | Null while queued |
@@ -364,10 +365,10 @@ Every notification the app sends, one row per channel. A notification goes out *
 | error | text, null | Provider error, for support |
 | created_at | timestamptz | |
 
-**Identity (the dedupe contract):** a notification is identified by who it's for, what kind it is, the channel, the day, and what it is about. "What it is about" is one nullable foreign key per subject; today the only subject is a signal.
+**Identity (the dedupe contract):** a notification is identified by who it's for, what kind it is, the channel, the day, and what it is about. "What it is about" is one nullable foreign key per subject: a signal, or a strategy's stock (`strategy_id` and `asset_id`).
 
-- Unique `(user_id, kind, channel, for_date, signal_id) NULLS NOT DISTINCT`, so rows with no subject (the overview, later) are deduplicated too.
-- `CHECK ((kind IN ('signal', 'snoozed')) = (signal_id IS NOT NULL))`.
+- Unique `(user_id, kind, channel, for_date, signal_id, strategy_id, asset_id) NULLS NOT DISTINCT`, so rows with no subject (the overview) are deduplicated too.
+- `CHECK ((kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL))` and `CHECK ((kind IN ('stock_candidate', 'stock_close')) = (strategy_id IS NOT NULL AND asset_id IS NOT NULL))`.
 - A new subject adds its own column and joins the key and the check: AI rounds will add `ai_round_id` (FK → ai_rounds), not a generic id.
 
 No row is created for a channel the user can't receive (no push subscription) or that the strategy has off (`notifications` for email, `push` for push). Push goes to all the user's devices as one row; a per-device log can come later if support needs it.

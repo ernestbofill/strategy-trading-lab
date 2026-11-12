@@ -272,6 +272,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             logger.LogInformation("{Count} strategies are left to the daily run: a US session is in progress.", ids.Count);
             return;
         }
+        var newSignals = 0;
         foreach (var id in ids)
         {
             try
@@ -288,6 +289,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                     state.Writing.Release();
                 }
                 var checkedNow = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, stoppingToken);
+                newSignals += checkedNow.NewSignals;
                 logger.LogInformation("Strategy {Strategy} checked at once: {Fetched} assets fetched ({Failed} failed), {Signals} new signals, {Trades} new trades.",
                     id, fetched.Count, fetched.Count(r => r.Outcome == RefreshOutcome.Failed), checkedNow.NewSignals, checkedNow.NewTrades);
             }
@@ -296,6 +298,8 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 logger.LogWarning("Strategy {Strategy} couldn't be checked at once: {Reason}", id, error.Message);
             }
         }
+        // A signal found here is pushed at once, as after the daily run (Ernest, 2026-11-12); its email keeps the user's hour.
+        if (newSignals > 0) await PushChangesAsync(stoppingToken);
     }
 
     const string DailyCheckKey = "daily-check";
@@ -348,11 +352,14 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
     }
 
     /// <summary>
-    /// Right after the check, the alerts for the live signals it found that are still waiting, then the daily overview. After the
-    /// run is recorded as finished, and apart from it: an email problem is not a refresh failure.
+    /// Right after the check, the pushes of what it changed (<see cref="PushChangesAsync"/>), then the alerts for the live signals
+    /// it found that are still waiting, then the daily overview. After the run is recorded as finished, and apart from it: a push
+    /// or email problem is not a refresh failure.
     /// </summary>
     async Task SendNotificationsAsync(CancellationToken stoppingToken)
     {
+        // First, and apart from the emails: pushes go out as soon as the check has run, whatever the user's notification hour.
+        await PushChangesAsync(stoppingToken);
         try
         {
             using var scope = scopes.CreateScope();
@@ -360,11 +367,8 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             if (!await notifications.EnabledAsync(stoppingToken)) return;
             var session = UsSession.LastComplete(time.GetUtcNow());
             logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(session, stoppingToken));
-            // Apart from the emails' count; a push problem stays in its own rows (a device gone, a push service down).
-            logger.LogInformation("Pushed {Count} signal alerts.", await notifications.PushSignalAlertsAsync(session, stoppingToken));
             // A buy signal that ended unanswered, after its alert (one this run just sent waits for its next day).
             logger.LogInformation("Sent {Count} ended signal alerts.", await notifications.SendSignalEndedAsync(session, stoppingToken));
-            logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, stoppingToken));
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
@@ -376,14 +380,35 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             using var scope = scopes.CreateScope();
             var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
             if (await notifications.EnabledAsync(stoppingToken))
-            {
                 logger.LogInformation("Sent {Count} daily overviews.", await notifications.SendOverviewsAsync(time.GetUtcNow(), stoppingToken));
-                logger.LogInformation("Pushed {Count} daily overviews.", await notifications.PushOverviewsAsync(time.GetUtcNow(), stoppingToken));
-            }
         }
         catch (Exception error) when (error is not OperationCanceledException)
         {
             logger.LogWarning("The daily overviews couldn't be sent: {Reason}", error.Message);
+        }
+    }
+
+    /// <summary>
+    /// The pushes of what a check changed: signals, their end, stocks becoming candidates or getting close. Never failing the
+    /// check: what couldn't go out is retried by the hourly <see cref="Notifications.NotificationWorker"/>.
+    /// </summary>
+    async Task PushChangesAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            var notifications = scope.ServiceProvider.GetRequiredService<Notifications.NotificationService>();
+            if (!await notifications.EnabledAsync(stoppingToken)) return;
+            var now = time.GetUtcNow();
+            var session = UsSession.LastComplete(now);
+            logger.LogInformation("Pushed {Count} signal alerts.", await notifications.PushSignalAlertsAsync(session, stoppingToken));
+            // A buy signal that ended unanswered, after its alert (one this run just pushed is told on a later check).
+            logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, stoppingToken));
+            logger.LogInformation("Pushed {Count} stock changes.", await notifications.PushStockChangesAsync(now, stoppingToken));
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            logger.LogWarning("The pushes couldn't be sent: {Reason}", error.Message);
         }
     }
 }

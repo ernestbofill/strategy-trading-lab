@@ -84,7 +84,7 @@ public class ModelTests
         var index = Model.FindEntityType(typeof(Notification))!.GetIndexes().Single(i => i.IsUnique);
 
         Assert.False(index.GetAreNullsDistinct());
-        Assert.Equal(["user_id", "kind", "channel", "for_date", "signal_id"], index.Properties.Select(p => p.GetColumnName()));
+        Assert.Equal(["user_id", "kind", "channel", "for_date", "signal_id", "strategy_id", "asset_id"], index.Properties.Select(p => p.GetColumnName()));
     }
 
     [Fact]

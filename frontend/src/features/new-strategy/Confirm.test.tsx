@@ -65,7 +65,7 @@ function DashboardStub() {
 function open(account: { alertPush?: boolean } = {}) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
   vi.spyOn(api, 'getAccount').mockResolvedValue({
-    email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, overviewPush: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false, notifyHour: 7, ...account,
+    email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false, notifyHour: 7, ...account,
   })
   vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
   vi.spyOn(api, 'getDashboard').mockResolvedValue({ strategies: [], waiting: [] } as unknown as Dashboard)
@@ -178,7 +178,7 @@ describe('Confirm', () => {
   it('disables starting when the user already runs 10 strategies', async () => {
     vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
     vi.spyOn(api, 'getAccount').mockResolvedValue({
-      email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, overviewPush: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false, notifyHour: 7,
+      email: 'a@example.com', firstName: null, lastName: null, emailVerified: true, locale: 'en', timeZone: 'UTC', overviewEmail: true, alertEmails: true, alertPush: true, currency: 'EUR', role: 'user', aiSharing: false, notifyHour: 7,
     })
     vi.spyOn(api, 'getTemplate').mockResolvedValue(ai)
     const running = Array.from({ length: 10 }, (_, i) => ({ id: `s${i}`, name: `S${i}`, status: 'running' as const } as unknown as StrategySummary))

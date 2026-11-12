@@ -2209,3 +2209,98 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    DROP INDEX ix_notifications_user_id_kind_channel_for_date_signal_id;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE notifications DROP CONSTRAINT ck_notifications_kind;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE users DROP COLUMN overview_push;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE notifications ADD asset_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE notifications ADD strategy_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    CREATE INDEX ix_notifications_asset_id ON notifications (asset_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    CREATE INDEX ix_notifications_strategy_id ON notifications (strategy_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    CREATE UNIQUE INDEX ix_notifications_user_id_kind_channel_for_date_signal_id_strat ON notifications (user_id, kind, channel, for_date, signal_id, strategy_id, asset_id) NULLS NOT DISTINCT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE notifications ADD CONSTRAINT ck_notifications_kind CHECK (kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended', 'stock_candidate', 'stock_close'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE notifications ADD CONSTRAINT ck_notifications_stock CHECK ((kind IN ('stock_candidate', 'stock_close')) = (strategy_id IS NOT NULL AND asset_id IS NOT NULL));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE notifications ADD CONSTRAINT fk_notifications_assets_asset_id FOREIGN KEY (asset_id) REFERENCES assets (id) ON DELETE CASCADE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    ALTER TABLE notifications ADD CONSTRAINT fk_notifications_strategies_strategy_id FOREIGN KEY (strategy_id) REFERENCES strategies (id) ON DELETE CASCADE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261112182025_PushStockChanges') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261112182025_PushStockChanges', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

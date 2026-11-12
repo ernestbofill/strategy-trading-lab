@@ -56,6 +56,38 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
         return await RefreshAllAsync(assets, Quotes(assets.Select(a => a.Currency)).Except(stored), cancellationToken);
     }
 
+    /// <summary>
+    /// The latest price of each asset a strategy follows, for its check at once while a US session is in progress (#220). Not
+    /// stored: a trade filled at it keeps its own price. An asset whose fetch fails is left out, and its check waits for the daily run.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, LatestPrice>> LatestAsync(Guid strategyId, CancellationToken cancellationToken)
+    {
+        var assets = await db.Assets.AsNoTracking()
+            .Where(a => a.Active && db.StrategyAssets.Any(sa => sa.StrategyId == strategyId && sa.AssetId == a.Id && sa.Active && sa.RemovedAt == null))
+            .OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
+        var latest = new Dictionary<Guid, LatestPrice>();
+        foreach (var asset in assets)
+        {
+            if (await TryLatestAsync(asset.Symbol, cancellationToken) is { } price) latest[asset.Id] = price;
+            await Task.Delay(Pause, cancellationToken);
+        }
+        return latest;
+    }
+
+    /// <summary>An asset's latest price, or null when the source fails (logged): best effort, never stored.</summary>
+    public async Task<LatestPrice?> TryLatestAsync(string symbol, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await source.LatestAsync(symbol, cancellationToken);
+        }
+        catch (MarketDataException error)
+        {
+            logger.LogWarning("The latest price of {Symbol} wasn't fetched: {Reason}", symbol, error.Message);
+            return null;
+        }
+    }
+
     /// <summary>Each asset's prices, then each currency's rates, with a pause between; one failing never stops the others.</summary>
     async Task<IReadOnlyList<RefreshResult>> RefreshAllAsync(IReadOnlyList<Asset> assets, IEnumerable<string> quotes,
         CancellationToken cancellationToken)

@@ -5,11 +5,12 @@ namespace StrategyTradingLab.Api.Signals;
 // The DTOs of Confirm a signal (frontend/src/api/types.ts; camelCase JSON, enums as camelCase strings).
 
 /// <summary>
-/// What the form starts with: the next trading day after the signal, its opening price once it is in (fetched when the page
-/// opens), else the signal day's close with <c>PriceIsClose</c>, the step (or budget) minus the tested fee for buys, and the
-/// user's held shares for sells.
+/// What the form starts with: the next trading day after the signal, its opening price once it is stored, else once that
+/// session has opened the latest price with <c>PriceIsLatest</c> (fetched when the page opens, not stored), else the signal
+/// day's close with <c>PriceIsClose</c>; the step (or budget) minus the tested fee for buys, and the user's held shares for sells.
 /// </summary>
-public record TradePrefill(DateOnly Date, decimal? Price, decimal? Amount, decimal? Shares = null, bool PriceIsClose = false);
+public record TradePrefill(DateOnly Date, decimal? Price, decimal? Amount, decimal? Shares = null, bool PriceIsClose = false,
+    bool PriceIsLatest = false);
 
 /// <summary>The reference rate of a day: units of the asset's currency per one unit of the strategy's.</summary>
 public record RateDay(DateOnly Date, decimal Rate);

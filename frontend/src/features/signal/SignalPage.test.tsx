@@ -76,6 +76,13 @@ describe('SignalPage', () => {
     expect(screen.getByText(/No opening price yet: prefilled with the close on Oct 22/)).toBeTruthy()
   })
 
+  it('starts with the latest price, said as such, once the session has opened', async () => {
+    open(detail({ prefill: { date: '2026-10-23', price: 189.25, amount: 98.8, priceIsLatest: true } }))
+
+    expect(((await screen.findByLabelText('Price per share (USD)')) as HTMLInputElement).value).toBe('189.25')
+    expect(screen.getByText(/Prefilled with the latest price/)).toBeTruthy()
+  })
+
   it('describes a sell signal and defaults to shares prefilled with held shares', async () => {
     open(
       detail({

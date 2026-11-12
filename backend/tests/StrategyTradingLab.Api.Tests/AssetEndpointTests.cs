@@ -34,6 +34,8 @@ public class AssetEndpointTests
             ]);
 
         public Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken) => Task.FromResult(PriceRefresher.BaseCurrency);
+
+        public Task<LatestPrice> LatestAsync(string symbol, CancellationToken cancellationToken) => throw new MarketDataException("No latest price here.");
     }
 
     /// <summary><paramref name="assetLimit"/>: the server's value for USER_ASSET_LIMIT (the page's, if set, would win).</summary>

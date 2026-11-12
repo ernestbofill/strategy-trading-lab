@@ -153,7 +153,7 @@ describe('stockLine', () => {
     expect(stockLine(row({ status: 'notCandidate' }), 'simulation', 'EUR', ai).detail).toBe('Not scored yet')
   })
 
-  it('says a stock not checked yet waits for the US session to end when the server left it to the daily run', () => {
+  it('says a stock not checked yet waits for the US session to end when the check at once left it to the daily run', () => {
     expect(stockLine(row({ status: 'notChecked' }), 'live', 'USD', null).detail).toBe('Not checked yet')
     expect(stockLine(row({ status: 'notChecked', afterClose: true }), 'live', 'USD', null).detail).toBe('Checked after the US session ends')
   })

@@ -67,6 +67,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Zoom on Sign-up and Settings (Ernest, 2026-11-10): 100%, 110% or 125%, the whole app like the browser zoom, kept on the device.
 - Combined strategy and fund page for single-asset strategies (Ernest, 2026-11-08): for fund templates (`investsIn !== 'stockList'`), `/strategies/{id}` shows the fund's ticker, name and latest close in the top header and shows its status as the first tile and inlines its price chart and rule checks directly below the summary box (without a separate `Funds · 1` row or duplicate position box), and `/strategies/{id}/stocks/{assetId}` redirects to `/strategies/{id}`.
 - Fixes from Ernest's feedback (2026-11-12): a new strategy or a stock added to the list is checked at once (missing prices fetched, its rules run) instead of at the next daily check, and its pages ask again until it is; no price chart before that check; the cooldown with its days left, also after a sale and in *Next step*; long stock lists show 5 with "Show all"; a signal goes up to its stock, whose name links there; and the signal's price is the next open fetched when the page opens, else the close, never an empty field.
+- Checked at once during market hours too (#220): while a US session is in progress, a signal the check finds trades at the latest price, fetched and not stored (a stock without one waits for the evening run, "Checked after the US session ends"); the signal page prefills the open once stored, else the latest price, else the close; AI simulation picks buy at the fetched latest price.
 
 ## Next
 
@@ -168,7 +169,6 @@ Roughly in the order they become useful:
 - A donation link to cover the server, once there are users (allowed by the regulation note).
 - Faster frontend tests: vitest with `isolate: false` runs in a third of the time (jsdom setup per file is half of it), once `FeedbackCapture.test.tsx` and `I18n.test.tsx` stop leaking state between files (#71).
 
-- **Check at once during market hours too** ([#220](https://github.com/ernestbofill/strategy-trading-lab/issues/220), Ernest 2026-11-12): a strategy started while a US session runs waits for the evening run today (#219); instead, fill its simulation signals at the latest price, fetched and not saved.
 - **A compact list view on the dashboard** (feedback 2026-11-12, skipped for now): the strategy cards as dense rows, as an option.
 - **Find indices such as the Nikkei 225 in the fund search** (feedback 2026-11-12, skipped for now): *Bear markets*' "Search funds" doesn't find it.
 - **One control for app notifications** (feedback 2026-11-12, skipped for now): on the account page the *App* tick and *This device · Turn off* say the same thing twice; combine them.

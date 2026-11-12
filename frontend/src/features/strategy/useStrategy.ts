@@ -8,9 +8,12 @@ export const strategyCacheKey = (id: string) => `strategy:${id}`
 const CHECK_POLL_MS = 5000
 const CHECK_POLLS = 12
 
-/** A running strategy with a stock its rules haven't checked yet (just started, or just added to the list). */
+/**
+ * A running strategy with a stock its rules haven't checked yet (just started, or just added to the list), not one the
+ * server left to the daily run after a US session (`afterClose`).
+ */
 export const awaitsCheck = (s: StrategyDetail) =>
-  s.status === 'running' && !s.aiRounds && s.stocks.some((row) => row.status === 'notChecked')
+  s.status === 'running' && !s.aiRounds && s.stocks.some((row) => row.status === 'notChecked' && !row.afterClose)
 
 /**
  * A strategy, asked again every few seconds for a minute while a stock waits for its first check, so the check the

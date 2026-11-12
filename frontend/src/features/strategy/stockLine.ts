@@ -94,7 +94,7 @@ function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, 
     case 'notEnoughData':
       return t('strategy.stock.notEnoughData')
     case 'notChecked':
-      return t('strategy.stock.notChecked')
+      return notCheckedLine(row, t)
     case 'removed':
       return t('strategy.stock.removed')
   }
@@ -114,6 +114,10 @@ const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
   notChecked: ['strategy.pill.notChecked', 'muted'],
   removed: ['strategy.pill.removed', 'muted'],
 }
+
+/** A stock not checked yet: one added during a US session waits for the daily run after it ends. */
+export const notCheckedLine = (row: StockRow, t: Translate) =>
+  t(row.afterClose ? 'strategy.stock.afterClose' : 'strategy.stock.notChecked')
 
 /** The stocks a strategy follows: not those unticked with Edit list, whose rows stay while they have trades. */
 export const followedStocks = (s: StrategyDetail) => s.stocks.filter((row) => row.status !== 'removed')

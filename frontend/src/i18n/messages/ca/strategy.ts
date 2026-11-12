@@ -84,6 +84,7 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.stock.notCandidate': 'Encara no és candidata',
   'strategy.stock.notEnoughData': 'Encara no hi ha prou historial de preus',
   'strategy.stock.notChecked': 'Encara no s’ha comprovat',
+  'strategy.stock.afterClose': 'Es comprovarà quan acabi la sessió dels EUA',
   'strategy.stock.removed': 'Fora de la llista, sense senyals',
   'strategy.stock.lastScore': 'Última puntuació: {score}',
   'strategy.stock.noBuys': 'Encara sense compres',

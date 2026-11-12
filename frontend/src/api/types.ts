@@ -319,6 +319,8 @@ export interface StockRow {
   close: number | null
   candidateSince?: string | null
   checks: RuleCheck[]
+  /** Not checked yet and left to the daily run: added while a US session is in progress. */
+  afterClose?: boolean
 }
 
 /** The part of the rules a check belongs to: what makes a candidate, what gives a buy or sell signal, what earns the next step. */

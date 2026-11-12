@@ -16,7 +16,7 @@ import { PriceChart } from './PriceChart'
 import { isCandidateOn } from './priceChartMarks'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
-import { stockLine, type StockLine } from './stockLine'
+import { notCheckedLine, stockLine, type StockLine } from './stockLine'
 import styles from './StockPage.module.css'
 import { useStrategy } from './useStrategy'
 
@@ -280,7 +280,7 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
   const trades = s.trades.filter((x) => x.assetId === row.assetId)
   // Without enough price history the rules say nothing yet: the status tile says so.
   const rules = s.checkTexts && row.status !== 'notEnoughData' && (
-    <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : t('strategy.stock.notChecked')}>
+    <Section title={row.checkedOn ? t('stock.rules', { date: shortDate(row.checkedOn) }) : notCheckedLine(row, t)}>
       <Rules row={row} texts={s.checkTexts} isCandidate={isCandidate} since={since} />
     </Section>
   )

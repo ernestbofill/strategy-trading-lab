@@ -82,6 +82,7 @@ export const strategy = {
   'strategy.stock.notCandidate': 'Not a candidate yet',
   'strategy.stock.notEnoughData': 'Not enough price history yet',
   'strategy.stock.notChecked': 'Not checked yet',
+  'strategy.stock.afterClose': 'Checked after the US session ends',
   'strategy.stock.removed': 'Off the list, no signals',
   'strategy.stock.lastScore': 'Last score: {score}',
   'strategy.stock.noBuys': 'No buys yet',

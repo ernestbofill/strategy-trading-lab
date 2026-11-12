@@ -30,7 +30,7 @@ A different angle, English only, with no app screens and no footage: `src/pulse/
 
 ## Cinematic shots
 
-Drop the Higgsfield clips into `public/cine/` as `a.mp4`, `b.mp4` and `c.mp4` (9:16), then set that shot to `true` in `CINE` in `src/theme.ts`. Until then each shot plays its coded fallback.
+The Higgsfield clips go in `public/cine/` (9:16, not in git). `CINE` in `src/theme.ts` names the take each shot uses and the frame of the clip it starts on; a shot set to `null` plays its coded fallback. In use since 2026-11-12: `a.mp4` from 0.5 s, `b2.mp4` from 3.0 s and `c1.mp4` from 1.5 s. Without the files a render fails, so on another machine copy them over or set the shots to `null`.
 
 ## The demo account
 
@@ -46,4 +46,3 @@ The waiting signal turns into a missed one once newer prices arrive on dev, so c
 
 - The Catalan app still shows the strategy names in English (they are the demo account's own names) and English template texts (an API bug): capture again once that is fixed.
 - Music, and the with-music renders.
-- The cinematic shots.

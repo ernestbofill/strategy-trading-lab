@@ -2,7 +2,7 @@
 ## Todos from Claude to Ernest
 - [ ] Promo video: watch the draft (`promo/`: `npm install`, `npm run capture` with the app running, `npm run render`) and check the Catalan lines in `promo/src/strings/ca.json`. (#218)
 - [x] Promo video: decide how the demo account gets a waiting signal and results. The app only checks a new strategy from today (no back-dating), so it is either rows written by hand on dev, or a strategy back-dated on dev so the engine replays real prices. (#218) Done 2026-11-11: rows by hand.
-- [ ] Promo video: once the storyboard's three prompts look right to you, start the Higgsfield trial (turn off renewal), and pick a music track. (#218)
+- [ ] Promo video: pick a music track for both videos. The three cinematic clips are in (2026-11-12); they live in `promo/public/cine/` on the PC only, so copy them to the Mac if you render there. (#218)
 - [ ] QA sessions, optional: save the `qaagent` password in the desktop app's built-in browser too (sign in once there). It resizes to 390px and 360px, which Chrome can't, so signed-in screens can be checked at phone width (lead L-005). The wrong-password check on Log-in (L-006) needs you or another tool: the agent may not type a password on production. (#215)
 - [x] Getting close push: choose #212 (its own push, Manual only, under signals and reminders) or #213 (the summary push names the stocks getting close). Merge one and close the other. (#212, #213) Ernest chose #213, 2026-11-10.
 - [x] Spaceship (domain → Email forwarding): forward `contact@strategytradinglab.com` to your inbox and send it a test mail. Claude then puts the address on the legal notice and the privacy policy (item 26). (#187) Done by Ernest, 2026-11-08; the address is on the legal pages since #198.

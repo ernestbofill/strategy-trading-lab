@@ -40,6 +40,11 @@ export const STRINGS: Record<Lang, Strings> = { en, ca };
 export type CueKey = keyof typeof timeline;
 export const CUES = timeline as unknown as Record<CueKey, [number, number]>;
 
-// Cinematic clips, dropped into public/cine/ as a.mp4, b.mp4 and c.mp4.
-// Turn one on once its file is there; until then its coded fallback plays.
-export const CINE = { a: false, b: false, c: false };
+// Cinematic clips in public/cine/ (not in git): the take each shot uses, and the frame of the clip it starts on.
+// A shot set to null plays its coded fallback.
+export type Clip = { file: string; start: number };
+export const CINE: Record<'a' | 'b' | 'c', Clip | null> = {
+  a: { file: 'a', start: 15 }, // 0.5 s: the face holds still, the reflections flicker
+  b: { file: 'b2', start: 90 }, // 3.0 s: the camera climbs past a tower onto the skyline
+  c: { file: 'c1', start: 45 }, // 1.5 s: the phone goes from dark to a green flash
+};

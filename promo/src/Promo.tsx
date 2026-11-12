@@ -5,7 +5,7 @@ import { Lines } from './components/Lines';
 import { Phone } from './components/Phone';
 import { EndCard } from './components/EndCard';
 import { ci, sp } from './anim';
-import { BEAT, C, CINE, FONT, FPS, H, Lang, STRINGS, Strings, W } from './theme';
+import { BEAT, C, CINE, Clip, FONT, FPS, H, Lang, STRINGS, Strings, W } from './theme';
 
 // Scene starts, in frames (see docs/promo/storyboard.md). One bar is 60 frames.
 const T = { hook: 0, reveal: 60, templates: 120, proof: 240, night: 360, signal: 420, ai: 540, end: 630 };
@@ -14,9 +14,9 @@ const CUTS = [T.reveal, T.templates, T.proof, T.signal, T.ai, T.end];
 
 type SceneProps = { lang: Lang; t: Strings };
 
-const Cine: React.FC<{ file: string; from: number; length: number; tint: string }> = ({ file, from, length, tint }) => (
+const Cine: React.FC<{ clip: Clip; from: number; length: number; tint: string }> = ({ clip, from, length, tint }) => (
   <Sequence from={from} durationInFrames={length}>
-    <OffthreadVideo muted src={staticFile(`cine/${file}.mp4`)} style={{ width: W, height: H, objectFit: 'cover' }} />
+    <OffthreadVideo muted trimBefore={clip.start} src={staticFile(`cine/${clip.file}.mp4`)} style={{ width: W, height: H, objectFit: 'cover' }} />
     <AbsoluteFill style={{ background: tint, mixBlendMode: 'soft-light' }} />
   </Sequence>
 );
@@ -35,7 +35,7 @@ const Hook: React.FC<SceneProps> = ({ t }) => {
   return (
     <AbsoluteFill style={{ background: '#07030a' }}>
       {CINE.a ? (
-        <Cine file="a" from={0} length={60} tint={`${C.danger}55`} />
+        <Cine clip={CINE.a} from={0} length={60} tint={`${C.danger}55`} />
       ) : (
         <AbsoluteFill
           style={{
@@ -177,7 +177,7 @@ const Proof: React.FC<SceneProps> = ({ lang, t }) => {
   return (
     <AbsoluteFill>
       <Backdrop grid={0.5} />
-      {CINE.b && <Cine file="b" from={T.proof} length={45} tint={`${C.violet}44`} />}
+      {CINE.b && <Cine clip={CINE.b} from={T.proof} length={45} tint={`${C.violet}44`} />}
       <AbsoluteFill style={{ opacity: dim }}>
         {series.map((val, i) => {
           const rise = sp(f, T.proof + i * 1.2, 15, 150);
@@ -245,7 +245,7 @@ const Signal: React.FC<SceneProps> = ({ lang, t }) => {
     <AbsoluteFill style={{ background: '#030208' }}>
       {night ? (
         CINE.c ? (
-          <Cine file="c" from={T.night} length={60} tint={`${C.primary}22`} />
+          <Cine clip={CINE.c} from={T.night} length={60} tint={`${C.primary}22`} />
         ) : (
           <>
             <AbsoluteFill style={{ background: `radial-gradient(circle at 50% 62%, ${C.primary}${Math.round(breath * 90).toString(16).padStart(2, '0')}, transparent 45%)` }} />

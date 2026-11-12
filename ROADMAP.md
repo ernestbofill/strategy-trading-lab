@@ -66,6 +66,7 @@ The path, after the regulation note's *Path by stage* ([docs/regulation-spain-eu
 - Template settings on `/admin/templates` (Ernest, 2026-11-07): the owner changes what new strategies of each template start with: the defaults of Advanced settings, the starter list (or the fund of *Bear markets* and *Ride the long trend*) and the *getting close* % (per template, 3 by default; the dashboard card and the summary's "comes close"). Versioned (`template_versions`, Ernest 2026-11-08): saving makes a new version, a dropdown shows every version and any one can be made active again; version 1 is the tested catalogue. A strategy keeps the version it started from, and "tuned" compares with it; getting close (the active version's) applies to all strategies.
 - Zoom on Sign-up and Settings (Ernest, 2026-11-10): 100%, 110% or 125%, the whole app like the browser zoom, kept on the device.
 - Combined strategy and fund page for single-asset strategies (Ernest, 2026-11-08): for fund templates (`investsIn !== 'stockList'`), `/strategies/{id}` shows the fund's ticker, name and latest close in the top header and shows its status as the first tile and inlines its price chart and rule checks directly below the summary box (without a separate `Funds · 1` row or duplicate position box), and `/strategies/{id}/stocks/{assetId}` redirects to `/strategies/{id}`.
+- Fixes from Ernest's feedback (2026-11-12): a new strategy or a stock added to the list is checked at once (missing prices fetched, its rules run) instead of at the next daily check, and its pages ask again until it is; no price chart before that check; the cooldown with its days left, also after a sale and in *Next step*; long stock lists show 5 with "Show all"; a signal goes up to its stock, whose name links there; and the signal's price is the next open fetched when the page opens, else the close, never an empty field.
 
 ## Next
 
@@ -166,6 +167,12 @@ Roughly in the order they become useful:
 - Serve Fira Code from the app instead of Google Fonts (#106 review): every visit sends the visitor's IP to Google, which the privacy policy doesn't list, and the CSP could then allow only the app's own host.
 - A donation link to cover the server, once there are users (allowed by the regulation note).
 - Faster frontend tests: vitest with `isolate: false` runs in a third of the time (jsdom setup per file is half of it), once `FeedbackCapture.test.tsx` and `I18n.test.tsx` stop leaking state between files (#71).
+
+- **Check at once during market hours too** ([#220](https://github.com/ernestbofill/strategy-trading-lab/issues/220), Ernest 2026-11-12): a strategy started while a US session runs waits for the evening run today (#219); instead, fill its simulation signals at the latest price, fetched and not saved.
+- **A compact list view on the dashboard** (feedback 2026-11-12, skipped for now): the strategy cards as dense rows, as an option.
+- **Find indices such as the Nikkei 225 in the fund search** (feedback 2026-11-12, skipped for now): *Bear markets*' "Search funds" doesn't find it.
+- **One control for app notifications** (feedback 2026-11-12, skipped for now): on the account page the *App* tick and *This device · Turn off* say the same thing twice; combine them.
+- **Fees outside the budget** (feedback 2026-11-12, skipped for now; Ernest's view): the fixed fee counts apart from the step and the budget, as most brokers do (a $100 buy costs $100 plus the fee), simulations show the fees they charged, and the fee is a strategy setting in Advanced settings. Today the fee is inside the step (spec: How the two modes run). Changes results and budgets: high risk.
 
 ## Open decisions (Ernest)
 

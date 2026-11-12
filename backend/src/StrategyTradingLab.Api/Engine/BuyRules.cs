@@ -11,8 +11,9 @@ public enum RuleStatus { NotEnoughData, NotCandidate, Watching, BuySignal, Signa
 /// <param name="Cooling">The cooldown after the latest buy or sale is still running today.</param>
 /// <param name="Full">Every step of the budget is bought.</param>
 /// <param name="MaxSteps">The budget's maximum steps per asset (<c>StepPlan.MaxSteps</c>).</param>
+/// <param name="CooldownUntil">The first day after the cooldown that follows the latest buy or sale; null when none was set.</param>
 public readonly record struct DayContext(DateOnly Day, RuleStatus? Previous, int StepsBought, DateOnly LastBuyDay, bool ActedNow,
-    bool Cooling, bool Full, int MaxSteps = 5)
+    bool Cooling, bool Full, int MaxSteps = 5, DateOnly? CooldownUntil = null)
 {
     public bool HasPosition => StepsBought > 0;
 }
@@ -50,13 +51,15 @@ public record RuleCheck(string Key, string Group, bool? Met, decimal? Value = nu
     /// <summary>How far <paramref name="value"/> has come toward <paramref name="target"/> (0 or more; exceeds 1 past the target).</summary>
     public static decimal? ProgressOf(decimal value, decimal target) => target > 0 ? Math.Round(Math.Max(0, value / target), 2) : null;
 
-    /// <summary>The cooldown after the last step, when it holds a buy back today: the days still to wait.</summary>
-    public static RuleCheck? Cooldown(DayContext day, int cooldownDays)
+    /// <summary>
+    /// The cooldown after the latest buy or sale, while it holds the next buy back: the calendar days still to wait. In
+    /// <paramref name="group"/>: the next step's group while the stock is held, where a template has one.
+    /// </summary>
+    public static RuleCheck? Cooldown(DayContext day, int cooldownDays, string group = CheckGroup.Buy)
     {
-        if (!day.Cooling || !day.HasPosition) return null;
-        var waited = Math.Max(0, day.Day.DayNumber - day.LastBuyDay.DayNumber);
-        var remaining = Math.Max(0, cooldownDays - waited);
-        return new RuleCheck("cooldown", CheckGroup.Buy, false, remaining, cooldownDays, Progress: ProgressOf(waited, cooldownDays));
+        if (!day.Cooling || day.CooldownUntil is not { } until) return null;
+        var remaining = Math.Clamp(until.DayNumber - day.Day.DayNumber, 0, cooldownDays);
+        return new RuleCheck("cooldown", group, false, remaining, cooldownDays, Progress: ProgressOf(cooldownDays - remaining, cooldownDays));
     }
 }
 

@@ -133,6 +133,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | D11 | Follow a simulation manually | §4 Going live | smoke | 2026-11-06-1 | C2.15 |
 | D12 | Archive, then delete | §6 Strategy page | deep | 2026-11-08-1 | Full lifecycle tested: create, archive, permanently delete throwaway. C3.4 |
 | D13 | An archived strategy is read-only | §6 Strategy page | smoke | 2026-11-06-1 | C3.16 |
+| D15 | Checked at once: a new strategy or an added stock leaves "Not checked yet" within a minute, without a reload; a list of more than 7 shows 5 and "Show all" | §5 Modes, §6 Strategy page | untested | | New (feedback 2026-11-12) |
 | D14 | Metrics arithmetic: budget used, fees, gains, vs the index | §6 Metrics, §5 Modes | deep | 2026-11-08-3 | Oversold arithmetic verified: sales proceeds vs buy cost (+200% return), clamping of invested capital to $0. C3.3–C3.5 |
 
 ### E · Stock page
@@ -142,6 +143,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | E1 | Status, position, its signals and trades | §6 Stock page | smoke | 2026-11-06-1 | C2.18, C3.17 |
 | E2 | Rules on [date]: badges and gauges, per template | §6 Stock page | deep | 2026-11-08-1 | Evaluated rules, gauges, and detail lines verified across fixtures. L-002 closed. C1.8 |
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | smoke | 2026-11-06-1 | C3.18 |
+| E5 | Cooldown row with days left, after a step and after a sale; no chart while "Not checked yet" | §6 Stock page | untested | | New (feedback 2026-11-12) |
 | E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours | §6 Stock page | deep | 2026-11-08-3 | Verified on PLTR and ZS: 90/30/7 day selectors, SVG start lines, buy area polygons, price polyline colors, 390px responsive rendering. C4.1–C4.3 |
 
 ### F · Confirm a signal (live)
@@ -154,6 +156,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | F4 | Answered and missed signals | §6 Signal | deep | 2026-11-08-1 | Missed signal verified: explanatory banner displayed, trade logging form remains submittable. L-001 closed. C1.1 |
 | F5 | Exchange-rate line (stock currency ≠ strategy currency) | §6 Signal | smoke | 2026-11-06-1 | F-004. C2.12 |
 | F6 | Sell signal (Index trend) | §6 Signal | untested | | Needs a sell signal on a live fixture |
+| F7 | Up to the stock and the name links there; the price is the next open, fetched on open, else the close with its hint | §6 Signal | untested | | New (feedback 2026-11-12) |
 
 ### G · AI strategies
 

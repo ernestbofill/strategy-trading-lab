@@ -288,14 +288,17 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
     <>
       {stats}
 
-      <PriceChart
-        strategyId={s.id}
-        assetId={row.assetId}
-        isCandidate={row.checks.length > 0 ? isCandidate : null}
-        currency={row.currency}
-        trades={trades}
-        texts={s.checkTexts}
-      />
+      {/* The chart draws the rules' levels as they checked them: none until the first check, which comes right after it's added. */}
+      {row.checkedOn && (
+        <PriceChart
+          strategyId={s.id}
+          assetId={row.assetId}
+          isCandidate={row.checks.length > 0 ? isCandidate : null}
+          currency={row.currency}
+          trades={trades}
+          texts={s.checkTexts}
+        />
+      )}
 
       {rules}
     </>

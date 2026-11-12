@@ -120,10 +120,10 @@
         "info": "A dip that falls through the SMA 50 is a collapse, not a discount."
       },
       "cooldown": {
-        "label": "Wait after a step",
-        "detail": "{value} more days to wait after the last step ({min} in all).",
-        "short": "waits {value} days after a step",
-        "info": "After each step the rules wait a few calendar days before the next buy signal."
+        "label": "Cooldown",
+        "detail": "{value} more days to wait after the last buy or sale ({min} in all).",
+        "short": "cooldown, {value} days left",
+        "info": "After each buy or sale the rules wait {min} calendar days before the next buy signal."
       }
     }
   },
@@ -291,10 +291,10 @@
         "info": "Milestone: after pulling back at least {min}% from a post-buy high, breaking above that high earns one step."
       },
       "cooldown": {
-        "label": "Wait after a step",
-        "detail": "{value} more days to wait after the last step ({min} in all).",
-        "short": "waits {value} days after a step",
-        "info": "After each step the rules wait a few calendar days before the next buy signal."
+        "label": "Cooldown",
+        "detail": "{value} more days to wait after the last buy or sale ({min} in all).",
+        "short": "cooldown, {value} days left",
+        "info": "After each buy or sale the rules wait {min} calendar days before the next buy signal."
       }
     }
   },
@@ -526,6 +526,12 @@
         "detail": "{+value}% vs the sell line ({level}, −{min}% below the SMA {midLevel}). Close is {+subValue}% vs the SMA.",
         "short": "{+value}% vs the sell line",
         "info": "Signals a sale below −{min}% of the 200-day average; inside the ±{min}% band ({level} to {endLevel}), the position stays held."
+      },
+      "cooldown": {
+        "label": "Cooldown",
+        "detail": "{value} more days to wait after the last buy or sale ({min} in all).",
+        "short": "cooldown, {value} days left",
+        "info": "After each buy or sale the rules wait {min} calendar days before the next buy signal."
       }
     }
   },

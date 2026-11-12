@@ -76,6 +76,21 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         return new EvaluationSummary(evaluated, signals, trades, missed, failed);
     }
 
+    /// <summary>
+    /// One running strategy's check, as the daily run makes it, right after it started or its list gained a stock
+    /// (<see cref="MarketData.PriceRefreshState.RequestCheck"/>). Idempotent like the run; the run's alerts stay its own.
+    /// </summary>
+    public async Task<EvaluationSummary> CheckAsync(Guid strategyId, CancellationToken cancellationToken)
+    {
+        var now = time.GetUtcNow();
+        var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
+            .SingleOrDefaultAsync(s => s.Id == strategyId && s.Status == StrategyStatus.Running, cancellationToken);
+        if (strategy is null || !TemplateRules.Supports(strategy.TemplateKey)) return new EvaluationSummary(0, 0, 0, 0, 0);
+        var rates = await ExchangeRates.LoadAsync(db, null, cancellationToken);
+        var run = await EvaluateAsync(strategy, UsSession.LastComplete(now), now, rates, [], cancellationToken);
+        return new EvaluationSummary(1, run.NewSignals, run.NewTrades, run.Missed, 0);
+    }
+
     /// <param name="missing">Gets a line for each stock the rules couldn't check in full: no prices, prices too old, or too short a history.</param>
     async Task<Changes> EvaluateAsync(Strategy strategy, DateOnly lastSession, DateTimeOffset now, ExchangeRates rates, List<string> missing,
         CancellationToken cancellationToken)

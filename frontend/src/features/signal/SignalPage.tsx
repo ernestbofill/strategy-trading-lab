@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api, InvalidFieldsError, InvalidValueError, type SignalDetail, type SkipReason } from '../../api'
 import { Callout } from '../../components/Callout'
 import { FormMessage, TextField, type FormMessageState } from '../../components/Field'
@@ -7,10 +7,11 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { ModeTag } from '../../components/ModeTag'
 import { TextAction } from '../../components/TextAction'
+import { useLeave } from '../../components/useLeave'
 import { exact, formatRate, formatShares, money, shortDate, symbolOf } from '../../lib/format'
 import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { useT } from '../../i18n/I18n'
-import { strategyPath } from '../dashboard/paths'
+import { stockPath, strategyPath } from '../dashboard/paths'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { strategyCacheKey } from '../strategy/useStrategy'
 import styles from './SignalPage.module.css'
@@ -19,13 +20,19 @@ import { ambiguousFields, initialForm, nextStep, rateOn, SKIP_REASON_KEYS, skipR
 const signalCacheKey = (id: string) => `signal:${id}`
 const FORM_ID = 'signal-answer'
 
+/** The stock's page on a stock list (feedback: back to the stock); a fund strategy's page is its fund's. */
+const parentOf = (s: SignalDetail) => (s.onStockList && s.assetId ? stockPath(s.strategyId, s.assetId) : strategyPath(s.strategyId))
+
 /** Confirm a signal (wireframe `Signal`), live strategies only. */
 export function SignalPage() {
   const t = useT()
   const { id = '', signalId = '' } = useParams()
   const signal = useLoadable(signalCacheKey(signalId), () => api.getSignal(signalId))
   const top = (s?: SignalDetail) => (
-    <TopBar up={strategyPath(s?.strategyId ?? id)} upLabel="common.up.strategy" aside={s ? <span>{t('signal.title', { date: shortDate(s.signalDate).toUpperCase() })}</span> : null} />
+    <TopBar
+      up={s ? parentOf(s) : strategyPath(id)}
+      upLabel={s?.onStockList ? 'common.up.stock' : 'common.up.strategy'}
+      aside={s ? <span>{t('signal.title', { date: shortDate(s.signalDate).toUpperCase() })}</span> : null} />
   )
 
   return (
@@ -46,7 +53,7 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
           {s.strategyName} · <em>{s.templateName}</em>
         </span>
       </div>
-      <h1 className={styles.title}>{s.stockName}</h1>
+      <h1 className={styles.title}>{s.onStockList ? <Link to={parentOf(s)}>{s.stockName}</Link> : s.stockName}</h1>
     </div>
   )
   const box = (
@@ -81,7 +88,7 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
 
   if (s.answer) {
     return (
-      <Screen top={top} action={<PrimaryAction to={strategyPath(s.strategyId)}>{t('signal.back')}</PrimaryAction>}>
+      <Screen top={top} action={<PrimaryAction to={parentOf(s)}>{t(s.onStockList ? 'signal.backStock' : 'signal.back')}</PrimaryAction>}>
         {header}
         {box}
         <Callout tone="info" title={t('signal.answered')}>
@@ -119,7 +126,7 @@ function AnswerLine({ s }: { s: SignalDetail }) {
 
 function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; header: ReactNode; box: ReactNode }) {
   const t = useT()
-  const navigate = useNavigate()
+  const leave = useLeave(parentOf(s))
   const [answer, setAnswer] = useState<'did' | 'skip'>('did')
   const [form, setForm] = useState<TradeForm>(() => initialForm(s))
   const [reason, setReason] = useState<SkipReason | null>(null)
@@ -136,7 +143,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
 
   const done = () => {
     for (const key of [dashboardCacheKey, strategyCacheKey(s.strategyId), signalCacheKey(s.id)]) invalidate(key)
-    navigate(strategyPath(s.strategyId))
+    leave()
   }
 
   async function save(e: FormEvent) {
@@ -173,10 +180,13 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   }
 
   const following = nextStep(s, t)
+  // Before the next open is in, the form starts with the signal day's close (feedback: no typing it in).
   const priceHint =
-    s.prefill.price !== null
-      ? t('signal.hint.prefilled', { date: shortDate(s.prefill.date) })
-      : t('signal.hint.noOpen', { date: shortDate(s.signalDate), price: exact(s.closePrice, s.assetCurrency) })
+    s.prefill.price === null
+      ? undefined
+      : s.prefill.priceIsClose
+        ? t('signal.hint.close', { date: shortDate(s.signalDate) })
+        : t('signal.hint.prefilled', { date: shortDate(s.prefill.date) })
 
   const reasons = skipReasons(t)
 

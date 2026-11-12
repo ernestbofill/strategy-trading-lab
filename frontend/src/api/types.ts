@@ -670,13 +670,19 @@ export interface SignalDetail {
   endedOn: string | null
   /** The user's local date. */
   today: string
-  /** The next trading day, its opening price once stored (else null), the step without the tested fee, and held shares for a sale. */
-  prefill: { date: string; price: number | null; amount: number | null; shares?: number | null }
+  /**
+   * The next trading day, its opening price once in (else the signal day's close, with `priceIsClose`), the step without
+   * the tested fee, and held shares for a sale.
+   */
+  prefill: { date: string; price: number | null; amount: number | null; shares?: number | null; priceIsClose?: boolean }
   /** Reference rates by day: asset currency per one unit of the strategy's. */
   rates: { date: string; rate: number }[]
   answer: SignalAnswer | null
   side?: TradeSide
   canSnooze?: boolean
+  assetId?: string
+  /** The strategy follows a list of stocks: the stock has its own page, the signal's parent. */
+  onStockList?: boolean
 }
 
 /** "I did it". `fxRate` is only read when `fxSource` is 'user'. */

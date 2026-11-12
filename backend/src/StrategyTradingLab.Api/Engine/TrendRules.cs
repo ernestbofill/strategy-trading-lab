@@ -118,6 +118,8 @@ public class TrendRules : IBuyRules
             : [new("buyLine", CheckGroup.Buy, aboveBuy, Math.Round(Indicators.PctFrom(price, buyLine), 1), p.BandPct,
                 Level: Math.Round(buyLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(sellLine, 2), SubValue: vsSma,
                 Progress: RuleCheck.ProgressOf(price, buyLine))];
+        // After a sale the cooldown holds the next buy back.
+        if (!day.HasPosition && RuleCheck.Cooldown(day, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
         return new RuleDecision(status, reason, facts, WindowOpen: aboveBuy) { Checks = checks };
     }
 }

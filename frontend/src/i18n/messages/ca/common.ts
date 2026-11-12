@@ -8,6 +8,7 @@ export const common: Record<keyof typeof en, string> = {
   'common.indexTip.text': 'Comprar i mantenir: els mateixos diners en un fons de l’S&P 500 (SPY) els mateixos dies, sense vendre mai.',
   'common.back': 'ENRERE',
   'common.up.strategy': 'ESTRATÈGIA',
+  'common.up.stock': 'ACCIÓ',
   'common.up.aiRound': 'RONDA D’IA',
   'common.up.logIn': 'INICIA SESSIÓ',
   'common.home.dashboard': 'DASHBOARD',

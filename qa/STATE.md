@@ -31,7 +31,7 @@ The account's settings before any session changed them. Restore them before endi
 | Time zone | Europe/Madrid (Europe/Barcelona GMT+1) |
 | Notification delivery hour | 07:00 |
 | Signals and reminders: App / Email | On / On |
-| Summary: App / Email | On / On |
+| Summary: Email | On |
 | This device (push) | Off for this device (Chrome) |
 | AI data sharing | Off. Answered "no" on the first round |
 | Strategies not starting with `QA ` (leave alone) | None |

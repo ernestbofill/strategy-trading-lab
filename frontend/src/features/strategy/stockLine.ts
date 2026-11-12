@@ -2,6 +2,7 @@ import type { CheckTexts, Currency, StockRow, StockStatusWords, StrategyDetail, 
 import { tNow, type Translate } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { money, signedPct } from '../../lib/format'
+import { usSessionInProgress } from '../../lib/usMarket'
 import { unmetLine } from './checks'
 
 export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching' | 'muted'
@@ -94,7 +95,8 @@ function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, 
     case 'notEnoughData':
       return t('strategy.stock.notEnoughData')
     case 'notChecked':
-      return t('strategy.stock.notChecked')
+      // Added while the US market is open, it waits for the close (the API's check at once skips it then).
+      return t(usSessionInProgress() ? 'strategy.stock.afterClose' : 'strategy.stock.notChecked')
     case 'removed':
       return t('strategy.stock.removed')
   }

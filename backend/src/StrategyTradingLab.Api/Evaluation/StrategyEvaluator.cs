@@ -134,15 +134,20 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
             var days = RulesRunner.Run(rules, bars, plan, from);
+            // A Manual buy signal today: also where the rules stand once its step is bought, for the stock page to show as soon as it's
+            // answered (a simulation's trade comes with the next check, which shows it anyway). Fresh rules: they keep state. Before
+            // the transaction, so the replay doesn't hold the strategy's lock.
+            var afterBuy = strategy.Mode == StrategyMode.Live && days[^1].NewBuy
+                ? RulesRunner.Run(TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from,
+                    boughtBeforeLast: UsSession.After(days[^1].Date))[^1].Checks
+                : null;
             if (days[^1].Status == RuleStatus.NotEnoughData)
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
             // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running: an Edit
             // list save or an archive made since the strategy was loaded waits for this or wins, and gets no new signal.
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             if (!await StillFollowedAsync(strategy.Id, asset.Id, cancellationToken)) continue;
-            var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget,
-                () => RulesRunner.Run(TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from,
-                    boughtBeforeLast: UsSession.After(days[^1].Date))[^1].Checks, cancellationToken);
+            var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, afterBuy, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             signals += run.NewSignals;
             trades += run.NewTrades;
@@ -203,9 +208,9 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     }
 
     /// <param name="evaluatedUntil">The last day checked before (<see cref="CheckedDaysAsync"/>).</param>
-    /// <param name="checksAfterBuy">The last day's checks once its buy signal's step is bought (<see cref="RulesRunner.Run"/>).</param>
+    /// <param name="checksAfterBuy">The last day's checks once its Manual buy signal's step is bought (<see cref="RulesRunner.Run"/>), if it starts one.</param>
     async Task<Changes> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,
-        DateOnly? evaluatedUntil, DateTimeOffset now, ExchangeRates rates, BudgetUse budget, Func<IReadOnlyList<RuleCheck>> checksAfterBuy,
+        DateOnly? evaluatedUntil, DateTimeOffset now, ExchangeRates rates, BudgetUse budget, IReadOnlyList<RuleCheck>? checksAfterBuy,
         CancellationToken cancellationToken)
     {
         int newSignals = 0, newTrades = 0, missed = 0;
@@ -248,15 +253,10 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             newSignals++;
         }
 
-        // Where it stands today. With a Manual buy signal today, also where the rules stand once its step is bought, for the stock
-        // page to show as soon as it's answered (a simulation's trade comes with the next check, which shows it anyway). Rules that
-        // count their own steps (Bear markets) read the same: nothing to keep.
-        IReadOnlyList<RuleCheck>? afterBuy = null;
-        if (live && latest.NewBuy && signals.ContainsKey((latest.Date, TradeSide.Buy)))
-        {
-            var checks = checksAfterBuy();
-            if (!checks.SequenceEqual(latest.Checks)) afterBuy = checks;
-        }
+        // Where it stands today, with the checks after the buy while today's signal exists (not when the budget held it back). Rules
+        // that count their own steps (Bear markets) read the same: nothing to keep.
+        var afterBuy = checksAfterBuy is not null && signals.ContainsKey((latest.Date, TradeSide.Buy)) && !checksAfterBuy.SequenceEqual(latest.Checks)
+            ? checksAfterBuy : null;
         var status = Enum.Parse<EvaluationStatus>(latest.Status.ToString());
         var row = await db.DailyEvaluations.FindAsync([strategy.Id, asset.Id, latest.Date], cancellationToken);
         if (row is null)

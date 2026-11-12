@@ -515,8 +515,10 @@ public static class StrategyEndpoints
             var evaluation = latest.GetValueOrDefault(asset.Id);
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
+            var own = signalEntities.Where(s => s.AssetId == asset.Id).ToList();
             var (status, rulesSteps, userSteps, distance, signal, checks) = StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
-                [.. signalEntities.Where(s => s.AssetId == asset.Id)], trades, book, aiScores);
+                own, trades, book, aiScores);
+            checks = ChecksAfterBuy(evaluation, own) ?? checks;
             DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
                 && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
                 ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
@@ -688,17 +690,22 @@ public static class StrategyEndpoints
         var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
             StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
-        // The latest check's buy signal is answered: the rules count its step as bought at the next open, so the page shows where
-        // they stand after it, its next steps and cooldown, without waiting for the next check (stored for Manual signals only).
-        if (evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date && s.Status != SignalStatus.Waiting)
-            && ChecksOf(evaluation.Facts, StrategyEvaluator.ChecksAfterBuyKey) is { Count: > 0 } afterBuy)
-            checks = afterBuy;
         var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
         var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
         decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
             ? d.GetDecimal() : null;
         return new StockState(status, rulesSteps, userSteps, distance, signal, checks);
     }
+
+    /// <summary>
+    /// The latest check's Manual buy signal is answered (done or skipped): the rules count its step as bought at the next open, so
+    /// the page shows where they stand after it, its next steps and cooldown, without waiting for the next check. Null otherwise.
+    /// </summary>
+    static IReadOnlyList<RuleCheck>? ChecksAfterBuy(DailyEvaluation? evaluation, IReadOnlyList<Signal> own) =>
+        evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date
+                && s.Status is SignalStatus.Confirmed or SignalStatus.Skipped)
+            && ChecksOf(evaluation.Facts, StrategyEvaluator.ChecksAfterBuyKey) is { Count: > 0 } afterBuy
+            ? afterBuy : null;
 
     /// <summary>The rule checks a daily evaluation stored under <paramref name="key"/> (none before they were stored).</summary>
     static IReadOnlyList<RuleCheck> ChecksOf(JsonDocument facts, string key = StrategyEvaluator.ChecksKey) =>

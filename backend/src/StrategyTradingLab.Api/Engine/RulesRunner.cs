@@ -40,6 +40,14 @@ public static class RulesRunner
         bool pendingBuy;
         bool pendingSell;
 
+        /// <summary>A step is bought on <paramref name="day"/>: the cooldown counts from it.</summary>
+        void Buy(DateOnly day)
+        {
+            stepsBought++;
+            lastBuyDay = day;
+            cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
+        }
+
         /// <param name="boughtOn">A step bought on that day besides yesterday's action, before today is decided (<see cref="Run"/>).</param>
         public DayEvaluation Step(int i, DateOnly day, DateOnly? boughtOn = null)
         {
@@ -47,9 +55,7 @@ public static class RulesRunner
             var actedNow = pendingBuy || pendingSell;
             if (pendingBuy)
             {
-                stepsBought++;
-                lastBuyDay = day;
-                cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
+                Buy(day);
                 pendingBuy = false;
             }
             else if (pendingSell)
@@ -61,9 +67,7 @@ public static class RulesRunner
             if (boughtOn is { } extra)
             {
                 actedNow = true;
-                stepsBought++;
-                lastBuyDay = extra;
-                cooldownUntil = rules.CooldownDays > 0 ? extra.AddDays(rules.CooldownDays) : null;
+                Buy(extra);
             }
 
             // 2) Today's evaluation, at the close.

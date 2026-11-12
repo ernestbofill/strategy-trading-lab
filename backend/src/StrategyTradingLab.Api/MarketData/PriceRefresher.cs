@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.Evaluation;
 using StrategyTradingLab.Api.Strategies;
 
 namespace StrategyTradingLab.Api.MarketData;
@@ -34,14 +35,38 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
 
     public async Task<IReadOnlyList<RefreshResult>> RunAsync(CancellationToken cancellationToken)
     {
-        var results = new List<RefreshResult>();
         var assets = await Watched().OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
+        return await RefreshAllAsync(assets, Quotes(assets.Select(a => a.Currency)), cancellationToken);
+    }
+
+    /// <summary>
+    /// Fetches what one strategy's followed assets lack before the daily run would: each asset not fetched since the last
+    /// finished US session's bar was final (just listed, nobody watched it, or fetched while that session ran), and the
+    /// rates of a currency with none stored.
+    /// </summary>
+    public async Task<IReadOnlyList<RefreshResult>> CatchUpAsync(Guid strategyId, CancellationToken cancellationToken)
+    {
+        var finalAt = UsSession.FinalAt(UsSession.LastComplete(Time.GetUtcNow()));
+        var assets = await db.Assets.AsNoTracking()
+            .Where(a => a.Active
+                && db.StrategyAssets.Any(sa => sa.StrategyId == strategyId && sa.AssetId == a.Id && sa.Active && sa.RemovedAt == null)
+                && (a.PricesCheckedAt == null || a.PricesCheckedAt < finalAt))
+            .OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
+        var stored = await db.FxRates.Where(r => r.Base == BaseCurrency).Select(r => r.Quote).Distinct().ToListAsync(cancellationToken);
+        return await RefreshAllAsync(assets, Quotes(assets.Select(a => a.Currency)).Except(stored), cancellationToken);
+    }
+
+    /// <summary>Each asset's prices, then each currency's rates, with a pause between; one failing never stops the others.</summary>
+    async Task<IReadOnlyList<RefreshResult>> RefreshAllAsync(IReadOnlyList<Asset> assets, IEnumerable<string> quotes,
+        CancellationToken cancellationToken)
+    {
+        var results = new List<RefreshResult>();
         foreach (var asset in assets)
         {
             results.Add(await GuardedAsync(asset.Symbol, () => RefreshAssetAsync(asset, cancellationToken), cancellationToken));
             await Task.Delay(Pause, cancellationToken);
         }
-        foreach (var quote in Quotes(assets.Select(a => a.Currency)))
+        foreach (var quote in quotes)
         {
             results.Add(await GuardedAsync($"{BaseCurrency}{quote}", () => RefreshRateAsync(quote, cancellationToken), cancellationToken));
             await Task.Delay(Pause, cancellationToken);

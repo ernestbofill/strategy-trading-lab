@@ -35,6 +35,8 @@ export const strategy = {
   'strategy.signals': 'Signals',
   'strategy.signalsCount': '{did} did · {skipped} skipped · {missed} missed',
   'strategy.stocks': 'Stocks · {count}',
+  'strategy.stocks.showAll': 'Show all {count}',
+  'strategy.stocks.showFewer': 'Show fewer',
   'strategy.funds': 'Funds · {count}',
   'strategy.editList': 'Edit list',
   'strategy.list.title': 'Edit list',

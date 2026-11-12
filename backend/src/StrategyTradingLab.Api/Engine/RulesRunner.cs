@@ -61,7 +61,7 @@ public static class RulesRunner
 
             var cooling = cooldownUntil is { } until && day < until;
             var context = new DayContext(day, previous, stepsBought, lastBuyDay, actedNow,
-                Cooling: cooling, Full: stepsBought >= plan.MaxSteps, MaxSteps: plan.MaxSteps);
+                Cooling: cooling, Full: stepsBought >= plan.MaxSteps, MaxSteps: plan.MaxSteps, CooldownUntil: cooldownUntil);
             var decision = rules.Decide(i, context);
             int? step = decision.Status == RuleStatus.BuySignal
                 ? (decision.StepNo ?? Math.Clamp(stepsBought + 1, 1, plan.MaxSteps))

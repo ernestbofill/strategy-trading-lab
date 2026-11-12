@@ -12,6 +12,7 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.nextStep': 'fase {n} de {max}',
   'signal.close': 'Tancament del {date}: {price}',
   'signal.back': 'Torna a l’estratègia',
+  'signal.backStock': 'Torna a l’acció',
   'signal.answered': 'Respost',
   'signal.skippedWhy': 'Ho has omès: {reason}.',
   'signal.skipped': 'Ho has omès.',
@@ -22,7 +23,7 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.error.ambiguous': 'És 1250 o 1,25? Escriu-ho com a 1250 o 1.25.',
   'signal.hint.prefilled':
     'Emplenat amb el preu d’obertura del {date}. Canvia el que sigui diferent al teu broker.',
-  'signal.hint.noOpen': 'Encara no hi ha el preu d’obertura següent. El tancament del {date} va ser {price}.',
+  'signal.hint.close': 'Encara no hi ha preu d’obertura: emplenat amb el tancament del {date}. Canvia’l pel preu del teu broker.',
   'signal.hint.amount': 'El que ha comprat accions. L’import de la fase, {step}, inclou la comissió.',
   'signal.hint.amountBudget': 'El que ha comprat accions. El teu pressupost de {step} inclou la comissió.',
   'signal.save.did': 'Desa l’operació',

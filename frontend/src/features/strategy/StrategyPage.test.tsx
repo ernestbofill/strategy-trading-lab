@@ -111,6 +111,22 @@ describe('StrategyPage', () => {
     expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).not.toContain('Past results')
   })
 
+  it('shows the first 5 stocks of a long list, and the rest on request', async () => {
+    const stock = (n: number) => ({
+      assetId: `s${n}`, symbol: `S${n}`, name: `Stock ${n}`, status: 'notCandidate' as const, steps: 0, rulesSteps: 0, maxSteps: 5,
+      distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
+      exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: '2026-10-22', close: 10, checks: [],
+    })
+    open(detail({ stocks: Array.from({ length: 8 }, (_, n) => stock(n + 1)) }))
+
+    expect(await screen.findByRole('heading', { name: 'Stocks · 8' })).toBeTruthy()
+    expect(screen.queryByText('Stock 6')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Show all 8' }))
+    expect(screen.getByText('Stock 8')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Show fewer' }))
+    expect(screen.queryByText('Stock 6')).toBeNull()
+  })
+
   it("inlines a fund strategy's fund header, status and rules on the strategy page without a Funds list, and explains the S&P 500 fund when asked", async () => {
     open(
       detail({

@@ -11,6 +11,7 @@ export const common = {
   'common.back': 'BACK',
   /** The top bar's up link, after a drawn arrow, named after the parent. */
   'common.up.strategy': 'STRATEGY',
+  'common.up.stock': 'STOCK',
   'common.up.aiRound': 'AI ROUND',
   'common.up.logIn': 'LOG IN',
   /** The top bar's direct link home, no arrow. */

@@ -131,6 +131,11 @@ public class AccountsApi : WebApplicationFactory<Program>
             StrategyTradingLab.Api.Templates.TemplateEndpoints.TemplatesLimit, Program.HealthLimit, Program.VersionLimit
         })
             builder.UseSetting($"RateLimits:{policy}", "1000");
-        builder.ConfigureTestServices(services => services.AddScoped<IEmailSender>(_ => Emails));
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddScoped<IEmailSender>(_ => Emails);
+            // No fetch from Yahoo on a strategy's start or a signal's page: the tests store the prices and run the checks themselves.
+            services.Configure<StrategyTradingLab.Api.MarketData.PriceRefreshOptions>(options => options.FetchOnDemand = false);
+        });
     }
 }

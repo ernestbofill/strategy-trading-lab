@@ -5,11 +5,11 @@ namespace StrategyTradingLab.Api.Signals;
 // The DTOs of Confirm a signal (frontend/src/api/types.ts; camelCase JSON, enums as camelCase strings).
 
 /// <summary>
-/// What the form starts with: the next trading day after the signal, its opening price once it is stored (else null, and the
-/// screen shows the signal day's close as a reference), the step (or budget) minus the tested fee for buys, and the user's
-/// held shares for sells.
+/// What the form starts with: the next trading day after the signal, its opening price once it is in (fetched when the page
+/// opens), else the signal day's close with <c>PriceIsClose</c>, the step (or budget) minus the tested fee for buys, and the
+/// user's held shares for sells.
 /// </summary>
-public record TradePrefill(DateOnly Date, decimal? Price, decimal? Amount, decimal? Shares = null);
+public record TradePrefill(DateOnly Date, decimal? Price, decimal? Amount, decimal? Shares = null, bool PriceIsClose = false);
 
 /// <summary>The reference rate of a day: units of the asset's currency per one unit of the strategy's.</summary>
 public record RateDay(DateOnly Date, decimal Rate);
@@ -20,6 +20,7 @@ public record SignalAnswer(SignalStatus Status, SkipReason? SkipReason, DateOnly
 /// <summary>
 /// Confirm a signal. <c>Reason</c> is what the rules found, in words ("8% below its recent peak, still above its 50-day
 /// average"). <c>Rates</c> are the stored reference rates of the weekdays from a week before the signal to today, for the rate line to follow the date.
+/// <c>OnStockList</c>: the strategy follows a list of stocks, so the stock (<c>AssetId</c>) has a page of its own, the signal's parent.
 /// </summary>
 public record SignalDetail(
     Guid Id,
@@ -43,7 +44,9 @@ public record SignalDetail(
     IReadOnlyList<RateDay> Rates,
     SignalAnswer? Answer,
     TradeSide Side = TradeSide.Buy,
-    bool CanSnooze = true);
+    bool CanSnooze = true,
+    Guid AssetId = default,
+    bool OnStockList = false);
 
 /// <summary>
 /// "I did it". <c>EnteredAs</c> says which of <c>Amount</c> and <c>Shares</c> the user typed; the other is worked out.

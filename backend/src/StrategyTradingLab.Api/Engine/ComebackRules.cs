@@ -110,7 +110,10 @@ public class ComebackRules : IBuyRules
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > Chase(buyLine),
                 "Price or volume fell back below the buy conditions.",
                 $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase.");
-            return new RuleDecision(status, reason, facts, window.Open) { Checks = TurnChecks(i, price, high, buyLine) };
+            var turn = TurnChecks(i, price, high, buyLine);
+            // After a sale the cooldown holds the first buy back.
+            if (RuleCheck.Cooldown(day, p.CooldownDays) is { } wait) turn.Add(wait);
+            return new RuleDecision(status, reason, facts, window.Open) { Checks = turn };
         }
 
         var (milestones, bought) = Milestones(i, day);
@@ -120,7 +123,8 @@ public class ComebackRules : IBuyRules
         var windowOpen = milestones.Any(m => InWindow(m, price));
         if (held == RuleStatus.BuySignal && active is not null) facts["milestone"] = active.Term;
         var checks = MilestoneChecks(i, price, milestones, preview: false);
-        if (RuleCheck.Cooldown(day, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
+        // Held, the cooldown holds the next step back: with the milestones that earn it.
+        if (RuleCheck.Cooldown(day, p.CooldownDays, CheckGroup.Next) is { } cooldown) checks.Add(cooldown);
         return new RuleDecision(held, heldReason, facts, windowOpen) { Checks = checks };
     }
 

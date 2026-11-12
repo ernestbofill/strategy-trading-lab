@@ -120,10 +120,10 @@
         "info": "Una baixada que travessa la SMA 50 és un enfonsament, no un descompte."
       },
       "cooldown": {
-        "label": "Espera després d'una fase",
-        "detail": "Falten {value} dies d'espera després de l'última fase ({min} en total).",
-        "short": "espera {value} dies després d'una fase",
-        "info": "Després de cada fase, les regles esperen uns dies naturals abans del senyal de compra següent."
+        "label": "Espera",
+        "detail": "Falten {value} dies d'espera després de l'última compra o venda ({min} en total).",
+        "short": "espera, falten {value} dies",
+        "info": "Després de cada compra o venda, les regles esperen {min} dies naturals abans del senyal de compra següent."
       }
     }
   },
@@ -291,10 +291,10 @@
         "info": "Fita: després de baixar almenys un {min}% des d'un màxim posterior a la compra, superar aquest màxim dona una fase."
       },
       "cooldown": {
-        "label": "Espera després d'una fase",
-        "detail": "Falten {value} dies d'espera després de l'última fase ({min} en total).",
-        "short": "espera {value} dies després d'una fase",
-        "info": "Després de cada fase, les regles esperen uns dies naturals abans del senyal de compra següent."
+        "label": "Espera",
+        "detail": "Falten {value} dies d'espera després de l'última compra o venda ({min} en total).",
+        "short": "espera, falten {value} dies",
+        "info": "Després de cada compra o venda, les regles esperen {min} dies naturals abans del senyal de compra següent."
       }
     }
   },
@@ -526,6 +526,12 @@
         "detail": "{+value}% respecte a la línia de venda ({level}, −{min}% per sota de la SMA {midLevel}). El tancament és a {+subValue}% de la SMA.",
         "short": "{+value}% respecte a la línia de venda",
         "info": "Assenyala venda per sota del −{min}% de la mitjana de 200 dies; dins la banda del ±{min}% ({level} a {endLevel}), la posició es manté."
+      },
+      "cooldown": {
+        "label": "Espera",
+        "detail": "Falten {value} dies d'espera després de l'última compra o venda ({min} en total).",
+        "short": "espera, falten {value} dies",
+        "info": "Després de cada compra o venda, les regles esperen {min} dies naturals abans del senyal de compra següent."
       }
     }
   },

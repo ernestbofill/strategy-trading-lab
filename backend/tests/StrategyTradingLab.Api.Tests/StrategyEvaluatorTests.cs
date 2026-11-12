@@ -30,6 +30,11 @@ public class StrategyEvaluatorTests
         Assert.Equal(new DateOnly(2026, 10, 22), UsSession.LastComplete(new DateTimeOffset(2026, 10, 23, 20, 29, 0, TimeSpan.Zero)));
         Assert.Equal(new DateOnly(2026, 10, 23), UsSession.LastComplete(new DateTimeOffset(2026, 10, 25, 12, 0, 0, TimeSpan.Zero))); // Sunday.
         Assert.Equal(new DateOnly(2026, 10, 23), UsSession.LastComplete(new DateTimeOffset(2026, 10, 26, 13, 0, 0, TimeSpan.Zero))); // Monday, before the open.
+        // In progress from the 09:30 open (13:30 UTC) until the bar is final: the next open after the last session is known then.
+        Assert.False(UsSession.InProgress(new DateTimeOffset(2026, 10, 23, 13, 29, 0, TimeSpan.Zero)));
+        Assert.True(UsSession.InProgress(new DateTimeOffset(2026, 10, 23, 13, 30, 0, TimeSpan.Zero)));
+        Assert.False(UsSession.InProgress(new DateTimeOffset(2026, 10, 23, 20, 30, 0, TimeSpan.Zero)));
+        Assert.False(UsSession.InProgress(new DateTimeOffset(2026, 10, 24, 15, 0, 0, TimeSpan.Zero))); // Saturday.
     }
 
     [Fact]

@@ -5,6 +5,7 @@ using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
@@ -26,10 +27,12 @@ public static class SignalEndpoints
         var group = app.MapGroup("/signals").WithTags("Signals").RequireUser();
 
         group.MapGet("/{id:guid}", async Task<Results<Ok<SignalDetail>, NotFound>> (
-            Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, AppDbContext db, Sessions sessions, PriceRefresher prices, PriceRefreshState refreshes,
+            Microsoft.Extensions.Options.IOptions<PriceRefreshOptions> options, TimeProvider time, CancellationToken cancellationToken) =>
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
+            if (options.Value.FetchOnDemand && Answerable(found.Signal)) await FetchOpenAsync(db, prices, refreshes, found, time, cancellationToken);
             return TypedResults.Ok(await DetailAsync(db, found, user, StrategyEndpoints.Today(user, time), cancellationToken));
         })
         .WithName("GetSignal")
@@ -121,6 +124,41 @@ public static class SignalEndpoints
 
     static bool Answerable(Signal signal) => signal.Status is SignalStatus.Waiting or SignalStatus.Missed;
 
+    /// <summary>How long the page waits for the open from Yahoo, and how often an asset is asked for it.</summary>
+    static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(5), OpenEvery = TimeSpan.FromMinutes(15);
+
+    /// <summary>
+    /// The day after the signal has no stored price yet (the daily refresh runs after the close): its bar is fetched now, so the
+    /// form starts with that day's open as soon as the market has opened. Best effort and only when no bulk write is on: a
+    /// failure, a slow source or the daily run leaves the stored prices, and the form starts with the close.
+    /// </summary>
+    static async Task FetchOpenAsync(AppDbContext db, PriceRefresher prices, PriceRefreshState refreshes,
+        (Signal Signal, Strategy Strategy, Asset Asset) found, TimeProvider time, CancellationToken cancellationToken)
+    {
+        var (signal, _, asset) = found;
+        var now = time.GetUtcNow();
+        // Before the next session opens there is no open to fetch.
+        if (now < UsSession.OpenAt(UsSession.After(signal.SignalDate)) || asset.PricesCheckedAt > now - OpenEvery) return;
+        if (await db.Prices.AnyAsync(p => p.AssetId == asset.Id && p.Date > signal.SignalDate, cancellationToken)) return;
+        // The write lock first: a try is only counted once it can be made.
+        if (!refreshes.Writing.Wait(0)) return;
+        try
+        {
+            if (!refreshes.TryFetchOpen(asset.Id, now, OpenEvery)) return;
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(OpenTimeout);
+            await prices.RefreshAssetAsync(asset, timeout.Token);
+        }
+        catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            db.ChangeTracker.Clear();
+        }
+        finally
+        {
+            refreshes.Writing.Release();
+        }
+    }
+
     /// <summary>
     /// Answers the signal and stores its trade, if any, in one transaction; false when it was already answered. The status
     /// changes only where it is still waiting or missed in the database, and that update locks the row, so of two answers at
@@ -187,7 +225,9 @@ public static class SignalEndpoints
                 .SumAsync(t => t.Side == TradeSide.Buy ? t.Shares : -t.Shares, cancellationToken);
             if (held > 0) prefillShares = held;
         }
-        var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open, prefillAmount, prefillShares);
+        // Before the next open is in, the latest price stored: the signal day's close, said as such.
+        var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open ?? signal.ClosePrice, prefillAmount, prefillShares,
+            PriceIsClose: next is null);
 
         var rates = new List<RateDay>();
         // The screen shows no rate line when the currencies match, so nothing to load then.
@@ -214,6 +254,7 @@ public static class SignalEndpoints
         var canSnooze = strategy.TemplateKey != "ai";
         return new SignalDetail(signal.Id, strategy.Id, strategy.Name, texts.Name, strategy.Currency, asset.Name, asset.Currency, signal.StepNo,
             signal.MaxSteps, signal.StepAmount, signal.SignalDate, signal.ClosePrice, reason, signal.Status, signal.SnoozedUntil, signal.EndedOn,
-            today, prefill, rates, answer, signal.Side, canSnooze);
+            today, prefill, rates, answer, signal.Side, canSnooze, asset.Id,
+            OnStockList: TemplateCatalog.Find(strategy.TemplateKey)?.InvestsIn == InvestsIn.StockList);
     }
 }

@@ -21,7 +21,7 @@ const above = (level: number, pct: number) => level * (1 + pct / 100)
 /** Whether the day's checks make the stock a candidate: every candidate check that has a verdict is met. */
 export const isCandidateOn = (checks: RuleCheck[]) => checks.every((c) => c.group !== 'candidate' || c.met !== false)
 
-/** A held stock's next step: the first milestone not used yet that has a buy area. */
+/** A held stock's next step: the first milestone not used yet with a buy window (the chart draws it as an area, but the golden cross as its two averages). */
 export const nextGoal = (checks: RuleCheck[]) =>
   checks.find((c) => c.group === 'next' && !c.used && !c.preview && c.level !== null && c.endLevel != null)
 

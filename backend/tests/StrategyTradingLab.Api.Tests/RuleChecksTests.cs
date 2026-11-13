@@ -64,6 +64,16 @@ public class RuleChecksTests
         // Holding a position: a step's signal comes from a milestone in its window.
         foreach (var day in days.Where(d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any()))
             Holds(Group(day, CheckGroup.Next).Any(c => c.Met == true && c.Used != true), day, "a step's signal has an open milestone");
+        // Held: the turn, step 1, comes first, bought on its day; a milestone that bought a step says so, with its day.
+        foreach (var day in days.Where(d => Group(d, CheckGroup.Next).Any()))
+        {
+            var turn = Group(day, CheckGroup.Next).First();
+            Holds(turn.Key == "turn" && turn.Bought == true && turn.Date is not null, day, "the turn is the first next-step row, bought");
+            Holds(Group(day, CheckGroup.Next).All(c => c.Bought != true || (c.Used == true && c.Date is not null)), day, "a bought row is used, with its day");
+            // Used without buying says so (false): null is how checks stored before the field read.
+            Holds(Group(day, CheckGroup.Next).All(c => c.Used != true || c.Bought is not null), day, "a used row says whether it bought");
+        }
+        Assert.Contains(days, d => Group(d, CheckGroup.Next).Any(c => c.Key != "turn" && c.Bought == true));
         Assert.Contains(days, d => d.Status == RuleStatus.BuySignal);
     }
 
@@ -85,6 +95,15 @@ public class RuleChecksTests
         var cooldown = Assert.Single(after, c => c.Key == "cooldown");
         Assert.Equal(CheckGroup.Next, cooldown.Group);
         Assert.Equal((decimal)new ComebackParams().CooldownDays, cooldown.Value);
+        Assert.Equal(buyDay, Assert.Single(after, c => c.Key == "turn").Date);
+
+        // A later step bought on its signal's day: its milestone reads bought on that day, not just used.
+        var later = RulesRunner.Run(new ComebackRules(all, new ComebackParams()), all, new StepPlan(5))
+            .First(d => d.NewBuy && Group(d, CheckGroup.Next).Any());
+        var upTo = all.TakeWhile(b => b.Date <= later.Date).ToList();
+        var laterBuy = later.Date.AddDays(1);
+        var afterLater = RulesRunner.Run(new ComebackRules(upTo, new ComebackParams()), upTo, new StepPlan(5), 0, boughtBeforeLast: laterBuy)[^1].Checks;
+        Assert.Contains(afterLater, c => c.Key != "turn" && c.Bought == true && c.Date == laterBuy);
     }
 
     [Fact]
@@ -98,7 +117,9 @@ public class RuleChecksTests
         Assert.Equal(bars.Count(b => b.Date >= from && b.Date < start), watched.Count);
         // A run that buys swaps the candidate checks for milestones; a stock never bought keeps them every day.
         Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "beaten"));
-        Assert.All(watched.Values.SelectMany(c => c), c => Assert.Equal(CheckGroup.Candidate, c.Group));
+        // With the next-step previews, whose averages the chart can draw back in time.
+        Assert.All(watched.Values.SelectMany(c => c), c => Assert.True(c.Group == CheckGroup.Candidate || c.Preview == true));
+        Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "golden" && c.Level is not null && c.MidLevel is not null));
     }
 
     [Theory]

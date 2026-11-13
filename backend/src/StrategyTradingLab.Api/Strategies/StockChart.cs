@@ -33,8 +33,8 @@ public static class StockChart
     }
 
     /// <summary>
-    /// Each day's candidate checks from <paramref name="from"/> until the day before <paramref name="before"/>, the rules run
-    /// over the whole history with no position: as a stock the rules only watch.
+    /// Each day's candidate checks (and next-step previews) from <paramref name="from"/> until the day before
+    /// <paramref name="before"/>, the rules run over the whole history with no position: as a stock the rules only watch.
     /// </summary>
     public static Dictionary<DateOnly, IReadOnlyList<RuleCheck>> WatchedChecks(IBuyRules rules, IReadOnlyList<PriceBar> bars, DateOnly from, DateOnly? before,
         int maxSteps)
@@ -50,7 +50,8 @@ public static class StockChart
             }
             var decision = rules.Decide(i, new DayContext(bars[i].Date, previous, 0, default, ActedNow: false, Cooling: false, Full: false, maxSteps));
             previous = decision.Status;
-            if (bars[i].Date >= from) result[bars[i].Date] = [.. decision.Checks.Where(c => c.Group == CheckGroup.Candidate)];
+            // The next-step previews too: they hold lines the chart can draw back in time (the golden cross's averages).
+            if (bars[i].Date >= from) result[bars[i].Date] = [.. decision.Checks.Where(c => c.Group == CheckGroup.Candidate || c.Preview == true)];
         }
         return result;
     }

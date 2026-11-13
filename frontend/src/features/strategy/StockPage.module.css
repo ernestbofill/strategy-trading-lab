@@ -68,8 +68,7 @@
 .mono {
   font-family: var(--font-mono);
 }
-.mono[data-state="met"],
-.mono[data-state="used"] {
+.mono[data-state="met"] {
   color: var(--success);
 }
 .mono[data-state="past"] {
@@ -269,8 +268,7 @@
   height: 100%;
   background: var(--info);
 }
-.fill[data-state="met"],
-.fill[data-state="used"] {
+.fill[data-state="met"] {
   background: var(--success);
 }
 .fill[data-state="past"] {

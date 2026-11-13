@@ -257,6 +257,12 @@
         "short": "volume {value}× (needs {min}×)",
         "info": "Shares traded per day: more trading than usual backs the turn."
       },
+      "turn": {
+        "label": "The turn",
+        "detail": "Step 1 is bought.",
+        "short": "the turn",
+        "info": "The first step: the price turned up above the buy line (the SMA 50 plus a margin) on rising volume."
+      },
       "sma200": {
         "label": "Back above the SMA 200",
         "detail": "{+value}% vs the SMA 200 ({level}). Step window: 0% to +{max}% ({level} to {endLevel}).",
@@ -271,6 +277,7 @@
         "past": "SMA 50 ({level}) is {+subValue}% vs SMA 200 ({midLevel}), but price is {+value}% above SMA 50 (past +{max}% limit, {endLevel}).",
         "short": "no golden cross yet",
         "pastShort": "past the SMA 50 limit ({+value}%)",
+        "tracking": "Not crossed yet: the SMA 50 ({level}) must rise {endValue}% to pass the SMA 200 ({midLevel}). Then one step is bought while the price is 0% to +{max}% above the SMA 50 (now up to {endLevel}).",
         "info": "Milestone: the 50-day average crosses above the 200-day average, confirming a medium-term uptrend."
       },
       "near_high": {
@@ -287,7 +294,8 @@
         "past": "{+value}% above the high before its {min}% pullback ({level}) — past the +{max}% chase limit ({endLevel}).",
         "short": "no breakout yet",
         "pastShort": "past the breakout limit ({+value}%)",
-        "none": "Needs an {min}% pullback after the last buy, then a close above the high before it.",
+        "none": "After a buy: a fall of {min}% from the highest close, then a close above that high.",
+        "tracking": "Highest close since the last buy: {midLevel}. A fall to {endLevel} (−{min}%) starts the watch; after it, a close above {midLevel} is a breakout.",
         "info": "Milestone: after pulling back at least {min}% from a post-buy high, breaking above that high earns one step."
       },
       "cooldown": {

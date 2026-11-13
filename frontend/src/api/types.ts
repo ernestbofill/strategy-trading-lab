@@ -347,6 +347,8 @@ export interface RuleCheck {
   subValue?: number | null
   endValue?: number | null
   preview?: boolean | null
+  /** Whether a used next-step rule bought a step (on `date`, when known); false: it was already there at a buy; null: read as bought. */
+  bought?: boolean | null
 }
 
 /** A template's words for a check, with {value}, {+value}, {min}, {max}, {level}, {midLevel}, {endLevel}, and {date}; `past` when past `max`, `none` when no value. */
@@ -357,6 +359,8 @@ export interface CheckTexts {
   past?: string | null
   pastShort?: string | null
   none?: string | null
+  /** The detail with no value but a level followed in `midLevel` (the breakout's highest close since the last buy, the SMA 200 a golden cross must pass). */
+  tracking?: string | null
   info?: string | null
 }
 
@@ -368,7 +372,7 @@ export interface StockStatusWords {
   holding?: string | null
 }
 
-/** A day of the stock page's chart: its close and the rules' checks that day (only candidate ones before `startedOn`). Backend Strategies/StrategyDtos.cs (ChartDay). */
+/** A day of the stock page's chart: its close and the rules' checks that day (only candidate ones and next-step previews before `startedOn`). Backend Strategies/StrategyDtos.cs (ChartDay). */
 export interface ChartDay {
   date: string
   close: number

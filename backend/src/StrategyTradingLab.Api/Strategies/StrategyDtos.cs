@@ -168,7 +168,7 @@ public record StrategySignalItem(
     DateOnly? EndedOn,
     DateTimeOffset CreatedAt);
 
-/// <summary>A day of the stock page's chart: its close and the rules' checks that day (only the candidate ones before <see cref="StockChartData.StartedOn"/>).</summary>
+/// <summary>A day of the stock page's chart: its close and the rules' checks that day (only the candidate ones and next-step previews before <see cref="StockChartData.StartedOn"/>).</summary>
 public record ChartDay(DateOnly Date, decimal Close, IReadOnlyList<RuleCheck> Checks);
 
 /// <summary>The stock page's chart: the last 90 days, and the day the rules first checked the stock under this strategy (null before that).</summary>

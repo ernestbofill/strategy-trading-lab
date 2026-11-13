@@ -110,6 +110,8 @@ Models: `opus` for every step (analyze, implement, review), including subagents.
 
 1. **Analyze and orchestrate.** Read the relevant code, docs and `ROADMAP.md`, then state the plan in a few lines: what changes, which files, the kind of change, and any risks. Ask only when a decision is really Ernest's to make.
 2. **Implement.** Work on the session's branch. Update existing tests when behaviour changes, and only add new tests for critical business logic or complex calculations (don't overly add tests; keep CI/CD light and fast). Keep `ROADMAP.md`, the spec and these instructions up to date.
+
+   **Log every test failure** you see, local or CI, in [docs/test-metrics.md](docs/test-metrics.md): a *true positive* when the fix is in the product code, a *false positive* when the fix is in the test itself. Commit the row with the fix. It is bookkeeping on runs that happen anyway: never run tests extra times for it.
 3. **PR.** Run the checks in the frontend and backend instructions, then commit, push, and open a pull request into `main`. Don't wait to be asked. Fill in the PR template.
 4. **Code review.** Run `/code-review <PR> --comment` in a subagent, so the findings land as inline PR comments. Besides bugs, ask it to pay particular attention to:
    - duplication and reuse opportunities;
@@ -175,6 +177,7 @@ Claude's memory for this repo lives in the repo, in `.claude/memories/`, so it i
 | What's built, what's next, open decisions | `ROADMAP.md` |
 | Steps waiting on Ernest | `TODO.md` → *Todos from Claude to Ernest* |
 | Decisions that outlive a PR, and why | `docs/decisions.md`: one dated line each, with the PR number |
+| Test failures, true or false positive | `docs/test-metrics.md` |
 | Small things learned while working that fit none of the above | `.claude/memories/` |
 | Plans, review findings, what was done | The PR |
 

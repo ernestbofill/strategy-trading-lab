@@ -14,12 +14,19 @@ public static class RulesRunner
     /// Evaluates the days from index <paramref name="from"/> on, as the POC's backtest starts a strategy fresh on its start day:
     /// the indicators read the earlier history, but the earlier days are not evaluated and no state is built from them.
     /// </summary>
-    public static IReadOnlyList<DayEvaluation> Run(IBuyRules rules, IReadOnlyList<PriceBar> bars, StepPlan plan, int from = 0)
+    /// <param name="boughtBeforeLast">
+    /// A step bought on that day (the next open, still to come) before the last day is decided, on top of what that day does: the
+    /// last day then reads as it will once its buy signal's step is bought, the next steps and the cooldown from its close. The
+    /// stock page shows it as soon as the step is taken (Ernest, 2026-11-12), instead of the signal's own checks until the next check.
+    /// </param>
+    public static IReadOnlyList<DayEvaluation> Run(IBuyRules rules, IReadOnlyList<PriceBar> bars, StepPlan plan, int from = 0,
+        DateOnly? boughtBeforeLast = null)
     {
         if (rules.Length != bars.Count) throw new ArgumentException($"The rules cover {rules.Length} days but {bars.Count} bars were given.", nameof(bars));
         var results = new List<DayEvaluation>(Math.Max(bars.Count - from, 0));
         var machine = new Machine(rules, plan);
-        for (var i = Math.Max(from, 0); i < bars.Count; i++) results.Add(machine.Step(i, bars[i].Date));
+        for (var i = Math.Max(from, 0); i < bars.Count; i++)
+            results.Add(machine.Step(i, bars[i].Date, i == bars.Count - 1 ? boughtBeforeLast : null));
         return results;
     }
 
@@ -33,15 +40,22 @@ public static class RulesRunner
         bool pendingBuy;
         bool pendingSell;
 
-        public DayEvaluation Step(int i, DateOnly day)
+        /// <summary>A step is bought on <paramref name="day"/>: the cooldown counts from it.</summary>
+        void Buy(DateOnly day)
+        {
+            stepsBought++;
+            lastBuyDay = day;
+            cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
+        }
+
+        /// <param name="boughtOn">A step bought on that day besides yesterday's action, before today is decided (<see cref="Run"/>).</param>
+        public DayEvaluation Step(int i, DateOnly day, DateOnly? boughtOn = null)
         {
             // 1) Yesterday's signal is acted on at today's open: a step is bought (or the position is sold), and the cooldown starts today.
             var actedNow = pendingBuy || pendingSell;
             if (pendingBuy)
             {
-                stepsBought++;
-                lastBuyDay = day;
-                cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
+                Buy(day);
                 pendingBuy = false;
             }
             else if (pendingSell)
@@ -49,6 +63,11 @@ public static class RulesRunner
                 stepsBought = 0;
                 cooldownUntil = rules.CooldownDays > 0 ? day.AddDays(rules.CooldownDays) : null;
                 pendingSell = false;
+            }
+            if (boughtOn is { } extra)
+            {
+                actedNow = true;
+                Buy(extra);
             }
 
             // 2) Today's evaluation, at the close.

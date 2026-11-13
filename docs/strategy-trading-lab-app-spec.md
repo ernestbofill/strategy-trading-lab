@@ -409,7 +409,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 | Group | Sentence | Default | Step | Min–max |
 | --- | --- | --- | --- | --- |
-| Candidate | "Beaten down: at least [n]% below its 52-week high." | 30% | 5 | 10–60 |
+| Candidate | "Beaten down: at least [n]% below its 52-week high." | 30% | 1 | 10–60 |
 | Candidate | "It stays a candidate for [n] trading days after it was last beaten down." | 60 | 10 | 0–120 |
 | Buy signal | "The buy line is [n]% above the SMA 50." | 15% | 1 | 5–30 |
 | Buy signal | "The 5-day average volume is at least [n]× the 50-day." | 1.2× | 0.1 | 1–3 |

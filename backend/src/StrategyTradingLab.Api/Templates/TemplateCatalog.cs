@@ -160,7 +160,7 @@ public static class TemplateCatalog
         // The POC's tunable rules, except "below its SMA 200", a yes/no the screen has no control for.
         Settings =
         [
-            new("drawdownPct", 5, 10, 60, Group: "candidate"),
+            new("drawdownPct", 1, 10, 60, Group: "candidate"),
             new("candidateDays", 10, 0, 120, Group: "candidate"),
             new("aboveSma50Pct", 1, 5, 30, Group: "signal"),
             new("volumeRatio", 0.1m, 1, 3, Group: "signal"),

@@ -71,9 +71,11 @@ export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(chec
         break
     }
   }
-  // A held stock's next step: the first milestone not used yet, from its level up to the chase limit.
+  // A held stock's next step: the first milestone not used yet, from its level up to the chase limit. Not the golden cross:
+  // its area sits under the price and read as a discount, so it draws the two averages instead (Ernest, 2026-11-13).
   const next = nextGoal(checks)
-  if (next) marks.push({ id: `next:${next.key}`, label: null, check: next.key, tone: 'buy', from: next.level!, to: next.endLevel! })
+  if (next && next.key !== 'golden')
+    marks.push({ id: `next:${next.key}`, label: null, check: next.key, tone: 'buy', from: next.level!, to: next.endLevel! })
   // The golden cross is the SMA 50 rising above the SMA 200: both lines, so the cross can be seen coming.
   const golden = goal === 'golden' ? checks.find((c) => c.key === 'golden') : undefined
   if (golden?.level != null && golden.midLevel != null)

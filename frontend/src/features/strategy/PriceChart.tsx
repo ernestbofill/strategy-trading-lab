@@ -69,8 +69,8 @@ export function PriceChart({
   const pct = (value: number, of: number) => `${(value / of) * 100}%`
   const nameOf = (s: (typeof series)[number]) => (s.mark.check ? (texts?.[s.mark.check]?.label ?? s.mark.check) : t(s.mark.label!))
 
-  // The right axis: the latest close, then each level's latest value (both edges of an area), each price once (the golden
-  // cross's area starts at the SMA 50).
+  // The right axis: the latest close, then each level's latest value (both edges of an area), each price once (two levels
+  // can meet).
   const labels = [
     { key: 'price', tone: 'price', value: last.close },
     ...series.flatMap((s) => {

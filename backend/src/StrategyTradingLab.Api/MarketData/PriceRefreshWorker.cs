@@ -75,9 +75,13 @@ public class PriceRefreshState
     /// </summary>
     public async Task<LatestPrice?> LatestPriceAsync(Guid assetId, DateTimeOffset now, TimeSpan every, Func<Task<LatestPrice?>> fetch)
     {
-        if (latestPrices.TryGetValue(assetId, out var tried) && tried.At > now - every) return tried.Price;
+        // Counted from the try, before it ends: the placeholder is put in place of what was there, so of two page opens at once only
+        // one asks the source.
         var placeholder = (now, (LatestPrice?)null);
-        latestPrices[assetId] = placeholder; // Counted from the try, before it ends.
+        var claimed = latestPrices.TryGetValue(assetId, out var tried)
+            ? tried.At <= now - every && latestPrices.TryUpdate(assetId, placeholder, tried)
+            : latestPrices.TryAdd(assetId, placeholder);
+        if (!claimed) return latestPrices.TryGetValue(assetId, out var current) ? current.Price : null;
         try
         {
             var price = await fetch();
@@ -178,6 +182,8 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
     IOptions<PriceRefreshOptions> options, TimeProvider time, ILogger<PriceRefreshWorker> logger) : BackgroundService
 {
     static readonly TimeSpan RetryAfterError = TimeSpan.FromMinutes(5);
+    /// <summary>How long a check at once waits for a stock's latest price before it leaves the stock to the daily run.</summary>
+    static readonly TimeSpan LatestTimeout = TimeSpan.FromSeconds(10);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -325,7 +331,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 // to the daily run. One clock reading decides both, so the session and the last finished one always agree.
                 var now = time.GetUtcNow();
                 Func<Asset, CancellationToken, Task<LatestPrice?>>? latest = UsSession.InProgress(now)
-                    ? (asset, cancellationToken) => refresher.TryLatestAsync(asset.Symbol, cancellationToken) : null;
+                    ? (asset, cancellationToken) => refresher.TryLatestAsync(asset.Symbol, LatestTimeout, cancellationToken) : null;
                 var (checkedNow, left) = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, latest, now, stoppingToken);
                 state.LeftToDailyRun(id, left, now);
                 newSignals += checkedNow.NewSignals;

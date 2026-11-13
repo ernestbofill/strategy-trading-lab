@@ -141,22 +141,11 @@ public static class SignalEndpoints
         // Before the next session opens the latest price is still the signal day's close.
         if (now < UsSession.OpenAt(UsSession.After(signal.SignalDate))) return null;
         if (await db.Prices.AnyAsync(p => p.AssetId == asset.Id && p.Date > signal.SignalDate, cancellationToken)) return null;
-        var latest = await refreshes.LatestPriceAsync(asset.Id, now, LatestEvery, async () =>
-        {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(LatestTimeout);
-            try
-            {
-                return await prices.TryLatestAsync(asset.Symbol, timeout.Token);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                return null; // Too slow: the close, and another try after LatestEvery.
-            }
-        });
-        // Only that next session's price, which the form dates: not the signal day's close (a holiday on its exchange), nor a much
-        // later day's (a stock whose prices are no longer fetched).
-        return latest?.Date == SignalRules.NextWeekday(signal.SignalDate) ? latest : null;
+        var latest = await refreshes.LatestPriceAsync(asset.Id, now, LatestEvery,
+            () => prices.TryLatestAsync(asset.Symbol, LatestTimeout, cancellationToken));
+        // Not the signal day's close (before its exchange's next session opened, or a holiday there). The form dates it by its own
+        // day, so a price from a later session (after a US holiday, or for a stock whose prices are no longer fetched) says so.
+        return latest?.Date > signal.SignalDate ? latest : null;
     }
 
     /// <summary>
@@ -209,10 +198,10 @@ public static class SignalEndpoints
         var (signal, strategy, asset) = found;
         var texts = TemplateTexts.For(TemplateCatalog.Find(strategy.TemplateKey)!, user.Locale);
 
-        // The trade day: the first trading day after the signal once its price is stored, else the next weekday.
+        // The trade day: the first trading day after the signal once its price is stored, else the latest price's day, else the next weekday.
         var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date > signal.SignalDate).OrderBy(p => p.Date)
             .Select(p => new { p.Date, p.Open }).FirstOrDefaultAsync(cancellationToken);
-        var nextDay = next?.Date ?? SignalRules.NextWeekday(signal.SignalDate);
+        var nextDay = next?.Date ?? latest?.Date ?? SignalRules.NextWeekday(signal.SignalDate);
         decimal? prefillAmount = null, prefillShares = null;
         if (signal.Side == TradeSide.Buy)
         {

@@ -190,22 +190,12 @@ public static class AiRoundEndpoints
     static async Task<Dictionary<Guid, LatestPrice>> LatestAsync(PriceRefresher prices, AppDbContext db, IReadOnlyList<AiPick> picks,
         CancellationToken cancellationToken)
     {
-        var latest = new Dictionary<Guid, LatestPrice>();
-        if (picks.Count == 0) return latest;
+        if (picks.Count == 0) return [];
         var ids = picks.Select(p => p.AssetId).ToList();
         var assets = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(LatestTimeout);
-        try
-        {
-            foreach (var asset in assets)
-                if (await prices.TryLatestAsync(asset.Symbol, timeout.Token) is { } price) latest[asset.Id] = price;
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            // Too slow: the picks fetched so far use theirs, the others their stored close.
-        }
-        return latest;
+        // At once, each under the same limit, so one slow pick doesn't leave the others at their stored close.
+        var fetched = await Task.WhenAll(assets.Select(async asset => (asset.Id, Price: await prices.TryLatestAsync(asset.Symbol, LatestTimeout, cancellationToken))));
+        return fetched.Where(f => f.Price is not null).ToDictionary(f => f.Id, f => f.Price!);
     }
 
     public static AiReadingDto ReadingOf(AiPlan plan) =>

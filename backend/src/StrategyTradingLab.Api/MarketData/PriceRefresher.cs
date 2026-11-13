@@ -58,15 +58,17 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
 
     /// <summary>
     /// An asset's latest price, or null when the source fails (logged): best effort, never stored (#220). For a check at once during
-    /// a US session, a signal's page and an AI simulation's picks.
+    /// a US session, a signal's page and an AI simulation's picks. A source slower than <paramref name="timeout"/> gives null too.
     /// </summary>
-    public async Task<LatestPrice?> TryLatestAsync(string symbol, CancellationToken cancellationToken)
+    public async Task<LatestPrice?> TryLatestAsync(string symbol, TimeSpan timeout, CancellationToken cancellationToken)
     {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(timeout);
         try
         {
-            return await source.LatestAsync(symbol, cancellationToken);
+            return await source.LatestAsync(symbol, limit.Token);
         }
-        catch (MarketDataException error)
+        catch (Exception error) when (error is MarketDataException || (error is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
             logger.LogWarning("The latest price of {Symbol} wasn't fetched: {Reason}", symbol, error.Message);
             return null;

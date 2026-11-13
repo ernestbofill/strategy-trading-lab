@@ -704,7 +704,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 | Label | Prefill |
 | --- | --- |
 | Date | The next trading day |
-| Price per share | The next trading day's opening price once it is stored (the daily check). Before that, once that session has opened, its latest price (only one from that day): opening the page fetches it from the price source, not stored (#220; at most one try every 5 minutes per stock, up to 5 seconds), with "Prefilled with the latest price. Change it to your broker's price." Else the signal day's close (feedback, 2026-11-12: typing it in was friction). |
+| Price per share | The next trading day's opening price once it is stored (the daily check). Before that, once that session has opened, the latest price from after the signal day, with that price's day as the date: opening the page fetches it from the price source, not stored (#220; at most one try every 5 minutes per stock, up to 5 seconds), with "Prefilled with the latest price. Change it to your broker's price." Else the signal day's close (feedback, 2026-11-12: typing it in was friction). |
 | Amount | The step size minus the tested fee (what buys shares; the step includes its fee). "Shares instead" switches the field to shares ("Amount instead" goes back); sells, all out, are usually entered as shares |
 | Fee (optional) | Empty, placeholder "€0.00" |
 

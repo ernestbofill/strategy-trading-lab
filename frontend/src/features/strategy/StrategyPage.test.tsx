@@ -148,7 +148,7 @@ describe('StrategyPage', () => {
             assetId: 'cspx', symbol: 'CSPX.L', name: 'iShares Core S&P 500 UCITS ETF', status: 'waitingForYou', steps: 0, rulesSteps: 1, maxSteps: null,
             distancePct: 1.3, signalId: 'sig-1', signalStep: null, invested: 100, result: 2,
             exchange: 'XLON', currency: 'USD', what: 'Tracks the 500 largest US companies', checkedOn: '2026-11-06', close: 802.21,
-            priceUpdatedAt: '2026-11-06T21:35:00Z', priceIsClose: true,
+            priceUpdatedAt: '2026-11-06T16:30:00Z', priceIsClose: true,
             checks: [{ key: 'buyLine', group: 'buy', met: false, value: -1.3, min: null, max: null, level: 812.91, midLevel: 789.23, endLevel: 765.55, progress: null, used: null }],
           },
         ],

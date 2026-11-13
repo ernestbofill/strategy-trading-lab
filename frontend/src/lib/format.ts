@@ -50,12 +50,30 @@ const shortDateCa = new Intl.DateTimeFormat('ca-ES', { month: 'short', day: 'num
 const fullDateEn = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 const fullDateCa = new Intl.DateTimeFormat('ca-ES', { day: 'numeric', month: 'short', year: 'numeric' })
 
+const shortTimeEn = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
+const shortTimeCa = new Intl.DateTimeFormat('ca-ES', { hour: '2-digit', minute: '2-digit' })
+
+const shortDateTimeEn = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+const shortDateTimeCa = new Intl.DateTimeFormat('ca-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+
 /** "Oct 13" (or "13 d’oct." in ca), from a local date like "2026-10-13". */
 export const shortDate = (iso: string, locale?: Locale) => {
   const [y, m, d] = iso.split('-').map(Number)
   const loc = locale ?? currentLocale()
   const format = loc === 'ca' ? shortDateCa : shortDateEn
   return format.format(new Date(y, m - 1, d))
+}
+
+/** "22:31" in the browser's local time, from an ISO timestamp. */
+export const shortTime = (iso: string, locale?: Locale) => {
+  const loc = locale ?? currentLocale()
+  return (loc === 'ca' ? shortTimeCa : shortTimeEn).format(new Date(iso))
+}
+
+/** "Nov 12, 22:31" (or "12 de nov., 22:31" in ca) in the browser's local time, from an ISO timestamp. */
+export const shortDateTime = (iso: string, locale?: Locale) => {
+  const loc = locale ?? currentLocale()
+  return (loc === 'ca' ? shortDateTimeCa : shortDateTimeEn).format(new Date(iso))
 }
 
 /** "13 Oct 2026" (or "13 d’oct. 2026" in ca), from a local date like "2026-10-13". */

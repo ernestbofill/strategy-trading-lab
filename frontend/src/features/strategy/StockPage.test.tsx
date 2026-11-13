@@ -20,6 +20,7 @@ const zs: StockRow = {
   assetId: 'zs', symbol: 'ZS', name: 'Zscaler', status: 'watching', steps: 0, rulesSteps: 0, maxSteps: 5,
   distancePct: 0, signalId: null, signalStep: null, invested: 0, result: null,
   exchange: 'NASDAQ', currency: 'USD', what: 'Cloud security.', checkedOn: '2026-10-30', close: 237.62,
+  priceUpdatedAt: '2026-10-30T15:15:00Z', priceIsClose: false,
   candidateSince: '2026-09-11',
   checks: [
     check({
@@ -103,7 +104,7 @@ describe('StockPage', () => {
     expect(screen.getByText('CANDIDATE')).toBeTruthy()
     expect(screen.getByText('Volume 0.84× (needs 1.1×)')).toBeTruthy()
     expect(screen.getAllByText('$237.62').length).toBeGreaterThan(0)
-    expect(screen.getByText('Close on Oct 30')).toBeTruthy()
+    expect(screen.getByText(/^Price on Oct 30, \d{2}:\d{2}$/)).toBeTruthy()
     // The chart's axis: a candidate's buy area, from the buy line to the chase limit.
     expect(await screen.findByText('$252.61')).toBeTruthy()
     expect(screen.getAllByText('$237.62')).toHaveLength(2)

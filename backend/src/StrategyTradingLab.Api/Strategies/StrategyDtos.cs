@@ -122,6 +122,10 @@ public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Sta
     public DateOnly? CheckedOn { get; init; }
     public DateOnly? CandidateSince { get; init; }
     public decimal? Close { get; init; }
+    /// <summary>When the asset's prices were last fetched successfully; null before the first fetch.</summary>
+    public DateTimeOffset? PriceUpdatedAt { get; init; }
+    /// <summary>True when <see cref="Close"/> was fetched after <see cref="CheckedOn"/>'s session closed.</summary>
+    public bool PriceIsClose { get; init; }
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
 
     /// <summary>A stock not checked yet that the check at once left to the daily run during this US session: its latest price couldn't be fetched (#220).</summary>

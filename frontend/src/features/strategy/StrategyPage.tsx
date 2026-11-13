@@ -18,7 +18,7 @@ import styles from './StrategyPage.module.css'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockRules, StockStatus } from './StockPage'
 import { StockPill } from './StockPill'
-import { followedStocks, stockLine } from './stockLine'
+import { followedStocks, stockLine, stockPriceLabel } from './stockLine'
 import { useStrategy } from './useStrategy'
 
 function Figure({ label, value, highlight, tip }: { label: string; value: number | null; highlight?: boolean; tip?: ReactNode }) {
@@ -208,6 +208,7 @@ export function StrategyPage() {
  */
 function StrategyView({ s }: { s: StrategyDetail }) {
   const t = useT()
+  const { locale } = useI18n()
   const [renaming, setRenaming] = useState(false)
   const live = s.mode === 'live'
   const running = s.status === 'running'
@@ -215,8 +216,6 @@ function StrategyView({ s }: { s: StrategyDetail }) {
   const answer =
     fund?.status === 'waitingForYou' && fund.signalId ? <PrimaryAction to={signalPath(s.id, fund.signalId)}>{t('stock.answer')}</PrimaryAction> : undefined
   const since = s.startedOn === s.today ? t('strategy.startedToday') : t('strategy.since', { date: shortDate(s.startedOn) })
-  // An AI simulation trades at once, at the latest price (spec §5); the other templates' at the next open.
-  const source = t(live ? 'strategy.source.live' : s.aiRounds ? 'strategy.source.simAi' : 'strategy.source.sim')
   const top = (
     <TopBar
       home
@@ -224,7 +223,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
     />
   )
   return (
-    <Screen top={top} action={answer} note={source}>
+    <Screen top={top} action={answer}>
       <div className={styles.header}>
         {renaming ? (
           <RenameForm s={s} onClose={() => setRenaming(false)} />
@@ -234,7 +233,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
             {fund?.close != null && fund.checkedOn && (
               <div className={styles.price}>
                 <span className={styles.priceValue}>{exact(fund.close, fund.currency)}</span>
-                <span className={styles.muted}>{t('stock.close', { date: shortDate(fund.checkedOn) })}</span>
+                <span className={styles.muted}>{stockPriceLabel(fund, locale, t)}</span>
               </div>
             )}
           </div>

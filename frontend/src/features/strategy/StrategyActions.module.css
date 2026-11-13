@@ -1,6 +1,7 @@
 /* The same confirm step and buttons as deleting a trade or the strategy. */
 .confirmBox {
   composes: confirmBox from './SignalsAndTrades.module.css';
+  grid-column: 1 / -1;
 }
 
 .confirmActions {
@@ -17,12 +18,6 @@
 
 .btnSecondary {
   composes: btnSecondary from './SignalsAndTrades.module.css';
-}
-
-.start {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .renameForm {

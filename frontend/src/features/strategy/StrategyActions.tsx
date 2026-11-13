@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, InvalidValueError, NameTakenError, UnauthorizedError, type StrategyDetail } from '../../api'
 import { TextField } from '../../components/Field'
-import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
 import { useDashboard } from '../dashboard/useDashboard'
@@ -61,7 +60,11 @@ export function RenameForm({ s, onClose }: { s: StrategyDetail; onClose: () => v
 }
 
 /** "Archive the strategy", after a confirm step: the daily check stops, waiting signals close as missed, the history stays. */
-export function ArchiveStrategy({ s }: { s: StrategyDetail }) {
+export function ArchiveStrategy({ s, className, titleClassName }: {
+  s: StrategyDetail
+  className: string
+  titleClassName: string
+}) {
   const t = useT()
   const [asking, setAsking] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -69,9 +72,9 @@ export function ArchiveStrategy({ s }: { s: StrategyDetail }) {
 
   if (!asking)
     return (
-      <div className={styles.start}>
-        <TextAction onClick={() => setAsking(true)}>{t('strategy.archive')}</TextAction>
-      </div>
+      <button type="button" className={className} onClick={() => setAsking(true)}>
+        <span className={titleClassName}>{t('strategy.archive')}</span>
+      </button>
     )
 
   const archive = async () => {

@@ -125,7 +125,7 @@ export const notCheckedLine = (row: StockRow, t: Translate) =>
 /** The stocks a strategy follows: not those unticked with Edit list, whose rows stay while they have trades. */
 export const followedStocks = (s: StrategyDetail) => s.stocks.filter((row) => row.status !== 'removed')
 
-/** Caption under a stock or fund price: says "Close" only when fetched after that session closed, with the update time in local time. */
+/** Caption under a stock or fund price: says "Close" only when fetched after that session closed, and omits the time when unknown. */
 export function stockPriceLabel(
   row: Pick<StockRow, 'checkedOn' | 'priceUpdatedAt' | 'priceIsClose'>,
   locale?: Locale,
@@ -133,8 +133,8 @@ export function stockPriceLabel(
 ): string {
   if (!row.checkedOn) return ''
   const date = shortDate(row.checkedOn, locale)
-  if (!row.priceUpdatedAt) return t(row.priceIsClose ? 'stock.close' : 'stock.price', { date })
-  if (!row.priceIsClose) return t('stock.priceAt', { dateTime: shortDateTime(row.priceUpdatedAt, locale) })
+  if (!row.priceIsClose) return t('stock.price', { date })
+  if (!row.priceUpdatedAt) return t('stock.close', { date })
   return isoDate(new Date(row.priceUpdatedAt)) === row.checkedOn
     ? t('stock.closeAt', { date, time: shortTime(row.priceUpdatedAt, locale) })
     : t('stock.closeUpdated', { date, updated: shortDateTime(row.priceUpdatedAt, locale) })

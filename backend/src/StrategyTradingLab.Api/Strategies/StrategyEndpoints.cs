@@ -525,6 +525,8 @@ public static class StrategyEndpoints
             DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
                 && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
                 ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
+            var priceIsClose = evaluation is not null && asset.PricesCheckedAt is { } checkedAt
+                && checkedAt >= UsSession.FinalAt(evaluation.Date);
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
                 Steps: userSteps,
                 RulesSteps: live ? rulesSteps : null,
@@ -541,8 +543,8 @@ public static class StrategyEndpoints
                 CheckedOn = evaluation?.Date,
                 CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
-                PriceUpdatedAt = asset.PricesCheckedAt,
-                PriceIsClose = evaluation is not null && asset.PricesCheckedAt is { } checkedAt && checkedAt >= UsSession.FinalAt(evaluation.Date),
+                PriceUpdatedAt = priceIsClose && evaluation is not null ? MarketClose.At(asset.Exchange, evaluation.Date) : null,
+                PriceIsClose = priceIsClose,
                 Checks = checks,
                 AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
             };

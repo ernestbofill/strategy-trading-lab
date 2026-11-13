@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StockRow } from '../../api'
-import { stockLine } from './stockLine'
+import { stockLine, stockPriceLabel } from './stockLine'
 
 const row = (fields: Partial<StockRow>): StockRow => ({
   assetId: 'a',
@@ -156,5 +156,15 @@ describe('stockLine', () => {
   it('says a stock not checked yet waits for the US session to end when the check at once left it to the daily run', () => {
     expect(stockLine(row({ status: 'notChecked' }), 'live', 'USD', null).detail).toBe('Not checked yet')
     expect(stockLine(row({ status: 'notChecked', afterClose: true }), 'live', 'USD', null).detail).toBe('Checked after the US session ends')
+  })
+})
+
+describe('stockPriceLabel', () => {
+  it('shows the close time in local time when known, omits it when unknown, and omits Close when not a close price', () => {
+    expect(stockPriceLabel({ checkedOn: '2026-11-12', priceUpdatedAt: '2026-11-12T21:00:00Z', priceIsClose: true }, 'en')).toMatch(
+      /^Close on Nov 12/,
+    )
+    expect(stockPriceLabel({ checkedOn: '2026-11-12', priceUpdatedAt: null, priceIsClose: true }, 'en')).toBe('Close on Nov 12')
+    expect(stockPriceLabel({ checkedOn: '2026-11-12', priceUpdatedAt: null, priceIsClose: false }, 'en')).toBe('Price on Nov 12')
   })
 })

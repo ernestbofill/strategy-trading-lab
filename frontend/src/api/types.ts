@@ -317,7 +317,7 @@ export interface StockRow {
   /** The day of its latest check, that day's close, when it became a candidate, and each rule's verdict. */
   checkedOn: string | null
   close: number | null
-  /** When the asset's prices were last fetched successfully; null before the first fetch. */
+  /** The UTC timestamp of `close` when it is a known exchange's close; null when unknown. */
   priceUpdatedAt?: string | null
   /** True when `close` was fetched after `checkedOn`'s session closed. */
   priceIsClose?: boolean

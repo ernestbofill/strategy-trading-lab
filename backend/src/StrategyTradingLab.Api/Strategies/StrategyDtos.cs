@@ -122,7 +122,7 @@ public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Sta
     public DateOnly? CheckedOn { get; init; }
     public DateOnly? CandidateSince { get; init; }
     public decimal? Close { get; init; }
-    /// <summary>When the asset's prices were last fetched successfully; null before the first fetch.</summary>
+    /// <summary>The UTC timestamp of <see cref="Close"/> when it is a known exchange's close; null otherwise.</summary>
     public DateTimeOffset? PriceUpdatedAt { get; init; }
     /// <summary>True when <see cref="Close"/> was fetched after <see cref="CheckedOn"/>'s session closed.</summary>
     public bool PriceIsClose { get; init; }

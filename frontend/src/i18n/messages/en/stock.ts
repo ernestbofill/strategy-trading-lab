@@ -5,7 +5,6 @@ export const stock = {
   'stock.closeAt': 'Close on {date}, {time}',
   'stock.closeUpdated': 'Close on {date} · {updated}',
   'stock.price': 'Price on {date}',
-  'stock.priceAt': 'Price on {dateTime}',
   'stock.status': 'Status',
   'stock.chart.period': 'Period',
   'stock.chart.days': '{days} days',

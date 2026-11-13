@@ -7,7 +7,6 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.closeAt': 'Tancament del {date}, {time}',
   'stock.closeUpdated': 'Tancament del {date} · {updated}',
   'stock.price': 'Preu del {date}',
-  'stock.priceAt': 'Preu del {dateTime}',
   'stock.status': 'Estat',
   'stock.chart.period': 'Període',
   'stock.chart.days': '{days} dies',

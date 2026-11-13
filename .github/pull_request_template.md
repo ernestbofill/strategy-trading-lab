@@ -20,6 +20,7 @@
 - [ ] Backend: `dotnet build`, `dotnet test` (say if `[NeonFact]` tests were skipped)
 - [ ] Changed screens checked at phone and desktop width, or why not (e.g. cloud session)
 - [ ] `ROADMAP.md` and docs updated
+- [ ] Every test failure seen (local or CI) logged in `docs/test-metrics.md`, or none failed
 
 ## Manual steps for Ernest
 

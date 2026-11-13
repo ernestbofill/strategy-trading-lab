@@ -317,6 +317,10 @@ export interface StockRow {
   /** The day of its latest check, that day's close, when it became a candidate, and each rule's verdict. */
   checkedOn: string | null
   close: number | null
+  /** When the asset's prices were last fetched successfully; null before the first fetch. */
+  priceUpdatedAt?: string | null
+  /** True when `close` was fetched after `checkedOn`'s session closed. */
+  priceIsClose?: boolean
   candidateSince?: string | null
   checks: RuleCheck[]
   /** Not checked yet and left to the daily run: added while a US session is in progress. */

@@ -1,7 +1,7 @@
-import type { CheckTexts, Currency, StockRow, StockStatusWords, StrategyDetail, StrategyMode } from '../../api'
+import type { CheckTexts, Currency, Locale, StockRow, StockStatusWords, StrategyDetail, StrategyMode } from '../../api'
 import { tNow, type Translate } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
-import { money, signedPct } from '../../lib/format'
+import { isoDate, money, shortDate, shortDateTime, shortTime, signedPct } from '../../lib/format'
 import { unmetLine } from './checks'
 
 export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching' | 'muted'
@@ -124,6 +124,21 @@ export const notCheckedLine = (row: StockRow, t: Translate) =>
 
 /** The stocks a strategy follows: not those unticked with Edit list, whose rows stay while they have trades. */
 export const followedStocks = (s: StrategyDetail) => s.stocks.filter((row) => row.status !== 'removed')
+
+/** Caption under a stock or fund price: says "Close" only when fetched after that session closed, with the update time in local time. */
+export function stockPriceLabel(
+  row: Pick<StockRow, 'checkedOn' | 'priceUpdatedAt' | 'priceIsClose'>,
+  locale?: Locale,
+  t: Translate = tNow,
+): string {
+  if (!row.checkedOn) return ''
+  const date = shortDate(row.checkedOn, locale)
+  if (!row.priceUpdatedAt) return t(row.priceIsClose ? 'stock.close' : 'stock.price', { date })
+  if (!row.priceIsClose) return t('stock.priceAt', { dateTime: shortDateTime(row.priceUpdatedAt, locale) })
+  return isoDate(new Date(row.priceUpdatedAt)) === row.checkedOn
+    ? t('stock.closeAt', { date, time: shortTime(row.priceUpdatedAt, locale) })
+    : t('stock.closeUpdated', { date, updated: shortDateTime(row.priceUpdatedAt, locale) })
+}
 
 /** The words of a stock's row on the strategy page (spec: Strategy page, one row per stock). */
 export function stockLine(

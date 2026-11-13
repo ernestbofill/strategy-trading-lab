@@ -541,6 +541,8 @@ public static class StrategyEndpoints
                 CheckedOn = evaluation?.Date,
                 CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
+                PriceUpdatedAt = asset.PricesCheckedAt,
+                PriceIsClose = evaluation is not null && asset.PricesCheckedAt is { } checkedAt && checkedAt >= UsSession.FinalAt(evaluation.Date),
                 Checks = checks,
                 AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
             };

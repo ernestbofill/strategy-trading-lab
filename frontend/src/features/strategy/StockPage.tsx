@@ -7,7 +7,7 @@ import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/S
 import { Section } from '../../components/Section'
 import { Stat, Stats } from '../../components/Stats'
 import { ModeTag } from '../../components/ModeTag'
-import { useT } from '../../i18n/I18n'
+import { useI18n, useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { exact, formatRate, money, pctTone, shortDate, signedPct } from '../../lib/format'
 import { signalPath, strategyPath } from '../dashboard/paths'
@@ -16,7 +16,7 @@ import { PriceChart } from './PriceChart'
 import { isCandidateOn } from './priceChartMarks'
 import { SignalsAndTrades } from './SignalsAndTrades'
 import { StockPill } from './StockPill'
-import { notCheckedLine, stockLine, type StockLine } from './stockLine'
+import { notCheckedLine, stockLine, stockPriceLabel, type StockLine } from './stockLine'
 import styles from './StockPage.module.css'
 import { useStrategy } from './useStrategy'
 
@@ -338,6 +338,7 @@ export function StockPage() {
 
 function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   const t = useT()
+  const { locale } = useI18n()
   if (s.investsIn !== 'stockList') return <Navigate to={strategyPath(s.id)} replace />
   const top = <TopBar up={strategyPath(s.id)} upLabel="common.up.strategy" />
   const row = s.stocks.find((r) => r.assetId === assetId)
@@ -367,7 +368,7 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
           {row.close !== null && row.checkedOn && (
             <div className={styles.price}>
               <span className={styles.priceValue}>{exact(row.close, row.currency)}</span>
-              <span className={styles.muted}>{t('stock.close', { date: shortDate(row.checkedOn) })}</span>
+              <span className={styles.muted}>{stockPriceLabel(row, locale, t)}</span>
             </div>
           )}
         </div>

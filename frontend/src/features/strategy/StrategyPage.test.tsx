@@ -108,7 +108,7 @@ describe('StrategyPage', () => {
       '/strategies/live/settings',
     )
     expect(screen.getByRole('heading', { name: 'Stocks · 1' })).toBeTruthy()
-    expect(screen.getByText(/Your results come from the trades you confirmed/).textContent).not.toContain('Past results')
+    expect(screen.queryByText(/Your results come from the trades you confirmed/)).toBeNull()
   })
 
   it('shows the first 5 stocks of a long list, and the rest on request', async () => {
@@ -148,6 +148,7 @@ describe('StrategyPage', () => {
             assetId: 'cspx', symbol: 'CSPX.L', name: 'iShares Core S&P 500 UCITS ETF', status: 'waitingForYou', steps: 0, rulesSteps: 1, maxSteps: null,
             distancePct: 1.3, signalId: 'sig-1', signalStep: null, invested: 100, result: 2,
             exchange: 'XLON', currency: 'USD', what: 'Tracks the 500 largest US companies', checkedOn: '2026-11-06', close: 802.21,
+            priceUpdatedAt: '2026-11-06T21:35:00Z', priceIsClose: true,
             checks: [{ key: 'buyLine', group: 'buy', met: false, value: -1.3, min: null, max: null, level: 812.91, midLevel: 789.23, endLevel: 765.55, progress: null, used: null }],
           },
         ],
@@ -160,7 +161,7 @@ describe('StrategyPage', () => {
     expect(screen.getByText(/XLON/)).toBeTruthy()
     expect(screen.getByText('Tracks the 500 largest US companies')).toBeTruthy()
     expect(screen.getByText('$802.21')).toBeTruthy()
-    expect(screen.getByText('Close on Nov 6')).toBeTruthy()
+    expect(screen.getByText(/^Close on Nov 6, \d{2}:\d{2}$/)).toBeTruthy()
     expect(screen.getByText('WAITING FOR YOU')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Rules on Nov 6' })).toBeTruthy()
     expect(screen.getByText('Price vs the buy line')).toBeTruthy()
@@ -185,7 +186,7 @@ describe('StrategyPage', () => {
     expect(screen.getByText('+8.1%')).toBeTruthy()
     expect(screen.getByText('−18%')).toBeTruthy()
     expect(screen.queryByText('Signals')).toBeNull()
-    expect(screen.getByText(/Results come from trades/)).toBeTruthy()
+    expect(screen.queryByText(/Results come from trades/)).toBeNull()
   })
 
   it('deletes an archived strategy after a confirm step and opens the dashboard', async () => {

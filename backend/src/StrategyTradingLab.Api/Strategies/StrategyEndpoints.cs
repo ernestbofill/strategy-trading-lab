@@ -82,7 +82,8 @@ public static class StrategyEndpoints
         .WithSummary("The user's strategies, running ones first, with their results, and the live signals and AI rounds waiting for an answer.");
 
         app.MapGet("/strategies/{id:guid}", async Task<Results<Ok<StrategyDetail>, NotFound>> (
-            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, PriceRefreshState refreshes, TimeProvider time,
+            CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
@@ -92,10 +93,9 @@ public static class StrategyEndpoints
             var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : default;
             // The version it started from: "tuned" compares with that.
             var template = await store.VersionAsync(strategy.TemplateKey, strategy.DefaultsVersion, cancellationToken);
-            // Nothing checks a strategy while a US session is in progress (the check at once skips it, PriceRefreshWorker.CheckAsync):
-            // a stock not checked yet waits for the daily run after it.
-            var waitsForClose = strategy.Status == StrategyStatus.Running && TemplateRules.Supports(strategy.TemplateKey) && UsSession.InProgress(time.GetUtcNow());
-            return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores, waitsForClose));
+            // The stocks its check at once left to the daily run during this US session (no latest price, PriceRefreshWorker.CheckAsync).
+            var leftToDailyRun = strategy.Status == StrategyStatus.Running ? refreshes.LeftToDailyRun(strategy.Id, time.GetUtcNow()) : null;
+            return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores, leftToDailyRun));
         })
         .RequireUser()
         .WithTags("Strategies")
@@ -478,7 +478,7 @@ public static class StrategyEndpoints
     }
 
     static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, Template template, User user, DateOnly today, CancellationToken cancellationToken,
-        AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null, bool waitsForClose = false)
+        AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null, IReadOnlySet<Guid>? leftToDailyRun = null)
     {
         var texts = TemplateTexts.For(template, user.Locale);
         var book = await StrategyBook.LoadAsync(db, [strategy], today, cancellationToken);
@@ -518,8 +518,10 @@ public static class StrategyEndpoints
             var evaluation = latest.GetValueOrDefault(asset.Id);
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
+            var own = signalEntities.Where(s => s.AssetId == asset.Id).ToList();
             var (status, rulesSteps, userSteps, distance, signal, checks) = StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
-                [.. signalEntities.Where(s => s.AssetId == asset.Id)], trades, book, aiScores);
+                own, trades, book, aiScores);
+            checks = ChecksAfterBuy(evaluation, own) ?? checks;
             DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
                 && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
                 ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
@@ -540,7 +542,7 @@ public static class StrategyEndpoints
                 CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 Checks = checks,
-                AfterClose = waitsForClose && status == StockStatus.NotChecked,
+                AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
             };
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
@@ -699,9 +701,19 @@ public static class StrategyEndpoints
         return new StockState(status, rulesSteps, userSteps, distance, signal, checks);
     }
 
-    /// <summary>The rule checks a daily evaluation stored (none before they were stored).</summary>
-    static IReadOnlyList<RuleCheck> ChecksOf(JsonDocument facts) =>
-        facts.RootElement.ValueKind == JsonValueKind.Object && facts.RootElement.TryGetProperty(StrategyEvaluator.ChecksKey, out var checks)
+    /// <summary>
+    /// The latest check's Manual buy signal is answered (done or skipped): the rules count its step as bought at the next open, so
+    /// the page shows where they stand after it, its next steps and cooldown, without waiting for the next check. Null otherwise.
+    /// </summary>
+    static IReadOnlyList<RuleCheck>? ChecksAfterBuy(DailyEvaluation? evaluation, IReadOnlyList<Signal> own) =>
+        evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date
+                && s.Status is SignalStatus.Confirmed or SignalStatus.Skipped)
+            && ChecksOf(evaluation.Facts, StrategyEvaluator.ChecksAfterBuyKey) is { Count: > 0 } afterBuy
+            ? afterBuy : null;
+
+    /// <summary>The rule checks a daily evaluation stored under <paramref name="key"/> (none before they were stored).</summary>
+    static IReadOnlyList<RuleCheck> ChecksOf(JsonDocument facts, string key = StrategyEvaluator.ChecksKey) =>
+        facts.RootElement.ValueKind == JsonValueKind.Object && facts.RootElement.TryGetProperty(key, out var checks)
             && checks.ValueKind == JsonValueKind.Array
             ? checks.Deserialize<List<RuleCheck>>(JsonSerializerOptions.Web) ?? []
             : [];

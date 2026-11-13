@@ -677,10 +677,18 @@ export interface SignalDetail {
   /** The user's local date. */
   today: string
   /**
-   * The next trading day, its opening price once in (else the signal day's close, with `priceIsClose`), the step without
+   * The next trading day, its opening price once stored (else, once that session has opened, the latest price with
+   * `priceIsLatest`, or else the signal day's close, with `priceIsClose`), the step without
    * the tested fee, and held shares for a sale.
    */
-  prefill: { date: string; price: number | null; amount: number | null; shares?: number | null; priceIsClose?: boolean }
+  prefill: {
+    date: string
+    price: number | null
+    amount: number | null
+    shares?: number | null
+    priceIsClose?: boolean
+    priceIsLatest?: boolean
+  }
   /** Reference rates by day: asset currency per one unit of the strategy's. */
   rates: { date: string; rate: number }[]
   answer: SignalAnswer | null

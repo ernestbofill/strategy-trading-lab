@@ -86,6 +86,21 @@ public class YahooClientTests
     }
 
     [Fact]
+    public void The_latest_price_is_read_from_the_meta_scaled_and_dated_on_the_exchange()
+    {
+        // 2026-10-20 03:00 UTC is still the 19th in New York (UTC-4).
+        var json = """
+            {"chart":{"result":[{"meta":{"currency":"GBp","symbol":"VOD.L","exchangeTimezoneName":"America/New_York","gmtoffset":-14400,
+            "regularMarketPrice":1234.5,"regularMarketTime":1792465200}}],"error":null}}
+            """;
+
+        var latest = YahooClient.ParseLatest(json, "VOD.L");
+
+        Assert.Equal((12.345m, new DateOnly(2026, 10, 19)), (latest.Price, latest.Date));
+        Assert.Throws<MarketDataException>(() => YahooClient.ParseLatest("""{"chart":{"result":[{"meta":{}}],"error":null}}""", "X"));
+    }
+
+    [Fact]
     public void Pence_are_scaled_to_pounds()
     {
         var json = Chart("GBp", """{"open":[1000,1010],"high":[1020,1030],"low":[990,1000],"close":[1010,1020],"volume":[1,2]}""");

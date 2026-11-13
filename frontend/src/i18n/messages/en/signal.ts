@@ -24,6 +24,7 @@ export const signal = {
   'signal.error.ambiguous': 'Is that 1250 or 1.25? Write it as 1250 or 1.25.',
   'signal.hint.prefilled': "Prefilled with {date}'s opening price. Change anything that differs from your broker.",
   'signal.hint.close': "No opening price yet: prefilled with the close on {date}. Change it to your broker's price.",
+  'signal.hint.latest': "Prefilled with the latest price. Change it to your broker's price.",
   'signal.hint.amount': 'What bought shares. Your step of {step} includes the fee.',
   'signal.hint.amountBudget': 'What bought shares. Your budget of {step} includes the fee.',
   'signal.save.did': 'Save the trade',

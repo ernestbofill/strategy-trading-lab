@@ -10,7 +10,7 @@ const CHECK_POLLS = 12
 
 /**
  * A running strategy with a stock its rules haven't checked yet (just started, or just added to the list), not one the
- * server left to the daily run after a US session (`afterClose`).
+ * check at once left to the daily run after the US session (`afterClose`: no latest price, #220).
  */
 export const awaitsCheck = (s: StrategyDetail) =>
   s.status === 'running' && !s.aiRounds && s.stocks.some((row) => row.status === 'notChecked' && !row.afterClose)

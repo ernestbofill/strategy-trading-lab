@@ -14,7 +14,8 @@ public class PriceRefreshOptions
 
     /// <summary>
     /// Fetches from Yahoo outside the daily run: a strategy's check when it starts or its list gains a stock
-    /// (<see cref="PriceRefreshState.RequestCheck"/>), and a signal's next open when its page opens. The API tests turn it
+    /// (<see cref="PriceRefreshState.RequestCheck"/>), with its stocks' latest prices during a US session, and a signal's latest
+    /// price when its page opens. The API tests turn it
     /// off: it would reach Yahoo and run the rules behind their backs.
     /// </summary>
     public bool FetchOnDemand { get; set; } = true;
@@ -27,7 +28,8 @@ public class PriceRefreshState
     readonly SemaphoreSlim changed = new(0, 1);
     readonly SemaphoreSlim checkRequested = new(0, 1);
     readonly HashSet<Guid> checks = [];
-    readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, DateTimeOffset> openFetches = new();
+    readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, (DateTimeOffset At, Task<LatestPrice?> Price)> latestPrices = new();
+    readonly Dictionary<Guid, (DateOnly Day, HashSet<Guid> Assets)> left = [];
     int pending;
     volatile bool running;
     volatile PriceRun last = new(null, null, [], null, null);
@@ -66,14 +68,57 @@ public class PriceRefreshState
     }
 
     /// <summary>
-    /// Whether a signal's page may ask the price source for an asset's next open now: once per <paramref name="every"/>, counted
-    /// from each try, so a source that fails or is slow isn't asked again on every page open.
+    /// A signal's page's latest price for an asset (#220): the one fetched within <paramref name="every"/>, else a fresh one from
+    /// <paramref name="fetch"/>. Each try counts, so a source that fails or is slow isn't asked again on every page open (a failed
+    /// try is remembered as null), and a page opened while a try runs waits for that same try, so both show the same price. A try
+    /// that throws (its page closed) gives the others null and is forgotten, so the next page open tries again. Kept in memory
+    /// only, never in the price history.
     /// </summary>
-    public bool TryFetchOpen(Guid assetId, DateTimeOffset now, TimeSpan every)
+    public async Task<LatestPrice?> LatestPriceAsync(Guid assetId, DateTimeOffset now, TimeSpan every, Func<Task<LatestPrice?>> fetch,
+        CancellationToken cancellationToken)
     {
-        if (openFetches.TryGetValue(assetId, out var tried) && tried > now - every) return false;
-        openFetches[assetId] = now;
-        return true;
+        // Claimed in place of what was there, so of two page opens at once only one asks the source.
+        var running = new TaskCompletionSource<LatestPrice?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var mine = (now, running.Task);
+        var claimed = latestPrices.TryGetValue(assetId, out var tried)
+            ? tried.At <= now - every && latestPrices.TryUpdate(assetId, mine, tried)
+            : latestPrices.TryAdd(assetId, mine);
+        if (!claimed) return latestPrices.TryGetValue(assetId, out var current) ? await current.Price.WaitAsync(cancellationToken) : null;
+        try
+        {
+            var price = await fetch();
+            running.SetResult(price);
+            return price;
+        }
+        catch
+        {
+            running.SetResult(null);
+            latestPrices.TryRemove(KeyValuePair.Create(assetId, mine));
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Records the stocks a strategy's check at once just left to the daily run (no latest price during a US session, #220), in
+    /// place of what its last check left. Their rows say so until the session ends. Days before today are forgotten.
+    /// </summary>
+    public void LeftToDailyRun(Guid strategyId, IReadOnlyCollection<Guid> assetIds, DateTimeOffset now)
+    {
+        var today = UsSession.Today(now);
+        lock (left)
+        {
+            foreach (var old in left.Where(entry => entry.Value.Day != today).Select(entry => entry.Key).ToList()) left.Remove(old);
+            if (assetIds.Count == 0) left.Remove(strategyId);
+            else left[strategyId] = (today, [.. assetIds]);
+        }
+    }
+
+    /// <summary>The stocks of a strategy its check at once left to the daily run this session; none outside a session.</summary>
+    public IReadOnlySet<Guid> LeftToDailyRun(Guid strategyId, DateTimeOffset now)
+    {
+        if (!UsSession.InProgress(now)) return new HashSet<Guid>();
+        lock (left)
+            return left.TryGetValue(strategyId, out var entry) && entry.Day == UsSession.Today(now) ? entry.Assets : new HashSet<Guid>();
     }
 
     /// <summary>The strategies asked to be checked since the last call.</summary>
@@ -265,33 +310,34 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         if (ids.Count == 0 || !options.Value.FetchOnDemand) return;
         // As for the run: prices belong to the database this host owns.
         if (databases.Active != databases.Home) return;
-        // While a US session runs, the next open after the last finished session is already known: a simulation would buy at a
-        // price the user could see. The daily run after the close checks it, as before.
-        if (UsSession.InProgress(time.GetUtcNow()))
-        {
-            logger.LogInformation("{Count} strategies are left to the daily run: a US session is in progress.", ids.Count);
-            return;
-        }
         var newSignals = 0;
         foreach (var id in ids)
         {
             try
             {
                 using var scope = scopes.CreateScope();
+                var refresher = scope.ServiceProvider.GetRequiredService<PriceRefresher>();
                 IReadOnlyList<RefreshResult> fetched;
                 await state.Writing.WaitAsync(stoppingToken);
                 try
                 {
-                    fetched = await scope.ServiceProvider.GetRequiredService<PriceRefresher>().CatchUpAsync(id, stoppingToken);
+                    fetched = await refresher.CatchUpAsync(id, stoppingToken);
                 }
                 finally
                 {
                     state.Writing.Release();
                 }
-                var checkedNow = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, stoppingToken);
+                // While a US session is in progress the next open after the last finished session has passed: a signal found now
+                // fills at the latest price, fetched before its stock's rules run and not stored (#220). A stock without one is left
+                // to the daily run. One clock reading decides both, so the session and the last finished one always agree.
+                var now = time.GetUtcNow();
+                Func<Asset, CancellationToken, Task<LatestPrice?>>? latest = UsSession.InProgress(now)
+                    ? (asset, cancellationToken) => refresher.TryLatestAsync(asset.Symbol, cancellationToken) : null;
+                var (checkedNow, left) = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, latest, now, stoppingToken);
+                state.LeftToDailyRun(id, left, now);
                 newSignals += checkedNow.NewSignals;
-                logger.LogInformation("Strategy {Strategy} checked at once: {Fetched} assets fetched ({Failed} failed), {Signals} new signals, {Trades} new trades.",
-                    id, fetched.Count, fetched.Count(r => r.Outcome == RefreshOutcome.Failed), checkedNow.NewSignals, checkedNow.NewTrades);
+                logger.LogInformation("Strategy {Strategy} checked at once: {Fetched} assets fetched ({Failed} failed), {Signals} new signals, {Trades} new trades, {Left} left to the daily run.",
+                    id, fetched.Count, fetched.Count(r => r.Outcome == RefreshOutcome.Failed), checkedNow.NewSignals, checkedNow.NewTrades, left.Count);
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {

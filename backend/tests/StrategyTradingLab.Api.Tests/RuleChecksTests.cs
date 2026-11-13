@@ -76,6 +76,35 @@ public class RuleChecksTests
     }
 
     [Fact]
+    public void Once_the_first_step_is_bought_the_checks_show_the_next_steps_and_the_cooldown()
+    {
+        var all = Bars("comeback-NOW-2400");
+        var turn = RulesRunner.Run(new ComebackRules(all, new ComebackParams()), all, new StepPlan(5))
+            .First(d => d.NewBuy && !Group(d, CheckGroup.Next).Any(c => c.Preview != true));
+        var bars = all.TakeWhile(b => b.Date <= turn.Date).ToList();
+        var buyDay = turn.Date.AddDays(1);
+
+        var after = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5), 0, boughtBeforeLast: buyDay)[^1].Checks;
+
+        // The milestones count from the buy, no longer in preview, and the cooldown holds the next step back, all of it to wait.
+        Assert.DoesNotContain(after, c => c.Group is CheckGroup.Candidate or CheckGroup.Buy);
+        Assert.All(after.Where(c => c.Group == CheckGroup.Next), c => Assert.Null(c.Preview));
+        Assert.All(after.Where(c => c.Group == CheckGroup.Next && c.Met == true && c.Key != "cooldown"), c => Assert.True(c.Used));
+        var cooldown = Assert.Single(after, c => c.Key == "cooldown");
+        Assert.Equal(CheckGroup.Next, cooldown.Group);
+        Assert.Equal((decimal)new ComebackParams().CooldownDays, cooldown.Value);
+        Assert.Equal(buyDay, Assert.Single(after, c => c.Key == "turn").Date);
+
+        // A later step bought on its signal's day: its milestone reads bought on that day, not just used.
+        var later = RulesRunner.Run(new ComebackRules(all, new ComebackParams()), all, new StepPlan(5))
+            .First(d => d.NewBuy && Group(d, CheckGroup.Next).Any());
+        var upTo = all.TakeWhile(b => b.Date <= later.Date).ToList();
+        var laterBuy = later.Date.AddDays(1);
+        var afterLater = RulesRunner.Run(new ComebackRules(upTo, new ComebackParams()), upTo, new StepPlan(5), 0, boughtBeforeLast: laterBuy)[^1].Checks;
+        Assert.Contains(afterLater, c => c.Key != "turn" && c.Bought == true && c.Date == laterBuy);
+    }
+
+    [Fact]
     public void Before_the_start_the_chart_gets_the_candidate_checks_of_a_stock_never_bought()
     {
         var bars = Bars("comeback-SMCI-800");

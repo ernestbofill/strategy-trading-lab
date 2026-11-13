@@ -181,8 +181,8 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
           {texts.info && <InfoTip label={t('stock.check.about', { label: texts.label })} text={fillCheck(texts.info, check, currency)} />}
         </div>
         <div className={styles.checkDetail}>{detail}</div>
-        <CheckGauge check={check} currency={currency} />
       </div>
+      <CheckGauge check={check} currency={currency} />
       {mark && (
         <span className={styles.mark} data-met={state} title={mark}>
           <span aria-hidden="true">{icon}</span>

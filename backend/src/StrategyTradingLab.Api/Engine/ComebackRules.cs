@@ -255,9 +255,11 @@ public class ComebackRules : IBuyRules
         var milestones = BuildMilestones(i, price, pulledBack, breakoutHigh);
         if (bought)
         {
-            // The first buy is the turn; a later one is for the milestone of the signal before it.
+            // The first buy is the turn; a later one is for the milestone of the signal before it. A step bought on the signal's
+            // own day (RulesRunner's boughtBeforeLast) has no signal before it: the open milestone in its window, as the signal's.
             if (turnOn is null) turnOn = day.LastBuyDay;
-            else if (signalled is { } key) boughtOn[key] = day.LastBuyDay;
+            else if ((signalled ?? milestones.FirstOrDefault(m => !used.Contains(m.Key) && InWindow(m, price))?.Key) is { } key)
+                boughtOn[key] = day.LastBuyDay;
             foreach (var m in milestones.Where(m => m.Reached)) used.Add(m.Key);
             usedAfterBuyOn = day.LastBuyDay;
             breakoutHigh = price; // The next breakout counts from here.

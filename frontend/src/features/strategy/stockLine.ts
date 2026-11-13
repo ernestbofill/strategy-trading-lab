@@ -115,7 +115,10 @@ const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
   removed: ['strategy.pill.removed', 'muted'],
 }
 
-/** A stock not checked yet: one added during a US session waits for the daily run after it ends. */
+/**
+ * A stock not checked yet: one the check at once left to the daily run during a US session (its latest price couldn't be
+ * fetched, #220) waits for that run after the session ends.
+ */
 export const notCheckedLine = (row: StockRow, t: Translate) =>
   t(row.afterClose ? 'strategy.stock.afterClose' : 'strategy.stock.notChecked')
 

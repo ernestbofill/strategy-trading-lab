@@ -5,6 +5,7 @@ using Npgsql;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 
@@ -148,7 +149,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
     /// another device).
     /// </summary>
     public async Task<AiRoundResult?> SubmitAsync(Strategy strategy, User user, AiRound round, bool extra, DateOnly today, AiPlan plan, string prompt,
-        string model, bool? share, CancellationToken cancellationToken)
+        string model, bool? share, IReadOnlyDictionary<Guid, LatestPrice>? latest, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
         var session = UsSession.LastComplete(now);
@@ -197,7 +198,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
             if (done == 0) return null;
         }
 
-        // A simulation buys at once, at the latest price stored (the endpoint refreshes the picks' prices first).
+        // A simulation buys at once, at the latest price (the endpoint fetches the picks' first; the latest stored close otherwise).
         var ids = picked.Keys.ToList();
         var assets = live ? new Dictionary<Guid, Asset>()
             : await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
@@ -222,7 +223,8 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
             };
             db.Signals.Add(signal);
             signals.Add(signal);
-            if (rates is not null && await LatestTradeAsync(signal, strategy, assets[pick.AssetId], session, rates, cancellationToken) is { } trade)
+            if (rates is not null && await LatestTradeAsync(signal, strategy, assets[pick.AssetId], session, rates,
+                    latest?.GetValueOrDefault(pick.AssetId), cancellationToken) is { } trade)
                 db.SignalTrades.Add(trade);
             // The strategy page shows the pick today, as the daily check's own signals.
             await SaveEvaluationAsync(strategy.Id, pick.AssetId, session, EvaluationStatus.BuySignal, pick.StepNo, ScoreFacts(score.Overall), cancellationToken);
@@ -282,18 +284,19 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
     }
 
     /// <summary>
-    /// A simulation's buy for a new signal at the latest stored price (today's bar while the market is open), dated that bar's day,
-    /// or the signal's session when the bar is older (a holiday). Null without the rate or anything to buy with: the daily check
-    /// then buys it at the next open, as before.
+    /// A simulation's buy for a new signal at the latest price: the one fetched just before (<paramref name="fetched"/>, not stored,
+    /// #220), else the latest stored close. Dated that price's day, or the signal's session when it is older (a holiday). Null
+    /// without the rate or anything to buy with: the daily check then buys it at the next open, as before.
     /// </summary>
     async Task<SignalTrade?> LatestTradeAsync(Signal signal, Strategy strategy, Asset asset, DateOnly session, ExchangeRates rates,
-        CancellationToken cancellationToken)
+        LatestPrice? fetched, CancellationToken cancellationToken)
     {
-        var latest = await db.Prices.AsNoTracking().Where(p => p.AssetId == signal.AssetId).OrderByDescending(p => p.Date)
+        var stored = await db.Prices.AsNoTracking().Where(p => p.AssetId == signal.AssetId).OrderByDescending(p => p.Date)
             .Select(p => new { p.Date, p.Close }).FirstAsync(cancellationToken);
-        var date = latest.Date > session ? latest.Date : session;
+        var (day, price) = fetched is not null && fetched.Date >= stored.Date ? (fetched.Date, fetched.Price) : (stored.Date, stored.Close);
+        var date = day > session ? day : session;
         return rates.Between(strategy.Currency, asset.Currency, date) is { } fx
-            ? StrategyEvaluator.BuyTrade(signal, strategy, date, latest.Close, fx, signal.StepAmount ?? 0)
+            ? StrategyEvaluator.BuyTrade(signal, strategy, date, price, fx, signal.StepAmount ?? 0)
             : null;
     }
 

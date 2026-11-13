@@ -162,17 +162,19 @@
   border-top: 1px solid var(--surface-editor);
 }
 
-/* Label and detail beside the badge; the gauge below spans the full row, whatever the badge's width. */
+/* Label and detail beside the badge; the gauge below spans the full row, whatever the badge's width.
+   The DOM keeps the reading order label, detail, gauge, badge; the grid only places them. */
 .check {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  column-gap: 12px;
   row-gap: var(--space-1);
   padding: 10px var(--space-3);
 }
-.check > :not(.checkMain, .mark) {
+.check > .progress,
+.check > .stackStrip {
+  grid-row: 2;
   grid-column: 1 / -1;
 }
 
@@ -197,7 +199,9 @@
 }
 
 .mark {
-  flex: none;
+  grid-row: 1;
+  grid-column: 2;
+  margin-left: 12px;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);

@@ -164,13 +164,13 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
         </div>
         <div className={styles.checkDetail}>{checkText(check, texts, currency, 'detail')}</div>
       </div>
+      <CheckGauge check={check} currency={currency} />
       {mark && (
         <span className={styles.mark} data-met={state} title={mark}>
           <span aria-hidden="true">{icon}</span>
           <span className={styles.markText}>{mark}</span>
         </span>
       )}
-      <CheckGauge check={check} currency={currency} />
     </li>
   )
 }

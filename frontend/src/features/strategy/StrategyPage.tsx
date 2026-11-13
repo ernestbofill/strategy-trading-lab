@@ -279,10 +279,11 @@ function StrategyView({ s }: { s: StrategyDetail }) {
           {running && !live && (
             <GoLive s={s} className={styles.tileLink} titleClassName={`ui-strong ${styles.tileTitle}`} detailClassName={styles.detail} />
           )}
+          {running && <ArchiveStrategy s={s} className={styles.tileLink} titleClassName={`ui-strong ${styles.tileTitle}`} />}
         </div>
       )}
       {/* One way out of each state: a running strategy is archived, and only an archived one can be deleted. */}
-      {running ? <ArchiveStrategy s={s} /> : <DeleteStrategy id={s.id} name={s.name} />}
+      {!running && <DeleteStrategy id={s.id} name={s.name} />}
     </Screen>
   )
 }

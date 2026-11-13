@@ -159,14 +159,22 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var from = replayIndex < 0 ? bars.Count - 1 : replayIndex;
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
-            var days = RulesRunner.Run(rules, bars, new StepPlan(strategy.Budget.MaxSteps ?? 1), from);
+            var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
+            var days = RulesRunner.Run(rules, bars, plan, from);
+            // A Manual buy signal today: also where the rules stand once its step is bought, for the stock page to show as soon as it's
+            // answered (a simulation's trade comes with the next check, which shows it anyway). Fresh rules: they keep state. Before
+            // the transaction, so the replay doesn't hold the strategy's lock.
+            var afterBuy = strategy.Mode == StrategyMode.Live && days[^1].NewBuy
+                ? RulesRunner.Run(TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from,
+                    boughtBeforeLast: UsSession.After(days[^1].Date))[^1].Checks
+                : null;
             if (days[^1].Status == RuleStatus.NotEnoughData)
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
             // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running: an Edit
             // list save or an archive made since the strategy was loaded waits for this or wins, and gets no new signal.
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             if (!await StillFollowedAsync(strategy.Id, asset.Id, cancellationToken)) continue;
-            var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, price, cancellationToken);
+            var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, afterBuy, price, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             signals += run.NewSignals;
             trades += run.NewTrades;
@@ -227,25 +235,14 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     }
 
     /// <param name="evaluatedUntil">The last day checked before (<see cref="CheckedDaysAsync"/>).</param>
+    /// <param name="checksAfterBuy">The last day's checks once its Manual buy signal's step is bought (<see cref="RulesRunner.Run"/>), if it starts one.</param>
     /// <param name="latestPrice">The stock's latest price during a session (<see cref="CheckAsync"/>), for the signals this call finds.</param>
     async Task<Changes> SyncAsync(Strategy strategy, Asset asset, IReadOnlyList<PriceBar> bars, IReadOnlyList<DayEvaluation> days,
-        DateOnly? evaluatedUntil, DateTimeOffset now, ExchangeRates rates, BudgetUse budget, LatestPrice? latestPrice, CancellationToken cancellationToken)
+        DateOnly? evaluatedUntil, DateTimeOffset now, ExchangeRates rates, BudgetUse budget, IReadOnlyList<RuleCheck>? checksAfterBuy,
+        LatestPrice? latestPrice, CancellationToken cancellationToken)
     {
         int newSignals = 0, newTrades = 0, missed = 0;
-
-        // Where it stands today.
         var latest = days[^1];
-        var status = Enum.Parse<EvaluationStatus>(latest.Status.ToString());
-        var row = await db.DailyEvaluations.FindAsync([strategy.Id, asset.Id, latest.Date], cancellationToken);
-        if (row is null)
-            db.DailyEvaluations.Add(new DailyEvaluation
-                { StrategyId = strategy.Id, AssetId = asset.Id, Date = latest.Date, Status = status, StepNo = latest.StepNo, Facts = TodaysFacts(latest) });
-        else
-        {
-            row.Status = status;
-            row.StepNo = latest.StepNo;
-            row.Facts = TodaysFacts(latest);
-        }
 
         // A signal for each buy or sale the rules call for. Days up to the last one evaluated before are never given new
         // signals: a changed setting or a revised price history must not back-date signals and trades.
@@ -285,6 +282,22 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             signals[(day.Date, TradeSide.Sell)] = signal;
             found.Add(signal);
             newSignals++;
+        }
+
+        // Where it stands today, with the checks after the buy while today's signal exists (not when the budget held it back). Rules
+        // that count their own steps (Bear markets) read the same: nothing to keep.
+        var afterBuy = checksAfterBuy is not null && signals.ContainsKey((latest.Date, TradeSide.Buy)) && !checksAfterBuy.SequenceEqual(latest.Checks)
+            ? checksAfterBuy : null;
+        var status = Enum.Parse<EvaluationStatus>(latest.Status.ToString());
+        var row = await db.DailyEvaluations.FindAsync([strategy.Id, asset.Id, latest.Date], cancellationToken);
+        if (row is null)
+            db.DailyEvaluations.Add(new DailyEvaluation
+                { StrategyId = strategy.Id, AssetId = asset.Id, Date = latest.Date, Status = status, StepNo = latest.StepNo, Facts = TodaysFacts(latest, afterBuy) });
+        else
+        {
+            row.Status = status;
+            row.StepNo = latest.StepNo;
+            row.Facts = TodaysFacts(latest, afterBuy);
         }
 
         // Where a signal's window closed: the first later day the buy (or sell) conditions no longer hold. A signal still waiting is missed.
@@ -380,12 +393,22 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
 
     static JsonDocument Facts(IReadOnlyDictionary<string, object> facts) => JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);
 
-    /// <summary>Where the stock stands today: the day's facts and, under <c>checks</c>, each rule's verdict (the stock page).</summary>
-    static JsonDocument TodaysFacts(DayEvaluation day) =>
-        JsonSerializer.SerializeToDocument(new Dictionary<string, object>(day.Facts) { [ChecksKey] = day.Checks }, JsonSerializerOptions.Web);
+    /// <summary>
+    /// Where the stock stands today: the day's facts and, under <c>checks</c>, each rule's verdict (the stock page); on a buy
+    /// signal's day, under <c>checksAfterBuy</c>, the verdicts once its step is bought.
+    /// </summary>
+    static JsonDocument TodaysFacts(DayEvaluation day, IReadOnlyList<RuleCheck>? afterBuy)
+    {
+        var facts = new Dictionary<string, object>(day.Facts) { [ChecksKey] = day.Checks };
+        if (afterBuy is not null) facts[ChecksAfterBuyKey] = afterBuy;
+        return JsonSerializer.SerializeToDocument(facts, JsonSerializerOptions.Web);
+    }
 
     /// <summary>The key of the checks in a daily evaluation's facts.</summary>
     public const string ChecksKey = "checks";
+
+    /// <summary>The key of the checks once the day's buy signal's step is bought (<see cref="RulesRunner.Run"/>).</summary>
+    public const string ChecksAfterBuyKey = "checksAfterBuy";
 }
 
 /// <summary>The euro against each currency by day, and the rate between any two through it.</summary>

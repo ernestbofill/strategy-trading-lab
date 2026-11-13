@@ -39,7 +39,7 @@ export const stock = {
   'stock.check.notMet': 'Not met',
   'stock.check.used': 'Step bought',
   'stock.check.usedAtBuy': 'Used at a buy',
-  'stock.check.boughtOn': 'Bought a step on {date}.',
+  'stock.check.boughtOn': 'Step counted at the open on {date}.',
   'stock.check.usedDetail': "Already reached at a buy: it can't earn another step.",
   'stock.check.windowClosed': 'Window closed',
   'stock.check.pastZone': 'Past zone',

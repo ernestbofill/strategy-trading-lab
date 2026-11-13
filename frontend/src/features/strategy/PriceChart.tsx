@@ -79,7 +79,7 @@ export function PriceChart({
       const values = today.to === undefined ? [today.from] : [today.from, today.to]
       return values.map((value, k) => ({ key: `${s.mark.id}:${k}`, tone: s.mark.tone, value }))
     }),
-  ].filter((l, k, all) => all.findIndex((o) => exact(o.value, currency) === exact(l.value, currency)) === k)
+  ].filter((l, k, all) => l.tone === 'price' || all.findIndex((o) => o.tone !== 'price' && exact(o.value, currency) === exact(l.value, currency)) === k)
   const labelTops = spreadLabels(labels.map((l) => y(l.value)), LABEL, LABEL / 2, HEIGHT - LABEL / 2)
 
   return (

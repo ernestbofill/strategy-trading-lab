@@ -206,7 +206,7 @@ public class ComebackRules : IBuyRules
                 ? RuleCheck.ProgressOf(Math.Max(0, -Indicators.PctFrom(price, peak)), p.BreakoutPullbackPct)
                 : null;
             var riseToCross = notCrossed && s50 is { } short50 && s200 is { } long200 && short50 > 0
-                ? Math.Round(Indicators.PctFrom(long200, short50), 1)
+                ? Math.Max(0.1m, Math.Round(Indicators.PctFrom(long200, short50), 1)) // Never "rise 0%" before the cross.
                 : (decimal?)null;
             var bought = isUsed && boughtOn.TryGetValue(m.Key, out var on) ? on : (DateOnly?)null;
             return new RuleCheck(m.Key, CheckGroup.Next, met, val, min, p.MaxChasePct, line,

@@ -46,7 +46,8 @@ export function fillCheck(text: string, check: RuleCheck, currency: string): str
 export function checkText(check: RuleCheck, texts: CheckTexts, currency: string, kind: 'detail' | 'short'): string {
   const past = isPastMax(check) ? (kind === 'detail' ? texts.past : texts.pastShort) : null
   const tracking = kind === 'detail' && check.midLevel != null ? texts.tracking : null
-  const text = check.value === null && (tracking || texts.none) ? (tracking || texts.none)! : (past ?? texts[kind])
+  const noValue = tracking || texts.none
+  const text = check.value === null && noValue ? noValue : (past ?? texts[kind])
   return fillCheck(text, check, currency)
 }
 

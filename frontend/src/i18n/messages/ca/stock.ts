@@ -41,7 +41,7 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.check.notMet': 'No compleix',
   'stock.check.used': 'Fase comprada',
   'stock.check.usedAtBuy': 'Usada en una compra',
-  'stock.check.boughtOn': 'Fase comprada el {date}.',
+  'stock.check.boughtOn': "Fase comptada a l'obertura del {date}.",
   'stock.check.usedDetail': "Ja s'havia assolit en una compra: no pot donar una altra fase.",
   'stock.check.windowClosed': 'Finestra tancada',
   'stock.check.pastZone': 'Fora de zona',

@@ -31,7 +31,8 @@ function CheckGauge({ check, currency }: { check: RuleCheck; currency: string })
   const state = past ? 'past' : check.met ? 'met' : 'notMet'
 
   // 0. No golden cross yet: the SMA 50 still under the SMA 200.
-  if (check.key === 'golden' && check.value === null && check.level !== null && check.midLevel != null) {
+  // (Checks stored before this field still have a value: a spread at or under 0 says the same.)
+  if (check.key === 'golden' && (check.value === null || (check.subValue ?? 0) <= 0) && check.level !== null && check.midLevel != null) {
     return (
       <div className={styles.stackStrip} aria-hidden="true">
         <span className={styles.stackChip}>{t('stock.bar.sma50', { price: exact(check.level, currency) })}</span>

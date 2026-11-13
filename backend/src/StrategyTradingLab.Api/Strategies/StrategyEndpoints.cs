@@ -82,7 +82,8 @@ public static class StrategyEndpoints
         .WithSummary("The user's strategies, running ones first, with their results, and the live signals and AI rounds waiting for an answer.");
 
         app.MapGet("/strategies/{id:guid}", async Task<Results<Ok<StrategyDetail>, NotFound>> (
-            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, PriceRefreshState refreshes, TimeProvider time,
+            CancellationToken cancellationToken) =>
         {
             var user = await CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
@@ -92,10 +93,9 @@ public static class StrategyEndpoints
             var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : default;
             // The version it started from: "tuned" compares with that.
             var template = await store.VersionAsync(strategy.TemplateKey, strategy.DefaultsVersion, cancellationToken);
-            // Nothing checks a strategy while a US session is in progress (the check at once skips it, PriceRefreshWorker.CheckAsync):
-            // a stock not checked yet waits for the daily run after it.
-            var waitsForClose = strategy.Status == StrategyStatus.Running && TemplateRules.Supports(strategy.TemplateKey) && UsSession.InProgress(time.GetUtcNow());
-            return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores, waitsForClose));
+            // The stocks its check at once left to the daily run during this US session (no latest price, PriceRefreshWorker.CheckAsync).
+            var leftToDailyRun = strategy.Status == StrategyStatus.Running ? refreshes.LeftToDailyRun(strategy.Id, time.GetUtcNow()) : null;
+            return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores, leftToDailyRun));
         })
         .RequireUser()
         .WithTags("Strategies")
@@ -478,7 +478,7 @@ public static class StrategyEndpoints
     }
 
     static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, Template template, User user, DateOnly today, CancellationToken cancellationToken,
-        AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null, bool waitsForClose = false)
+        AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null, IReadOnlySet<Guid>? leftToDailyRun = null)
     {
         var texts = TemplateTexts.For(template, user.Locale);
         var book = await StrategyBook.LoadAsync(db, [strategy], today, cancellationToken);
@@ -542,7 +542,7 @@ public static class StrategyEndpoints
                 CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 Checks = checks,
-                AfterClose = waitsForClose && status == StockStatus.NotChecked,
+                AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
             };
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)

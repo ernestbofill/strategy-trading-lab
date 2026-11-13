@@ -29,6 +29,8 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     /// rule window is 300 trading days, about 14 months; the rest is room to spare.
     /// </summary>
     public const int HistoryYears = 2;
+    /// <summary>How long a latest price may take before it counts as not fetched (<see cref="TryLatestAsync"/>).</summary>
+    public static readonly TimeSpan LatestTimeout = TimeSpan.FromSeconds(10);
     /// <summary>Politeness towards an unofficial endpoint.</summary>
     public TimeSpan Pause { get; set; } = TimeSpan.FromMilliseconds(300);
     public TimeProvider Time { get; set; } = TimeProvider.System;
@@ -54,6 +56,26 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
             .OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
         var stored = await db.FxRates.Where(r => r.Base == BaseCurrency).Select(r => r.Quote).Distinct().ToListAsync(cancellationToken);
         return await RefreshAllAsync(assets, Quotes(assets.Select(a => a.Currency)).Except(stored), cancellationToken);
+    }
+
+    /// <summary>
+    /// An asset's latest price, or null when the source fails (logged): best effort, never stored (#220). For a check at once during
+    /// a US session, a signal's page and an AI simulation's picks. A source slower than <paramref name="timeout"/>
+    /// (<see cref="LatestTimeout"/> by default) gives null too.
+    /// </summary>
+    public async Task<LatestPrice?> TryLatestAsync(string symbol, CancellationToken cancellationToken, TimeSpan? timeout = null)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(timeout ?? LatestTimeout);
+        try
+        {
+            return await source.LatestAsync(symbol, limit.Token);
+        }
+        catch (Exception error) when (error is MarketDataException || (error is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+        {
+            logger.LogWarning("The latest price of {Symbol} wasn't fetched: {Reason}", symbol, error.Message);
+            return null;
+        }
     }
 
     /// <summary>Each asset's prices, then each currency's rates, with a pause between; one failing never stops the others.</summary>

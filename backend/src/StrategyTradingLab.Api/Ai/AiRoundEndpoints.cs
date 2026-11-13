@@ -106,8 +106,8 @@ public static class AiRoundEndpoints
                 if (shown != AiPrompt.Build(parameters, today.AddDays(-1), plan.Stocks)) return TypedResults.Conflict(Messages.PromptChanged.In(user.Locale));
                 prompt = shown;
             }
-            if (strategy.Mode == StrategyMode.Simulation) await RefreshAsync(prices, db, plan.Picks, cancellationToken);
-            var result = await rounds.SubmitAsync(strategy, user, round, extra, today, plan, prompt, model, request.Share, cancellationToken);
+            var latest = strategy.Mode == StrategyMode.Simulation ? await LatestAsync(prices, db, plan.Picks, cancellationToken) : null;
+            var result = await rounds.SubmitAsync(strategy, user, round, extra, today, plan, prompt, model, request.Share, latest, cancellationToken);
             return result is null ? TypedResults.Conflict(Messages.RoundDone.In(user.Locale)) : TypedResults.Ok(result);
         })
         .WithName("UseAiScores")
@@ -180,31 +180,19 @@ public static class AiRoundEndpoints
         db.Strategies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id && s.UserId == userId && s.TemplateKey == TemplateCatalog.Ai.Key
             && (!running || s.Status == StrategyStatus.Running), cancellationToken);
 
-    /// <summary>How long a simulation waits for the picks' fresh prices before it buys at the ones stored.</summary>
-    static readonly TimeSpan RefreshTimeout = TimeSpan.FromSeconds(10);
-
     /// <summary>
-    /// Fetches the picks' latest prices (today's bar while the market is open), so a simulation buys at the latest price. Best
-    /// effort: a failure or a slow source leaves the stored prices.
+    /// Fetches the picks' latest prices, not stored (#220), so a simulation buys at the latest price. Best effort: a pick whose
+    /// fetch fails, or comes too late, buys at its latest stored close.
     /// </summary>
-    static async Task RefreshAsync(PriceRefresher prices, AppDbContext db, IReadOnlyList<AiPick> picks, CancellationToken cancellationToken)
+    static async Task<Dictionary<Guid, LatestPrice>> LatestAsync(PriceRefresher prices, AppDbContext db, IReadOnlyList<AiPick> picks,
+        CancellationToken cancellationToken)
     {
-        if (picks.Count == 0) return;
+        if (picks.Count == 0) return [];
         var ids = picks.Select(p => p.AssetId).ToList();
         var assets = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(RefreshTimeout);
-        foreach (var asset in assets)
-        {
-            try
-            {
-                await prices.RefreshAssetAsync(asset, timeout.Token);
-            }
-            catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
-            {
-                db.ChangeTracker.Clear();
-            }
-        }
+        // At once, each under the same limit, so one slow pick doesn't leave the others at their stored close.
+        var fetched = await Task.WhenAll(assets.Select(async asset => (asset.Id, Price: await prices.TryLatestAsync(asset.Symbol, cancellationToken))));
+        return fetched.Where(f => f.Price is not null).ToDictionary(f => f.Id, f => f.Price!);
     }
 
     public static AiReadingDto ReadingOf(AiPlan plan) =>

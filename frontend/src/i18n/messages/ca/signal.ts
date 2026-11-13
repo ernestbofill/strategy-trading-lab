@@ -24,6 +24,7 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.hint.prefilled':
     'Emplenat amb el preu d’obertura del {date}. Canvia el que sigui diferent al teu broker.',
   'signal.hint.close': 'Encara no hi ha preu d’obertura: emplenat amb el tancament del {date}. Canvia’l pel preu del teu broker.',
+  'signal.hint.latest': 'Emplenat amb el darrer preu. Canvia’l pel preu del teu broker.',
   'signal.hint.amount': 'El que ha comprat accions. L’import de la fase, {step}, inclou la comissió.',
   'signal.hint.amountBudget': 'El que ha comprat accions. El teu pressupost de {step} inclou la comissió.',
   'signal.save.did': 'Desa l’operació',

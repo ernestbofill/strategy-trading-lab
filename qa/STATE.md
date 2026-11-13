@@ -133,7 +133,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | D11 | Follow a simulation manually | §4 Going live | smoke | 2026-11-06-1 | C2.15 |
 | D12 | Archive, then delete | §6 Strategy page | deep | 2026-11-08-1 | Full lifecycle tested: create, archive, permanently delete throwaway. C3.4 |
 | D13 | An archived strategy is read-only | §6 Strategy page | smoke | 2026-11-06-1 | C3.16 |
-| D15 | Checked at once: a new strategy or an added stock leaves "Not checked yet" within a minute, without a reload; a list of more than 7 shows 5 and "Show all" | §5 Modes, §6 Strategy page | untested | | New (feedback 2026-11-12) |
+| D15 | Checked at once: a new strategy or an added stock leaves "Not checked yet" within a minute, without a reload, also during a US session (a simulation's signal then trades at the latest price, #220); a list of more than 7 shows 5 and "Show all" | §5 Modes, §6 Strategy page | untested | | New (feedback 2026-11-12) |
 | D14 | Metrics arithmetic: budget used, fees, gains, vs the index | §6 Metrics, §5 Modes | deep | 2026-11-08-3 | Oversold arithmetic verified: sales proceeds vs buy cost (+200% return), clamping of invested capital to $0. C3.3–C3.5 |
 
 ### E · Stock page

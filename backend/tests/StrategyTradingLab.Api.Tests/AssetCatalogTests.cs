@@ -36,6 +36,8 @@ public class AssetCatalogTests
         }
 
         public Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken) => Task.FromResult(Currency);
+
+        public Task<LatestPrice> LatestAsync(string symbol, CancellationToken cancellationToken) => throw new MarketDataException("No latest price here.");
     }
 
     static string NewSymbol() => $"T{Guid.NewGuid():N}"[..10].ToUpperInvariant();

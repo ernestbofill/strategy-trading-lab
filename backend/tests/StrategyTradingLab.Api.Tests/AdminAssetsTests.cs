@@ -95,6 +95,8 @@ public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture
 
         // The euro: no exchange rate is fetched, so no fake one lands on a real currency.
         public Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken) => Task.FromResult(PriceRefresher.BaseCurrency);
+
+        public Task<LatestPrice> LatestAsync(string symbol, CancellationToken cancellationToken) => throw new MarketDataException("No latest price here.");
     }
 
     sealed class Api(IMarketDataSource source) : AccountsApi

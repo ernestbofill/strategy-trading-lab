@@ -180,13 +180,16 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   }
 
   const following = nextStep(s, t)
-  // Before the next open is in, the form starts with the signal day's close (feedback: no typing it in).
+  // Before the next open is stored, the form starts with the latest price once that session has opened, else the signal day's
+  // close (feedback: no typing it in).
   const priceHint =
     s.prefill.price === null
       ? undefined
       : s.prefill.priceIsClose
         ? t('signal.hint.close', { date: shortDate(s.signalDate) })
-        : t('signal.hint.prefilled', { date: shortDate(s.prefill.date) })
+        : s.prefill.priceIsLatest
+          ? t('signal.hint.latest')
+          : t('signal.hint.prefilled', { date: shortDate(s.prefill.date) })
 
   const reasons = skipReasons(t)
 

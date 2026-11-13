@@ -33,6 +33,8 @@ public class PriceRefresherTests
             Task.FromResult<IReadOnlyList<SymbolMatch>>([]);
 
         public Task<string> CurrencyAsync(string symbol, CancellationToken cancellationToken) => Task.FromResult("USD");
+
+        public Task<LatestPrice> LatestAsync(string symbol, CancellationToken cancellationToken) => throw new MarketDataException("No latest price here.");
     }
 
     static IReadOnlyList<Candle> Recent(params (int Day, decimal Close)[] days) => [.. days.Select(d => Day(d.Day, d.Close))];

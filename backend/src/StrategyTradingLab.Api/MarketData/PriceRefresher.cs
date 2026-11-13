@@ -57,24 +57,9 @@ public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<P
     }
 
     /// <summary>
-    /// The latest price of each asset a strategy follows, for its check at once while a US session is in progress (#220). Not
-    /// stored: a trade filled at it keeps its own price. An asset whose fetch fails is left out, and its check waits for the daily run.
+    /// An asset's latest price, or null when the source fails (logged): best effort, never stored (#220). For a check at once during
+    /// a US session, a signal's page and an AI simulation's picks.
     /// </summary>
-    public async Task<IReadOnlyDictionary<Guid, LatestPrice>> LatestAsync(Guid strategyId, CancellationToken cancellationToken)
-    {
-        var assets = await db.Assets.AsNoTracking()
-            .Where(a => a.Active && db.StrategyAssets.Any(sa => sa.StrategyId == strategyId && sa.AssetId == a.Id && sa.Active && sa.RemovedAt == null))
-            .OrderBy(a => a.Symbol).ToListAsync(cancellationToken);
-        var latest = new Dictionary<Guid, LatestPrice>();
-        foreach (var asset in assets)
-        {
-            if (await TryLatestAsync(asset.Symbol, cancellationToken) is { } price) latest[asset.Id] = price;
-            await Task.Delay(Pause, cancellationToken);
-        }
-        return latest;
-    }
-
-    /// <summary>An asset's latest price, or null when the source fails (logged): best effort, never stored.</summary>
     public async Task<LatestPrice?> TryLatestAsync(string symbol, CancellationToken cancellationToken)
     {
         try

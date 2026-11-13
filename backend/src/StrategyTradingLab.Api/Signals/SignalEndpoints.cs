@@ -154,8 +154,9 @@ public static class SignalEndpoints
                 return null; // Too slow: the close, and another try after LatestEvery.
             }
         });
-        // A holiday on its exchange: still the signal day's close.
-        return latest?.Date > signal.SignalDate ? latest : null;
+        // Only that next session's price, which the form dates: not the signal day's close (a holiday on its exchange), nor a much
+        // later day's (a stock whose prices are no longer fetched).
+        return latest?.Date == SignalRules.NextWeekday(signal.SignalDate) ? latest : null;
     }
 
     /// <summary>

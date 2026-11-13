@@ -84,29 +84,31 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     /// One running strategy's check, as the daily run makes it, right after it started or its list gained a stock
     /// (<see cref="MarketData.PriceRefreshState.RequestCheck"/>). Idempotent like the run; the run's alerts stay its own.
     /// </summary>
-    /// <param name="latest">
-    /// While a US session is in progress, each stock's latest price, fetched just before (#220): the next open after the last
-    /// finished session has passed, so a signal this check finds fills at that price instead. A stock without one (its fetch
-    /// failed, or no exchange rate for it) is left to the daily run, untouched: a signal found now would otherwise fill at this
-    /// morning's open, which the user could already see. Null outside a session.
+    /// <param name="latestPrice">
+    /// While a US session is in progress, fetches a stock's latest price (#220), not stored; null when it fails. The next open
+    /// after the last finished session has passed, so a signal this check finds fills at that price instead. It is asked for
+    /// before the stock's rules run; a stock without one from after the last finished session (the fetch failed, nothing traded
+    /// yet today, a holiday) or without an exchange rate is left to the daily run, untouched: a signal found now would otherwise
+    /// fill at this morning's open, which the user could already see. Null outside a session.
     /// </param>
-    public async Task<CheckResult> CheckAsync(Guid strategyId, IReadOnlyDictionary<Guid, LatestPrice>? latest, CancellationToken cancellationToken)
+    /// <param name="now">The moment the caller chose between the two, so the last finished session is the one it saw.</param>
+    public async Task<CheckResult> CheckAsync(Guid strategyId, Func<Asset, CancellationToken, Task<LatestPrice?>>? latestPrice, DateTimeOffset now,
+        CancellationToken cancellationToken)
     {
-        var now = time.GetUtcNow();
         var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
             .SingleOrDefaultAsync(s => s.Id == strategyId && s.Status == StrategyStatus.Running, cancellationToken);
         if (strategy is null || !TemplateRules.Supports(strategy.TemplateKey)) return new CheckResult(new EvaluationSummary(0, 0, 0, 0, 0), []);
         var rates = await ExchangeRates.LoadAsync(db, null, cancellationToken);
         var left = new List<Guid>();
-        var run = await EvaluateAsync(strategy, UsSession.LastComplete(now), now, rates, latest, [], left, cancellationToken);
+        var run = await EvaluateAsync(strategy, UsSession.LastComplete(now), now, rates, latestPrice, [], left, cancellationToken);
         return new CheckResult(new EvaluationSummary(1, run.NewSignals, run.NewTrades, run.Missed, 0), left);
     }
 
-    /// <param name="latest">The latest prices of a check at once during a session (<see cref="CheckAsync"/>); null for the daily run.</param>
+    /// <param name="latestPrice">Fetches a latest price during a session (<see cref="CheckAsync"/>); null for the daily run.</param>
     /// <param name="missing">Gets a line for each stock the rules couldn't check in full: no prices, prices too old, or too short a history.</param>
     /// <param name="left">Gets each stock left to the daily run for want of a latest price.</param>
     async Task<Changes> EvaluateAsync(Strategy strategy, DateOnly lastSession, DateTimeOffset now, ExchangeRates rates,
-        IReadOnlyDictionary<Guid, LatestPrice>? latest, List<string> missing, List<Guid> left, CancellationToken cancellationToken)
+        Func<Asset, CancellationToken, Task<LatestPrice?>>? latestPrice, List<string> missing, List<Guid> left, CancellationToken cancellationToken)
     {
         int signals = 0, trades = 0, missed = await CloseUnfollowedAsync(strategy, lastSession, cancellationToken);
         var listed = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).ToDictionary(a => a.AssetId, a => a.AddedAt);
@@ -121,15 +123,6 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             // A stock added later is evaluated from the day it was added, not from the strategy's start.
             var start = added[asset.Id] > strategy.StartedOn ? added[asset.Id] : strategy.StartedOn;
             if (start > DateOnly.FromDateTime(now.UtcDateTime).AddDays(1)) continue; // Nothing if the strategy (or stock) starts in the future.
-            LatestPrice? price = null;
-            // Checked first, so a stock that couldn't fill at its latest price gets no signal now (see CheckAsync).
-            if (latest is not null
-                && (!latest.TryGetValue(asset.Id, out price) || rates.Between(strategy.Currency, asset.Currency, price.Date) is null))
-            {
-                left.Add(asset.Id);
-                continue;
-            }
-
             var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date <= lastSession).OrderBy(p => p.Date)
                 .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
             if (bars.Count == 0)
@@ -147,6 +140,19 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             if (firstChecked is { } first && first < UsSession.LastComplete(listed[asset.Id])
                 && checkedUntil is { } until && added[asset.Id] > until && bars[^1].Date > until)
                 checkedUntil = bars[^1].Date.AddDays(-1);
+            // During a session, a stock this check can give a new signal (a day after the last one checked) needs its latest price
+            // first, from after the last finished session: else it is left to the daily run, untouched (see CheckAsync). A stock
+            // already checked to its newest bar gets no new signal here, so it needs none.
+            LatestPrice? price = null;
+            if (latestPrice is not null && (checkedUntil is null || checkedUntil < bars[^1].Date))
+            {
+                price = await latestPrice(asset, cancellationToken);
+                if (price is null || price.Date <= lastSession || rates.Between(strategy.Currency, asset.Currency, price.Date) is null)
+                {
+                    left.Add(asset.Id);
+                    continue;
+                }
+            }
             var replayFrom = firstChecked ?? bars[^1].Date;
             // No bar from that day on (a price row revised away): the latest bar, never back to the start.
             var replayIndex = bars.FindIndex(b => b.Date >= replayFrom);
@@ -345,13 +351,13 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
 
     /// <summary>
     /// The day and price a signal's trade fills at: the open of the first bar after its day; else, for a signal <paramref name="found"/>
-    /// by this check at once during a session, the latest price once it comes from a later day than the signal's (on a holiday it
-    /// is still the signal day's close, and the next open is still to come). Null while it waits.
+    /// by this check at once during a session, the latest price (from after the last finished session, so after the signal's day:
+    /// <see cref="EvaluateAsync"/> checks it). Null while it waits.
     /// </summary>
     static (DateOnly Date, decimal Price)? FillOf(Signal signal, IReadOnlyList<PriceBar> bars, LatestPrice? latest, HashSet<Signal> found)
     {
         if (bars.FirstOrDefault(b => b.Date > signal.SignalDate) is { } next) return (next.Date, next.Open);
-        if (latest is not null && found.Contains(signal) && latest.Date > signal.SignalDate) return (latest.Date, latest.Price);
+        if (latest is not null && found.Contains(signal)) return (latest.Date, latest.Price);
         return null;
     }
 

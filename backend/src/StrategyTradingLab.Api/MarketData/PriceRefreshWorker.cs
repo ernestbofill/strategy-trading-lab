@@ -70,15 +70,25 @@ public class PriceRefreshState
     /// <summary>
     /// A signal's page's latest price for an asset (#220): the one fetched within <paramref name="every"/>, else a fresh one from
     /// <paramref name="fetch"/>. Each try counts, so a source that fails or is slow isn't asked again on every page open (a failed
-    /// try is remembered as null). Kept in memory only, never in the price history.
+    /// try is remembered as null; a page open while it runs gets null too). A try that throws (the page closed) is forgotten, so
+    /// the next page open tries again. Kept in memory only, never in the price history.
     /// </summary>
     public async Task<LatestPrice?> LatestPriceAsync(Guid assetId, DateTimeOffset now, TimeSpan every, Func<Task<LatestPrice?>> fetch)
     {
         if (latestPrices.TryGetValue(assetId, out var tried) && tried.At > now - every) return tried.Price;
-        latestPrices[assetId] = (now, null); // Counted from the try, before it ends.
-        var price = await fetch();
-        latestPrices[assetId] = (now, price);
-        return price;
+        var placeholder = (now, (LatestPrice?)null);
+        latestPrices[assetId] = placeholder; // Counted from the try, before it ends.
+        try
+        {
+            var price = await fetch();
+            latestPrices[assetId] = (now, price);
+            return price;
+        }
+        catch
+        {
+            latestPrices.TryRemove(new KeyValuePair<Guid, (DateTimeOffset, LatestPrice?)>(assetId, placeholder));
+            throw;
+        }
     }
 
     /// <summary>
@@ -311,10 +321,13 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                     state.Writing.Release();
                 }
                 // While a US session is in progress the next open after the last finished session has passed: a signal found now
-                // fills at the latest price, fetched first and not stored (#220). A stock without one is left to the daily run.
-                var latest = UsSession.InProgress(time.GetUtcNow()) ? await refresher.LatestAsync(id, stoppingToken) : null;
-                var (checkedNow, left) = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, latest, stoppingToken);
-                state.LeftToDailyRun(id, left, time.GetUtcNow());
+                // fills at the latest price, fetched before its stock's rules run and not stored (#220). A stock without one is left
+                // to the daily run. One clock reading decides both, so the session and the last finished one always agree.
+                var now = time.GetUtcNow();
+                Func<Asset, CancellationToken, Task<LatestPrice?>>? latest = UsSession.InProgress(now)
+                    ? (asset, cancellationToken) => refresher.TryLatestAsync(asset.Symbol, cancellationToken) : null;
+                var (checkedNow, left) = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, latest, now, stoppingToken);
+                state.LeftToDailyRun(id, left, now);
                 newSignals += checkedNow.NewSignals;
                 logger.LogInformation("Strategy {Strategy} checked at once: {Fetched} assets fetched ({Failed} failed), {Signals} new signals, {Trades} new trades, {Left} left to the daily run.",
                     id, fetched.Count, fetched.Count(r => r.Outcome == RefreshOutcome.Failed), checkedNow.NewSignals, checkedNow.NewTrades, left.Count);

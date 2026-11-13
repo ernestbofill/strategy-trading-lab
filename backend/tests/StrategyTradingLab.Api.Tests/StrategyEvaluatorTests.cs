@@ -185,6 +185,18 @@ public class StrategyEvaluatorTests
         return await db.Prices.Where(p => p.AssetId == assetId).OrderByDescending(p => p.Date).Select(p => p.Close).FirstAsync();
     }
 
+    /// <summary>A latest-price fetch that answers <paramref name="price"/> and counts how often it was asked.</summary>
+    sealed class LatestFetch(MarketData.LatestPrice? price)
+    {
+        public int Asked { get; private set; }
+
+        public Task<MarketData.LatestPrice?> FetchAsync(Asset asset, CancellationToken cancellationToken)
+        {
+            Asked++;
+            return Task.FromResult(price);
+        }
+    }
+
     static async Task AddTuesdayAsync(AppDbContext db, Guid assetId, decimal open, decimal close)
     {
         db.Prices.Add(new PriceDaily { AssetId = assetId, Date = Tuesday, Open = open, High = open, Low = close, Close = close, Volume = 1000 });
@@ -204,14 +216,17 @@ public class StrategyEvaluatorTests
             var close = await WithoutMondayAsync(db, assetId);
             var latest = Math.Round(close * 1.02m, 4);
 
-            // No latest price: the stock is left to the daily run, untouched.
-            var none = await Evaluator(db, new Clock(TuesdayMorning)).CheckAsync(strategyId, new Dictionary<Guid, MarketData.LatestPrice>(), default);
-            Assert.Equal([assetId], none.LeftToDailyRun);
-            Assert.Equal((0, 0), (await SignalCount(db, strategyId), await TradeCount(db, strategyId)));
-            Assert.Equal(1, await db.DailyEvaluations.CountAsync(e => e.StrategyId == strategyId)); // Only the seeded one.
+            // Its latest price is still Monday's close (nothing traded yet today): the stock is left to the daily run, untouched, so
+            // no signal found now fills at this morning's open tonight. The same without a latest price at all.
+            foreach (var stale in new MarketData.LatestPrice?[] { new(close, new DateOnly(2024, 10, 28), MondayEvening), null })
+            {
+                var none = await Evaluator(db).CheckAsync(strategyId, new LatestFetch(stale).FetchAsync, TuesdayMorning, default);
+                Assert.Equal([assetId], none.LeftToDailyRun);
+                Assert.Equal((0, 0), (await SignalCount(db, strategyId), await TradeCount(db, strategyId)));
+                Assert.Equal(1, await db.DailyEvaluations.CountAsync(e => e.StrategyId == strategyId)); // Only the seeded one.
+            }
 
-            var check = await Evaluator(db, new Clock(TuesdayMorning)).CheckAsync(strategyId,
-                new Dictionary<Guid, MarketData.LatestPrice> { [assetId] = new(latest, Tuesday, TuesdayMorning) }, default);
+            var check = await Evaluator(db).CheckAsync(strategyId, new LatestFetch(new(latest, Tuesday, TuesdayMorning)).FetchAsync, TuesdayMorning, default);
             Assert.Empty(check.LeftToDailyRun);
             var trade = await db.SignalTrades.AsNoTracking().SingleAsync(t => t.StrategyId == strategyId);
             Assert.Equal((Tuesday, latest), (trade.TradeDate, trade.Price));
@@ -241,10 +256,11 @@ public class StrategyEvaluatorTests
             await Evaluator(db, new Clock(MondayEvening)).RunAsync(default);
             Assert.Equal((1, 0), (await SignalCount(db, strategyId), await TradeCount(db, strategyId))); // Its open is Tuesday's.
 
-            // Another stock added on Tuesday morning checks the strategy again: this signal was found before the open, so it waits for it.
-            await Evaluator(db, new Clock(TuesdayMorning)).CheckAsync(strategyId,
-                new Dictionary<Guid, MarketData.LatestPrice> { [assetId] = new(Math.Round(close * 1.02m, 4), Tuesday, TuesdayMorning) }, default);
-            Assert.Equal(0, await TradeCount(db, strategyId));
+            // Another stock added on Tuesday morning checks the strategy again: this signal was found before the open, so it waits for it,
+            // and the stock, checked to its newest bar, needs no latest price.
+            var fetch = new LatestFetch(new(Math.Round(close * 1.02m, 4), Tuesday, TuesdayMorning));
+            await Evaluator(db).CheckAsync(strategyId, fetch.FetchAsync, TuesdayMorning, default);
+            Assert.Equal((0, 0), (await TradeCount(db, strategyId), fetch.Asked));
 
             var open = Math.Round(close * 1.01m, 4);
             await AddTuesdayAsync(db, assetId, open, close);

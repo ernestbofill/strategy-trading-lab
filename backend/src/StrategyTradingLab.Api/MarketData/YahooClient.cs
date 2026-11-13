@@ -164,7 +164,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
             var at = DateTimeOffset.FromUnixTimeSeconds(meta.GetProperty("regularMarketTime").GetInt64());
             if (price <= 0) throw new MarketDataException($"Yahoo has no latest price for {symbol}.");
             var scale = Text(meta, "currency") is { } code && MinorUnits.TryGetValue(code, out var minor) ? minor.Scale : 1m;
-            return new LatestPrice(Math.Round(price * scale, 4), ExchangeDate(meta, at), at);
+            return new LatestPrice(Math.Round(price * scale, 4), ExchangeDates(meta)(at), at);
         }
         catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException
             or IndexOutOfRangeException or FormatException or OverflowException)
@@ -174,16 +174,16 @@ public class YahooClient(HttpClient http) : IMarketDataSource
     }
 
     /// <summary>
-    /// The day in the exchange's zone at <paramref name="at"/>: the zone's offset changes with the clocks, while
+    /// The day in the exchange's zone at a moment, its zone read once per answer: the zone's offset changes with the clocks, while
     /// <c>gmtoffset</c> is only today's, which would date a summer-time bar a day early after the clocks go back.
     /// </summary>
-    static DateOnly ExchangeDate(JsonElement meta, DateTimeOffset at)
+    static Func<DateTimeOffset, DateOnly> ExchangeDates(JsonElement meta)
     {
         if (meta.TryGetProperty("exchangeTimezoneName", out var zoneName) && zoneName.GetString() is { } id
             && TimeZoneInfo.TryFindSystemTimeZoneById(id, out var zone))
-            return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(at, zone).DateTime);
+            return at => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(at, zone).DateTime);
         var offset = meta.TryGetProperty("gmtoffset", out var gmt) ? gmt.GetInt32() : 0;
-        return DateOnly.FromDateTime(at.UtcDateTime.AddSeconds(offset));
+        return at => DateOnly.FromDateTime(at.UtcDateTime.AddSeconds(offset));
     }
 
     static string? Text(JsonElement item, string name) =>
@@ -218,6 +218,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         if (Text(meta, "dataGranularity") is { } granularity && granularity != "1d")
             throw new MarketDataException($"Yahoo sent {granularity} bars for {symbol} instead of daily ones.");
         if (!result.TryGetProperty("timestamp", out var timestamps)) return []; // A symbol with no days in the range.
+        var dateOf = ExchangeDates(meta);
         // London stocks are quoted in pence (GBp) while the asset's currency is pounds.
         var scale = meta.TryGetProperty("currency", out var currency) && currency.GetString() is { } code && MinorUnits.TryGetValue(code, out var minor) ? minor.Scale : 1m;
         var indicators = result.GetProperty("indicators");
@@ -243,7 +244,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
                 factor = adjustedClose.Value / close.Value;
             }
             factor *= scale;
-            var date = ExchangeDate(meta, DateTimeOffset.FromUnixTimeSeconds(timestamps[i].GetInt64()));
+            var date = dateOf(DateTimeOffset.FromUnixTimeSeconds(timestamps[i].GetInt64()));
             var volume = Number(quote, "volume", i) ?? 0;
             var candle = new Candle(date, Round(open.Value * factor, adjusted), Round(high.Value * factor, adjusted), Round(low.Value * factor, adjusted), Round(close.Value * factor, adjusted), (long)volume);
             // Rounding can push a tiny price to 0, and a bad bar can have its low above its high: neither may reach the table's checks.

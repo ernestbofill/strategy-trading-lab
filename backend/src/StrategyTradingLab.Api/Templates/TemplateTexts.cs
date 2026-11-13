@@ -56,9 +56,12 @@ public record StockStatusTexts(string Zone, string NotCandidate, string? Watchin
 /// The words of a rule check on the stock page (Engine <c>RuleCheck</c>). <c>Label</c> names the rule, <c>Detail</c> says where
 /// the stock stands and <c>Short</c> says it in a few words for the strategy page's list; both hold <c>{value}</c> (or
 /// <c>{+value}</c>, signed), <c>{min}</c>, <c>{max}</c> and <c>{level}</c> (a price). <c>None</c> replaces both when the check
-/// has no value (never beaten down, no pullback yet), and <c>Past</c> / <c>PastShort</c> when the figure went past <c>{max}</c>. <c>Info</c> explains the rule.
+/// has no value (never beaten down, no pullback yet), <c>Tracking</c> the detail when it has no value but follows a level
+/// (<c>{midLevel}</c>: the breakout's highest close since the last buy, the SMA 200 a golden cross must pass), and <c>Past</c> / <c>PastShort</c> when the figure went
+/// past <c>{max}</c>. <c>Info</c> explains the rule.
 /// </summary>
-public record CheckTexts(string Label, string Detail, string Short, string? None = null, string? Info = null, string? Past = null, string? PastShort = null);
+public record CheckTexts(string Label, string Detail, string Short, string? None = null, string? Info = null, string? Past = null, string? PastShort = null,
+    string? Tracking = null);
 
 /// <summary>Localized display name and per-period stories for one benchmark index tab.</summary>
 public record BenchmarkTexts(string Name, IReadOnlyDictionary<string, string>? Stories = null);

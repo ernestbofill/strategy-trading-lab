@@ -25,9 +25,21 @@ const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high',
 /** Visual gauge for a rule check: threshold bar (with >100% overflow), 3-zone window band, or moving-average comparison. */
 function CheckGauge({ check, currency }: { check: RuleCheck; currency: string }) {
   const t = useT()
-  if (check.met === null && !check.used) return null
+  // A used next-step rule can't earn a step any more: today's figures no longer matter.
+  if (check.met === null || check.used) return null
   const past = isPastMax(check)
-  const state = check.used ? 'used' : past ? 'past' : check.met ? 'met' : 'notMet'
+  const state = past ? 'past' : check.met ? 'met' : 'notMet'
+
+  // 0. No golden cross yet: the SMA 50 still under the SMA 200.
+  if (check.key === 'golden' && check.value === null && check.level !== null && check.midLevel != null) {
+    return (
+      <div className={styles.stackStrip} aria-hidden="true">
+        <span className={styles.stackChip}>{t('stock.bar.sma50', { price: exact(check.level, currency) })}</span>
+        <span className={styles.stackRel} data-ok={false}>≤</span>
+        <span className={styles.stackChip}>{t('stock.bar.sma200', { price: exact(check.midLevel, currency) })}</span>
+      </div>
+    )
+  }
 
   // 1. Moving-average stack: Short vs Mid vs Long prices.
   if (check.key === 'stacked' && check.level !== null && check.midLevel != null && check.endLevel != null) {
@@ -78,9 +90,7 @@ function CheckGauge({ check, currency }: { check: RuleCheck; currency: string })
     const max = check.max
     const span = Math.max(1, max - min)
     let fillPct: number
-    if (check.key === 'golden' && check.met === false && !past) {
-      fillPct = 18
-    } else if (check.value < min) {
+    if (check.value < min) {
       fillPct = isZone
         ? Math.max(4, Math.round((Math.max(0, check.value) / Math.max(1, min)) * 30))
         : Math.max(4, Math.round(30 + (Math.max(-15, check.value) / 15) * 26))
@@ -147,7 +157,7 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
   const pastKey: MessageKey =
     check.key === 'beaten' ? 'stock.check.windowClosed' : check.key === 'zone' ? 'stock.check.pastZone' : 'stock.check.pastLimit'
   const mark = check.used
-    ? t('stock.check.used')
+    ? t(check.bought ? 'stock.check.used' : 'stock.check.usedAtBuy')
     : past
       ? t(pastKey)
       : check.met === null
@@ -155,6 +165,14 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
         : t(check.met ? 'stock.check.met' : 'stock.check.notMet')
   const state = check.used ? 'used' : past ? 'past' : String(check.met)
   const icon = check.used || check.met ? '✓' : past ? '✕' : '○'
+  // A used rule: the step it bought and when, or that it was already there at a buy; today's figures no longer matter.
+  const detail = !check.used
+    ? checkText(check, texts, currency, 'detail')
+    : !check.bought
+      ? t('stock.check.usedDetail')
+      : check.date
+        ? t('stock.check.boughtOn', { date: shortDate(check.date) })
+        : fillCheck(texts.detail, check, currency)
   return (
     <li className={styles.check}>
       <div className={styles.checkMain}>
@@ -162,7 +180,7 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
           {texts.label}
           {texts.info && <InfoTip label={t('stock.check.about', { label: texts.label })} text={fillCheck(texts.info, check, currency)} />}
         </div>
-        <div className={styles.checkDetail}>{checkText(check, texts, currency, 'detail')}</div>
+        <div className={styles.checkDetail}>{detail}</div>
         <CheckGauge check={check} currency={currency} />
       </div>
       {mark && (

@@ -64,6 +64,14 @@ public class RuleChecksTests
         // Holding a position: a step's signal comes from a milestone in its window.
         foreach (var day in days.Where(d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any()))
             Holds(Group(day, CheckGroup.Next).Any(c => c.Met == true && c.Used != true), day, "a step's signal has an open milestone");
+        // Held: the turn, step 1, comes first, bought on its day; a milestone that bought a step says so, with its day.
+        foreach (var day in days.Where(d => Group(d, CheckGroup.Next).Any()))
+        {
+            var turn = Group(day, CheckGroup.Next).First();
+            Holds(turn.Key == "turn" && turn.Bought == true && turn.Date is not null, day, "the turn is the first next-step row, bought");
+            Holds(Group(day, CheckGroup.Next).All(c => c.Bought != true || (c.Used == true && c.Date is not null)), day, "a bought row is used, with its day");
+        }
+        Assert.Contains(days, d => Group(d, CheckGroup.Next).Any(c => c.Key != "turn" && c.Bought == true));
         Assert.Contains(days, d => d.Status == RuleStatus.BuySignal);
     }
 
@@ -78,7 +86,9 @@ public class RuleChecksTests
         Assert.Equal(bars.Count(b => b.Date >= from && b.Date < start), watched.Count);
         // A run that buys swaps the candidate checks for milestones; a stock never bought keeps them every day.
         Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "beaten"));
-        Assert.All(watched.Values.SelectMany(c => c), c => Assert.Equal(CheckGroup.Candidate, c.Group));
+        // With the next-step previews, whose averages the chart can draw back in time.
+        Assert.All(watched.Values.SelectMany(c => c), c => Assert.True(c.Group == CheckGroup.Candidate || c.Preview == true));
+        Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "golden" && c.Level is not null && c.MidLevel is not null));
     }
 
     [Theory]

@@ -40,13 +40,14 @@ public static class CheckGroup
 /// One rule's verdict on one day, as the stock page shows it ("Volume is 0.84× its 50-day average, needs 1.2×"). <c>Met</c> is
 /// whether the rule holds today. <c>Value</c> is today's figure, <c>Min</c> and <c>Max</c> the rule's numbers,
 /// <c>Level</c>, <c>MidLevel</c> and <c>EndLevel</c> price lines, and <c>Progress</c> (0 or more; exceeds 1 past the target)
-/// how far a figure that must grow has come. <c>Used</c> marks a milestone that already earned its step, <c>Date</c> when a
-/// window or drop started, <c>SubValue</c> and <c>EndValue</c> secondary figures, and <c>Preview</c> a next-step rule shown
+/// how far a figure that must grow has come. <c>Used</c> marks a next-step rule that can't earn a step any more, and
+/// <c>Bought</c> one that did (a used one without it was already there at a buy), <c>Date</c> when a window or drop started (or
+/// the step was bought), <c>SubValue</c> and <c>EndValue</c> secondary figures, and <c>Preview</c> a next-step rule shown
 /// collapsed before the first step is bought. The words are the template's texts, by <c>Key</c>.
 /// </summary>
 public record RuleCheck(string Key, string Group, bool? Met, decimal? Value = null, decimal? Min = null, decimal? Max = null,
     decimal? Level = null, decimal? Progress = null, bool? Used = null, DateOnly? Date = null, decimal? MidLevel = null,
-    decimal? EndLevel = null, decimal? SubValue = null, decimal? EndValue = null, bool? Preview = null)
+    decimal? EndLevel = null, decimal? SubValue = null, decimal? EndValue = null, bool? Preview = null, bool? Bought = null)
 {
     /// <summary>How far <paramref name="value"/> has come toward <paramref name="target"/> (0 or more; exceeds 1 past the target).</summary>
     public static decimal? ProgressOf(decimal value, decimal target) => target > 0 ? Math.Round(Math.Max(0, value / target), 2) : null;

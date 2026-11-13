@@ -176,7 +176,7 @@ public class BearRules : IBuyRules
                     Progress: RuleCheck.ProgressOf(sinceLast, p.StepEveryDays))
                 : phase == "done" || (phase == "accumulating" && status == RuleStatus.BuySignal && doneSteps > 1)
                     ? new("pace", CheckGroup.Next, true, p.StepEveryDays, p.StepEveryDays, Progress: 1,
-                        Used: phase == "done" ? true : null)
+                        Used: phase == "done" ? true : null, Bought: phase == "done" ? true : null)
                     : new("pace", CheckGroup.Next, false, null, p.StepEveryDays, Preview: true),
         ];
         return new RuleDecision(status, reason, facts, windowOpen, stepNo) { Checks = checks };

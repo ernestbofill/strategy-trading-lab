@@ -28,6 +28,11 @@ public class ComebackRules : IBuyRules
     DateOnly? usedAfterBuyOn;
     decimal? breakoutHigh;
     bool pulledBack;
+    // For the stock page only (no verdict reads them): the first step's day, the milestone yesterday's signal was for, and
+    // the milestones that bought a step, with its day. The others in `used` were already there at a buy.
+    DateOnly? turnOn;
+    string? signalled;
+    readonly Dictionary<string, DateOnly> boughtOn = [];
 
     public ComebackRules(IReadOnlyList<PriceBar> bars, ComebackParams parameters)
     {
@@ -107,6 +112,9 @@ public class ComebackRules : IBuyRules
             usedAfterBuyOn = null;
             breakoutHigh = null;
             pulledBack = false;
+            turnOn = null;
+            signalled = null;
+            boughtOn.Clear();
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > Chase(buyLine),
                 "Price or volume fell back below the buy conditions.",
                 $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase.");
@@ -122,7 +130,10 @@ public class ComebackRules : IBuyRules
         // (a buy marks it used, which must not close the window the day after).
         var windowOpen = milestones.Any(m => InWindow(m, price));
         if (held == RuleStatus.BuySignal && active is not null) facts["milestone"] = active.Term;
-        var checks = MilestoneChecks(i, price, milestones, preview: false);
+        signalled = held == RuleStatus.BuySignal ? active?.Key : null;
+        // The step already bought comes first: the turn, step 1.
+        List<RuleCheck> checks = [new("turn", CheckGroup.Next, true, Used: true, Bought: true, Date: turnOn)];
+        checks.AddRange(MilestoneChecks(i, price, milestones, preview: false));
         // Held, the cooldown holds the next step back: with the milestones that earn it.
         if (RuleCheck.Cooldown(day, p.CooldownDays, CheckGroup.Next) is { } cooldown) checks.Add(cooldown);
         return new RuleDecision(held, heldReason, facts, windowOpen) { Checks = checks };
@@ -173,22 +184,40 @@ public class ComebackRules : IBuyRules
                 ? Math.Max(0.1m, Math.Round(Indicators.PctFrom(shortAvg, longAvg), 1))
                 : Math.Min(0m, Math.Round(Indicators.PctFrom(shortAvg, longAvg), 1)))
             : (decimal?)null;
+        // Held, before a pullback: the highest close since the last buy, which a fall of the pullback % starts to watch.
+        var tracked = !preview && !pulledBack ? breakoutHigh : null;
         return [.. milestones.Select(m =>
         {
             var isUsed = !preview && used.Contains(m.Key);
             var met = isUsed || InWindow(m, price);
-            var val = m.Level is { } level ? Math.Round(Indicators.PctFrom(price, level), 1) : (decimal?)null;
+            // No golden cross yet: the price vs the SMA 50 says nothing until it comes, only how far the SMA 50 must rise.
+            var notCrossed = m.Key == "golden" && !m.Reached;
+            var val = m.Level is { } level && !notCrossed ? Math.Round(Indicators.PctFrom(price, level), 1) : (decimal?)null;
             var min = m.Key switch { "near_high" => p.NearHighPct, "breakout" => p.BreakoutPullbackPct, _ => (decimal?)0 };
             var line = m.Level is { } l ? Math.Round(l, 2) : (decimal?)null;
             var midLine = m.Key == "golden" && s200 is { } slow ? Math.Round(slow, 2)
                 : m.Key == "near_high" && high252[i] is { } h ? Math.Round(h, 2)
+                : m.Key == "breakout" && tracked is { } top ? Math.Round(top, 2)
                 : (decimal?)null;
-            var endLine = m.Level is { } chaseBase ? Math.Round(Chase(chaseBase), 2) : (decimal?)null;
+            var endLine = m.Level is { } chaseBase ? Math.Round(Chase(chaseBase), 2)
+                : m.Key == "breakout" && tracked is { } watchFrom ? Math.Round(watchFrom * (1 - p.BreakoutPullbackPct / 100), 2)
+                : (decimal?)null;
+            var pullback = m.Key == "breakout" && tracked is { } peak
+                ? RuleCheck.ProgressOf(Math.Max(0, -Indicators.PctFrom(price, peak)), p.BreakoutPullbackPct)
+                : null;
+            var riseToCross = notCrossed && s50 is { } short50 && s200 is { } long200 && short50 > 0
+                ? Math.Round(Indicators.PctFrom(long200, short50), 1)
+                : (decimal?)null;
+            var bought = isUsed && boughtOn.TryGetValue(m.Key, out var on) ? on : (DateOnly?)null;
             return new RuleCheck(m.Key, CheckGroup.Next, met, val, min, p.MaxChasePct, line,
+                Progress: pullback,
                 Used: isUsed,
+                Bought: bought is null ? null : true,
+                Date: bought,
                 MidLevel: midLine,
                 EndLevel: endLine,
                 SubValue: m.Key == "golden" ? goldenSpread : null,
+                EndValue: riseToCross,
                 Preview: preview ? true : null);
         })];
     }
@@ -226,6 +255,9 @@ public class ComebackRules : IBuyRules
         var milestones = BuildMilestones(i, price, pulledBack, breakoutHigh);
         if (bought)
         {
+            // The first buy is the turn; a later one is for the milestone of the signal before it.
+            if (turnOn is null) turnOn = day.LastBuyDay;
+            else if (signalled is { } key) boughtOn[key] = day.LastBuyDay;
             foreach (var m in milestones.Where(m => m.Reached)) used.Add(m.Key);
             usedAfterBuyOn = day.LastBuyDay;
             breakoutHigh = price; // The next breakout counts from here.

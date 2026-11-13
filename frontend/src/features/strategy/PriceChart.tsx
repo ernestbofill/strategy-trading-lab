@@ -69,7 +69,8 @@ export function PriceChart({
   const pct = (value: number, of: number) => `${(value / of) * 100}%`
   const nameOf = (s: (typeof series)[number]) => (s.mark.check ? (texts?.[s.mark.check]?.label ?? s.mark.check) : t(s.mark.label!))
 
-  // The right axis: the latest close, then each level's latest value (both edges of an area).
+  // The right axis: the latest close, then each level's latest value (both edges of an area), each price once (the golden
+  // cross's area starts at the SMA 50).
   const labels = [
     { key: 'price', tone: 'price', value: last.close },
     ...series.flatMap((s) => {
@@ -78,7 +79,7 @@ export function PriceChart({
       const values = today.to === undefined ? [today.from] : [today.from, today.to]
       return values.map((value, k) => ({ key: `${s.mark.id}:${k}`, tone: s.mark.tone, value }))
     }),
-  ]
+  ].filter((l, k, all) => all.findIndex((o) => exact(o.value, currency) === exact(l.value, currency)) === k)
   const labelTops = spreadLabels(labels.map((l) => y(l.value)), LABEL, LABEL / 2, HEIGHT - LABEL / 2)
 
   return (

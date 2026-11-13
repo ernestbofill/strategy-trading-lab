@@ -9,7 +9,8 @@ export interface ChartMark {
   id: string
   label: MessageKey | null
   check?: string
-  tone: 'buy' | 'sell' | 'watch'
+  /** `short` and `long` are the moving averages a goal is about (the golden cross's SMA 50 and SMA 200). */
+  tone: 'buy' | 'sell' | 'watch' | 'short' | 'long'
   from: number
   to?: number
 }
@@ -20,13 +21,18 @@ const above = (level: number, pct: number) => level * (1 + pct / 100)
 /** Whether the day's checks make the stock a candidate: every candidate check that has a verdict is met. */
 export const isCandidateOn = (checks: RuleCheck[]) => checks.every((c) => c.group !== 'candidate' || c.met !== false)
 
+/** A held stock's next step: the first milestone not used yet that has a buy area. */
+export const nextGoal = (checks: RuleCheck[]) =>
+  checks.find((c) => c.group === 'next' && !c.used && !c.preview && c.level !== null && c.endLevel != null)
+
 /**
  * One day's levels from its checks' keys (not the template's): a candidate's buy area or discount zone, else the line that
  * would make it a candidate (beaten down, proven growth); a held stock's next milestone; a bear's market fall line, and its
- * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks.
- * The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest, 2026-11-08).
+ * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks (and
+ * next-step previews). The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
+ * 2026-11-08); likewise `goal`, today's next step: while it is the golden cross, every day draws the SMA 50 and SMA 200.
  */
-export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(checks)): ChartMark[] {
+export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(checks), goal: string | null = null): ChartMark[] {
   const marks: ChartMark[] = []
   // The comeback's `drop` comes with its `beaten` window; a bear's comes alone before the start (no bounce check then).
   const bear = !checks.some((c) => c.key === 'beaten')
@@ -66,8 +72,15 @@ export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(chec
     }
   }
   // A held stock's next step: the first milestone not used yet, from its level up to the chase limit.
-  const next = checks.find((c) => c.group === 'next' && !c.used && !c.preview && c.level !== null && c.endLevel != null)
+  const next = nextGoal(checks)
   if (next) marks.push({ id: `next:${next.key}`, label: null, check: next.key, tone: 'buy', from: next.level!, to: next.endLevel! })
+  // The golden cross is the SMA 50 rising above the SMA 200: both lines, so the cross can be seen coming.
+  const golden = goal === 'golden' ? checks.find((c) => c.key === 'golden') : undefined
+  if (golden?.level != null && golden.midLevel != null)
+    marks.push(
+      { id: 'sma50', label: 'stock.chart.sma50', tone: 'short', from: golden.level },
+      { id: 'sma200', label: 'stock.chart.sma200', tone: 'long', from: golden.midLevel },
+    )
   return marks
 }
 
@@ -78,11 +91,16 @@ export interface ChartSeries {
   points: { i: number; from: number; to?: number }[]
 }
 
-/** Each level across the days, drawn as the stock's verdict today has it: a candidate's areas, else its watch lines. */
+/**
+ * Each level across the days, drawn as the stock's verdict today has it: a candidate's areas, else its watch lines; and the
+ * lines of today's next step (the latest day the rules checked), every day it has them.
+ */
 export function chartSeries(days: ChartDay[], isCandidate: boolean): ChartSeries[] {
   const byId = new Map<string, ChartSeries>()
+  const latest = days.findLast((d) => d.checks.length > 0)
+  const goal = latest ? (nextGoal(latest.checks)?.key ?? null) : null
   days.forEach((day, i) => {
-    for (const { from, to, ...mark } of chartMarks(day.checks, isCandidate)) {
+    for (const { from, to, ...mark } of chartMarks(day.checks, isCandidate, goal)) {
       let series = byId.get(mark.id)
       if (!series) byId.set(mark.id, (series = { mark, area: to !== undefined, points: [] }))
       series.points.push({ i, from, to })

@@ -39,10 +39,14 @@ export function fillCheck(text: string, check: RuleCheck, currency: string): str
     .replace(/ to –\)/g, ')')
 }
 
-/** Where the stock stands on one rule: the detail sentence, or the short one for the list; `past` when past `max`, `none` when it has no value. */
+/**
+ * Where the stock stands on one rule: the detail sentence, or the short one for the list; `past` when past `max`, `none`
+ * when it has no value, or `tracking` (the detail) when it has none but follows a level.
+ */
 export function checkText(check: RuleCheck, texts: CheckTexts, currency: string, kind: 'detail' | 'short'): string {
   const past = isPastMax(check) ? (kind === 'detail' ? texts.past : texts.pastShort) : null
-  const text = check.value === null && texts.none ? texts.none : (past ?? texts[kind])
+  const tracking = kind === 'detail' && check.midLevel != null ? texts.tracking : null
+  const text = check.value === null && (tracking || texts.none) ? (tracking || texts.none)! : (past ?? texts[kind])
   return fillCheck(text, check, currency)
 }
 

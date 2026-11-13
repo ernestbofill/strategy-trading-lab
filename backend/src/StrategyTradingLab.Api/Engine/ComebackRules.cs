@@ -212,7 +212,8 @@ public class ComebackRules : IBuyRules
             return new RuleCheck(m.Key, CheckGroup.Next, met, val, min, p.MaxChasePct, line,
                 Progress: pullback,
                 Used: isUsed,
-                Bought: bought is null ? null : true,
+                // Used without buying is false, not null: checks stored before this field read as before ("Step bought").
+                Bought: isUsed ? bought is not null : null,
                 Date: bought,
                 MidLevel: midLine,
                 EndLevel: endLine,

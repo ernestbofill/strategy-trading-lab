@@ -347,7 +347,7 @@ export interface RuleCheck {
   subValue?: number | null
   endValue?: number | null
   preview?: boolean | null
-  /** A used next-step rule that bought a step (on `date`); used without it, it was already there at a buy. */
+  /** Whether a used next-step rule bought a step (on `date`, when known); false: it was already there at a buy; null: read as bought. */
   bought?: boolean | null
 }
 

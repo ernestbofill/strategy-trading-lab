@@ -157,7 +157,7 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
   const pastKey: MessageKey =
     check.key === 'beaten' ? 'stock.check.windowClosed' : check.key === 'zone' ? 'stock.check.pastZone' : 'stock.check.pastLimit'
   const mark = check.used
-    ? t(check.bought ? 'stock.check.used' : 'stock.check.usedAtBuy')
+    ? t(check.bought === false ? 'stock.check.usedAtBuy' : 'stock.check.used')
     : past
       ? t(pastKey)
       : check.met === null
@@ -168,7 +168,7 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
   // A used rule: the step it bought and when, or that it was already there at a buy; today's figures no longer matter.
   const detail = !check.used
     ? checkText(check, texts, currency, 'detail')
-    : !check.bought
+    : check.bought === false
       ? t('stock.check.usedDetail')
       : check.date
         ? t('stock.check.boughtOn', { date: shortDate(check.date) })

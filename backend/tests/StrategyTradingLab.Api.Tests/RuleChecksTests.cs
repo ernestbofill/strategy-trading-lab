@@ -70,6 +70,8 @@ public class RuleChecksTests
             var turn = Group(day, CheckGroup.Next).First();
             Holds(turn.Key == "turn" && turn.Bought == true && turn.Date is not null, day, "the turn is the first next-step row, bought");
             Holds(Group(day, CheckGroup.Next).All(c => c.Bought != true || (c.Used == true && c.Date is not null)), day, "a bought row is used, with its day");
+            // Used without buying says so (false): null is how checks stored before the field read.
+            Holds(Group(day, CheckGroup.Next).All(c => c.Used != true || c.Bought is not null), day, "a used row says whether it bought");
         }
         Assert.Contains(days, d => Group(d, CheckGroup.Next).Any(c => c.Key != "turn" && c.Bought == true));
         Assert.Contains(days, d => d.Status == RuleStatus.BuySignal);

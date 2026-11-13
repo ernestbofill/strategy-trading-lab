@@ -41,8 +41,8 @@ public static class CheckGroup
 /// whether the rule holds today. <c>Value</c> is today's figure, <c>Min</c> and <c>Max</c> the rule's numbers,
 /// <c>Level</c>, <c>MidLevel</c> and <c>EndLevel</c> price lines, and <c>Progress</c> (0 or more; exceeds 1 past the target)
 /// how far a figure that must grow has come. <c>Used</c> marks a next-step rule that can't earn a step any more, and
-/// <c>Bought</c> one that did (a used one without it was already there at a buy), <c>Date</c> when a window or drop started (or
-/// the step was bought), <c>SubValue</c> and <c>EndValue</c> secondary figures, and <c>Preview</c> a next-step rule shown
+/// <c>Bought</c> whether it did (false: it was already there at a buy; null: not told, read as bought), <c>Date</c> when a
+/// window or drop started (or the step was bought, when known),<c>SubValue</c> and <c>EndValue</c> secondary figures, and <c>Preview</c> a next-step rule shown
 /// collapsed before the first step is bought. The words are the template's texts, by <c>Key</c>.
 /// </summary>
 public record RuleCheck(string Key, string Group, bool? Met, decimal? Value = null, decimal? Min = null, decimal? Max = null,

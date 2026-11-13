@@ -32,9 +32,10 @@ public static class SignalEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
-            var latest = options.Value.FetchOnDemand && Answerable(found.Signal)
-                ? await LatestPriceAsync(db, prices, refreshes, found, time, cancellationToken) : null;
-            return TypedResults.Ok(await DetailAsync(db, found, user, StrategyEndpoints.Today(user, time), latest, cancellationToken));
+            var next = await NextOpenAsync(db, found.Signal, cancellationToken);
+            var latest = next is null && options.Value.FetchOnDemand && Answerable(found.Signal)
+                ? await LatestPriceAsync(prices, refreshes, found, time, cancellationToken) : null;
+            return TypedResults.Ok(await DetailAsync(db, found, user, StrategyEndpoints.Today(user, time), next, latest, cancellationToken));
         })
         .WithName("GetSignal")
         .WithSummary("A live signal, with what Confirm a signal's form starts with.");
@@ -128,21 +129,28 @@ public static class SignalEndpoints
     /// <summary>How long the page waits for the latest price from Yahoo, and how often an asset is asked for it.</summary>
     static readonly TimeSpan LatestTimeout = TimeSpan.FromSeconds(5), LatestEvery = TimeSpan.FromMinutes(5);
 
+    /// <summary>The first stored trading day after the signal, with its open; null until the daily refresh stores it.</summary>
+    static async Task<(DateOnly Date, decimal Open)?> NextOpenAsync(AppDbContext db, Signal signal, CancellationToken cancellationToken)
+    {
+        var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == signal.AssetId && p.Date > signal.SignalDate).OrderBy(p => p.Date)
+            .Select(p => new { p.Date, p.Open }).FirstOrDefaultAsync(cancellationToken);
+        return next is null ? null : (next.Date, next.Open);
+    }
+
     /// <summary>
     /// The day after the signal has no stored price yet (the daily refresh runs after the close) but its session has opened: the
     /// latest price, fetched and not stored (#220), so the form starts with a price the user could trade at. Best effort: a failure
     /// or a slow source gives null, and the form starts with the close.
     /// </summary>
-    static async Task<LatestPrice?> LatestPriceAsync(AppDbContext db, PriceRefresher prices, PriceRefreshState refreshes,
+    static async Task<LatestPrice?> LatestPriceAsync(PriceRefresher prices, PriceRefreshState refreshes,
         (Signal Signal, Strategy Strategy, Asset Asset) found, TimeProvider time, CancellationToken cancellationToken)
     {
         var (signal, _, asset) = found;
         var now = time.GetUtcNow();
         // Before the next session opens the latest price is still the signal day's close.
         if (now < UsSession.OpenAt(UsSession.After(signal.SignalDate))) return null;
-        if (await db.Prices.AnyAsync(p => p.AssetId == asset.Id && p.Date > signal.SignalDate, cancellationToken)) return null;
         var latest = await refreshes.LatestPriceAsync(asset.Id, now, LatestEvery,
-            () => prices.TryLatestAsync(asset.Symbol, LatestTimeout, cancellationToken));
+            () => prices.TryLatestAsync(asset.Symbol, cancellationToken, LatestTimeout), cancellationToken);
         // Not the signal day's close (before its exchange's next session opened, or a holiday there). The form dates it by its own
         // day, so a price from a later session (after a US holiday, or for a stock whose prices are no longer fetched) says so.
         return latest?.Date > signal.SignalDate ? latest : null;
@@ -191,16 +199,15 @@ public static class SignalEndpoints
         return true;
     }
 
+    /// <param name="next">The next open once stored (<see cref="NextOpenAsync"/>).</param>
     /// <param name="latest">The latest price when the next open isn't stored yet (<see cref="LatestPriceAsync"/>).</param>
     static async Task<SignalDetail> DetailAsync(AppDbContext db, (Signal Signal, Strategy Strategy, Asset Asset) found, User user, DateOnly today,
-        LatestPrice? latest, CancellationToken cancellationToken)
+        (DateOnly Date, decimal Open)? next, LatestPrice? latest, CancellationToken cancellationToken)
     {
         var (signal, strategy, asset) = found;
         var texts = TemplateTexts.For(TemplateCatalog.Find(strategy.TemplateKey)!, user.Locale);
 
         // The trade day: the first trading day after the signal once its price is stored, else the latest price's day, else the next weekday.
-        var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date > signal.SignalDate).OrderBy(p => p.Date)
-            .Select(p => new { p.Date, p.Open }).FirstOrDefaultAsync(cancellationToken);
         var nextDay = next?.Date ?? latest?.Date ?? SignalRules.NextWeekday(signal.SignalDate);
         decimal? prefillAmount = null, prefillShares = null;
         if (signal.Side == TradeSide.Buy)

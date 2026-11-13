@@ -180,9 +180,6 @@ public static class AiRoundEndpoints
         db.Strategies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id && s.UserId == userId && s.TemplateKey == TemplateCatalog.Ai.Key
             && (!running || s.Status == StrategyStatus.Running), cancellationToken);
 
-    /// <summary>How long a simulation waits for the picks' latest prices before it buys at the stored closes.</summary>
-    static readonly TimeSpan LatestTimeout = TimeSpan.FromSeconds(10);
-
     /// <summary>
     /// Fetches the picks' latest prices, not stored (#220), so a simulation buys at the latest price. Best effort: a pick whose
     /// fetch fails, or comes too late, buys at its latest stored close.
@@ -194,7 +191,7 @@ public static class AiRoundEndpoints
         var ids = picks.Select(p => p.AssetId).ToList();
         var assets = await db.Assets.AsNoTracking().Where(a => ids.Contains(a.Id)).ToListAsync(cancellationToken);
         // At once, each under the same limit, so one slow pick doesn't leave the others at their stored close.
-        var fetched = await Task.WhenAll(assets.Select(async asset => (asset.Id, Price: await prices.TryLatestAsync(asset.Symbol, LatestTimeout, cancellationToken))));
+        var fetched = await Task.WhenAll(assets.Select(async asset => (asset.Id, Price: await prices.TryLatestAsync(asset.Symbol, cancellationToken))));
         return fetched.Where(f => f.Price is not null).ToDictionary(f => f.Id, f => f.Price!);
     }
 

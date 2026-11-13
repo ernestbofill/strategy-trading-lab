@@ -160,11 +160,12 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         {
             using var document = JsonDocument.Parse(json);
             var meta = ChartResult(document, symbol).GetProperty("meta");
-            var price = meta.GetProperty("regularMarketPrice").GetDecimal();
             var at = DateTimeOffset.FromUnixTimeSeconds(meta.GetProperty("regularMarketTime").GetInt64());
-            if (price <= 0) throw new MarketDataException($"Yahoo has no latest price for {symbol}.");
             var scale = Text(meta, "currency") is { } code && MinorUnits.TryGetValue(code, out var minor) ? minor.Scale : 1m;
-            return new LatestPrice(Math.Round(price * scale, 4), ExchangeDates(meta)(at), at);
+            var price = Math.Round(meta.GetProperty("regularMarketPrice").GetDecimal() * scale, 4);
+            // After the scaling and rounding, as Parse does: a tiny price rounded to 0 would buy at nothing.
+            if (price <= 0) throw new MarketDataException($"Yahoo has no latest price for {symbol}.");
+            return new LatestPrice(price, ExchangeDates(meta)(at), at);
         }
         catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException
             or IndexOutOfRangeException or FormatException or OverflowException)

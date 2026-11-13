@@ -28,7 +28,7 @@ public class PriceRefreshState
     readonly SemaphoreSlim changed = new(0, 1);
     readonly SemaphoreSlim checkRequested = new(0, 1);
     readonly HashSet<Guid> checks = [];
-    readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, (DateTimeOffset At, LatestPrice? Price)> latestPrices = new();
+    readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, (DateTimeOffset At, Task<LatestPrice?> Price)> latestPrices = new();
     readonly Dictionary<Guid, (DateOnly Day, HashSet<Guid> Assets)> left = [];
     int pending;
     volatile bool running;
@@ -70,27 +70,30 @@ public class PriceRefreshState
     /// <summary>
     /// A signal's page's latest price for an asset (#220): the one fetched within <paramref name="every"/>, else a fresh one from
     /// <paramref name="fetch"/>. Each try counts, so a source that fails or is slow isn't asked again on every page open (a failed
-    /// try is remembered as null; a page open while it runs gets null too). A try that throws (the page closed) is forgotten, so
-    /// the next page open tries again. Kept in memory only, never in the price history.
+    /// try is remembered as null), and a page opened while a try runs waits for that same try, so both show the same price. A try
+    /// that throws (its page closed) gives the others null and is forgotten, so the next page open tries again. Kept in memory
+    /// only, never in the price history.
     /// </summary>
-    public async Task<LatestPrice?> LatestPriceAsync(Guid assetId, DateTimeOffset now, TimeSpan every, Func<Task<LatestPrice?>> fetch)
+    public async Task<LatestPrice?> LatestPriceAsync(Guid assetId, DateTimeOffset now, TimeSpan every, Func<Task<LatestPrice?>> fetch,
+        CancellationToken cancellationToken)
     {
-        // Counted from the try, before it ends: the placeholder is put in place of what was there, so of two page opens at once only
-        // one asks the source.
-        var placeholder = (now, (LatestPrice?)null);
+        // Claimed in place of what was there, so of two page opens at once only one asks the source.
+        var running = new TaskCompletionSource<LatestPrice?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var mine = (now, running.Task);
         var claimed = latestPrices.TryGetValue(assetId, out var tried)
-            ? tried.At <= now - every && latestPrices.TryUpdate(assetId, placeholder, tried)
-            : latestPrices.TryAdd(assetId, placeholder);
-        if (!claimed) return latestPrices.TryGetValue(assetId, out var current) ? current.Price : null;
+            ? tried.At <= now - every && latestPrices.TryUpdate(assetId, mine, tried)
+            : latestPrices.TryAdd(assetId, mine);
+        if (!claimed) return latestPrices.TryGetValue(assetId, out var current) ? await current.Price.WaitAsync(cancellationToken) : null;
         try
         {
             var price = await fetch();
-            latestPrices[assetId] = (now, price);
+            running.SetResult(price);
             return price;
         }
         catch
         {
-            latestPrices.TryRemove(new KeyValuePair<Guid, (DateTimeOffset, LatestPrice?)>(assetId, placeholder));
+            running.SetResult(null);
+            latestPrices.TryRemove(KeyValuePair.Create(assetId, mine));
             throw;
         }
     }
@@ -182,8 +185,6 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
     IOptions<PriceRefreshOptions> options, TimeProvider time, ILogger<PriceRefreshWorker> logger) : BackgroundService
 {
     static readonly TimeSpan RetryAfterError = TimeSpan.FromMinutes(5);
-    /// <summary>How long a check at once waits for a stock's latest price before it leaves the stock to the daily run.</summary>
-    static readonly TimeSpan LatestTimeout = TimeSpan.FromSeconds(10);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -331,7 +332,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 // to the daily run. One clock reading decides both, so the session and the last finished one always agree.
                 var now = time.GetUtcNow();
                 Func<Asset, CancellationToken, Task<LatestPrice?>>? latest = UsSession.InProgress(now)
-                    ? (asset, cancellationToken) => refresher.TryLatestAsync(asset.Symbol, LatestTimeout, cancellationToken) : null;
+                    ? (asset, cancellationToken) => refresher.TryLatestAsync(asset.Symbol, cancellationToken) : null;
                 var (checkedNow, left) = await scope.ServiceProvider.GetRequiredService<StrategyEvaluator>().CheckAsync(id, latest, now, stoppingToken);
                 state.LeftToDailyRun(id, left, now);
                 newSignals += checkedNow.NewSignals;

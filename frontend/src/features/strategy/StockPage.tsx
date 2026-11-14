@@ -11,7 +11,7 @@ import { useI18n, useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { exact, formatRate, money, pctTone, shortDate, signedPct } from '../../lib/format'
 import { signalPath, strategyPath } from '../dashboard/paths'
-import { checkText, fillCheck, isPastMax } from './checks'
+import { checkText, fillCheck, isPastMax, normalizeCheck } from './checks'
 import { PriceChart } from './PriceChart'
 import { isCandidateOn } from './priceChartMarks'
 import { SignalsAndTrades } from './SignalsAndTrades'
@@ -23,8 +23,9 @@ import { useStrategy } from './useStrategy'
 const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high', 'breakout'])
 
 /** Visual gauge for a rule check: threshold bar (with >100% overflow), 3-zone window band, or moving-average comparison. */
-function CheckGauge({ check, currency }: { check: RuleCheck; currency: string }) {
+function CheckGauge({ check: raw, currency }: { check: RuleCheck; currency: string }) {
   const t = useT()
+  const check = normalizeCheck(raw)
   // A used next-step rule can't earn a step any more: today's figures no longer matter.
   if (check.met === null || check.used) return null
   const past = isPastMax(check)
@@ -87,12 +88,13 @@ function CheckGauge({ check, currency }: { check: RuleCheck; currency: string })
   // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`, milestones).
   if (WINDOW_KEYS.has(check.key) && check.value !== null && check.max !== null && check.max > 0) {
     const isZone = check.key === 'zone'
-    const min = isZone ? (check.min ?? 0) : 0
+    const fromZero = isZone || (check.key === 'buyLine' && (check.min ?? 0) > 0 && check.max > (check.min ?? 0))
+    const min = fromZero ? (check.min ?? 0) : 0
     const max = check.max
     const span = Math.max(1, max - min)
     let fillPct: number
     if (check.value < min) {
-      fillPct = isZone
+      fillPct = fromZero
         ? Math.max(4, Math.round((Math.max(0, check.value) / Math.max(1, min)) * 30))
         : Math.max(4, Math.round(30 + (Math.max(-15, check.value) / 15) * 26))
     } else if (check.value <= max) {
@@ -102,7 +104,9 @@ function CheckGauge({ check, currency }: { check: RuleCheck; currency: string })
     }
     const label = isZone
       ? t('stock.bar.zone', { min: formatRate(min), max: formatRate(max) })
-      : t('stock.bar.chase', { max: formatRate(max) })
+      : fromZero
+        ? t('stock.bar.bounce', { min: formatRate(min), max: formatRate(max) })
+        : t('stock.bar.chase', { max: formatRate(max) })
     return (
       <div className={styles.progress}>
         <div className={styles.bar} data-kind="band" aria-hidden="true">

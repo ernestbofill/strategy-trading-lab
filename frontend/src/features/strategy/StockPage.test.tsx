@@ -27,7 +27,7 @@ const zs: StockRow = {
       key: 'beaten', group: 'candidate', met: true, value: 12, min: 30, max: 60,
       date: '2026-09-11', subValue: -29.2, level: 335.77, endValue: 42.5, endLevel: 166.86,
     }),
-    check({ key: 'buyLine', group: 'buy', met: true, value: 1.6, subValue: 50, min: 15, max: 8, level: 233.9, midLevel: 203.39, endLevel: 252.61 }),
+    check({ key: 'buyLine', group: 'buy', met: true, value: 16.8, subValue: 50, endValue: 8, min: 15, max: 24.2, level: 233.9, midLevel: 203.39, endLevel: 252.61 }),
     check({ key: 'volume', group: 'buy', met: false, value: 0.84, min: 1.1, progress: 0.76 }),
     check({ key: 'sma200', group: 'next', met: false, value: 42.5, max: 8, level: 166.86, endLevel: 180.21, preview: true }),
   ],
@@ -49,10 +49,11 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
     },
     buyLine: {
       label: 'Price vs the buy line',
-      detail: '{+value}% vs the buy line ({level}). A step needs 0% to +{max}% (up to {endLevel}).',
-      past: 'Past chase limit: {+value}% vs the buy line ({level}); more than +{max}% ({endLevel}) is too late.',
-      short: '{+value}% vs the buy line',
-      info: 'The {subValue}-day low ({midLevel}) + {min}%.',
+      detail: '+{value}% above the recent low ({midLevel}), needs +{min}% to +{max}% ({level} to {endLevel}).',
+      past: '+{value}% above the recent low ({midLevel}) — past the +{max}% chase limit ({endLevel}).',
+      short: '+{value}% above its low (needs +{min}%)',
+      pastShort: '+{value}% above its low (past +{max}% limit)',
+      info: 'The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. Above +{endValue}% past the buy line (+{max}% above the low, {endLevel}) is too late to chase.',
     },
     volume: { label: 'Volume: 5-day vs 50-day average', detail: '{value}× its 50-day average (needs {min}×).', short: 'volume {value}× (needs {min}×)' },
     sma200: {
@@ -117,7 +118,8 @@ describe('StockPage', () => {
       ),
     ).toBeTruthy()
     expect(screen.queryByText(/Day \d+ of|^\+12%$/)).toBeNull()
-    expect(screen.getByText('+1.6% vs the buy line ($233.90). A step needs 0% to +8% (up to $252.61).')).toBeTruthy()
+    expect(screen.getByText('+16.8% above the recent low ($203.39), needs +15% to +24.2% ($233.90 to $252.61).')).toBeTruthy()
+    expect(screen.getByText('+15 to +24.2%')).toBeTruthy()
     expect(screen.getByText('0.84× its 50-day average (needs 1.1×).')).toBeTruthy()
     expect(screen.getByText('76%')).toBeTruthy()
     expect(screen.getAllByText('Met')).toHaveLength(2)
@@ -134,6 +136,7 @@ describe('StockPage', () => {
       candidateSince: null,
       checks: [
         check({ key: 'beaten', group: 'candidate', met: false, value: 74, min: 30, max: 60, date: '2026-07-15' }),
+        check({ key: 'buyLine', group: 'buy', met: false, value: -13, subValue: 50, min: 15, max: 8, level: 187.28, midLevel: 162.85, endLevel: 202.26 }),
         check({ key: 'gain', group: 'candidate', met: true, value: 118.9, min: 50, progress: 2.38 }),
         check({ key: 'stacked', group: 'candidate', met: true, value: 32.5, level: 41.2, midLevel: 38.5, endLevel: 31.1 }),
         check({ key: 'zone', group: 'buy', met: false, value: 26.7, min: 5, max: 15, level: 42.7, endLevel: 38.21 }),
@@ -143,6 +146,7 @@ describe('StockPage', () => {
     expect(await screen.findByText('NOT A CANDIDATE')).toBeTruthy()
     expect(screen.getByText('Window closed')).toBeTruthy()
     expect(screen.getByText('Window closed: last beaten down on Jul 15 (74 trading days ago; window is 60 days).')).toBeTruthy()
+    expect(screen.getByText('+0% above the recent low ($162.85), needs +15% to +24.2% ($187.28 to $202.26).')).toBeTruthy()
     expect(screen.getByText('238%')).toBeTruthy()
     expect(screen.getByText('Short $41.20')).toBeTruthy()
     expect(screen.getByText('Mid $38.50')).toBeTruthy()

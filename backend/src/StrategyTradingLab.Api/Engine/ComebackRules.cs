@@ -164,10 +164,13 @@ public class ComebackRules : IBuyRules
             if (p.BelowSma200 && slow200 is { } slow)
                 checks.Add(new("vsSma200", CheckGroup.Candidate, price < slow, vsSma200Pct, p.DrawdownPct, Level: Math.Round(slow, 2)));
         }
-        var vsLine = Math.Round(Indicators.PctFrom(price, buyLine), 1);
-        var inBuyWindow = price >= buyLine && price <= Chase(buyLine);
-        checks.Add(new("buyLine", CheckGroup.Buy, inBuyWindow, vsLine, p.AboveSma50Pct, p.MaxChasePct,
-            Math.Round(buyLine, 2), MidLevel: Math.Round(lowest, 2), EndLevel: Math.Round(Chase(buyLine), 2), SubValue: p.LowDays));
+        var aboveLow = Math.Round(Indicators.PctFrom(price, lowest), 1);
+        var chaseLimit = Chase(buyLine);
+        var maxAboveLow = Math.Round(Indicators.PctFrom(chaseLimit, lowest), 1);
+        var inBuyWindow = price >= buyLine && price <= chaseLimit;
+        checks.Add(new("buyLine", CheckGroup.Buy, inBuyWindow, aboveLow, p.AboveSma50Pct, maxAboveLow,
+            Math.Round(buyLine, 2), MidLevel: Math.Round(lowest, 2), EndLevel: Math.Round(chaseLimit, 2),
+            SubValue: p.LowDays, EndValue: p.MaxChasePct));
         var volumeOk = VolumeOk(i);
         checks.Add(new("volume", CheckGroup.Buy, volumeOk, Math.Round(ratio, 2), p.VolumeRatio,
             Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio)));

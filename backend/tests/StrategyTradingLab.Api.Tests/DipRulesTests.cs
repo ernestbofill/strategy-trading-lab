@@ -69,13 +69,13 @@ public class DipRulesTests
     [Fact]
     public void The_comeback_measures_the_turn_from_the_recent_low_window()
     {
-        // A fast fall from 200 to 100 leaves the SMA 50 above 170, while the 50-day low is 100 (buy line 115).
+        // A fast fall from 200 to 100 leaves the SMA 50 above 170, while the 50-day low is 100 (buy line 110).
         PriceBar Bar(int i, decimal close, long volume = 100) =>
             new(new DateOnly(2020, 1, 1).AddDays(i), close, close, close, close, volume);
         var bars = Enumerable.Range(0, 250).Select(i => Bar(i, 200))
             .Concat(Enumerable.Range(250, 5).Select(i => Bar(i, 100)))
             .Concat(Enumerable.Range(255, 10).Select(i => Bar(i, 120)))
-            .Append(Bar(265, 116, volume: 300))
+            .Append(Bar(265, 112, volume: 300))
             .ToList();
 
         var fiftyDay = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5))[^1];
@@ -83,7 +83,7 @@ public class DipRulesTests
 
         Assert.Equal(RuleStatus.BuySignal, fiftyDay.Status);
         var buyLine = Assert.Single(fiftyDay.Checks, c => c.Key == "buyLine");
-        Assert.Equal(115m, buyLine.Level);
+        Assert.Equal(110m, buyLine.Level);
         Assert.Equal(100m, buyLine.MidLevel);
         Assert.Equal(50m, buyLine.SubValue);
         Assert.Equal(RuleStatus.Watching, tenDay.Status);

@@ -83,9 +83,14 @@ public class DipRulesTests
 
         Assert.Equal(RuleStatus.BuySignal, fiftyDay.Status);
         var buyLine = Assert.Single(fiftyDay.Checks, c => c.Key == "buyLine");
+        Assert.Equal(12m, buyLine.Value);
+        Assert.Equal(10m, buyLine.Min);
+        Assert.Equal(18.8m, buyLine.Max);
         Assert.Equal(110m, buyLine.Level);
         Assert.Equal(100m, buyLine.MidLevel);
+        Assert.Equal(118.8m, buyLine.EndLevel);
         Assert.Equal(50m, buyLine.SubValue);
+        Assert.Equal(8m, buyLine.EndValue);
         Assert.Equal(RuleStatus.Watching, tenDay.Status);
     }
 }

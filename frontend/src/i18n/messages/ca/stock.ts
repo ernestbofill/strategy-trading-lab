@@ -51,6 +51,7 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.check.pastLimit': 'Fora de límit',
   'stock.check.about': 'Sobre {label}',
   'stock.bar.zone': 'Zona {min}–{max}%',
+  'stock.bar.bounce': '+{min} a +{max}%',
   'stock.bar.chase': '0 a +{max}%',
   'stock.bar.short': 'Curta {price}',
   'stock.bar.mid': 'Mitjana {price}',

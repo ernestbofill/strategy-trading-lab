@@ -245,11 +245,11 @@
       },
       "buyLine": {
         "label": "Price vs the buy line",
-        "detail": "{+value}% vs the buy line ({level}). A step needs 0% to +{max}% ({level} to {endLevel}).",
-        "past": "{+value}% above the buy line ({level}) — past the +{max}% chase limit ({endLevel}).",
-        "short": "{+value}% vs the buy line",
-        "pastShort": "too far past the buy line ({+value}%)",
-        "info": "The buy line is {min}% above the {subValue}-day low ({midLevel}), the lowest close of the last {subValue} trading days: the stock has turned. Above +{max}% past the buy line is too late to chase."
+        "detail": "+{value}% above the recent low ({midLevel}), needs +{min}% to +{max}% ({level} to {endLevel}).",
+        "past": "+{value}% above the recent low ({midLevel}) — past the +{max}% chase limit ({endLevel}).",
+        "short": "+{value}% above its low (needs +{min}%)",
+        "pastShort": "+{value}% above its low (past +{max}% limit)",
+        "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. Above +{endValue}% past the buy line (+{max}% above the low, {endLevel}) is too late to chase."
       },
       "chase": {
         "label": "Not too far past the line",

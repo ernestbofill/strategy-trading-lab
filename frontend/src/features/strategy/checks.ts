@@ -6,16 +6,44 @@ const plain = (n: number | null | undefined) => (n === null || n === undefined ?
 const signed = (n: number | null | undefined) => (n === null || n === undefined ? '–' : `${n > 0 ? '+' : ''}${plain(n)}`)
 const price = (n: number | null | undefined, currency: string) => (n === null || n === undefined ? '–' : exact(n, currency))
 
+/** Converts pre-deploy `buyLine` checks (measured vs the buy line) into % above the recent low (`midLevel`). */
+export function normalizeCheck(check: RuleCheck): RuleCheck {
+  if (
+    check.key === 'buyLine' &&
+    check.endValue == null &&
+    check.value !== null &&
+    check.min !== null &&
+    check.max !== null &&
+    check.max <= check.min &&
+    check.level !== null &&
+    check.midLevel != null &&
+    check.midLevel > 0
+  ) {
+    const approxPrice = check.level * (1 + check.value / 100)
+    const rawAbove = Math.max(0, ((approxPrice - check.midLevel) / check.midLevel) * 100)
+    // Because legacy `value` was rounded to 0.1%, a stock right at its low (`0%` above) rounds back to ~0.1%.
+    const aboveLow = rawAbove < 0.15 ? 0 : Math.round(rawAbove * 10) / 10
+    const maxAboveLow = Math.round(((1 + check.min / 100) * (1 + check.max / 100) - 1) * 1000) / 10
+    return { ...check, value: aboveLow, max: maxAboveLow, endValue: check.max }
+  }
+  return check
+}
+
 /** Whether an unmet check has gone past its upper bound (window closed, fell past zone, or past chase limit). */
-export const isPastMax = (check: RuleCheck): boolean =>
-  check.met === false &&
-  check.value !== null &&
-  check.max !== null &&
-  check.value > check.max &&
-  !(check.key === 'golden' && (check.subValue ?? 0) <= 0)
+export const isPastMax = (raw: RuleCheck): boolean => {
+  const check = normalizeCheck(raw)
+  return (
+    check.met === false &&
+    check.value !== null &&
+    check.max !== null &&
+    check.value > check.max &&
+    !(check.key === 'golden' && (check.subValue ?? 0) <= 0)
+  )
+}
 
 /** A check's words with its numbers in: {value}, {+value} (signed), {min}, {max}, {level}, {midLevel}, {endLevel}, and {date}. */
-export function fillCheck(text: string, check: RuleCheck, currency: string): string {
+export function fillCheck(text: string, raw: RuleCheck, currency: string): string {
+  const check = normalizeCheck(raw)
   const out = text
     .replaceAll('{+value}', signed(check.value))
     .replaceAll('{value}', plain(check.value))
@@ -43,7 +71,8 @@ export function fillCheck(text: string, check: RuleCheck, currency: string): str
  * Where the stock stands on one rule: the detail sentence, or the short one for the list; `past` when past `max`, `none`
  * when it has no value, or `tracking` (the detail) when it has none but follows a level.
  */
-export function checkText(check: RuleCheck, texts: CheckTexts, currency: string, kind: 'detail' | 'short'): string {
+export function checkText(raw: RuleCheck, texts: CheckTexts, currency: string, kind: 'detail' | 'short'): string {
+  const check = normalizeCheck(raw)
   const past = isPastMax(check) ? (kind === 'detail' ? texts.past : texts.pastShort) : null
   const tracking = kind === 'detail' && check.midLevel != null ? texts.tracking : null
   const noValue = tracking || texts.none

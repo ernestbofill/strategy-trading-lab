@@ -245,11 +245,11 @@
       },
       "buyLine": {
         "label": "Preu respecte a la línia de compra",
-        "detail": "{+value}% respecte a la línia de compra ({level}). Una fase necessita de 0% a +{max}% (fins a {endLevel}).",
-        "past": "Massa lluny: {+value}% per sobre de la línia de compra ({level}); més d'un +{max}% ({endLevel}) és massa tard.",
-        "short": "{+value}% respecte a la línia de compra",
-        "pastShort": "massa lluny de la línia ({+value}%, màx. +{max}%)",
-        "info": "La línia de compra és un {min}% per sobre del mínim de {subValue} dies ({midLevel}), el tancament més baix dels últims {subValue} dies de mercat: l'acció ha girat. Per sobre d'un +{max}% és massa tard."
+        "detail": "+{value}% per sobre del mínim recent ({midLevel}), necessita de +{min}% a +{max}% (de {level} a {endLevel}).",
+        "past": "Massa lluny: +{value}% per sobre del mínim recent ({midLevel}); més d'un +{max}% ({endLevel}) és massa tard.",
+        "short": "+{value}% sobre el mínim (cal +{min}%)",
+        "pastShort": "massa lluny del mínim (+{value}%, màx. +{max}%)",
+        "info": "El mínim recent és el tancament més baix dels últims {subValue} dies de mercat ({midLevel}). La línia de compra és un +{min}% per sobre ({level}): l'acció ha girat. Per sobre d'un +{endValue}% de la línia de compra (+{max}% sobre el mínim, {endLevel}) és massa tard."
       },
       "chase": {
         "label": "No massa lluny de la línia",

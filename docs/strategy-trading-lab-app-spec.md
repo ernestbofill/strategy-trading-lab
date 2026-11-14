@@ -122,7 +122,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **The comeback (Confirmed turnaround)**
 - Candidate (beaten down): at least 30% below its 52-week high, and below the SMA 200.
-- Signal: the close is at least 15% above the SMA 50, and 5-day average volume is at least 20% above the 50-day average.
+- Signal: the close is at least 15% above the recent low (lowest close of the last 50 trading days by default), and 5-day average volume is at least 20% above the 50-day average.
 - Signal ends: the close drops back under the signal line, or the price is more than 8% above it.
 - Later steps: one per milestone (back above the SMA 200, golden cross, within 15% of the 52-week high, breakout after an 8% pullback), each within 8% above its level. Cooldown 5 days.
 
@@ -330,7 +330,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - The idea: "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys in steps."
 - It signals when:
   1. "**It was beaten down:** the stock fell at least [X]% from its high of the last 12 months." (POC: 30% below the 52-week high.)
-  2. "**It turned around:** it climbs 15% above its SMA 50 (average price over the last 50 days)."
+  2. "**It turned around:** it climbs 15% above its 50-day low (lowest close of the last 50 trading days)."
   3. "**More people are trading it:** its volume (shares traded per day) is rising."
 - Tested: "[N] stocks, [year]-[year]."
 - What can go wrong: "a recovery can stall, and the stock can fall again."
@@ -411,7 +411,8 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- | --- |
 | Candidate | "Beaten down: at least [n]% below its 52-week high." | 30% | 5 | 10–60 |
 | Candidate | "It stays a candidate for [n] trading days after it was last beaten down." | 60 | 10 | 0–120 |
-| Buy signal | "The buy line is [n]% above the SMA 50." | 15% | 1 | 5–30 |
+| Buy signal | "The buy line is [n]% above the recent low." | 15% | 1 | 5–30 |
+| Buy signal | "The recent low is the lowest close of the last [n] trading days." | 50 | 5 | 10–120 |
 | Buy signal | "The 5-day average volume is at least [n]× the 50-day." | 1.2× | 0.1 | 1–3 |
 | Buy signal | "Chase limit: buy only up to [n]% above the buy line or a milestone's level." | 8% | 1 | 2–20 |
 | Milestones | "Milestone near the old high: within [n]% of the 52-week high." | 15% | 1 | 5–30 |

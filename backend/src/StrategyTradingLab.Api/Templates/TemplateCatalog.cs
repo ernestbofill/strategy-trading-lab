@@ -163,6 +163,7 @@ public static class TemplateCatalog
             new("drawdownPct", 5, 10, 60, Group: "candidate"),
             new("candidateDays", 10, 0, 120, Group: "candidate"),
             new("aboveSma50Pct", 1, 5, 30, Group: "signal"),
+            new("lowDays", 5, 10, 120, Group: "signal"),
             new("volumeRatio", 0.1m, 1, 3, Group: "signal"),
             new("maxChasePct", 1, 2, 20, Group: "signal"),
             new("nearHighPct", 1, 5, 30, Group: "milestones"),

@@ -5,7 +5,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// <summary>
 /// The comeback (POC Confirmed turnaround, <c>turnaround</c>). A candidate was beaten down (at least <c>DrawdownPct</c>
 /// below its 52-week high, and below the SMA 200) at some point in the last <c>CandidateDays</c> days. The first step is the
-/// turn: the close at least <c>AboveSma50Pct</c> above the SMA 50 on rising volume, but not more than <c>MaxChasePct</c> above
+/// turn: the close at least <c>AboveSma50Pct</c> above the <c>LowDays</c>-day low on rising volume, but not more than <c>MaxChasePct</c> above
 /// that line. Later steps are earned by milestones (back above the SMA 200, golden cross, near the old high, a breakout after
 /// a pullback): each new one, reached after the last buy, earns one step, bought within <c>MaxChasePct</c> above its level.
 /// Keeps state between days (the milestones used, the breakout tracker): one instance per run.
@@ -17,7 +17,7 @@ public class ComebackRules : IBuyRules
     readonly ComebackParams p;
     readonly IReadOnlyList<decimal> close;
     readonly DateOnly[] dates;
-    readonly decimal?[] sma50, sma200, high252, vol5, vol50;
+    readonly decimal?[] low, sma50, sma200, high252, vol5, vol50;
     readonly bool[] candidate;
     readonly int?[] beatenAgo;
     readonly DateOnly?[] beatenOn;
@@ -40,6 +40,7 @@ public class ComebackRules : IBuyRules
         close = [.. bars.Select(b => b.Close)];
         dates = [.. bars.Select(b => b.Date)];
         var volume = bars.Select(b => (decimal)b.Volume).ToList();
+        low = Indicators.RollingLow(close, p.LowDays);
         sma50 = Indicators.Sma(close, SmaShort);
         sma200 = Indicators.Sma(close, SmaLong);
         high252 = Indicators.RollingHigh(close, HighDays);
@@ -50,7 +51,7 @@ public class ComebackRules : IBuyRules
 
     public int Length => close.Count;
 
-    public int MinHistory => HighDays;
+    public int MinHistory => Math.Max(HighDays, p.LowDays);
 
     public int CooldownDays => p.CooldownDays;
 
@@ -87,14 +88,14 @@ public class ComebackRules : IBuyRules
     {
         if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
         lastDecided = i;
-        if (sma50[i] is not { } slow50 || high252[i] is not { } high || sma200[i] is null)
+        if (low[i] is not { } lowest || sma50[i] is null || high252[i] is not { } high || sma200[i] is null)
         {
             var (none, noneReason) = window.Compose(day, candidate: false, entryOk: false, extended: false, "", "");
             return new RuleDecision(none, noneReason, new Dictionary<string, object>());
         }
 
         var price = close[i];
-        var buyLine = slow50 * (1 + p.AboveSma50Pct / 100);
+        var buyLine = lowest * (1 + p.AboveSma50Pct / 100);
         var facts = new Dictionary<string, object>
         {
             ["aboveBuyLinePct"] = Math.Round(Indicators.PctFrom(price, buyLine), 2),
@@ -118,7 +119,7 @@ public class ComebackRules : IBuyRules
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > Chase(buyLine),
                 "Price or volume fell back below the buy conditions.",
                 $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase.");
-            var turn = TurnChecks(i, price, high, buyLine);
+            var turn = TurnChecks(i, price, high, lowest, buyLine);
             // After a sale the cooldown holds the first buy back.
             if (RuleCheck.Cooldown(day, p.CooldownDays) is { } wait) turn.Add(wait);
             return new RuleDecision(status, reason, facts, window.Open) { Checks = turn };
@@ -140,7 +141,7 @@ public class ComebackRules : IBuyRules
     }
 
     /// <summary>The checks before the first step: beaten down lately, the turn, and the next-step milestones in preview.</summary>
-    List<RuleCheck> TurnChecks(int i, decimal price, decimal high, decimal buyLine)
+    List<RuleCheck> TurnChecks(int i, decimal price, decimal high, decimal lowest, decimal buyLine)
     {
         var ratio = vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 ? short5 / long50 : 0;
         var dropPct = Math.Round(Indicators.PctFrom(price, high), 1);
@@ -165,9 +166,8 @@ public class ComebackRules : IBuyRules
         }
         var vsLine = Math.Round(Indicators.PctFrom(price, buyLine), 1);
         var inBuyWindow = price >= buyLine && price <= Chase(buyLine);
-        var s50Val = sma50[i] is { } s50 ? Math.Round(s50, 2) : (decimal?)null;
         checks.Add(new("buyLine", CheckGroup.Buy, inBuyWindow, vsLine, p.AboveSma50Pct, p.MaxChasePct,
-            Math.Round(buyLine, 2), MidLevel: s50Val, EndLevel: Math.Round(Chase(buyLine), 2)));
+            Math.Round(buyLine, 2), MidLevel: Math.Round(lowest, 2), EndLevel: Math.Round(Chase(buyLine), 2), SubValue: p.LowDays));
         var volumeOk = VolumeOk(i);
         checks.Add(new("volume", CheckGroup.Buy, volumeOk, Math.Round(ratio, 2), p.VolumeRatio,
             Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio)));

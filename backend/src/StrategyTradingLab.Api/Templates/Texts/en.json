@@ -139,7 +139,7 @@
       },
       {
         "marker": "02",
-        "text": "**It turned around:** it climbs `{aboveSma50Pct}%` above its `SMA 50` (average price over the last 50 days)."
+        "text": "**It turned around:** it climbs `{aboveSma50Pct}%` above its `{lowDays}-day low` (lowest close of the last `{lowDays}` trading days)."
       },
       {
         "marker": "03",
@@ -168,9 +168,14 @@
         "help": "Longer: a slower recovery can still signal. 0: it must turn while still beaten down."
       },
       "aboveSma50Pct": {
-        "sentence": "The buy line is {value} above the SMA 50.",
+        "sentence": "The buy line is {value} above the recent low.",
         "value": "{n}%",
         "help": "Higher: waits for a stronger move, skipping more dead-cat bounces, but buys later and higher."
+      },
+      "lowDays": {
+        "sentence": "The recent low is the lowest close of the last {value}.",
+        "value": "{n} trading days",
+        "help": "Longer: measures the turn from a wider window's bottom. Shorter: follows recent drops more closely."
       },
       "volumeRatio": {
         "sentence": "The 5-day average volume is at least {value} the 50-day.",
@@ -205,7 +210,7 @@
       },
       "signal": {
         "title": "2 · Buy signal: the first step",
-        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its `SMA 50` (the buy line), on rising volume, and not too far above the line. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
+        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), on rising volume, and not too far above the line. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
       },
       "milestones": {
         "title": "3 · Milestones: the next steps",
@@ -244,7 +249,7 @@
         "past": "{+value}% above the buy line ({level}) — past the +{max}% chase limit ({endLevel}).",
         "short": "{+value}% vs the buy line",
         "pastShort": "too far past the buy line ({+value}%)",
-        "info": "The buy line is {min}% above the SMA 50 ({midLevel}), the average close of the last 50 days: the stock has turned. Above +{max}% past the buy line is too late to chase."
+        "info": "The buy line is {min}% above the {subValue}-day low ({midLevel}), the lowest close of the last {subValue} trading days: the stock has turned. Above +{max}% past the buy line is too late to chase."
       },
       "chase": {
         "label": "Not too far past the line",
@@ -261,7 +266,7 @@
         "label": "The turn",
         "detail": "Step 1 is bought.",
         "short": "the turn",
-        "info": "The first step: the price turned up above the buy line (the SMA 50 plus a margin) on rising volume."
+        "info": "The first step: the price turned up above the buy line (the recent low plus a margin) on rising volume."
       },
       "sma200": {
         "label": "Back above the SMA 200",

@@ -26,7 +26,7 @@ export const welcome = {
   'welcome.builder.mock.t1Rule': 'SMA 50 > 150 > 200 · 5%–15% discount zone',
   'welcome.builder.mock.t1Budget': '€100 / step · max 3 steps',
   'welcome.builder.mock.t2Name': 'The comeback',
-  'welcome.builder.mock.t2Rule': '≥ 30% below 52w high · +15% above SMA 50 + volume',
+  'welcome.builder.mock.t2Rule': '≥ 30% below 52w high · +15% above 50d low + volume',
   'welcome.builder.mock.t2Budget': '€150 / step · max 2 steps',
   'welcome.builder.mock.t3Name': 'Bear markets',
   'welcome.builder.mock.t3Rule': 'S&P 500 drop ≥ 20% · +5% bounce off low',

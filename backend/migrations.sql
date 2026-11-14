@@ -2304,3 +2304,23 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261114165408_ComebackTenPctDefault') THEN
+    UPDATE template_versions
+    SET defaults = '{"drawdownPct":30,"candidateDays":60,"aboveSma50Pct":10,"lowDays":50,"volumeRatio":1.2,"maxChasePct":8,"nearHighPct":15,"breakoutPullbackPct":8,"cooldownDays":5}'::jsonb
+    WHERE template_key = 'comeback' AND version = 1;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261114165408_ComebackTenPctDefault') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261114165408_ComebackTenPctDefault', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

@@ -28,7 +28,7 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   'welcome.builder.mock.t1Rule': 'SMA 50 > 150 > 200 · zona de descompte 5%–15%',
   'welcome.builder.mock.t1Budget': '100 € / fase · màx. 3 fases',
   'welcome.builder.mock.t2Name': 'Empreses en remuntada',
-  'welcome.builder.mock.t2Rule': '≥ 30% sota el màxim anual · +15% sobre el mínim de 50d + volum',
+  'welcome.builder.mock.t2Rule': '≥ 30% sota el màxim anual · +10% sobre el mínim de 50d + volum',
   'welcome.builder.mock.t2Budget': '150 € / fase · màx. 2 fases',
   'welcome.builder.mock.t3Name': 'Mercats baixistes',
   'welcome.builder.mock.t3Rule': 'Caiguda de l’S&P 500 ≥ 20% · rebot del +5% des del mínim',

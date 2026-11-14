@@ -7,9 +7,11 @@ Screens and behaviour are in the [spec](docs/strategy-trading-lab-app-spec.md). 
 - *Spec: drawn* or *designed*: build it from the spec.
 - *Spec: gap*: proposed here. Write the spec section in the same PR.
 
-## The launch product
+## Personal product
 
-The goal of Next is a **minimum coherent product** that Ernest can publish and run on his own. That means:
+Strategy Trading Lab is now for Ernest's personal use only (Ernest, 2026-11-14; previously planned for a public launch). Items that were only for strangers or a public launch (such as lawyer review, commercial price feeds, or public beta sign-up) are no longer needed unless Ernest wants them.
+
+The earlier launch framing, kept for context:
 
 - **A stranger can use it end to end.** They look around without an account, sign up with an invite, start a strategy in either mode from any template on offer, add their own stocks, get their emails, confirm live signals, fix a wrong trade, archive a strategy, and export or delete their data. Nothing on screen leads to a dead end or to something that never runs: what isn't built is hidden.
 - **Ernest can run it.** He sees whether the daily job ran, gets an email when it fails, sees who signed up, decides who can sign up, blocks an account, and gets feedback from users. Limits stop one user from loading the server. New stocks need no deploy.

@@ -6,7 +6,7 @@ Strategy Trading Lab (STL) is a strategy lab and monitoring side app. A user pic
 
 The owner and engineer is Mr Ernest.
 
-It is a hobby project with no active users, which may launch publicly later. A broken screen or a failed deploy costs little, so favour progress over ceremony and keep reviews light where nothing is at stake. Don't overly add tests: we want to keep CI/CD light and fast. Prefer updating existing tests when behaviour changes over creating new test suites or multiplying test cases for simple UI, copy, templates or low-risk tweaks. Still build it ready for launch: secrets, security and the product rules apply in full, and the *High risk* list stays high risk.
+It is a personal project for Mr Ernest's own use only (no public launch). A broken screen or a failed deploy costs little, so favour progress over ceremony and keep reviews light where nothing is at stake. Don't overly add tests: we want to keep CI/CD light and fast. Prefer updating existing tests when behaviour changes over creating new test suites or multiplying test cases for simple UI, copy, templates or low-risk tweaks. Secrets, security and the product rules still apply in full, and the *High risk* list stays high risk.
 
 ## Sources of truth
 

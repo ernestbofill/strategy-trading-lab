@@ -57,8 +57,11 @@ public record ComebackParams
     /// <summary>Stays a candidate for this many days after it was last beaten down.</summary>
     [Range(0, 250)] public int CandidateDays { get; init; } = 60;
 
-    /// <summary>The signal line: this % above the SMA 50.</summary>
+    /// <summary>The signal line: this % above the recent low.</summary>
     [Range(0, 50)] public decimal AboveSma50Pct { get; init; } = 15;
+
+    /// <summary>The low the buy line is measured from: the lowest close of this many trading days.</summary>
+    [Range(10, 250)] public int LowDays { get; init; } = 50;
 
     /// <summary>The 5-day average volume is at least this multiple of the 50-day.</summary>
     [Range(1, 5)] public decimal VolumeRatio { get; init; } = 1.2m;

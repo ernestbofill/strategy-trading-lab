@@ -27,7 +27,7 @@ const zs: StockRow = {
       key: 'beaten', group: 'candidate', met: true, value: 12, min: 30, max: 60,
       date: '2026-09-11', subValue: -29.2, level: 335.77, endValue: 42.5, endLevel: 166.86,
     }),
-    check({ key: 'buyLine', group: 'buy', met: true, value: 1.6, min: 15, max: 8, level: 233.9, midLevel: 203.39, endLevel: 252.61 }),
+    check({ key: 'buyLine', group: 'buy', met: true, value: 1.6, subValue: 50, min: 15, max: 8, level: 233.9, midLevel: 203.39, endLevel: 252.61 }),
     check({ key: 'volume', group: 'buy', met: false, value: 0.84, min: 1.1, progress: 0.76 }),
     check({ key: 'sma200', group: 'next', met: false, value: 42.5, max: 8, level: 166.86, endLevel: 180.21, preview: true }),
   ],
@@ -52,7 +52,7 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
       detail: '{+value}% vs the buy line ({level}). A step needs 0% to +{max}% (up to {endLevel}).',
       past: 'Past chase limit: {+value}% vs the buy line ({level}); more than +{max}% ({endLevel}) is too late.',
       short: '{+value}% vs the buy line',
-      info: 'The SMA 50 ({midLevel}) + {min}%.',
+      info: 'The {subValue}-day low ({midLevel}) + {min}%.',
     },
     volume: { label: 'Volume: 5-day vs 50-day average', detail: '{value}× its 50-day average (needs {min}×).', short: 'volume {value}× (needs {min}×)' },
     sma200: {

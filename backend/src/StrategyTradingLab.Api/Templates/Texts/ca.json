@@ -139,7 +139,7 @@
       },
       {
         "marker": "02",
-        "text": "**Ha girat:** puja un `{aboveSma50Pct}%` per sobre de la seva `SMA 50` (preu mitjà dels últims 50 dies)."
+        "text": "**Ha girat:** puja un `{aboveSma50Pct}%` per sobre del seu `mínim de {lowDays} dies` (el tancament més baix dels últims `{lowDays}` dies de mercat)."
       },
       {
         "marker": "03",
@@ -168,9 +168,14 @@
         "help": "Més llarg: una recuperació més lenta encara pot donar senyal. 0: ha de girar mentre encara està castigada."
       },
       "aboveSma50Pct": {
-        "sentence": "La línia de compra és un {value} per sobre de la SMA 50.",
+        "sentence": "La línia de compra és un {value} per sobre del mínim recent.",
         "value": "{n}%",
         "help": "Més alt: espera un moviment més fort i evita més rebots falsos, però compra més tard i més car."
+      },
+      "lowDays": {
+        "sentence": "El mínim recent és el tancament més baix dels últims {value}.",
+        "value": "{n} dies de mercat",
+        "help": "Més llarg: mesura el gir des del mínim d'una finestra més àmplia. Més curt: segueix les caigudes recents de més a prop."
       },
       "volumeRatio": {
         "sentence": "El volum mitjà de 5 dies és almenys {value} el de 50 dies.",
@@ -205,7 +210,7 @@
       },
       "signal": {
         "title": "2 · Senyal de compra: la primera fase",
-        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre de la seva `SMA 50` (la línia de compra), amb volum creixent, i no gaire per sobre de la línia. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
+        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), amb volum creixent, i no gaire per sobre de la línia. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
       },
       "milestones": {
         "title": "3 · Fites: les fases següents",
@@ -244,7 +249,7 @@
         "past": "Massa lluny: {+value}% per sobre de la línia de compra ({level}); més d'un +{max}% ({endLevel}) és massa tard.",
         "short": "{+value}% respecte a la línia de compra",
         "pastShort": "massa lluny de la línia ({+value}%, màx. +{max}%)",
-        "info": "La línia de compra és un {min}% per sobre de la SMA 50 ({midLevel}), el tancament mitjà dels últims 50 dies: l'acció ha girat."
+        "info": "La línia de compra és un {min}% per sobre del mínim de {subValue} dies ({midLevel}), el tancament més baix dels últims {subValue} dies de mercat: l'acció ha girat. Per sobre d'un +{max}% és massa tard."
       },
       "chase": {
         "label": "No massa lluny de la línia",
@@ -261,7 +266,7 @@
         "label": "El gir",
         "detail": "La fase 1 està comprada.",
         "short": "el gir",
-        "info": "La primera fase: el preu ha girat per sobre de la línia de compra (la SMA 50 més un marge) amb volum creixent."
+        "info": "La primera fase: el preu ha girat per sobre de la línia de compra (el mínim recent més un marge) amb volum creixent."
       },
       "sma200": {
         "label": "Torna per sobre de la SMA 200",

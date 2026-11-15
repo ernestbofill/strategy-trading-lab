@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { InvalidFieldsError, InvalidValueError, UnauthorizedError } from '../api'
 import type { FormMessageState } from './Field'
 
@@ -8,12 +8,17 @@ import type { FormMessageState } from './Field'
  */
 export function useSubmit(fallback: string) {
   const [busy, setBusy] = useState(false)
+  // The guard itself: two submits before React renders again (Enter and a tap) both see busy as false.
+  const running = useRef(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<FormMessageState>(null)
 
-  /** Runs `action` unless `check` finds fields to fix first; resolves to whether it worked. */
+  /**
+   * Runs `action` unless `check` finds fields to fix first; resolves to whether it worked. After it worked the form stays
+   * busy: the screen moves on, and a second tap must not send it again.
+   */
   const run = async (action: () => Promise<unknown>, check?: () => Record<string, string>): Promise<boolean> => {
-    if (busy) return false
+    if (running.current) return false
     setErrors({})
     setMessage(null)
     const unclear = check?.() ?? {}
@@ -21,17 +26,18 @@ export function useSubmit(fallback: string) {
       setErrors(unclear)
       return false
     }
+    running.current = true
     setBusy(true)
     try {
       await action()
       return true
     } catch (e) {
+      running.current = false
+      setBusy(false)
       if (e instanceof UnauthorizedError) return false
       if (e instanceof InvalidFieldsError) setErrors(e.fields)
       else setMessage({ tone: 'error', text: e instanceof InvalidValueError ? e.message : fallback })
       return false
-    } finally {
-      setBusy(false)
     }
   }
 

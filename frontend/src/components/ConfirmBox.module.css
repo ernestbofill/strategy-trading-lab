@@ -5,8 +5,6 @@
   padding: var(--space-3);
   background: var(--surface-deep);
   border: 1px solid var(--danger);
-  /* The whole row of a tile grid (the strategy page's actions). */
-  grid-column: 1 / -1;
 }
 
 .box p {

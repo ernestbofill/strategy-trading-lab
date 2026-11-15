@@ -14,13 +14,15 @@ interface ConfirmBoxProps {
   /** Does it; a rejection says `failedText` (an ended session goes to Log-in, so it says nothing). */
   onConfirm: () => Promise<void>
   onKeep: () => void
+  /** Placement from the caller (the strategy page's tile grid makes it the whole row). */
+  className?: string
 }
 
 /**
  * The confirm step of something that can't be undone (delete a trade or a strategy, archive it): the question, the danger
  * button and the safe one, which gets the focus so the keyboard lands in the step.
  */
-export function ConfirmBox({ ask, confirmLabel, busyLabel, keepLabel, failedText, onConfirm, onKeep }: ConfirmBoxProps) {
+export function ConfirmBox({ ask, confirmLabel, busyLabel, keepLabel, failedText, onConfirm, onKeep, className }: ConfirmBoxProps) {
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
 
@@ -29,15 +31,16 @@ export function ConfirmBox({ ask, confirmLabel, busyLabel, keepLabel, failedText
     setFailed(false)
     try {
       await onConfirm()
+      // Done: the screen changes (the item goes, the page reloads); its buttons stay off meanwhile.
     } catch (e) {
       if (e instanceof UnauthorizedError) return
       setFailed(true)
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   return (
-    <div className={styles.box}>
+    <div className={className ? `${styles.box} ${className}` : styles.box}>
       <p>{ask}</p>
       {failed && <p role="alert">{failedText}</p>}
       <ButtonRow>

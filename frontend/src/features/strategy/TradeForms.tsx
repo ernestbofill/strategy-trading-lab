@@ -60,7 +60,7 @@ function TradeFormCard(props: TradeFormCardProps) {
         maxDate={props.today}
       />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-      <ButtonRow>
+      <ButtonRow className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={saving}>
           {saving ? t('trades.saving') : saveLabel}
         </Button>

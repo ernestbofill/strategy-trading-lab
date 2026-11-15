@@ -97,6 +97,7 @@ export function ArchiveStrategy({ s, className, titleClassName }: {
       failedText={t('strategy.archiveFailed')}
       onConfirm={archive}
       onKeep={() => setAsking(false)}
+      className={styles.wholeRow}
     />
   )
 }

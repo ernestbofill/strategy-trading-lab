@@ -1,3 +1,8 @@
+/* The archive confirm step takes the whole row of the tile grid. */
+.wholeRow {
+  grid-column: 1 / -1;
+}
+
 .renameForm {
   display: flex;
   flex-direction: column;

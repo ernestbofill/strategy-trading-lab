@@ -133,3 +133,6 @@ a.row:hover {
   color: var(--primary);
 }
 
+.formActions {
+  margin-top: var(--space-2);
+}

@@ -11,4 +11,6 @@ export function Button({ variant = 'secondary', type = 'button', className, ...r
 }
 
 /** Buttons side by side, wrapping on a narrow screen. */
-export const ButtonRow = ({ children }: { children: ReactNode }) => <div className={styles.row}>{children}</div>
+export const ButtonRow = ({ children, className }: { children: ReactNode; className?: string }) => (
+  <div className={className ? `${styles.row} ${className}` : styles.row}>{children}</div>
+)

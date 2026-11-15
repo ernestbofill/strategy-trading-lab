@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.MarketData;
@@ -40,8 +41,8 @@ public static class AssetEndpoints
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             var query = q?.Trim() ?? "";
-            if (query.Length is < 2 or > MaxQueryLength) return Invalid("q", Messages.SearchLength.In(user.Locale, MaxQueryLength));
-            if (KindFrom(kind) is not { } wanted) return Invalid("kind", Messages.PickStockOrFund.In(user.Locale));
+            if (query.Length is < 2 or > MaxQueryLength) return ApiProblems.Invalid("q", Messages.SearchLength.In(user.Locale, MaxQueryLength));
+            if (KindFrom(kind) is not { } wanted) return ApiProblems.Invalid("kind", Messages.PickStockOrFund.In(user.Locale));
 
             // The stored ones first: they need no adding. A symbol starts with the query, a name contains it.
             var escaped = EscapeLike(query);
@@ -97,9 +98,9 @@ public static class AssetEndpoints
         {
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             var symbol = request.Symbol?.Trim() ?? "";
-            if (KindFrom(request.Kind) is not { } wanted) return Invalid("kind", Messages.PickStockOrFund.In(user.Locale));
+            if (KindFrom(request.Kind) is not { } wanted) return ApiProblems.Invalid("kind", Messages.PickStockOrFund.In(user.Locale));
             var refused = wanted == AssetKind.Fund ? Messages.NotAFund.In(user.Locale) : Messages.NotAStock.In(user.Locale);
-            if (symbol.Length is 0 or > AssetCatalog.MaxSymbolLength) return Invalid("symbol", refused);
+            if (symbol.Length is 0 or > AssetCatalog.MaxSymbolLength) return ApiProblems.Invalid("symbol", refused);
             // Adding fetches prices, and prices belong to the database this host owns (as on /admin/assets).
             if (databases.Active != databases.Home) return TypedResults.Conflict(Messages.CantAddNow.In(user.Locale));
             // A user adds at most the admin's number of new assets; one already stored is returned as it is and never counts.
@@ -115,18 +116,17 @@ public static class AssetEndpoints
                 var added = await catalog.AddAsync(symbol, user.Id, cancellationToken,
                     (kind, exchange) => kind == wanted && AssetCatalog.SupportedExchanges.Contains(exchange));
                 var asset = added.Asset;
-                if (!asset.Active || asset.Kind != wanted) return Invalid("symbol", refused);
-                var what = asset.Texts.FirstOrDefault(t => t.Locale == user.Locale)?.What
-                    ?? asset.Texts.First(t => t.Locale == TemplateTexts.DefaultLocale).What;
-                return TypedResults.Ok(new AddedAssetDto(new SecurityDto(asset.Id, asset.Symbol, asset.Name, what), added.Problem is null));
+                if (!asset.Active || asset.Kind != wanted) return ApiProblems.Invalid("symbol", refused);
+                return TypedResults.Ok(new AddedAssetDto(new SecurityDto(asset.Id, asset.Symbol, asset.Name, asset.WhatIn(user.Locale) ?? ""),
+                    added.Problem is null));
             }
             catch (UnsupportedCurrencyException)
             {
-                return Invalid("symbol", refused);
+                return ApiProblems.Invalid("symbol", refused);
             }
             catch (AssetNotFoundException)
             {
-                return Invalid("symbol", refused);
+                return ApiProblems.Invalid("symbol", refused);
             }
             catch (MarketDataException)
             {
@@ -157,9 +157,6 @@ public static class AssetEndpoints
     };
 
     static string EscapeLike(string text) => text.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");
-
-    static ValidationProblem Invalid(string field, string message) =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
 
     /// <summary>The rate limit's key: the user, or the client's address before the session is read.</summary>
     public static string UserKey(HttpContext http) =>

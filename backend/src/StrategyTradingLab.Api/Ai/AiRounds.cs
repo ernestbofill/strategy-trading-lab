@@ -1,7 +1,8 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
+using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
@@ -30,7 +31,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
     /// <summary>The longest AI model name kept.</summary>
     public const int MaxModel = 60;
 
-    public static bool IsAi(Strategy strategy) => strategy.TemplateKey == TemplateCatalog.Ai.Key;
+    public static bool IsAi(Strategy strategy) => strategy.TemplateKey == TemplateKeys.Ai;
 
     /// <summary>
     /// Makes sure each running AI strategy has its round due: the first on its start day, then one every <c>EveryDays</c>
@@ -73,7 +74,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
                 }
             }
             // Another request moved the same round on: what it wrote stands.
-            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            catch (DbUpdateException error) when (error.IsUniqueViolation())
             {
             }
             catch (DbUpdateConcurrencyException)
@@ -271,7 +272,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
             await db.SaveChangesAsync(cancellationToken);
         }
         // The next round, or a signal on that day, exists already: done by another request meanwhile.
-        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (DbUpdateException error) when (error.IsUniqueViolation())
         {
             db.ChangeTracker.Clear();
             return null;
@@ -316,7 +317,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
         {
             await db.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (DbUpdateException error) when (error.IsUniqueViolation())
         {
             db.ChangeTracker.Clear();
             return false;
@@ -355,14 +356,14 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
         var session = UsSession.LastComplete(now);
         var rows = await (from strategy in db.Strategies.AsNoTracking().Include(s => s.Assets)
                           join user in db.Users.AsNoTracking() on strategy.UserId equals user.Id
-                          where strategy.Status == StrategyStatus.Running && strategy.TemplateKey == TemplateCatalog.Ai.Key
+                          where strategy.Status == StrategyStatus.Running && strategy.TemplateKey == TemplateKeys.Ai
                           select new { strategy, user.TimeZone }).ToListAsync(cancellationToken);
         var rates = await ExchangeRates.LoadAsync(db, null, cancellationToken);
         int trades = 0, missed = 0, failed = 0;
         var problems = new List<(Strategy Strategy, string Title, string Detail)>();
         foreach (var row in rows)
         {
-            var today = StrategyEndpoints.Today(row.TimeZone, now);
+            var today = UserClock.Today(row.TimeZone, now);
             try
             {
                 await SweepAsync([new(row.strategy, today)], cancellationToken);
@@ -393,7 +394,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
         var trades = 0;
         foreach (var signal in signals.Where(s => !traded.Contains(s.Id)))
         {
-            var after = DateFact(signal, "tradeAfter") ?? signal.SignalDate;
+            var after = signal.Facts.RootElement.Date("tradeAfter") ?? signal.SignalDate;
             var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == signal.AssetId && p.Date > after).OrderBy(p => p.Date)
                 .Select(p => new { p.Date, p.Open }).FirstOrDefaultAsync(cancellationToken);
             if (next is null || !assets.TryGetValue(signal.AssetId, out var asset)
@@ -405,12 +406,12 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
 
         // A signal's time is up when the next round is due.
         foreach (var signal in signals.Where(s => s.EndedOn is null))
-            if (DateFact(signal, "endsOn") is { } ends && ends <= today) signal.EndedOn = ends;
+            if (signal.Facts.RootElement.Date("endsOn") is { } ends && ends <= today) signal.EndedOn = ends;
 
         // Where each ticked stock stands at the last session's close: its signal that day, its steps, or its last score.
         var lastScores = await LastScoresAsync(strategy.Id, cancellationToken);
         var maxSteps = strategy.Budget.MaxSteps ?? 1;
-        foreach (var assetId in strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId))
+        foreach (var assetId in strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId))
         {
             var own = signals.Where(s => s.AssetId == assetId).ToList();
             var todays = own.FirstOrDefault(s => s.SignalDate == session);
@@ -458,10 +459,6 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
 
     public static IReadOnlyList<AiRoundScore> Read(JsonDocument? scores) =>
         scores?.Deserialize<List<AiRoundScore>>(JsonSerializerOptions.Web) ?? [];
-
-    static DateOnly? DateFact(Signal signal, string name) =>
-        signal.Facts.RootElement.ValueKind == JsonValueKind.Object && signal.Facts.RootElement.TryGetProperty(name, out var value)
-            && value.ValueKind == JsonValueKind.String && DateOnly.TryParse(value.GetString(), out var date) ? date : null;
 
     /// <summary>
     /// The history: every round, newest first, and each done round's picks against the rest: the average change of their

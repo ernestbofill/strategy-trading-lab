@@ -1,4 +1,5 @@
 using System.Text.Json;
+using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Evaluation;
@@ -39,8 +40,7 @@ public static class StockChanges
 
     /// <summary>The distance to the signal's line, when the evaluation has one above zero.</summary>
     public static decimal? Distance(JsonElement facts) =>
-        facts.ValueKind == JsonValueKind.Object && facts.TryGetProperty("distancePct", out var d) && d.ValueKind == JsonValueKind.Number && d.GetDecimal() is > 0 and var value
-            ? value : null;
+        facts.Number("distancePct") is > 0 and var value ? value : null;
 
     /// <summary>
     /// What changed on the latest of <paramref name="newestFirst"/> (a stock's recent evaluations, newest first), against the

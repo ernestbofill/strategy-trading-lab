@@ -1,4 +1,5 @@
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.Notifications;
 
 namespace StrategyTradingLab.Api.Auth;
 
@@ -124,8 +125,7 @@ public class AccountEmails(EmailQueue queue, IConfiguration configuration)
                 new(ca ? "Obre l'app amb el Chrome o el navegador, toca el menú (⋮) i tria 'Instal·la l'aplicació' o 'Afegeix a la pantalla d'inici'."
                        : "Open the app in Chrome or your browser, tap the menu (⋮), and choose 'Install app' or 'Add to Home screen'.", Tag: "Android"),
             ], url: appUrl)
-            .Disclaimer(ca ? "No és assessorament financer. Els senyals segueixen les teves regles."
-                           : "Not financial advice. Signals follow your rules.");
+            .Disclaimer(EmailTexts.DisclaimerFor(locale));
 
         queue.Enqueue(new(to, doc.Build(ca ? "Et donem la benvinguda a Strategy Trading Lab" : "Welcome to Strategy Trading Lab")));
     }

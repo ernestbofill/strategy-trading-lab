@@ -19,10 +19,16 @@ public record TestedFee(decimal Percent, decimal Fixed)
     public (decimal Amount, decimal Fee) Split(decimal step)
     {
         // A step must leave something to buy with (the budget screen's minimum step is far above the fee).
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(step, Fixed + 0.01m);
+        if (!CanBuyWith(step)) throw new ArgumentOutOfRangeException(nameof(step), step, "A step must be more than the fixed fee.");
         var amount = Math.Round((step - Fixed) / (1 + Percent / 100), 2, MidpointRounding.ToZero);
         return (amount, step - amount);
     }
+
+    /// <summary>Whether <paramref name="spend"/> leaves something to buy with once the fixed fee is paid.</summary>
+    public bool CanBuyWith(decimal spend) => spend > Fixed + 0.01m;
+
+    /// <summary>The fee on a sale of <paramref name="amount"/>, to the cent.</summary>
+    public decimal On(decimal amount) => Math.Round(amount * (Percent / 100) + Fixed, 2);
 }
 
 /// <summary>
@@ -119,7 +125,7 @@ public static class TemplateCatalog
     // Each period is an independent test starting with fresh money at its beginning.
 
     public static readonly Template Dip = new(
-        "dip", "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
+        TemplateKeys.Dip, "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList(Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor),
         [
             new("2000-12", 11.5m, 5.5m, -18m, -37m),
@@ -146,7 +152,7 @@ public static class TemplateCatalog
     };
 
     public static readonly Template Comeback = new(
-        "comeback", "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
+        TemplateKeys.Comeback, "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList(Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
             ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler),
         [
@@ -173,7 +179,7 @@ public static class TemplateCatalog
     };
 
     public static readonly Template Bear = new(
-        "bear", "bear_accumulation", InvestsIn.Sp500Fund, SignalSides.BuysOnly, new Budget(3000, 600, 5),
+        TemplateKeys.Bear, "bear_accumulation", InvestsIn.Sp500Fund, SignalSides.BuysOnly, new Budget(3000, 600, 5),
         new DefaultFund(Cspx),
         [
             new("2000-12", 9.4m, 1.7m, -12m, -37m),
@@ -203,7 +209,7 @@ public static class TemplateCatalog
 
     // All in, all out: no step, the whole budget at once.
     public static readonly Template Trend = new(
-        "trend", "index_trend", InvestsIn.IndexFund, SignalSides.BuysAndSells, new Budget(3000, null, null),
+        TemplateKeys.Trend, "index_trend", InvestsIn.IndexFund, SignalSides.BuysAndSells, new Budget(3000, null, null),
         new DefaultFund(Cspx),
         TrendSp500Periods,
         new TrendParams())
@@ -257,7 +263,7 @@ public static class TemplateCatalog
 
     // No backtest: results start on the day the strategy starts. Watches the stocks of Winners at a discount and The comeback.
     public static readonly Template Ai = new(
-        "ai", null, InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
+        TemplateKeys.Ai, null, InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList([.. Dip.Watches.AssetIds.Union(Comeback.Watches.AssetIds)]),
         null,
         new AiParams())

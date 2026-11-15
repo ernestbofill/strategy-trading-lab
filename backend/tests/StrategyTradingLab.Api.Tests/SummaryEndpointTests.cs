@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Data;
@@ -14,94 +15,16 @@ namespace StrategyTradingLab.Api.Tests;
 
 public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi>
 {
-    [Fact]
-    public void DailySummaryDto_deserializes_from_camel_case_json_with_string_enums()
-    {
-        var json = """
-        {
-            "date": "2026-10-23",
-            "hasChanges": true,
-            "waitingSignals": [
-                {
-                    "signalId": "11111111-1111-1111-1111-111111111111",
-                    "strategyId": "22222222-2222-2222-2222-222222222222",
-                    "strategyName": "Dip",
-                    "stockName": "Apple",
-                    "side": "buy",
-                    "signalDate": "2026-10-23",
-                    "stepNo": 1,
-                    "maxSteps": 5,
-                    "closePrice": 150.5
-                }
-            ],
-            "waitingAiRounds": [
-                {
-                    "strategyId": "22222222-2222-2222-2222-222222222222",
-                    "strategyName": "AI Strat"
-                }
-            ],
-            "whatChanged": [
-                {
-                    "signalId": "11111111-1111-1111-1111-111111111111",
-                    "strategyId": "22222222-2222-2222-2222-222222222222",
-                    "strategyName": "Dip",
-                    "mode": "live",
-                    "stockName": "Apple",
-                    "side": "buy",
-                    "signalDate": "2026-10-23",
-                    "closePrice": 150.5,
-                    "stepNo": 1,
-                    "maxSteps": 5,
-                    "text": "Apple: rules met"
-                }
-            ],
-            "stockChanges": [
-                {
-                    "strategyId": "22222222-2222-2222-2222-222222222222",
-                    "assetId": "33333333-3333-3333-3333-333333333333",
-                    "strategyName": "Dip",
-                    "mode": "simulation",
-                    "stockName": "Tesla",
-                    "kind": "cameClose",
-                    "distancePct": 2.5,
-                    "text": "Tesla: close"
-                }
-            ],
-            "strategies": [
-                {
-                    "strategyId": "22222222-2222-2222-2222-222222222222",
-                    "strategyName": "Dip",
-                    "mode": "live",
-                    "startedOn": "2026-10-01",
-                    "signalsCount": 3
-                }
-            ]
-        }
-        """;
+    /// <summary>As the API must write it: camelCase, enums as camelCase strings (a number fails the read).</summary>
+    static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) } };
 
-        var dto = JsonSerializer.Deserialize<DailySummaryDto>(json, JsonSerializerOptions.Web);
-        Assert.NotNull(dto);
-        Assert.True(dto.HasChanges);
-        Assert.Equal(TradeSide.Buy, dto.WaitingSignals[0].Side);
-        Assert.Equal(StrategyMode.Live, dto.WhatChanged[0].Mode);
-        Assert.Equal(TradeSide.Buy, dto.WhatChanged[0].Side);
-        Assert.Equal(StrategyMode.Simulation, dto.StockChanges[0].Mode);
-        Assert.Equal(StockChangeKind.CameClose, dto.StockChanges[0].Kind);
-        Assert.Equal(StrategyMode.Live, dto.Strategies[0].Mode);
-
-        var serialized = JsonSerializer.Serialize(dto, JsonSerializerOptions.Web);
-        Assert.Contains("\"mode\":\"live\"", serialized);
-        Assert.Contains("\"mode\":\"simulation\"", serialized);
-        Assert.Contains("\"side\":\"buy\"", serialized);
-        Assert.Contains("\"kind\":\"cameClose\"", serialized);
-    }
     [NeonFact]
     public async Task The_summary_reflects_quiet_state_before_strategies_and_changes_when_active()
     {
         var (client, email) = await factory.SignedUpAsync();
 
         // 1. Quiet state with no strategies
-        var quiet = await client.GetFromJsonAsync<DailySummaryDto>("/summary");
+        var quiet = await client.GetFromJsonAsync<DailySummaryDto>("/summary", Json);
         Assert.NotNull(quiet);
         Assert.True(quiet.Date.Year >= 2026);
         Assert.False(quiet.HasChanges);
@@ -193,7 +116,7 @@ public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsA
             });
         await db.SaveChangesAsync();
 
-        var summary = await client.GetFromJsonAsync<DailySummaryDto>("/summary");
+        var summary = await client.GetFromJsonAsync<DailySummaryDto>("/summary", Json);
 
         Assert.NotNull(summary);
         Assert.True(summary.HasChanges);

@@ -1,9 +1,10 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using StrategyTradingLab.Api.Ai;
+using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
@@ -32,7 +33,7 @@ public static class StrategyEndpoints
                 .Concat(all.Where(s => s.Status != StrategyStatus.Running).OrderByDescending(s => s.EndedAt))
                 .ToList();
             var running = strategies.Where(s => s.Status == StrategyStatus.Running).ToList();
-            var today = Today(user, time);
+            var today = UserClock.Today(user, time);
             // AI rounds whose week ran out are skipped before anything is shown.
             await rounds.SweepAsync(running.Select(s => new AiStrategyDay(s, today)), cancellationToken);
             var book = await StrategyBook.LoadAsync(db, strategies, today, cancellationToken);
@@ -89,7 +90,7 @@ public static class StrategyEndpoints
             var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
                 .SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
-            var today = Today(user, time);
+            var today = UserClock.Today(user, time);
             var ai = AiRounds.IsAi(strategy) ? await rounds.SummaryAsync(strategy, today, cancellationToken) : default;
             // The version it started from: "tuned" compares with that.
             var template = await store.VersionAsync(strategy.TemplateKey, strategy.DefaultsVersion, cancellationToken);
@@ -148,7 +149,7 @@ public static class StrategyEndpoints
                 errors["sourceStrategyId"] = [Messages.NotYourSimulation.In(user.Locale)];
             var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             // The AI template's prompt choices (Review: "What the AI reads", Edit prompt).
-            if (parameters is not null && template.Key == TemplateCatalog.Ai.Key)
+            if (parameters is not null && template.Key == TemplateKeys.Ai)
                 parameters = AiRoundEndpoints.Apply(parameters, request.Ai, (field, message) => errors[$"ai.{field}"] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
@@ -172,7 +173,7 @@ public static class StrategyEndpoints
                 Name = request.Name.Trim(),
                 Mode = request.Mode!.Value,
                 Status = StrategyStatus.Running,
-                StartedOn = Today(user, time),
+                StartedOn = UserClock.Today(user, time),
                 Currency = request.Currency ?? user.Currency,
                 Budget = request.Budget,
                 Params = parameters,
@@ -182,14 +183,14 @@ public static class StrategyEndpoints
             };
             db.Strategies.Add(strategy);
             // Its first AI round is due now (spec: Confirm, "Your first AI round is due now").
-            if (template.Key == TemplateCatalog.Ai.Key) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, DueOn = strategy.StartedOn, Status = AiRoundStatus.Due });
+            if (template.Key == TemplateKeys.Ai) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, DueOn = strategy.StartedOn, Status = AiRoundStatus.Due });
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
                 await tx.CommitAsync(cancellationToken);
             }
             // The running name index refuses a taken name, also when two requests race.
-            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RunningNameIndex })
+            catch (DbUpdateException error) when (error.IsUniqueViolation(RunningNameIndex))
             {
                 return TypedResults.Conflict(Messages.NameTaken.In(user.Locale));
             }
@@ -213,9 +214,7 @@ public static class StrategyEndpoints
             // A setting the request leaves out keeps the strategy's own value, never the template's default, which the owner
             // may have changed since it started (/admin/templates).
             var root = strategy.Params.RootElement;
-            var settings = template.Settings
-                .Where(s => root.TryGetProperty(s.Key, out var value) && value.ValueKind == JsonValueKind.Number)
-                .ToDictionary(s => s.Key, s => root.GetProperty(s.Key).GetDecimal());
+            var settings = root.Numbers(template.Settings.Select(s => s.Key));
             foreach (var (key, value) in request.Settings ?? new Dictionary<string, decimal>()) settings[key] = value;
             var parameters = TemplateSettings.Apply(template, settings, (field, message) => errors[field] = [message], user.Locale, strategy.Params);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
@@ -247,8 +246,8 @@ public static class StrategyEndpoints
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
             if (NewStrategyValidation.AssetsError(ids, template, assets, user.Locale,
-                    [.. strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId)]) is { } invalid)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetIds"] = [invalid] });
+                    [.. strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId)]) is { } invalid)
+                return ApiProblems.Invalid("assetIds", invalid);
 
             var now = time.GetUtcNow();
             // Spec (strategy page, Edit list): an unticked stock stops its signals, and its trades stay. A stock ticked again
@@ -258,7 +257,7 @@ public static class StrategyEndpoints
             foreach (var listed in strategy.Assets)
             {
                 var ticked = ids.Contains(listed.AssetId);
-                var following = listed.Active && listed.RemovedAt is null;
+                var following = listed.IsFollowed;
                 if (ticked && !following)
                 {
                     (listed.Active, listed.RemovedAt, listed.AddedAt) = (true, null, now);
@@ -279,7 +278,7 @@ public static class StrategyEndpoints
             await db.SaveChangesAsync(cancellationToken);
 
             // Their waiting signals can't be answered in time any more: missed, ending today, as when archiving.
-            var today = Today(user, time);
+            var today = UserClock.Today(user, time);
             if (removed.Count > 0)
                 await db.Signals.Where(s => s.StrategyId == id && s.Status == SignalStatus.Waiting && removed.Contains(s.AssetId))
                     .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
@@ -338,7 +337,7 @@ public static class StrategyEndpoints
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             if (NewStrategyValidation.NameError(request.Name, user.Locale) is { } invalid)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["name"] = [invalid] });
+                return ApiProblems.Invalid("name", invalid);
 
             strategy.Name = request.Name!.Trim();
             try
@@ -346,7 +345,7 @@ public static class StrategyEndpoints
                 await db.SaveChangesAsync(cancellationToken);
             }
             // As on Confirm: the running name index refuses a name another running strategy of the user has.
-            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: RunningNameIndex })
+            catch (DbUpdateException error) when (error.IsUniqueViolation(RunningNameIndex))
             {
                 return TypedResults.Conflict(Messages.NameTaken.In(user.Locale));
             }
@@ -361,7 +360,7 @@ public static class StrategyEndpoints
             var user = await CurrentUser(sessions, cancellationToken);
             if (!await db.Strategies.AnyAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken)) return TypedResults.NotFound();
             var now = time.GetUtcNow();
-            var today = Today(user, time);
+            var today = UserClock.Today(user, time);
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             // Only while it runs, so two taps archive it once. The daily check runs running strategies only, and the running name index frees its name.
             var ended = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running)
@@ -389,23 +388,9 @@ public static class StrategyEndpoints
     internal static async Task<User> CurrentUser(Sessions sessions, CancellationToken cancellationToken) =>
         (await sessions.CurrentAsync(cancellationToken))!;
 
-    /// <summary>The user's local date; UTC if their time zone isn't known to the server.</summary>
-    internal static DateOnly Today(User user, TimeProvider time) => Today(user.TimeZone, time.GetUtcNow());
-
-    /// <summary>The date in a time zone at <paramref name="now"/>; UTC if the server doesn't know the zone.</summary>
-    internal static DateOnly Today(string timeZone, DateTimeOffset now)
-    {
-        TimeZoneInfo zone;
-        try { zone = TimeZoneInfo.FindSystemTimeZoneById(timeZone); }
-        catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { zone = TimeZoneInfo.Utc; }
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, zone).DateTime);
-    }
-
-    /// <summary>The user's local date the strategy ended; null while it runs.</summary>
-    internal static DateOnly? EndedOn(Strategy strategy, User user) => strategy.EndedAt is { } at ? Today(user.TimeZone, at) : null;
 
     /// <summary>The day its results are worked out to: today, or an ended strategy's end date (its results are frozen there).</summary>
-    static DateOnly ResultsDay(Strategy strategy, User user, DateOnly today) => EndedOn(strategy, user) is { } ended && ended < today ? ended : today;
+    static DateOnly ResultsDay(Strategy strategy, User user, DateOnly today) => UserClock.EndedOn(strategy, user) is { } ended && ended < today ? ended : today;
 
     /// <summary>A strategy's card; without <paramref name="trades"/> (a new strategy) it has no results and nothing used.</summary>
     static StrategySummary Summary(Strategy strategy, User user, Template template, (StrategyBook Book, DateOnly Today)? trades = null)
@@ -416,10 +401,10 @@ public static class StrategyEndpoints
         var results = figures is null ? null : new StrategyResults(figures.You, figures.Index, [.. figures.History.Select(p => p.You)]);
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
             strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(strategy, template, texts),
-            strategy.Status, EndedOn(strategy, user), trades is { } d ? d.Book.IndexSinceStart(strategy, ResultsDay(strategy, user, d.Today)) : null);
+            strategy.Status, UserClock.EndedOn(strategy, user), trades is { } d ? d.Book.IndexSinceStart(strategy, ResultsDay(strategy, user, d.Today)) : null);
     }
 
-    static IEnumerable<StrategyAsset> Followed(Strategy strategy) => strategy.Assets.Where(a => a.Active && a.RemovedAt is null);
+    static IEnumerable<StrategyAsset> Followed(Strategy strategy) => strategy.Assets.Where(a => a.IsFollowed);
 
     /// <summary>A running strategy's followed stocks counted by pill, for its dashboard card.</summary>
     static StockCounts CountsOf(Strategy strategy, Template template, StrategyBook book, IEnumerable<Signal> signals,
@@ -431,7 +416,7 @@ public static class StrategyEndpoints
             latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], book, aiScores))
             .ToList();
         // Bear markets' distance is above the low, not from a buy rule, so it is never "close".
-        bool Close(StockState s) => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket && strategy.TemplateKey != "bear"
+        bool Close(StockState s) => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket && strategy.TemplateKey != TemplateKeys.Bear
             && s.Distance is > 0 && s.Distance <= template.ClosePct;
         return new StockCounts(
             states.Count(s => s.Status is StockStatus.WaitingForYou or StockStatus.Signal),
@@ -468,7 +453,7 @@ public static class StrategyEndpoints
 
         var activeIds = activeAssetIds ?? (strategy.Assets is null
             ? []
-            : strategy.Assets.Where(a => a.Active && a.RemovedAt == null).Select(a => a.AssetId));
+            : strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId));
         return template.Watches switch
         {
             StarterList starter => activeIds.Any(id => !starter.StockIds.Contains(id)),
@@ -489,7 +474,7 @@ public static class StrategyEndpoints
             .OrderByDescending(s => s.SignalDate).ThenByDescending(s => s.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        var shown = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
+        var shown = strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId).ToList();
         var you = book.You(strategy);
         // A stock unticked with Edit list keeps its row, dimmed, while it has trades in the results, the user's or (live) the rules' (spec: strategy page).
         var traded = you.Concat(book.Rules(strategy) ?? []).Select(t => t.AssetId).ToHashSet();
@@ -522,9 +507,7 @@ public static class StrategyEndpoints
             var (status, rulesSteps, userSteps, distance, signal, checks) = StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
                 own, trades, book, aiScores);
             checks = ChecksAfterBuy(evaluation, own) ?? checks;
-            DateOnly? candidateSince = evaluation?.Facts.RootElement.TryGetProperty("candidateSince", out var cs) == true
-                && cs.ValueKind == JsonValueKind.String && DateOnly.TryParse(cs.GetString(), out var parsedSince)
-                ? parsedSince : checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
+            var candidateSince = evaluation?.Facts.RootElement.Date("candidateSince") ?? checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
             var priceIsClose = evaluation is not null && asset.PricesCheckedAt is { } checkedAt
                 && checkedAt >= UsSession.FinalAt(evaluation.Date);
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
@@ -538,8 +521,7 @@ public static class StrategyEndpoints
             {
                 Exchange = asset.Exchange,
                 Currency = asset.Currency,
-                What = asset.Texts.FirstOrDefault(t => t.Locale == user.Locale)?.What
-                    ?? asset.Texts.FirstOrDefault(t => t.Locale == TemplateTexts.DefaultLocale)?.What,
+                What = asset.WhatIn(user.Locale),
                 CheckedOn = evaluation?.Date,
                 CandidateSince = candidateSince,
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
@@ -622,30 +604,12 @@ public static class StrategyEndpoints
             var fromDate = earliestTrade < strategy.StartedOn ? earliestTrade : strategy.StartedOn;
             var exchange = await ExchangeRates.LoadAsync(db, fromDate, cancellationToken);
             foreach (var curr in foreignCurrencies)
-            {
-                var days = new List<RateDay>();
-                for (var day = fromDate.AddDays(-ExchangeRates.LookBackDays); day <= today; day = day.AddDays(1))
-                {
-                    if (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(curr, day)
-                        && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)
-                        && exchange.Between(strategy.Currency, curr, day) is { } rate)
-                    {
-                        days.Add(new RateDay(day, rate));
-                    }
-                }
-                ratesList.Add(new CurrencyRates(curr, days));
-            }
+                ratesList.Add(new CurrencyRates(curr, exchange.ReferenceDays(strategy.Currency, curr, fromDate, today)));
         }
 
-        var root = strategy.Params.RootElement;
-        var settings = new Dictionary<string, decimal>();
-        foreach (var s in template.Settings)
-        {
-            if (root.TryGetProperty(s.Key, out var prop) && prop.ValueKind == JsonValueKind.Number)
-                settings[s.Key] = prop.GetDecimal();
-        }
+        var settings = strategy.Params.RootElement.Numbers(template.Settings.Select(s => s.Key));
 
-        var aiSetup = template.Key == TemplateCatalog.Ai.Key && strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) is { } aiParams
+        var aiSetup = template.Key == TemplateKeys.Ai && strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) is { } aiParams
             ? new AiSetup(aiParams.News, aiParams.Mood, aiParams.Figures, aiParams.Instructions)
             : null;
         var sourceName = strategy.SourceStrategyId is { } sourceId
@@ -653,7 +617,7 @@ public static class StrategyEndpoints
             : null;
 
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
-            EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
+            UserClock.EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion };
@@ -675,7 +639,7 @@ public static class StrategyEndpoints
         // A simulation's signal of the latest checked day is a SIGNAL until its own trade is in: the next open's, or at once for an
         // AI round (spec §5, F-007). Of several that day, the one still waiting.
         var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date && !book.HasTrade(s.Id));
-        var (doneSteps, cycleStart) = strategy.TemplateKey == "bear" ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
+        var (doneSteps, cycleStart) = strategy.TemplateKey == TemplateKeys.Bear ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
         var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
         int rulesSteps;
         if (maxSteps is null)
@@ -688,7 +652,7 @@ public static class StrategyEndpoints
             rulesSteps = doneSteps is { } done ? Math.Min(done, buySignals) : buySignals;
         }
         var userSteps = maxSteps is null ? (Performance.Used(trades) > 0 ? 1 : 0)
-            : strategy.TemplateKey == "bear" && !live ? rulesSteps
+            : strategy.TemplateKey == TemplateKeys.Bear && !live ? rulesSteps
             : doneSteps == 0 ? 0
             : trades.Count(b => b.Side == TradeSide.Buy && (cycleStart is null || b.Date >= cycleStart));
 
@@ -699,9 +663,8 @@ public static class StrategyEndpoints
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
             StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
         var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
-        var distanceKey = strategy.TemplateKey == "bear" && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
-        decimal? distance = evaluation?.Facts.RootElement.TryGetProperty(distanceKey, out var d) == true && d.ValueKind == JsonValueKind.Number
-            ? d.GetDecimal() : null;
+        var distanceKey = strategy.TemplateKey == TemplateKeys.Bear && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
+        var distance = evaluation?.Facts.RootElement.Number(distanceKey);
         return new StockState(status, rulesSteps, userSteps, distance, signal, checks);
     }
 

@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Signals;
 
 namespace StrategyTradingLab.Api.Strategies;
@@ -25,19 +27,19 @@ public static class TradeEndpoints
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             // A stock it follows; a sale also on one unticked with Edit list, so the user can record selling what they hold of it.
-            if (strategy.Assets.All(a => a.AssetId != request.AssetId || (request.Side != TradeSide.Sell && !(a.Active && a.RemovedAt == null))))
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = [Messages.PickStrategyStock.In(user.Locale)] });
+            if (strategy.Assets.All(a => a.AssetId != request.AssetId || (request.Side != TradeSide.Sell && !a.IsFollowed)))
+                return ApiProblems.Invalid("assetId", Messages.PickStrategyStock.In(user.Locale));
 
             var asset = await db.Assets.FindAsync([request.AssetId], cancellationToken);
             if (asset is null)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["assetId"] = [Messages.PickStrategyStock.In(user.Locale)] });
+                return ApiProblems.Invalid("assetId", Messages.PickStrategyStock.In(user.Locale));
 
             var tradeDate = request.Date;
             var minRatesDate = tradeDate.HasValue && tradeDate.Value < strategy.StartedOn ? tradeDate.Value : strategy.StartedOn;
-            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, minRatesDate, cancellationToken);
+            var rates = await ExchangeRates.ForPairAsync(db, strategy.Currency, asset.Currency, minRatesDate, cancellationToken);
             var signalRequest = new SignalTradeRequest(request.Date, request.Price, request.EnteredAs, request.Amount, request.Shares, request.Fee,
                 request.FxSource, request.FxRate);
-            var (trade, errors) = SignalRules.CheckTrade(signalRequest, minDate: null, StrategyEndpoints.Today(user, time),
+            var (trade, errors) = SignalRules.CheckTrade(signalRequest, minDate: null, UserClock.Today(user, time),
                 day => rates.Between(strategy.Currency, asset.Currency, day), locale: user.Locale);
             if (trade is null) return TypedResults.ValidationProblem(errors);
 
@@ -86,27 +88,18 @@ public static class TradeEndpoints
             var asset = await db.Assets.FindAsync([trade.AssetId], cancellationToken);
             if (asset is null) return TypedResults.NotFound();
 
-            DateOnly? minDate;
-            string? minDateMessage;
-            if (trade.Source == TradeSource.Signal && trade.SignalId is { } signalId)
-            {
-                var signal = await db.Signals.FindAsync([signalId], cancellationToken);
-                minDate = signal?.SignalDate;
-                minDateMessage = null; // CheckTrade words it: a day on or after the signal.
-            }
-            else
-            {
-                minDate = null;
-                minDateMessage = null;
-            }
+            // A signal's trade stays on or after the signal's day; a manual one has no earliest day.
+            var minDate = trade.Source == TradeSource.Signal && trade.SignalId is { } signalId
+                ? (await db.Signals.FindAsync([signalId], cancellationToken))?.SignalDate
+                : null;
 
             var tradeDate = request.Date;
             var minRatesDate = tradeDate.HasValue && tradeDate.Value < strategy.StartedOn ? tradeDate.Value : (minDate ?? strategy.StartedOn);
-            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, minRatesDate, cancellationToken);
+            var rates = await ExchangeRates.ForPairAsync(db, strategy.Currency, asset.Currency, minRatesDate, cancellationToken);
             var signalRequest = new SignalTradeRequest(request.Date, request.Price, request.EnteredAs, request.Amount, request.Shares, request.Fee,
                 request.FxSource, request.FxRate);
-            var (checkedTrade, errors) = SignalRules.CheckTrade(signalRequest, minDate, StrategyEndpoints.Today(user, time),
-                day => rates.Between(strategy.Currency, asset.Currency, day), minDateMessage: minDateMessage, locale: user.Locale);
+            var (checkedTrade, errors) = SignalRules.CheckTrade(signalRequest, minDate, UserClock.Today(user, time),
+                day => rates.Between(strategy.Currency, asset.Currency, day), locale: user.Locale);
             if (checkedTrade is null) return TypedResults.ValidationProblem(errors);
 
             trade.TradeDate = checkedTrade.Date;

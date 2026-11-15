@@ -1,4 +1,5 @@
 using StrategyTradingLab.Api.Data.Entities;
+using StrategyTradingLab.Api.MarketData;
 
 namespace StrategyTradingLab.Api.Signals;
 
@@ -13,7 +14,6 @@ public record TradePrefill(DateOnly Date, decimal? Price, decimal? Amount, decim
     bool PriceIsLatest = false);
 
 /// <summary>The reference rate of a day: units of the asset's currency per one unit of the strategy's.</summary>
-public record RateDay(DateOnly Date, decimal Rate);
 
 /// <summary>How the user answered: the trade they saved, or the skip and its reason.</summary>
 public record SignalAnswer(SignalStatus Status, SkipReason? SkipReason, DateOnly? Date, decimal? Price, decimal? Amount, decimal? Shares, decimal? Fee);

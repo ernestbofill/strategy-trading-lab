@@ -1,0 +1,36 @@
+/* A form's own buttons (Save, Cancel, a confirm step's Delete): not the screen's one PrimaryAction. */
+.button {
+  min-height: 44px;
+  padding: 10px 16px;
+  font: 600 13px/20px var(--font-mono);
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.button[data-variant="primary"] {
+  color: var(--on-action);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.button[data-variant="secondary"] {
+  color: var(--ink);
+  background: var(--surface-sidebar);
+  border-color: var(--border-hairline);
+}
+.button[data-variant="danger"] {
+  color: var(--on-action);
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+/* A row of them: Save and Cancel, Delete and Keep. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

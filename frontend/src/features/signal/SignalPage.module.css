@@ -145,13 +145,6 @@
   gap: var(--space-3);
 }
 
-.rate {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--space-2);
-}
-
 .snooze {
   display: flex;
   justify-content: center;
@@ -169,8 +162,7 @@
     align-items: start;
   }
   .fields > p,
-  .fields > fieldset,
-  .rate {
+  .fields > fieldset {
     grid-column: 1 / -1;
   }
 }

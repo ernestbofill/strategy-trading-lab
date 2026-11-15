@@ -19,7 +19,6 @@ public class DailySummary(AppDbContext db, TemplateStore templates, TimeProvider
     const int RecentDays = 4;
 
     public record Data(
-        IReadOnlyList<Strategy> Strategies,
         IReadOnlyList<SignalLine> Waiting,
         IReadOnlyList<SignalLine> Changed,
         IReadOnlyList<StockChangeLine> StockChanges,
@@ -33,7 +32,7 @@ public class DailySummary(AppDbContext db, TemplateStore templates, TimeProvider
         var strategies = running ?? await db.Strategies.AsNoTracking().Where(s => s.UserId == userId && s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var ids = strategies.Select(s => s.Id).ToList();
         if (ids.Count == 0)
-            return new Data([], [], [], [], [], [], false, true);
+            return new Data([], [], [], [], [], false, true);
 
         var signals = await (from signal in db.Signals.AsNoTracking()
                              join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
@@ -56,7 +55,7 @@ public class DailySummary(AppDbContext db, TemplateStore templates, TimeProvider
             .Select(g => new { g.Key, Count = g.Count() }).ToDictionaryAsync(g => g.Key, g => g.Count, cancellationToken);
         var scoreboard = strategies.OrderBy(s => s.Name).Select(s => new ScoreLine(s.Name, s.Mode, s.StartedOn, counts.GetValueOrDefault(s.Id), s.Id)).ToList();
 
-        return new Data(strategies, waiting, changed, stockChanges, scoreboard, [.. roundsDue.Select(r => (r.StrategyId, r.Name))], hasChanges, complete);
+        return new Data(waiting, changed, stockChanges, scoreboard, [.. roundsDue.Select(r => (r.StrategyId, r.Name))], hasChanges, complete);
     }
 
     /// <summary>

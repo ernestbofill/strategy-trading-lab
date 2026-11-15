@@ -46,7 +46,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             ? db.Users.AsNoTracking().Where(u => u.EmailVerifiedAt != null && u.AlertEmails)
             : db.Users.AsNoTracking().Where(u => u.AlertPush && db.PushSubscriptions.Any(p => p.UserId == u.Id));
 
-    static Recipient To(User user) => new(user.Id, user.Email, user.Locale, user.UnsubscribeToken, user.TimeZone, user.NotifyHour);
+    /// <summary>
+    /// Whether what a check found on <paramref name="day"/> may go out now: a push at once, an email from the user's notification
+    /// hour (<see cref="NotifyTime.AlertDueAt"/>).
+    /// </summary>
+    static bool Due(NotificationChannel channel, DateOnly day, Recipient to, DateTimeOffset now) =>
+        channel == NotificationChannel.Push || now >= NotifyTime.AlertDueAt(day, to.NotifyHour, to.TimeZone);
 
     /// <summary>Whether a channel can send at all: push needs its keys.</summary>
     bool Ready(NotificationChannel channel) => channel == NotificationChannel.Email || delivery.PushReady;
@@ -82,14 +87,14 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           // A second check the same day (a re-run, a price that came in late) can signal the same stock again: it was alerted already.
                           let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == channel && x.SentAt > recent
                               && db.Signals.Any(o => o.Id == x.SignalId && o.StrategyId == signal.StrategyId && o.AssetId == signal.AssetId && o.Side == signal.Side))
-                          select new { signal, strategy, user, asset, repeat }).ToListAsync(cancellationToken);
+                          select new { signal, strategy, to = new Recipient(user.Id, user.Email, user.Locale, user.UnsubscribeToken, user.TimeZone, user.NotifyHour), asset, repeat }).ToListAsync(cancellationToken);
 
         var sent = 0;
         var seen = new HashSet<(Guid, Guid, TradeSide)>();
-        var due = rows.Where(r => channel == NotificationChannel.Push || now >= NotifyTime.AlertDueAt(r.signal.SignalDate, r.user.NotifyHour, r.user.TimeZone));
+        var due = rows.Where(r => Due(channel, r.signal.SignalDate, r.to, now));
         foreach (var row in due.OrderBy(r => r.signal.CreatedAt))
         {
-            if (await delivery.ClaimAsync(row.user.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, channel) is not { } claimed) continue;
+            if (await delivery.ClaimAsync(row.to.Id, row.signal.Id, NotificationKind.Signal, row.signal.SignalDate, cancellationToken, channel) is not { } claimed) continue;
             // Only a send that worked holds back the batch's other signal for the stock: after a failed one, the next is tried.
             if (row.repeat || seen.Contains(SameThing(row.signal)))
             {
@@ -97,7 +102,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                 continue;
             }
             var line = Line(row.signal, row.strategy, row.asset);
-            var to = To(row.user);
+            var to = row.to;
             if (await delivery.DeliverAsync(channel, claimed, to, () => EmailTexts.SignalAlert(line, AppUrl, to.Locale, to.UnsubscribeToken),
                     () => PushTexts.SignalAlert(line, to.Locale), cancellationToken))
             {
@@ -128,16 +133,16 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.TemplateKey != TemplateKeys.Ai
                               && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == channel && x.SentAt != null)
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == channel)
-                          select new { signal, strategy, user, asset }).ToListAsync(cancellationToken);
+                          select new { signal, strategy, to = new Recipient(user.Id, user.Email, user.Locale, user.UnsubscribeToken, user.TimeZone, user.NotifyHour), asset }).ToListAsync(cancellationToken);
 
         var now = time.GetUtcNow();
         var sent = 0;
-        foreach (var row in rows.Where(r => channel == NotificationChannel.Push || now >= NotifyTime.AlertDueAt(r.signal.EndedOn!.Value, r.user.NotifyHour, r.user.TimeZone)))
+        foreach (var row in rows.Where(r => Due(channel, r.signal.EndedOn!.Value, r.to, now)))
         {
             var endedOn = row.signal.EndedOn!.Value;
-            if (await delivery.ClaimAsync(row.user.Id, row.signal.Id, NotificationKind.SignalEnded, endedOn, cancellationToken, channel) is not { } claimed) continue;
+            if (await delivery.ClaimAsync(row.to.Id, row.signal.Id, NotificationKind.SignalEnded, endedOn, cancellationToken, channel) is not { } claimed) continue;
             var line = Line(row.signal, row.strategy, row.asset);
-            var to = To(row.user);
+            var to = row.to;
             if (await delivery.DeliverAsync(channel, claimed, to, () => EmailTexts.SignalEnded(line, endedOn, AppUrl, to.Locale, to.UnsubscribeToken),
                     () => PushTexts.SignalEnded(line, endedOn, to.Locale), cancellationToken)) sent++;
         }
@@ -213,16 +218,16 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && strategy.TemplateKey != TemplateKeys.Ai
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
                                   && x.Channel == channel && x.ForDate == signal.SnoozedUntil)
-                          select new { signal, strategy, user, asset }).ToListAsync(cancellationToken);
+                          select new { signal, strategy, to = new Recipient(user.Id, user.Email, user.Locale, user.UnsubscribeToken, user.TimeZone, user.NotifyHour), asset }).ToListAsync(cancellationToken);
 
         var sent = 0;
         foreach (var row in rows)
         {
             var day = row.signal.SnoozedUntil!.Value;
-            if (!IsMorningOf(day, UserClock.LocalNow(now, row.user.TimeZone), NotifyTime.ReminderHour(row.user.NotifyHour))) continue;
-            if (await delivery.ClaimAsync(row.user.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken, channel) is not { } claimed) continue;
+            if (!IsMorningOf(day, UserClock.LocalNow(now, row.to.TimeZone), NotifyTime.ReminderHour(row.to.NotifyHour))) continue;
+            if (await delivery.ClaimAsync(row.to.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken, channel) is not { } claimed) continue;
             var line = Line(row.signal, row.strategy, row.asset);
-            var to = To(row.user);
+            var to = row.to;
             if (await delivery.DeliverAsync(channel, claimed, to, () => EmailTexts.SnoozeReminder(line, AppUrl, to.Locale, to.UnsubscribeToken),
                     () => PushTexts.SnoozeReminder(line, to.Locale), cancellationToken)) sent++;
         }
@@ -245,12 +250,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.Status == StrategyStatus.Running
                               && !db.Notifications.Any(x => x.UserId == user.Id && x.Kind == NotificationKind.AiRound
                                   && x.Channel == channel && x.ForDate == round.DueOn)
-                          select new { round.DueOn, strategy.Id, strategy.Name, user }).ToListAsync(cancellationToken);
+                          select new { round.DueOn, strategy.Id, strategy.Name, to = new Recipient(user.Id, user.Email, user.Locale, user.UnsubscribeToken, user.TimeZone, user.NotifyHour) }).ToListAsync(cancellationToken);
 
         var sent = 0;
-        foreach (var group in rows.GroupBy(r => (r.user.Id, r.DueOn)))
+        foreach (var group in rows.GroupBy(r => (r.to.Id, r.DueOn)))
         {
-            var to = To(group.First().user);
+            var to = group.First().to;
             if (!IsMorningOf(group.Key.DueOn, UserClock.LocalNow(now, to.TimeZone), NotifyTime.ReminderHour(to.NotifyHour))) continue;
             if (await delivery.ClaimAsync(to.Id, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken, channel) is not { } claimed) continue;
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
@@ -271,8 +276,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         if (!delivery.PushReady) return 0;
         var session = UsSession.LastComplete(now);
         var strategies = await db.Strategies.AsNoTracking()
-            .Where(s => s.Status == StrategyStatus.Running && db.Users.Any(u => u.Id == s.UserId && u.AlertPush)
-                && db.PushSubscriptions.Any(p => p.UserId == s.UserId)
+            .Where(s => s.Status == StrategyStatus.Running && Reachable(NotificationChannel.Push).Any(u => u.Id == s.UserId)
                 && db.DailyEvaluations.Any(e => e.StrategyId == s.Id && e.Date == session))
             .ToListAsync(cancellationToken);
         if (strategies.Count == 0) return 0;

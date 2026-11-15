@@ -242,7 +242,9 @@ public static class EmailTexts
 
     /// <summary>"Time for the AI round of Picks. It takes about two minutes.": the reminder's first line, and the push's text.</summary>
     public static string AiRoundIntro(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string locale) =>
-        (strategies.Count > 1 ? AiRoundIntroMany : AiRoundIntroSingle).In(locale, NameList(strategies, locale));
+        AiRoundIntro(strategies.Count, NameList(strategies, locale), locale);
+
+    static string AiRoundIntro(int count, string names, string locale) => (count > 1 ? AiRoundIntroMany : AiRoundIntroSingle).In(locale, names);
 
     /// <summary>The AI round's name, the reminder's eyebrow and the push's title.</summary>
     public static string AiRoundTitle(string locale) => AiRoundEyebrow.In(locale);
@@ -255,7 +257,8 @@ public static class EmailTexts
     /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
     public static EmailContent AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en", string? unsubscribeToken = null)
     {
-        var intro = AiRoundIntro(strategies, locale);
+        var names = NameList(strategies, locale);
+        var intro = AiRoundIntro(strategies.Count, names, locale);
         return new EmailDocument(locale, appUrl)
             .Eyebrow(AiRoundTitle(locale))
             .Paragraph(intro)
@@ -263,7 +266,7 @@ public static class EmailTexts
             .Paragraph(AiRoundNoConnect.In(locale))
             .WithUnsubscribe(EmailKind.Alerts, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
-            .Build(AiRoundSubject.In(locale, NameList(strategies, locale)));
+            .Build(AiRoundSubject.In(locale, names));
     }
 
     /// <summary>What a template's distance measures to: "below the buy line".</summary>

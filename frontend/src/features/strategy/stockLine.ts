@@ -4,7 +4,7 @@ import type { MessageKey } from '../../i18n/messages/en'
 import { isoDate, money, shortDate, shortDateTime, shortTime, signedPct } from '../../lib/format'
 import { unmetLine } from './checks'
 
-export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching' | 'muted' | 'done'
+export type PillTone = 'waiting' | 'signal' | 'holding' | 'building' | 'watching' | 'muted'
 
 /** What a stock's row says: its pill, the line under it, and its result on the right. */
 export interface StockLine {

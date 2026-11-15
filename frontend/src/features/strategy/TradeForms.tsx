@@ -29,15 +29,16 @@ function TradeFormCard(props: TradeFormCardProps) {
   const t = useT()
   const [form, setForm] = useState(initial)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState<FormMessageState>(null)
   // Another stock in another currency: a rate typed for the old pair doesn't apply, so the reference rate comes back.
   const [pair, setPair] = useState(props.assetCurrency)
   if (pair !== props.assetCurrency) {
     setPair(props.assetCurrency)
     set({ ownRate: null })
+    setErrors(({ fxRate: _dropped, ...others }) => others)
   }
-  const [saving, setSaving] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<FormMessageState>(null)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()

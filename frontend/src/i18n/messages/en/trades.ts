@@ -6,6 +6,7 @@ export const trades = {
   'trades.empty': 'No signals or trades yet.',
   'trades.deleteAsk': 'Delete this trade? This will remove it from your results.',
   'trades.deleting': 'Deleting…',
+  'trades.errorDelete': 'Could not delete the trade. Try again.',
   'trades.delete': 'Delete',
   'trades.cancel': 'Cancel',
   'trades.edit': 'Edit',

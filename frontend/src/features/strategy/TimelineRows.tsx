@@ -8,8 +8,7 @@ import type { MessageKey } from '../../i18n/messages/en'
 import { exact, formatRate, formatShares, money, shortDate } from '../../lib/format'
 import { signalPath } from '../dashboard/paths'
 import { skipReasons } from '../signal/signalForm'
-import type { PillTone } from './stockLine'
-import { StockPill } from './StockPill'
+import { StockPill, type SignalTone } from './StockPill'
 import styles from './SignalsAndTrades.module.css'
 
 /** A trade on the timeline, with Edit and Delete (after a confirm step) while it can still change. */
@@ -33,11 +32,13 @@ export function TradeRow({
 }) {
   const t = useT()
   const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   if (isDeleting) {
     return (
       <div className={styles.confirmBox}>
         <p>{t('trades.deleteAsk')}</p>
+        {failed && <p role="alert">{t('trades.errorDelete')}</p>}
         <div className={styles.confirmActions}>
           <button
             type="button"
@@ -45,8 +46,11 @@ export function TradeRow({
             disabled={busy}
             onClick={async () => {
               setBusy(true)
+              setFailed(false)
               try {
                 await onConfirmDelete()
+              } catch {
+                setFailed(true)
               } finally {
                 setBusy(false)
               }
@@ -140,9 +144,9 @@ export function SignalRow({ s, signal, live }: { s: StrategyDetail; signal: Stra
   return <div className={styles.row}>{content}</div>
 }
 
-const PILLS: Record<StrategySignalItem['status'] | 'snoozed', [MessageKey, PillTone]> = {
+const PILLS: Record<StrategySignalItem['status'] | 'snoozed', [MessageKey, SignalTone]> = {
   confirmed: ['trades.pill.did', 'done'],
-  skipped: ['trades.pill.skipped', 'watching'],
+  skipped: ['trades.pill.skipped', 'skipped'],
   missed: ['trades.pill.missed', 'waiting'],
   snoozed: ['trades.pill.snoozed', 'signal'],
   waiting: ['trades.pill.waiting', 'waiting'],

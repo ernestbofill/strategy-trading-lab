@@ -7,6 +7,7 @@ export const trades: Record<keyof typeof en, string> = {
   'trades.empty': 'Encara no hi ha senyals ni operacions.',
   'trades.deleteAsk': 'Vols eliminar aquesta operació? Deixarà de comptar als teus resultats.',
   'trades.deleting': 'Eliminant…',
+  'trades.errorDelete': 'No s’ha pogut eliminar l’operació. Torna-ho a provar.',
   'trades.delete': 'Elimina',
   'trades.cancel': 'Cancel·la',
   'trades.edit': 'Edita',

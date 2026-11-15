@@ -10,7 +10,6 @@ import { localDateTime as at } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import styles from './AdminAlerts.module.css'
 
-
 const sourceText: Record<AlertSource, string> = {
   dailyCheck: 'Daily check',
   prices: 'Prices',
@@ -18,7 +17,6 @@ const sourceText: Record<AlertSource, string> = {
   aiStrategies: 'AI strategy',
   email: 'Email',
 }
-
 
 function AlertCard({ alert, onDismiss, busy }: { alert: AdminAlert; onDismiss?: () => void; busy?: boolean }) {
   return (
@@ -63,7 +61,7 @@ export function AdminAlerts() {
     } catch {
       setRefused(id)
     }
-    setReloadFailed(!(await reload(adminCacheKeys.alerts)))
+    setReloadFailed(!(await reload(adminCacheKeys.alerts, { fresh: true })))
     setBusy(null)
   }
 

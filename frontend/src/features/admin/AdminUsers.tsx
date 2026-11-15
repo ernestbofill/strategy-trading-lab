@@ -12,7 +12,6 @@ import styles from './AdminUsers.module.css'
 const roleText: Record<Role, string> = { user: 'User', vip: 'VIP', owner: 'Owner' }
 const blockedText = { bounced: 'Blocked: bounced', invalid: 'Blocked: invalid address', complaint: 'Blocked: reported spam' }
 
-
 const columns: DataTableColumn<AdminUser>[] = [
   { id: 'email', header: 'Email', accessorFn: (u) => u.email, cell: (u) => <span className={styles.email}>{u.email}</span> },
   { id: 'name', header: 'Name', accessorFn: (u) => [u.firstName, u.lastName].filter(Boolean).join(' '), cell: (u) => [u.firstName, u.lastName].filter(Boolean).join(' ') || '–' },

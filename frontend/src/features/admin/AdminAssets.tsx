@@ -11,7 +11,6 @@ import { DataTable, type DataTableColumn, type DataTableFilter } from '../../com
 import { AddAssetForm, EditAssetForm } from './AssetForms'
 import { AllPricesSection } from './AssetPrices'
 
-
 const kindText: Record<AssetKind, string> = {
   stock: 'Stock',
   fund: 'Fund',
@@ -90,7 +89,7 @@ export function AdminAssets() {
   // After a change that worked: the list stays on screen while it loads again, and a failed reload is said on its own, not
   // as if the change had failed.
   const reload = async () => {
-    if (!(await reloadKey(adminCacheKeys.assets))) setError("Couldn't reload the assets. Reload the page.")
+    if (!(await reloadKey(adminCacheKeys.assets, { fresh: true }))) setError("Couldn't reload the assets. Reload the page.")
   }
 
   const toggleActive = async (asset: AdminAsset) => {

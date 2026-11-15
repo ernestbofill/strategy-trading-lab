@@ -7,7 +7,6 @@ import { adminCacheKeys } from './cacheKeys'
 
 const POLL_MS = 3000
 
-
 const when = (iso: string | null) => (iso ? localDateTime(iso) : '–')
 
 /** The daily price refresh: when it ran and runs, a button to run it now, and a check that Yahoo answers. */
@@ -31,7 +30,7 @@ export function PricesBox() {
     setMessage(null)
     try {
       await api.refreshAdminPrices()
-      await reload(adminCacheKeys.prices)
+      await reload(adminCacheKeys.prices, { fresh: true })
     } catch (e) {
       if (e instanceof UnauthorizedError) return
       setMessage(e instanceof InvalidValueError ? e.message : "Couldn't start it. Try again.")

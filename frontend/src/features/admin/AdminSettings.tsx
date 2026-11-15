@@ -14,9 +14,9 @@ import { NavRow } from '../../components/NavRow'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { localDateTime } from '../../lib/format'
-import { invalidate, reload, useLoadable } from '../../lib/useLoadable'
+import { invalidate, invalidateAll, reload, useLoadable } from '../../lib/useLoadable'
 import { TimeZoneField } from '../account/TimeZoneField'
-import { adminCacheKeys, invalidateAdmin } from './cacheKeys'
+import { adminCacheKeys } from './cacheKeys'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
 import { PricesBox } from './PricesBox'
@@ -40,12 +40,12 @@ export function AdminSettings() {
   // After a save or a switch: keeps the page on screen while it loads again, the prices box's next run included.
   const load = async () => {
     invalidate(adminCacheKeys.prices)
-    await reload(adminCacheKeys.settings)
+    await reload(adminCacheKeys.settings, { fresh: true })
   }
-  // Another database: every admin page's rows were the other one's.
+  // Another database: everything the app loaded (admin pages, strategies, templates) was the other one's.
   const switched = async () => {
-    invalidateAdmin()
-    await reload(adminCacheKeys.settings)
+    invalidateAll()
+    await reload(adminCacheKeys.settings, { fresh: true })
   }
   const openAlerts = useOpenAlerts()
 

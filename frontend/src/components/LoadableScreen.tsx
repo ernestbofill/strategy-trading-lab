@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Loadable } from '../lib/useLoadable'
-import { Loaded } from './Loaded'
+import { LoadMessage } from './Loaded'
 import { Screen } from './Screen'
 
 interface LoadableScreenProps<T> {
@@ -16,9 +16,7 @@ export function LoadableScreen<T>({ state, top, what, children }: LoadableScreen
   if (state.status === 'ready') return children(state.data)
   return (
     <Screen top={top}>
-      <Loaded state={state} what={what}>
-        {() => null}
-      </Loaded>
+      <LoadMessage state={state} what={what} />
     </Screen>
   )
 }

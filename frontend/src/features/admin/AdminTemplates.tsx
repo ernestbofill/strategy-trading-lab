@@ -15,7 +15,6 @@ import { AssetPicker } from '../new-strategy/review/AssetPicker'
 import { templateCacheKey, templatesCacheKey } from '../new-strategy/useTemplate'
 import styles from './AdminTemplates.module.css'
 
-
 /** The setting's sentence with a blank for its value: "Rose at least _% from its low". */
 const labelOf = (sentence: string, value: string) => sentence.replace('{value}', value.replace('{n}', '_'))
 
@@ -240,6 +239,7 @@ export function AdminTemplates() {
       <Loaded state={state} what="the templates">
         {(templates) => {
           const shown = templates.find((t) => t.key === params.get('template'))?.key ?? templates[0]?.key
+          if (shown === undefined) return null
           return (
             <div className={styles.list}>
               <Tabs

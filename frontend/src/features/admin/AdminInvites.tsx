@@ -34,7 +34,7 @@ const LANGUAGES = [
 export function AdminInvites() {
   const state = useLoadable(adminCacheKeys.invites, api.getAdminInvites)
   const [created, setCreated] = useState<{ invite: AdminInvite; sent: boolean } | null>(null)
-  const load = async () => void (await reload(adminCacheKeys.invites))
+  const load = async () => void (await reload(adminCacheKeys.invites, { fresh: true }))
 
   const onCreated = async (invite: AdminInvite, sent: boolean) => {
     setCreated({ invite, sent })

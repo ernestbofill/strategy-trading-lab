@@ -8,6 +8,8 @@ export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status
 const settled = new Map<string, Loadable<unknown>>()
 const pending = new Map<string, Promise<boolean>>()
 const loadedAt = new Map<string, number>()
+// Whether the latest load of each key that settled loaded: what a superseded load answers its caller.
+const lastLoaded = new Map<string, boolean>()
 // Keys the user changed (`invalidate`): a screen that opens on one shows loading, not the old result, until it reloads,
 // and a failed reload shows the error instead of the result from before the change.
 const stale = new Set<string>()
@@ -43,6 +45,7 @@ function fetchKey(cacheKey: string, load: () => Promise<unknown>): Promise<boole
   const current = (): boolean => pending.get(cacheKey) === started
   const settle = (result: Loadable<unknown>, loaded: boolean) => {
     if (!current()) return
+    lastLoaded.set(cacheKey, loaded)
     pending.delete(cacheKey)
     stale.delete(cacheKey)
     if (loaded) loadedAt.set(cacheKey, Date.now())
@@ -53,9 +56,20 @@ function fetchKey(cacheKey: string, load: () => Promise<unknown>): Promise<boole
     const shown = settled.get(cacheKey)
     return shown && !stale.has(cacheKey) ? shown : { status: 'error' }
   }
+  // A load another one replaced answers with that one's outcome: its own result was never shown.
+  const outcome = (loaded: boolean): boolean | Promise<boolean> =>
+    current() ? loaded : (pending.get(cacheKey) ?? lastLoaded.get(cacheKey) ?? false)
   const started: Promise<boolean> = load().then(
-    (data) => (settle(data === undefined ? MISSING : { status: 'ready', data }, true), true),
-    () => (settle(failed(), false), false),
+    (data) => {
+      const answer = outcome(true)
+      settle(data === undefined ? MISSING : { status: 'ready', data }, true)
+      return answer
+    },
+    () => {
+      const answer = outcome(false)
+      settle(failed(), false)
+      return answer
+    },
   )
   pending.set(cacheKey, started)
   return started
@@ -98,14 +112,15 @@ export function refreshAll(olderThanMs = 0) {
 }
 
 /**
- * Reloads one key the open screens show, keeping it on screen meanwhile (after a change, or a result the server is still
- * working on). A load already in flight may have started before the change, so a new one replaces it. Resolves to whether it
- * loaded: a failed reload keeps the old result, so a screen may want to say so.
+ * Reloads one key the open screens show, keeping it on screen meanwhile. A load already in flight is joined (a result the
+ * server is still working on, the app back in front); after a change pass `{ fresh: true }`, since a load that started before
+ * the change would bring the old result. Resolves to whether it loaded: a failed reload keeps the old result, so a screen may
+ * want to say so.
  */
-export function reload(cacheKey: string): Promise<boolean> {
+export function reload(cacheKey: string, { fresh = false } = {}): Promise<boolean> {
   const load = loaderOf(cacheKey)
   if (!load) return Promise.resolve(false)
-  pending.delete(cacheKey)
+  if (fresh) pending.delete(cacheKey)
   return fetchKey(cacheKey, load)
 }
 
@@ -113,8 +128,10 @@ export function reload(cacheKey: string): Promise<boolean> {
 export function update<T>(cacheKey: string, change: (data: T) => T) {
   const shown = settled.get(cacheKey)
   if (shown?.status !== 'ready') return
-  // A load in flight started before the change: its result must not overwrite it.
+  // A load in flight started before the change: its result must not overwrite it. The reply is as fresh as a load.
   pending.delete(cacheKey)
+  stale.delete(cacheKey)
+  loadedAt.set(cacheKey, Date.now())
   settled.set(cacheKey, { status: 'ready', data: change(shown.data as T) })
   notify(cacheKey)
 }

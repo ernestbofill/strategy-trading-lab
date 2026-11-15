@@ -19,6 +19,14 @@
   border-color: var(--primary);
   color: var(--primary);
 }
+/* Signals and trades: a signal the user did, or skipped. */
+.pill[data-tone="done"] {
+  border-color: var(--success);
+  color: var(--success);
+}
+.pill[data-tone="skipped"] {
+  color: var(--ink-muted);
+}
 .pill[data-tone="building"] {
   border-color: var(--info);
   color: var(--info);

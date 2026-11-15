@@ -2,20 +2,21 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, InvalidFieldsError, InvalidValueError, type SignalDetail, type SkipReason } from '../../api'
 import { Callout } from '../../components/Callout'
-import { FormMessage, TextField, type FormMessageState } from '../../components/Field'
+import { FormMessage, type FormMessageState } from '../../components/Field'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { ModeTag } from '../../components/ModeTag'
 import { TextAction } from '../../components/TextAction'
 import { useLeave } from '../../components/useLeave'
-import { exact, formatRate, formatShares, money, shortDate, symbolOf } from '../../lib/format'
+import { exact, formatShares, money, shortDate } from '../../lib/format'
 import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { useT } from '../../i18n/I18n'
 import { stockPath, strategyPath } from '../dashboard/paths'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { strategyCacheKey } from '../strategy/useStrategy'
 import styles from './SignalPage.module.css'
-import { ambiguousFields, initialForm, nextStep, rateOn, SKIP_REASON_KEYS, skipReasons, tradeRequest, type TradeForm } from './signalForm'
+import { ambiguousFields, initialForm, nextStep, SKIP_REASON_KEYS, skipReasons, tradeRequest, type TradeForm } from './signalForm'
+import { TradeFields } from './TradeFields'
 
 const signalCacheKey = (id: string) => `signal:${id}`
 const FORM_ID = 'signal-answer'
@@ -137,10 +138,6 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
   const sell = s.side === 'sell'
 
-  const otherCurrency = s.assetCurrency !== s.strategyCurrency
-  const reference = rateOn(s.rates, form.date)
-  const rateUnit = t('signal.rate.unit', { asset: symbolOf(s.assetCurrency), strategy: symbolOf(s.strategyCurrency) })
-
   const done = () => {
     for (const key of [dashboardCacheKey, strategyCacheKey(s.strategyId), signalCacheKey(s.id)]) invalidate(key)
     leave()
@@ -236,84 +233,22 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
 
         {answer === 'did' ? (
           <div className={styles.fields}>
-            <TextField
-              label={t('signal.field.date')}
-              type="date"
-              value={form.date}
-              min={s.signalDate}
-              max={s.today}
-              onChange={(date) => set({ date })}
-              error={errors.date}
+            <TradeFields
+              form={form}
+              set={set}
+              errors={errors}
+              assetCurrency={s.assetCurrency}
+              strategyCurrency={s.strategyCurrency}
+              rates={s.rates}
+              minDate={s.signalDate}
+              maxDate={s.today}
+              priceHint={priceHint}
+              amountHint={
+                !sell && s.stepAmount !== null
+                  ? t(s.stepNo !== null ? 'signal.hint.amount' : 'signal.hint.amountBudget', { step: money(s.stepAmount, s.strategyCurrency) })
+                  : undefined
+              }
             />
-            <TextField
-              label={t('signal.field.price', { currency: s.assetCurrency })}
-              type="decimal"
-              value={form.price}
-              onChange={(price) => set({ price })}
-              hint={priceHint}
-              error={errors.price}
-            />
-            {form.enteredAs === 'amount' ? (
-              <TextField
-                label={t('signal.field.amount', { currency: s.strategyCurrency })}
-                type="decimal"
-                value={form.amount}
-                onChange={(amount) => set({ amount })}
-                hint={
-                  !sell && s.stepAmount !== null
-                    ? t(s.stepNo !== null ? 'signal.hint.amount' : 'signal.hint.amountBudget', {
-                        step: money(s.stepAmount, s.strategyCurrency),
-                      })
-                    : undefined
-                }
-                error={errors.amount}
-                aside={<TextAction onClick={() => set({ enteredAs: 'shares' })}>{t('signal.field.sharesInstead')}</TextAction>}
-              />
-            ) : (
-              <TextField
-                label={t('signal.field.shares')}
-                type="decimal"
-                value={form.shares}
-                onChange={(shares) => set({ shares })}
-                error={errors.shares}
-                aside={<TextAction onClick={() => set({ enteredAs: 'amount' })}>{t('signal.field.amountInstead')}</TextAction>}
-              />
-            )}
-            <TextField
-              label={t('signal.field.fee', { currency: s.strategyCurrency })}
-              type="decimal"
-              value={form.fee}
-              placeholder="0.00"
-              onChange={(fee) => set({ fee })}
-              error={errors.fee}
-            />
-            {otherCurrency &&
-              (form.ownRate === null ? (
-                <div className={styles.rate}>
-                  <p className={styles.plain}>
-                    {reference ? (
-                      t('signal.rate.at', {
-                        rate: `${symbolOf(s.assetCurrency)}${formatRate(reference.rate)}`,
-                        unit: `${symbolOf(s.strategyCurrency)}1`,
-                        date: shortDate(reference.date),
-                      })
-                    ) : (
-                      t('signal.rate.none')
-                    )}
-                  </p>
-                  <TextAction onClick={() => set({ ownRate: reference ? String(reference.rate) : '' })}>{t('signal.rate.change')}</TextAction>
-                  {errors.fxRate && <FormMessage tone="error">{errors.fxRate}</FormMessage>}
-                </div>
-              ) : (
-                <TextField
-                  label={t('signal.rate.own', { unit: rateUnit })}
-                  type="decimal"
-                  value={form.ownRate}
-                  onChange={(ownRate) => set({ ownRate })}
-                  error={errors.fxRate}
-                  aside={reference && <TextAction onClick={() => set({ ownRate: null })}>{t('signal.rate.reference')}</TextAction>}
-                />
-              ))}
           </div>
         ) : (
           <div className={styles.fields}>

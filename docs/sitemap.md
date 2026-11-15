@@ -184,9 +184,9 @@ See "Wording rules" in the user journey. In short:
 
 ## 8. Open decisions (❓)
 
-1. Is the template catalogue public, or visible only after sign-up?
-2. Languages at launch: English only, or also Spanish / Catalan?
-3. Public blog or changelog, or leave until after launch?
-4. "Buy the dip" tagline: pending legal review.
+1. ~~Is the template catalogue public, or visible only after sign-up?~~ Public (#100).
+2. ~~Languages at launch: English only, or also Spanish / Catalan?~~ English and Catalan (#67, #140).
+3. ~~Public blog or changelog, or leave until after launch?~~ Not needed: personal use only (2026-11-14).
+4. ~~"Buy the dip" tagline: pending legal review.~~ No legal review: personal use only (2026-11-14).
 5. Design for pausing and ending a strategy.
 6. Web push on iPhone: is a home-screen prompt enough?

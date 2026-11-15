@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-15 · Personal use only, confirmed: ROADMAP items that were only for a public launch (32 lawyer review, 34 a commercial price provider, 35 open sign-ups, 37 managing users, the quiet launch) are marked *Not needed*; what is already built for strangers (sign-up, invites, legal pages, Brevo emails) stays. (Ernest)
 - 2026-11-14 · Strategy Trading Lab is now for Ernest's personal use only, not a public launch. (Ernest, #234)
 - 2026-11-14 · *The comeback*'s first-step buy line is `aboveSma50Pct`% (default 10%) above the recent low (`lowDays`, default 50 trading days, tunable 10–120 in steps of 5 on Advanced settings) instead of above the SMA 50: after a fast fall, the SMA 50 can still sit near the pre-drop high and put the buy line above the price before the fall, whereas the recent low anchors the turnaround to the bottom of the recent window, and 10% avoids giving up too much of a 30% drop or crowding the SMA 200 milestone; the SMA 50 is kept for the Golden Cross milestone. (Ernest, #234)
 - 2026-11-13 · Every test failure, local or CI, is logged in `docs/test-metrics.md` as a true positive (fix in the product code) or a false positive (fix in the test), to see which tests earn their CI time. Only runs that happen anyway; no extra runs for it. (Ernest, #225)

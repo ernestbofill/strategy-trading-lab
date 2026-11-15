@@ -2,6 +2,8 @@
 
 Oct 13, 2026 · @Ernest
 
+> Since 2026-11-14 the app is for Ernest's personal use only, with no publication planned. This note is kept for reference: it matters again only if the app is ever opened to other people.
+
 This note covers how Strategy Trading Lab (simulation and live modes, as described in `stab-product-user-journey.md`) fits the EU and Spanish rules on investment services. It also covers what changes if the app grows and makes money. It is research, not legal advice. Before charging money, get a written opinion from a Spanish securities lawyer. The questions to bring are at the end.
 
 ## The short answer

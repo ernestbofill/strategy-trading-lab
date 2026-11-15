@@ -141,8 +141,8 @@ export function SignalRow({ s, signal, live }: { s: StrategyDetail; signal: Stra
 }
 
 const PILLS: Record<StrategySignalItem['status'] | 'snoozed', [MessageKey, PillTone]> = {
-  confirmed: ['trades.pill.did', 'holding'],
-  skipped: ['trades.pill.skipped', 'muted'],
+  confirmed: ['trades.pill.did', 'done'],
+  skipped: ['trades.pill.skipped', 'watching'],
   missed: ['trades.pill.missed', 'waiting'],
   snoozed: ['trades.pill.snoozed', 'signal'],
   waiting: ['trades.pill.waiting', 'waiting'],

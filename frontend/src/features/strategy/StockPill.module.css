@@ -19,6 +19,11 @@
   border-color: var(--primary);
   color: var(--primary);
 }
+/* A signal the user answered "I did it" (Signals and trades). */
+.pill[data-tone="done"] {
+  border-color: var(--success);
+  color: var(--success);
+}
 .pill[data-tone="building"] {
   border-color: var(--info);
   color: var(--info);

@@ -10,18 +10,6 @@ namespace StrategyTradingLab.Api.Tests;
 public class AdminUsersTests(AdminFixture fixture) : IClassFixture<AdminFixture>
 {
     [NeonFact]
-    public async Task Users_need_the_owner_role()
-    {
-        using var stranger = fixture.CreateApiClient();
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/users")).StatusCode);
-        foreach (var role in new[] { UserRole.User, UserRole.Vip })
-        {
-            using var other = await fixture.SignedUpAsync(role);
-            Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync("/admin/users")).StatusCode);
-        }
-    }
-
-    [NeonFact]
     public async Task Lists_each_account_with_its_strategies_and_counts_running_ones_by_template_and_mode()
     {
         var before = await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/users");

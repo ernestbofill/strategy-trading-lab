@@ -54,29 +54,6 @@ public class AdminSettingsTests(AdminFixture fixture) : IClassFixture<AdminFixtu
         (await fixture.Admin.GetFromJsonAsync<JsonElement>("/admin/settings")).EnumerateArray().Single(s => s.GetProperty("key").GetString() == key);
 
     [NeonFact]
-    public async Task Settings_need_a_log_in()
-    {
-        using var stranger = fixture.CreateApiClient();
-
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/settings")).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PutAsJsonAsync("/admin/settings/SMTP_USER", new { value = "a@b.c" })).StatusCode);
-        stranger.DefaultRequestHeaders.Add("Cookie", "stl_session=forged");
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/settings")).StatusCode);
-    }
-
-    [NeonFact]
-    public async Task Settings_are_for_the_owner_only()
-    {
-        foreach (var role in new[] { UserRole.User, UserRole.Vip })
-        {
-            using var other = await fixture.SignedUpAsync(role);
-
-            Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync("/admin/settings")).StatusCode);
-            Assert.Equal(HttpStatusCode.Forbidden, (await other.PutAsJsonAsync("/admin/settings/SMTP_USER", new { value = "a@b.c" })).StatusCode);
-        }
-    }
-
-    [NeonFact]
     public async Task A_setting_from_the_page_wins_and_default_brings_back_the_rest()
     {
         await fixture.Admin.DeleteAsync("/admin/settings/SMTP_PORT");

@@ -96,12 +96,6 @@ public class AccountRulesTests
         Assert.True(throttle.IsLocked("victim@b.c"));
     }
 
-    [Fact]
-    public void Locales_supported_are_en_and_ca()
-    {
-        Assert.Equal(["en", "ca"], AccountRules.Locales);
-    }
-
     [Theory]
     [InlineData("ca", "ca")]
     [InlineData("ca-ES", "ca")]

@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Tests;
 
-public class EmailEventTests
+public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
 {
     const string Key = "a-long-enough-webhook-key";
 
@@ -34,7 +34,6 @@ public class EmailEventTests
     [NeonFact]
     public async Task Bounces_invalid_addresses_and_complaints_are_recorded_and_other_events_are_not()
     {
-        using var api = new AccountsApi();
         string[] emails = [api.NewEmail(), api.NewEmail(), api.NewEmail(), api.NewEmail()];
         try
         {
@@ -57,7 +56,6 @@ public class EmailEventTests
     [NeonFact]
     public async Task A_repeated_event_a_batch_and_nonsense_are_all_fine()
     {
-        using var api = new AccountsApi();
         string[] emails = [api.NewEmail(), api.NewEmail()];
         try
         {
@@ -79,7 +77,6 @@ public class EmailEventTests
     [NeonFact]
     public async Task Odd_values_and_a_wrong_content_type_never_make_a_500()
     {
-        using var api = new AccountsApi();
         var email = api.NewEmail();
         try
         {
@@ -97,7 +94,6 @@ public class EmailEventTests
     [NeonFact]
     public async Task Without_the_right_key_the_endpoint_does_not_exist()
     {
-        using var api = new AccountsApi();
         var email = api.NewEmail();
         var body = Json($$"""{"event":"hard_bounce","email":"{{email}}"}""");
         try
@@ -122,7 +118,6 @@ public class EmailEventTests
     [NeonFact]
     public async Task The_sender_skips_bulk_mail_to_a_suppressed_address_and_still_sends_the_rest()
     {
-        using var api = new AccountsApi();
         var blocked = api.NewEmail();
         // Email isn't set up in this test, so anything that is not skipped says so: a skip can't be mistaken for a send.
         using var configured = api.WithWebHostBuilder(_ => { });
@@ -154,7 +149,6 @@ public class EmailEventTests
     [NeonFact]
     public async Task The_admin_users_list_says_which_accounts_are_blocked()
     {
-        using var api = new AccountsApi();
         var (_, email) = await api.SignedUpAsync();
         using var owner = await api.OwnerAsync();
         try

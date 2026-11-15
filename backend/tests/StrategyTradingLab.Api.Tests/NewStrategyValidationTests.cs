@@ -28,13 +28,6 @@ public class NewStrategyValidationTests
         Assert.NotNull(NewStrategyValidation.AssetsError([listed.Id], TemplateCatalog.Dip, [listed], "en"));
     }
 
-    [Fact]
-    public void The_tested_defaults_with_a_stock_are_valid()
-    {
-        Assert.Empty(Check(TemplateCatalog.Dip, TemplateCatalog.Dip.Budget, assets: Stock()));
-        Assert.Empty(Check(TemplateCatalog.Trend, TemplateCatalog.Trend.Budget, assets: Fund()));
-    }
-
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

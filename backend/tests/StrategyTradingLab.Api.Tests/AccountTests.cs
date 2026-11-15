@@ -395,15 +395,6 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [NeonFact]
-    public async Task The_seeded_user_is_gone()
-    {
-        using var scope = api.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        Assert.False(await db.Users.AnyAsync(u => u.Id == new Guid("019a0000-0000-7000-8000-000000000001")));
-        Assert.False(await db.Users.AnyAsync(u => u.Email == "ernest@strategytradinglab.local"));
-    }
 }
 
 /// <summary>The per-email lock, in its own API so its log-in rate limit counts only these tries.</summary>

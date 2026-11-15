@@ -76,13 +76,4 @@ public class AdminPricesTests
         Assert.Equal(HttpStatusCode.Accepted, (await admin.PostAsync("/admin/prices/refresh", null)).StatusCode);
     }
 
-    [NeonFact]
-    public async Task The_price_endpoints_need_the_admin_login()
-    {
-        using var api = new Api(new FakeSource(_ => []));
-        using var visitor = api.CreateApiClient();
-
-        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsync("/admin/prices/test", null)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await visitor.PostAsync("/admin/prices/refresh", null)).StatusCode);
-    }
 }

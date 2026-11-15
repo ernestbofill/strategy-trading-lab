@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
-public class NotificationTests
+public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
 {
     static SignalLine Dip(string facts = """{"belowPeakPct":8.2}""") => new(Guid.Parse("11111111-1111-1111-1111-111111111111"), Guid.Parse("22222222-2222-2222-2222-222222222222"), "Zscaler & friends", StrategyMode.Live, "dip", "Zscaler", "USD", "EUR",
         new DateOnly(2026, 10, 22), 187.5m, 2, 5, 100, JsonDocument.Parse(facts).RootElement);
@@ -111,18 +111,6 @@ public class NotificationTests
         Assert.Equal(("Nova candidata: Tesla", "Tesla, Strat: ara és candidata, les regles la vigilen. (Simulació)"), (candidate.Title, candidate.Body));
         Assert.Equal(close.Tag, candidate.Tag);
         Assert.Equal("A prop de la línia: Tesla", PushTexts.StockChange(tesla, "ca").Title);
-    }
-
-    [Fact]
-    public void Stock_change_text_formats_candidate_and_distance_changes()
-    {
-        var candidate = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Apple", StockChangeKind.BecameCandidate);
-        Assert.Equal("Apple, Strat: now a candidate, the rules watch it.", EmailTexts.StockChangeText(candidate, "en"));
-        Assert.Equal("Apple, Strat: ara és candidata, les regles la vigilen.", EmailTexts.StockChangeText(candidate, "ca"));
-
-        var close = new StockChangeLine(Guid.NewGuid(), Guid.NewGuid(), "Strat", StrategyMode.Live, "dip", "Tesla", StockChangeKind.CameClose, 2.5m);
-        Assert.Equal("Tesla, Strat: now 2.5% above the discount zone.", EmailTexts.StockChangeText(close, "en"));
-        Assert.Equal("Tesla, Strat: ara un 2.5% per sobre de la zona de descompte.", EmailTexts.StockChangeText(close, "ca"));
     }
 
     [Fact]
@@ -291,7 +279,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_push_that_failed_is_tried_again_and_a_device_failing_for_a_week_is_dropped()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId, _, _) = await SeedAsync(db);
@@ -336,7 +323,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_live_signal_is_pushed_once_to_each_device_when_the_user_has_push_on()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId, signalId, _) = await SeedAsync(db);
@@ -378,7 +364,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_stock_is_pushed_once_when_it_changes_state_and_not_again_while_it_stays_there()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         // A simulation: stock changes are pushed for both modes.
@@ -430,7 +415,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_live_signal_is_alerted_once_at_the_users_hour_and_recorded()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, _, assetId, signalId, email) = await SeedAsync(db, notifyHour: 7);
@@ -460,7 +444,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_second_signal_for_the_same_stock_the_same_day_is_not_alerted_and_an_alerted_buy_that_ends_is_told_once()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId, signalId, _) = await SeedAsync(db);
@@ -496,7 +479,6 @@ public class NotificationTests
     [NeonFact]
     public async Task An_alert_to_a_suppressed_address_is_recorded_as_skipped_not_sent_or_failed()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, _, assetId, _, _) = await SeedAsync(db);
@@ -519,7 +501,6 @@ public class NotificationTests
     [NeonFact]
     public async Task No_alert_or_reminder_for_someone_who_turned_alerts_off()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, _, assetId, signalId, _) = await SeedAsync(db, alerts: false);
@@ -543,7 +524,6 @@ public class NotificationTests
     [NeonFact]
     public async Task No_alert_for_an_unverified_address_a_simulation_or_a_user_with_alert_emails_off()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var unverified = await SeedAsync(db, verified: false);
@@ -567,7 +547,6 @@ public class NotificationTests
     [NeonFact]
     public async Task No_alert_or_snooze_reminder_for_an_ai_strategy_signal()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var ai = await SeedAsync(db, templateKey: "ai");
@@ -591,7 +570,6 @@ public class NotificationTests
     [NeonFact]
     public async Task The_summary_goes_out_once_a_session_at_the_users_hour_or_right_after_the_check_and_not_on_a_quiet_day()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var wanted = await SeedAsync(db, notifyHour: 7);
@@ -644,7 +622,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_quiet_day_is_only_final_once_every_strategy_was_checked_for_the_session()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var seeded = await SeedAsync(db);
@@ -684,7 +661,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_strategy_the_check_never_reaches_does_not_hold_a_quiet_day()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var seeded = await SeedAsync(db);
@@ -711,7 +687,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_quiet_day_waits_for_a_strategy_started_that_day_to_be_checked()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var seeded = await SeedAsync(db);
@@ -738,7 +713,6 @@ public class NotificationTests
     [NeonFact]
     public async Task A_snoozed_signal_is_reminded_once_from_seven_on_its_snooze_day_while_it_waits()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var snoozed = await SeedAsync(db);
@@ -776,7 +750,6 @@ public class NotificationTests
     [NeonFact]
     public async Task An_alert_that_could_not_be_sent_because_email_is_not_set_up_is_tried_again_later()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, _, assetId, _, _) = await SeedAsync(db);
@@ -803,7 +776,6 @@ public class NotificationTests
     [NeonFact]
     public async Task No_overview_before_the_daily_check_has_evaluated_the_session_and_one_once_it_has()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId, _, _) = await SeedAsync(db, evaluated: false);

@@ -14,6 +14,10 @@ describe('timeZones', () => {
     expect(vienna.find((o) => o.value === 'Europe/Vienna')?.label).toMatch(/· Barcelona, Paris, Copenhagen/)
     // ...or a row of its own when no row keeps its clock.
     expect(timeZoneOptions('Australia/Lord_Howe').find((o) => o.value === 'Australia/Lord_Howe')?.label).toMatch(/· Australia\/Lord Howe$/)
+    // A name the browser can't resolve (a Windows ID the server accepts) keeps its own row, never UTC's.
+    const windows = timeZoneOptions('Romance Standard Time')
+    expect(windows.find((o) => o.value === 'Romance Standard Time')?.label).toBe('Romance Standard Time')
+    expect(windows.find((o) => o.label.endsWith('· UTC'))?.value).toBe('UTC')
   })
 
   it('names rows after cities, Spain after Barcelona first, and keeps the IANA name as the value', () => {

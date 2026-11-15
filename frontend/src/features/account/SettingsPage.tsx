@@ -16,7 +16,7 @@ import { errorText } from './copy'
 import { APP_HASH, NOTIFICATIONS_HASH, accountPath } from './paths'
 import { InstallApp } from './InstallApp'
 import { NotificationSettings } from './NotificationSettings'
-import { timeZoneOptions } from './timeZones'
+import { TimeZoneField } from './TimeZoneField'
 import { ZoomField } from './ZoomField'
 import { SendFeedback } from '../feedback/SendFeedback'
 
@@ -151,12 +151,11 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: Saved 
 
 function TimeZoneForm({ current, onSaved }: { current: string; onSaved: Saved }) {
   const t = useT()
-  const options = useMemo(() => timeZoneOptions(current), [current])
   const form = useSave(current, api.setTimeZone, onSaved, 'timeZone', t('account.page.timeZoneSaved'))
 
   return (
     <SettingForm form={form} saveLabel={t('account.page.timeZoneSave')}>
-      <SelectField label={t('account.page.timeZone')} hideLabel value={form.value} onChange={form.setValue} options={options} />
+      <TimeZoneField label={t('account.page.timeZone')} hideLabel saved={current} value={form.value} onChange={form.setValue} />
       <p className={styles.line}>{t('account.page.timeZoneHint')}</p>
     </SettingForm>
   )

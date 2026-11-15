@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
 import {
   api,
   InvalidValueError,
@@ -9,11 +9,10 @@ import {
   type AdminSetting,
   type BackendVersion,
 } from '../../api'
-import { SelectField } from '../../components/Field'
 import { NavRow } from '../../components/NavRow'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
-import { timeZoneOptions } from '../account/timeZones'
+import { TimeZoneField } from '../account/TimeZoneField'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
 import { PricesBox } from './PricesBox'
@@ -210,7 +209,9 @@ interface SettingRowProps {
 }
 
 function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
-  const [draft, setDraft] = useState(s.secret ? '' : (s.value ?? ''))
+  const timeZone = s.input === 'timeZone'
+  // A time zone always shows a row, so its draft starts on the zone shown (the default when none is set), never on ''.
+  const [draft, setDraft] = useState(s.secret ? '' : (s.value ?? (timeZone ? s.default : null) ?? ''))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const id = useId()
@@ -240,7 +241,7 @@ function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
   return (
     <form className={styles.row} onSubmit={save}>
       <div className={styles.text}>
-        {s.input === 'timeZone' ? (
+        {timeZone ? (
           <span className={styles.key}>{s.key}</span>
         ) : (
           <label htmlFor={id} className={styles.key}>
@@ -251,8 +252,8 @@ function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
         <p className={styles.source}>{sourceText[s.source]}</p>
       </div>
       <div className={styles.controls}>
-        {s.input === 'timeZone' ? (
-          <TimeZoneSelect label={s.key} value={draft || (s.default ?? 'UTC')} onChange={setDraft} />
+        {timeZone ? (
+          <TimeZoneField label={s.key} hideLabel saved={s.value ?? s.default ?? ''} value={draft} onChange={setDraft} />
         ) : (
           <input
             id={id}
@@ -297,10 +298,4 @@ function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
       </div>
     </form>
   )
-}
-
-/** The time zone list of Settings and Sign-up, so the admin page names zones the same way ("GMT+1 · Barcelona, Paris…"). */
-function TimeZoneSelect({ label, value, onChange }: { label: string; value: string; onChange: (zone: string) => void }) {
-  const options = useMemo(() => timeZoneOptions(value), [value])
-  return <SelectField label={label} hideLabel value={value} onChange={onChange} options={options} />
 }

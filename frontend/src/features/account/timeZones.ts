@@ -74,6 +74,16 @@ export function timeZoneLabel(zone: string, now = new Date()): string {
   return `${offsetOf(zone, now).text} · ${cities}`
 }
 
+/** Whether the browser knows the zone by this name. */
+function resolvable(zone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zone })
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** Whether two zones keep the same clock: the same offset in winter and in summer. */
 const sameClock = (a: string, b: string) =>
   [new Date('2026-01-15T12:00:00Z'), new Date('2026-07-15T12:00:00Z')].every((d) => offsetOf(a, d).minutes === offsetOf(b, d).minutes)
@@ -86,9 +96,12 @@ const sameClock = (a: string, b: string) =>
 export function timeZoneOptions(current: string): { value: string; label: string }[] {
   const now = new Date()
   const listed = ZONES.some(([z]) => z === current)
-  const twin = listed ? undefined : ZONES.find(([z]) => sameClock(z, current))?.[0]
+  // A name the browser can't resolve (a Windows ID the server accepts, "Romance Standard Time") has no offset to compare:
+  // it gets its own row under its raw name, never a twin's (it would read as UTC).
+  const known = resolvable(current)
+  const twin = listed || !known ? undefined : ZONES.find(([z]) => sameClock(z, current))?.[0]
   const rows = ZONES.map(([zone]) => ({ value: zone === twin ? current : zone, label: timeZoneLabel(zone, now), zone }))
-  if (!listed && !twin) rows.push({ value: current, label: timeZoneLabel(current, now), zone: current })
+  if (!listed && !twin) rows.push({ value: current, label: known ? timeZoneLabel(current, now) : current, zone: current })
   return rows
     .map((row) => ({ ...row, minutes: offsetOf(row.zone, now).minutes }))
     .sort((a, b) => a.minutes - b.minutes)

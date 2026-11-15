@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
@@ -393,7 +394,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
         var trades = 0;
         foreach (var signal in signals.Where(s => !traded.Contains(s.Id)))
         {
-            var after = DateFact(signal, "tradeAfter") ?? signal.SignalDate;
+            var after = signal.Facts.RootElement.Date("tradeAfter") ?? signal.SignalDate;
             var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == signal.AssetId && p.Date > after).OrderBy(p => p.Date)
                 .Select(p => new { p.Date, p.Open }).FirstOrDefaultAsync(cancellationToken);
             if (next is null || !assets.TryGetValue(signal.AssetId, out var asset)
@@ -405,7 +406,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
 
         // A signal's time is up when the next round is due.
         foreach (var signal in signals.Where(s => s.EndedOn is null))
-            if (DateFact(signal, "endsOn") is { } ends && ends <= today) signal.EndedOn = ends;
+            if (signal.Facts.RootElement.Date("endsOn") is { } ends && ends <= today) signal.EndedOn = ends;
 
         // Where each ticked stock stands at the last session's close: its signal that day, its steps, or its last score.
         var lastScores = await LastScoresAsync(strategy.Id, cancellationToken);
@@ -458,8 +459,6 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
 
     public static IReadOnlyList<AiRoundScore> Read(JsonDocument? scores) =>
         scores?.Deserialize<List<AiRoundScore>>(JsonSerializerOptions.Web) ?? [];
-
-    static DateOnly? DateFact(Signal signal, string name) => signal.Facts.RootElement.Date(name);
 
     /// <summary>
     /// The history: every round, newest first, and each done round's picks against the rest: the average change of their

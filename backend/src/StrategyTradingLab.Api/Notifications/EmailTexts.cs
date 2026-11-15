@@ -120,8 +120,6 @@ public static class EmailTexts
         return date.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
     }
 
-    static decimal? Fact(JsonElement facts, string name) => facts.Number(name);
-
     /// <summary>A recovery milestone (named in English by the engine) in Catalan.</summary>
     static string MilestoneCa(string term) => term switch
     {
@@ -137,13 +135,13 @@ public static class EmailTexts
     {
         if (s.Side == TradeSide.Sell)
         {
-            var belowSma = Fact(s.Facts, "belowSmaPct");
+            var belowSma = s.Facts.Number("belowSmaPct");
             return belowSma is null ? RulesMet.In(locale) : SellBelowSma.In(locale, Pct(belowSma.Value));
         }
         if (s.TemplateKey == TemplateKeys.Ai)
         {
-            var score = Fact(s.Facts, "score");
-            var rank = Fact(s.Facts, "rank");
+            var score = s.Facts.Number("score");
+            var rank = s.Facts.Number("rank");
             if (score is null) return AiScoreTop.In(locale);
             return rank is null or 1
                 ? AiScoreTopRank.In(locale, Pct(score.Value))
@@ -151,18 +149,18 @@ public static class EmailTexts
         }
         if (s.TemplateKey == TemplateKeys.Trend)
         {
-            var aboveSma = Fact(s.Facts, "aboveSmaPct");
+            var aboveSma = s.Facts.Number("aboveSmaPct");
             return aboveSma is null ? RulesMet.In(locale) : TrendAboveSma.In(locale, Pct(aboveSma.Value));
         }
         if (s.TemplateKey == TemplateKeys.Bear)
         {
-            var below = Fact(s.Facts, "belowDropPeakPct") ?? Fact(s.Facts, "belowHighPct");
-            var above = Fact(s.Facts, "aboveLowPct");
+            var below = s.Facts.Number("belowDropPeakPct") ?? s.Facts.Number("belowHighPct");
+            var above = s.Facts.Number("aboveLowPct");
             return below is null || above is null ? RulesMet.In(locale) : BearDrop.In(locale, Pct(below.Value), Pct(above.Value));
         }
         if (s.TemplateKey == TemplateKeys.Dip)
         {
-            var below = Fact(s.Facts, "belowPeakPct");
+            var below = s.Facts.Number("belowPeakPct");
             return below is null ? RulesMet.In(locale) : DipBelowPeak.In(locale, Pct(below.Value));
         }
         var milestone = s.Facts.Text("milestone");
@@ -171,7 +169,7 @@ public static class EmailTexts
             var term = (locale == "ca" ? MilestoneCa(milestone) : milestone).ToLowerInvariant();
             return MilestoneSign.In(locale, term);
         }
-        var aboveBuyLine = Fact(s.Facts, "aboveBuyLinePct");
+        var aboveBuyLine = s.Facts.Number("aboveBuyLinePct");
         return aboveBuyLine is null ? RulesMet.In(locale)
             : (aboveBuyLine >= 0 ? AboveBuyLine : BelowBuyLine).In(locale, Pct(Math.Abs(aboveBuyLine.Value)));
     }

@@ -15,8 +15,8 @@ namespace StrategyTradingLab.Api.Tests;
 
 public class SummaryEndpointTests(AccountsApi factory) : IClassFixture<AccountsApi>
 {
-    /// <summary>As the API writes it: camelCase, enums as camelCase strings.</summary>
-    static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } };
+    /// <summary>As the API must write it: camelCase, enums as camelCase strings (a number fails the read).</summary>
+    static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) } };
 
     [NeonFact]
     public async Task The_summary_reflects_quiet_state_before_strategies_and_changes_when_active()

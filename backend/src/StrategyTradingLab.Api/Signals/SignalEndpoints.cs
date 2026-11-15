@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
@@ -226,13 +227,10 @@ public static class SignalEndpoints
         var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open ?? latest?.Price ?? signal.ClosePrice, prefillAmount, prefillShares,
             PriceIsClose: next is null && latest is null, PriceIsLatest: next is null && latest is not null);
 
-        // The screen shows no rate line when the currencies match, so nothing to load then. From the look-back before the
-        // signal, as the server's own lookup reads them, so a signal day without a stored rate (a European holiday) still shows
-        // the earlier one the server would use.
-        var rates = strategy.Currency == asset.Currency
-            ? []
-            : (await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken))
-                .ReferenceDays(strategy.Currency, asset.Currency, signal.SignalDate, today);
+        // From the look-back before the signal, as the server's own lookup reads them, so a signal day without a stored rate
+        // (a European holiday) still shows the earlier one the server would use.
+        var rates = (await ExchangeRates.ForPairAsync(db, strategy.Currency, asset.Currency, signal.SignalDate, cancellationToken))
+            .ReferenceDays(strategy.Currency, asset.Currency, signal.SignalDate, today);
 
         SignalAnswer? answer = null;
         if (signal.Status == SignalStatus.Confirmed)

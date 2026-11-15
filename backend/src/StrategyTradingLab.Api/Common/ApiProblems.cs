@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace StrategyTradingLab.Api.Auth;
+namespace StrategyTradingLab.Api.Common;
 
 public static class ApiProblems
 {

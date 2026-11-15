@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Data;
-using StrategyTradingLab.Api.Signals;
 
 namespace StrategyTradingLab.Api.MarketData;
+
+/// <summary>A reference rate on a day: units of the asset's currency per one of the strategy's.</summary>
+public record RateDay(DateOnly Date, decimal Rate);
 
 /// <summary>The euro against each currency by day, and the rate between any two through it.</summary>
 public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)>> byQuote)
@@ -44,11 +46,13 @@ public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)
     /// <summary>
     /// The days a trade form offers a reference rate, from the look-back before <paramref name="from"/> to <paramref name="to"/>:
     /// weekdays with both rates stored, since another day (a weekend, a holiday, today before the rates are in) would repeat an
-    /// earlier rate under its own date. The form picks the latest on or before its date, as the server does.
+    /// earlier rate under its own date. The form picks the latest on or before its date, as the server does. None for one currency.
     /// </summary>
     public IReadOnlyList<RateDay> ReferenceDays(string strategyCurrency, string assetCurrency, DateOnly from, DateOnly to)
     {
         var days = new List<RateDay>();
+        // The screens show no rate line when the currencies match.
+        if (strategyCurrency == assetCurrency) return days;
         for (var day = from.AddDays(-LookBackDays); day <= to; day = day.AddDays(1))
             if (StoredOn(strategyCurrency, day) && StoredOn(assetCurrency, day)
                 && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && Between(strategyCurrency, assetCurrency, day) is { } rate)

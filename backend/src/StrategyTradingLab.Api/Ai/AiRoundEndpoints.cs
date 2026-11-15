@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.MarketData;
@@ -145,7 +146,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running
-                && s.TemplateKey == TemplateCatalog.Ai.Key, cancellationToken);
+                && s.TemplateKey == TemplateKeys.Ai, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var errors = new Dictionary<string, string[]>();
             if (Apply(strategy.Params, request, (field, message) => errors[field] = [message], user.Locale) is not { } json) return TypedResults.ValidationProblem(errors);
@@ -177,7 +178,7 @@ public static class AiRoundEndpoints
 
     /// <summary>One of the user's AI strategies (running unless <paramref name="running"/> is false); null for anything else.</summary>
     static Task<Strategy?> FindAsync(AppDbContext db, Guid id, Guid userId, CancellationToken cancellationToken, bool running = true) =>
-        db.Strategies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id && s.UserId == userId && s.TemplateKey == TemplateCatalog.Ai.Key
+        db.Strategies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id && s.UserId == userId && s.TemplateKey == TemplateKeys.Ai
             && (!running || s.Status == StrategyStatus.Running), cancellationToken);
 
     /// <summary>

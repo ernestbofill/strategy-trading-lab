@@ -15,6 +15,9 @@ public static class JsonFacts
     public static decimal? Number(this JsonElement facts, string name) =>
         facts.Get(name) is { ValueKind: JsonValueKind.Number } value ? value.GetDecimal() : null;
 
+    public static int? Int(this JsonElement facts, string name) =>
+        facts.Get(name) is { ValueKind: JsonValueKind.Number } value && value.TryGetInt32(out var number) ? number : null;
+
     public static string? Text(this JsonElement facts, string name) =>
         facts.Get(name) is { ValueKind: JsonValueKind.String } value ? value.GetString() : null;
 

@@ -15,8 +15,8 @@ public static class StrategyPage
     /// </summary>
     public static (int? DoneSteps, DateOnly? CycleStart) BearCycle(JsonElement? facts)
     {
-        if (facts is not { } root || root.Number("doneSteps") is not { } done) return default;
-        return ((int)done, root.Date("cycleStart"));
+        if (facts is not { } root || root.Int("doneSteps") is not { } done) return default;
+        return (done, root.Date("cycleStart"));
     }
     /// <summary>
     /// A live signal waiting for an answer comes first; then a simulation's signal of the latest evaluated day. A stock

@@ -1,6 +1,6 @@
 using StrategyTradingLab.Api.Data.Entities;
 
-namespace StrategyTradingLab.Api.Auth;
+namespace StrategyTradingLab.Api.Common;
 
 /// <summary>A user's clock: their time zone, now and today there. UTC for a zone this server doesn't know, as everywhere.</summary>
 public static class UserClock

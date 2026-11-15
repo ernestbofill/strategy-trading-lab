@@ -1,4 +1,5 @@
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Evaluation;
 
 namespace StrategyTradingLab.Api.Notifications;
@@ -32,7 +33,7 @@ public static class NotifyTime
         var final = UsSession.FinalAt(session);
         if (hour is not { } h) return final;
         var zone = UserClock.Zone(timeZone);
-        var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(final, zone).DateTime);
+        var day = UserClock.Today(timeZone, final);
         var due = At(day, h, zone);
         return due >= final ? due : At(day.AddDays(1), h, zone);
     }

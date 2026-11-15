@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
@@ -148,7 +149,7 @@ public static class StrategyEndpoints
                 errors["sourceStrategyId"] = [Messages.NotYourSimulation.In(user.Locale)];
             var parameters = TemplateSettings.Apply(template, request.Settings, (field, message) => errors[field] = [message], user.Locale);
             // The AI template's prompt choices (Review: "What the AI reads", Edit prompt).
-            if (parameters is not null && template.Key == TemplateCatalog.Ai.Key)
+            if (parameters is not null && template.Key == TemplateKeys.Ai)
                 parameters = AiRoundEndpoints.Apply(parameters, request.Ai, (field, message) => errors[$"ai.{field}"] = [message], user.Locale);
             if (errors.Count > 0 || parameters is null) return TypedResults.ValidationProblem(errors);
 
@@ -182,7 +183,7 @@ public static class StrategyEndpoints
             };
             db.Strategies.Add(strategy);
             // Its first AI round is due now (spec: Confirm, "Your first AI round is due now").
-            if (template.Key == TemplateCatalog.Ai.Key) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, DueOn = strategy.StartedOn, Status = AiRoundStatus.Due });
+            if (template.Key == TemplateKeys.Ai) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, DueOn = strategy.StartedOn, Status = AiRoundStatus.Due });
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
@@ -608,7 +609,7 @@ public static class StrategyEndpoints
 
         var settings = strategy.Params.RootElement.Numbers(template.Settings.Select(s => s.Key));
 
-        var aiSetup = template.Key == TemplateCatalog.Ai.Key && strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) is { } aiParams
+        var aiSetup = template.Key == TemplateKeys.Ai && strategy.Params.Deserialize<AiParams>(JsonSerializerOptions.Web) is { } aiParams
             ? new AiSetup(aiParams.News, aiParams.Mood, aiParams.Figures, aiParams.Instructions)
             : null;
         var sourceName = strategy.SourceStrategyId is { } sourceId

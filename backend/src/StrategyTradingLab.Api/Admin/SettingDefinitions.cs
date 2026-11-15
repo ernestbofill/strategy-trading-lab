@@ -8,6 +8,7 @@ namespace StrategyTradingLab.Api.Admin;
 /// </summary>
 /// <param name="BoundTo">For a secret: the settings it belongs with. It only counts as set while they keep the values
 /// they had when it was saved, so it is never sent somewhere new (a mail server swapped in by whoever knows the page's password).</param>
+/// <param name="Input">How the page asks for it: a text box, or the time zone list of Settings.</param>
 public record SettingDefinition(
     string Key,
     string Group,
@@ -15,7 +16,10 @@ public record SettingDefinition(
     string? Default = null,
     bool Secret = false,
     Func<string, string?>? Validate = null,
-    IReadOnlyList<string>? BoundTo = null);
+    IReadOnlyList<string>? BoundTo = null,
+    SettingInput Input = SettingInput.Text);
+
+public enum SettingInput { Text, TimeZone }
 
 public static class SettingDefinitions
 {
@@ -38,7 +42,8 @@ public static class SettingDefinitions
         // The daily price refresh (MarketData/PriceRefreshWorker). The first value is what it uses until someone sets one here.
         new("PRICES_SCHEDULE_ENABLED", "Prices", "Run the daily price refresh. Only one running copy may: the server. Off on a development computer.",
             Default: "true", Validate: Bool),
-        new("PRICES_TIME_ZONE", "Prices", "The time zone for the time below, e.g. Europe/Madrid.", Default: "Europe/Madrid", Validate: TimeZone),
+        new("PRICES_TIME_ZONE", "Prices", "The time zone for the time below.", Default: "Europe/Madrid", Validate: TimeZone,
+            Input: SettingInput.TimeZone),
         new("PRICES_DAILY_TIME", "Prices", "When the daily refresh starts, HH:MM (after the US close, which is 22:00 in Madrid).",
             Default: "22:30", Validate: Time),
 
@@ -47,7 +52,7 @@ public static class SettingDefinitions
             Default: SignUpsOpen, Validate: SignUpMode),
 
         // "+ Add a stock" and the fund picker (Assets/AssetEndpoints). Picking one already in the app never counts.
-        new(UserAssetLimit, "Assets", "How many new stocks and funds one user can add to the app. 0: none.",
+        new(UserAssetLimit, "Assets", "How many new stocks and funds one user can add to the app. Set to 0 to allow none.",
             Default: "30", Validate: WholeNumber),
     ];
 

@@ -12,6 +12,7 @@ import {
 import { NavRow } from '../../components/NavRow'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { TimeZoneField } from '../account/TimeZoneField'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
 import { PricesBox } from './PricesBox'
@@ -208,7 +209,9 @@ interface SettingRowProps {
 }
 
 function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
-  const [draft, setDraft] = useState(s.secret ? '' : (s.value ?? ''))
+  const timeZone = s.input === 'timeZone'
+  // A time zone always shows a row, so its draft starts on the zone shown (the default when none is set), never on ''.
+  const [draft, setDraft] = useState(s.secret ? '' : (s.value ?? (timeZone ? s.default : null) ?? ''))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const id = useId()
@@ -238,23 +241,31 @@ function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
   return (
     <form className={styles.row} onSubmit={save}>
       <div className={styles.text}>
-        <label htmlFor={id} className={styles.key}>
-          {s.key}
-        </label>
+        {timeZone ? (
+          <span className={styles.key}>{s.key}</span>
+        ) : (
+          <label htmlFor={id} className={styles.key}>
+            {s.key}
+          </label>
+        )}
         <p className={styles.description}>{s.description}</p>
         <p className={styles.source}>{sourceText[s.source]}</p>
       </div>
       <div className={styles.controls}>
-        <input
-          id={id}
-          className={styles.input}
-          type={s.secret ? 'password' : 'text'}
-          autoComplete={s.secret ? 'new-password' : 'off'}
-          spellCheck={false}
-          value={draft}
-          placeholder={placeholder}
-          onChange={(e) => setDraft(e.target.value)}
-        />
+        {timeZone ? (
+          <TimeZoneField label={s.key} hideLabel saved={s.value ?? s.default ?? ''} value={draft} onChange={setDraft} />
+        ) : (
+          <input
+            id={id}
+            className={styles.input}
+            type={s.secret ? 'password' : 'text'}
+            autoComplete={s.secret ? 'new-password' : 'off'}
+            spellCheck={false}
+            value={draft}
+            placeholder={placeholder}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        )}
         <div className={styles.buttons}>
           <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !edited}>
             Save

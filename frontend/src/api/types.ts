@@ -752,6 +752,8 @@ export interface AdminSetting {
   isSet: boolean
   /** Where the value comes from: this page, the server's environment, the default, or nowhere. */
   source: 'page' | 'server' | 'default' | 'none'
+  /** How the page asks for it: a text box, or the time zone list of Settings. */
+  input: 'text' | 'timeZone'
 }
 
 export type Locale = 'en' | 'ca'

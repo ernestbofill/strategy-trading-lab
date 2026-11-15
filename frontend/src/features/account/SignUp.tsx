@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { api, InvalidFieldsError, type Currency, type Locale, type SignUpOptions } from '../../api'
-import { Checkbox, FormMessage, PasswordField, SegmentedField, SelectField, TextField, type FormMessageState } from '../../components/Field'
+import { Checkbox, FormMessage, PasswordField, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { TextAction } from '../../components/TextAction'
@@ -16,7 +16,8 @@ import { InviteWelcome } from './InviteWelcome'
 import { ZoomField } from './ZoomField'
 import { INVITE_PARAM, logInPath, logInPathFor, safeNext } from './paths'
 import { privacyPath, termsPath } from '../legal/paths'
-import { guessTimeZone, timeZoneOptions } from './timeZones'
+import { TimeZoneField } from './TimeZoneField'
+import { guessTimeZone } from './timeZones'
 
 export const TERMS_VERSION = '2026-10-31'
 
@@ -47,8 +48,8 @@ export function SignUp() {
   const [searchParams] = useSearchParams()
   const nextParam = searchParams.get('next')
   const next = nextParam ? safeNext(nextParam) : (signedUp ? pickPath : dashboardPath)
-  // Built once: the list holds the guessed zone, and any zone picked comes from it.
-  const zones = useMemo(() => timeZoneOptions(guessTimeZone()), [])
+  // The list is built around the guessed zone, and any zone picked comes from it.
+  const [guessedZone] = useState(guessTimeZone)
   const currOptions = useMemo(() => currencyOptionsWith(t), [t])
 
   // Asked once: whether a code is needed, and who the link's invite is for. Without an answer the form still works.
@@ -182,7 +183,7 @@ export function SignUp() {
           options={currOptions}
           error={errors.currency}
         />
-        <SelectField label={t('account.signUp.timeZone')} value={timeZone} onChange={setTimeZone} options={zones} error={errors.timeZone} />
+        <TimeZoneField label={t('account.signUp.timeZone')} saved={guessedZone} value={timeZone} onChange={setTimeZone} error={errors.timeZone} />
         <Checkbox checked={accepted} onChange={setAccepted} error={errors.disclaimerAccepted || errors.termsVersion}>
           <span>
             {t('account.signUp.accept', { disclaimer: t('common.disclaimerFull') })}{' '}

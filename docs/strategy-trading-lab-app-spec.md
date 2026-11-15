@@ -890,7 +890,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Summary settings (a time of your choice).
 - ~~Empty, loading and error states.~~ (built, item 26: a 404 page, a crash page and the offline line; loading and error states per screen)
 
-Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP.md) → *The launch product*; each gets its section here when it is built):
+Ideas not in this spec yet (the app is for Ernest's personal use only since 2026-11-14, so none is needed to publish; see [ROADMAP.md](../ROADMAP.md); each gets its section here if it is built):
 
 - "Coming soon" cards on Pick a template for templates the engine can't run yet.
 - Live mode gated on a confirmed email (alerts by email, and by web push where the user turned it on, #134).
@@ -904,12 +904,12 @@ Needed to publish, and not in this spec yet (proposed in [ROADMAP.md](../ROADMAP
 
 ## 10. Open questions
 
-- **Regulation.** See `regulation-spain-eu.md`. For the legal review: the taglines "Buy the dip" (an instruction: "Buy") and "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists, and the AI comparison page.
+- **Regulation.** Only if the app is ever published (personal use only since 2026-11-14). See `regulation-spain-eu.md`. For a legal review: the taglines "Buy the dip" (an instruction: "Buy") and "Take the wins, dodge the losses" (could read as a promise to avoid losses), the suggested AI prompt, the default stock lists, and the AI comparison page.
 - **Anonymous or pseudonymous AI data.** Built with no key to the user, the link kept on the user's own round so turning sharing off removes it (see AI data sharing); Ernest to confirm, and the lawyer to check the consent wording.
 - **Edited prompts** in the AI comparison: kept, with the edited flag, so the comparison can keep them apart or leave them out when it is built.
 - **The suggested prompt:** v1 written by Claude (`backend/.../Ai/AiPrompt.cs`, versioned by `AiPrompt.Version`); still to test by hand in ChatGPT, Claude and Gemini, and for the legal review.
 - **Reading the answer:** settled as above (AI round, "How forgiving the reader is").
 - **AI model list:** settled as above; agents keep it current.
-- **Price data:** which provider supplies daily US prices and the euro-dollar rate, with terms that allow commercial use, and its cost at many free users. The POC uses eToro and Yahoo.
+- **Price data:** settled for personal use: Yahoo (decided #20). A provider whose terms allow commercial use matters only if the app is ever published.
 - **Web push on iPhone:** is a home-screen prompt enough, or do iPhone users rely on email?
 - **Card copy for *Your AI's top picks*** on the pick screen: "the top score should get a position" is final as drawn, but "position" is the one trading word there without an explanation.

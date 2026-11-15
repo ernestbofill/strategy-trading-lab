@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api, InvalidValueError, TooManyTriesError, UnauthorizedError, type AdminPrices, type YahooCheck } from '../../api'
-import { localDateTime } from '../../lib/format'
+import { localDateTime as when } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import styles from './AdminSettings.module.css'
 import { adminCacheKeys } from './cacheKeys'
 
 const POLL_MS = 3000
-
-const when = (iso: string | null) => (iso ? localDateTime(iso) : '–')
 
 /** The daily price refresh: when it ran and runs, a button to run it now, and a check that Yahoo answers. */
 export function PricesBox() {

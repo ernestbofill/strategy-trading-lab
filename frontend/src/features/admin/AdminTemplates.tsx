@@ -1,26 +1,19 @@
-import { useEffect, useId, useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api, InvalidFieldsError, type AdminTemplate, type AdminTemplateAsset, type AdminTemplateVersion } from '../../api'
 import { SelectField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Tabs } from '../../components/Tabs'
 import { tabPanel } from '../../components/tabPanel'
-import { Screen, ScreenMessage } from '../../components/Screen'
+import { Loaded } from '../../components/Loaded'
+import { Screen } from '../../components/Screen'
 import { AdminTopBar } from './AdminTopBar'
+import { adminCacheKeys } from './cacheKeys'
 import { formatRate, isoDate } from '../../lib/format'
-import { invalidate } from '../../lib/useLoadable'
+import { invalidate, update, useLoadable } from '../../lib/useLoadable'
 import { AssetPicker } from '../new-strategy/review/AssetPicker'
+import { templateCacheKey, templatesCacheKey } from '../new-strategy/useTemplate'
 import styles from './AdminTemplates.module.css'
-
-type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; templates: AdminTemplate[] }
-
-async function fetchTemplates(): Promise<State> {
-  try {
-    return { status: 'ready', templates: await api.getAdminTemplates() }
-  } catch {
-    return { status: 'error' }
-  }
-}
 
 /** The setting's sentence with a blank for its value: "Rose at least _% from its low". */
 const labelOf = (sentence: string, value: string) => sentence.replace('{value}', value.replace('{n}', '_'))
@@ -224,26 +217,17 @@ function TemplateCard({ template, onChanged }: { template: AdminTemplate; onChan
  * A strategy keeps the version it started from.
  */
 export function AdminTemplates() {
-  const [state, setState] = useState<State>({ status: 'loading' })
+  const state = useLoadable(adminCacheKeys.templates, api.getAdminTemplates)
   const tabsId = useId()
   // The template shown is in the address (?template=dip), so a reload or a shared link opens it; the first one otherwise.
   const [params, setParams] = useSearchParams()
-  const templates = state.status === 'ready' ? state.templates : []
-  const shown = templates.find((t) => t.key === params.get('template'))?.key ?? templates[0]?.key
-
-  useEffect(() => {
-    let current = true
-    void fetchTemplates().then((next) => current && setState(next))
-    return () => {
-      current = false
-    }
-  }, [])
 
   const changed = (next: AdminTemplate) => {
     // This tab's new-strategy screens keep templates until a deploy: load them again with the new active version.
-    invalidate('templates')
-    invalidate(`template:${next.key}`)
-    setState((s) => (s.status === 'ready' ? { ...s, templates: s.templates.map((t) => (t.key === next.key ? next : t)) } : s))
+    invalidate(templatesCacheKey)
+    invalidate(templateCacheKey(next.key))
+    // The save's answer replaces that template; the cards stay mounted, so unsaved edits on other templates are kept.
+    update<AdminTemplate[]>(adminCacheKeys.templates, (templates) => templates.map((t) => (t.key === next.key ? next : t)))
   }
 
   return (
@@ -252,33 +236,37 @@ export function AdminTemplates() {
         title="Templates"
         lead="What new strategies start with, by version. Saving makes a new version; any version can be made active again. Strategies keep the version they started from."
       />
-      {state.status === 'loading' && <ScreenMessage>Loading the templates…</ScreenMessage>}
-      {state.status === 'error' && <ScreenMessage>Could not load the templates. Try again later.</ScreenMessage>}
-      {shown !== undefined && (
-        <div className={styles.list}>
-          <Tabs
-            id={tabsId}
-            label="Template"
-            items={templates.map((t) => ({ key: t.key, label: t.name }))}
-            selected={shown}
-            onSelect={(key) =>
-              setParams(
-                (p) => {
-                  p.set('template', key)
-                  return p
-                },
-                { replace: true },
-              )
-            }
-          />
-          {/* Every card stays mounted, the others hidden, so switching templates keeps unsaved edits. */}
-          {templates.map((t) => (
-            <div key={t.key} {...tabPanel(tabsId, t.key)} hidden={t.key !== shown}>
-              <TemplateCard template={t} onChanged={changed} />
+      <Loaded state={state} what="the templates" english>
+        {(templates) => {
+          const shown = templates.find((t) => t.key === params.get('template'))?.key ?? templates[0]?.key
+          if (shown === undefined) return null
+          return (
+            <div className={styles.list}>
+              <Tabs
+                id={tabsId}
+                label="Template"
+                items={templates.map((t) => ({ key: t.key, label: t.name }))}
+                selected={shown}
+                onSelect={(key) =>
+                  setParams(
+                    (p) => {
+                      p.set('template', key)
+                      return p
+                    },
+                    { replace: true },
+                  )
+                }
+              />
+              {/* Every card stays mounted, the others hidden, so switching templates keeps unsaved edits. */}
+              {templates.map((t) => (
+                <div key={t.key} {...tabPanel(tabsId, t.key)} hidden={t.key !== shown}>
+                  <TemplateCard template={t} onChanged={changed} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )
+        }}
+      </Loaded>
     </Screen>
   )
 }

@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 1 | 0 | 1 |
-| Backend (xUnit) | 0 | 0 | 0 |
-| **All** | **1** | **0** | **1** |
+| Frontend (Vitest) | 3 | 1 | 4 |
+| Backend (xUnit) | 0 | 1 | 1 |
+| **All** | **3** | **2** | **5** |
 
 ## Log
 
@@ -28,4 +28,8 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-15 | #241 | local | Frontend (Vitest) | `src/features/admin/AdminTemplates.test.tsx` (saves a new version; makes an older one active) and `AdminAssets.test.tsx > says when an asset already there is hidden, and a failed reload apart from the add` | 3 | TP | Moving the admin screens to `useLoadable` dropped two behaviours: Templates no longer showed the save's reply, Assets no longer said its reload failed. Added `update(key, change)` and made `reload(key)` resolve to whether it loaded. |
+| 2026-11-15 | #241 | local | Frontend (Vitest) | `src/features/admin/AdminAlerts.test.tsx > shows no error when a dismiss is refused because the alert is no longer open` | 1 | TP | The first `useLoadable` draft showed an error for a 404 on an alert a run had cleared; the error now shows only while the alert is still open. |
+| 2026-11-15 | #241 | local | Frontend (Vitest) | `src/features/admin/AdminUsers.test.tsx`, `AdminAlerts.test.tsx`, `AdminInvites.test.tsx` (the second test of each file) | 4 | FP | Results kept by `useLoadable` leaked from one test to the next; `testSetup.ts` now empties the cache after each test. |
+| 2026-11-15 | #238, #239 | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
 | 2026-11-14 | #236 | local | Frontend (Vitest) | `src/features/strategy/StockPage.test.tsx > shows window closed, >100% progress, moving-average stack strips, and past-zone cancellation` | 1 | TP | Legacy pre-deploy `buyLine` check (`-13%` vs buy line `$187.28`, low `$162.85`) rounded back to `+0.1%` above the low instead of `+0%` due to 0.1% rounding in stored `value`; snapped `< 0.15%` to `0` in `normalizeCheck`. |

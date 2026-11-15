@@ -17,7 +17,7 @@
 - `src/components/`: shared, screen-agnostic UI. Reuse these before writing new markup:
   - `Screen`, `TopBar`, `PrimaryAction`, `ScreenMessage`: the screen shell. Pass the one primary action as `action` and a short hint as `note`, never a disclaimer; they close the content, above the site footer, which is the only place the disclaimer shows. A form's action is `PrimaryAction form="<form id>"`, a real submit button, so Enter and password managers work.
   - `Field`: `TextField`, `PasswordField` (show/hide), `SelectField` (long lists), `SegmentedField` (two to four short choices, as buttons), `Checkbox` and `FormMessage`, with the error under the field.
-  - `LoadableScreen`: renders the loading, error and not-found states for screens that load data.
+  - `LoadableScreen`: renders the loading, error and not-found states for screens that load data. `Loaded` does the same for a part of a screen that shows its header first (the admin pages): load with `useLoadable`, never a hand-written `useEffect` with a `live` flag.
   - `PageHeader`, `Section`, `Columns` (main + aside from 1024px), `Tag`, `Tagline`.
   - `Card`: the app's card surface and states (hover, selected, disabled, focus), as any element (`as={Link}`, `as="button"`). Build every card on it so they stay alike; the caller adds only its layout.
   - `ChoiceCard`/`ChoiceList` (single choice, radio), `CheckList` (multi choice), `ToggleTiles` (`aria-pressed`), `ItemRow`, `NavRow`, `TextAction`.
@@ -29,7 +29,7 @@
   - `NewStrategyDraft.tsx` holds the choices made across the flow for the chosen template, kept in the tab's sessionStorage (`draftStorage.ts`) so a reload keeps it; closing the tab drops it. Choosing another template starts over (`switchTemplate`); call `reset()` when a strategy is started.
   - `useTemplate.ts` holds the data hooks.
 - `src/features/account/`: sign-up, log-in, password links, and the Settings and Account pages. `AccountContext` asks `/account/me` once at start and clears the user on a 401 (`onSessionEnded` in `api/`); `RequireAccount` is the layout route of every screen that needs a user, sending others to Log-in with `?next=` (only app paths, `safeNext`). Logging in or out forgets every cached load (`invalidateAll`).
-- `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading). A kept result shows at once and is loaded again in the background: the server changes data on its own (new signals), so screens reload on open, when the app comes back to the front, every 5 minutes in front and on a push (`refreshAll`). Call `invalidate` after the user changes something, so the next screen doesn't show the old result first.
+- `src/lib/`: framework-free helpers (`format.ts`, `copy.ts` for shared copy such as `DISCLAIMER`) and `useLoadable` (cached loading). A kept result shows at once and is loaded again in the background: the server changes data on its own (new signals), so screens reload on open, when the app comes back to the front, every 5 minutes in front and on a push (`refreshAll`). Call `invalidate` after the user changes something, so the next screen doesn't show the old result first; on the screen itself, `reload(key, { fresh: true })` loads again while keeping the result on screen (it resolves to whether it loaded; without `fresh` it joins a load in flight, for polling), and `update(key, change)` puts a save's reply in place without a load.
 
 ## Conventions
 

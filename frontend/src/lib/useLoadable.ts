@@ -6,8 +6,10 @@ export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status
 // server changes data on its own (a new signal, an AI round due), so a screen that opens shows the kept result and
 // loads it again in the background, and `refreshAll` reloads every open screen (the app back in front, a push).
 const settled = new Map<string, Loadable<unknown>>()
-const pending = new Map<string, Promise<void>>()
+const pending = new Map<string, Promise<boolean>>()
 const loadedAt = new Map<string, number>()
+// Whether the latest load of each key that settled loaded: what a superseded load answers its caller.
+const lastLoaded = new Map<string, boolean>()
 // Keys the user changed (`invalidate`): a screen that opens on one shows loading, not the old result, until it reloads,
 // and a failed reload shows the error instead of the result from before the change.
 const stale = new Set<string>()
@@ -36,12 +38,14 @@ function requestReload(cacheKey: string) {
  * Starts a load of `cacheKey` unless one is in flight. A failed background reload keeps the result already shown; a
  * failed reload after `invalidate` shows the error.
  */
-function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
-  if (pending.has(cacheKey)) return
+function fetchKey(cacheKey: string, load: () => Promise<unknown>): Promise<boolean> {
+  const inFlight = pending.get(cacheKey)
+  if (inFlight) return inFlight
   // An invalidated request still finishes, but must not overwrite the newer one's result.
   const current = (): boolean => pending.get(cacheKey) === started
   const settle = (result: Loadable<unknown>, loaded: boolean) => {
     if (!current()) return
+    lastLoaded.set(cacheKey, loaded)
     pending.delete(cacheKey)
     stale.delete(cacheKey)
     if (loaded) loadedAt.set(cacheKey, Date.now())
@@ -52,11 +56,23 @@ function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
     const shown = settled.get(cacheKey)
     return shown && !stale.has(cacheKey) ? shown : { status: 'error' }
   }
-  const started: Promise<void> = load().then(
-    (data) => settle(data === undefined ? MISSING : { status: 'ready', data }, true),
-    () => settle(failed(), false),
+  // A load another one replaced answers with that one's outcome: its own result was never shown.
+  const outcome = (loaded: boolean): boolean | Promise<boolean> =>
+    current() ? loaded : (pending.get(cacheKey) ?? lastLoaded.get(cacheKey) ?? false)
+  const started: Promise<boolean> = load().then(
+    (data) => {
+      const answer = outcome(true)
+      settle(data === undefined ? MISSING : { status: 'ready', data }, true)
+      return answer
+    },
+    () => {
+      const answer = outcome(false)
+      settle(failed(), false)
+      return answer
+    },
   )
   pending.set(cacheKey, started)
+  return started
 }
 
 /**
@@ -73,15 +89,23 @@ export function invalidate(cacheKey: string) {
 }
 
 /**
- * Forgets every result: another user logged in (or out), so nothing loaded for the last one may show. Screens that
- * are still open once React commits show loading and load again.
+ * Forgets every result: another user logged in (or out), or the admin page switched databases, so nothing loaded before may
+ * show. Screens that are still open once React commits show loading and load again, except `keep`'s, which keeps its result
+ * on screen until the reload lands.
  */
-export function invalidateAll() {
+export function invalidateAll({ keep }: { keep?: string } = {}) {
+  const kept = keep ? settled.get(keep) : undefined
   settled.clear()
   pending.clear()
   loadedAt.clear()
   stale.clear()
+  lastLoaded.clear()
   for (const cacheKey of listeners.keys()) requestReload(cacheKey)
+  // A key the screen doing the change shows stays on it while it loads again (the admin page across a database switch).
+  if (keep && kept) {
+    settled.set(keep, kept)
+    stale.add(keep)
+  }
 }
 
 /**
@@ -95,10 +119,30 @@ export function refreshAll(olderThanMs = 0) {
   }
 }
 
-/** Reloads one key the open screens show, keeping it on screen meanwhile (a result the server is still working on). */
-export function reload(cacheKey: string) {
+/**
+ * Reloads one key the open screens show, keeping it on screen meanwhile. A load already in flight is joined (a result the
+ * server is still working on, the app back in front); after a change pass `{ fresh: true }`, since a load that started before
+ * the change would bring the old result. Resolves to whether it loaded: a failed reload keeps the old result, so a screen may
+ * want to say so.
+ */
+export function reload(cacheKey: string, { fresh = false } = {}): Promise<boolean> {
   const load = loaderOf(cacheKey)
-  if (load) fetchKey(cacheKey, load)
+  if (!load) return Promise.resolve(false)
+  if (fresh) pending.delete(cacheKey)
+  return fetchKey(cacheKey, load)
+}
+
+/** Changes a kept result with what the server just answered (a save's reply), without loading it again. */
+export function update<T>(cacheKey: string, change: (data: T) => T) {
+  const shown = settled.get(cacheKey)
+  if (shown?.status !== 'ready') return
+  // A load in flight started before the change: its result must not overwrite it. The reply is as fresh as a load.
+  pending.delete(cacheKey)
+  stale.delete(cacheKey)
+  loadedAt.set(cacheKey, Date.now())
+  lastLoaded.set(cacheKey, true)
+  settled.set(cacheKey, { status: 'ready', data: change(shown.data as T) })
+  notify(cacheKey)
 }
 
 /**

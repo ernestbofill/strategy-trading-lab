@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Loaded } from '../../components/Loaded'
 import { Screen } from '../../components/Screen'
 import { AdminTopBar } from './AdminTopBar'
+import { adminCacheKeys } from './cacheKeys'
 import { localDay } from '../../lib/format'
 import { useLoadable } from '../../lib/useLoadable'
 import styles from './AdminUsers.module.css'
@@ -11,7 +12,6 @@ import styles from './AdminUsers.module.css'
 const roleText: Record<Role, string> = { user: 'User', vip: 'VIP', owner: 'Owner' }
 const blockedText = { bounced: 'Blocked: bounced', invalid: 'Blocked: invalid address', complaint: 'Blocked: reported spam' }
 
-const day = localDay
 
 const columns: DataTableColumn<AdminUser>[] = [
   { id: 'email', header: 'Email', accessorFn: (u) => u.email, cell: (u) => <span className={styles.email}>{u.email}</span> },
@@ -26,8 +26,8 @@ const columns: DataTableColumn<AdminUser>[] = [
     ),
   },
   { id: 'invitedBy', header: 'Invited by', accessorFn: (u) => u.invitedBy ?? '', cell: (u) => u.invitedBy ?? '–' },
-  { id: 'joined', header: 'Joined', accessorFn: (u) => u.joined, cell: (u) => day(u.joined), mono: true },
-  { id: 'lastVisit', header: 'Last visit', accessorFn: (u) => u.lastVisit ?? '', cell: (u) => day(u.lastVisit), mono: true },
+  { id: 'joined', header: 'Joined', accessorFn: (u) => u.joined, cell: (u) => localDay(u.joined), mono: true },
+  { id: 'lastVisit', header: 'Last visit', accessorFn: (u) => u.lastVisit ?? '', cell: (u) => localDay(u.lastVisit), mono: true },
   { id: 'running', header: 'Running', accessorFn: (u) => u.running, mono: true, align: 'right' },
   { id: 'archived', header: 'Archived', accessorFn: (u) => u.archived, mono: true, align: 'right' },
 ]
@@ -93,7 +93,7 @@ function Counts({ counts }: { counts: AdminUsersPage['counts'] }) {
 
 /** Admin users page (/admin/users): every account with its role, confirmed email, last visit and strategies. Read-only for now. */
 export function AdminUsers() {
-  const state = useLoadable('admin:users', api.getAdminUsers)
+  const state = useLoadable(adminCacheKeys.users, api.getAdminUsers)
 
   return (
     <Screen top={<AdminTopBar />}>

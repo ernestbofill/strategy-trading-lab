@@ -15,6 +15,7 @@ import { Screen } from '../../components/Screen'
 import { localDay } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import { AdminTopBar } from './AdminTopBar'
+import { adminCacheKeys } from './cacheKeys'
 import styles from './AdminInvites.module.css'
 
 /** The admin setting that gates sign-up (backend Admin/SettingDefinitions.cs). */
@@ -26,16 +27,14 @@ const LANGUAGES = [
   { value: 'ca', label: 'Català' },
 ]
 
-const invitesCacheKey = 'admin:invites'
-
 /**
  * Invites (/admin/invites, owner only; spec: Admin, Invites): who can sign up, a new invite for one person in their
  * language (emailed, or a message to copy into WhatsApp or anywhere), and the invites made so far.
  */
 export function AdminInvites() {
-  const state = useLoadable(invitesCacheKey, api.getAdminInvites)
+  const state = useLoadable(adminCacheKeys.invites, api.getAdminInvites)
   const [created, setCreated] = useState<{ invite: AdminInvite; sent: boolean } | null>(null)
-  const load = async () => void (await reload(invitesCacheKey))
+  const load = async () => void (await reload(adminCacheKeys.invites))
 
   const onCreated = async (invite: AdminInvite, sent: boolean) => {
     setCreated({ invite, sent })

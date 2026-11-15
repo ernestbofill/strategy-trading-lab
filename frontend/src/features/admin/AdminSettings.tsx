@@ -16,10 +16,10 @@ import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { localDateTime } from '../../lib/format'
 import { invalidate, reload, useLoadable } from '../../lib/useLoadable'
 import { TimeZoneField } from '../account/TimeZoneField'
-import { alertsCacheKey } from './AdminAlerts'
+import { adminCacheKeys, invalidateAdmin } from './cacheKeys'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
-import { PricesBox, pricesCacheKey } from './PricesBox'
+import { PricesBox } from './PricesBox'
 
 interface AdminPage {
   /** Null when they can't be read: they live in the database in use, which may be the broken one. */
@@ -28,21 +28,24 @@ interface AdminPage {
   version: BackendVersion | null
 }
 
-const settingsCacheKey = 'admin:settings'
-
 /** How many alerts are open, for the Alerts row; null until known, or when they can't be read. */
 function useOpenAlerts() {
-  const alerts = useLoadable(alertsCacheKey, api.getAdminAlerts)
+  const alerts = useLoadable(adminCacheKeys.alerts, api.getAdminAlerts)
   return alerts.status === 'ready' ? alerts.data.filter((a) => a.status === 'open').length : null
 }
 
 /** Admin settings (/admin): settings the app reads, set here instead of in the server's environment. Not linked from the app. */
 export function AdminSettings() {
-  const state = useLoadable(settingsCacheKey, fetchSettings)
+  const state = useLoadable(adminCacheKeys.settings, fetchSettings)
   // After a save or a switch: keeps the page on screen while it loads again, the prices box's next run included.
   const load = async () => {
-    invalidate(pricesCacheKey)
-    await reload(settingsCacheKey)
+    invalidate(adminCacheKeys.prices)
+    await reload(adminCacheKeys.settings)
+  }
+  // Another database: every admin page's rows were the other one's.
+  const switched = async () => {
+    invalidateAdmin()
+    await reload(adminCacheKeys.settings)
   }
   const openAlerts = useOpenAlerts()
 
@@ -66,7 +69,7 @@ export function AdminSettings() {
         {(page) => (
           <>
             {page.version && <BackendBox version={page.version} />}
-            <DatabaseBox databases={page.databases} onChanged={load} />
+            <DatabaseBox databases={page.databases} onChanged={switched} />
             {!page.settings && (
               <ScreenMessage>Could not load the settings: the database in use may not answer. Switch above, or try again later.</ScreenMessage>
             )}

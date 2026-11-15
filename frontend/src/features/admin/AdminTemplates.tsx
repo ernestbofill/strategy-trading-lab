@@ -8,13 +8,13 @@ import { tabPanel } from '../../components/tabPanel'
 import { Loaded } from '../../components/Loaded'
 import { Screen } from '../../components/Screen'
 import { AdminTopBar } from './AdminTopBar'
+import { adminCacheKeys } from './cacheKeys'
 import { formatRate, isoDate } from '../../lib/format'
 import { invalidate, update, useLoadable } from '../../lib/useLoadable'
 import { AssetPicker } from '../new-strategy/review/AssetPicker'
 import { templateCacheKey, templatesCacheKey } from '../new-strategy/useTemplate'
 import styles from './AdminTemplates.module.css'
 
-const adminTemplatesCacheKey = 'admin:templates'
 
 /** The setting's sentence with a blank for its value: "Rose at least _% from its low". */
 const labelOf = (sentence: string, value: string) => sentence.replace('{value}', value.replace('{n}', '_'))
@@ -218,7 +218,7 @@ function TemplateCard({ template, onChanged }: { template: AdminTemplate; onChan
  * A strategy keeps the version it started from.
  */
 export function AdminTemplates() {
-  const state = useLoadable(adminTemplatesCacheKey, api.getAdminTemplates)
+  const state = useLoadable(adminCacheKeys.templates, api.getAdminTemplates)
   const tabsId = useId()
   // The template shown is in the address (?template=dip), so a reload or a shared link opens it; the first one otherwise.
   const [params, setParams] = useSearchParams()
@@ -228,7 +228,7 @@ export function AdminTemplates() {
     invalidate(templatesCacheKey)
     invalidate(templateCacheKey(next.key))
     // The save's answer replaces that template; the cards stay mounted, so unsaved edits on other templates are kept.
-    update<AdminTemplate[]>(adminTemplatesCacheKey, (templates) => templates.map((t) => (t.key === next.key ? next : t)))
+    update<AdminTemplate[]>(adminCacheKeys.templates, (templates) => templates.map((t) => (t.key === next.key ? next : t)))
   }
 
   return (

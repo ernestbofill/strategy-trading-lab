@@ -99,17 +99,22 @@ export function refreshAll(olderThanMs = 0) {
 
 /**
  * Reloads one key the open screens show, keeping it on screen meanwhile (after a change, or a result the server is still
- * working on). Resolves to whether it loaded: a failed reload keeps the old result, so a screen may want to say so.
+ * working on). A load already in flight may have started before the change, so a new one replaces it. Resolves to whether it
+ * loaded: a failed reload keeps the old result, so a screen may want to say so.
  */
 export function reload(cacheKey: string): Promise<boolean> {
   const load = loaderOf(cacheKey)
-  return load ? fetchKey(cacheKey, load) : Promise.resolve(false)
+  if (!load) return Promise.resolve(false)
+  pending.delete(cacheKey)
+  return fetchKey(cacheKey, load)
 }
 
 /** Changes a kept result with what the server just answered (a save's reply), without loading it again. */
 export function update<T>(cacheKey: string, change: (data: T) => T) {
   const shown = settled.get(cacheKey)
   if (shown?.status !== 'ready') return
+  // A load in flight started before the change: its result must not overwrite it.
+  pending.delete(cacheKey)
   settled.set(cacheKey, { status: 'ready', data: change(shown.data as T) })
   notify(cacheKey)
 }

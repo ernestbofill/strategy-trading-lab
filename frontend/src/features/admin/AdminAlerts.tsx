@@ -4,13 +4,12 @@ import { PageHeader } from '../../components/PageHeader'
 import { Loaded } from '../../components/Loaded'
 import { Screen } from '../../components/Screen'
 import { AdminTopBar } from './AdminTopBar'
+import { adminCacheKeys } from './cacheKeys'
 import { Section } from '../../components/Section'
 import { localDateTime as at } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import styles from './AdminAlerts.module.css'
 
-/** The alerts, also counted on /admin's Alerts row. */
-export const alertsCacheKey = 'admin:alerts'
 
 const sourceText: Record<AlertSource, string> = {
   dailyCheck: 'Daily check',
@@ -48,21 +47,23 @@ function AlertCard({ alert, onDismiss, busy }: { alert: AdminAlert; onDismiss?: 
  * data, emails that didn't go out), instead of emails to the owner. Alerts clear themselves once a later run finds them fixed.
  */
 export function AdminAlerts() {
-  const state = useLoadable(alertsCacheKey, api.getAdminAlerts)
+  const state = useLoadable(adminCacheKeys.alerts, api.getAdminAlerts)
   // The alert a dismiss was refused for: only a failure while it is still open (a double tap, or a run that cleared it
-  // meanwhile, answers 404). A failed reload keeps the list on screen.
+  // meanwhile, answers 404). A failed reload keeps the list on screen, and says so.
   const [refused, setRefused] = useState<string | null>(null)
+  const [reloadFailed, setReloadFailed] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
 
   const dismiss = async (id: string) => {
     setBusy(id)
     setRefused(null)
+    setReloadFailed(false)
     try {
       await api.dismissAdminAlert(id)
     } catch {
       setRefused(id)
     }
-    reload(alertsCacheKey)
+    setReloadFailed(!(await reload(adminCacheKeys.alerts)))
     setBusy(null)
   }
 
@@ -75,10 +76,10 @@ export function AdminAlerts() {
           const open = of('open')
           const dismissed = of('dismissed')
           const cleared = of('cleared')
-          const failed = open.some((a) => a.id === refused)
+          const failed = reloadFailed || open.some((a) => a.id === refused)
           return (
             <>
-              {failed && <p className={styles.error} role="alert">Could not dismiss it. Try again.</p>}
+              {failed && <p className={styles.error} role="alert">Could not dismiss it, or reload the list. Try again.</p>}
               <Section title={`Open · ${open.length}`}>
                 {open.length === 0 ? (
                   <p className={styles.muted}>Nothing open.</p>

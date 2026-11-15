@@ -5,12 +5,12 @@ import { Loaded } from '../../components/Loaded'
 import { Screen } from '../../components/Screen'
 import { reload as reloadKey, useLoadable } from '../../lib/useLoadable'
 import { AdminTopBar } from './AdminTopBar'
+import { adminCacheKeys } from './cacheKeys'
 import styles from './AdminAssets.module.css'
 import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
 import { AddAssetForm, EditAssetForm } from './AssetForms'
 import { AllPricesSection } from './AssetPrices'
 
-const assetsCacheKey = 'admin:assets'
 
 const kindText: Record<AssetKind, string> = {
   stock: 'Stock',
@@ -82,7 +82,7 @@ const filters: DataTableFilter[] = [
 
 /** Admin assets page (/admin/assets): all stocks, funds and indexes in the database, with search, filters, hide/show, adding by symbol and editing. */
 export function AdminAssets() {
-  const state = useLoadable(assetsCacheKey, api.getAdminAssets)
+  const state = useLoadable(adminCacheKeys.assets, api.getAdminAssets)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<AdminAsset | null>(null)
@@ -90,7 +90,7 @@ export function AdminAssets() {
   // After a change that worked: the list stays on screen while it loads again, and a failed reload is said on its own, not
   // as if the change had failed.
   const reload = async () => {
-    if (!(await reloadKey(assetsCacheKey))) setError("Couldn't reload the assets. Reload the page.")
+    if (!(await reloadKey(adminCacheKeys.assets))) setError("Couldn't reload the assets. Reload the page.")
   }
 
   const toggleActive = async (asset: AdminAsset) => {

@@ -3,17 +3,16 @@ import { api, InvalidValueError, TooManyTriesError, UnauthorizedError, type Admi
 import { localDateTime } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import styles from './AdminSettings.module.css'
+import { adminCacheKeys } from './cacheKeys'
 
 const POLL_MS = 3000
 
-/** The prices box; its next run follows the schedule settings, so a save loads it again. */
-export const pricesCacheKey = 'admin:prices'
 
 const when = (iso: string | null) => (iso ? localDateTime(iso) : '–')
 
 /** The daily price refresh: when it ran and runs, a button to run it now, and a check that Yahoo answers. */
 export function PricesBox() {
-  const state = useLoadable(pricesCacheKey, api.getAdminPrices)
+  const state = useLoadable(adminCacheKeys.prices, api.getAdminPrices)
   // Until it loads (or when it can't: the session ended and the app shows Log-in), the box shows dashes.
   const prices: AdminPrices | null = state.status === 'ready' ? state.data : null
   const [message, setMessage] = useState<string | null>(null)
@@ -24,7 +23,7 @@ export function PricesBox() {
   const running = prices?.running ?? false
   useEffect(() => {
     if (!running) return
-    const timer = setInterval(() => void reload(pricesCacheKey), POLL_MS)
+    const timer = setInterval(() => void reload(adminCacheKeys.prices), POLL_MS)
     return () => clearInterval(timer)
   }, [running])
 
@@ -32,7 +31,7 @@ export function PricesBox() {
     setMessage(null)
     try {
       await api.refreshAdminPrices()
-      await reload(pricesCacheKey)
+      await reload(adminCacheKeys.prices)
     } catch (e) {
       if (e instanceof UnauthorizedError) return
       setMessage(e instanceof InvalidValueError ? e.message : "Couldn't start it. Try again.")

@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Data.Entities;
 namespace StrategyTradingLab.Api.Tests;
 
 /// <summary>Every /admin endpoint is for the owner only: one check of the routes, and one of what a request gets.</summary>
-public class AdminAccessTests(AdminFixture fixture) : IClassFixture<AdminFixture>
+public class AdminAccessTests(AccountsApi fixture) : IClassFixture<AccountsApi>
 {
     [NeonFact]
     public void Every_admin_endpoint_requires_the_owner_policy()
@@ -18,7 +18,11 @@ public class AdminAccessTests(AdminFixture fixture) : IClassFixture<AdminFixture
             .Where(e => e.RoutePattern.RawText?.TrimStart('/').StartsWith("admin", StringComparison.Ordinal) == true).ToList();
 
         Assert.NotEmpty(admin);
-        Assert.All(admin, e => Assert.Contains(e.Metadata.GetOrderedMetadata<IAuthorizeData>(), a => a.Policy == Policies.Owner));
+        Assert.All(admin, e =>
+        {
+            Assert.Contains(e.Metadata.GetOrderedMetadata<IAuthorizeData>(), a => a.Policy == Policies.Owner);
+            Assert.Empty(e.Metadata.GetOrderedMetadata<IAllowAnonymous>());
+        });
     }
 
     [NeonFact]

@@ -135,7 +135,15 @@ public class AccountsApi : WebApplicationFactory<Program>
         {
             services.AddScoped<IEmailSender>(_ => Emails);
             // No fetch from Yahoo on a strategy's start or a signal's page: the tests store the prices and run the checks themselves.
-            services.Configure<StrategyTradingLab.Api.MarketData.PriceRefreshOptions>(options => options.FetchOnDemand = false);
+            services.Configure<StrategyTradingLab.Api.MarketData.PriceRefreshOptions>(options =>
+            {
+                options.FetchOnDemand = false;
+                // A class shares one API for longer than the minute after start: no daily run or hourly notifications behind the
+                // tests' backs (a strategy's own check and "Refresh now" still run).
+                options.StartDelay = TimeSpan.FromDays(365);
+            });
+            foreach (var worker in services.Where(s => s.ImplementationType == typeof(StrategyTradingLab.Api.Notifications.NotificationWorker)).ToList())
+                services.Remove(worker);
         });
     }
 }

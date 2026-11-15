@@ -1,17 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type TemplateDetail } from '../../../api'
-import { invalidateAll } from '../../../lib/useLoadable'
 import { NewStrategyDraftProvider } from '../NewStrategyDraft'
 import { HowTested } from './HowTested'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 const templateWithBacktest: TemplateDetail = {
   key: 'dip',

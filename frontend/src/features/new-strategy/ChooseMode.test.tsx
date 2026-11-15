@@ -1,20 +1,13 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useEffect } from 'react'
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type TemplateDetail } from '../../api'
-import { invalidateAll } from '../../lib/useLoadable'
 import { AccountProvider } from '../account/AccountContext'
 import { RequireAccount } from '../account/RequireAccount'
 import { ChooseMode } from './ChooseMode'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from './NewStrategyDraft'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 /** Sets the draft to manual (the code's `live`), as "Follow it manually" or an earlier visit would. */
 function StartLive() {

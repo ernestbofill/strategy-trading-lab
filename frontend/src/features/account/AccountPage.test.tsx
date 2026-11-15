@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type Account, type Role } from '../../api'
 import { AccountPage } from './AccountPage'
 import { SettingsPage } from './SettingsPage'
@@ -30,11 +30,6 @@ vi.mock('./AccountContext', () => ({
   useIsOwner: () => currentRole === 'owner',
   useRole: () => currentRole,
 }))
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 describe('AccountPage', () => {
   it('renders the admin link when the user is an owner', () => {

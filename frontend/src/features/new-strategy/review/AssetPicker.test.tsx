@@ -1,17 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, ForbiddenError, InvalidValueError, type Security, type TemplateDetail } from '../../../api'
-import { invalidateAll } from '../../../lib/useLoadable'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from '../NewStrategyDraft'
 import { ReviewTemplate } from './ReviewTemplate'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 const cspx = { id: 'id-CSPX', symbol: 'CSPX.L', name: 'iShares Core S&P 500', what: 'Tracks the 500 largest US companies' }
 

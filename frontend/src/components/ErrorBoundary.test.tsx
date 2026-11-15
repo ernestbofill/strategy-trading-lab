@@ -1,14 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { ErrorBoundary } from './ErrorBoundary'
 
 const Fine = () => <p>Fine page</p>
 const Broken = (): never => {
   throw new Error('broken')
 }
-
-afterEach(cleanup)
 
 describe('ErrorBoundary', () => {
   it('catches a page that crashes as it opens, and clears the crash on the next path', () => {

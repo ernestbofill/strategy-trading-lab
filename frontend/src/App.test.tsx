@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, type Account } from './api'
 import App from './App'
@@ -25,8 +25,6 @@ function open(path: string) {
 }
 
 afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
   localStorage.clear()
   document.documentElement.lang = 'en'
   window.history.replaceState({}, '', '/')

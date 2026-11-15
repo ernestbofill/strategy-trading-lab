@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api } from '../../api'
 import { PromptEditor } from './PromptEditor'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 function open(instructions: string | null, onSave = vi.fn().mockResolvedValue(undefined)) {
   vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })

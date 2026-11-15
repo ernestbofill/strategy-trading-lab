@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type TemplateDetail } from '../../api'
 import { Advanced } from './Advanced'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from './NewStrategyDraft'
-
-afterEach(cleanup)
 
 const dip = {
   key: 'dip',

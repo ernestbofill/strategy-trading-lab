@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ExpiredLinkError, ForbiddenError, InvalidFieldsError, InvalidValueError, NameTakenError, TooManyTriesError, UnauthorizedError } from './errors'
 import { onSessionEnded } from './session'
 import { httpApi } from './httpApi'
@@ -6,10 +6,6 @@ import type { NewStrategy } from './types'
 
 const respond = (status: number, body?: unknown) =>
   vi.stubGlobal('fetch', vi.fn(async () => new Response(body === undefined ? null : JSON.stringify(body), { status })))
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
 
 describe('httpApi', () => {
   it('reads the templates from /api/templates', async () => {
@@ -276,7 +272,6 @@ describe('httpApi database', () => {
     )
   })
 })
-
 
 describe('httpApi feedback', () => {
   it('submits, lists, updates and deletes feedback items via /api/feedback', async () => {

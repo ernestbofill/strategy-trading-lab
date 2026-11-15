@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type AdminInvite, type AdminSetting } from '../../api'
 import { AdminInvites } from './AdminInvites'
 
@@ -10,11 +10,6 @@ vi.mock('../account/AccountContext', () => ({
   useIsOwner: () => true,
   useRole: () => 'owner',
 }))
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const anna: AdminInvite = {
   id: '1', code: 'ABCD-EFGH', link: 'https://stl.test/sign-up?invite=ABCD-EFGH', message: 'Hi Anna! … ABCD-EFGH',

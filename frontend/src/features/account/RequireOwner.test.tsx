@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Role } from '../../api'
 import { RequireOwner } from './RequireOwner'
-
-afterEach(cleanup)
 
 let role: Role = 'owner'
 vi.mock('./AccountContext', () => ({ useCurrentAccount: () => ({ role }) }))

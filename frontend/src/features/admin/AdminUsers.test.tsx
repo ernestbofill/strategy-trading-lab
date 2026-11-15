@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type AdminUsers as AdminUsersPage } from '../../api'
 import { AdminUsers } from './AdminUsers'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const page: AdminUsersPage = {
   counts: {

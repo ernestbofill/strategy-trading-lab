@@ -1,13 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { api, InvalidValueError, type AdminAsset, type AdminPrices } from '../../api'
 import { AllPricesSection, AssetPricesActions } from './AssetPrices'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const asset = (id: string, symbol: string): AdminAsset => ({
   id,

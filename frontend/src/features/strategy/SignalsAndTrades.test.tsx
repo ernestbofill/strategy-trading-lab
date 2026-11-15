@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   api,
   type StrategyDetail,
@@ -9,8 +9,6 @@ import {
   type StrategyTradeItem,
 } from '../../api'
 import { SignalsAndTrades } from './SignalsAndTrades'
-
-afterEach(cleanup)
 
 const mockSignal = (fields: Partial<StrategySignalItem>): StrategySignalItem => ({
   id: fields.id ?? 'sig-1',

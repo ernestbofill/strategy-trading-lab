@@ -1,3 +1,4 @@
+import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
 import { invalidateAll } from './lib/useLoadable'
 
@@ -5,8 +6,9 @@ import { invalidateAll } from './lib/useLoadable'
 if (typeof window !== 'undefined') window.scrollTo = () => {}
 
 // The new-strategy draft is kept in sessionStorage: each test starts without the last one's.
-// Loaded results are kept per cache key: each test loads its own.
+// Each test starts on an empty page, and loads its own results (they are kept per cache key).
 afterEach(() => {
+  cleanup()
   if (typeof sessionStorage !== 'undefined') sessionStorage.clear()
   invalidateAll()
 })

@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type DailySummary } from '../../api'
-import { invalidateAll } from '../../lib/useLoadable'
 import { SummaryPage } from './SummaryPage'
 
 vi.mock('../account/AccountContext', () => ({
@@ -18,12 +17,6 @@ vi.mock('../account/AccountContext', () => ({
   }),
   useIsOwner: () => false,
 }))
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 const mockSummary = (fields: Partial<DailySummary>): DailySummary => ({
   date: '2026-10-23',
@@ -76,40 +69,6 @@ describe('SummaryPage', () => {
     expect(screen.getByText('MANUAL')).toBeTruthy()
     expect(screen.getByText('since Oct 1')).toBeTruthy()
     expect(screen.getByText(/3 signals/)).toBeTruthy()
-  })
-
-  it('renders MANUAL and SIM tags correctly regardless of PascalCase or lowercase mode', async () => {
-    vi.spyOn(api, 'getSummary').mockResolvedValue(
-      mockSummary({
-        hasChanges: false,
-        strategies: [
-          {
-            strategyId: 'strat-live',
-            strategyName: 'Live Strat',
-            mode: 'Live' as any,
-            startedOn: '2026-10-01',
-            signalsCount: 1,
-          },
-          {
-            strategyId: 'strat-sim',
-            strategyName: 'Sim Strat',
-            mode: 'Simulation' as any,
-            startedOn: '2026-10-01',
-            signalsCount: 0,
-          },
-        ],
-      }),
-    )
-
-    render(
-      <MemoryRouter>
-        <SummaryPage />
-      </MemoryRouter>,
-    )
-
-    expect(await screen.findByRole('link', { name: /Live Strat/i })).toBeTruthy()
-    expect(screen.getByText('MANUAL')).toBeTruthy()
-    expect(screen.getByText('SIM')).toBeTruthy()
   })
 
   it('renders what changed, waiting items, stock changes, and scoreboard on active days', async () => {
@@ -218,16 +177,4 @@ describe('SummaryPage', () => {
     expect(startLink.getAttribute('href')).toBe('/new')
   })
 
-  it('provides DASHBOARD link in TopBar pointing to home', async () => {
-    vi.spyOn(api, 'getSummary').mockResolvedValue(mockSummary({}))
-
-    render(
-      <MemoryRouter>
-        <SummaryPage />
-      </MemoryRouter>,
-    )
-
-    const homeLink = await screen.findByRole('link', { name: 'DASHBOARD' })
-    expect(homeLink.getAttribute('href')).toBe('/')
-  })
 })

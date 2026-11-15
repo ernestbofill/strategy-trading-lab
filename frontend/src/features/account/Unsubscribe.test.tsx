@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, ExpiredLinkError } from '../../api'
 import { Unsubscribe } from './Unsubscribe'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 function open(path: string) {
   render(

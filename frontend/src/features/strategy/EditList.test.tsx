@@ -1,16 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, InvalidFieldsError, type StockRow, type StrategyDetail } from '../../api'
-import { invalidateAll } from '../../lib/useLoadable'
 import { EditList } from './EditList'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 const row = (assetId: string, name: string, status: StockRow['status'] = 'watching'): StockRow => ({
   assetId, symbol: assetId.toUpperCase(), name, status, steps: 0, rulesSteps: null, maxSteps: 5, distancePct: null, signalId: null,

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Account, StrategyTemplate } from '../../api'
@@ -41,8 +41,6 @@ vi.mock('../account/AccountContext', async (importOriginal) => {
 })
 
 afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
   currentAccount = null
 })
 

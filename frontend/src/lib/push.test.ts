@@ -20,8 +20,6 @@ function browser({ permission = 'default', existing = null as null | { key: Uint
 }
 
 afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
   forgetPushKey()
 })
 

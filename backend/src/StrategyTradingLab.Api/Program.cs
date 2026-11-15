@@ -82,6 +82,7 @@ builder.Services.AddScoped<StrategyTradingLab.Api.Evaluation.StrategyEvaluator>(
 builder.Services.AddSingleton<PriceRefreshState>();
 builder.Services.AddHostedService<PriceRefreshWorker>();
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<DailySummary>();
 builder.Services.AddScoped<AiRounds>();
 builder.Services.AddHostedService<NotificationWorker>();
 

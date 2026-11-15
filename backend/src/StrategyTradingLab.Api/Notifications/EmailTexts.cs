@@ -205,14 +205,14 @@ public static class EmailTexts
     /// <summary>The reminder the day after a snooze: the same text as the alert.</summary>
     public static EmailContent SnoozeReminder(SignalLine s, string appUrl, string locale = "en", string? unsubscribeToken = null) =>
         Signal(s, appUrl, locale,
-            SnoozeSubject.In(locale, s.StockName, s.StrategyName),
+            SnoozeTitle(s, locale),
             SnoozeIntro.In(locale),
             SnoozeEyebrow.In(locale),
             unsubscribeToken);
 
     public static EmailContent SignalAlert(SignalLine s, string appUrl, string locale = "en", string? unsubscribeToken = null) =>
         Signal(s, appUrl, locale,
-            AlertSubject.In(locale, s.StockName, s.StrategyName),
+            AlertTitle(s, locale),
             null,
             (s.Side == TradeSide.Sell ? SaleSignalEyebrow : SignalEyebrow).In(locale),
             unsubscribeToken);
@@ -229,6 +229,24 @@ public static class EmailTexts
 
     public static string EndedTitle(SignalLine s, string locale) => EndedSubject.In(locale, s.StockName, s.StrategyName);
 
+    /// <summary>The alert's subject, also the push's title: "Tesla: your rules for Tech dips are met".</summary>
+    public static string AlertTitle(SignalLine s, string locale) => AlertSubject.In(locale, s.StockName, s.StrategyName);
+
+    /// <summary>The snooze reminder's subject, also the push's title.</summary>
+    public static string SnoozeTitle(SignalLine s, string locale) => SnoozeSubject.In(locale, s.StockName, s.StrategyName);
+
+    /// <summary>"Tech dips, Leaders and Picks": strategies' names as a sentence lists them.</summary>
+    public static string NameList(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string locale) =>
+        strategies.Count == 1 ? strategies[0].Name
+            : $"{string.Join(", ", strategies.Take(strategies.Count - 1).Select(s => s.Name))} {AndWord.In(locale)} {strategies[^1].Name}";
+
+    /// <summary>"Time for the AI round of Picks. It takes about two minutes.": the reminder's first line, and the push's text.</summary>
+    public static string AiRoundIntro(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string locale) =>
+        (strategies.Count > 1 ? AiRoundIntroMany : AiRoundIntroSingle).In(locale, NameList(strategies, locale));
+
+    /// <summary>The AI round's name, the reminder's eyebrow and the push's title.</summary>
+    public static string AiRoundTitle(string locale) => AiRoundEyebrow.In(locale);
+
     public static string EndedText(SignalLine s, DateOnly endedOn, string locale) => EndedIntro.In(locale, Date(endedOn, locale), s.StrategyName, s.StockName);
 
     /// <summary>The AI round screen of a strategy, in the email's language.</summary>
@@ -237,17 +255,15 @@ public static class EmailTexts
     /// <summary>"Time for the AI round of [strategy name]": one email for every round due that day.</summary>
     public static EmailContent AiRoundDue(IReadOnlyList<(Guid StrategyId, string Name)> strategies, string appUrl, string locale = "en", string? unsubscribeToken = null)
     {
-        var names = strategies.Count == 1 ? strategies[0].Name
-            : $"{string.Join(", ", strategies.Take(strategies.Count - 1).Select(s => s.Name))} {AndWord.In(locale)} {strategies[^1].Name}";
-        var intro = (strategies.Count > 1 ? AiRoundIntroMany : AiRoundIntroSingle).In(locale, names);
+        var intro = AiRoundIntro(strategies, locale);
         return new EmailDocument(locale, appUrl)
-            .Eyebrow(AiRoundEyebrow.In(locale))
+            .Eyebrow(AiRoundTitle(locale))
             .Paragraph(intro)
             .Links(strategies.Select(s => (s.Name, AiRoundUrl(s.StrategyId, appUrl, locale))))
             .Paragraph(AiRoundNoConnect.In(locale))
             .WithUnsubscribe(EmailKind.Alerts, unsubscribeToken)
             .Disclaimer(DisclaimerFor(locale))
-            .Build(AiRoundSubject.In(locale, names));
+            .Build(AiRoundSubject.In(locale, NameList(strategies, locale)));
     }
 
     /// <summary>What a template's distance measures to: "below the buy line".</summary>

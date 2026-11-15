@@ -165,7 +165,7 @@
       "candidateDays": {
         "sentence": "Continua sent candidata {value} després de l'última vegada que va estar castigada.",
         "value": "{n} dies de mercat",
-        "help": "Més llarg: una recuperació més lenta encara pot donar senyal. 0: ha de girar mentre encara està castigada."
+        "help": "Més llarg: una recuperació més lenta encara pot donar senyal. Amb 0, ha de girar mentre encara està castigada."
       },
       "aboveSma50Pct": {
         "sentence": "La línia de compra és un {value} per sobre del mínim recent.",
@@ -421,7 +421,7 @@
       "bandPct": {
         "sentence": "Les línies de compra i de venda són un {value} per sobre i per sota de la línia de tendència.",
         "value": "{n}%",
-        "help": "Més ampla: menys operacions i menys senyals falsos, però compra i ven més tard. 0: opera a cada creuament."
+        "help": "Més ampla: menys operacions i menys senyals falsos, però compra i ven més tard. Amb 0, opera a cada creuament."
       },
       "cooldownDays": {
         "sentence": "Després d'una venda, espera {value} abans del següent senyal de compra.",

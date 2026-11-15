@@ -15,7 +15,7 @@ namespace StrategyTradingLab.Api.Admin;
 
 /// <summary>What the admin page shows for a setting. A secret's value is never sent, only whether it is set.</summary>
 public record AdminSetting(string Key, string Group, string Description, string? Default, bool Secret, string? Value,
-    bool IsSet, SettingSource Source);
+    bool IsSet, SettingSource Source, SettingInput Input);
 
 /// <summary>Where the test email went.</summary>
 public record TestEmailSent(string SentTo);
@@ -451,7 +451,7 @@ public static class AdminEndpoints
     {
         var d = setting.Definition;
         return new(d.Key, d.Group, d.Description, d.Default, d.Secret, d.Secret ? null : setting.Value,
-            setting.Value is not null, setting.Source);
+            setting.Value is not null, setting.Source, d.Input);
     }
 
     /// <summary>The rate limit key for a client: its IPv4 address, or its IPv6 /64.</summary>

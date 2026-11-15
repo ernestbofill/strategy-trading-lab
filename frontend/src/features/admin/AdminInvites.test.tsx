@@ -23,7 +23,7 @@ const anna: AdminInvite = {
 }
 
 const signUps = (value: string): AdminSetting => ({
-  key: 'SIGN_UPS', group: 'Sign-ups', description: '', default: 'open', secret: false, value, isSet: true, source: 'page',
+  key: 'SIGN_UPS', group: 'Sign-ups', description: '', default: 'open', secret: false, value, isSet: true, source: 'page', input: 'text',
 })
 
 function open(invites: AdminInvite[] = [], gate = 'open') {

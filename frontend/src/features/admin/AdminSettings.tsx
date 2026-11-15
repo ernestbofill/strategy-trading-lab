@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import {
   api,
   InvalidValueError,
@@ -9,9 +9,11 @@ import {
   type AdminSetting,
   type BackendVersion,
 } from '../../api'
+import { SelectField } from '../../components/Field'
 import { NavRow } from '../../components/NavRow'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { timeZoneOptions } from '../account/timeZones'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
 import { PricesBox } from './PricesBox'
@@ -238,23 +240,31 @@ function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
   return (
     <form className={styles.row} onSubmit={save}>
       <div className={styles.text}>
-        <label htmlFor={id} className={styles.key}>
-          {s.key}
-        </label>
+        {s.input === 'timeZone' ? (
+          <span className={styles.key}>{s.key}</span>
+        ) : (
+          <label htmlFor={id} className={styles.key}>
+            {s.key}
+          </label>
+        )}
         <p className={styles.description}>{s.description}</p>
         <p className={styles.source}>{sourceText[s.source]}</p>
       </div>
       <div className={styles.controls}>
-        <input
-          id={id}
-          className={styles.input}
-          type={s.secret ? 'password' : 'text'}
-          autoComplete={s.secret ? 'new-password' : 'off'}
-          spellCheck={false}
-          value={draft}
-          placeholder={placeholder}
-          onChange={(e) => setDraft(e.target.value)}
-        />
+        {s.input === 'timeZone' ? (
+          <TimeZoneSelect label={s.key} value={draft || (s.default ?? 'UTC')} onChange={setDraft} />
+        ) : (
+          <input
+            id={id}
+            className={styles.input}
+            type={s.secret ? 'password' : 'text'}
+            autoComplete={s.secret ? 'new-password' : 'off'}
+            spellCheck={false}
+            value={draft}
+            placeholder={placeholder}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        )}
         <div className={styles.buttons}>
           <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !edited}>
             Save
@@ -287,4 +297,10 @@ function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
       </div>
     </form>
   )
+}
+
+/** The time zone list of Settings and Sign-up, so the admin page names zones the same way ("GMT+1 · Barcelona, Paris…"). */
+function TimeZoneSelect({ label, value, onChange }: { label: string; value: string; onChange: (zone: string) => void }) {
+  const options = useMemo(() => timeZoneOptions(value), [value])
+  return <SelectField label={label} hideLabel value={value} onChange={onChange} options={options} />
 }

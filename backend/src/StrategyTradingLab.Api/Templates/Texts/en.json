@@ -165,7 +165,7 @@
       "candidateDays": {
         "sentence": "It stays a candidate for {value} after it was last beaten down.",
         "value": "{n} trading days",
-        "help": "Longer: a slower recovery can still signal. 0: it must turn while still beaten down."
+        "help": "Longer: a slower recovery can still signal. Set to 0, it must turn while still beaten down."
       },
       "aboveSma50Pct": {
         "sentence": "The buy line is {value} above the recent low.",
@@ -421,7 +421,7 @@
       "bandPct": {
         "sentence": "The buy and sell lines are {value} above and below the trend line.",
         "value": "{n}%",
-        "help": "Wider: fewer trades and fewer false signals, but buys later and sells later. 0: trades every crossing."
+        "help": "Wider: fewer trades and fewer false signals, but buys later and sells later. Set to 0, it trades every crossing."
       },
       "cooldownDays": {
         "sentence": "After a sale, wait {value} before the next buy signal.",

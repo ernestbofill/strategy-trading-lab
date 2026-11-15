@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.MarketData;
@@ -78,7 +77,7 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
                 await db.SaveChangesAsync(cancellationToken);
                 created = true;
             }
-            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            catch (DbUpdateException error) when (error.IsUniqueViolation())
             {
                 // Added by someone else meanwhile: use theirs.
                 db.ChangeTracker.Clear();
@@ -112,7 +111,7 @@ public sealed class AssetCatalog(AppDbContext db, IMarketDataSource source, Pric
             await load();
         }
         // The same prices loaded meanwhile (a second add, the daily refresh): they are in.
-        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (DbUpdateException error) when (error.IsUniqueViolation())
         {
             db.ChangeTracker.Clear();
         }

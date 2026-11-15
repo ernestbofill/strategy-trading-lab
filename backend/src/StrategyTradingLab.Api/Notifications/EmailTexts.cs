@@ -2,8 +2,10 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
+using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Notifications;
 
@@ -28,9 +30,10 @@ public static class EmailTexts
     // Disclaimer
     public const string DisclaimerEn = "Not financial advice. Signals follow your rules.";
     public const string DisclaimerCa = "No és assessorament financer. Els senyals segueixen les teves regles.";
-    public const string Disclaimer = DisclaimerEn;
     static readonly Message DisclaimerMsg = new(DisclaimerEn, DisclaimerCa);
-    static string DisclaimerFor(string locale) => DisclaimerMsg.In(locale);
+
+    /// <summary>The short disclaimer every email ends with (emails have no app footer).</summary>
+    public static string DisclaimerFor(string locale) => DisclaimerMsg.In(locale);
 
     // Modes
     static readonly Message ModeLive = new("Manual", "Manual");
@@ -117,8 +120,7 @@ public static class EmailTexts
         return date.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
     }
 
-    static decimal? Fact(JsonElement facts, string name) =>
-        facts.ValueKind == JsonValueKind.Object && facts.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDecimal() : null;
+    static decimal? Fact(JsonElement facts, string name) => facts.Number(name);
 
     /// <summary>A recovery milestone (named in English by the engine) in Catalan.</summary>
     static string MilestoneCa(string term) => term switch
@@ -138,7 +140,7 @@ public static class EmailTexts
             var belowSma = Fact(s.Facts, "belowSmaPct");
             return belowSma is null ? RulesMet.In(locale) : SellBelowSma.In(locale, Pct(belowSma.Value));
         }
-        if (s.TemplateKey == "ai")
+        if (s.TemplateKey == TemplateKeys.Ai)
         {
             var score = Fact(s.Facts, "score");
             var rank = Fact(s.Facts, "rank");
@@ -147,23 +149,23 @@ public static class EmailTexts
                 ? AiScoreTopRank.In(locale, Pct(score.Value))
                 : AiScoreRank.In(locale, Pct(score.Value), rank.Value);
         }
-        if (s.TemplateKey == "trend")
+        if (s.TemplateKey == TemplateKeys.Trend)
         {
             var aboveSma = Fact(s.Facts, "aboveSmaPct");
             return aboveSma is null ? RulesMet.In(locale) : TrendAboveSma.In(locale, Pct(aboveSma.Value));
         }
-        if (s.TemplateKey == "bear")
+        if (s.TemplateKey == TemplateKeys.Bear)
         {
             var below = Fact(s.Facts, "belowDropPeakPct") ?? Fact(s.Facts, "belowHighPct");
             var above = Fact(s.Facts, "aboveLowPct");
             return below is null || above is null ? RulesMet.In(locale) : BearDrop.In(locale, Pct(below.Value), Pct(above.Value));
         }
-        if (s.TemplateKey == "dip")
+        if (s.TemplateKey == TemplateKeys.Dip)
         {
             var below = Fact(s.Facts, "belowPeakPct");
             return below is null ? RulesMet.In(locale) : DipBelowPeak.In(locale, Pct(below.Value));
         }
-        var milestone = s.Facts.ValueKind == JsonValueKind.Object && s.Facts.TryGetProperty("milestone", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null;
+        var milestone = s.Facts.Text("milestone");
         if (milestone is not null)
         {
             var term = (locale == "ca" ? MilestoneCa(milestone) : milestone).ToLowerInvariant();
@@ -254,8 +256,8 @@ public static class EmailTexts
     static string LineName(string templateKey, string locale) =>
         (templateKey switch
         {
-            "dip" => LineAboveDiscount,
-            "bear" => LineBelowBounce,
+            TemplateKeys.Dip => LineAboveDiscount,
+            TemplateKeys.Bear => LineBelowBounce,
             _ => LineBelowBuy,
         }).In(locale);
 

@@ -1,13 +1,6 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Notifications;
-
-public class JsonCamelCaseStringEnumConverter : JsonStringEnumConverter
-{
-    public JsonCamelCaseStringEnumConverter() : base(JsonNamingPolicy.CamelCase) { }
-}
 
 public record DailySummaryDto(
     DateOnly Date,
@@ -23,7 +16,7 @@ public record SummaryWaitingSignal(
     Guid StrategyId,
     string StrategyName,
     string StockName,
-    [property: JsonConverter(typeof(JsonCamelCaseStringEnumConverter))] TradeSide Side,
+    TradeSide Side,
     DateOnly SignalDate,
     int? StepNo,
     int? MaxSteps,
@@ -37,9 +30,9 @@ public record SummaryChangedSignal(
     Guid SignalId,
     Guid StrategyId,
     string StrategyName,
-    [property: JsonConverter(typeof(JsonCamelCaseStringEnumConverter))] StrategyMode Mode,
+    StrategyMode Mode,
     string StockName,
-    [property: JsonConverter(typeof(JsonCamelCaseStringEnumConverter))] TradeSide Side,
+    TradeSide Side,
     DateOnly SignalDate,
     decimal ClosePrice,
     int? StepNo,
@@ -50,15 +43,15 @@ public record SummaryStockChange(
     Guid StrategyId,
     Guid AssetId,
     string StrategyName,
-    [property: JsonConverter(typeof(JsonCamelCaseStringEnumConverter))] StrategyMode Mode,
+    StrategyMode Mode,
     string StockName,
-    [property: JsonConverter(typeof(JsonCamelCaseStringEnumConverter))] StockChangeKind Kind,
+    StockChangeKind Kind,
     decimal? DistancePct,
     string Text);
 
 public record SummaryStrategyScore(
     Guid StrategyId,
     string StrategyName,
-    [property: JsonConverter(typeof(JsonCamelCaseStringEnumConverter))] StrategyMode Mode,
+    StrategyMode Mode,
     DateOnly StartedOn,
     int SignalsCount);

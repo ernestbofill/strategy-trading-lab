@@ -179,6 +179,9 @@ public class StrategyAsset
     public DateTimeOffset AddedAt { get; set; }
     public DateTimeOffset? RemovedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>Ticked and still on the list: the daily check follows it. In memory only (a query spells it out).</summary>
+    public bool IsFollowed => Active && RemovedAt is null;
 }
 
 public class Signal

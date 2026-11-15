@@ -25,13 +25,13 @@ public static class SignalRules
     /// a user rate from the request. Errors by field, empty when the trade is valid, in <paramref name="locale"/> ("ca", else English).
     /// </summary>
     public static (CheckedTrade? Trade, Dictionary<string, string[]> Errors) CheckTrade(SignalTradeRequest request, DateOnly? minDate,
-        DateOnly today, Func<DateOnly, decimal?> referenceRate, string? minDateMessage = null, string locale = "en")
+        DateOnly today, Func<DateOnly, decimal?> referenceRate, string locale = "en")
     {
         var errors = new Dictionary<string, string[]>();
         void Fail(string field, string message) => errors[field] = [message];
 
         if (request.Date is not { } date) Fail("date", Messages.EnterTradeDay.In(locale));
-        else if (minDate is { } min && date < min) Fail("date", minDateMessage ?? Messages.DayAfterSignal.In(locale));
+        else if (minDate is { } min && date < min) Fail("date", Messages.DayAfterSignal.In(locale));
         else if (date > today) Fail("date", Messages.DayUpToToday.In(locale));
 
         if (request.Price is not (>= 0.0001m and < 1_000_000)) Fail("price", Messages.EnterPrice.In(locale));

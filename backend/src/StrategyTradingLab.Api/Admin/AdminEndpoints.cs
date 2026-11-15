@@ -1,13 +1,12 @@
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
-using StrategyTradingLab.Api.Assets;
-using StrategyTradingLab.Api.Auth;
-using StrategyTradingLab.Api.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Npgsql;
+using StrategyTradingLab.Api.Assets;
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
+using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.MarketData;
 
@@ -140,7 +139,7 @@ public static class AdminEndpoints
                 : value.Length > 500 ? "Use at most 500 characters."
                 : value.Any(char.IsControl) ? "Use printable characters only."
                 : definition.Validate?.Invoke(value);
-            if (error is not null) return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["value"] = [error] });
+            if (error is not null) return ApiProblems.Invalid("value", error);
 
             var saved = await store.SetAsync(definition, value, request.Expected, cancellationToken);
             if (saved && IsPriceSetting(key)) prices.ScheduleChanged();
@@ -249,7 +248,7 @@ public static class AdminEndpoints
             ClaimsPrincipal principal, AssetCatalog catalog, AppDbContext db, DatabaseSwitch databases, CancellationToken cancellationToken) =>
         {
             var symbol = request.Symbol?.Trim() ?? "";
-            if (SymbolProblem(symbol) is { } symbolProblem) return Invalid("symbol", symbolProblem);
+            if (SymbolProblem(symbol) is { } symbolProblem) return ApiProblems.Invalid("symbol", symbolProblem);
             // Adding fetches prices, and prices belong to the database this host owns (as Refresh now).
             if (databases.Active != databases.Home)
                 return TypedResults.Conflict("The API is switched to another database: switch back to add an asset.");
@@ -261,11 +260,11 @@ public static class AdminEndpoints
             }
             catch (AssetNotFoundException error)
             {
-                return Invalid("symbol", error.Message);
+                return ApiProblems.Invalid("symbol", error.Message);
             }
             catch (UnsupportedCurrencyException error)
             {
-                return Invalid("symbol", error.Message);
+                return ApiProblems.Invalid("symbol", error.Message);
             }
             catch (MarketDataException error)
             {
@@ -331,7 +330,7 @@ public static class AdminEndpoints
             Guid id, PriceDownload request, AppDbContext db, PriceRefresher refresher, PriceRefreshState state, DatabaseSwitch databases,
             TimeProvider time, CancellationToken cancellationToken) =>
         {
-            if (YearsProblem(request.Years) is { } yearsProblem) return Invalid("years", yearsProblem);
+            if (YearsProblem(request.Years) is { } yearsProblem) return ApiProblems.Invalid("years", yearsProblem);
             var asset = await db.Assets.AsNoTracking().SingleOrDefaultAsync(a => a.Id == id, cancellationToken);
             if (asset is null) return TypedResults.NotFound();
             try
@@ -351,7 +350,7 @@ public static class AdminEndpoints
         assets.MapPost("/rates", async Task<Results<Ok<RatesDownloaded>, ValidationProblem, Conflict<string>>> (PriceDownload request,
             PriceRefresher refresher, PriceRefreshState state, DatabaseSwitch databases, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            if (YearsProblem(request.Years) is { } yearsProblem) return Invalid("years", yearsProblem);
+            if (YearsProblem(request.Years) is { } yearsProblem) return ApiProblems.Invalid("years", yearsProblem);
             IReadOnlyList<RefreshResult> results = [];
             if (await WriteAsync(databases, state, async () => results = await refresher.ReplaceRatesAsync(Since(time, request.Years), cancellationToken)) is { } refused)
                 return refused;
@@ -383,8 +382,7 @@ public static class AdminEndpoints
             return null;
         }
         // Only the clash itself: any other database error is a real failure, answered 500 and logged.
-        catch (Exception error) when (error is DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } }
-            or PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (Exception error) when (error.IsUniqueViolation())
         {
             return TypedResults.Conflict("The prices changed meanwhile: try again.");
         }
@@ -414,9 +412,6 @@ public static class AdminEndpoints
                 db.Prices.Where(p => p.AssetId == asset.Id).Max(p => (DateOnly?)p.Date),
                 asset.PricesProblem));
     }
-
-    static ValidationProblem Invalid(string field, string message) =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = [message] });
 
     static string? SymbolProblem(string symbol) =>
         symbol.Length == 0 ? "Type a symbol."

@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using StrategyTradingLab.Api.Data;
-using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Ai;
+using StrategyTradingLab.Api.Data;
+using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Invites;
 using StrategyTradingLab.Api.Notifications;
 
@@ -120,13 +119,13 @@ public static class AccountEndpoints
             await using (var transaction = await db.Database.BeginTransactionAsync(cancellationToken))
             {
                 if (invite is not null && !await InviteEndpoints.ClaimAsync(db, invite.Id, cancellationToken))
-                    return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["inviteCode"] = [Messages.InviteNotValid.In(reqLocale)] });
+                    return ApiProblems.Invalid("inviteCode", Messages.InviteNotValid.In(reqLocale));
                 try
                 {
                     await db.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                 }
-                catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+                catch (DbUpdateException error) when (error.IsUniqueViolation())
                 {
                     await transaction.RollbackAsync(cancellationToken);
                     var existingUser = await db.Users.Where(u => u.Email == email).Select(u => u.Locale).FirstOrDefaultAsync(cancellationToken);
@@ -194,7 +193,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (request.Currency is not { } currency || !AccountRules.Currencies.Contains(currency))
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currency"] = [Messages.PickCurrency.In(reqLocale)] });
+                return ApiProblems.Invalid("currency", Messages.PickCurrency.In(reqLocale));
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             // Strategies already started keep the currency they began with; only new ones use this.
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Currency, currency), cancellationToken);
@@ -223,7 +222,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (request.Locale is not { } locale || !AccountRules.Locales.Contains(locale))
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["locale"] = [Messages.PickLanguage.In(reqLocale)] });
+                return ApiProblems.Invalid("locale", Messages.PickLanguage.In(reqLocale));
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Locale, locale), cancellationToken);
             return TypedResults.NoContent();
@@ -236,7 +235,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (!AccountRules.IsTimeZone(request.TimeZone))
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["timeZone"] = [Messages.PickTimeZone.In(reqLocale)] });
+                return ApiProblems.Invalid("timeZone", Messages.PickTimeZone.In(reqLocale));
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.TimeZone, request.TimeZone!), cancellationToken);
             return TypedResults.NoContent();
@@ -251,10 +250,10 @@ public static class AccountEndpoints
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             // The app must keep an owner: an owner's account is removed by hand, not from the page.
             if (user.Role == UserRole.Owner)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [Messages.OwnerCantDelete.In(reqLocale)] });
+                return ApiProblems.Invalid("password", Messages.OwnerCantDelete.In(reqLocale));
             if (user.PasswordHash is not { } hash || (request.Password?.Length ?? 0) > AccountRules.PasswordMax
                 || hasher.VerifyHashedPassword(user, hash, request.Password ?? "") == PasswordVerificationResult.Failed)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [Messages.WrongPassword.In(reqLocale)] });
+                return ApiProblems.Invalid("password", Messages.WrongPassword.In(reqLocale));
 
             var (email, firstName, locale) = (user.Email, user.FirstName, user.Locale);
             // Everything else about the user goes with the row (strategies, signals, trades, sessions, devices, notifications,
@@ -278,7 +277,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (!NotifyTime.IsHour(request.Hour))
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["hour"] = [Messages.PickNotifyHour.In(reqLocale)] });
+                return ApiProblems.Invalid("hour", Messages.PickNotifyHour.In(reqLocale));
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.NotifyHour, request.Hour), cancellationToken);
             return TypedResults.NoContent();
@@ -291,7 +290,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (request.Enabled is not { } enabled)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
+                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(reqLocale));
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewEmail, enabled), cancellationToken);
             return TypedResults.NoContent();
@@ -304,7 +303,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (request.Enabled is not { } enabled)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
+                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(reqLocale));
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertEmails, enabled), cancellationToken);
             return TypedResults.NoContent();
@@ -317,7 +316,7 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             if (request.Enabled is not { } enabled)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(reqLocale)] });
+                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(reqLocale));
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, enabled), cancellationToken);
             return TypedResults.NoContent();
@@ -393,7 +392,7 @@ public static class AccountEndpoints
             var user = await db.Users.SingleAsync(u => u.Id == token.UserId, cancellationToken);
             // The password is checked before the link is used, so a refused password doesn't use it up.
             if (AccountRules.PasswordError(request.Password, user.Email, reqLocale) is { } error)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["password"] = [error] });
+                return ApiProblems.Invalid("password", error);
             var newHash = hasher.HashPassword(user, request.Password!); // Before the transaction, so the lock isn't held over it.
 
             // All or nothing: the link, the other reset links, the new password and the ended sessions.
@@ -420,12 +419,12 @@ public static class AccountEndpoints
         {
             var reqLocale = RequestLocale.From(context.Request);
             var user = (await sessions.CurrentAsync(cancellationToken))!;
-            var wrongCurrent = TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["currentPassword"] = [Messages.WrongCurrentPassword.In(reqLocale)] });
+            var wrongCurrent = ApiProblems.Invalid("currentPassword", Messages.WrongCurrentPassword.In(reqLocale));
             if (user.PasswordHash is not { } checkedHash
                 || hasher.VerifyHashedPassword(user, checkedHash, request.CurrentPassword ?? "") == PasswordVerificationResult.Failed)
                 return wrongCurrent;
             if (AccountRules.PasswordError(request.NewPassword, user.Email, reqLocale) is { } error)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["newPassword"] = [error] });
+                return ApiProblems.Invalid("newPassword", error);
             var newHash = hasher.HashPassword(user, request.NewPassword!);
 
             // All or nothing, and after any reset that is running: if one changed the password meanwhile, this is refused.

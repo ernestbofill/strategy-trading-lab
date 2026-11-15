@@ -52,7 +52,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
-            var today = StrategyEndpoints.Today(user, time);
+            var today = UserClock.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
 
             var parameters = AiRoundRules.Params(strategy);
@@ -85,7 +85,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
-            var today = StrategyEndpoints.Today(user, time);
+            var today = UserClock.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
             // Before the scheduled round is due, only an extra round on purpose: a second tap after a round never adds one.
             var extra = round.DueOn > today;
@@ -118,7 +118,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
-            var today = StrategyEndpoints.Today(user, time);
+            var today = UserClock.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
             if (round.DueOn > today) return TypedResults.Conflict(Messages.RoundNotDue.In(user.Locale));
             if (request.RoundId is { } shown && shown != round.Id) return TypedResults.Conflict(Messages.RoundChanged.In(user.Locale));
@@ -132,7 +132,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken, running: false) is not { } strategy) return TypedResults.NotFound();
-            var today = StrategyEndpoints.Today(user, time);
+            var today = UserClock.Today(user, time);
             await rounds.SweepAsync([new(strategy, today)], cancellationToken);
             var (items, total) = await rounds.HistoryAsync(strategy, cancellationToken);
             return TypedResults.Ok(new AiRoundHistory(strategy.Id, strategy.Name, strategy.Mode, today, items, total));
@@ -161,7 +161,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (request.Enabled is not { } enabled)
-                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(user.Locale)] });
+                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(user.Locale));
             var now = time.GetUtcNow();
             await db.Users.Where(u => u.Id == user.Id)
                 .ExecuteUpdateAsync(u => u.SetProperty(x => x.AiSharing, enabled).SetProperty(x => x.AiSharingChangedAt, now), cancellationToken);

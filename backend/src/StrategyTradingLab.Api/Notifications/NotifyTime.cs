@@ -1,3 +1,4 @@
+using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Evaluation;
 
 namespace StrategyTradingLab.Api.Notifications;
@@ -30,7 +31,7 @@ public static class NotifyTime
     {
         var final = UsSession.FinalAt(session);
         if (hour is not { } h) return final;
-        var zone = Zone(timeZone);
+        var zone = UserClock.Zone(timeZone);
         var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(final, zone).DateTime);
         var due = At(day, h, zone);
         return due >= final ? due : At(day.AddDays(1), h, zone);
@@ -51,10 +52,6 @@ public static class NotifyTime
         var latest = UsSession.FinalAt(UsSession.After(session)) - AlertMargin;
         return due < latest ? due : latest;
     }
-
-    /// <summary>The user's zone; UTC for a name this server doesn't know, as the dashboard does.</summary>
-    public static TimeZoneInfo Zone(string timeZone) =>
-        TimeZoneInfo.TryFindSystemTimeZoneById(timeZone, out var zone) ? zone : TimeZoneInfo.Utc;
 
     /// <summary><paramref name="hour"/>:00 of a local day; an hour a clock change skips becomes the hour after it.</summary>
     static DateTimeOffset At(DateOnly day, int hour, TimeZoneInfo zone)

@@ -163,7 +163,7 @@ public class TemplateTests
             Assets = starter.StockIds.Select(s => new StrategyAsset { AssetId = s, Active = true }).ToList(),
         };
 
-        Assert.False(StrategyEndpoints.IsCustomized(strategy, dip));
+        Assert.False(TemplateCustomization.IsCustomized(strategy, dip));
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class TemplateTests
             Assets = starter.StockIds.Select(s => new StrategyAsset { AssetId = s, Active = true }).ToList(),
         };
 
-        Assert.True(StrategyEndpoints.IsCustomized(strategy, dip));
+        Assert.True(TemplateCustomization.IsCustomized(strategy, dip));
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public class TemplateTests
             Assets = assets,
         };
 
-        Assert.True(StrategyEndpoints.IsCustomized(strategy, dip));
+        Assert.True(TemplateCustomization.IsCustomized(strategy, dip));
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class TemplateTests
             Params = trend.ParamsJson(),
             Assets = [new StrategyAsset { AssetId = defaultFund.FundId, Active = true }],
         };
-        Assert.False(StrategyEndpoints.IsCustomized(defaultStrategy, trend));
+        Assert.False(TemplateCustomization.IsCustomized(defaultStrategy, trend));
 
         var customFundStrategy = new Strategy
         {
@@ -230,6 +230,6 @@ public class TemplateTests
             Params = trend.ParamsJson(),
             Assets = [new StrategyAsset { AssetId = Guid.NewGuid(), Active = true }],
         };
-        Assert.True(StrategyEndpoints.IsCustomized(customFundStrategy, trend));
+        Assert.True(TemplateCustomization.IsCustomized(customFundStrategy, trend));
     }
 }

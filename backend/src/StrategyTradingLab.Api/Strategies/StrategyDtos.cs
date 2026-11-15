@@ -151,7 +151,18 @@ public record StrategyTradeItem(
     decimal FxRate,
     FxSource FxSource,
     TradeSource Source,
-    Guid? SignalId);
+    Guid? SignalId)
+{
+    /// <summary>A trade the user logged or answered (Manual).</summary>
+    public static StrategyTradeItem From(UserTrade t, Asset? asset, string strategyCurrency) =>
+        new(t.Id, t.AssetId, asset?.Symbol ?? "", asset?.Name ?? "", t.TradeDate, t.Side, t.Price, asset?.Currency ?? strategyCurrency,
+            t.EnteredAs, t.Amount, t.Shares, t.Fee, strategyCurrency, t.FxRate, t.FxSource, t.Source, t.SignalId);
+
+    /// <summary>A trade the rules made (Simulation): by amount, at the reference rate.</summary>
+    public static StrategyTradeItem From(SignalTrade t, Asset? asset, string strategyCurrency) =>
+        new(t.Id, t.AssetId, asset?.Symbol ?? "", asset?.Name ?? "", t.TradeDate, t.Side, t.Price, asset?.Currency ?? strategyCurrency,
+            EnteredAs.Amount, t.Amount, t.Shares, t.Fee, strategyCurrency, t.FxRate, FxSource.Reference, TradeSource.Signal, t.SignalId);
+}
 
 /// <summary>A signal in the strategy's signal history.</summary>
 public record StrategySignalItem(

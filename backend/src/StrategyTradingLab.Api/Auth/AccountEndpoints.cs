@@ -183,25 +183,15 @@ public static class AccountEndpoints
 
         group.MapGet("/me", async (Sessions sessions, CancellationToken cancellationToken) =>
         {
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             return TypedResults.Ok(new AccountDto(user.Email, user.FirstName, user.LastName, user.EmailVerifiedAt is not null, user.Locale, user.TimeZone, user.OverviewEmail, user.AlertEmails, user.Currency, user.Role, user.AlertPush, user.AiSharing, user.TermsVersionAccepted, user.TermsAcceptedAt, user.NotifyHour));
         })
         .RequireUser()
         .WithSummary("The logged-in user, or 401: the app's start-up check.");
 
-        group.MapPost("/currency", async Task<Results<NoContent, ValidationProblem>> (CurrencyRequest request, AppDbContext db,
-            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
-        {
-            var reqLocale = RequestLocale.From(context.Request);
-            if (request.Currency is not { } currency || !AccountRules.Currencies.Contains(currency))
-                return ApiProblems.Invalid("currency", Messages.PickCurrency.In(reqLocale));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
-            // Strategies already started keep the currency they began with; only new ones use this.
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Currency, currency), cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .RequireUser()
-        .WithSummary("Sets the currency of the user's new strategies. Running ones keep theirs.");
+        // Strategies already started keep the currency they began with; only new ones use this.
+        MapSetting(group, "/currency", (CurrencyRequest r) => (r.Currency is { } c && AccountRules.Currencies.Contains(c), r.Currency!),
+            "currency", Messages.PickCurrency, u => u.Currency, "Sets the currency of the user's new strategies. Running ones keep theirs.");
 
         group.MapPost("/name", async Task<Results<NoContent, ValidationProblem>> (NameRequest request, AppDbContext db,
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
@@ -210,7 +200,7 @@ public static class AccountEndpoints
             var errors = new Dictionary<string, string[]>();
             var (firstName, lastName) = CheckNames(request.FirstName, request.LastName, errors, reqLocale);
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             await db.Users.Where(u => u.Id == user.Id)
                 .ExecuteUpdateAsync(u => u.SetProperty(x => x.FirstName, firstName).SetProperty(x => x.LastName, lastName), cancellationToken);
             return TypedResults.NoContent();
@@ -218,37 +208,17 @@ public static class AccountEndpoints
         .RequireUser()
         .WithSummary("Sets the logged-in user's first and last name.");
 
-        group.MapPost("/locale", async Task<Results<NoContent, ValidationProblem>> (LocaleRequest request, AppDbContext db,
-            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
-        {
-            var reqLocale = RequestLocale.From(context.Request);
-            if (request.Locale is not { } locale || !AccountRules.Locales.Contains(locale))
-                return ApiProblems.Invalid("locale", Messages.PickLanguage.In(reqLocale));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.Locale, locale), cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .RequireUser()
-        .WithSummary("Sets the language of the user's account and emails.");
+        MapSetting(group, "/locale", (LocaleRequest r) => (r.Locale is { } l && AccountRules.Locales.Contains(l), r.Locale!),
+            "locale", Messages.PickLanguage, u => u.Locale, "Sets the language of the user's account and emails.");
 
-        group.MapPost("/time-zone", async Task<Results<NoContent, ValidationProblem>> (TimeZoneRequest request, AppDbContext db,
-            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
-        {
-            var reqLocale = RequestLocale.From(context.Request);
-            if (!AccountRules.IsTimeZone(request.TimeZone))
-                return ApiProblems.Invalid("timeZone", Messages.PickTimeZone.In(reqLocale));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.TimeZone, request.TimeZone!), cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .RequireUser()
-        .WithSummary("Sets the user's time zone: their dates and when their emails and reminders come.");
+        MapSetting(group, "/time-zone", (TimeZoneRequest r) => (AccountRules.IsTimeZone(r.TimeZone), r.TimeZone!),
+            "timeZone", Messages.PickTimeZone, u => u.TimeZone, "Sets the user's time zone: their dates and when their emails and reminders come.");
 
         group.MapPost("/delete", async Task<Results<NoContent, ValidationProblem>> (DeleteAccountRequest request, AppDbContext db,
             IPasswordHasher<User> hasher, Sessions sessions, AiRounds aiRounds, AccountEmails emails, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             // The app must keep an owner: an owner's account is removed by hand, not from the page.
             if (user.Role == UserRole.Owner)
                 return ApiProblems.Invalid("password", Messages.OwnerCantDelete.In(reqLocale));
@@ -273,57 +243,16 @@ public static class AccountEndpoints
         .RequireRateLimiting(PasswordLimit)
         .WithSummary("Deletes the logged-in user and everything about them, after their password; ends every session and sends one last email.");
 
-        group.MapPost("/notify-hour", async Task<Results<NoContent, ValidationProblem>> (NotifyHourRequest request, AppDbContext db,
-            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
-        {
-            var reqLocale = RequestLocale.From(context.Request);
-            if (!NotifyTime.IsHour(request.Hour))
-                return ApiProblems.Invalid("hour", Messages.PickNotifyHour.In(reqLocale));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.NotifyHour, request.Hour), cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .RequireUser()
-        .WithSummary("Sets when the user's alerts, summary and reminders come: an hour in their time zone, or null for as soon as they're ready.");
+        MapSetting(group, "/notify-hour", (NotifyHourRequest r) => (NotifyTime.IsHour(r.Hour), r.Hour),
+            "hour", Messages.PickNotifyHour, u => u.NotifyHour,
+            "Sets when the user's alerts, summary and reminders come: an hour in their time zone, or null for as soon as they're ready.");
 
-        group.MapPost("/overview-email", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
-            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
-        {
-            var reqLocale = RequestLocale.From(context.Request);
-            if (request.Enabled is not { } enabled)
-                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(reqLocale));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.OverviewEmail, enabled), cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .RequireUser()
-        .WithSummary("Turns the summary email on or off for the logged-in user.");
+        MapSwitch(group, "/overview-email", u => u.OverviewEmail, "Turns the summary email on or off for the logged-in user.");
 
-        group.MapPost("/alert-emails", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
-            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
-        {
-            var reqLocale = RequestLocale.From(context.Request);
-            if (request.Enabled is not { } enabled)
-                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(reqLocale));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertEmails, enabled), cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .RequireUser()
-        .WithSummary("Turns the signal alerts and reminders on or off for the logged-in user.");
+        MapSwitch(group, "/alert-emails", u => u.AlertEmails, "Turns the signal alerts and reminders on or off for the logged-in user.");
 
-        group.MapPost("/alert-push", async Task<Results<NoContent, ValidationProblem>> (SwitchRequest request, AppDbContext db,
-            Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
-        {
-            var reqLocale = RequestLocale.From(context.Request);
-            if (request.Enabled is not { } enabled)
-                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(reqLocale));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
-            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, enabled), cancellationToken);
-            return TypedResults.NoContent();
-        })
-        .RequireUser()
-        .WithSummary("Turns web push (to the user's devices) on or off for the logged-in user: signals, stock changes and reminders.");
+        MapSwitch(group, "/alert-push", u => u.AlertPush,
+            "Turns web push (to the user's devices) on or off for the logged-in user: signals, stock changes and reminders.");
 
         // It doesn't log anyone in: a link that logged in whoever opened it would let someone log a victim into the
         // attacker's account, or keep using an account they created with the victim's email before the victim did.
@@ -352,7 +281,7 @@ public static class AccountEndpoints
         group.MapPost("/resend-verification", async (AppDbContext db, Sessions sessions, AccountEmails emails, TimeProvider time,
             CancellationToken cancellationToken) =>
         {
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (user.EmailVerifiedAt is null)
                 emails.Verify(user.Email, await NewToken(db, user, EmailTokenPurpose.VerifyEmail, time.GetUtcNow() + VerifyFor, cancellationToken), user.Locale);
             return TypedResults.NoContent();
@@ -419,7 +348,7 @@ public static class AccountEndpoints
             AppDbContext db, IPasswordHasher<User> hasher, Sessions sessions, TimeProvider time, HttpContext context, CancellationToken cancellationToken) =>
         {
             var reqLocale = RequestLocale.From(context.Request);
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             var wrongCurrent = ApiProblems.Invalid("currentPassword", Messages.WrongCurrentPassword.In(reqLocale));
             if (user.PasswordHash is not { } checkedHash
                 || hasher.VerifyHashedPassword(user, checkedHash, request.CurrentPassword ?? "") == PasswordVerificationResult.Failed)
@@ -442,6 +371,28 @@ public static class AccountEndpoints
         .RequireRateLimiting(PasswordLimit)
         .WithSummary("Changes the password; ends the user's other sessions and unused reset links.");
     }
+
+    /// <summary>
+    /// A one-value account setting: <paramref name="read"/> checks the request's value, a refused one answers 400 on
+    /// <paramref name="field"/>, and the value is stored on the user's row.
+    /// </summary>
+    static void MapSetting<TRequest, TValue>(RouteGroupBuilder group, string path, Func<TRequest, (bool Ok, TValue Value)> read, string field,
+        Message refused, System.Linq.Expressions.Expression<Func<User, TValue>> column, string summary) =>
+        group.MapPost(path, async Task<Results<NoContent, ValidationProblem>> (TRequest request, AppDbContext db, Sessions sessions, HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            var (ok, value) = read(request);
+            if (!ok) return ApiProblems.Invalid(field, refused.In(RequestLocale.From(context.Request)));
+            var user = await sessions.RequiredAsync(cancellationToken);
+            await db.Users.Where(u => u.Id == user.Id).ExecuteUpdateAsync(u => u.SetProperty(column, value), cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .RequireUser()
+        .WithSummary(summary);
+
+    /// <summary>An on/off account setting: <c>{ "enabled": true }</c>.</summary>
+    static void MapSwitch(RouteGroupBuilder group, string path, System.Linq.Expressions.Expression<Func<User, bool>> column, string summary) =>
+        MapSetting(group, path, (SwitchRequest r) => (r.Enabled is not null, r.Enabled ?? false), "enabled", Messages.SayTrueOrFalse, column, summary);
 
     static PasswordVerificationResult Failed(IPasswordHasher<User> hasher, string? password)
     {

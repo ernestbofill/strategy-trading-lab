@@ -19,7 +19,7 @@ public static class TradeEndpoints
         strategiesGroup.MapPost("/{id:guid}/trades", async Task<Results<Created<StrategyTradeItem>, ValidationProblem, NotFound, Conflict<string>>> (
             Guid id, ManualTradeRequest request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.Include(s => s.Assets).FirstOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             if (strategy.Mode != StrategyMode.Live) return TypedResults.Conflict(Messages.LiveOnlyLog.In(user.Locale));
@@ -62,9 +62,7 @@ public static class TradeEndpoints
             db.UserTrades.Add(userTrade);
             await db.SaveChangesAsync(cancellationToken);
 
-            var item = new StrategyTradeItem(userTrade.Id, asset.Id, asset.Symbol, asset.Name, userTrade.TradeDate, userTrade.Side, userTrade.Price,
-                asset.Currency, userTrade.EnteredAs, userTrade.Amount, userTrade.Shares, userTrade.Fee, strategy.Currency, userTrade.FxRate,
-                userTrade.FxSource, userTrade.Source, userTrade.SignalId);
+            var item = StrategyTradeItem.From(userTrade, asset, strategy.Currency);
 
             return TypedResults.Created($"/trades/{userTrade.Id}", item);
         })
@@ -76,7 +74,7 @@ public static class TradeEndpoints
         tradesGroup.MapPut("/{id:guid}", async Task<Results<NoContent, ValidationProblem, NotFound, Conflict<string>>> (
             Guid id, UpdateTradeRequest request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var trade = await db.UserTrades.FirstOrDefaultAsync(t => t.Id == id && t.DeletedAt == null, cancellationToken);
             if (trade is null) return TypedResults.NotFound();
 
@@ -121,7 +119,7 @@ public static class TradeEndpoints
         tradesGroup.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var trade = await db.UserTrades.FirstOrDefaultAsync(t => t.Id == id && t.DeletedAt == null, cancellationToken);
             if (trade is null) return TypedResults.NotFound();
 

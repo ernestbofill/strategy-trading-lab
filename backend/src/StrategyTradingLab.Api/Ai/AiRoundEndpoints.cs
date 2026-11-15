@@ -51,7 +51,7 @@ public static class AiRoundEndpoints
         group.MapGet("/ai-round", async Task<Results<Ok<AiRoundDetail>, NotFound>> (Guid id, AppDbContext db, Sessions sessions, AiRounds rounds,
             TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
             var today = UserClock.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
@@ -73,7 +73,7 @@ public static class AiRoundEndpoints
         group.MapPost("/ai-round/read", async Task<Results<Ok<AiReadingDto>, NotFound>> (Guid id, AiAnswerRequest request, AppDbContext db,
             Sessions sessions, AiRounds rounds, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
             var plan = await rounds.PlanAsync(strategy, request.Answer, user.Locale, cancellationToken);
             return TypedResults.Ok(ReadingOf(plan));
@@ -84,7 +84,7 @@ public static class AiRoundEndpoints
         group.MapPost("/ai-round", async Task<Results<Ok<AiRoundResult>, ValidationProblem, NotFound, Conflict<string>>> (Guid id, AiRoundSubmit request,
             AppDbContext db, Sessions sessions, AiRounds rounds, PriceRefresher prices, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
             var today = UserClock.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
@@ -117,7 +117,7 @@ public static class AiRoundEndpoints
         group.MapPost("/ai-round/skip", async Task<Results<NoContent, NotFound, Conflict<string>>> (Guid id, AiSkipRequest request, AppDbContext db,
             Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
             var today = UserClock.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
@@ -131,7 +131,7 @@ public static class AiRoundEndpoints
         group.MapGet("/ai-rounds", async Task<Results<Ok<AiRoundHistory>, NotFound>> (Guid id, AppDbContext db, Sessions sessions, AiRounds rounds,
             TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken, running: false) is not { } strategy) return TypedResults.NotFound();
             var today = UserClock.Today(user, time);
             await rounds.SweepAsync([new(strategy, today)], cancellationToken);
@@ -144,7 +144,7 @@ public static class AiRoundEndpoints
         group.MapPut("/ai-prompt", async Task<Results<NoContent, NotFound, ValidationProblem>> (Guid id, AiSetup request, AppDbContext db,
             Sessions sessions, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running
                 && s.TemplateKey == TemplateKeys.Ai, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
@@ -160,7 +160,7 @@ public static class AiRoundEndpoints
         app.MapPost("/account/ai-sharing", async Task<Results<NoContent, ValidationProblem>> (AiSharingRequest request, AppDbContext db,
             Sessions sessions, AiRounds rounds, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (request.Enabled is not { } enabled)
                 return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(user.Locale));
             var now = time.GetUtcNow();

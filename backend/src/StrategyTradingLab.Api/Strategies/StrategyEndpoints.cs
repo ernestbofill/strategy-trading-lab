@@ -25,7 +25,7 @@ public static class StrategyEndpoints
     {
         app.MapGet("/dashboard", async (AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var all = await db.Strategies.AsNoTracking().Where(strategy => strategy.UserId == user.Id).Include(strategy => strategy.Assets).ToListAsync(cancellationToken);
             // Running ones newest first, then the archived ones, last archived first.
             var strategies = all.Where(s => s.Status == StrategyStatus.Running)
@@ -59,7 +59,7 @@ public static class StrategyEndpoints
             var aiScores = new Dictionary<Guid, Dictionary<Guid, decimal>>();
             foreach (var s in running.Where(AiRounds.IsAi)) aiScores[s.Id] = await rounds.LastScoresAsync(s.Id, cancellationToken);
             var templates = (await store.AllAsync(cancellationToken)).ToDictionary(t => t.Key);
-            var counts = running.ToDictionary(s => s.Id, s => CountsOf(s, templates[s.TemplateKey], book, signals[s.Id], latest, aiScores.GetValueOrDefault(s.Id)));
+            var counts = running.ToDictionary(s => s.Id, s => StockStates.CountsOf(s, templates[s.TemplateKey], book, signals[s.Id], latest, aiScores.GetValueOrDefault(s.Id)));
             // The fund a fund template follows, named on its card.
             var fundIds = strategies.Where(s => templates[s.TemplateKey].InvestsIn != InvestsIn.StockList)
                 .SelectMany(s => Followed(s).Select(a => a.AssetId)).Distinct().ToList();
@@ -86,7 +86,7 @@ public static class StrategyEndpoints
             Guid id, AppDbContext db, Sessions sessions, AiRounds rounds, TemplateStore store, PriceRefreshState refreshes, TimeProvider time,
             CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.AsNoTracking().Include(s => s.Assets)
                 .SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
@@ -108,7 +108,7 @@ public static class StrategyEndpoints
         group.MapGet("/{id:guid}/stocks/{assetId:guid}/chart", async Task<Results<Ok<StockChartData>, NotFound>> (
             Guid id, Guid assetId, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.AsNoTracking()
                 .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
                 .Select(s => new { s.TemplateKey, s.Params, s.Budget.MaxSteps }).SingleOrDefaultAsync(cancellationToken);
@@ -136,7 +136,7 @@ public static class StrategyEndpoints
         {
             if (await store.FindAsync(request.TemplateKey ?? "", cancellationToken) is not { } template) return TypedResults.NotFound();
 
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var ids = request.AssetIds ?? [];
             var assets = await db.Assets.Where(asset => ids.Contains(asset.Id)).ToListAsync(cancellationToken);
             var errors = NewStrategyValidation.Validate(request, template, assets, user.Locale);
@@ -204,7 +204,7 @@ public static class StrategyEndpoints
         group.MapPut("/{id:guid}/settings", async Task<Results<NoContent, NotFound, ValidationProblem>> (
             Guid id, UpdateStrategySettings request, AppDbContext db, Sessions sessions, TemplateStore store, CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
 
@@ -230,7 +230,7 @@ public static class StrategyEndpoints
             Guid id, UpdateStrategyAssets request, AppDbContext db, Sessions sessions, PriceRefreshState prices, TimeProvider time,
             CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             // Locked first, so two saves of the list go one after the other and an archive meanwhile wins.
             var mine = await db.Database.SqlQuery<Guid>(
@@ -303,7 +303,7 @@ public static class StrategyEndpoints
         group.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var status = await db.Strategies.Where(s => s.Id == id && s.UserId == user.Id).Select(s => (StrategyStatus?)s.Status)
                 .SingleOrDefaultAsync(cancellationToken);
             if (status is null) return TypedResults.NotFound();
@@ -333,7 +333,7 @@ public static class StrategyEndpoints
         group.MapPut("/{id:guid}/name", async Task<Results<NoContent, NotFound, ValidationProblem, Conflict<string>>> (
             Guid id, RenameStrategy request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             if (NewStrategyValidation.NameError(request.Name, user.Locale) is { } invalid)
@@ -357,7 +357,7 @@ public static class StrategyEndpoints
         group.MapPost("/{id:guid}/archive", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (!await db.Strategies.AnyAsync(s => s.Id == id && s.UserId == user.Id, cancellationToken)) return TypedResults.NotFound();
             var now = time.GetUtcNow();
             var today = UserClock.Today(user, time);
@@ -384,11 +384,6 @@ public static class StrategyEndpoints
 
     }
 
-    /// <summary>The logged-in user: the endpoints require one (RequireUser), so it is there.</summary>
-    internal static async Task<User> CurrentUser(Sessions sessions, CancellationToken cancellationToken) =>
-        (await sessions.CurrentAsync(cancellationToken))!;
-
-
     /// <summary>The day its results are worked out to: today, or an ended strategy's end date (its results are frozen there).</summary>
     static DateOnly ResultsDay(Strategy strategy, User user, DateOnly today) => UserClock.EndedOn(strategy, user) is { } ended && ended < today ? ended : today;
 
@@ -400,67 +395,11 @@ public static class StrategyEndpoints
         var figures = trades is { } t ? t.Book.Figures(strategy, ResultsDay(strategy, user, t.Today)) : null;
         var results = figures is null ? null : new StrategyResults(figures.You, figures.Index, [.. figures.History.Select(p => p.You)]);
         return new StrategySummary(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, strategy.Mode,
-            strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, PastResultOf(strategy, template, texts),
+            strategy.StartedOn, strategy.Currency, strategy.Budget.Amount, book?.Used(strategy) ?? 0, results, TemplateCustomization.PastResultOf(strategy, template, texts),
             strategy.Status, UserClock.EndedOn(strategy, user), trades is { } d ? d.Book.IndexSinceStart(strategy, ResultsDay(strategy, user, d.Today)) : null);
     }
 
     static IEnumerable<StrategyAsset> Followed(Strategy strategy) => strategy.Assets.Where(a => a.IsFollowed);
-
-    /// <summary>A running strategy's followed stocks counted by pill, for its dashboard card.</summary>
-    static StockCounts CountsOf(Strategy strategy, Template template, StrategyBook book, IEnumerable<Signal> signals,
-        IReadOnlyDictionary<(Guid, Guid), DailyEvaluation> latest, IReadOnlyDictionary<Guid, decimal>? aiScores)
-    {
-        var you = book.You(strategy);
-        var own = signals.ToList();
-        var states = Followed(strategy).Select(a => StockStateOf(strategy, a.AssetId, false,
-            latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], book, aiScores))
-            .ToList();
-        // Bear markets' distance is above the low, not from a buy rule, so it is never "close".
-        bool Close(StockState s) => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket && strategy.TemplateKey != TemplateKeys.Bear
-            && s.Distance is > 0 && s.Distance <= template.ClosePct;
-        return new StockCounts(
-            states.Count(s => s.Status is StockStatus.WaitingForYou or StockStatus.Signal),
-            states.Count(Close),
-            states.Count(s => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket or StockStatus.NoBudget && !Close(s)),
-            states.Count(s => s.Status is StockStatus.Holding or StockStatus.Building or StockStatus.Done),
-            states.Count(s => s.Status == StockStatus.NotCandidate));
-    }
-    // "Customized" compares with the template version the strategy started from (it is passed that version), so it reads as
-    // tuned only when the user changed something, whatever the owner made active since on /admin/templates.
-    // owner's changes on /admin/templates: a running strategy doesn't flip when the owner edits a template.
-    static PastResult? PastResultOf(Strategy strategy, Template template, TemplateTexts texts, IEnumerable<Guid>? activeAssetIds = null) =>
-        template.Backtest?.LastOrDefault() is { TemplatePerYear: { } tmpl, IndexPerYear: { } idx, WorstYear: { } worst, IndexWorstYear: { } idxWorst } && texts.Backtest is { } words
-            ? new PastResult(words.Years, tmpl, idx, worst, idxWorst,
-                IsCustomized(strategy, template, activeAssetIds))
-            : null;
-
-    internal static bool IsCustomized(Strategy strategy, Template template, IEnumerable<Guid>? activeAssetIds = null)
-    {
-        if (template.Settings.Count > 0)
-        {
-            var root = strategy.Params.RootElement;
-            var defaultRoot = template.ParamsJson().RootElement;
-            foreach (var s in template.Settings)
-            {
-                if (root.TryGetProperty(s.Key, out var prop) && defaultRoot.TryGetProperty(s.Key, out var defProp)
-                    && prop.ValueKind == JsonValueKind.Number && defProp.ValueKind == JsonValueKind.Number
-                    && prop.GetDecimal() != defProp.GetDecimal())
-                {
-                    return true;
-                }
-            }
-        }
-
-        var activeIds = activeAssetIds ?? (strategy.Assets is null
-            ? []
-            : strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId));
-        return template.Watches switch
-        {
-            StarterList starter => activeIds.Any(id => !starter.StockIds.Contains(id)),
-            DefaultFund defaultFund => activeIds.Any(id => id != defaultFund.FundId),
-            _ => false,
-        };
-    }
 
     static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, Template template, User user, DateOnly today, CancellationToken cancellationToken,
         AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null, IReadOnlySet<Guid>? leftToDailyRun = null)
@@ -504,9 +443,9 @@ public static class StrategyEndpoints
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
             var own = signalEntities.Where(s => s.AssetId == asset.Id).ToList();
-            var (status, rulesSteps, userSteps, distance, signal, checks) = StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
+            var (status, rulesSteps, userSteps, distance, signal, checks) = StockStates.StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
                 own, trades, book, aiScores);
-            checks = ChecksAfterBuy(evaluation, own) ?? checks;
+            checks = StockStates.ChecksAfterBuy(evaluation, own) ?? checks;
             var candidateSince = evaluation?.Facts.RootElement.Date("candidateSince") ?? checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
             var priceIsClose = evaluation is not null && asset.PricesCheckedAt is { } checkedAt
                 && checkedAt >= UsSession.FinalAt(evaluation.Date);
@@ -549,52 +488,16 @@ public static class StrategyEndpoints
                 s.SkipReason, s.SnoozedUntil, s.EndedOn, s.CreatedAt);
         }).ToList();
 
-        List<StrategyTradeItem> tradeItems;
-        if (live)
-        {
-            var userTrades = await db.UserTrades.AsNoTracking()
-                .Where(t => t.StrategyId == strategy.Id && t.DeletedAt == null)
-                .OrderByDescending(t => t.TradeDate).ThenByDescending(t => t.CreatedAt)
-                .ToListAsync(cancellationToken);
-
-            // In case userTrades have assets not already in assetsById
-            var missingAssetIds = userTrades.Select(t => t.AssetId).Where(id => !assetsById.ContainsKey(id)).Distinct().ToList();
-            if (missingAssetIds.Count > 0)
-            {
-                var extra = await db.Assets.AsNoTracking().Where(a => missingAssetIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
-                foreach (var (k, v) in extra) assetsById[k] = v;
-            }
-
-            tradeItems = userTrades.Select(t =>
-            {
-                var asset = assetsById.GetValueOrDefault(t.AssetId);
-                return new StrategyTradeItem(t.Id, t.AssetId, asset?.Symbol ?? "", asset?.Name ?? "", t.TradeDate, t.Side,
-                    t.Price, asset?.Currency ?? strategy.Currency, t.EnteredAs, t.Amount, t.Shares, t.Fee, strategy.Currency,
-                    t.FxRate, t.FxSource, t.Source, t.SignalId);
-            }).ToList();
-        }
-        else
-        {
-            var simTrades = await db.SignalTrades.AsNoTracking()
-                .Where(t => t.StrategyId == strategy.Id)
-                .OrderByDescending(t => t.TradeDate).ThenByDescending(t => t.CreatedAt)
-                .ToListAsync(cancellationToken);
-
-            var missingAssetIds = simTrades.Select(t => t.AssetId).Where(id => !assetsById.ContainsKey(id)).Distinct().ToList();
-            if (missingAssetIds.Count > 0)
-            {
-                var extra = await db.Assets.AsNoTracking().Where(a => missingAssetIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
-                foreach (var (k, v) in extra) assetsById[k] = v;
-            }
-
-            tradeItems = simTrades.Select(t =>
-            {
-                var asset = assetsById.GetValueOrDefault(t.AssetId);
-                return new StrategyTradeItem(t.Id, t.AssetId, asset?.Symbol ?? "", asset?.Name ?? "", t.TradeDate, t.Side,
-                    t.Price, asset?.Currency ?? strategy.Currency, EnteredAs.Amount, t.Amount, t.Shares, t.Fee, strategy.Currency,
-                    t.FxRate, FxSource.Reference, TradeSource.Signal, t.SignalId);
-            }).ToList();
-        }
+        // Manual strategies show the user's own trades; simulations the trades the rules made.
+        var tradeItems = live
+            ? await TradeItemsAsync(db, assetsById, strategy.Currency, await db.UserTrades.AsNoTracking()
+                    .Where(t => t.StrategyId == strategy.Id && t.DeletedAt == null)
+                    .OrderByDescending(t => t.TradeDate).ThenByDescending(t => t.CreatedAt)
+                    .ToListAsync(cancellationToken), t => t.AssetId, StrategyTradeItem.From, cancellationToken)
+            : await TradeItemsAsync(db, assetsById, strategy.Currency, await db.SignalTrades.AsNoTracking()
+                    .Where(t => t.StrategyId == strategy.Id)
+                    .OrderByDescending(t => t.TradeDate).ThenByDescending(t => t.CreatedAt)
+                    .ToListAsync(cancellationToken), t => t.AssetId, StrategyTradeItem.From, cancellationToken);
 
         var foreignCurrencies = assetsById.Values.Select(a => a.Currency).Where(c => c != strategy.Currency).Distinct().ToList();
         var ratesList = new List<CurrencyRates>();
@@ -619,69 +522,18 @@ public static class StrategyEndpoints
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
             UserClock.EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
-            book.Figures(strategy, resultsDay), PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
+            book.Figures(strategy, resultsDay), TemplateCustomization.PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion };
     }
 
-    /// <summary>Where a stock stands today: its pill, the steps and signal behind it, and how far the price is from the rules.</summary>
-    record StockState(StockStatus Status, int RulesSteps, int UserSteps, decimal? Distance, Signal? Signal, IReadOnlyList<RuleCheck> Checks);
-
-    /// <summary>
-    /// A stock's state from its latest evaluation, its signals and the trades the results count (spec: Strategy page). For an AI
-    /// strategy, <paramref name="aiScores"/> holds the last round's scores (null for other templates).
-    /// </summary>
-    static StockState StockStateOf(Strategy strategy, Guid assetId, bool removed, DailyEvaluation? evaluation, IReadOnlyList<Signal> own,
-        IReadOnlyList<Buy> trades, StrategyBook book, IReadOnlyDictionary<Guid, decimal>? aiScores)
+    /// <summary>The page's trades, with their stock; a stock no longer on the list (sold after Edit list) is loaded too.</summary>
+    static async Task<List<StrategyTradeItem>> TradeItemsAsync<T>(AppDbContext db, Dictionary<Guid, Asset> assetsById, string strategyCurrency,
+        List<T> trades, Func<T, Guid> assetOf, Func<T, Asset?, string, StrategyTradeItem> item, CancellationToken cancellationToken)
     {
-        var live = strategy.Mode == StrategyMode.Live;
-        var maxSteps = strategy.Budget.MaxSteps;
-        var waiting = own.Where(s => s.Status == SignalStatus.Waiting).OrderBy(s => s.SignalDate).FirstOrDefault();
-        // A simulation's signal of the latest checked day is a SIGNAL until its own trade is in: the next open's, or at once for an
-        // AI round (spec §5, F-007). Of several that day, the one still waiting.
-        var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date && !book.HasTrade(s.Id));
-        var (doneSteps, cycleStart) = strategy.TemplateKey == TemplateKeys.Bear ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
-        var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
-        int rulesSteps;
-        if (maxSteps is null)
-        {
-            var lastSignal = own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault();
-            rulesSteps = lastSignal?.Side == TradeSide.Buy ? 1 : 0;
-        }
-        else
-        {
-            rulesSteps = doneSteps is { } done ? Math.Min(done, buySignals) : buySignals;
-        }
-        var userSteps = maxSteps is null ? (Performance.Used(trades) > 0 ? 1 : 0)
-            : strategy.TemplateKey == TemplateKeys.Bear && !live ? rulesSteps
-            : doneSteps == 0 ? 0
-            : trades.Count(b => b.Side == TradeSide.Buy && (cycleStart is null || b.Date >= cycleStart));
-
-        // Before an AI strategy's daily check has a verdict: watching once a round scored the stock, else not scored yet.
-        var latestStatus = evaluation?.Status
-            ?? (aiScores is null ? null : aiScores.ContainsKey(assetId) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
-        var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
-        var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
-            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
-        var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
-        var distanceKey = strategy.TemplateKey == TemplateKeys.Bear && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
-        var distance = evaluation?.Facts.RootElement.Number(distanceKey);
-        return new StockState(status, rulesSteps, userSteps, distance, signal, checks);
+        var missing = trades.Select(assetOf).Where(id => !assetsById.ContainsKey(id)).Distinct().ToList();
+        if (missing.Count > 0)
+            foreach (var asset in await db.Assets.AsNoTracking().Where(a => missing.Contains(a.Id)).ToListAsync(cancellationToken))
+                assetsById[asset.Id] = asset;
+        return [.. trades.Select(t => item(t, assetsById.GetValueOrDefault(assetOf(t)), strategyCurrency))];
     }
-
-    /// <summary>
-    /// The latest check's Manual buy signal is answered (done or skipped): the rules count its step as bought at the next open, so
-    /// the page shows where they stand after it, its next steps and cooldown, without waiting for the next check. Null otherwise.
-    /// </summary>
-    static IReadOnlyList<RuleCheck>? ChecksAfterBuy(DailyEvaluation? evaluation, IReadOnlyList<Signal> own) =>
-        evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date
-                && s.Status is SignalStatus.Confirmed or SignalStatus.Skipped)
-            && ChecksOf(evaluation.Facts, StrategyEvaluator.ChecksAfterBuyKey) is { Count: > 0 } afterBuy
-            ? afterBuy : null;
-
-    /// <summary>The rule checks a daily evaluation stored under <paramref name="key"/> (none before they were stored).</summary>
-    static IReadOnlyList<RuleCheck> ChecksOf(JsonDocument facts, string key = StrategyEvaluator.ChecksKey) =>
-        facts.RootElement.ValueKind == JsonValueKind.Object && facts.RootElement.TryGetProperty(key, out var checks)
-            && checks.ValueKind == JsonValueKind.Array
-            ? checks.Deserialize<List<RuleCheck>>(JsonSerializerOptions.Web) ?? []
-            : [];
 }

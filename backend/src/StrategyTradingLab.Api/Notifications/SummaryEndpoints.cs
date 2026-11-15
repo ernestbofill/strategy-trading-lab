@@ -8,7 +8,7 @@ public static class SummaryEndpoints
     {
         app.MapGet("/summary", async (DailySummary summary, Sessions sessions, CancellationToken cancellationToken) =>
         {
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             return TypedResults.Ok(await summary.ForPageAsync(user.Id, user.TimeZone, user.Locale, cancellationToken));
         })
         .RequireUser()

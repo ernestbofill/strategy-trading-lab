@@ -38,13 +38,15 @@ function useOpenAlerts() {
 export function AdminSettings() {
   const state = useLoadable(adminCacheKeys.settings, fetchSettings)
   // After a save or a switch: keeps the page on screen while it loads again, the prices box's next run included.
-  const load = async () => {
+  const load = async () => void (await reload(adminCacheKeys.settings, { fresh: true }))
+  // A Prices setting changes the box's next run.
+  const loadPrices = async () => {
     invalidate(adminCacheKeys.prices)
-    await reload(adminCacheKeys.settings, { fresh: true })
+    await load()
   }
   // Another database: everything the app loaded (admin pages, strategies, templates) was the other one's.
   const switched = async () => {
-    invalidateAll()
+    invalidateAll({ keep: adminCacheKeys.settings })
     await reload(adminCacheKeys.settings, { fresh: true })
   }
   const openAlerts = useOpenAlerts()
@@ -65,7 +67,7 @@ export function AdminSettings() {
         <NavRow label="Templates" meta="defaults, starter lists and getting close" to="/admin/templates" />
         <NavRow label="Feedback" meta="open issues, ideas and notes" to="/feedback" />
       </section>
-      <Loaded state={state} what="the settings">
+      <Loaded state={state} what="the settings" english>
         {(page) => (
           <>
             {page.version && <BackendBox version={page.version} />}
@@ -79,7 +81,7 @@ export function AdminSettings() {
                   <h2 className={styles.groupTitle}>{group}</h2>
                   {settings.map((s) => (
                     // Keyed by its value, so a row starts again from what the server now has after a save.
-                    <SettingRow key={`${s.key}:${s.source}:${s.value}:${s.isSet}`} setting={s} shown={shownValues(page.settings ?? [])} onChanged={load} />
+                    <SettingRow key={`${s.key}:${s.source}:${s.value}:${s.isSet}`} setting={s} shown={shownValues(page.settings ?? [])} onChanged={group === 'Prices' ? loadPrices : load} />
                   ))}
                   {group === 'Email' && <TestEmail />}
                   {group === 'Prices' && <PricesBox />}

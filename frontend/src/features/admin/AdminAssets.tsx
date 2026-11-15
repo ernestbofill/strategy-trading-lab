@@ -3,7 +3,7 @@ import { api, UnauthorizedError, type AdminAsset, type AssetKind } from '../../a
 import { PageHeader } from '../../components/PageHeader'
 import { Loaded } from '../../components/Loaded'
 import { Screen } from '../../components/Screen'
-import { reload as reloadKey, useLoadable } from '../../lib/useLoadable'
+import { reload, useLoadable } from '../../lib/useLoadable'
 import { AdminTopBar } from './AdminTopBar'
 import { adminCacheKeys } from './cacheKeys'
 import styles from './AdminAssets.module.css'
@@ -88,8 +88,8 @@ export function AdminAssets() {
 
   // After a change that worked: the list stays on screen while it loads again, and a failed reload is said on its own, not
   // as if the change had failed.
-  const reload = async () => {
-    if (!(await reloadKey(adminCacheKeys.assets, { fresh: true }))) setError("Couldn't reload the assets. Reload the page.")
+  const reloadAssets = async () => {
+    if (!(await reload(adminCacheKeys.assets, { fresh: true }))) setError("Couldn't reload the assets. Reload the page.")
   }
 
   const toggleActive = async (asset: AdminAsset) => {
@@ -97,7 +97,7 @@ export function AdminAssets() {
     setError(null)
     try {
       await api.setAdminAssetActive(asset.id, !asset.active)
-      await reload()
+      await reloadAssets()
     } catch (e) {
       if (e instanceof UnauthorizedError) return
       setError("Couldn't update the asset. Try again.")
@@ -109,7 +109,7 @@ export function AdminAssets() {
   return (
     <Screen top={<AdminTopBar />}>
       <PageHeader title="Assets" lead="Stocks, funds and indexes. Prices are fetched daily for those a running strategy watches, and for the index fund (SPY) always." />
-      <Loaded state={state} what="the assets">
+      <Loaded state={state} what="the assets" english>
         {(assets) => (
           <>
             {error && (
@@ -117,18 +117,18 @@ export function AdminAssets() {
                 {error}
               </p>
             )}
-            {!editing && <AddAssetForm onAdded={reload} />}
+            {!editing && <AddAssetForm onAdded={reloadAssets} />}
             {/* Shown while editing too: a running Download all keeps its progress and summary. */}
-            <AllPricesSection assets={assets} onChanged={reload} />
+            <AllPricesSection assets={assets} onChanged={reloadAssets} />
             {editing && (
               <EditAssetForm
                 key={editing.id}
                 asset={editing}
                 onDone={async (saved) => {
-                  if (saved) await reload()
+                  if (saved) await reloadAssets()
                   setEditing(null)
                 }}
-                onPricesChanged={reload}
+                onPricesChanged={reloadAssets}
               />
             )}
             <DataTable

@@ -236,7 +236,7 @@ export function AdminTemplates() {
         title="Templates"
         lead="What new strategies start with, by version. Saving makes a new version; any version can be made active again. Strategies keep the version they started from."
       />
-      <Loaded state={state} what="the templates">
+      <Loaded state={state} what="the templates" english>
         {(templates) => {
           const shown = templates.find((t) => t.key === params.get('template'))?.key ?? templates[0]?.key
           if (shown === undefined) return null

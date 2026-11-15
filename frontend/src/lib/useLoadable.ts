@@ -89,15 +89,23 @@ export function invalidate(cacheKey: string) {
 }
 
 /**
- * Forgets every result: another user logged in (or out), so nothing loaded for the last one may show. Screens that
- * are still open once React commits show loading and load again.
+ * Forgets every result: another user logged in (or out), or the admin page switched databases, so nothing loaded before may
+ * show. Screens that are still open once React commits show loading and load again, except `keep`'s, which keeps its result
+ * on screen until the reload lands.
  */
-export function invalidateAll() {
+export function invalidateAll({ keep }: { keep?: string } = {}) {
+  const kept = keep ? settled.get(keep) : undefined
   settled.clear()
   pending.clear()
   loadedAt.clear()
   stale.clear()
+  lastLoaded.clear()
   for (const cacheKey of listeners.keys()) requestReload(cacheKey)
+  // A key the screen doing the change shows stays on it while it loads again (the admin page across a database switch).
+  if (keep && kept) {
+    settled.set(keep, kept)
+    stale.add(keep)
+  }
 }
 
 /**
@@ -132,6 +140,7 @@ export function update<T>(cacheKey: string, change: (data: T) => T) {
   pending.delete(cacheKey)
   stale.delete(cacheKey)
   loadedAt.set(cacheKey, Date.now())
+  lastLoaded.set(cacheKey, true)
   settled.set(cacheKey, { status: 'ready', data: change(shown.data as T) })
   notify(cacheKey)
 }

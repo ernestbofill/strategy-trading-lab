@@ -59,7 +59,7 @@ export function AdminInvites() {
         <h2 id="invites-made" className={styles.groupTitle}>
           Sent so far
         </h2>
-        <Loaded state={state} what="the invites">
+        <Loaded state={state} what="the invites" english>
           {(invites) =>
             invites.length === 0 ? (
               <p className={styles.muted}>No invites yet.</p>

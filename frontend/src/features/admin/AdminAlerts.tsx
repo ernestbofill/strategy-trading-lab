@@ -56,19 +56,22 @@ export function AdminAlerts() {
     setBusy(id)
     setRefused(null)
     setReloadFailed(false)
+    let refusedNow = false
     try {
       await api.dismissAdminAlert(id)
     } catch {
-      setRefused(id)
+      refusedNow = true
     }
+    // Only once the list has reloaded: a 404 for an alert a run cleared meanwhile is no failure.
     setReloadFailed(!(await reload(adminCacheKeys.alerts, { fresh: true })))
+    if (refusedNow) setRefused(id)
     setBusy(null)
   }
 
   return (
     <Screen top={<AdminTopBar />}>
       <PageHeader title="Alerts" lead="Problems the daily jobs found. Each clears itself once a later run finds it fixed." />
-      <Loaded state={state} what="the alerts">
+      <Loaded state={state} what="the alerts" english>
         {(alerts) => {
           const of = (status: AdminAlert['status']) => alerts.filter((a) => a.status === status)
           const open = of('open')

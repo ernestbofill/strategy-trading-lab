@@ -97,7 +97,7 @@ export function AdminUsers() {
   return (
     <Screen top={<AdminTopBar />}>
       <PageHeader title="Users" lead="Every account, newest first. Blocking, deleting and invites come later." />
-      <Loaded state={state} what="the users">
+      <Loaded state={state} what="the users" english>
         {(page) => (
           <>
             <Counts counts={page.counts} />

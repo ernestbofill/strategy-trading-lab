@@ -1,51 +1,38 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, InvalidValueError, TooManyTriesError, UnauthorizedError, type AdminPrices, type YahooCheck } from '../../api'
+import { localDateTime } from '../../lib/format'
+import { reload, useLoadable } from '../../lib/useLoadable'
 import styles from './AdminSettings.module.css'
 
 const POLL_MS = 3000
 
-const when = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '–'
+/** The prices box; its next run follows the schedule settings, so a save loads it again. */
+export const pricesCacheKey = 'admin:prices'
+
+const when = (iso: string | null) => (iso ? localDateTime(iso) : '–')
 
 /** The daily price refresh: when it ran and runs, a button to run it now, and a check that Yahoo answers. */
 export function PricesBox() {
-  const [prices, setPrices] = useState<AdminPrices | null>(null)
+  const state = useLoadable(pricesCacheKey, api.getAdminPrices)
+  // Until it loads (or when it can't: the session ended and the app shows Log-in), the box shows dashes.
+  const prices: AdminPrices | null = state.status === 'ready' ? state.data : null
   const [message, setMessage] = useState<string | null>(null)
   const [checks, setChecks] = useState<YahooCheck[] | null>(null)
   const [testing, setTesting] = useState(false)
-
-  const load = useCallback(async () => {
-    try {
-      setPrices(await api.getAdminPrices())
-    } catch {
-      // Unauthorized: the session ended and the app shows Log-in.
-    }
-  }, [])
-
-  useEffect(() => {
-    let live = true
-    api
-      .getAdminPrices()
-      .then((next) => live && setPrices(next))
-      .catch(() => undefined)
-    return () => {
-      live = false
-    }
-  }, [])
 
   // While a refresh runs, look again every few seconds.
   const running = prices?.running ?? false
   useEffect(() => {
     if (!running) return
-    const timer = setInterval(() => void load(), POLL_MS)
+    const timer = setInterval(() => void reload(pricesCacheKey), POLL_MS)
     return () => clearInterval(timer)
-  }, [running, load])
+  }, [running])
 
   const refresh = async () => {
     setMessage(null)
     try {
       await api.refreshAdminPrices()
-      await load()
+      await reload(pricesCacheKey)
     } catch (e) {
       if (e instanceof UnauthorizedError) return
       setMessage(e instanceof InvalidValueError ? e.message : "Couldn't start it. Try again.")

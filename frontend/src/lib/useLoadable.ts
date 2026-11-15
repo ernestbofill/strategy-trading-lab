@@ -6,7 +6,7 @@ export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status
 // server changes data on its own (a new signal, an AI round due), so a screen that opens shows the kept result and
 // loads it again in the background, and `refreshAll` reloads every open screen (the app back in front, a push).
 const settled = new Map<string, Loadable<unknown>>()
-const pending = new Map<string, Promise<void>>()
+const pending = new Map<string, Promise<boolean>>()
 const loadedAt = new Map<string, number>()
 // Keys the user changed (`invalidate`): a screen that opens on one shows loading, not the old result, until it reloads,
 // and a failed reload shows the error instead of the result from before the change.
@@ -36,8 +36,9 @@ function requestReload(cacheKey: string) {
  * Starts a load of `cacheKey` unless one is in flight. A failed background reload keeps the result already shown; a
  * failed reload after `invalidate` shows the error.
  */
-function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
-  if (pending.has(cacheKey)) return
+function fetchKey(cacheKey: string, load: () => Promise<unknown>): Promise<boolean> {
+  const inFlight = pending.get(cacheKey)
+  if (inFlight) return inFlight
   // An invalidated request still finishes, but must not overwrite the newer one's result.
   const current = (): boolean => pending.get(cacheKey) === started
   const settle = (result: Loadable<unknown>, loaded: boolean) => {
@@ -52,11 +53,12 @@ function fetchKey(cacheKey: string, load: () => Promise<unknown>) {
     const shown = settled.get(cacheKey)
     return shown && !stale.has(cacheKey) ? shown : { status: 'error' }
   }
-  const started: Promise<void> = load().then(
-    (data) => settle(data === undefined ? MISSING : { status: 'ready', data }, true),
-    () => settle(failed(), false),
+  const started: Promise<boolean> = load().then(
+    (data) => (settle(data === undefined ? MISSING : { status: 'ready', data }, true), true),
+    () => (settle(failed(), false), false),
   )
   pending.set(cacheKey, started)
+  return started
 }
 
 /**
@@ -95,10 +97,21 @@ export function refreshAll(olderThanMs = 0) {
   }
 }
 
-/** Reloads one key the open screens show, keeping it on screen meanwhile (a result the server is still working on). */
-export function reload(cacheKey: string) {
+/**
+ * Reloads one key the open screens show, keeping it on screen meanwhile (after a change, or a result the server is still
+ * working on). Resolves to whether it loaded: a failed reload keeps the old result, so a screen may want to say so.
+ */
+export function reload(cacheKey: string): Promise<boolean> {
   const load = loaderOf(cacheKey)
-  if (load) fetchKey(cacheKey, load)
+  return load ? fetchKey(cacheKey, load) : Promise.resolve(false)
+}
+
+/** Changes a kept result with what the server just answered (a save's reply), without loading it again. */
+export function update<T>(cacheKey: string, change: (data: T) => T) {
+  const shown = settled.get(cacheKey)
+  if (shown?.status !== 'ready') return
+  settled.set(cacheKey, { status: 'ready', data: change(shown.data as T) })
+  notify(cacheKey)
 }
 
 /**

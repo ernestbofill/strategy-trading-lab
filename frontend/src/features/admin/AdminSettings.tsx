@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import {
   api,
   InvalidValueError,
@@ -9,50 +9,42 @@ import {
   type AdminSetting,
   type BackendVersion,
 } from '../../api'
+import { Loaded } from '../../components/Loaded'
 import { NavRow } from '../../components/NavRow'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, ScreenMessage, TopBar } from '../../components/Screen'
+import { localDateTime } from '../../lib/format'
+import { invalidate, reload, useLoadable } from '../../lib/useLoadable'
 import { TimeZoneField } from '../account/TimeZoneField'
+import { alertsCacheKey } from './AdminAlerts'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
-import { PricesBox } from './PricesBox'
+import { PricesBox, pricesCacheKey } from './PricesBox'
 
-type State =
-  | { status: 'loading' }
-  | { status: 'error' }
-  /** `settings` is null when they can't be read: they live in the database in use, which may be the broken one. */
-  | { status: 'ready'; settings: AdminSetting[] | null; databases: AdminDatabases; version: BackendVersion | null }
+interface AdminPage {
+  /** Null when they can't be read: they live in the database in use, which may be the broken one. */
+  settings: AdminSetting[] | null
+  databases: AdminDatabases
+  version: BackendVersion | null
+}
+
+const settingsCacheKey = 'admin:settings'
 
 /** How many alerts are open, for the Alerts row; null until known, or when they can't be read. */
 function useOpenAlerts() {
-  const [open, setOpen] = useState<number | null>(null)
-  useEffect(() => {
-    let live = true
-    api
-      .getAdminAlerts()
-      .then((alerts) => live && setOpen(alerts.filter((a) => a.status === 'open').length))
-      .catch(() => undefined)
-    return () => {
-      live = false
-    }
-  }, [])
-  return open
+  const alerts = useLoadable(alertsCacheKey, api.getAdminAlerts)
+  return alerts.status === 'ready' ? alerts.data.filter((a) => a.status === 'open').length : null
 }
 
 /** Admin settings (/admin): settings the app reads, set here instead of in the server's environment. Not linked from the app. */
 export function AdminSettings() {
-  const [state, setState] = useState<State>({ status: 'loading' })
-
-  const load = useCallback(async () => setState(await fetchSettings()), [])
+  const state = useLoadable(settingsCacheKey, fetchSettings)
+  // After a save or a switch: keeps the page on screen while it loads again, the prices box's next run included.
+  const load = async () => {
+    invalidate(pricesCacheKey)
+    await reload(settingsCacheKey)
+  }
   const openAlerts = useOpenAlerts()
-
-  useEffect(() => {
-    let live = true
-    void fetchSettings().then((next) => live && setState(next))
-    return () => {
-      live = false
-    }
-  }, [])
 
   return (
     <Screen top={<TopBar home />}>
@@ -70,48 +62,41 @@ export function AdminSettings() {
         <NavRow label="Templates" meta="defaults, starter lists and getting close" to="/admin/templates" />
         <NavRow label="Feedback" meta="open issues, ideas and notes" to="/feedback" />
       </section>
-      {state.status === 'loading' && <ScreenMessage>Loading the settings…</ScreenMessage>}
-      {state.status === 'error' && <ScreenMessage>Could not load the settings. Try again later.</ScreenMessage>}
-      {state.status === 'ready' && state.version && <BackendBox version={state.version} />}
-      {state.status === 'ready' && (
-        <DatabaseBox databases={state.databases} onChanged={load} />
-      )}
-      {state.status === 'ready' && !state.settings && (
-        <ScreenMessage>Could not load the settings: the database in use may not answer. Switch above, or try again later.</ScreenMessage>
-      )}
-      {state.status === 'ready' &&
-        state.settings &&
-        groups(state.settings).map(([group, settings]) => (
-          <section key={group} className={styles.group}>
-            <h2 className={styles.groupTitle}>{group}</h2>
-            {settings.map((s) => (
-              // Keyed by its value, so a row starts again from what the server now has after a save.
-              <SettingRow
-                key={`${s.key}:${s.source}:${s.value}:${s.isSet}`}
-                setting={s}
-                shown={shownValues(state.settings ?? [])} onChanged={load} />
-            ))}
-            {group === 'Email' && <TestEmail />}
-            {/* Keyed by the schedule, so the box asks again (next run) after a save. */}
-            {group === 'Prices' && <PricesBox key={settings.map((s) => s.value).join('|')} />}
-          </section>
-        ))}
+      <Loaded state={state} what="the settings">
+        {(page) => (
+          <>
+            {page.version && <BackendBox version={page.version} />}
+            <DatabaseBox databases={page.databases} onChanged={load} />
+            {!page.settings && (
+              <ScreenMessage>Could not load the settings: the database in use may not answer. Switch above, or try again later.</ScreenMessage>
+            )}
+            {page.settings &&
+              groups(page.settings).map(([group, settings]) => (
+                <section key={group} className={styles.group}>
+                  <h2 className={styles.groupTitle}>{group}</h2>
+                  {settings.map((s) => (
+                    // Keyed by its value, so a row starts again from what the server now has after a save.
+                    <SettingRow key={`${s.key}:${s.source}:${s.value}:${s.isSet}`} setting={s} shown={shownValues(page.settings ?? [])} onChanged={load} />
+                  ))}
+                  {group === 'Email' && <TestEmail />}
+                  {group === 'Prices' && <PricesBox />}
+                </section>
+              ))}
+          </>
+        )}
+      </Loaded>
     </Screen>
   )
 }
 
-async function fetchSettings(): Promise<State> {
-  try {
-    // The database box and the build don't need the database, so they show even when the settings can't load.
-    const settings = api.getAdminSettings().catch((e: unknown) => {
-      if (e instanceof UnauthorizedError || e instanceof ForbiddenError) throw e
-      return null
-    })
-    const [databases, version, loaded] = await Promise.all([api.getAdminDatabases(), api.getVersion().catch(() => null), settings])
-    return { status: 'ready', settings: loaded, databases, version }
-  } catch {
-    return { status: 'error' }
-  }
+async function fetchSettings(): Promise<AdminPage> {
+  // The database box and the build don't need the database, so they show even when the settings can't load.
+  const settings = api.getAdminSettings().catch((e: unknown) => {
+    if (e instanceof UnauthorizedError || e instanceof ForbiddenError) throw e
+    return null
+  })
+  const [databases, version, loaded] = await Promise.all([api.getAdminDatabases(), api.getVersion().catch(() => null), settings])
+  return { settings: loaded, databases, version }
 }
 
 /** The API's build, for information. */
@@ -119,7 +104,7 @@ function BackendBox({ version }: { version: BackendVersion }) {
   const rows: [string, string][] = [
     ['Version', version.version],
     ['Commit', version.commit?.slice(0, 7) ?? 'unknown'],
-    ['Built', version.builtAt ? `${version.builtAt.slice(0, 16).replace('T', ' ')} UTC` : 'unknown (a Debug build)'],
+    ['Built', version.builtAt ? localDateTime(version.builtAt) : 'unknown (a Debug build)'],
   ]
   return (
     <section className={styles.group}>

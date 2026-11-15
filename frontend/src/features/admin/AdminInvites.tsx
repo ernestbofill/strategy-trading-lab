@@ -34,7 +34,9 @@ const LANGUAGES = [
 export function AdminInvites() {
   const state = useLoadable(adminCacheKeys.invites, api.getAdminInvites)
   const [created, setCreated] = useState<{ invite: AdminInvite; sent: boolean } | null>(null)
-  const load = async () => void (await reload(adminCacheKeys.invites, { fresh: true }))
+  // After a change: a failed reload says so, so a new invite missing from the list isn't taken for one never made.
+  const [reloadFailed, setReloadFailed] = useState(false)
+  const load = async () => setReloadFailed(!(await reload(adminCacheKeys.invites, { fresh: true })))
 
   const onCreated = async (invite: AdminInvite, sent: boolean) => {
     setCreated({ invite, sent })
@@ -59,6 +61,7 @@ export function AdminInvites() {
         <h2 id="invites-made" className={styles.groupTitle}>
           Sent so far
         </h2>
+        {reloadFailed && <FormMessage tone="error">Couldn't reload the invites. Reload the page.</FormMessage>}
         <Loaded state={state} what="the invites" english>
           {(invites) =>
             invites.length === 0 ? (

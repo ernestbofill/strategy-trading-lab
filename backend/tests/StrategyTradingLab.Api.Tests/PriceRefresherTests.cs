@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
-public class PriceRefresherTests
+public class PriceRefresherTests(AccountsApi api) : IClassFixture<AccountsApi>
 {
     static Candle Day(int day, decimal close) => new(new DateOnly(2026, 9, 1).AddDays(day), close, close + 1, close - 1, close, 1000);
 
@@ -92,7 +92,6 @@ public class PriceRefresherTests
     [NeonFact]
     public async Task The_first_run_stores_the_history_and_a_matching_second_run_only_the_recent_days()
     {
-        using var api = new AccountsApi();
         var (asset, db, scope) = await NewAssetAsync(api);
         using var _ = scope;
         try
@@ -118,7 +117,6 @@ public class PriceRefresherTests
     [NeonFact]
     public async Task A_re_adjusted_history_replaces_what_was_stored()
     {
-        using var api = new AccountsApi();
         var (asset, db, scope) = await NewAssetAsync(api);
         using var _ = scope;
         try
@@ -142,7 +140,6 @@ public class PriceRefresherTests
     [NeonFact]
     public async Task A_failing_source_keeps_what_was_stored_and_says_why()
     {
-        using var api = new AccountsApi();
         var (asset, db, scope) = await NewAssetAsync(api);
         using var _ = scope;
         try
@@ -173,7 +170,6 @@ public class PriceRefresherTests
     [NeonFact]
     public async Task A_re_adjusted_history_is_fetched_from_two_years_back_or_over_the_span_already_stored()
     {
-        using var api = new AccountsApi();
         var (asset, db, scope) = await NewAssetAsync(api);
         using var _ = scope;
         try
@@ -203,7 +199,6 @@ public class PriceRefresherTests
     [NeonFact]
     public async Task A_trade_recorded_before_the_stored_days_fetches_two_years_before_it()
     {
-        using var api = new AccountsApi();
         var (asset, db, scope) = await NewAssetAsync(api);
         using var _ = scope;
         var user = new User { Email = $"held-{Guid.NewGuid():N}@example.com", TimeZone = "UTC", Locale = "en" };
@@ -247,7 +242,6 @@ public class PriceRefresherTests
     [NeonFact]
     public async Task Exchange_rates_are_stored_per_day_and_refreshed_in_place()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         try
@@ -271,7 +265,6 @@ public class PriceRefresherTests
     [NeonFact]
     public async Task Only_assets_a_running_strategy_lists_and_the_index_fund_are_refreshed_daily()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var tag = Guid.NewGuid().ToString("N")[..9];

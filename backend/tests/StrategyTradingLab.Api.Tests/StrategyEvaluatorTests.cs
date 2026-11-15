@@ -12,7 +12,7 @@ using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Tests;
 
-public class StrategyEvaluatorTests
+public class StrategyEvaluatorTests(AccountsApi api) : IClassFixture<AccountsApi>
 {
     sealed class Clock(DateTimeOffset now) : TimeProvider
     {
@@ -139,7 +139,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_simulation_strategy_gets_a_confirmed_signal_and_its_trade_at_the_next_open_once()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
@@ -208,7 +207,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_check_at_once_during_a_session_fills_its_signal_at_the_latest_price_and_the_evening_run_adds_no_second_trade()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
@@ -247,7 +245,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_signal_found_before_the_session_still_fills_at_its_open_when_a_check_at_once_runs_during_it()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
@@ -278,7 +275,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_live_signal_waits_for_the_user_and_is_missed_when_its_window_closes()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: true);
@@ -301,7 +297,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_strategy_whose_prices_stopped_gets_an_alert_for_the_owner()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
@@ -326,7 +321,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_first_check_looks_at_the_latest_day_only_with_no_backlog_of_old_signals()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         // The dip on day 300 and the return to the peak on day 302 both came before the strategy's first check.
@@ -349,7 +343,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_first_check_signals_a_stock_already_in_its_zone_on_the_latest_day_and_later_checks_carry_on_from_there()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
@@ -382,7 +375,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task Days_checked_before_the_price_history_was_long_enough_dont_stop_the_first_real_check_from_signalling()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
@@ -410,7 +402,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task Days_short_of_history_after_a_real_check_still_get_no_back_dated_signal()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         // A real check the day before the start, then days 300 and 301 short of history (say a longer average was set).
@@ -436,7 +427,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_stock_with_a_signal_doesnt_start_its_steps_again_when_its_checks_were_short_of_history()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
@@ -467,7 +457,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_strategy_that_started_after_the_last_price_is_left_alone()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
@@ -489,7 +478,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_new_strategy_started_after_the_last_session_is_evaluated_on_its_first_check()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false, checkedBefore: false);
@@ -517,7 +505,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task No_signal_is_made_when_its_step_would_not_fit_in_the_budget()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Simulation, windowCloses: false);
@@ -545,7 +532,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_trend_strategy_buys_all_in_sells_all_out_and_reinvests_the_proceeds_on_the_next_buy()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var tag = Guid.NewGuid().ToString("N")[..10];
@@ -600,7 +586,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_waiting_signal_is_missed_once_its_stock_is_delisted()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
@@ -628,7 +613,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_waiting_signal_is_missed_once_its_stock_is_unticked()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
@@ -653,7 +637,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_stock_ticked_again_gets_no_signal_for_the_days_it_was_off_the_list()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         // Checked last on day 298 (a Friday), then off the list over the dip on day 300, and ticked again early on day 302
@@ -678,7 +661,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_stock_added_after_the_start_still_gets_the_signal_of_a_day_its_check_missed()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         // Added on Saturday, day 299, so its first check was on Friday, day 298; the run for day 300's dip failed, and the next one catches it up.
@@ -703,7 +685,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_waiting_signal_left_on_an_ended_strategy_is_missed_by_the_next_run()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var (userId, strategyId, assetId) = await SeedAsync(db, StrategyMode.Live, windowCloses: false);
@@ -728,7 +709,6 @@ public class StrategyEvaluatorTests
     [NeonFact]
     public async Task A_second_bear_drop_after_the_budget_is_used_up_makes_no_new_signals_and_records_the_new_cycle_start()
     {
-        using var api = new AccountsApi();
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var tag = Guid.NewGuid().ToString("N")[..10];

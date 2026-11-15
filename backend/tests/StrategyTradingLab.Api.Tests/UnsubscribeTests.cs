@@ -8,7 +8,7 @@ using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Tests;
 
-public class UnsubscribeTests
+public class UnsubscribeTests(AccountsApi api) : IClassFixture<AccountsApi>
 {
     static async Task<JsonElement> Me(HttpClient client) => await client.GetFromJsonAsync<JsonElement>("/account/me");
 
@@ -22,7 +22,6 @@ public class UnsubscribeTests
     [NeonFact]
     public async Task The_link_turns_off_one_kind_for_one_user_without_logging_in()
     {
-        using var api = new AccountsApi();
         var (me, myEmail) = await api.SignedUpAsync();
         var (other, _) = await api.SignedUpAsync();
         using var stranger = api.CreateApiClient();
@@ -43,7 +42,6 @@ public class UnsubscribeTests
     [NeonFact]
     public async Task A_mail_apps_one_click_post_needs_no_header_or_login()
     {
-        using var api = new AccountsApi();
         var (me, email) = await api.SignedUpAsync();
         using var mailApp = api.CreateClient();
         var request = new HttpRequestMessage(HttpMethod.Post, $"/email/unsubscribe/{await TokenOf(api, email)}/overview")
@@ -59,7 +57,6 @@ public class UnsubscribeTests
     [NeonFact]
     public async Task A_guess_a_wrong_kind_or_a_page_load_changes_nothing()
     {
-        using var api = new AccountsApi();
         var (me, email) = await api.SignedUpAsync();
         using var stranger = api.CreateApiClient();
         var token = await TokenOf(api, email);
@@ -76,7 +73,6 @@ public class UnsubscribeTests
     [NeonFact]
     public async Task The_account_can_turn_alerts_back_on()
     {
-        using var api = new AccountsApi();
         var (me, email) = await api.SignedUpAsync();
         using var stranger = api.CreateApiClient();
         await stranger.PostAsync($"/email/unsubscribe/{await TokenOf(api, email)}/alerts", null);

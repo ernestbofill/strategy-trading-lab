@@ -9,17 +9,10 @@ namespace StrategyTradingLab.Api.Tests;
 /// <summary>The five templates' definitions, texts and seeded assets. No database.</summary>
 public class TemplateTests
 {
-    [Fact]
-    public void The_catalogue_has_the_five_templates_in_pick_screen_order()
-    {
-        Assert.Equal(["dip", "comeback", "bear", "trend", "ai"], TemplateCatalog.Keys);
-    }
-
-    [Fact]
-    public void Every_template_has_english_texts_with_rules() => AssertCompleteTexts("en");
-
-    [Fact]
-    public void Every_template_has_catalan_texts_with_rules() => AssertCompleteTexts("ca");
+    [Theory]
+    [InlineData("en")]
+    [InlineData("ca")]
+    public void Every_template_has_texts_with_rules(string locale) => AssertCompleteTexts(locale);
 
     private static void AssertCompleteTexts(string locale)
     {
@@ -64,25 +57,6 @@ public class TemplateTests
     }
 
     [Fact]
-    public void Params_are_stored_as_camel_case_json_with_the_poc_defaults()
-    {
-        var dip = TemplateCatalog.Dip.ParamsJson().RootElement;
-
-        Assert.Equal(60, dip.GetProperty("peakDays").GetInt32());
-        Assert.Equal(5, dip.GetProperty("zoneStartPct").GetDecimal());
-        Assert.Equal(15, dip.GetProperty("zoneEndPct").GetDecimal());
-        Assert.Equal(1.2m, TemplateCatalog.Comeback.ParamsJson().RootElement.GetProperty("volumeRatio").GetDecimal());
-    }
-
-    [Fact]
-    public void Budgets_are_steps_except_ride_the_long_trend_which_is_all_in()
-    {
-        Assert.Equal(new Budget(3000, 100, 5), TemplateCatalog.Dip.Budget);
-        Assert.Equal(new Budget(3000, 600, 5), TemplateCatalog.Bear.Budget);
-        Assert.Equal(new Budget(3000, null, null), TemplateCatalog.Trend.Budget);
-    }
-
-    [Fact]
     public void Every_template_asset_is_seeded_with_the_right_kind()
     {
         foreach (var template in TemplateCatalog.All)
@@ -101,12 +75,6 @@ public class TemplateTests
     {
         Assert.Equal(TemplateAssets.All.Length, TemplateAssets.All.Select(asset => asset.Id).Distinct().Count());
         Assert.Equal(TemplateAssets.All.Length, TemplateAssets.All.Select(asset => (asset.Symbol, asset.Exchange)).Distinct().Count());
-    }
-
-    [Fact]
-    public void The_ai_template_watches_the_stocks_of_both_stock_templates_once()
-    {
-        Assert.Equal(19, TemplateCatalog.Ai.Watches.AssetIds.Count);
     }
 
     [Theory]

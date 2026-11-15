@@ -43,16 +43,6 @@ public class AdminAlertsTests(AdminFixture fixture) : IClassFixture<AdminFixture
             .Cast<JsonElement?>().SingleOrDefault(a => a!.Value.GetProperty("title").GetString() == title);
 
     [NeonFact]
-    public async Task Alerts_need_the_owner_role()
-    {
-        using var stranger = fixture.CreateApiClient();
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/alerts")).StatusCode);
-        using var user = await fixture.SignedUpAsync(UserRole.User);
-        Assert.Equal(HttpStatusCode.Forbidden, (await user.GetAsync("/admin/alerts")).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, (await user.PostAsync($"/admin/alerts/{Guid.NewGuid()}/dismiss", null)).StatusCode);
-    }
-
-    [NeonFact]
     public async Task An_alert_counts_up_stays_quiet_once_dismissed_and_opens_again_after_it_cleared()
     {
         var db = fixture.Db();

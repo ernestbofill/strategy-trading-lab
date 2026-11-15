@@ -9,7 +9,7 @@ using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Tests;
 
-public class EmailEventTests
+public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
 {
     const string Key = "a-long-enough-webhook-key";
 
@@ -34,11 +34,11 @@ public class EmailEventTests
     [NeonFact]
     public async Task Bounces_invalid_addresses_and_complaints_are_recorded_and_other_events_are_not()
     {
-        using var api = new AccountsApi();
         string[] emails = [api.NewEmail(), api.NewEmail(), api.NewEmail(), api.NewEmail()];
         try
         {
-            using var brevo = WithKey(api).CreateClient(); // No cookie and no X-Requested-With header, as Brevo calls it.
+            using var brevoApi = WithKey(api);
+            using var brevo = brevoApi.CreateClient(); // No cookie and no X-Requested-With header, as Brevo calls it.
             foreach (var (kind, email) in new[] { ("hard_bounce", emails[0]), ("invalid_email", emails[1]), ("spam", emails[2]), ("complaint", emails[3]), ("delivered", emails[3]), ("soft_bounce", emails[3]) })
                 Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"{{kind}}","email":"{{email}}","id":1}"""))).StatusCode);
 
@@ -57,11 +57,11 @@ public class EmailEventTests
     [NeonFact]
     public async Task A_repeated_event_a_batch_and_nonsense_are_all_fine()
     {
-        using var api = new AccountsApi();
         string[] emails = [api.NewEmail(), api.NewEmail()];
         try
         {
-            using var brevo = WithKey(api).CreateClient();
+            using var brevoApi = WithKey(api);
+            using var brevo = brevoApi.CreateClient();
             var body = Json($$"""[{"event":"hard_bounce","email":"{{emails[0]}}"},{"event":"hard_bounce","email":"{{emails[0]}}"},{"event":"spam","email":"{{emails[1]}}"},{"event":"hard_bounce"},"x",{"email":"nobody@example.com"}]""");
 
             Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", body)).StatusCode);
@@ -79,11 +79,11 @@ public class EmailEventTests
     [NeonFact]
     public async Task Odd_values_and_a_wrong_content_type_never_make_a_500()
     {
-        using var api = new AccountsApi();
         var email = api.NewEmail();
         try
         {
-            using var brevo = WithKey(api).CreateClient();
+            using var brevoApi = WithKey(api);
+            using var brevo = brevoApi.CreateClient();
             Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json("""[{"event":"hard_bounce","email":5},{"event":1,"email":"a@b.c"},{"event":null,"email":null}]"""))).StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, (await brevo.PostAsync($"/email/events?key={Key}", new StringContent("event=hard_bounce", Encoding.UTF8, "text/plain"))).StatusCode);
             Assert.Empty(await Rows(api, email));
@@ -97,18 +97,20 @@ public class EmailEventTests
     [NeonFact]
     public async Task Without_the_right_key_the_endpoint_does_not_exist()
     {
-        using var api = new AccountsApi();
         var email = api.NewEmail();
         var body = Json($$"""{"event":"hard_bounce","email":"{{email}}"}""");
         try
         {
-            using var wrong = WithKey(api).CreateClient();
+            using var wrongApi = WithKey(api);
+            using var wrong = wrongApi.CreateClient();
             Assert.Equal(HttpStatusCode.NotFound, (await wrong.PostAsync("/email/events?key=not-the-key", body)).StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, (await wrong.PostAsync("/email/events", body)).StatusCode);
 
-            using var noKeySet = WithKey(api, null).CreateClient();
+            using var noKeySetApi = WithKey(api, null);
+            using var noKeySet = noKeySetApi.CreateClient();
             Assert.Equal(HttpStatusCode.NotFound, (await noKeySet.PostAsync("/email/events?key=", body)).StatusCode);
-            using var shortKey = WithKey(api, "short").CreateClient();
+            using var shortKeyApi = WithKey(api, "short");
+            using var shortKey = shortKeyApi.CreateClient();
             Assert.Equal(HttpStatusCode.NotFound, (await shortKey.PostAsync("/email/events?key=short", body)).StatusCode);
 
             Assert.Empty(await Rows(api, email));
@@ -122,7 +124,6 @@ public class EmailEventTests
     [NeonFact]
     public async Task The_sender_skips_bulk_mail_to_a_suppressed_address_and_still_sends_the_rest()
     {
-        using var api = new AccountsApi();
         var blocked = api.NewEmail();
         // Email isn't set up in this test, so anything that is not skipped says so: a skip can't be mistaken for a send.
         using var configured = api.WithWebHostBuilder(_ => { });
@@ -154,12 +155,12 @@ public class EmailEventTests
     [NeonFact]
     public async Task The_admin_users_list_says_which_accounts_are_blocked()
     {
-        using var api = new AccountsApi();
         var (_, email) = await api.SignedUpAsync();
         using var owner = await api.OwnerAsync();
         try
         {
-            using var brevo = WithKey(api).CreateClient();
+            using var brevoApi = WithKey(api);
+            using var brevo = brevoApi.CreateClient();
             await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"hard_bounce","email":"{{email}}"}"""));
 
             var users = await owner.GetFromJsonAsync<System.Text.Json.JsonElement>("/admin/users");

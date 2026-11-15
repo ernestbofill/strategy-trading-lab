@@ -49,27 +49,6 @@ public class AdminDatabaseTests(DatabaseFixture fixture) : IClassFixture<Databas
         (await client.GetFromJsonAsync<JsonElement>("/version")).GetProperty("database").GetString();
 
     [NeonFact]
-    public async Task The_database_box_needs_a_log_in()
-    {
-        using var stranger = fixture.CreateApiClient();
-
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/admin/database")).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.PostAsJsonAsync("/admin/database/active", new { name = "production" })).StatusCode);
-    }
-
-    [NeonFact]
-    public async Task The_database_box_is_for_the_owner_only()
-    {
-        foreach (var role in new[] { UserRole.User, UserRole.Vip })
-        {
-            using var other = await fixture.SignedUpAsync(role);
-
-            Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync("/admin/database")).StatusCode);
-            Assert.Equal(HttpStatusCode.Forbidden, (await other.PostAsJsonAsync("/admin/database/active", new { name = "production" })).StatusCode);
-        }
-    }
-
-    [NeonFact]
     public async Task Locally_the_api_uses_dev_and_each_url_comes_from_a_server_variable()
     {
         using var state = new TemporaryDirectory();

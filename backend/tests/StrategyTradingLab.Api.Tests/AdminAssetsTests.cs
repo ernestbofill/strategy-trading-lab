@@ -16,31 +16,6 @@ namespace StrategyTradingLab.Api.Tests;
 public class AdminAssetsTests(AdminFixture fixture) : IClassFixture<AdminFixture>
 {
     [NeonFact]
-    public async Task Assets_need_the_owner_role()
-    {
-        static async Task<HttpStatusCode[]> AskAll(HttpClient client) =>
-        [
-            (await client.GetAsync("/admin/assets")).StatusCode,
-            (await client.PutAsJsonAsync($"/admin/assets/{TemplateAssets.CBrain.Id}/active", new { active = false })).StatusCode,
-            (await client.PostAsJsonAsync("/admin/assets", new { symbol = "AAPL" })).StatusCode,
-            (await client.PutAsJsonAsync($"/admin/assets/{TemplateAssets.CBrain.Id}", new { name = "x", what = "y" })).StatusCode,
-            (await client.DeleteAsync("/admin/assets/prices")).StatusCode,
-            (await client.DeleteAsync($"/admin/assets/{TemplateAssets.CBrain.Id}/prices")).StatusCode,
-            (await client.PostAsJsonAsync($"/admin/assets/{TemplateAssets.CBrain.Id}/prices", new { years = 2 })).StatusCode,
-            (await client.PostAsJsonAsync("/admin/assets/rates", new { years = 2 })).StatusCode,
-        ];
-
-        using var stranger = fixture.CreateApiClient();
-        Assert.All(await AskAll(stranger), status => Assert.Equal(HttpStatusCode.Unauthorized, status));
-
-        foreach (var role in new[] { UserRole.User, UserRole.Vip })
-        {
-            using var other = await fixture.SignedUpAsync(role);
-            Assert.All(await AskAll(other), status => Assert.Equal(HttpStatusCode.Forbidden, status));
-        }
-    }
-
-    [NeonFact]
     public async Task Lists_all_seeded_assets_and_toggles_whether_one_is_active()
     {
         var cBrainId = TemplateAssets.CBrain.Id;

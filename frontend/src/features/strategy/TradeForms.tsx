@@ -29,6 +29,12 @@ function TradeFormCard(props: TradeFormCardProps) {
   const t = useT()
   const [form, setForm] = useState(initial)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
+  // Another stock in another currency: a rate typed for the old pair doesn't apply, so the reference rate comes back.
+  const [pair, setPair] = useState(props.assetCurrency)
+  if (pair !== props.assetCurrency) {
+    setPair(props.assetCurrency)
+    set({ ownRate: null })
+  }
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<FormMessageState>(null)
@@ -90,8 +96,7 @@ export function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; on
     setAssetId(id)
     if (removed(id)) setSide('sell')
   }
-  const assetCurrency =
-    s.trades?.find((tr) => tr.assetId === assetId)?.assetCurrency ?? s.signalHistory?.find((sig) => sig.assetId === assetId)?.assetCurrency ?? s.currency
+  const assetCurrency = s.stocks.find((st) => st.assetId === assetId)?.currency ?? s.currency
 
   return (
     <TradeFormCard
@@ -122,7 +127,7 @@ export function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; on
             value={side}
             onChange={(v) => setSide(v as TradeSide)}
             options={[
-              { value: 'buy', label: t('trades.buy') },
+              ...(removed(assetId) ? [] : [{ value: 'buy', label: t('trades.buy') }]),
               { value: 'sell', label: t('trades.sale') },
             ]}
             error={errors.side}

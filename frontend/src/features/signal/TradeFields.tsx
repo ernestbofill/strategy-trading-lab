@@ -44,7 +44,6 @@ export function TradeFields({ form, set, errors, assetCurrency, strategyCurrency
         label={t('signal.field.price', { currency: assetCurrency })}
         type="decimal"
         value={form.price}
-        placeholder="0.00"
         onChange={(price) => set({ price })}
         hint={priceHint}
         error={errors.price}
@@ -80,7 +79,7 @@ export function TradeFields({ form, set, errors, assetCurrency, strategyCurrency
       {assetCurrency !== strategyCurrency &&
         (form.ownRate === null ? (
           <div className={styles.rate}>
-            <p className={styles.plain}>
+            <p className="caption">
               {reference
                 ? t('signal.rate.at', {
                     rate: `${symbolOf(assetCurrency)}${formatRate(reference.rate)}`,

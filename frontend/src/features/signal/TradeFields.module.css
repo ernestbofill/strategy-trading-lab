@@ -6,9 +6,3 @@
   /* The whole row of a two-column form. */
   grid-column: 1 / -1;
 }
-
-.plain {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-}

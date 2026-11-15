@@ -21,7 +21,7 @@ public record RefreshResult(string Name, RefreshOutcome Outcome, int Rows, strin
 /// </summary>
 public class PriceRefresher(AppDbContext db, IMarketDataSource source, ILogger<PriceRefresher> logger)
 {
-    public const string BaseCurrency = ExchangeRates.Base;
+    public const string BaseCurrency = "EUR";
     /// <summary>A stored close further than this from the fresh one means the history was re-adjusted (0.1%, the POC's).</summary>
     public const decimal Tolerance = 0.001m;
     /// <summary>

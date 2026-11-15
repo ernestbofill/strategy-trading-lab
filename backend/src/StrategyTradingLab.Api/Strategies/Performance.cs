@@ -1,6 +1,5 @@
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
-using StrategyTradingLab.Api.MarketData;
 
 namespace StrategyTradingLab.Api.Strategies;
 

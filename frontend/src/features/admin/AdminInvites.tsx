@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
   api,
   InvalidFieldsError,
@@ -10,7 +10,10 @@ import {
 } from '../../api'
 import { FormMessage, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
-import { Screen, ScreenMessage } from '../../components/Screen'
+import { Loaded } from '../../components/Loaded'
+import { Screen } from '../../components/Screen'
+import { localDay } from '../../lib/format'
+import { reload, useLoadable } from '../../lib/useLoadable'
 import { AdminTopBar } from './AdminTopBar'
 import styles from './AdminInvites.module.css'
 
@@ -23,25 +26,16 @@ const LANGUAGES = [
   { value: 'ca', label: 'Català' },
 ]
 
-type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; invites: AdminInvite[] }
+const invitesCacheKey = 'admin:invites'
 
 /**
  * Invites (/admin/invites, owner only; spec: Admin, Invites): who can sign up, a new invite for one person in their
  * language (emailed, or a message to copy into WhatsApp or anywhere), and the invites made so far.
  */
 export function AdminInvites() {
-  const [state, setState] = useState<State>({ status: 'loading' })
+  const state = useLoadable(invitesCacheKey, api.getAdminInvites)
   const [created, setCreated] = useState<{ invite: AdminInvite; sent: boolean } | null>(null)
-
-  const load = useCallback(async () => setState(await fetchInvites()), [])
-
-  useEffect(() => {
-    let live = true
-    void fetchInvites().then((next) => live && setState(next))
-    return () => {
-      live = false
-    }
-  }, [])
+  const load = async () => void (await reload(invitesCacheKey))
 
   const onCreated = async (invite: AdminInvite, sent: boolean) => {
     setCreated({ invite, sent })
@@ -66,27 +60,22 @@ export function AdminInvites() {
         <h2 id="invites-made" className={styles.groupTitle}>
           Sent so far
         </h2>
-        {state.status === 'loading' && <ScreenMessage>Loading the invites…</ScreenMessage>}
-        {state.status === 'error' && <ScreenMessage>Could not load the invites. Try again later.</ScreenMessage>}
-        {state.status === 'ready' && state.invites.length === 0 && <p className={styles.muted}>No invites yet.</p>}
-        {state.status === 'ready' && state.invites.length > 0 && (
-          <ul className={styles.list}>
-            {state.invites.map((invite) => (
-              <InviteRow key={invite.id} invite={invite} onChanged={load} />
-            ))}
-          </ul>
-        )}
+        <Loaded state={state} what="the invites">
+          {(invites) =>
+            invites.length === 0 ? (
+              <p className={styles.muted}>No invites yet.</p>
+            ) : (
+              <ul className={styles.list}>
+                {invites.map((invite) => (
+                  <InviteRow key={invite.id} invite={invite} onChanged={load} />
+                ))}
+              </ul>
+            )
+          }
+        </Loaded>
       </section>
     </Screen>
   )
-}
-
-async function fetchInvites(): Promise<State> {
-  try {
-    return { status: 'ready', invites: await api.getAdminInvites() }
-  } catch {
-    return { status: 'error' }
-  }
 }
 
 /** Who can sign up: anyone, or only people with an invite. */
@@ -295,12 +284,12 @@ function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () =
         </span>
       </div>
       <p className={styles.meta}>
-        <span className={styles.mono}>{invite.code}</span> · {languageName(invite.locale)} · {invite.createdAt.slice(0, 10)}
+        <span className={styles.mono}>{invite.code}</span> · {languageName(invite.locale)} · {localDay(invite.createdAt)}
         {invite.email && <> · {invite.email}</>}
       </p>
       {invite.joined.map((u) => (
         <p key={u.email} className={styles.meta}>
-          Joined {u.joinedAt.slice(0, 10)} as <span className={styles.mono}>{u.email}</span>
+          Joined {localDay(u.joinedAt)} as <span className={styles.mono}>{u.email}</span>
         </p>
       ))}
       {usable && (

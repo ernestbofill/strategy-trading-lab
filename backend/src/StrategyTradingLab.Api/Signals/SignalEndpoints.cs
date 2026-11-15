@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using StrategyTradingLab.Api.Auth;
-using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
@@ -35,7 +35,7 @@ public static class SignalEndpoints
             var next = await NextOpenAsync(db, found.Signal, cancellationToken);
             var latest = next is null && options.Value.FetchOnDemand && Answerable(found.Signal)
                 ? await LatestPriceAsync(prices, refreshes, found, time, cancellationToken) : null;
-            return TypedResults.Ok(await DetailAsync(db, found, user, UserClock.Today(user, time), next, latest, cancellationToken));
+            return TypedResults.Ok(await DetailAsync(db, found, user, StrategyEndpoints.Today(user, time), next, latest, cancellationToken));
         })
         .WithName("GetSignal")
         .WithSummary("A live signal, with what Confirm a signal's form starts with.");
@@ -51,8 +51,8 @@ public static class SignalEndpoints
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             // The same currency needs no rate (it is 1): nothing to load.
-            var rates = await ExchangeRates.ForPairAsync(db, strategy.Currency, asset.Currency, signal.SignalDate, cancellationToken);
-            var (trade, errors) = SignalRules.CheckTrade(request, signal.SignalDate, UserClock.Today(user, time),
+            var rates = strategy.Currency == asset.Currency ? new ExchangeRates([]) : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
+            var (trade, errors) = SignalRules.CheckTrade(request, signal.SignalDate, StrategyEndpoints.Today(user, time),
                 day => rates.Between(strategy.Currency, asset.Currency, day), locale: user.Locale);
             if (trade is null) return TypedResults.ValidationProblem(errors);
 
@@ -89,7 +89,7 @@ public static class SignalEndpoints
             // Only a waiting signal can be snoozed (the table's check): a missed one has nothing left to remind of.
             if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict(Messages.OnlyWaitingCanSnooze.In(user.Locale));
             // AI round signals cannot be snoozed: they remain due until they expire.
-            if (found.Strategy.TemplateKey == TemplateKeys.Ai) return TypedResults.Conflict(Messages.AiSignalsCannotSnooze.In(user.Locale));
+            if (found.Strategy.TemplateKey == "ai") return TypedResults.Conflict(Messages.AiSignalsCannotSnooze.In(user.Locale));
             // A snooze promises a reminder: refuse it when none could be sent.
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyEnded.In(user.Locale));
             // By email (switched on and confirmed) or by push (switched on, sent by this server, with a device that gets it).
@@ -102,7 +102,7 @@ public static class SignalEndpoints
             // The next US market day (spec: a day is a US market day), counted from the later of New York's date and the user's,
             // so it is always after the user's own today: the reminder goes out from 07:00 of that day in their time zone.
             var newYork = UsSession.Today(time.GetUtcNow());
-            var local = UserClock.Today(user, time);
+            var local = StrategyEndpoints.Today(user, time);
             var until = SignalRules.NextWeekday(local > newYork ? local : newYork);
             // Conditional, like the answers: the signal may have been answered or missed since it was read.
             var snoozed = await db.Signals.Where(s => s.Id == id && s.Status == SignalStatus.Waiting)
@@ -190,7 +190,7 @@ public static class SignalEndpoints
                 await db.SaveChangesAsync(cancellationToken);
             }
             // The signal's trade already exists (its unique index): answered by another save after all.
-            catch (DbUpdateException error) when (error.IsUniqueViolation(OneTradeIndex))
+            catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: OneTradeIndex })
             {
                 return false;
             }
@@ -213,7 +213,7 @@ public static class SignalEndpoints
         if (signal.Side == TradeSide.Buy)
         {
             var step = signal.StepAmount ?? strategy.Budget.Amount;
-            if (TemplateCatalog.Fee.CanBuyWith(step)) prefillAmount = TemplateCatalog.Fee.Split(step).Amount;
+            if (step > TemplateCatalog.Fee.Fixed + 0.01m) prefillAmount = TemplateCatalog.Fee.Split(step).Amount;
         }
         else
         {
@@ -227,10 +227,18 @@ public static class SignalEndpoints
         var prefill = new TradePrefill(nextDay > today ? today : nextDay, next?.Open ?? latest?.Price ?? signal.ClosePrice, prefillAmount, prefillShares,
             PriceIsClose: next is null && latest is null, PriceIsLatest: next is null && latest is not null);
 
+        var rates = new List<RateDay>();
+        // The screen shows no rate line when the currencies match, so nothing to load then.
+        var exchange = strategy.Currency == asset.Currency ? null : await ExchangeRates.LoadAsync(db, signal.SignalDate, cancellationToken);
+        if (exchange is not null)
+        // Only days with both rates stored: another day (a weekend, a holiday, today before the rates are in) would repeat an
+        // earlier rate under its own date. The form picks the latest on or before its date, as the server does.
         // From the look-back before the signal, as the server's own lookup reads them, so a signal day without a stored rate
         // (a European holiday) still shows the earlier one the server would use.
-        var rates = (await ExchangeRates.ForPairAsync(db, strategy.Currency, asset.Currency, signal.SignalDate, cancellationToken))
-            .ReferenceDays(strategy.Currency, asset.Currency, signal.SignalDate, today);
+        for (var day = signal.SignalDate.AddDays(-ExchangeRates.LookBackDays); day <= today; day = day.AddDays(1))
+            if (exchange.StoredOn(strategy.Currency, day) && exchange.StoredOn(asset.Currency, day)
+                && day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && exchange.Between(strategy.Currency, asset.Currency, day) is { } rate)
+                rates.Add(new RateDay(day, rate));
 
         SignalAnswer? answer = null;
         if (signal.Status == SignalStatus.Confirmed)
@@ -241,7 +249,7 @@ public static class SignalEndpoints
         else if (signal.Status == SignalStatus.Skipped) answer = new SignalAnswer(signal.Status, signal.SkipReason, null, null, null, null, null);
 
         var reason = EmailTexts.FactSentence(SignalLine.From(signal, strategy, asset), user.Locale);
-        var canSnooze = strategy.TemplateKey != TemplateKeys.Ai;
+        var canSnooze = strategy.TemplateKey != "ai";
         return new SignalDetail(signal.Id, strategy.Id, strategy.Name, texts.Name, strategy.Currency, asset.Name, asset.Currency, signal.StepNo,
             signal.MaxSteps, signal.StepAmount, signal.SignalDate, signal.ClosePrice, reason, signal.Status, signal.SnoozedUntil, signal.EndedOn,
             today, prefill, rates, answer, signal.Side, canSnooze, asset.Id,

@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
-using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.MarketData;
@@ -53,7 +52,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
-            var today = UserClock.Today(user, time);
+            var today = StrategyEndpoints.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
 
             var parameters = AiRoundRules.Params(strategy);
@@ -86,7 +85,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
-            var today = UserClock.Today(user, time);
+            var today = StrategyEndpoints.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
             // Before the scheduled round is due, only an extra round on purpose: a second tap after a round never adds one.
             var extra = round.DueOn > today;
@@ -119,7 +118,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } strategy) return TypedResults.NotFound();
-            var today = UserClock.Today(user, time);
+            var today = StrategyEndpoints.Today(user, time);
             if (await rounds.CurrentAsync(strategy, today, cancellationToken) is not { } round) return TypedResults.NotFound();
             if (round.DueOn > today) return TypedResults.Conflict(Messages.RoundNotDue.In(user.Locale));
             if (request.RoundId is { } shown && shown != round.Id) return TypedResults.Conflict(Messages.RoundChanged.In(user.Locale));
@@ -133,7 +132,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken, running: false) is not { } strategy) return TypedResults.NotFound();
-            var today = UserClock.Today(user, time);
+            var today = StrategyEndpoints.Today(user, time);
             await rounds.SweepAsync([new(strategy, today)], cancellationToken);
             var (items, total) = await rounds.HistoryAsync(strategy, cancellationToken);
             return TypedResults.Ok(new AiRoundHistory(strategy.Id, strategy.Name, strategy.Mode, today, items, total));
@@ -146,7 +145,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running
-                && s.TemplateKey == TemplateKeys.Ai, cancellationToken);
+                && s.TemplateKey == TemplateCatalog.Ai.Key, cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var errors = new Dictionary<string, string[]>();
             if (Apply(strategy.Params, request, (field, message) => errors[field] = [message], user.Locale) is not { } json) return TypedResults.ValidationProblem(errors);
@@ -162,7 +161,7 @@ public static class AiRoundEndpoints
         {
             var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
             if (request.Enabled is not { } enabled)
-                return ApiProblems.Invalid("enabled", Messages.SayTrueOrFalse.In(user.Locale));
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["enabled"] = [Messages.SayTrueOrFalse.In(user.Locale)] });
             var now = time.GetUtcNow();
             await db.Users.Where(u => u.Id == user.Id)
                 .ExecuteUpdateAsync(u => u.SetProperty(x => x.AiSharing, enabled).SetProperty(x => x.AiSharingChangedAt, now), cancellationToken);
@@ -178,7 +177,7 @@ public static class AiRoundEndpoints
 
     /// <summary>One of the user's AI strategies (running unless <paramref name="running"/> is false); null for anything else.</summary>
     static Task<Strategy?> FindAsync(AppDbContext db, Guid id, Guid userId, CancellationToken cancellationToken, bool running = true) =>
-        db.Strategies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id && s.UserId == userId && s.TemplateKey == TemplateKeys.Ai
+        db.Strategies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == id && s.UserId == userId && s.TemplateKey == TemplateCatalog.Ai.Key
             && (!running || s.Status == StrategyStatus.Running), cancellationToken);
 
     /// <summary>

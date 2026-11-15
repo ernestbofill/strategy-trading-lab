@@ -1,19 +1,17 @@
-import { useEffect, useState } from 'react'
 import { api, type AdminUser, type AdminUsers as AdminUsersPage, type Role } from '../../api'
 import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
 import { PageHeader } from '../../components/PageHeader'
-import { Screen, ScreenMessage } from '../../components/Screen'
+import { Loaded } from '../../components/Loaded'
+import { Screen } from '../../components/Screen'
 import { AdminTopBar } from './AdminTopBar'
-import { isoDate } from '../../lib/format'
+import { localDay } from '../../lib/format'
+import { useLoadable } from '../../lib/useLoadable'
 import styles from './AdminUsers.module.css'
-
-type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; page: AdminUsersPage }
 
 const roleText: Record<Role, string> = { user: 'User', vip: 'VIP', owner: 'Owner' }
 const blockedText = { bounced: 'Blocked: bounced', invalid: 'Blocked: invalid address', complaint: 'Blocked: reported spam' }
 
-/** "2026-10-30" in the owner's time zone, or "–". */
-const day = (at: string | null) => (at ? isoDate(new Date(at)) : '–')
+const day = localDay
 
 const columns: DataTableColumn<AdminUser>[] = [
   { id: 'email', header: 'Email', accessorFn: (u) => u.email, cell: (u) => <span className={styles.email}>{u.email}</span> },
@@ -95,38 +93,27 @@ function Counts({ counts }: { counts: AdminUsersPage['counts'] }) {
 
 /** Admin users page (/admin/users): every account with its role, confirmed email, last visit and strategies. Read-only for now. */
 export function AdminUsers() {
-  const [state, setState] = useState<State>({ status: 'loading' })
-
-  useEffect(() => {
-    let live = true
-    api
-      .getAdminUsers()
-      .then((page) => live && setState({ status: 'ready', page }))
-      .catch(() => live && setState({ status: 'error' }))
-    return () => {
-      live = false
-    }
-  }, [])
+  const state = useLoadable('admin:users', api.getAdminUsers)
 
   return (
     <Screen top={<AdminTopBar />}>
       <PageHeader title="Users" lead="Every account, newest first. Blocking, deleting and invites come later." />
-      {state.status === 'loading' && <ScreenMessage>Loading the users…</ScreenMessage>}
-      {state.status === 'error' && <ScreenMessage>Could not load the users. Try again later.</ScreenMessage>}
-      {state.status === 'ready' && (
-        <>
-          <Counts counts={state.page.counts} />
-          <DataTable
-            label="Users"
-            data={state.page.users}
-            getRowId={(u) => u.id}
-            columns={columns}
-            filters={filters}
-            searchPlaceholder="Search users…"
-            initialSort={{ id: 'joined', desc: true }}
-          />
-        </>
-      )}
+      <Loaded state={state} what="the users">
+        {(page) => (
+          <>
+            <Counts counts={page.counts} />
+            <DataTable
+              label="Users"
+              data={page.users}
+              getRowId={(u) => u.id}
+              columns={columns}
+              filters={filters}
+              searchPlaceholder="Search users…"
+              initialSort={{ id: 'joined', desc: true }}
+            />
+          </>
+        )}
+      </Loaded>
     </Screen>
   )
 }

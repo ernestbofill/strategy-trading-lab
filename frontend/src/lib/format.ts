@@ -40,9 +40,19 @@ export const signedPct = (n: number, digits?: number) => {
   return `${n > 0 ? '+' : n < 0 ? '−' : ''}${digits === undefined ? formatRate(abs) : abs.toFixed(digits)}%`
 }
 
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
 /** Local calendar date as "2026-10-13". */
-export const isoDate = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+export const isoDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+
+/** A moment's local day, "2026-10-30", or "–" when there is none (the admin pages, in the viewer's time zone). */
+export const localDay = (iso: string | null) => (iso ? isoDate(new Date(iso)) : '–')
+
+/** A moment as "2026-10-30 08:12" in the viewer's time zone (the admin pages). */
+export const localDateTime = (iso: string) => {
+  const d = new Date(iso)
+  return `${isoDate(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+}
 
 const shortDateEn = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
 const shortDateCa = new Intl.DateTimeFormat('ca-ES', { month: 'short', day: 'numeric' })

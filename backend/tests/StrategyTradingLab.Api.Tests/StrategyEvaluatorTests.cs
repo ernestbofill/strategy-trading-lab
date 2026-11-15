@@ -1,12 +1,11 @@
+using StrategyTradingLab.Api.Admin;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
-using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 

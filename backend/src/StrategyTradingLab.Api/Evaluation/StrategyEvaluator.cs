@@ -111,7 +111,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         Func<Asset, CancellationToken, Task<LatestPrice?>>? latestPrice, List<string> missing, List<Guid> left, CancellationToken cancellationToken)
     {
         int signals = 0, trades = 0, missed = await CloseUnfollowedAsync(strategy, lastSession, cancellationToken);
-        var listed = strategy.Assets.Where(a => a.IsFollowed).ToDictionary(a => a.AssetId, a => a.AddedAt);
+        var listed = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).ToDictionary(a => a.AssetId, a => a.AddedAt);
         var added = listed.ToDictionary(a => a.Key, a => DateOnly.FromDateTime(a.Value.UtcDateTime));
         var wanted = added.Keys.ToList();
         // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
@@ -197,7 +197,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     /// </summary>
     async Task<int> CloseUnfollowedAsync(Strategy strategy, DateOnly lastSession, CancellationToken cancellationToken)
     {
-        var ticked = strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId).ToList();
+        var ticked = strategy.Assets.Where(a => a.Active && a.RemovedAt is null).Select(a => a.AssetId).ToList();
         // Read in the database, so an answer saved meanwhile stands. Only a waiting signal can be snoozed (the table's check).
         return await db.Signals.Where(s => s.StrategyId == strategy.Id && s.Status == SignalStatus.Waiting
                 && !db.Assets.Any(a => a.Id == s.AssetId && a.Active && ticked.Contains(a.Id)))
@@ -346,7 +346,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             {
                 var amount = Math.Round(heldShares * price / fx, 2);
                 if (amount <= 0) continue;
-                var fee = TemplateCatalog.Fee.On(amount);
+                var fee = Math.Round(amount * (TemplateCatalog.Fee.Percent / 100) + TemplateCatalog.Fee.Fixed, 2);
                 db.SignalTrades.Add(new SignalTrade
                 {
                     SignalId = signal.Id, StrategyId = strategy.Id, AssetId = asset.Id, TradeDate = date, Side = TradeSide.Sell, StepNo = null,
@@ -380,7 +380,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     /// </summary>
     public static SignalTrade? BuyTrade(Signal signal, Strategy strategy, DateOnly date, decimal open, decimal fx, decimal spend)
     {
-        if (!TemplateCatalog.Fee.CanBuyWith(spend)) return null;
+        if (spend <= TemplateCatalog.Fee.Fixed + 0.01m) return null;
         var (amount, fee) = TemplateCatalog.Fee.Split(spend);
         var shares = Math.Round(amount * fx / open, 6);
         if (shares <= 0) return null;
@@ -409,4 +409,42 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
 
     /// <summary>The key of the checks once the day's buy signal's step is bought (<see cref="RulesRunner.Run"/>).</summary>
     public const string ChecksAfterBuyKey = "checksAfterBuy";
+}
+
+/// <summary>The euro against each currency by day, and the rate between any two through it.</summary>
+public class ExchangeRates(Dictionary<string, List<(DateOnly Date, decimal Rate)>> byQuote)
+{
+    public const string Base = "EUR";
+
+    /// <summary>How far before a range prices and rates are loaded, so its first days still find the last trading day before them.</summary>
+    public const int LookBackDays = 7;
+
+    /// <summary>The stored rates from <see cref="LookBackDays"/> before <paramref name="from"/> on (all of them when null): a rate older than that isn't used.</summary>
+    public static async Task<ExchangeRates> LoadAsync(AppDbContext db, DateOnly? from, CancellationToken cancellationToken)
+    {
+        var since = from?.AddDays(-LookBackDays) ?? DateOnly.MinValue;
+        var rows = await db.FxRates.AsNoTracking().Where(r => r.Base == Base && r.Date >= since).OrderBy(r => r.Date)
+            .Select(r => new { r.Quote, r.Date, r.Rate }).ToListAsync(cancellationToken);
+        return new ExchangeRates(rows.GroupBy(r => r.Quote).ToDictionary(g => g.Key, g => g.Select(r => (r.Date, r.Rate)).ToList()));
+    }
+
+    /// <summary>Units of <paramref name="quote"/> per euro on the latest day on or before <paramref name="date"/>; null when unknown.</summary>
+    decimal? PerEuro(string currency, DateOnly date)
+    {
+        if (currency == Base) return 1;
+        if (!byQuote.TryGetValue(currency, out var days)) return null;
+        var at = days.FindLastIndex(d => d.Date <= date);
+        return at < 0 ? null : days[at].Rate;
+    }
+
+    /// <summary>Whether <paramref name="currency"/> has a rate stored for that very day (the euro always has).</summary>
+    public bool StoredOn(string currency, DateOnly date) =>
+        currency == Base || (byQuote.TryGetValue(currency, out var days) && days.Exists(d => d.Date == date));
+
+    /// <summary>Units of <paramref name="assetCurrency"/> per one unit of <paramref name="strategyCurrency"/> on a day (USD per EUR, a trade's fx rate).</summary>
+    public decimal? Between(string strategyCurrency, string assetCurrency, DateOnly date)
+    {
+        if (strategyCurrency == assetCurrency) return 1;
+        return PerEuro(assetCurrency, date) is { } asset && PerEuro(strategyCurrency, date) is { } strategy ? asset / strategy : null;
+    }
 }

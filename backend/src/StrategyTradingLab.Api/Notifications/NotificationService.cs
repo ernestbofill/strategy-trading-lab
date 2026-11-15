@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using StrategyTradingLab.Api.Admin;
-using StrategyTradingLab.Api.Auth;
-using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
@@ -52,7 +51,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
                               && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
-                              && strategy.TemplateKey != TemplateKeys.Ai
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email)
                           // A second check the same day (a re-run, a price that came in late) can signal the same stock again: it was alerted already.
                           let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email && x.SentAt > recent
@@ -114,10 +113,11 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         {
             var due = NotifyTime.DueAt(lastSession, user.NotifyHour, user.TimeZone);
             if (now < due || !looked(due)) continue;
+            var local = LocalTime(now, user.TimeZone);
             if (await ClaimAsync(user.Id, null, NotificationKind.Overview, lastSession, cancellationToken) is not { } claimed) continue;
 
             // AI rounds due count by the user's own date, which may already be the day after the session.
-            var today = UserClock.Today(user.TimeZone, now);
+            var today = DateOnly.FromDateTime(local.DateTime);
             // A quiet day is only final once every strategy has been checked for the session: until then (the daily check still
             // running, a strategy that couldn't be checked yet), the claim is given back and a later run looks again.
             var incomplete = false;
@@ -145,7 +145,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest && signal.SnoozedUntil >= earliest
                               && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && user.EmailVerifiedAt != null && user.AlertEmails
-                              && strategy.TemplateKey != TemplateKeys.Ai
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
                                   && x.Channel == NotificationChannel.Email && x.ForDate == signal.SnoozedUntil)
                           select new { signal, strategy, user.Id, user.Email, user.TimeZone, user.NotifyHour, user.Locale, user.UnsubscribeToken, asset }).ToListAsync(cancellationToken);
@@ -154,7 +154,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         foreach (var row in rows)
         {
             var day = row.signal.SnoozedUntil!.Value;
-            if (!IsMorningOf(day, UserClock.LocalNow(now, row.TimeZone), NotifyTime.ReminderHour(row.NotifyHour))) continue;
+            if (!IsMorningOf(day, LocalTime(now, row.TimeZone), NotifyTime.ReminderHour(row.NotifyHour))) continue;
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken) is not { } claimed) continue;
             if (await SendAsync(claimed, row.Email, () => Task.FromResult<EmailContent?>(EmailTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), AppUrl, row.Locale, row.UnsubscribeToken)), cancellationToken)) sent++;
         }
@@ -182,7 +182,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         foreach (var group in rows.GroupBy(r => (r.UserId, r.DueOn)))
         {
             var first = group.First();
-            if (!IsMorningOf(group.Key.DueOn, UserClock.LocalNow(now, first.TimeZone), NotifyTime.ReminderHour(first.NotifyHour))) continue;
+            if (!IsMorningOf(group.Key.DueOn, LocalTime(now, first.TimeZone), NotifyTime.ReminderHour(first.NotifyHour))) continue;
             if (await ClaimAsync(group.Key.UserId, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken) is not { } claimed) continue;
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
             if (await SendAsync(claimed, first.Email, () => Task.FromResult<EmailContent?>(EmailTexts.AiRoundDue(strategies, AppUrl, first.Locale, first.UnsubscribeToken)), cancellationToken)) sent++;
@@ -206,7 +206,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id
                           where signal.SignalDate >= since && signal.Status == SignalStatus.Waiting && strategy.Mode == StrategyMode.Live
                               && user.AlertPush && strategy.Status == StrategyStatus.Running && db.PushSubscriptions.Any(p => p.UserId == user.Id)
-                              && strategy.TemplateKey != TemplateKeys.Ai
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push)
                           let repeat = db.Notifications.Any(x => x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt > recent
                               && db.Signals.Any(o => o.Id == x.SignalId && o.StrategyId == signal.StrategyId && o.AssetId == signal.AssetId && o.Side == signal.Side))
@@ -247,7 +247,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && asset.Active
                               && db.StrategyAssets.Any(a => a.StrategyId == strategy.Id && a.AssetId == asset.Id && a.Active && a.RemovedAt == null)
                               && user.EmailVerifiedAt != null && user.AlertEmails
-                              && strategy.TemplateKey != TemplateKeys.Ai
+                              && strategy.TemplateKey != "ai"
                               && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Email && x.SentAt != null)
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == NotificationChannel.Email)
                           select new { signal, strategy, user.Id, user.Email, user.Locale, user.UnsubscribeToken, user.TimeZone, user.NotifyHour, asset }).ToListAsync(cancellationToken);
@@ -275,7 +275,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && strategy.Mode == StrategyMode.Live && strategy.Status == StrategyStatus.Running && asset.Active
                               && db.StrategyAssets.Any(a => a.StrategyId == strategy.Id && a.AssetId == asset.Id && a.Active && a.RemovedAt == null)
                               && user.AlertPush && db.PushSubscriptions.Any(p => p.UserId == user.Id)
-                              && strategy.TemplateKey != TemplateKeys.Ai
+                              && strategy.TemplateKey != "ai"
                               && db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Signal && x.Channel == NotificationChannel.Push && x.SentAt != null)
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == NotificationChannel.Push)
                           select new { signal, strategy, user.Id, user.Locale, asset }).ToListAsync(cancellationToken);
@@ -345,7 +345,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                           where signal.Status == SignalStatus.Waiting && signal.SnoozedUntil != null && signal.SnoozedUntil <= latest && signal.SnoozedUntil >= earliest
                               && strategy.Mode == StrategyMode.Live && user.AlertPush && strategy.Status == StrategyStatus.Running
                               && db.PushSubscriptions.Any(p => p.UserId == user.Id)
-                              && strategy.TemplateKey != TemplateKeys.Ai
+                              && strategy.TemplateKey != "ai"
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.Snoozed
                                   && x.Channel == NotificationChannel.Push && x.ForDate == signal.SnoozedUntil)
                           select new { signal, strategy, user.Id, user.TimeZone, user.NotifyHour, user.Locale, asset }).ToListAsync(cancellationToken);
@@ -353,7 +353,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         foreach (var row in rows)
         {
             var day = row.signal.SnoozedUntil!.Value;
-            if (!IsMorningOf(day, UserClock.LocalNow(now, row.TimeZone), NotifyTime.ReminderHour(row.NotifyHour))) continue;
+            if (!IsMorningOf(day, LocalTime(now, row.TimeZone), NotifyTime.ReminderHour(row.NotifyHour))) continue;
             if (await ClaimAsync(row.Id, row.signal.Id, NotificationKind.Snoozed, day, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
             if (await PushAsync(claimed, row.Id, PushTexts.SnoozeReminder(Line(row.signal, row.strategy, row.asset), row.Locale), cancellationToken)) sent++;
         }
@@ -377,7 +377,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         foreach (var group in rows.GroupBy(r => (r.UserId, r.DueOn)))
         {
             var first = group.First();
-            if (!IsMorningOf(group.Key.DueOn, UserClock.LocalNow(now, first.TimeZone), NotifyTime.ReminderHour(first.NotifyHour))) continue;
+            if (!IsMorningOf(group.Key.DueOn, LocalTime(now, first.TimeZone), NotifyTime.ReminderHour(first.NotifyHour))) continue;
             if (await ClaimAsync(group.Key.UserId, null, NotificationKind.AiRound, group.Key.DueOn, cancellationToken, NotificationChannel.Push) is not { } claimed) continue;
             var strategies = group.OrderBy(r => r.Name).Select(r => (r.Id, r.Name)).ToList();
             if (await PushAsync(claimed, group.Key.UserId, PushTexts.AiRoundDue(strategies, group.Key.DueOn, first.Locale), cancellationToken)) sent++;
@@ -463,6 +463,12 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         return delivered;
     }
 
+    static DateTimeOffset LocalTime(DateTimeOffset now, string timeZone)
+    {
+        try { return TimeZoneInfo.ConvertTime(now, TimeZoneInfo.FindSystemTimeZoneById(timeZone)); }
+        catch (Exception error) when (error is TimeZoneNotFoundException or InvalidTimeZoneException) { return now; } // UTC, as the dashboard does.
+    }
+
     record SummaryData(
         IReadOnlyList<Strategy> Strategies,
         IReadOnlyList<SignalLine> Waiting,
@@ -533,7 +539,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
         var latestEval = await db.DailyEvaluations.AsNoTracking().Where(e => ids.Contains(e.StrategyId)).MaxAsync(e => (DateOnly?)e.Date, cancellationToken);
         var sessionDate = latestEval ?? lastSession;
 
-        var today = UserClock.Today(timeZone, now);
+        var local = LocalTime(now, timeZone);
+        var today = DateOnly.FromDateTime(local.DateTime);
 
         var data = await LoadSummaryDataAsync(userId, today, sessionDate, cancellationToken, runningStrategies);
 
@@ -602,7 +609,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
             await db.SaveChangesAsync(cancellationToken);
             return notification.Id;
         }
-        catch (DbUpdateException error) when (error.IsUniqueViolation())
+        catch (DbUpdateException error) when (error.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
             db.ChangeTracker.Clear();
             return null;

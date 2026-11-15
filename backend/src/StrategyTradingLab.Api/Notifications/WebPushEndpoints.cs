@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Auth;
-using StrategyTradingLab.Api.Common;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 
@@ -58,7 +57,7 @@ public static class WebPushEndpoints
             Sessions sessions, HttpContext context, CancellationToken cancellationToken) =>
         {
             if (!IsPushService(request.Endpoint, out _) || !IsKey(request.Keys?.P256dh, 65) || !IsKey(request.Keys?.Auth, 16))
-                return ApiProblems.Invalid("endpoint", Messages.PushNotSupported.In(RequestLocale.From(context.Request)));
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["endpoint"] = [Messages.PushNotSupported.In(RequestLocale.From(context.Request))] });
             var user = (await sessions.CurrentAsync(cancellationToken))!;
             // One row per device: a device someone else used before (logged out, then this user logged in) now notifies this user only.
             string endpoint = request.Endpoint!, p256dh = request.Keys!.P256dh!, auth = request.Keys.Auth!;
@@ -77,7 +76,7 @@ public static class WebPushEndpoints
                 await db.SaveChangesAsync(cancellationToken);
             }
             // Saved at the same moment by another request (the dashboard prompt and the account page, two tabs): update that row instead.
-            catch (DbUpdateException error) when (error.IsUniqueViolation())
+            catch (DbUpdateException error) when (error.InnerException is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.UniqueViolation })
             {
                 db.ChangeTracker.Clear();
                 await Update();

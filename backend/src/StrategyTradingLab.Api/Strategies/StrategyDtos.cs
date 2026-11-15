@@ -1,5 +1,4 @@
 using StrategyTradingLab.Api.Engine;
-using StrategyTradingLab.Api.MarketData;
 using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Signals;

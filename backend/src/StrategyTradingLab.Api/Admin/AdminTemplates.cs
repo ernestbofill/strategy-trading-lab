@@ -76,7 +76,7 @@ public static class AdminTemplates
             // something else isn't refused because of it.
             if (NewStrategyValidation.AssetsError(ids, tested, found, TemplateTexts.DefaultLocale, active.AssetIds) is { } invalid) Fail("assetIds", invalid);
             var closePct = change.ClosePct ?? active.ClosePct;
-            if (tested.Key == TemplateKeys.Ai && closePct != active.ClosePct)
+            if (tested.Key == TemplateCatalog.Ai.Key && closePct != active.ClosePct)
                 Fail("closePct", "This template has no getting close: its stocks have no buy rule.");
             else if (closePct < MinClosePct || closePct > MaxClosePct || closePct % CloseStep != 0)
                 Fail("closePct", $"Use {MinClosePct} to {MaxClosePct}, in steps of {CloseStep}.");
@@ -169,7 +169,7 @@ public static class AdminTemplates
                         .Select(a => new AdminTemplateAsset(a.Id, a.Symbol, a.Name, a.Active))
                         .OrderBy(a => a.Name, StringComparer.InvariantCultureIgnoreCase)],
                     v.ClosePct, Strategies.GetValueOrDefault((tested.Key, v.Version)))).ToList();
-            return new AdminTemplate(tested.Key, texts.Name, tested.InvestsIn, tested.Key != TemplateKeys.Ai, settings, versions);
+            return new AdminTemplate(tested.Key, texts.Name, tested.InvestsIn, tested.Key != TemplateCatalog.Ai.Key, settings, versions);
         }
     }
 }

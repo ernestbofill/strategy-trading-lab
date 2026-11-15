@@ -15,7 +15,7 @@ public class AdminAccessTests(AccountsApi fixture) : IClassFixture<AccountsApi>
     public void Every_admin_endpoint_requires_the_owner_policy()
     {
         var admin = fixture.Services.GetRequiredService<EndpointDataSource>().Endpoints.OfType<RouteEndpoint>()
-            .Where(e => e.RoutePattern.RawText?.TrimStart('/').StartsWith("admin", StringComparison.Ordinal) == true).ToList();
+            .Where(e => e.RoutePattern.RawText?.TrimStart('/') is { } path && (path == "admin" || path.StartsWith("admin/", StringComparison.Ordinal))).ToList();
 
         Assert.NotEmpty(admin);
         Assert.All(admin, e =>

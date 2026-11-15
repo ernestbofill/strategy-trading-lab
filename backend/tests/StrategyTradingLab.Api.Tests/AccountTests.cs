@@ -395,7 +395,6 @@ public class AccountTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-
     /// <summary>The account an early migration seeded, with a known password hash, must never come back.</summary>
     [NeonFact]
     public async Task The_seeded_user_is_gone()

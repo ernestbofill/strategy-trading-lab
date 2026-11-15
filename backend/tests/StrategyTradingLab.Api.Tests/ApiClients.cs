@@ -139,8 +139,8 @@ public class AccountsApi : WebApplicationFactory<Program>
             {
                 options.FetchOnDemand = false;
                 // A class shares one API for longer than the minute after start: no daily run or hourly notifications behind the
-                // tests' backs (a strategy's own check and "Refresh now" still run).
-                options.StartDelay = TimeSpan.FromDays(365);
+                // tests' backs (a strategy's own check and "Refresh now" still run). Within Task.Delay's limit (about 49 days).
+                options.StartDelay = TimeSpan.FromDays(30);
             });
             foreach (var worker in services.Where(s => s.ImplementationType == typeof(StrategyTradingLab.Api.Notifications.NotificationWorker)).ToList())
                 services.Remove(worker);

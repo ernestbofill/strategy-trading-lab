@@ -226,8 +226,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
                     latest?.GetValueOrDefault(pick.AssetId), cancellationToken) is { } trade)
                 db.SignalTrades.Add(trade);
             // The strategy page shows the pick today, as the daily check's own signals.
-            await db.SaveDayAsync(new DailyEvaluation { StrategyId = strategy.Id, AssetId = pick.AssetId, Date = session, Status = EvaluationStatus.BuySignal,
-                StepNo = pick.StepNo, Facts = ScoreFacts(score.Overall) }, cancellationToken);
+            await db.SaveDayAsync(strategy.Id, pick.AssetId, session, EvaluationStatus.BuySignal, pick.StepNo, ScoreFacts(score.Overall), cancellationToken);
         }
         if (!extra) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = nextDue });
 
@@ -405,12 +404,11 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
                 : lastScores.ContainsKey(assetId) ? EvaluationStatus.Watching
                 : EvaluationStatus.NotCandidate;
             var facts = ScoreFacts(lastScores.TryGetValue(assetId, out var score) ? score : null);
-            await db.SaveDayAsync(new DailyEvaluation { StrategyId = strategy.Id, AssetId = assetId, Date = session, Status = status, StepNo = todays?.StepNo, Facts = facts },
-                cancellationToken);
+            await db.SaveDayAsync(strategy.Id, assetId, session, status, todays?.StepNo, facts, cancellationToken);
         }
         await db.SaveChangesAsync(cancellationToken);
         // Read in the database, so an answer saved since these rows were read stands (as the daily check does).
-        var missed = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.EndedOn != null).MissWaitingAsync(null, cancellationToken);
+        var missed = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.EndedOn != null).MissWaitingAsync(session, cancellationToken);
         db.ChangeTracker.Clear();
         return (trades, missed);
     }

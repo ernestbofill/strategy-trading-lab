@@ -166,7 +166,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
             // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running.
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            if (!(await db.LockFollowedAsync(strategy.Id, cancellationToken)).Contains(asset.Id)) continue;
+            if ((await db.LockFollowedAsync(strategy.Id, cancellationToken, asset.Id)).Count == 0) continue;
             var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, afterBuy, price, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             signals += run.NewSignals;
@@ -234,8 +234,9 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         var hasSteps = strategy.Budget.Step is not null && strategy.Budget.MaxSteps is not null;
         IEnumerable<DayEvaluation> Unsignalled(Func<DayEvaluation, bool> starts, TradeSide side) =>
             days.Where(d => starts(d) && !signals.ContainsKey((d.Date, side)) && (evaluatedUntil is null || d.Date > evaluatedUntil));
-        void Add(DayEvaluation day, TradeSide side, bool steps)
+        void AddSignal(DayEvaluation day, TradeSide side)
         {
+            var steps = side == TradeSide.Buy && hasSteps;
             var signal = new Signal
             {
                 StrategyId = strategy.Id, AssetId = asset.Id, Side = side,
@@ -253,18 +254,16 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var stepAmount = strategy.Budget.Step ?? 0;
             if (budget.Used + stepAmount > strategy.Budget.Amount) continue; // The budget is used up: no more signals.
             budget.Used += stepAmount;
-            Add(day, TradeSide.Buy, hasSteps);
+            AddSignal(day, TradeSide.Buy);
         }
-        foreach (var day in Unsignalled(d => d.NewSell, TradeSide.Sell)) Add(day, TradeSide.Sell, steps: false);
+        foreach (var day in Unsignalled(d => d.NewSell, TradeSide.Sell)) AddSignal(day, TradeSide.Sell);
 
         // Where it stands today, with the checks after the buy while today's signal exists (not when the budget held it back). Rules
         // that count their own steps (Bear markets) read the same: nothing to keep.
         var afterBuy = checksAfterBuy is not null && signals.ContainsKey((latest.Date, TradeSide.Buy)) && !checksAfterBuy.SequenceEqual(latest.Checks)
             ? checksAfterBuy : null;
         var status = Enum.Parse<EvaluationStatus>(latest.Status.ToString());
-        await db.SaveDayAsync(new DailyEvaluation
-            { StrategyId = strategy.Id, AssetId = asset.Id, Date = latest.Date, Status = status, StepNo = latest.StepNo, Facts = TodaysFacts(latest, afterBuy) },
-            cancellationToken);
+        await db.SaveDayAsync(strategy.Id, asset.Id, latest.Date, status, latest.StepNo, TodaysFacts(latest, afterBuy), cancellationToken);
 
         // Where a signal's window closed: the first later day the buy (or sell) conditions no longer hold. A signal still waiting is missed.
         foreach (var signal in signals.Values.Where(s => s.EndedOn is null))
@@ -278,7 +277,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         // Every ended signal still waiting in the database is missed: not only today's, so a run stopped between the two
         // writes is repaired by the next.
         missed += await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id && s.EndedOn != null)
-            .MissWaitingAsync(null, cancellationToken);
+            .MissWaitingAsync(latest.Date, cancellationToken);
 
         // Each signal's own trade, at the next trading day's open, once that day exists. A signal this check at once finds during a
         // session (#220), when that open has passed, trades at the latest price instead (FillOf); one found before (the evening run)

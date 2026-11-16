@@ -104,7 +104,7 @@ describe('Dashboard', () => {
     expect(fund.getByText('S&P 500: −1.1%')).toBeTruthy()
     expect(fund.getByText('CSPX: holding')).toBeTruthy()
     // Below the limit of 10 running strategies, a new one can start.
-    expect(screen.getByRole('link', { name: /\+ New strategy/ }).getAttribute('href')).toBe('/new')
+    expect(screen.getByRole('link', { name: '+ New strategy' }).getAttribute('href')).toBe('/new')
   })
 
   it('disables the new strategy button at the limit of 10 running strategies', async () => {

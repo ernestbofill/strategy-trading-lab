@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api, TooManyTriesError, type FeedbackItem } from '../../api'
 import { SendFeedback } from './SendFeedback'
 
@@ -34,11 +34,6 @@ const renderForm = () =>
 describe('SendFeedback', () => {
   beforeEach(() => {
     emailVerified = true
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    cleanup()
   })
 
   it('sends a comment with its type, not tied to any page, and clears the box', async () => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../../api'
 import { AccountProvider, useAccount } from './AccountContext'
 
@@ -12,8 +12,6 @@ function deferred<T>() {
   const promise = new Promise<T>((r) => (resolve = r))
   return { promise, resolve }
 }
-
-afterEach(() => vi.restoreAllMocks())
 
 describe('AccountProvider', () => {
   it("doesn't let an older check undo a newer log-in", async () => {

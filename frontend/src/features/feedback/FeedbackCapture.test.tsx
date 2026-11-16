@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../../api'
@@ -28,8 +28,6 @@ describe('FeedbackCapture', () => {
   afterEach(() => {
     window.getSelection()?.removeAllRanges()
     vi.useRealTimers()
-    vi.restoreAllMocks()
-    cleanup()
   })
 
   it('lets any user with a confirmed email select text and submit feedback', async () => {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import { api, InvalidFieldsError, type Currency, type Locale } from '../../api'
-import { FormMessage, SegmentedField, SelectField, type FormMessageState } from '../../components/Field'
+import { api, type Currency, type Locale } from '../../api'
+import { FormMessage, SegmentedField, SelectField } from '../../components/Field'
+import { useSubmit } from '../../components/useSubmit'
 import { NavRow } from '../../components/NavRow'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
@@ -88,25 +89,19 @@ type Saved = () => Promise<unknown>
 /** Saves one setting: a select or segmented field, a "Saved." line and a save button, enabled once it changed. */
 function useSave<T>(current: T, save: (value: T) => Promise<void>, onSaved: Saved, field: string, savedText: string) {
   const [value, setValue] = useState(current)
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
+  const { busy, errors, line, run, done } = useSubmit(errorText)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setMessage(null)
-    try {
+    const saved = await run(async () => {
       await save(value)
       if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
-      setMessage({ tone: 'done', text: savedText })
-    } catch (err) {
-      setMessage({ tone: 'error', text: (err instanceof InvalidFieldsError && err.fields[field]) || errorText(err) })
-    }
-    setBusy(false)
+    })
+    if (saved) done(savedText)
   }
 
-  return { value, setValue, message, busy, submit, changed: value !== current }
+  // The form has one line: this setting's refusal first, else the save's.
+  return { value, setValue, message: errors[field] ? ({ tone: 'error', text: errors[field] } as const) : line, busy, submit, changed: value !== current }
 }
 
 /** The shell of one setting's form: its field(s) as children, then the "Saved." line and the save button. */

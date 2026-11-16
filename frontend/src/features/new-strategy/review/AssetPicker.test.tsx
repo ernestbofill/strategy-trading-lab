@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { api, ForbiddenError, InvalidValueError, type Security, type TemplateDetail } from '../../../api'
@@ -27,6 +27,17 @@ const stock = (symbol: string): Security => ({ id: `id-${symbol}`, symbol, name:
 
 const dip = (starterList: Security[]) =>
   ({ ...trend, key: 'dip', name: 'Winners at a discount', watches: { kind: 'stocks', starterList } }) as unknown as TemplateDetail
+
+/** Types into a search field and lets its 400ms wait pass at once: fake timers only for that wait, so the screen's own reads keep real ones. */
+async function typeSearch(label: string, value: string) {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  try {
+    fireEvent.change(screen.getByLabelText(label), { target: { value } })
+    await act(() => vi.advanceTimersByTimeAsync(400))
+  } finally {
+    vi.useRealTimers()
+  }
+}
 
 /** Stands in for Choose the mode: shows which template the draft is for. */
 function DraftTemplate() {
@@ -67,8 +78,8 @@ describe('the fund picker', () => {
     open()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Change' }))
-    fireEvent.change(screen.getByLabelText('Search funds'), { target: { value: 'world' } })
-    fireEvent.click(await screen.findByRole('button', { name: /Vanguard Total World/ }, { timeout: 2000 }))
+    await typeSearch('Search funds', 'world')
+    fireEvent.click(await screen.findByRole('button', { name: /Vanguard Total World/ }))
 
     expect(search).toHaveBeenCalledWith('world', 'fund')
     expect(add).toHaveBeenCalledWith('VT', 'fund')
@@ -88,8 +99,8 @@ describe('the fund picker', () => {
     open()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Change' }))
-    fireEvent.change(screen.getByLabelText('Search funds'), { target: { value: 'nasdaq' } })
-    fireEvent.click(await screen.findByRole('button', { name: /Invesco QQQ Trust/ }, { timeout: 2000 }))
+    await typeSearch('Search funds', 'nasdaq')
+    fireEvent.click(await screen.findByRole('button', { name: /Invesco QQQ Trust/ }))
 
     expect(add).not.toHaveBeenCalled()
     expect(screen.getByText('Tracks the Nasdaq-100')).toBeTruthy()
@@ -103,8 +114,8 @@ describe('the fund picker', () => {
     open()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Change' }))
-    fireEvent.change(screen.getByLabelText('Search funds'), { target: { value: 'world' } })
-    fireEvent.click(await screen.findByRole('button', { name: /Vanguard Total World/ }, { timeout: 2000 }))
+    await typeSearch('Search funds', 'world')
+    fireEvent.click(await screen.findByRole('button', { name: /Vanguard Total World/ }))
 
     expect(await screen.findByText(/Confirm your email to add a new fund/)).toBeTruthy()
     expect(screen.getByText('iShares Core S&P 500')).toBeTruthy()
@@ -116,7 +127,7 @@ describe('"+ Add a stock"', () => {
 
   async function search(text: string) {
     fireEvent.click(await screen.findByRole('button', { name: '+ Add a stock' }))
-    fireEvent.change(screen.getByLabelText('Search stocks'), { target: { value: text } })
+    await typeSearch('Search stocks', text)
   }
 
   it('adds a searched stock at the end of the list, ticked', async () => {
@@ -128,7 +139,7 @@ describe('"+ Add a stock"', () => {
     open(dip([stock('NVDA'), stock('AVGO')]))
 
     await search('zscaler')
-    fireEvent.click(await screen.findByRole('button', { name: /Zscaler, Inc\./ }, { timeout: 2000 }))
+    fireEvent.click(await screen.findByRole('button', { name: /Zscaler, Inc\./ }))
 
     expect(find).toHaveBeenCalledWith('zscaler', 'stock')
     expect(add).toHaveBeenCalledWith('ZS', 'stock')
@@ -148,7 +159,7 @@ describe('"+ Add a stock"', () => {
     fireEvent.click(await screen.findByRole('checkbox', { name: /AVGO Inc\./ }))
     expect(screen.getByText('1 of 2 ticked')).toBeTruthy()
     await search('avgo')
-    fireEvent.click(await screen.findByRole('button', { name: /AVGO Inc\./ }, { timeout: 2000 }))
+    fireEvent.click(await screen.findByRole('button', { name: /AVGO Inc\./ }))
 
     expect(add).not.toHaveBeenCalled()
     expect(screen.getAllByRole('checkbox')).toHaveLength(2)
@@ -161,10 +172,10 @@ describe('"+ Add a stock"', () => {
     open(dip([stock('NVDA')]))
 
     await search('zzzz')
-    expect(await screen.findByText("Nothing found. Try the company's name or its symbol.", undefined, { timeout: 2000 })).toBeTruthy()
+    expect(await screen.findByText("Nothing found. Try the company's name or its symbol.")).toBeTruthy()
 
-    fireEvent.change(screen.getByLabelText('Search stocks'), { target: { value: 'zscaler' } })
-    fireEvent.click(await screen.findByRole('button', { name: /Zscaler, Inc\./ }, { timeout: 2000 }))
+    await typeSearch('Search stocks', 'zscaler')
+    fireEvent.click(await screen.findByRole('button', { name: /Zscaler, Inc\./ }))
 
     expect(await screen.findByText("You can add up to 30 new stocks and funds, and you've reached it.")).toBeTruthy()
     expect(screen.getAllByRole('checkbox')).toHaveLength(1)

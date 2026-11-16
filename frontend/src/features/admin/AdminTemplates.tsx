@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { api, InvalidFieldsError, type AdminTemplate, type AdminTemplateAsset, type AdminTemplateVersion } from '../../api'
+import { api, type AdminTemplate, type AdminTemplateAsset, type AdminTemplateVersion } from '../../api'
 import { SelectField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Tabs } from '../../components/Tabs'
@@ -15,6 +15,7 @@ import { AssetPicker } from '../new-strategy/review/AssetPicker'
 import { templateCacheKey, templatesCacheKey } from '../new-strategy/useTemplate'
 import styles from './AdminTemplates.module.css'
 import { Button } from '../../components/Button'
+import { useSubmit } from '../../components/useSubmit'
 
 /** The setting's sentence with a blank for its value: "Rose at least _% from its low". */
 const labelOf = (sentence: string, value: string) => sentence.replace('{value}', value.replace('{n}', '_'))
@@ -46,23 +47,12 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
   )
   const [close, setClose] = useState(String(version.closePct))
   const [assets, setAssets] = useState<AdminTemplateAsset[]>(version.assets)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [failed, setFailed] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const submit = useSubmit('Could not save. Try again.')
+  const { busy, errors, message } = submit
 
-  const run = async (action: () => Promise<void>) => {
-    setBusy(true)
-    setFailed(false)
-    setErrors({})
-    try {
-      await action()
-    } catch (e) {
-      if (e instanceof InvalidFieldsError) setErrors(e.fields)
-      else setFailed(true)
-    } finally {
-      // Also after a success that keeps this form (making a version active, a save that changed nothing).
-      setBusy(false)
-    }
+  // Released after a success too: making a version active, or a save that changed nothing, keeps this form.
+  const run = async (action: () => Promise<void>, check?: () => Record<string, string>) => {
+    if (await submit.run(action, check)) submit.reset()
   }
 
   const save = (e: FormEvent) => {
@@ -74,14 +64,10 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
       ...Object.entries(defaults).filter(([, n]) => Number.isNaN(n)).map(([key]) => [`settings.${key}`, 'Type a number.']),
       ...(closePct !== null && Number.isNaN(closePct) ? [['closePct', 'Type a number.']] : []),
     ])
-    if (Object.keys(notNumbers).length > 0) {
-      setErrors(notNumbers)
-      return
-    }
     void run(async () => {
       const next = await api.saveAdminTemplateVersion(template.key, { defaults, assetIds: assets.map((a) => a.id), closePct })
       onChanged(next, next.versions.find((v) => v.active)?.version ?? version.version)
-    })
+    }, () => notNumbers)
   }
 
   const activate = () =>
@@ -153,7 +139,7 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
         {errors.assetIds && <p className={styles.error} role="alert">{errors.assetIds}</p>}
       </fieldset>
 
-      {failed && <p className={styles.error} role="alert">Could not save. Try again.</p>}
+      {message && <p className={styles.error} role="alert">{message.text}</p>}
       <div className={styles.actions}>
         <Button type="submit" variant="primary" disabled={busy}>
           Save as new version

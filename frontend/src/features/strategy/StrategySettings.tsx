@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { api, InvalidFieldsError, type StrategyDetail, type TemplateDetail } from '../../api'
+import { api, type StrategyDetail, type TemplateDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -12,6 +12,7 @@ import { useTemplate } from '../new-strategy/useTemplate'
 import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
 import { useStrategy } from './useStrategy'
+import { useSubmit } from '../../components/useSubmit'
 
 /** Tune the settings for a running strategy (/strategies/:id/settings). */
 export function StrategySettings() {
@@ -41,8 +42,8 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
   const t = useT()
   const leave = useLeave(strategyPath(strategy.id))
   const [values, setValues] = useState<SettingValues>(() => settingValues(template, strategy.settings ?? {}))
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { busy: saving, line, run } = useSubmit(t('strategy.settings.saveFailed'))
+  const error = line?.text
   const top = <TopBar up={strategyPath(strategy.id)} upLabel="common.up.strategy" step={strategy.name} />
 
   if (template.settings.length === 0) {
@@ -55,21 +56,9 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
   }
 
   const save = async () => {
-    if (saving) return
-    setSaving(true)
-    setError(null)
-    try {
-      await api.updateStrategySettings(strategy.id, values)
-      invalidateAll()
-      leave()
-    } catch (err) {
-      if (err instanceof InvalidFieldsError) {
-        setError(Object.values(err.fields)[0] || t('strategy.settings.checkSettings'))
-      } else {
-        setError(t('strategy.settings.saveFailed'))
-      }
-      setSaving(false)
-    }
+    if (!(await run(() => api.updateStrategySettings(strategy.id, values)))) return
+    invalidateAll()
+    leave()
   }
 
   return (

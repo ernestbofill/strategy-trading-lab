@@ -18,7 +18,7 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
         {
             await Task.Delay(delay, time, stoppingToken);
             // Like the price refresh: while the admin page has the API on the other database, its users are not ours to email.
-            if (databases.Active != databases.Home)
+            if (!databases.IsHome)
             {
                 delay = UntilNextHour(time.GetUtcNow());
                 continue;

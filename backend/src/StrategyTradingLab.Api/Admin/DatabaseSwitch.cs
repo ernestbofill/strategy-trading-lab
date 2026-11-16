@@ -53,6 +53,9 @@ public class DatabaseSwitch
 
     public DatabaseName Active => choice.Active;
 
+    /// <summary>Whether the API uses its home database: prices, notifications and assets belong to it, so those wait otherwise.</summary>
+    public bool IsHome => Active == Home;
+
     /// <summary>The connection string of the active database: read for every new context.</summary>
     public string? ConnectionString() => ConnectionString(choice.Active);
 

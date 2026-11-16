@@ -181,7 +181,7 @@ public static class AdminEndpoints
         .WithSummary("The price refresh: the next and last runs and what failed in the last one.");
 
         prices.MapPost("/refresh", Results<Accepted, Conflict<string>> (PriceRefreshState state, DatabaseSwitch databases) =>
-            databases.Active != databases.Home ? TypedResults.Conflict("The API is switched to another database: switch back to refresh the prices.")
+            !databases.IsHome ? TypedResults.Conflict("The API is switched to another database: switch back to refresh the prices.")
             : state.Request() ? TypedResults.Accepted((string?)null)
             : TypedResults.Conflict("A refresh is already running."))
         .WithSummary("Refreshes the prices now, in the background, whatever the schedule says.");
@@ -251,7 +251,7 @@ public static class AdminEndpoints
             var symbol = request.Symbol?.Trim() ?? "";
             if (SymbolProblem(symbol) is { } symbolProblem) return ApiProblems.Invalid("symbol", symbolProblem);
             // Adding fetches prices, and prices belong to the database this host owns (as Refresh now).
-            if (databases.Active != databases.Home)
+            if (!databases.IsHome)
                 return TypedResults.Conflict("The API is switched to another database: switch back to add an asset.");
             try
             {
@@ -374,7 +374,7 @@ public static class AdminEndpoints
     /// </summary>
     static async Task<Conflict<string>?> WriteAsync(DatabaseSwitch databases, PriceRefreshState state, Func<Task> write)
     {
-        if (databases.Active != databases.Home) return TypedResults.Conflict("The API is switched to another database: switch back to change the prices.");
+        if (!databases.IsHome) return TypedResults.Conflict("The API is switched to another database: switch back to change the prices.");
         if (state.Running || !await state.Writing.WaitAsync(0))
             return TypedResults.Conflict("Prices are being fetched (the daily refresh or another download): try again when it's done.");
         try
@@ -448,16 +448,5 @@ public static class AdminEndpoints
         var d = setting.Definition;
         return new(d.Key, d.Group, d.Description, d.Default, d.Secret, d.Secret ? null : setting.Value,
             setting.Value is not null, setting.Source, d.Input);
-    }
-
-    /// <summary>The rate limit key for a client: its IPv4 address, or its IPv6 /64.</summary>
-    public static string ClientKey(System.Net.IPAddress? address)
-    {
-        if (address is null) return "unknown";
-        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
-        if (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6) return address.ToString();
-        var bytes = address.GetAddressBytes();
-        Array.Clear(bytes, 8, 8);
-        return new System.Net.IPAddress(bytes) + "/64";
     }
 }

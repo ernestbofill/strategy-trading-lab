@@ -35,7 +35,7 @@
         "help": "Higher: only the strongest runs count, so fewer candidates. Lower: more stocks qualify, with weaker trends."
       },
       "gainDays": {
-        "sentence": "The low is the lowest close of the last {value}.",
+        "sentence": "The low is the lowest close of the last {value}, up to the peak.",
         "value": "{n} trading days",
         "help": "21 trading days is about a month (168 ≈ 8 months). Longer: an older low counts, so a slower climb can qualify. Shorter: the rise must be recent."
       },
@@ -89,7 +89,7 @@
         "label": "Proven growth",
         "detail": "Rose {value}% from its low ({level} → {endLevel}, needs {min}%).",
         "short": "rose {value}% (needs {min}%)",
-        "info": "The recent peak must be at least {min}% above the lowest close of the last months: only proven winners count."
+        "info": "The recent peak must be at least {min}% above the lowest close before it, in the last months: only proven winners count. A fall after the peak is no rise."
       },
       "stacked": {
         "label": "Averages stacked",

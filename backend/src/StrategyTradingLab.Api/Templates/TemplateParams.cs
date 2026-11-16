@@ -17,6 +17,13 @@ public record DipParams : IValidatableObject
     /// <summary>The low is measured over this many days (~8 months).</summary>
     [Range(60, 252)] public int GainDays { get; init; } = 168;
 
+    /// <summary>
+    /// From this day on the low is the lowest close up to the peak's day, so a fall after the peak is no rise; earlier days keep
+    /// the POC's rule (the window's low, whatever the order). A strategy that ran before the rule existed has the day it came
+    /// (set by migration), so the daily replay of its past, which rebuilds the steps it holds, reads as it did.
+    /// </summary>
+    public DateOnly LowBeforePeakFrom { get; init; } = DateOnly.MinValue;
+
     /// <summary>Recent peak: the highest close of this many days.</summary>
     [Range(10, 120)] public int PeakDays { get; init; } = 60;
 

@@ -180,11 +180,14 @@ describe('httpApi CSRF header', () => {
     for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'X-Requested-With': 'stl' })
   })
 
-  it('sends Accept-Language on requests', async () => {
+  it('sends Accept-Language on every request, saves and trades included', async () => {
     respond(200, [{ key: 'dip' }])
     await httpApi.getTemplates()
-    const [, init] = vi.mocked(fetch).mock.calls[0]
-    expect(init?.headers).toMatchObject({ 'Accept-Language': 'en' })
+    respond(204)
+    await httpApi.updateStrategySettings('s1', {})
+    respond(204)
+    await httpApi.deleteTrade('t1')
+    for (const [, init] of vi.mocked(fetch).mock.calls) expect(init?.headers).toMatchObject({ 'Accept-Language': 'en' })
   })
 })
 

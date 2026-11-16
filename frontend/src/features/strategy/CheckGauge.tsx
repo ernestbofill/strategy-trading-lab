@@ -9,9 +9,10 @@ const withClass = (own: string, extra?: string) => (extra ? `${own} ${extra}` : 
 
 const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high', 'breakout'])
 
-// Rules measured in percent: their bar says the figure itself, as the sentence does. Its share of the target ("199%" for
-// a 99.3% rise that needs 50%) read as another figure (feedback, 2026-11-16).
-const PERCENT_KEYS = new Set(['gain', 'drop'])
+// Proven growth's bar says the rise itself, as its sentence does: its share of the target ("199%" for a 99.3% rise that
+// needs 50%) read as another figure (feedback, 2026-11-16). Not the drops: the comeback's is negative, and a bear's bar
+// stays full inside a drop while its figure shrinks.
+const VALUE_KEYS = new Set(['gain'])
 
 /** Visual gauge for a rule check (`className` places it in its parent): threshold bar (with >100% overflow), 3-zone window band, or moving-average comparison. */
 export function CheckGauge({ check: raw, currency, className }: { check: RuleCheck; currency: string; className?: string }) {
@@ -125,7 +126,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
           <div className={styles.fill} data-state={state} style={{ width: `${fillPct}%` }} />
           <span className={styles.targetTick} style={{ left: '75%' }} />
         </div>
-        <span className={styles.mono} data-state={state}>{PERCENT_KEYS.has(check.key) && check.value !== null ? formatRate(check.value) : pct}%</span>
+        <span className={styles.mono} data-state={state}>{VALUE_KEYS.has(check.key) && check.value !== null ? formatRate(check.value) : pct}%</span>
       </div>
     )
   }

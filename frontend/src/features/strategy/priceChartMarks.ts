@@ -29,8 +29,9 @@ export const nextGoal = (checks: RuleCheck[]) =>
  * One day's levels from its checks' keys (not the template's): a candidate's buy area or discount zone, else the line that
  * would make it a candidate (beaten down, proven growth); a held stock's next milestone; a bear's market fall line, and its
  * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks (and
- * next-step previews). The growth line shows only on days the growth isn't met. The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
- * 2026-11-08); likewise `goal`, today's next step: while it is the golden cross, every day draws the SMA 50 and SMA 200.
+ * next-step previews). The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
+ * 2026-11-08), except the growth line, which shows only on the days the growth isn't met (so a dip that lacks only its
+ * averages draws no level); likewise `goal`, today's next step: while it is the golden cross, every day draws the SMA 50 and SMA 200.
  */
 export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(checks), goal: string | null = null): ChartMark[] {
   const marks: ChartMark[] = []

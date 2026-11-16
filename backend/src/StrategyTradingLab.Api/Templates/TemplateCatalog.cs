@@ -99,6 +99,9 @@ public sealed record Template(
 
     public const decimal DefaultClosePct = 3;
 
+    /// <summary>Signals are rare (years apart): the strategy page says so next to the past results, so a quiet strategy doesn't look broken.</summary>
+    public bool RareSignals { get; init; }
+
     /// <summary>Optional multi-index backtest tabs (used by Index trend).</summary>
     public IReadOnlyList<BenchmarkBacktest>? Benchmarks { get; init; }
 
@@ -189,6 +192,7 @@ public static class TemplateCatalog
         ],
         new BearParams())
     {
+        RareSignals = true,
         // The POC's tunable rules, except the second legs (rearm), a yes/no the screen has no control for.
         Settings =
         [

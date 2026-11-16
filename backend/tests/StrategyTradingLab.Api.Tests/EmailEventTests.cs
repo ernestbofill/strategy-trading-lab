@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
@@ -9,12 +11,26 @@ using StrategyTradingLab.Api.Email;
 
 namespace StrategyTradingLab.Api.Tests;
 
-public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
+/// <summary>The test API with Brevo's webhook key set, shared by the class (in configuration: `.env.local` beats `UseSetting`).</summary>
+public class BrevoApi : AccountsApi
 {
-    const string Key = "a-long-enough-webhook-key";
+    public const string Key = "a-long-enough-webhook-key";
 
-    static Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> WithKey(AccountsApi api, string? key = Key) =>
-        api.WithWebHostBuilder(b => { if (key is not null) b.UseSetting("BREVO_WEBHOOK_KEY", key); });
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?> { ["BREVO_WEBHOOK_KEY"] = Key }));
+    }
+}
+
+public class EmailEventTests(BrevoApi api) : IClassFixture<BrevoApi>
+{
+    const string Key = BrevoApi.Key;
+
+    /// <summary>A host of its own with another webhook key: empty, or too short to count.</summary>
+    static Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> WithKey(AccountsApi api, string key) =>
+        api.WithWebHostBuilder(b => b.ConfigureAppConfiguration((_, config) =>
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["BREVO_WEBHOOK_KEY"] = key })));
 
     static StringContent Json(string json) => new(json, Encoding.UTF8, "application/json");
 
@@ -37,8 +53,7 @@ public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
         string[] emails = [api.NewEmail(), api.NewEmail(), api.NewEmail(), api.NewEmail()];
         try
         {
-            using var brevoApi = WithKey(api);
-            using var brevo = brevoApi.CreateClient(); // No cookie and no X-Requested-With header, as Brevo calls it.
+            using var brevo = api.CreateClient(); // No cookie and no X-Requested-With header, as Brevo calls it.
             foreach (var (kind, email) in new[] { ("hard_bounce", emails[0]), ("invalid_email", emails[1]), ("spam", emails[2]), ("complaint", emails[3]), ("delivered", emails[3]), ("soft_bounce", emails[3]) })
                 Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"{{kind}}","email":"{{email}}","id":1}"""))).StatusCode);
 
@@ -60,8 +75,7 @@ public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
         string[] emails = [api.NewEmail(), api.NewEmail()];
         try
         {
-            using var brevoApi = WithKey(api);
-            using var brevo = brevoApi.CreateClient();
+            using var brevo = api.CreateClient();
             var body = Json($$"""[{"event":"hard_bounce","email":"{{emails[0]}}"},{"event":"hard_bounce","email":"{{emails[0]}}"},{"event":"spam","email":"{{emails[1]}}"},{"event":"hard_bounce"},"x",{"email":"nobody@example.com"}]""");
 
             Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", body)).StatusCode);
@@ -82,8 +96,7 @@ public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
         var email = api.NewEmail();
         try
         {
-            using var brevoApi = WithKey(api);
-            using var brevo = brevoApi.CreateClient();
+            using var brevo = api.CreateClient();
             Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json("""[{"event":"hard_bounce","email":5},{"event":1,"email":"a@b.c"},{"event":null,"email":null}]"""))).StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, (await brevo.PostAsync($"/email/events?key={Key}", new StringContent("event=hard_bounce", Encoding.UTF8, "text/plain"))).StatusCode);
             Assert.Empty(await Rows(api, email));
@@ -101,12 +114,11 @@ public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
         var body = Json($$"""{"event":"hard_bounce","email":"{{email}}"}""");
         try
         {
-            using var wrongApi = WithKey(api);
-            using var wrong = wrongApi.CreateClient();
+            using var wrong = api.CreateClient();
             Assert.Equal(HttpStatusCode.NotFound, (await wrong.PostAsync("/email/events?key=not-the-key", body)).StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, (await wrong.PostAsync("/email/events", body)).StatusCode);
 
-            using var noKeySetApi = WithKey(api, null);
+            using var noKeySetApi = WithKey(api, "");
             using var noKeySet = noKeySetApi.CreateClient();
             Assert.Equal(HttpStatusCode.NotFound, (await noKeySet.PostAsync("/email/events?key=", body)).StatusCode);
             using var shortKeyApi = WithKey(api, "short");
@@ -126,7 +138,6 @@ public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
     {
         var blocked = api.NewEmail();
         // Email isn't set up in this test, so anything that is not skipped says so: a skip can't be mistaken for a send.
-        using var configured = api.WithWebHostBuilder(_ => { });
         try
         {
             using (var scope = api.Services.CreateScope())
@@ -136,7 +147,7 @@ public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
                 await db.SaveChangesAsync();
             }
 
-            using var send = configured.Services.CreateScope();
+            using var send = api.Services.CreateScope();
             // The real sender: the test API replaces IEmailSender with one that captures emails.
             var sender = ActivatorUtilities.CreateInstance<SmtpEmailSender>(send.ServiceProvider);
             const string Unsubscribe = "https://app.example/api/email/unsubscribe/tok3n/alerts";
@@ -159,8 +170,7 @@ public class EmailEventTests(AccountsApi api) : IClassFixture<AccountsApi>
         using var owner = await api.OwnerAsync();
         try
         {
-            using var brevoApi = WithKey(api);
-            using var brevo = brevoApi.CreateClient();
+            using var brevo = api.CreateClient();
             await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"hard_bounce","email":"{{email}}"}"""));
 
             var users = await owner.GetFromJsonAsync<System.Text.Json.JsonElement>("/admin/users");

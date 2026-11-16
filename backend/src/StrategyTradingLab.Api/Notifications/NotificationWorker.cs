@@ -32,7 +32,7 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     // Alerts held for the user's notification hour (and any a run couldn't send) go out here, before the summary.
                     var now = time.GetUtcNow();
                     var session = UsSession.LastComplete(now);
-                    var alerts = await service.SendSignalAlertsAsync(session, stoppingToken) + await service.SendSignalEndedAsync(session, stoppingToken);
+                    var alerts = await service.SendSignalAlertsAsync(session, now, stoppingToken) + await service.SendSignalEndedAsync(session, now, stoppingToken);
                     if (alerts > 0) logger.LogInformation("Sent {Count} signal alerts.", alerts);
                     var sent = await service.SendOverviewsAsync(now, stoppingToken);
                     if (sent > 0) logger.LogInformation("Sent {Count} summaries.", sent);
@@ -42,8 +42,8 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     if (rounds > 0) logger.LogInformation("Sent {Count} AI round reminders.", rounds);
                     // Push after email. What a run couldn't push right after the check (a push service down) is retried here, every hour.
                     // Stock changes last: the reminders don't depend on them.
-                    var pushed = await service.PushSignalAlertsAsync(session, stoppingToken)
-                        + await service.PushSignalEndedAsync(session, stoppingToken)
+                    var pushed = await service.PushSignalAlertsAsync(session, now, stoppingToken)
+                        + await service.PushSignalEndedAsync(session, now, stoppingToken)
                         + await service.PushSnoozeRemindersAsync(now, stoppingToken)
                         + await service.PushAiRoundRemindersAsync(now, stoppingToken)
                         + await service.PushStockChangesAsync(now, stoppingToken);

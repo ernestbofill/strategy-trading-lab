@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] GitHub: delete the branch `claude/awesome-clarke-32nvbu-admin-loading`. It holds one bad commit from the refactor (it undoes #239) and has no PR; the cloud session couldn't delete it. Its work merged as #241 from another branch. (#252)
 - [ ] QA sessions, optional: save the `qaagent` password in the desktop app's built-in browser too (sign in once there). It resizes to 390px and 360px, which Chrome can't, so signed-in screens can be checked at phone width (lead L-005). The wrong-password check on Log-in (L-006) needs you or another tool: the agent may not type a password on production. (#215)
 - [x] Getting close push: choose #212 (its own push, Manual only, under signals and reminders) or #213 (the summary push names the stocks getting close). Merge one and close the other. (#212, #213) Ernest chose #213, 2026-11-10.
 - [x] Spaceship (domain → Email forwarding): forward `contact@strategytradinglab.com` to your inbox and send it a test mail. Claude then puts the address on the legal notice and the privacy policy (item 26). (#187) Done by Ernest, 2026-11-08; the address is on the legal pages since #198.

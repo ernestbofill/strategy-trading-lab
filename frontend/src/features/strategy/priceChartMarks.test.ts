@@ -35,8 +35,8 @@ describe('chartMarks', () => {
     ]
     expect(chartMarks(checks)).toEqual([{ id: 'zone', label: 'stock.chart.zone', tone: 'buy', from: 190, to: 170 }])
     expect(chartMarks([{ ...checks[0], met: false }, checks[1]])).toEqual([{ id: 'growth', label: 'stock.chart.growth', tone: 'watch', from: 150 }])
-    // A day that was a candidate, drawn for a stock that isn't one today: the growth line, not the zone.
-    expect(chartMarks(checks, false).map((m) => m.id)).toEqual(['growth'])
+    // A day with the growth met, drawn for a stock that isn't a candidate today: no zone, and no growth line either.
+    expect(chartMarks(checks, false)).toEqual([])
   })
 
   it("shows a held comeback stock its next milestone's buy area, not a used one", () => {

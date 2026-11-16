@@ -29,7 +29,7 @@ export const nextGoal = (checks: RuleCheck[]) =>
  * One day's levels from its checks' keys (not the template's): a candidate's buy area or discount zone, else the line that
  * would make it a candidate (beaten down, proven growth); a held stock's next milestone; a bear's market fall line, and its
  * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks (and
- * next-step previews). The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
+ * next-step previews). The growth line shows only on days the growth isn't met. The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
  * 2026-11-08); likewise `goal`, today's next step: while it is the golden cross, every day draws the SMA 50 and SMA 200.
  */
 export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(checks), goal: string | null = null): ChartMark[] {
@@ -56,8 +56,10 @@ export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(chec
         if (isCandidate && c.level !== null && c.endLevel != null)
           marks.push({ id: 'zone', label: 'stock.chart.zone', tone: 'buy', from: c.level, to: c.endLevel })
         break
+      // Only while the growth is what's missing: the rule reads the recent peak, not today's price, so once it is met a
+      // price under the line read as a rule not met (feedback, 2026-11-16).
       case 'gain':
-        if (!isCandidate && c.level !== null && c.min !== null)
+        if (!isCandidate && c.met === false && c.level !== null && c.min !== null)
           marks.push({ id: 'growth', label: 'stock.chart.growth', tone: 'watch', from: above(c.level, c.min) })
         break
       // The comeback has it only while not a candidate (the beaten-down line); a bear always (the market fall).

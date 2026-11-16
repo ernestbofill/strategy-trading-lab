@@ -1,14 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
   api,
-  InvalidFieldsError,
-  InvalidValueError,
   TooManyTriesError,
-  UnauthorizedError,
   type AdminInvite,
   type Locale,
 } from '../../api'
-import { FormMessage, SegmentedField, TextField, type FormMessageState } from '../../components/Field'
+import { FormMessage, SegmentedField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Loaded } from '../../components/Loaded'
 import { Screen } from '../../components/Screen'
@@ -18,6 +15,7 @@ import { AdminTopBar } from './AdminTopBar'
 import { adminCacheKeys } from './cacheKeys'
 import { useCopy } from '../../components/useCopy'
 import styles from './AdminInvites.module.css'
+import { useSubmit } from '../../components/useSubmit'
 
 /** The admin setting that gates sign-up (backend Admin/SettingDefinitions.cs). */
 const SIGN_UPS = 'SIGN_UPS'
@@ -85,8 +83,7 @@ export function AdminInvites() {
 function SignUpGate() {
   const [saved, setSaved] = useState<SignUps | null>(null)
   const [choice, setChoice] = useState<SignUps>('open')
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
+  const { busy, message, setMessage, run, reset } = useSubmit("Couldn't save it. Try again.")
 
   useEffect(() => {
     let live = true
@@ -103,20 +100,14 @@ function SignUpGate() {
     return () => {
       live = false
     }
-  }, [])
+  }, [setMessage])
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
-    setBusy(true)
-    setMessage(null)
-    try {
-      await api.setAdminSetting(SIGN_UPS, choice)
-      setSaved(choice)
-      setMessage({ tone: 'done', text: choice === 'invite_only' ? 'Saved: only people with an invite can sign up.' : 'Saved: anyone can sign up.' })
-    } catch (err) {
-      setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : "Couldn't save it. Try again." })
-    }
-    setBusy(false)
+    if (!(await run(() => api.setAdminSetting(SIGN_UPS, choice)))) return
+    reset()
+    setSaved(choice)
+    setMessage({ tone: 'done', text: choice === 'invite_only' ? 'Saved: only people with an invite can sign up.' : 'Saved: anyone can sign up.' })
   }
 
   return (
@@ -154,25 +145,18 @@ function NewInviteForm({ onCreated }: { onCreated: (invite: AdminInvite, sent: b
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [locale, setLocale] = useState<Locale>('en')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState<'send' | 'copy' | null>(null)
+  // Which of the two buttons is working: its label says so. Made, the form gives way to the invite's card.
+  const [sending, setSending] = useState(false)
+  const submit = useSubmit((err) =>
+    err instanceof TooManyTriesError ? 'Too many invite emails this hour. Make it without sending and copy the message.' : "Couldn't make the invite. Try again.",
+  )
+  const { errors, message } = submit
+  const busy = submit.busy ? (sending ? 'send' : 'copy') : null
 
   const create = async (send: boolean) => {
-    if (busy) return
-    setBusy(send ? 'send' : 'copy')
-    setErrors({})
-    setMessage(null)
-    try {
-      const invite = await api.createAdminInvite({ firstName, lastName, email, locale, send })
-      await onCreated(invite, send)
-    } catch (err) {
-      if (err instanceof InvalidFieldsError) setErrors(err.fields)
-      else if (err instanceof TooManyTriesError)
-        setMessage({ tone: 'error', text: 'Too many invite emails this hour. Make it without sending and copy the message.' })
-      else if (!(err instanceof UnauthorizedError)) setMessage({ tone: 'error', text: "Couldn't make the invite. Try again." })
-      setBusy(null)
-    }
+    if (submit.busy) return
+    setSending(send)
+    await submit.run(async () => onCreated(await api.createAdminInvite({ firstName, lastName, email, locale, send }), send))
   }
 
   return (
@@ -255,27 +239,19 @@ function ShareCard({ invite, sent, onAnother }: { invite: AdminInvite; sent: boo
 
 function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false)
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
+  const submit = useSubmit((err) => (err instanceof TooManyTriesError ? 'Too many invite emails this hour. Copy the message instead.' : "Couldn't do it. Try again."))
+  const { busy, message, setMessage } = submit
   const status = statusOf(invite)
   const usable = status === 'sent' || status === 'waiting'
 
   const run = async (action: () => Promise<unknown>, done?: string) => {
-    setBusy(true)
-    setMessage(null)
-    try {
+    const worked = await submit.run(async () => {
       await action()
-      if (done) setMessage({ tone: 'done', text: done })
       await onChanged()
-    } catch (err) {
-      if (!(err instanceof UnauthorizedError)) setMessage({
-        tone: 'error',
-        text: err instanceof TooManyTriesError ? 'Too many invite emails this hour. Copy the message instead.'
-          : err instanceof InvalidValueError ? err.message
-            : "Couldn't do it. Try again.",
-      })
-    }
-    setBusy(false)
+    })
+    if (!worked) return
+    submit.reset()
+    if (done) setMessage({ tone: 'done', text: done })
   }
 
   return (

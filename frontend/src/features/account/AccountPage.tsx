@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { api, InvalidFieldsError, UnauthorizedError } from '../../api'
-import { Checkbox, FormMessage, PasswordField, TextField, type FormMessageState } from '../../components/Field'
+import { api, UnauthorizedError } from '../../api'
+import { Checkbox, FormMessage, PasswordField, TextField } from '../../components/Field'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
+import { useSubmit } from '../../components/useSubmit'
 import { AdminLink } from '../admin/AdminTopBar'
 import { useT } from '../../i18n/I18n'
 import styles from './Account.module.css'
@@ -104,25 +105,17 @@ function NameForm({ firstName, lastName, onSaved }: { firstName: string; lastNam
   const t = useT()
   const [first, setFirst] = useState(firstName)
   const [last, setLast] = useState(lastName)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
+  const { busy, errors, message, setMessage, run, reset } = useSubmit(errorText)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setErrors({})
-    setMessage(null)
-    try {
+    const saved = await run(async () => {
       await api.setName(first, last)
       if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
-      setMessage({ tone: 'done', text: t('account.page.nameSaved') })
-    } catch (err) {
-      if (err instanceof InvalidFieldsError) setErrors(err.fields)
-      else setMessage({ tone: 'error', text: errorText(err) })
-    }
-    setBusy(false)
+    })
+    if (!saved) return
+    reset()
+    setMessage({ tone: 'done', text: t('account.page.nameSaved') })
   }
 
   return (
@@ -143,26 +136,15 @@ function ChangePassword({ email }: { email: string }) {
   const t = useT()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
+  const { busy, errors, message, setMessage, run, reset } = useSubmit(errorText)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setErrors({})
-    setMessage(null)
-    try {
-      await api.changePassword(current, next)
-      setCurrent('')
-      setNext('')
-      setMessage({ tone: 'done', text: t('account.page.passwordChanged') })
-    } catch (err) {
-      if (err instanceof InvalidFieldsError) setErrors(err.fields)
-      else setMessage({ tone: 'error', text: errorText(err) })
-    }
-    setBusy(false)
+    if (!(await run(() => api.changePassword(current, next)))) return
+    reset()
+    setCurrent('')
+    setNext('')
+    setMessage({ tone: 'done', text: t('account.page.passwordChanged') })
   }
 
   return (
@@ -195,20 +177,16 @@ function ChangePassword({ email }: { email: string }) {
 /** Sharing AI rounds anonymously (spec: AI round, AI data sharing): off by default, asked at the first round. */
 function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Promise<unknown> }) {
   const t = useT()
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [busy, setBusy] = useState(false)
+  const { message, run, reset } = useSubmit(errorText)
 
   const change = async (enabled: boolean) => {
-    if (busy) return
-    setBusy(true)
-    setMessage(null)
-    try {
-      await api.setAiSharing(enabled)
-      await onSaved()
-    } catch (err) {
-      setMessage({ tone: 'error', text: errorText(err) })
-    }
-    setBusy(false)
+    if (
+      await run(async () => {
+        await api.setAiSharing(enabled)
+        await onSaved()
+      })
+    )
+      reset()
   }
 
   return (
@@ -227,31 +205,18 @@ function DeleteAccount({ email }: { email: string }) {
   const t = useT()
   const [asking, setAsking] = useState(false)
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const { busy, errors, setErrors, message, run } = useSubmit(errorText)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (busy) return
-    setBusy(true)
-    setError(null)
-    setMessage(null)
-    try {
-      await api.deleteAccount(password)
-      // Only once deleted (a wrong password must leave this device's alerts on): the browser forgets its subscription, whose
-      // server row went with the account (best effort).
-      // At most 2 seconds: without a service worker (cleared site data) the wait never ends, and the account is gone anyway.
-      const forget = deviceSubscription().then((subscription) => subscription?.unsubscribe()).catch(() => {})
-      await Promise.race([forget, new Promise((done) => setTimeout(done, 2000))])
-      // A full load as a guest: no cached load of the deleted account survives, and no screen that needs it renders on the way.
-      window.location.replace(homePath)
-      return
-    } catch (err) {
-      if (err instanceof InvalidFieldsError && err.fields.password) setError(err.fields.password)
-      else setMessage(errorText(err))
-    }
-    setBusy(false)
+    if (!(await run(() => api.deleteAccount(password)))) return
+    // Only once deleted (a wrong password must leave this device's alerts on): the browser forgets its subscription, whose
+    // server row went with the account (best effort).
+    // At most 2 seconds: without a service worker (cleared site data) the wait never ends, and the account is gone anyway.
+    const forget = deviceSubscription().then((subscription) => subscription?.unsubscribe()).catch(() => {})
+    await Promise.race([forget, new Promise((done) => setTimeout(done, 2000))])
+    // A full load as a guest: no cached load of the deleted account survives, and no screen that needs it renders on the way.
+    window.location.replace(homePath)
   }
 
   if (!asking)
@@ -267,13 +232,13 @@ function DeleteAccount({ email }: { email: string }) {
   return (
     <form className={styles.form} onSubmit={submit} noValidate>
       <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
-      <PasswordField label={t('account.delete.password')} autoComplete="current-password" value={password} onChange={setPassword} error={error} />
-      {message && <FormMessage tone="error">{message}</FormMessage>}
+      <PasswordField label={t('account.delete.password')} autoComplete="current-password" value={password} onChange={setPassword} error={errors.password} />
+      {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <div className={styles.links}>
         <button type="submit" className={`ui-strong ${styles.button} ${styles.danger}`} disabled={busy || !password}>
           {busy ? t('account.delete.deleting') : t('account.delete.confirm')}
         </button>
-        <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => { setAsking(false); setPassword(''); setError(null) }}>
+        <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => { setAsking(false); setPassword(''); setErrors({}) }}>
           {t('account.delete.cancel')}
         </button>
       </div>

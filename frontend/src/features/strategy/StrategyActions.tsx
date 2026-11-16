@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, InvalidFieldsError, InvalidValueError, NameTakenError, UnauthorizedError, type StrategyDetail } from '../../api'
+import { api, InvalidFieldsError, InvalidValueError, NameTakenError, type StrategyDetail } from '../../api'
 import { Button, ButtonRow } from '../../components/Button'
 import { ConfirmBox } from '../../components/ConfirmBox'
 import { TextField } from '../../components/Field'
+import { useSubmit } from '../../components/useSubmit'
 import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
 import { useDashboard } from '../dashboard/useDashboard'
@@ -19,28 +20,19 @@ import styles from './StrategyActions.module.css'
 export function RenameForm({ s, onClose }: { s: StrategyDetail; onClose: () => void }) {
   const t = useT()
   const [name, setName] = useState(s.name)
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const { busy, errors, message, run } = useSubmit(t('strategy.renameFailed'))
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
     if (name.trim() === s.name) return onClose()
-    setBusy(true)
-    setError(null)
-    try {
-      await api.renameStrategy(s.id, name.trim())
-    } catch (err) {
-      if (err instanceof UnauthorizedError) return
-      setError(
-        err instanceof NameTakenError
-          ? t('strategy.renameTaken')
-          : err instanceof InvalidFieldsError
-            ? (err.fields.name ?? err.message)
-            : t('strategy.renameFailed'),
-      )
-      setBusy(false)
-      return
-    }
+    const saved = await run(async () => {
+      try {
+        await api.renameStrategy(s.id, name.trim())
+      } catch (err) {
+        throw err instanceof NameTakenError ? new InvalidFieldsError({ name: t('strategy.renameTaken') }) : err
+      }
+    })
+    if (!saved) return
     // The name shows on the signal and AI round pages too.
     invalidateAll()
     onClose()
@@ -48,7 +40,7 @@ export function RenameForm({ s, onClose }: { s: StrategyDetail; onClose: () => v
 
   return (
     <form className={styles.renameForm} onSubmit={save}>
-      <TextField label={t('strategy.renameLabel')} value={name} onChange={setName} error={error} />
+      <TextField label={t('strategy.renameLabel')} value={name} onChange={setName} error={errors.name ?? message?.text ?? null} />
       <ButtonRow>
         <Button type="submit" variant="primary" disabled={busy}>
           {t('strategy.renameSave')}

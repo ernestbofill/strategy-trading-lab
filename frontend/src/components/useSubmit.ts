@@ -4,11 +4,11 @@ import type { FormMessageState } from './Field'
 
 /**
  * A form's save: busy while it runs (a second submit does nothing), the server's refusals under their fields, else a line
- * saying why, in the server's words for a refused value or `fallback`. An ended session goes to Log-in: nothing is said.
- * After a save that worked it stays busy for good: it is for forms whose screen moves on or unmounts on success. A form that
- * stays open after a save needs a way to release it first.
+ * saying why, in the server's words for a refused value or `fallback` (a function picks the line by the error). An ended session goes to Log-in: nothing is said.
+ * After a save that worked it stays busy, so a second tap can't send it again while the screen moves on or the form closes;
+ * a form that stays open after a save calls `reset()` to take the next one.
  */
-export function useSubmit(fallback: string) {
+export function useSubmit(fallback: string | ((error: unknown) => string)) {
   const [busy, setBusy] = useState(false)
   // The guard itself: two submits before React renders again (Enter and a tap) both see busy as false.
   const running = useRef(false)
@@ -38,10 +38,16 @@ export function useSubmit(fallback: string) {
       setBusy(false)
       if (e instanceof UnauthorizedError) return false
       if (e instanceof InvalidFieldsError) setErrors(e.fields)
-      else setMessage({ tone: 'error', text: e instanceof InvalidValueError ? e.message : fallback })
+      else setMessage({ tone: 'error', text: e instanceof InvalidValueError ? e.message : typeof fallback === 'function' ? fallback(e) : fallback })
       return false
     }
   }
 
-  return { busy, errors, setErrors, message, setMessage, run }
+  /** Ready for the next save, after one that worked on a form that stays open. */
+  const reset = () => {
+    running.current = false
+    setBusy(false)
+  }
+
+  return { busy, errors, setErrors, message, setMessage, run, reset }
 }

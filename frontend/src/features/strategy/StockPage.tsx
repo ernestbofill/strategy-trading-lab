@@ -183,6 +183,7 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
           strategyId={s.id}
           assetId={row.assetId}
           isCandidate={row.checks.length > 0 ? isCandidate : null}
+          beatenDate={row.checks.some((c) => c.key === 'beaten') ? since : null}
           currency={row.currency}
           trades={trades}
           texts={s.checkTexts}

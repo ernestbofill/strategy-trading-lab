@@ -20,7 +20,7 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 | --- | --- | --- | --- |
 | Frontend (Vitest) | 3 | 3 | 6 |
 | Backend (xUnit) | 0 | 4 | 4 |
-| **All** | **3** | **5** | **8** |
+| **All** | **3** | **7** | **10** |
 
 ## Log
 

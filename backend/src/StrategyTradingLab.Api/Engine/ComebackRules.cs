@@ -178,7 +178,8 @@ public class ComebackRules : BuyRulesBase
             // Enough volume on a price that isn't rising is not met: the bar stops short of its target, as the verdict says.
             Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio) is { } done && !volumeOk ? Math.Min(done, 0.99m) : RuleCheck.ProgressOf(ratio, p.VolumeRatio),
             // The price over the volume's 5 days: the volume only counts on a rise.
-            SubValue: RisePct(i) is { } rise ? Math.Round(rise, 1) : null));
+            // Never "0%" for a small move: the verdict reads the unrounded change.
+            SubValue: RisePct(i) is { } rise ? (Math.Round(rise, 1) is var shown && shown == 0 && rise != 0 ? 0.1m * Math.Sign(rise) : shown) : null));
         checks.AddRange(MilestoneChecks(i, price, BuildMilestones(i, price, pulled: false, highBeforePullback: null), preview: true));
         return checks;
     }

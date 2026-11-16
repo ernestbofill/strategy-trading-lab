@@ -4,7 +4,7 @@ import { SegmentedField } from '../../components/Field'
 import { useT } from '../../i18n/I18n'
 import { exact, shortDate } from '../../lib/format'
 import { useLoadable } from '../../lib/useLoadable'
-import { beatenOn, chartSeries, isCandidateOn, lastDays, priceRange, segments, spreadLabels } from './priceChartMarks'
+import { chartSeries, isCandidateOn, lastDays, priceRange, segments, spreadLabels } from './priceChartMarks'
 import styles from './PriceChart.module.css'
 
 const WIDTH = 340
@@ -23,6 +23,7 @@ export function PriceChart({
   strategyId,
   assetId,
   isCandidate,
+  beatenDate,
   currency,
   trades,
   texts,
@@ -31,6 +32,8 @@ export function PriceChart({
   assetId: string
   /** The stored verdict the page shows; null before the daily check has stored any. */
   isCandidate: boolean | null
+  /** The day a comeback candidate was last beaten down (the page's "Candidate since"), ringed on the price; null for none. */
+  beatenDate: string | null
   currency: string
   trades: StrategyTradeItem[]
   texts: Record<string, CheckTexts> | null | undefined
@@ -54,8 +57,8 @@ export function PriceChart({
   // On the price line at its day's close: a trade's own price is what was paid, which a later split no longer matches.
   const dots = trades.filter((tr) => tr.tradeDate >= first && tr.tradeDate <= last.date).map((tr) => ({ ...tr, i: dayOf(tr.tradeDate) }))
   // Where a candidate was last beaten down ("Candidate since"), when the period reaches back to it (Ernest, 2026-11-16).
-  const beatenDate = candidate && lastChecked >= 0 ? beatenOn(points[lastChecked].checks) : null
-  const beaten = beatenDate && beatenDate >= first && beatenDate <= last.date ? dayOf(beatenDate) : null
+  // Not while it is still beaten down: the ring would sit on the latest price and move with it each day.
+  const beaten = beatenDate && beatenDate >= first && beatenDate < last.date ? dayOf(beatenDate) : null
   const startedOn = chart.data.startedOn
   const started = startedOn && startedOn > first && startedOn <= last.date ? dayOf(startedOn) : null
 

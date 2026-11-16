@@ -16,7 +16,6 @@ vi.mock('../account/AccountContext', () => ({
     owner: 'reader@example.com',
     clear: vi.fn(),
   }),
-  useIsOwner: () => false,
 }))
 
 const summary = (fields: Partial<StrategySummary>): StrategySummary => ({

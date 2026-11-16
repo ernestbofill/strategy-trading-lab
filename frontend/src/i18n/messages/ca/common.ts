@@ -13,7 +13,6 @@ export const common: Record<keyof typeof en, string> = {
   'common.up.logIn': 'INICIA SESSIÓ',
   'common.home.dashboard': 'DASHBOARD',
   'common.home.welcome': 'BENVINGUDA',
-  'common.account': 'COMPTE',
   'common.settings': 'CONFIGURACIÓ',
   'common.logIn': 'INICIA SESSIÓ',
   'common.admin': 'ADMIN',
@@ -57,13 +56,8 @@ export const common: Record<keyof typeof en, string> = {
   'legal.privacy.title': 'Política de privadesa',
   'legal.privacy.lead': 'Com s’emmagatzemen i es tracten les dades.',
   'legal.disclaimer.title': 'Avís de responsabilitat',
-  'legal.disclaimer.content':
-    'Strategy Trading Lab és un laboratori d’estratègies i una aplicació de seguiment per aprendre i seguir estratègies amb les teves pròpies regles. L’aplicació mai no posa ordres ni es connecta a cap broker.',
   'legal.about.title': 'Quant a',
   'legal.about.lead': 'Quant a Strategy Trading Lab.',
-  'legal.about.content':
-    'Un laboratori d’estratègies i aplicació d’acompanyament. Tria una plantilla d’estratègia, ajusta les seves regles i segueix-la en simulació o en mode manual. L’aplicació mai no posa ordres ni es connecta a cap broker.',
-  'legal.laterStep': 'Aquesta pàgina vindrà més endavant.',
   'errors.goHome': "Torna a l'inici",
   'errors.notFound.title': "No s'ha trobat la pàgina",
   'errors.notFound.line': "Aquesta pàgina no existeix, o s'ha mogut.",

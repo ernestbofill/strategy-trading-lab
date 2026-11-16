@@ -99,9 +99,6 @@ export const account = {
   'account.resend.sent': 'Sent. Check your email.',
 
   // Sign-in gate
-  'account.gate.loading': 'Loading…',
-  'account.gate.unreachable': 'Could not reach Strategy Trading Lab.',
-  'account.gate.retry': 'Try again',
 
   // Install the app
   'account.install.installed': 'The app is installed on this device.',
@@ -126,7 +123,6 @@ export const account = {
   'account.page.currency': 'Currency',
   'account.page.currencySave': 'Save currency',
   'account.page.currencySaved': 'Saved. New strategies use it; running ones keep theirs.',
-  'account.page.reloadFailed': 'Could not reload the account.',
   'account.page.notifications': 'Notifications',
   'account.page.timeZone': 'Time zone',
   'account.page.timeZoneHint': 'Your dates and notification time follow it.',

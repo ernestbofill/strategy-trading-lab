@@ -34,7 +34,6 @@ export const strategy = {
   'strategy.stocks': 'Stocks · {count}',
   'strategy.stocks.showAll': 'Show all {count}',
   'strategy.stocks.showFewer': 'Show fewer',
-  'strategy.funds': 'Funds · {count}',
   'strategy.editList': 'Edit list',
   'strategy.list.title': 'Edit list',
   'strategy.list.lead': 'Unticking a stock stops its signals; waiting ones close as missed. Its trades stay in the results. A stock ticked again starts from today.',

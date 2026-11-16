@@ -1,6 +1,5 @@
 export const summary = {
   'summary.what': 'the daily summary',
-  'summary.title': 'Daily summary',
   'summary.heading': 'Your summary, {date}',
   'summary.lead': 'Latest trading day, after the US market close.',
   'summary.quiet.title': 'No changes',

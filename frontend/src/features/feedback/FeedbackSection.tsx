@@ -12,6 +12,7 @@ import { Screen } from '../../components/Screen'
 import { AdminTopBar } from '../admin/AdminTopBar'
 import { feedbackMarkdown, isAppPath, kindMeta } from './feedback'
 import { FEEDBACK_SUBMITTED_EVENT } from './FeedbackCapture'
+import { useCopy } from '../../components/useCopy'
 import styles from './Feedback.module.css'
 import { KindPicker } from './KindPicker'
 
@@ -41,7 +42,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
   const [editText, setEditText] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
 
-  const [copied, setCopied] = useState(false)
+  const { copied, copy } = useCopy()
 
   useEffect(() => {
     let live = true
@@ -67,12 +68,6 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
       window.removeEventListener(FEEDBACK_SUBMITTED_EVENT, fetchFeedback)
     }
   }, [])
-
-  useEffect(() => {
-    if (!copied) return
-    const id = window.setTimeout(() => setCopied(false), 2000)
-    return () => window.clearTimeout(id)
-  }, [copied])
 
   const openCount = items.filter((i) => i.status === 'open').length
   const closedCount = items.filter((i) => i.status === 'closed').length
@@ -157,13 +152,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
   }
 
   const copyMarkdown = async () => {
-    const md = feedbackMarkdown(items)
-    try {
-      await navigator.clipboard.writeText(md)
-      setCopied(true)
-    } catch {
-      setError('Clipboard copy failed.')
-    }
+    if (!(await copy(feedbackMarkdown(items)))) setError('Clipboard copy failed.')
   }
 
   return (
@@ -184,7 +173,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
           disabled={openCount === 0}
           onClick={() => void copyMarkdown()}
         >
-          {copied ? 'Copied Markdown ✓' : `Copy open as Markdown (${openCount})`}
+          {copied === true ? 'Copied Markdown ✓' : `Copy open as Markdown (${openCount})`}
         </button>
       </div>
 

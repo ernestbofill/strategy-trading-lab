@@ -16,6 +16,7 @@ import { localDay } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import { AdminTopBar } from './AdminTopBar'
 import { adminCacheKeys } from './cacheKeys'
+import { useCopy } from '../../components/useCopy'
 import styles from './AdminInvites.module.css'
 
 /** The admin setting that gates sign-up (backend Admin/SettingDefinitions.cs). */
@@ -322,18 +323,9 @@ function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () =
 
 /** Copies the text and says so for a moment. */
 function CopyButton({ text, label, primary }: { text: string; label: string; primary?: boolean }) {
-  const [copied, setCopied] = useState<boolean | null>(null)
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-    } catch {
-      setCopied(false)
-    }
-    setTimeout(() => setCopied(null), 2000)
-  }
+  const { copied, copy } = useCopy()
   return (
-    <button type="button" className={`ui-strong ${primary ? styles.primary : styles.button}`} onClick={() => void copy()}>
+    <button type="button" className={`ui-strong ${primary ? styles.primary : styles.button}`} onClick={() => void copy(text)}>
       <span aria-live="polite">{copied === true ? '✓ Copied' : copied === false ? 'Copy failed' : label}</span>
     </button>
   )

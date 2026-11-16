@@ -122,10 +122,3 @@ export function useRole(): Role | null | undefined {
   const ctx = useContext(AccountContext)
   return ctx?.state.status === 'ready' ? (ctx.state.account?.role ?? null) : undefined
 }
-
-/** Whether the current logged-in user is an owner. Safe to call anywhere, even outside AccountProvider. */
-// eslint-disable-next-line react-refresh/only-export-components
-export function useIsOwner(): boolean {
-  const ctx = useContext(AccountContext)
-  return ctx?.state.status === 'ready' && ctx.state.account?.role === 'owner'
-}

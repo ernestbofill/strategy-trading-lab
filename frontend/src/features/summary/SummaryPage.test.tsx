@@ -15,7 +15,6 @@ vi.mock('../account/AccountContext', () => ({
     owner: 'trader@example.com',
     clear: vi.fn(),
   }),
-  useIsOwner: () => false,
 }))
 
 const mockSummary = (fields: Partial<DailySummary>): DailySummary => ({

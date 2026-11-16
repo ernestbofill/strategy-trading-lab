@@ -17,136 +17,112 @@ function endedSession(): never {
   throw new UnauthorizedError()
 }
 
+type Problem = { errors?: Record<string, string[]>; detail?: string } | null
+
+/** A refusal's body: the API's problem, or its reason as a JSON string; null when it has none. */
+const readBody = (response: Response) => response.json().catch(() => null) as Promise<Problem | string>
+
+/** What a refusal says: the API's reason, else its first field error, else its detail. */
+const reasonOf = (problem: Problem | string) =>
+  typeof problem === 'string' ? problem : ((problem?.errors ? Object.values(problem.errors).flat()[0] : undefined) ?? problem?.detail)
+
+/** A 400's field errors, under their fields: each field's first message, or all of them joined. */
+const fieldErrors = (errors: Record<string, string[]>, joined = false) =>
+  new InvalidFieldsError(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, joined ? v.join(' ') : (v[0] ?? '')])))
+
+/** How an endpoint family's refusals read, besides what every call shares (401 ends the session, 403, 429). */
+interface Refusals {
+  /** Statuses that aren't failures: the caller reads them (a 404 that is fine, `/account/me`'s 401). */
+  ok?: number[]
+  /** A 401 is a refusal, not a session that ended (log-in: a wrong password). */
+  noSession?: boolean
+  /** A 409: what it means, from the API's reason. By default the reason itself, as `InvalidValueError` ("Reload and try again." without one). */
+  conflict?: (reason: string | null) => Error
+  /** A 400's field errors: each field's first message (the default), all of them joined, or left to `refused`. */
+  fields?: 'first' | 'joined' | 'none'
+  /** Any other refusal: what it means, from its body; undefined fails it as an HTTP error. */
+  refused?: (problem: Problem | string, status: number) => Error | undefined
+}
+
+/**
+ * Every call to the API: JSON in and out, the app header (the API refuses state changes without it: CSRF, backend/AUTH.md) and
+ * the app's language. Resolves to the response when it is ok (or one of `ok`), else throws what the refusal means.
+ */
+async function request(method: string, path: string, body?: unknown, refusals: Refusals = {}): Promise<Response> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const { status } = response
+  if (response.ok || refusals.ok?.includes(status)) return response
+  if (status === 401) {
+    if (refusals.noSession) throw new UnauthorizedError()
+    endedSession()
+  }
+  if (status === 403) throw new ForbiddenError()
+  if (status === 429) throw new TooManyTriesError()
+  if (status === 409) {
+    const reason = await readBody(response)
+    throw (refusals.conflict ?? reasonOr('Reload and try again.'))(typeof reason === 'string' ? reason : null)
+  }
+  const problem = status === 400 || refusals.refused ? await readBody(response) : null
+  const fields = refusals.fields ?? 'first'
+  if (status === 400 && fields !== 'none' && typeof problem !== 'string' && problem?.errors) throw fieldErrors(problem.errors, fields === 'joined')
+  const refused = refusals.refused?.(problem, status)
+  if (refused) throw refused
+  throw new Error(`${method} ${path} failed: HTTP ${status}`)
+}
+
 /** GETs `path` as JSON; a 404 is `undefined` (not found), any other failure throws. */
 async function get<T>(path: string): Promise<T | undefined> {
-  const response = await fetch(`${BASE_URL}${path}`, { headers: { Accept: 'application/json', ...langHeader() } })
-  if (response.status === 404) return undefined
-  if (response.status === 401) endedSession()
-  if (!response.ok) throw new Error(`GET ${path} failed: HTTP ${response.status}`)
-  return (await response.json()) as T
+  const response = await request('GET', path, undefined, { ok: [404] })
+  return response.status === 404 ? undefined : ((await response.json()) as T)
 }
 
 async function getRequired<T>(path: string): Promise<T> {
-  const value = await get<T>(path)
-  if (value === undefined) throw new Error(`GET ${path} failed: HTTP 404`)
-  return value
+  return (await (await request('GET', path)).json()) as T
 }
 
-type Problem = { errors?: Record<string, string[]>; detail?: string } | null
+const json = async <T,>(response: Promise<Response>) => (await (await response).json()) as T
+const done = async (response: Promise<Response>) => void (await response)
 
-/** POSTs `body` as JSON. A 409 means the name is taken; a 400 with errors maps to InvalidFieldsError; any other failure throws. */
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...APP_HEADER, ...langHeader() },
-    body: JSON.stringify(body),
-  })
-  if (response.status === 409) throw new NameTakenError()
-  if (response.status === 401) endedSession()
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) {
-      throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-    }
-  }
-  if (!response.ok) throw new Error(`POST ${path} failed: HTTP ${response.status}`)
-  return (await response.json()) as T
-}
+/** A 409 with the API's reason: the value was refused as it stands (already answered, not due, ended). */
+const reasonOr = (fallback: string) => (reason: string | null) => new InvalidValueError(reason ?? fallback)
 
-async function put(path: string, body: unknown): Promise<void> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method: 'PUT',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...APP_HEADER },
-    body: JSON.stringify(body),
-  })
-  if (response.status === 401) endedSession()
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-  }
-  if (!response.ok) throw new Error(`PUT ${path} failed: HTTP ${response.status}`)
-}
+/** A new strategy: a 409 means the name is taken. */
+const post = <T,>(path: string, body: unknown) => json<T>(request('POST', path, body, { conflict: () => new NameTakenError() }))
 
-async function tradesRequest(method: string, path: string, body?: unknown): Promise<Response> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (response.status === 401) endedSession()
-  if (response.status === 409) {
-    const message = (await response.json().catch(() => null)) as string | null
-    throw new InvalidValueError(message ?? 'Could not perform trade action.')
-  }
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-  }
-  if (!response.ok) throw new Error(`${method} ${path} failed: HTTP ${response.status}`)
-  return response
-}
+const put = (path: string, body: unknown) => done(request('PUT', path, body))
 
-/** A strategy action (rename, alerts, end, archive). A 409 is `InvalidValueError` with the API's reason, a 400 `InvalidFieldsError`. */
-async function strategyAction(method: 'PUT' | 'POST', id: string, action: string, body?: unknown): Promise<void> {
-  const path = `/strategies/${encodeURIComponent(id)}/${action}`
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (response.status === 401) endedSession()
-  if (response.status === 409) {
-    if (action === 'name') throw new NameTakenError()
-    throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
-  }
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-  }
-  if (!response.ok) throw new Error(`${method} ${path} failed: HTTP ${response.status}`)
-}
+const tradesRequest = (method: string, path: string, body?: unknown) =>
+  request(method, path, body, { conflict: reasonOr('Could not perform trade action.') })
 
-/** POSTs an answer to a signal. A 400 with field errors is `InvalidFieldsError`; a 409 (already answered) is `InvalidValueError`. */
-async function signalPost(path: string, body?: unknown): Promise<Response> {
-  const response = await fetch(`${BASE_URL}/signals${path}`, {
-    method: 'POST',
-    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (response.status === 401) endedSession()
-  if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'This signal is already answered.')
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-  }
-  if (!response.ok) throw new Error(`POST /signals${path} failed: HTTP ${response.status}`)
-  return response
-}
+/** A strategy action (rename, archive). A 409 is `InvalidValueError` with the API's reason (a rename's: the name is taken). */
+const strategyAction = (method: 'PUT' | 'POST', id: string, action: string, body?: unknown) =>
+  done(request(method, `/strategies/${encodeURIComponent(id)}/${action}`, body, {
+    conflict: action === 'name' ? () => new NameTakenError() : undefined,
+  }))
+
+/** POSTs an answer to a signal. A 409 (already answered) is `InvalidValueError`. */
+const signalPost = (path: string, body?: unknown) =>
+  request('POST', `/signals${path}`, body, { conflict: reasonOr('This signal is already answered.') })
 
 /** Sends a request to the admin API and maps its refusals to errors the page can show. */
-async function admin(method: string, path: string, body?: unknown): Promise<Response> {
-  const response = await fetch(`${BASE_URL}/admin${path}`, {
-    method,
-    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
+const admin = (method: string, path: string, body?: unknown) =>
+  request(method, `/admin${path}`, body, {
+    fields: 'none',
+    refused: (problem, status) => {
+      if (status !== 400 && status !== 502) return undefined
+      const p = typeof problem === 'string' ? null : problem
+      // A setting's one field is `value`; a form's (an asset's symbol, name and description) go by name.
+      if (p?.errors && Object.keys(p.errors).some((k) => k !== 'value')) return fieldErrors(p.errors)
+      const reason = p?.errors?.value?.[0] ?? p?.detail
+      // A 502 without the API's reason is nginx: the API itself is down, not a refused value.
+      if (reason) return new InvalidValueError(reason)
+      return status === 502 ? undefined : new InvalidValueError('That was refused.')
+    },
   })
-  if (response.status === 401) endedSession()
-  if (response.status === 403) throw new ForbiddenError()
-  if (response.status === 429) throw new TooManyTriesError()
-  if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'Reload and try again.')
-  if (response.status === 400 || response.status === 502) {
-    const problem = (await response.json().catch(() => null)) as { errors?: Record<string, string[]>; detail?: string } | null
-    // A setting's one field is `value`; a form's (an asset's symbol, name and description) go by name.
-    if (problem?.errors && Object.keys(problem.errors).some((k) => k !== 'value'))
-      throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-    const reason = problem?.errors?.value?.[0] ?? problem?.detail
-    // A 502 without the API's reason is nginx: the API itself is down, not a refused value.
-    if (reason) throw new InvalidValueError(reason)
-    if (response.status !== 502) throw new InvalidValueError('That was refused.')
-  }
-  if (!response.ok) throw new Error(`${method} /admin${path} failed: HTTP ${response.status}`)
-  return response
-}
 
 interface AccountCall {
   /** A link endpoint (verify, reset): a 400 with only a message is an expired or used link. */
@@ -156,126 +132,75 @@ interface AccountCall {
 }
 
 /** POSTs to the account API. A 400 with field errors is `InvalidFieldsError`; 401 is `UnauthorizedError`, 429 too many tries. */
-async function account(path: string, body?: unknown, { link, session }: AccountCall = {}): Promise<Response> {
-  const response = await fetch(`${BASE_URL}/account${path}`, {
-    method: 'POST',
-    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v[0] ?? ''])))
-    if (link) throw new ExpiredLinkError()
-  }
-  if (response.status === 401) {
-    if (session) endedSession()
-    throw new UnauthorizedError()
-  }
-  if (response.status === 429) throw new TooManyTriesError()
-  if (!response.ok) throw new Error(`POST /account${path} failed: HTTP ${response.status}`)
-  return response
-}
+const account = (path: string, body?: unknown, { link, session }: AccountCall = {}) =>
+  done(request('POST', `/account${path}`, body, {
+    noSession: !session,
+    refused: (_, status) => (link && status === 400 ? new ExpiredLinkError() : undefined),
+  }))
 
 async function getSignUpOptions(invite?: string): Promise<SignUpOptions> {
   const query = invite ? `?invite=${encodeURIComponent(invite)}` : ''
-  const response = await fetch(`${BASE_URL}/account/sign-up-options${query}`, { headers: { Accept: 'application/json', ...langHeader() } })
-  if (response.status === 429) throw new TooManyTriesError()
-  if (!response.ok) throw new Error(`GET /account/sign-up-options failed: HTTP ${response.status}`)
-  return (await response.json()) as SignUpOptions
+  return json(request('GET', `/account/sign-up-options${query}`, undefined, { noSession: true }))
 }
 
 async function getAccount(): Promise<Account | null> {
-  const response = await fetch(`${BASE_URL}/account/me`, { headers: { Accept: 'application/json', ...langHeader() } })
-  if (response.status === 401) return null
-  if (!response.ok) throw new Error(`GET /account/me failed: HTTP ${response.status}`)
-  return (await response.json()) as Account
+  const response = await request('GET', '/account/me', undefined, { ok: [401] })
+  return response.status === 401 ? null : ((await response.json()) as Account)
 }
 
 const settingPath = (key: string) => `/settings/${encodeURIComponent(key)}`
 
-/** A request about AI rounds. A 400 with field errors is `InvalidFieldsError`, a 409 (not due, done already) `InvalidValueError`. */
-async function aiRequest(method: string, path: string, body?: unknown): Promise<Response> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  if (response.status === 401) endedSession()
-  if (response.status === 409) throw new InvalidValueError((await response.json().catch(() => null)) ?? 'This AI round is already done.')
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    if (problem?.errors) throw new InvalidFieldsError(Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, v.join(' ')])))
-  }
-  if (!response.ok) throw new Error(`${method} ${path} failed: HTTP ${response.status}`)
-  return response
-}
+/** A request about AI rounds. A 400's field errors are joined, a 409 (not due, done already) is `InvalidValueError`. */
+const aiRequest = (method: string, path: string, body?: unknown) =>
+  request(method, path, body, { conflict: reasonOr('This AI round is already done.'), fields: 'joined' })
 
 const aiPath = (strategyId: string, rest: string) => `/strategies/${encodeURIComponent(strategyId)}${rest}`
 
-/** Sends a request to the feedback API and maps its refusals to errors the UI can show. */
-async function feedback(method: string, path: string, body?: unknown): Promise<Response> {
-  const response = await fetch(`${BASE_URL}/feedback${path}`, {
-    method,
-    headers: { Accept: 'application/json', ...APP_HEADER, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
+/** Sends a request to the feedback API: a refused comment says why. */
+const feedback = (method: string, path: string, body?: unknown) =>
+  request(method, `/feedback${path}`, body, {
+    fields: 'none',
+    refused: (problem, status) =>
+      status === 400
+        ? new InvalidValueError(reasonOf(problem) ?? 'That comment was refused.')
+        : undefined,
   })
-  if (response.status === 401) endedSession()
-  if (response.status === 403) throw new ForbiddenError()
-  if (response.status === 429) throw new TooManyTriesError()
-  if (response.status === 400) {
-    const problem = (await response.json().catch(() => null)) as Problem
-    const firstFieldError = problem?.errors ? Object.values(problem.errors).flat()[0] : undefined
-    throw new InvalidValueError(firstFieldError ?? problem?.detail ?? 'That comment was refused.')
-  }
-  if (!response.ok) throw new Error(`${method} /feedback${path} failed: HTTP ${response.status}`)
-  return response
-}
 
 /** The stock and fund search. Any refusal (a short query, not a fund, the price source down) carries a message for the user. */
-async function assets(path: string, body?: unknown): Promise<Response> {
-  const response = await fetch(`${BASE_URL}/assets${path}`, {
-    method: body === undefined ? 'GET' : 'POST',
-    headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
-    body: body === undefined ? undefined : JSON.stringify(body),
+const assets = (path: string, body?: unknown) =>
+  request(body === undefined ? 'GET' : 'POST', `/assets${path}`, body, {
+    fields: 'none',
+    refused: (problem) => {
+      const message = reasonOf(problem)
+      return message ? new InvalidValueError(message) : undefined
+    },
   })
-  if (response.status === 401) endedSession()
-  if (response.status === 403) throw new ForbiddenError()
-  if (response.status === 429) throw new TooManyTriesError()
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => null)) as Problem | string
-    const message = typeof problem === 'string' ? problem : (problem?.errors ? Object.values(problem.errors).flat()[0] : problem?.detail)
-    if (message) throw new InvalidValueError(message)
-    throw new Error(`${path} failed: HTTP ${response.status}`)
-  }
-  return response
-}
 
 export const httpApi: Api = {
   getAccount,
-  signUp: async (signUp) => void (await account('/sign-up', signUp)),
+  signUp: (signUp) => account('/sign-up', signUp),
   getSignUpOptions,
-  setName: async (firstName, lastName) => void (await account('/name', { firstName, lastName }, { session: true })),
-  logIn: async (email, password) => void (await account('/log-in', { email, password })),
-  logOut: async () => void (await account('/log-out')),
-  verifyEmail: async (token) => void (await account('/verify-email', { token }, { link: true })),
-  resendVerification: async () => void (await account('/resend-verification', undefined, { session: true })),
-  forgotPassword: async (email) => void (await account('/forgot-password', { email })),
-  resetPassword: async (token, password) => void (await account('/reset-password', { token, password }, { link: true })),
-  deleteAccount: async (password) => void (await account('/delete', { password }, { session: true })),
-  changePassword: async (currentPassword, newPassword) =>
-    void (await account('/change-password', { currentPassword, newPassword }, { session: true })),
-  setCurrency: async (currency) => void (await account('/currency', { currency }, { session: true })),
-  setLocale: async (locale) => void (await account('/locale', { locale }, { session: true })),
-  setTimeZone: async (timeZone) => void (await account('/time-zone', { timeZone }, { session: true })),
-  setNotifyHour: async (hour) => void (await account('/notify-hour', { hour }, { session: true })),
-  setOverviewEmail: async (enabled) => void (await account('/overview-email', { enabled }, { session: true })),
-  setAlertEmails: async (enabled) => void (await account('/alert-emails', { enabled }, { session: true })),
-  setAlertPush: async (enabled) => void (await account('/alert-push', { enabled }, { session: true })),
-  unsubscribe: async (token, kind) => {
-    const response = await fetch(`${BASE_URL}/email/unsubscribe/${encodeURIComponent(token)}/${kind}`, { method: 'POST', headers: APP_HEADER })
-    if (response.status === 404) throw new ExpiredLinkError()
-    if (!response.ok) throw new Error(`Couldn't turn the emails off (${response.status}).`)
-  },
+  setName: (firstName, lastName) => account('/name', { firstName, lastName }, { session: true }),
+  logIn: (email, password) => account('/log-in', { email, password }),
+  logOut: () => account('/log-out'),
+  verifyEmail: (token) => account('/verify-email', { token }, { link: true }),
+  resendVerification: () => account('/resend-verification', undefined, { session: true }),
+  forgotPassword: (email) => account('/forgot-password', { email }),
+  resetPassword: (token, password) => account('/reset-password', { token, password }, { link: true }),
+  deleteAccount: (password) => account('/delete', { password }, { session: true }),
+  changePassword: (currentPassword, newPassword) => account('/change-password', { currentPassword, newPassword }, { session: true }),
+  setCurrency: (currency) => account('/currency', { currency }, { session: true }),
+  setLocale: (locale) => account('/locale', { locale }, { session: true }),
+  setTimeZone: (timeZone) => account('/time-zone', { timeZone }, { session: true }),
+  setNotifyHour: (hour) => account('/notify-hour', { hour }, { session: true }),
+  setOverviewEmail: (enabled) => account('/overview-email', { enabled }, { session: true }),
+  setAlertEmails: (enabled) => account('/alert-emails', { enabled }, { session: true }),
+  setAlertPush: (enabled) => account('/alert-push', { enabled }, { session: true }),
+  unsubscribe: (token, kind) =>
+    done(request('POST', `/email/unsubscribe/${encodeURIComponent(token)}/${kind}`, undefined, {
+      noSession: true,
+      refused: (_, status) => (status === 404 ? new ExpiredLinkError() : undefined),
+    })),
   getTemplates: () => getRequired('/templates'),
   getTemplate: (key, version) => get(`/templates/${encodeURIComponent(key)}${version === undefined ? '' : `?version=${version}`}`),
   getDashboard: () => getRequired('/dashboard'),
@@ -285,84 +210,65 @@ export const httpApi: Api = {
   updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),
   updateStrategyAssets: (id, assetIds) => put(`/strategies/${encodeURIComponent(id)}/assets`, { assetIds }),
   getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),
-  confirmSignal: async (id, trade) => void (await signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
-  logManualTrade: async (strategyId, trade) =>
-    (await (await tradesRequest('POST', `/strategies/${encodeURIComponent(strategyId)}/trades`, trade)).json()) as StrategyTradeItem,
-  updateTrade: async (tradeId, trade) =>
-    void (await tradesRequest('PUT', `/trades/${encodeURIComponent(tradeId)}`, trade)),
-  deleteTrade: async (tradeId) =>
-    void (await tradesRequest('DELETE', `/trades/${encodeURIComponent(tradeId)}`)),
-  skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
-  snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
-  searchAssets: async (query, kind) =>
-    (await assets(`/search?${new URLSearchParams({ q: query, kind })}`)).json(),
-  addAsset: async (symbol, kind) => (await assets('', { symbol, kind })).json(),
+  confirmSignal: (id, trade) => done(signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
+  logManualTrade: (strategyId, trade) => json<StrategyTradeItem>(tradesRequest('POST', `/strategies/${encodeURIComponent(strategyId)}/trades`, trade)),
+  updateTrade: (tradeId, trade) => done(tradesRequest('PUT', `/trades/${encodeURIComponent(tradeId)}`, trade)),
+  deleteTrade: (tradeId) => done(tradesRequest('DELETE', `/trades/${encodeURIComponent(tradeId)}`)),
+  skipSignal: (id, reason) => done(signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
+  snoozeSignal: async (id) => (await json<{ snoozedUntil: string }>(signalPost(`/${encodeURIComponent(id)}/snooze`))).snoozedUntil,
+  searchAssets: (query, kind) =>
+    json(assets(`/search?${new URLSearchParams({ q: query, kind })}`)),
+  addAsset: (symbol, kind) => json(assets('', { symbol, kind })),
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
-  deleteStrategy: async (id) => {
-    const response = await fetch(`${BASE_URL}/strategies/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-      headers: { Accept: 'application/json', ...APP_HEADER, ...langHeader() },
-    })
-    if (response.status === 401) endedSession()
-    // Already gone (another tab, or a retry after a request that went through) is what the user asked for.
-    if (!response.ok && response.status !== 404) throw new Error(`DELETE /strategies/${id} failed: HTTP ${response.status}`)
-  },
+  // Already gone (another tab, or a retry after a request that went through) is what the user asked for.
+  deleteStrategy: (id) => done(request('DELETE', `/strategies/${encodeURIComponent(id)}`, undefined, { ok: [404] })),
   renameStrategy: (id, name) => strategyAction('PUT', id, 'name', { name }),
   getPushKey: async () => (await getRequired<{ publicKey: string | null }>('/push/key')).publicKey,
   savePushSubscription: (subscription) => put('/push/subscription', subscription),
-  removePushSubscription: async (endpoint) => {
-    const response = await fetch(`${BASE_URL}/push/unsubscribe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...APP_HEADER, ...langHeader() },
-      body: JSON.stringify({ endpoint }),
-    })
-    if (response.status === 401) endedSession()
-    if (!response.ok) throw new Error(`POST /push/unsubscribe failed: HTTP ${response.status}`)
-  },
+  removePushSubscription: (endpoint) => done(request('POST', '/push/unsubscribe', { endpoint })),
   archiveStrategy: (id) => strategyAction('POST', id, 'archive'),
-  getAdminSettings: async () => (await admin('GET', '/settings')).json(),
-  getAdminInvites: async () => (await admin('GET', '/invites')).json(),
-  createAdminInvite: async (invite) => (await admin('POST', '/invites', invite)).json(),
-  sendAdminInvite: async (id) => (await admin('POST', `/invites/${encodeURIComponent(id)}/send`)).json(),
-  revokeAdminInvite: async (id) => void (await admin('POST', `/invites/${encodeURIComponent(id)}/revoke`)),
-  setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
-  sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,
-  resetAdminSetting: async (key, clear) => void (await admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
+  getAdminSettings: () => json(admin('GET', '/settings')),
+  getAdminInvites: () => json(admin('GET', '/invites')),
+  createAdminInvite: (invite) => json(admin('POST', '/invites', invite)),
+  sendAdminInvite: (id) => json(admin('POST', `/invites/${encodeURIComponent(id)}/send`)),
+  revokeAdminInvite: (id) => done(admin('POST', `/invites/${encodeURIComponent(id)}/revoke`)),
+  setAdminSetting: (key, value, shown) => done(admin('PUT', settingPath(key), { value, expected: shown })),
+  sendAdminTestEmail: async () => (await json<{ sentTo: string }>(admin('POST', '/test-email'))).sentTo,
+  resetAdminSetting: (key, clear) => done(admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
   getVersion: () => getRequired('/version'),
-  getAdminPrices: async () => (await admin('GET', '/prices')).json(),
-  refreshAdminPrices: async () => void (await admin('POST', '/prices/refresh')),
-  testAdminYahoo: async () => (await admin('POST', '/prices/test')).json(),
-  getAdminDatabases: async () => (await admin('GET', '/database')).json(),
-  switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
-  getAdminAssets: async () => (await admin('GET', '/assets')).json(),
-  getAdminUsers: async () => (await admin('GET', '/users')).json(),
-  getAdminAlerts: async () => (await admin('GET', '/alerts')).json(),
-  dismissAdminAlert: async (id) => void (await admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
-  getAdminTemplates: async () => (await admin('GET', '/templates')).json(),
-  saveAdminTemplateVersion: async (key, change) => (await admin('POST', `/templates/${encodeURIComponent(key)}/versions`, change)).json(),
-  activateAdminTemplateVersion: async (key, version) =>
-    (await admin('PUT', `/templates/${encodeURIComponent(key)}/active`, { version })).json(),
-  setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
-  addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
-  updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),
-  flushAdminPrices: async () => (await admin('DELETE', '/assets/prices')).json(),
-  flushAdminAssetPrices: async (id) => void (await admin('DELETE', `/assets/${encodeURIComponent(id)}/prices`)),
-  downloadAdminAssetPrices: async (id, years) => (await admin('POST', `/assets/${encodeURIComponent(id)}/prices`, { years })).json(),
-  downloadAdminRates: async (years) => (await admin('POST', '/assets/rates', { years })).json(),
-  submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
-  getFeedback: async (status) =>
-    (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],
-  updateFeedback: async (id, patch) =>
-    (await (await feedback('PATCH', `/${encodeURIComponent(id)}`, patch)).json()) as FeedbackItem,
-  deleteFeedback: async (id) => void (await feedback('DELETE', `/${encodeURIComponent(id)}`)),
-  previewAiPrompt: async (request) => (await aiRequest('POST', '/templates/ai/prompt', request)).json(),
+  getAdminPrices: () => json(admin('GET', '/prices')),
+  refreshAdminPrices: () => done(admin('POST', '/prices/refresh')),
+  testAdminYahoo: () => json(admin('POST', '/prices/test')),
+  getAdminDatabases: () => json(admin('GET', '/database')),
+  switchAdminDatabase: (name) => done(admin('POST', '/database/active', { name })),
+  getAdminAssets: () => json(admin('GET', '/assets')),
+  getAdminUsers: () => json(admin('GET', '/users')),
+  getAdminAlerts: () => json(admin('GET', '/alerts')),
+  dismissAdminAlert: (id) => done(admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
+  getAdminTemplates: () => json(admin('GET', '/templates')),
+  saveAdminTemplateVersion: (key, change) => json(admin('POST', `/templates/${encodeURIComponent(key)}/versions`, change)),
+  activateAdminTemplateVersion: (key, version) =>
+    json(admin('PUT', `/templates/${encodeURIComponent(key)}/active`, { version })),
+  setAdminAssetActive: (id, active) => done(admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
+  addAdminAsset: (symbol) => json(admin('POST', '/assets', { symbol })),
+  updateAdminAsset: (id, edit) => done(admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),
+  flushAdminPrices: () => json(admin('DELETE', '/assets/prices')),
+  flushAdminAssetPrices: (id) => done(admin('DELETE', `/assets/${encodeURIComponent(id)}/prices`)),
+  downloadAdminAssetPrices: (id, years) => json(admin('POST', `/assets/${encodeURIComponent(id)}/prices`, { years })),
+  downloadAdminRates: (years) => json(admin('POST', '/assets/rates', { years })),
+  submitFeedback: (item) => json<FeedbackItem>(feedback('POST', '', item)),
+  getFeedback: (status) =>
+    json<FeedbackItem[]>(feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')),
+  updateFeedback: (id, patch) =>
+    json<FeedbackItem>(feedback('PATCH', `/${encodeURIComponent(id)}`, patch)),
+  deleteFeedback: (id) => done(feedback('DELETE', `/${encodeURIComponent(id)}`)),
+  previewAiPrompt: (request) => json(aiRequest('POST', '/templates/ai/prompt', request)),
   getAiRound: (strategyId) => get(aiPath(strategyId, '/ai-round')),
-  readAiAnswer: async (strategyId, answer) => (await aiRequest('POST', aiPath(strategyId, '/ai-round/read'), { answer })).json(),
-  useAiScores: async (strategyId, answer, aiModel, share, prompt, extra) =>
-    (await aiRequest('POST', aiPath(strategyId, '/ai-round'), { answer, aiModel, share, prompt, extra })).json(),
-  skipAiRound: async (strategyId, roundId) => void (await aiRequest('POST', aiPath(strategyId, '/ai-round/skip'), { roundId })),
+  readAiAnswer: (strategyId, answer) => json(aiRequest('POST', aiPath(strategyId, '/ai-round/read'), { answer })),
+  useAiScores: (strategyId, answer, aiModel, share, prompt, extra) =>
+    json(aiRequest('POST', aiPath(strategyId, '/ai-round'), { answer, aiModel, share, prompt, extra })),
+  skipAiRound: (strategyId, roundId) => done(aiRequest('POST', aiPath(strategyId, '/ai-round/skip'), { roundId })),
   getAiRounds: (strategyId) => get(aiPath(strategyId, '/ai-rounds')),
-  updateAiPrompt: async (strategyId, setup) => void (await aiRequest('PUT', aiPath(strategyId, '/ai-prompt'), setup)),
-  setAiSharing: async (enabled) => void (await account('/ai-sharing', { enabled }, { session: true })),
-
+  updateAiPrompt: (strategyId, setup) => done(aiRequest('PUT', aiPath(strategyId, '/ai-prompt'), setup)),
+  setAiSharing: (enabled) => account('/ai-sharing', { enabled }, { session: true }),
 }

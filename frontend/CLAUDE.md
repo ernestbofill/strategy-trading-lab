@@ -11,7 +11,8 @@
 
 ## Structure
 
-- `src/api/`: `types.ts` holds the DTOs and the `Api` interface. `index.ts` exports the `api` client, `httpApi.ts` (the .NET API at `/api`).
+- `src/api/`: `types/` holds the DTOs, one file per domain, and `types/api.ts` the `Api` interface (`types.ts` re-exports them). `index.ts` exports the `api` client, `httpApi.ts` (the .NET API at `/api`).
+  - Every call goes through `request()`, which sends the app and language headers and maps the shared refusals (401 ends the session, 403, 429); an endpoint family only declares its own (`Refusals`: a 409's meaning, how a 400's fields read).
   - Screens talk only to `api`.
   - DTO shapes mirror the .NET API (camelCase JSON). Change them deliberately, together with the backend.
 - `src/components/`: shared, screen-agnostic UI. Reuse these before writing new markup:

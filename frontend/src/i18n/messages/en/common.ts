@@ -9,6 +9,8 @@ export const common = {
   'common.indexTip.text': 'Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold.',
   /** The top bar's up link, after a drawn arrow: the new-strategy steps, whose parent is the step before. */
   'common.back': 'BACK',
+  /** After a list's count badge, for a screen reader. */
+  'common.countHidden': ' in this list',
   /** The top bar's up link, after a drawn arrow, named after the parent. */
   'common.up.strategy': 'STRATEGY',
   'common.up.stock': 'STOCK',
@@ -18,7 +20,6 @@ export const common = {
   'common.home.dashboard': 'DASHBOARD',
   'common.home.welcome': 'WELCOME',
   /** The top bar's right side: the default links, and the admin pages' link to /admin. */
-  'common.account': 'ACCOUNT',
   'common.settings': 'SETTINGS',
   'common.logIn': 'LOG IN',
   'common.admin': 'ADMIN',
@@ -66,13 +67,8 @@ export const common = {
   'legal.privacy.title': 'Privacy policy',
   'legal.privacy.lead': 'How data is stored and handled.',
   'legal.disclaimer.title': 'Disclaimer',
-  'legal.disclaimer.content':
-    'Strategy Trading Lab is a strategy lab and monitoring app for learning and following strategies with your own rules. The app never places orders and never connects to a broker.',
   'legal.about.title': 'About',
   'legal.about.lead': 'About Strategy Trading Lab.',
-  'legal.about.content':
-    'A strategy lab and monitoring side app. Pick a strategy template, tune its rules, and follow it as a simulation or manually. The app never places orders and never connects to a broker.',
-  'legal.laterStep': 'This page comes in a later step.',
   'errors.goHome': 'Go home',
   'errors.notFound.title': 'Page not found',
   'errors.notFound.line': "This page doesn't exist, or it moved.",

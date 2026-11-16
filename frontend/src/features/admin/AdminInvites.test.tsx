@@ -7,7 +7,6 @@ import { AdminInvites } from './AdminInvites'
 
 vi.mock('../account/AccountContext', () => ({
   useAccount: () => ({ state: { status: 'ready', account: null } }),
-  useIsOwner: () => true,
   useRole: () => 'owner',
 }))
 

@@ -2,7 +2,6 @@ import type { summary as en } from '../en/summary'
 
 export const summary: Record<keyof typeof en, string> = {
   'summary.what': 'el resum diari',
-  'summary.title': 'Resum diari',
   'summary.heading': 'El teu resum, {date}',
   'summary.lead': 'Darrer dia de negociació, després del tancament del mercat nord-americà.',
   'summary.quiet.title': 'Cap canvi',

@@ -113,10 +113,10 @@ export function ManualTradeForm({ s, onDone, onCancel }: { s: StrategyDetail; on
             label={t('trades.side')}
             hideLabel
             value={side}
-            onChange={(v) => setSide(v as TradeSide)}
+            onChange={setSide}
             options={[
-              ...(removed(assetId) ? [] : [{ value: 'buy', label: t('trades.buy') }]),
-              { value: 'sell', label: t('trades.sale') },
+              ...(removed(assetId) ? [] : [{ value: 'buy' as const, label: t('trades.buy') }]),
+              { value: 'sell' as const, label: t('trades.sale') },
             ]}
             error={errors.side}
           />

@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, InvalidValueError, type SignalDetail, type SkipReason } from '../../api'
 import { Callout } from '../../components/Callout'
-import { FormMessage } from '../../components/Field'
+import { FormMessage, SegmentedField } from '../../components/Field'
 import { useSubmit } from '../../components/useSubmit'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
@@ -194,27 +194,15 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
         </Callout>
       )}
       <form id={FORM_ID} className={styles.form} onSubmit={save} noValidate>
-        <fieldset className={styles.choices}>
-          <legend className={styles.legend}>{t('signal.question')}</legend>
-          {(
-            [
-              ['did', t('signal.choice.did')],
-              ['skip', t('signal.choice.skip')],
-            ] as const
-          ).map(([id, label]) => (
-            <label key={id} className={styles.choice} data-on={answer === id || undefined}>
-              <input
-                type="radio"
-                name="answer"
-                value={id}
-                checked={answer === id}
-                onChange={() => setAnswer(id)}
-                className="visually-hidden"
-              />
-              {label}
-            </label>
-          ))}
-        </fieldset>
+        <SegmentedField
+          label={t('signal.question')}
+          value={answer}
+          onChange={setAnswer}
+          options={[
+            { value: 'did', label: t('signal.choice.did') },
+            { value: 'skip', label: t('signal.choice.skip') },
+          ]}
+        />
 
         {answer === 'did' ? (
           <div className={styles.fields}>

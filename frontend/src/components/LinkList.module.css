@@ -55,17 +55,18 @@
   color: var(--ink);
 }
 
-.text {
+.content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 13px;
   line-height: 20px;
 }
-.text b {
-  font-weight: 600;
-}
 
 .chevron {
+  flex: none;
   font-family: var(--font-mono);
   color: var(--accent);
 }

@@ -179,7 +179,7 @@ export function SignUp() {
         <SegmentedField
           label={t('account.signUp.currency')}
           value={currency}
-          onChange={(v) => setCurrency(v as Currency)}
+          onChange={setCurrency}
           options={currOptions}
           error={errors.currency}
         />

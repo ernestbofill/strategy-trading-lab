@@ -101,9 +101,6 @@ export const account: Record<keyof typeof en, string> = {
   'account.resend.sent': 'Enviat. Mira el mail.',
 
   // Sign-in gate
-  'account.gate.loading': 'Carregant…',
-  'account.gate.unreachable': 'No s’ha pogut contactar amb Strategy Trading Lab.',
-  'account.gate.retry': 'Torna-ho a provar',
 
   // Install the app
   'account.install.installed': 'L’aplicació està instal·lada en aquest dispositiu.',
@@ -128,7 +125,6 @@ export const account: Record<keyof typeof en, string> = {
   'account.page.currency': 'Moneda',
   'account.page.currencySave': 'Desa la moneda',
   'account.page.currencySaved': 'Desat. Les estratègies noves la faran servir; les que ja funcionen mantenen la seva.',
-  'account.page.reloadFailed': 'No s’ha pogut tornar a carregar el compte.',
   'account.page.notifications': 'Notificacions',
   'account.page.timeZone': 'Zona horària',
   'account.page.timeZoneHint': "Les teves dates i l'hora de les notificacions la segueixen.",

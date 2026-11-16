@@ -15,6 +15,7 @@ import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { dashboardPath } from '../new-strategy/paths'
 import { strategyCacheKey } from '../strategy/useStrategy'
 import { AI_MODELS, AI_SERVICES, OTHER_MODEL } from './aiModels'
+import { useCopy } from '../../components/useCopy'
 import styles from './AiRound.module.css'
 import { AiSharingDetails } from './AiSharingDetails'
 import { PromptText } from './PromptText'
@@ -70,7 +71,7 @@ function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string)
   const t = useT()
   const { locale } = useI18n()
   const navigate = useNavigate()
-  const [copied, setCopied] = useState(false)
+  const { copied, copy: copyText } = useCopy()
   const [answer, setAnswer] = useState('')
   const [reading, setReading] = useState<AiReading | null>(null)
   const [model, setModel] = useState(() => initialModel(r.lastModel))
@@ -129,12 +130,7 @@ function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string)
   }
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(r.prompt)
-      setCopied(true)
-    } catch {
-      setMessage({ tone: 'error', text: t('aiRound.copyFailed') })
-    }
+    if (!(await copyText(r.prompt))) setMessage({ tone: 'error', text: t('aiRound.copyFailed') })
   }
 
   const modelName = model.choice === OTHER_MODEL ? model.other.trim() : model.choice
@@ -179,8 +175,8 @@ function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string)
         <StepTitle n="01">{t('aiRound.step.copy')}</StepTitle>
         <PromptText text={r.prompt} version={r.promptVersion} edited={r.promptEdited} collapsed />
         <div className={styles.row}>
-          <button type="button" className={`ui-strong ${styles.copy}`} data-copied={copied || undefined} onClick={() => void copy()}>
-            {t(copied ? 'aiRound.copied' : 'aiRound.copy')}
+          <button type="button" className={`ui-strong ${styles.copy}`} data-copied={copied === true || undefined} onClick={() => void copy()}>
+            {t(copied === true ? 'aiRound.copied' : 'aiRound.copy')}
           </button>
           <TextAction to={aiPromptPath(r.strategyId)}>{t('aiRound.editPrompt')}</TextAction>
         </div>

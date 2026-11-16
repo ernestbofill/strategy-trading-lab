@@ -133,7 +133,7 @@ function LanguageForm({ current, onSaved }: { current: Locale; onSaved: Saved })
 
   return (
     <SettingForm form={form} saveLabel={t('account.page.languageSave')}>
-      <SegmentedField label={t('account.page.language')} hideLabel value={form.value} onChange={(v) => form.setValue(v as Locale)} options={LOCALES} />
+      <SegmentedField label={t('account.page.language')} hideLabel value={form.value} onChange={form.setValue} options={LOCALES} />
     </SettingForm>
   )
 }
@@ -144,7 +144,7 @@ function CurrencyForm({ current, onSaved }: { current: Currency; onSaved: Saved 
 
   return (
     <SettingForm form={form} saveLabel={t('account.page.currencySave')}>
-      <SegmentedField label={t('account.page.currency')} hideLabel value={form.value} onChange={(v) => form.setValue(v as Currency)} options={currencyOptionsWith(t)} />
+      <SegmentedField label={t('account.page.currency')} hideLabel value={form.value} onChange={form.setValue} options={currencyOptionsWith(t)} />
     </SettingForm>
   )
 }

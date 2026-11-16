@@ -1,14 +1,9 @@
-import { Link } from 'react-router-dom'
 import type { WaitingItem } from '../../api'
-import { Tag } from '../../components/Tag'
+import { LinkList, LinkSection } from '../../components/LinkList'
 import { ModeTag } from '../../components/ModeTag'
+import { Tag } from '../../components/Tag'
 import { useT } from '../../i18n/I18n'
 import { aiRoundPath, signalPath } from './paths'
-import styles from './WaitingList.module.css'
-
-function target(item: WaitingItem) {
-  return item.kind === 'aiRound' ? aiRoundPath(item.strategyId) : signalPath(item.strategyId, item.id)
-}
 
 function Message({ item }: { item: WaitingItem }) {
   const t = useT()
@@ -27,29 +22,15 @@ export function WaitingList({ items }: { items: WaitingItem[] }) {
   const t = useT()
   if (items.length === 0) return null
   return (
-    <section className={styles.section}>
-      <div className={styles.head}>
-        <h2 className={`ui-strong ${styles.title}`}>{t('dashboard.waitingTitle')}</h2>
-        <span className={styles.count}>
-          {items.length}
-          <span className="visually-hidden">{t('dashboard.waitingHidden')}</span>
-        </span>
-      </div>
-      <ul className={styles.list}>
-        {items.map((item) => (
-          <li key={item.id}>
-            <Link to={target(item)} className={styles.row}>
-              {item.kind === 'aiRound' ? <Tag tone="ai">AI</Tag> : <ModeTag live />}
-              <span className={styles.text}>
-                <Message item={item} />
-              </span>
-              <span className={styles.chevron} aria-hidden="true">
-                ›
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <LinkSection title={t('dashboard.waitingTitle')} count={items.length} countLabel={t('dashboard.waitingHidden')}>
+      <LinkList
+        items={items.map((item) => ({
+          key: item.id,
+          to: item.kind === 'aiRound' ? aiRoundPath(item.strategyId) : signalPath(item.strategyId, item.id),
+          tag: item.kind === 'aiRound' ? <Tag tone="ai">AI</Tag> : <ModeTag live />,
+          children: <Message item={item} />,
+        }))}
+      />
+    </LinkSection>
   )
 }

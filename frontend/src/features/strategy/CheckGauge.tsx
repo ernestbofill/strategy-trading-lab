@@ -4,6 +4,9 @@ import { exact, formatRate, signedPct } from '../../lib/format'
 import { isPastMax, normalizeCheck } from './checks'
 import styles from './CheckGauge.module.css'
 
+/** The gauge's own class, and the parent's placement when given. */
+const withClass = (own: string, extra?: string) => (extra ? `${own} ${extra}` : own)
+
 const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high', 'breakout'])
 
 /** Visual gauge for a rule check (`className` places it in its parent): threshold bar (with >100% overflow), 3-zone window band, or moving-average comparison. */
@@ -19,7 +22,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // (Checks stored before this field still have a value: a spread at or under 0 says the same.)
   if (check.key === 'golden' && (check.value === null || (check.subValue ?? 0) <= 0) && check.level !== null && check.midLevel != null) {
     return (
-      <div className={`${styles.stackStrip} ${className ?? ''}`} aria-hidden="true">
+      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
         <span className={styles.stackChip}>{t('stock.bar.sma50', { price: exact(check.level, currency) })}</span>
         <span className={styles.stackRel} data-ok={false}>≤</span>
         <span className={styles.stackChip}>{t('stock.bar.sma200', { price: exact(check.midLevel, currency) })}</span>
@@ -32,7 +35,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
     const firstOk = check.level > check.midLevel
     const secondOk = check.midLevel > check.endLevel
     return (
-      <div className={`${styles.stackStrip} ${className ?? ''}`} aria-hidden="true">
+      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
         <span className={styles.stackChip}>{t('stock.bar.short', { price: exact(check.level, currency) })}</span>
         <span className={styles.stackRel} data-ok={firstOk}>{firstOk ? '>' : '≤'}</span>
         <span className={styles.stackChip}>{t('stock.bar.mid', { price: exact(check.midLevel, currency) })}</span>
@@ -45,7 +48,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // 2. Rising long average: 20 trading days ago -> today.
   if (check.key === 'rising' && check.level !== null && check.endLevel != null) {
     return (
-      <div className={`${styles.stackStrip} ${className ?? ''}`} aria-hidden="true">
+      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
         <span className={styles.stackChip}>{t('stock.bar.ago20', { price: exact(check.endLevel, currency) })}</span>
         <span className={styles.stackRel} data-ok={check.met === true}>{check.met ? '↗' : '↘'}</span>
         <span className={styles.stackChip}>{t('stock.bar.now', { price: exact(check.level, currency) })}</span>
@@ -56,7 +59,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // 3. Index trend sell line 3-level band (Sell line | SMA 200 | Buy line).
   if (check.key === 'sellLine' && check.max === null && check.level !== null && check.midLevel != null && check.endLevel != null) {
     return (
-      <div className={`${styles.stackStrip} ${className ?? ''}`} aria-hidden="true">
+      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
         <span className={styles.stackChip}>{t('stock.bar.sell', { price: exact(check.level, currency) })}</span>
         <span className={styles.stackRel} data-ok={true}>·</span>
         <span className={styles.stackChip}>{t('stock.bar.sma', { price: exact(check.midLevel, currency) })}</span>
@@ -92,7 +95,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
         ? t('stock.bar.bounce', { min: formatRate(min), max: formatRate(max) })
         : t('stock.bar.chase', { max: formatRate(max) })
     return (
-      <div className={`${styles.progress} ${className ?? ''}`}>
+      <div className={withClass(styles.progress, className)}>
         <div className={styles.bar} data-kind="band" aria-hidden="true">
           <span className={styles.bandZone} />
           <div className={styles.fill} data-state={state} style={{ width: `${fillPct}%` }} />
@@ -112,7 +115,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
       ? Math.min(100, Math.round(75 + Math.min(25, ((pct - 100) / 100) * 25)))
       : Math.round((pct / 100) * 75)
     return (
-      <div className={`${styles.progress} ${className ?? ''}`}>
+      <div className={withClass(styles.progress, className)}>
         <div className={styles.bar} data-kind="threshold" aria-hidden="true">
           <div className={styles.fill} data-state={state} style={{ width: `${fillPct}%` }} />
           <span className={styles.targetTick} style={{ left: '75%' }} />
@@ -126,7 +129,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   if (check.level !== null && check.value !== null) {
     const fillPct = Math.max(4, Math.min(100, Math.round(50 + (Math.max(-25, Math.min(25, check.value)) / 25) * 50)))
     return (
-      <div className={`${styles.progress} ${className ?? ''}`}>
+      <div className={withClass(styles.progress, className)}>
         <div className={styles.bar} data-kind="threshold" aria-hidden="true">
           <div className={styles.fill} data-state={state} style={{ width: `${fillPct}%` }} />
           <span className={styles.targetTick} style={{ left: '50%' }} />

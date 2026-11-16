@@ -59,7 +59,6 @@ function readSelection(): CapturedSelection | null {
   }
 }
 
-
 /**
  * Floating "Add comment" button + desktop right-click menu + modal dialog whenever a user with a
  * confirmed email selects text on any screen.

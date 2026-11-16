@@ -20,9 +20,11 @@ public record DipParams : IValidatableObject
     /// <summary>
     /// From this day on the low is the lowest close up to the peak's day, so a fall after the peak is no rise; earlier days keep
     /// the POC's rule (the window's low, whatever the order). A strategy that ran before the rule existed has the day it came
-    /// (set by migration), so the daily replay of its past, which rebuilds the steps it holds, reads as it did.
+    /// (set by migration), so the daily replay of its past, which rebuilds the steps it holds, reads as it did. Params stored
+    /// without it keep the POC's rule for good (the default): a lost date must never rewrite a strategy's past. The template
+    /// turns the rule on for new strategies (<c>TemplateCatalog.Dip</c>).
     /// </summary>
-    public DateOnly LowBeforePeakFrom { get; init; } = DateOnly.MinValue;
+    public DateOnly LowBeforePeakFrom { get; init; } = DateOnly.MaxValue;
 
     /// <summary>Recent peak: the highest close of this many days.</summary>
     [Range(10, 120)] public int PeakDays { get; init; } = 60;
@@ -48,6 +50,11 @@ public record DipParams : IValidatableObject
         {
             yield return new ValidationResult("The discount zone must start before it ends.",
                 [nameof(ZoneStartPct), nameof(ZoneEndPct)]);
+        }
+        // The low is looked for up to the peak's day: a peak window as long as the low's could leave no day before the peak.
+        if (PeakDays >= GainDays)
+        {
+            yield return new ValidationResult("The peak's days must be fewer than the low's.", [nameof(PeakDays), nameof(GainDays)]);
         }
     }
 }

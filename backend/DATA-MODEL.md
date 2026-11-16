@@ -213,7 +213,7 @@ What a user who shares AI rounds gives, apart from account data: no user, strate
 | budget_amount | numeric(14,2), not null | The most it can invest in total. Range checked in C# (€500 – €1,000,000 in euro) |
 | budget_step | numeric(14,2), null | How much each buy is. Null for all in, all out. Check ≤ budget_amount |
 | budget_max_steps | int, null | Max steps per stock, 1–20. Null for all in, all out. `CHECK ((budget_step IS NULL) = (budget_max_steps IS NULL))` |
-| params | jsonb, not null | Every template setting, validated per template in C#. Winners at a discount: `{"minGainPct":50,"gainDays":168,"peakDays":60,"zoneStartPct":5,"zoneEndPct":15,"trendDays":200,"floorDays":50,"cooldownDays":10}` (records in `Templates/TemplateParams.cs`) |
+| params | jsonb, not null | Every template setting, validated per template in C#. Winners at a discount: `{"minGainPct":50,"gainDays":168,"peakDays":60,"zoneStartPct":5,"zoneEndPct":15,"trendDays":200,"floorDays":50,"cooldownDays":10}` (records in `Templates/TemplateParams.cs`). Two params are dates no screen shows, each the day one of STL's own rules starts for the strategy; before it, the daily replay of the strategy's past keeps the POC's rule, so never edit or remove them: `lowBeforePeakFrom` (Winners at a discount; missing means never) and `volumeOnRiseFrom` (The comeback; missing means always) |
 | source_strategy_id | uuid FK → strategies, null, set null | The simulation a live strategy was copied from. A simulation can have several live copies |
 | created_at, updated_at | timestamptz | |
 

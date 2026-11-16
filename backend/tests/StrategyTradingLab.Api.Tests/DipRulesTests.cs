@@ -44,14 +44,18 @@ public class DipRulesTests
         var halved = Bars(200, 100);
 
         // The peak (200) came before the low (100): the low up to the peak's day is the peak itself, no rise.
-        var gain = Gain(halved, new DipParams());
+        var rule = new DipParams { LowBeforePeakFrom = DateOnly.MinValue };
+        var gain = Gain(halved, rule);
         Assert.False(gain.Met);
         Assert.Equal(0m, gain.Value);
         Assert.Equal(200m, gain.Level);
         // A real rise, the low first, still counts in full.
-        Assert.Equal(100m, Gain(Bars(100, 200), new DipParams()).Value);
+        Assert.Equal(100m, Gain(Bars(100, 200), rule).Value);
         // A strategy older than the rule replays its earlier days as the POC did: the window's low, whatever the order.
         Assert.True(Gain(halved, new DipParams { LowBeforePeakFrom = halved[^1].Date.AddDays(1) }).Met);
+        // So do params stored without the date, while a new strategy takes the template's, with the rule on.
+        Assert.True(Gain(halved, new DipParams()).Met);
+        Assert.False(Gain(halved, (DipParams)TemplateCatalog.Dip.Params).Met);
     }
 
     [Fact]

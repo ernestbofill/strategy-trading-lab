@@ -43,7 +43,7 @@ public class EngineGoldenTests
         var golden = Load(name);
         var bars = Bars(golden);
 
-        var days = RulesRunner.Run(new DipRules(bars, new DipParams { CooldownDays = 10, LowBeforePeakFrom = DateOnly.MaxValue }), bars, new StepPlan(5));
+        var days = RulesRunner.Run(new DipRules(bars, new DipParams { CooldownDays = 10 }), bars, new StepPlan(5));
 
         Matches(golden, days);
     }

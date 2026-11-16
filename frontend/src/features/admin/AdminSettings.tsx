@@ -20,6 +20,7 @@ import { adminCacheKeys } from './cacheKeys'
 import styles from './AdminSettings.module.css'
 import { DatabaseBox } from './DatabaseBox'
 import { PricesBox } from './PricesBox'
+import { Button } from '../../components/Button'
 
 interface AdminPage {
   /** Null when they can't be read: they live in the database in use, which may be the broken one. */
@@ -168,9 +169,9 @@ function TestEmail() {
       </div>
       <div className={styles.controls}>
         <div className={styles.buttons}>
-          <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={send}>
+          <Button variant="outline" disabled={busy} onClick={send}>
             {busy ? 'Sending…' : 'Send a test email'}
-          </button>
+          </Button>
         </div>
         {result && (
           <p role={result.ok ? 'status' : 'alert'} className={result.ok ? styles.done : styles.error}>
@@ -257,27 +258,25 @@ function SettingRow({ setting: s, shown, onChanged }: SettingRowProps) {
           />
         )}
         <div className={styles.buttons}>
-          <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !edited}>
+          <Button type="submit" variant="outline" disabled={busy || !edited}>
             Save
-          </button>
+          </Button>
           {s.secret ? (
-            <button
-              type="button"
-              className={`ui-strong ${styles.button}`}
+            <Button
+              variant="outline"
               disabled={busy || !s.isSet}
               onClick={() => run(() => api.resetAdminSetting(s.key, true))}
             >
               Clear
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              className={`ui-strong ${styles.button}`}
+            <Button
+              variant="outline"
               disabled={busy || s.source !== 'page'}
               onClick={() => run(() => api.resetAdminSetting(s.key))}
             >
               Default
-            </button>
+            </Button>
           )}
         </div>
         {error && (

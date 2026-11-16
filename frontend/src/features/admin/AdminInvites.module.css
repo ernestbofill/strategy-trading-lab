@@ -44,49 +44,9 @@
   column-gap: var(--space-3);
 }
 
-.button,
-.primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  min-width: 88px;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.button {
-  align-self: flex-start;
-  background: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
-}
-.button:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.primary {
-  background: var(--action-rest);
-  border: 1px solid transparent;
-  color: var(--on-action);
-}
-.primary:hover:not(:disabled),
-.primary:focus-visible {
-  background: var(--action);
-  box-shadow: var(--glow-primary);
-}
-
-.button:disabled,
-.primary:disabled,
 .textButton:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-.linkButton {
-  text-decoration: none;
 }
 
 .textButton {

@@ -10,6 +10,7 @@ import styles from './AdminAssets.module.css'
 import { DataTable, type DataTableColumn, type DataTableFilter } from '../../components/DataTable'
 import { AddAssetForm, EditAssetForm } from './AssetForms'
 import { AllPricesSection } from './AssetPrices'
+import { Button } from '../../components/Button'
 
 const kindText: Record<AssetKind, string> = {
   stock: 'Stock',
@@ -143,19 +144,18 @@ export function AdminAssets() {
               actionHeader="Actions"
               rowAction={(a) => (
                 <div className={styles.buttons}>
-                  <button type="button" className={`ui-strong ${styles.actionButton}`} onClick={() => setEditing(a)}>
+                  <Button variant="outline" onClick={() => setEditing(a)}>
                     Edit
                     <span className="visually-hidden"> {a.name}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`ui-strong ${styles.actionButton}`}
+                  </Button>
+                  <Button
+                    variant="outline"
                     disabled={busyId === a.id}
                     onClick={() => void toggleActive(a)}
                   >
                     {a.active ? 'Hide' : 'Show'}
                     <span className="visually-hidden"> {a.name}</span>
-                  </button>
+                  </Button>
                 </div>
               )}
             />

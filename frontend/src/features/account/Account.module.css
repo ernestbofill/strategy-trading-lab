@@ -40,38 +40,6 @@
   overflow-wrap: anywhere;
 }
 
-.button {
-  align-self: flex-start;
-  min-height: 44px;
-  min-width: 88px;
-  padding: 0 var(--space-3);
-  background: transparent;
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-sm);
-  color: var(--primary);
-  cursor: pointer;
-}
-.button:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-.button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-/* Delete my account: the one action that can't be undone. */
-.danger {
-  border-color: var(--danger);
-  color: var(--danger-ink);
-}
-
-.linkButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
 /* Notifications: a kind (its title and hint) with its channels side by side. */
 .kind {
   display: flex;

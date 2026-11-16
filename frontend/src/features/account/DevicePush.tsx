@@ -4,6 +4,7 @@ import { FormMessage } from '../../components/Field'
 import { useT } from '../../i18n/I18n'
 import { deviceSubscription, pushKey, pushSupport, subscribeDevice, unsubscribeDevice } from '../../lib/push'
 import styles from './Account.module.css'
+import { Button } from '../../components/Button'
 
 /** `none`: the server sends no push (no keys), so there is nothing to turn on. */
 type DeviceState = 'loading' | 'none' | 'on' | 'off'
@@ -59,9 +60,9 @@ export function DevicePush() {
   return (
     <>
       <p className={styles.line}>{t(state === 'on' ? 'account.push.on' : 'account.push.off')}</p>
-      <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => void change()}>
+      <Button variant="outline" disabled={busy} onClick={() => void change()}>
         {t(state === 'on' ? 'account.push.turnOff' : 'account.push.turnOn')}
-      </button>
+      </Button>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
     </>
   )

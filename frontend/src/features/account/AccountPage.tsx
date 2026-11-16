@@ -17,6 +17,7 @@ import { ResendLink } from './ResendLink'
 import { deviceSubscription, unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
+import { Button, buttonLook } from '../../components/Button'
 
 /** Account (spec: Account): who the user is and their data. Reached from Settings' first row. */
 export function AccountPage() {
@@ -75,7 +76,7 @@ export function AccountPage() {
       {account.role === 'owner' && (
         <Section title={t('account.page.admin')}>
           <p className={styles.line}>{t('account.page.adminLine')}</p>
-          <Link to="/admin" className={`ui-strong ${styles.button} ${styles.linkButton}`}>
+          <Link to="/admin" {...buttonLook('outline')}>
             {t('account.page.adminLink')}
           </Link>
         </Section>
@@ -89,9 +90,9 @@ export function AccountPage() {
         <ChangePassword email={account.email} />
       </Section>
 
-      <button type="button" className={`ui-strong ${styles.button}`} disabled={loggingOut} onClick={() => void logOut()}>
+      <Button variant="outline" disabled={loggingOut} onClick={() => void logOut()}>
         {loggingOut ? t('account.page.loggingOut') : t('account.page.logOut')}
-      </button>
+      </Button>
       {logOutError && <FormMessage tone="error">{logOutError}</FormMessage>}
 
       <Section title={t('account.delete.title')}>
@@ -123,9 +124,9 @@ function NameForm({ firstName, lastName, onSaved }: { firstName: string; lastNam
         <TextField label={t('account.field.lastName')} autoComplete="family-name" autoCapitalize="words" value={last} onChange={setLast} error={errors.lastName} />
       </div>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || (first === firstName && last === lastName)}>
+      <Button type="submit" variant="outline" disabled={busy || (first === firstName && last === lastName)}>
         {busy ? t('account.saving') : t('account.page.nameSave')}
-      </button>
+      </Button>
     </form>
   )
 }
@@ -164,9 +165,9 @@ function ChangePassword({ email }: { email: string }) {
         error={errors.newPassword}
       />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !current || !next}>
+      <Button type="submit" variant="outline" disabled={busy || !current || !next}>
         {busy ? t('account.saving') : t('account.page.changePassword')}
-      </button>
+      </Button>
     </form>
   )
 }
@@ -222,9 +223,9 @@ function DeleteAccount({ email }: { email: string }) {
     return (
       <div className={styles.form}>
         <p className={styles.line}>{t('account.delete.line')}</p>
-        <button type="button" className={`ui-strong ${styles.button} ${styles.danger}`} onClick={() => setAsking(true)}>
+        <Button variant="outline-danger" onClick={() => setAsking(true)}>
           {t('account.delete.title')}
-        </button>
+        </Button>
       </div>
     )
 
@@ -234,12 +235,12 @@ function DeleteAccount({ email }: { email: string }) {
       <PasswordField label={t('account.delete.password')} autoComplete="current-password" value={password} onChange={setPassword} error={errors.password} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <div className={styles.links}>
-        <button type="submit" className={`ui-strong ${styles.button} ${styles.danger}`} disabled={busy || !password}>
+        <Button type="submit" variant="outline-danger" disabled={busy || !password}>
           {busy ? t('account.delete.deleting') : t('account.delete.confirm')}
-        </button>
-        <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => { setAsking(false); setPassword(''); setErrors({}) }}>
+        </Button>
+        <Button variant="outline" disabled={busy} onClick={() => { setAsking(false); setPassword(''); setErrors({}) }}>
           {t('account.delete.cancel')}
-        </button>
+        </Button>
       </div>
     </form>
   )

@@ -3,6 +3,7 @@ import { api, InvalidFieldsError, InvalidValueError, UnauthorizedError, type Adm
 import { FormMessage, TextField, type FormMessageState } from '../../components/Field'
 import { Section } from '../../components/Section'
 import styles from './AdminAssets.module.css'
+import { Button } from '../../components/Button'
 
 const DEFAULT_YEARS = '2'
 /** The API's limit (AdminEndpoints.MaxDownloadYears). */
@@ -35,9 +36,8 @@ function YearsField({ value, onChange }: { value: string; onChange: (value: stri
 function DeleteButton({ label, busy, onDelete }: { label: string; busy: boolean; onDelete: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false)
   return confirming ? (
-    <button
-      type="button"
-      className={`ui-strong ${styles.actionButton} ${styles.danger}`}
+    <Button
+      variant="outline-danger"
       disabled={busy}
       onClick={() => {
         setConfirming(false)
@@ -45,11 +45,11 @@ function DeleteButton({ label, busy, onDelete }: { label: string; busy: boolean;
       }}
     >
       Sure? {label}
-    </button>
+    </Button>
   ) : (
-    <button type="button" className={`ui-strong ${styles.actionButton}`} disabled={busy} onClick={() => setConfirming(true)}>
+    <Button variant="outline" disabled={busy} onClick={() => setConfirming(true)}>
       {label}
-    </button>
+    </Button>
   )
 }
 
@@ -134,9 +134,9 @@ export function AllPricesSection({ assets, onChanged }: { assets: AdminAsset[]; 
       <div className={styles.form}>
         <YearsField value={years} onChange={setYears} />
         <div className={styles.buttons}>
-          <button type="button" className={`ui-strong ${styles.actionButton}`} disabled={busy || active.length === 0} onClick={() => void downloadAll()}>
+          <Button variant="outline" disabled={busy || active.length === 0} onClick={() => void downloadAll()}>
             Download all
-          </button>
+          </Button>
           <DeleteButton label="Delete all" busy={busy} onDelete={deleteAll} />
         </div>
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
@@ -183,9 +183,9 @@ export function AssetPricesActions({ asset, onChanged }: { asset: AdminAsset; on
     <div className={styles.form}>
       <YearsField value={years} onChange={setYears} />
       <div className={styles.buttons}>
-        <button type="button" className={`ui-strong ${styles.actionButton}`} disabled={busy} onClick={() => void download()}>
+        <Button variant="outline" disabled={busy} onClick={() => void download()}>
           {busy ? 'Working…' : 'Download prices'}
-        </button>
+        </Button>
         <DeleteButton label="Delete prices" busy={busy} onDelete={remove} />
       </div>
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}

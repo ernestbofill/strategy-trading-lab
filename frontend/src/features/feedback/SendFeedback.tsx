@@ -7,6 +7,7 @@ import { useCurrentAccount } from '../account/AccountContext'
 import styles from '../account/Account.module.css'
 import { FEEDBACK_SUBMITTED_EVENT, feedbackErrorText } from './feedback'
 import { KindPicker } from './KindPicker'
+import { Button } from '../../components/Button'
 
 /** The hash that opens the account page at this form ("Send feedback" on the dashboard). */
 export const SEND_FEEDBACK_HASH = '#feedback'
@@ -51,9 +52,9 @@ export function SendFeedback() {
       <KindPicker value={kind} onChange={setKind} />
       <TextAreaField label={t('feedback.yourComment')} hideLabel value={text} onChange={setText} rows={4} maxLength={4000} placeholder={t('feedback.send.placeholder')} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-      <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || !text.trim()}>
+      <Button type="submit" variant="outline" disabled={busy || !text.trim()}>
         {busy ? t('feedback.send.sending') : t('feedback.send.action')}
-      </button>
+      </Button>
     </form>
   )
 }

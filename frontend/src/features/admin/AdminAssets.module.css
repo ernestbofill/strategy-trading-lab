@@ -25,31 +25,6 @@
   font-family: var(--font-mono);
 }
 
-.actionButton {
-  min-height: 44px;
-  min-width: 72px;
-  padding: 0 var(--space-3);
-  background: transparent;
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-sm);
-  color: var(--primary);
-  cursor: pointer;
-}
-
-.actionButton:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.actionButton.danger {
-  border-color: var(--danger-ink);
-  color: var(--danger-ink);
-}
-
-.actionButton:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
 .error {
   margin: 0;
   color: var(--danger-ink);

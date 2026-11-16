@@ -130,3 +130,6 @@ export function topOffset(headerBottom = 0): number {
 
 /** Fired when a comment is sent, so an open feedback list loads again. */
 export const FEEDBACK_SUBMITTED_EVENT = 'stl:feedback-submitted'
+
+/** The feedback list's load (`useLoadable`). */
+export const feedbackCacheKey = 'feedback:all'

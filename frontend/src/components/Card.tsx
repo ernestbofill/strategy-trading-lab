@@ -8,7 +8,7 @@ type CardProps<T extends ElementType> = {
   interactive?: boolean
   /** Picked or open: the green edge and glow. */
   selected?: boolean
-  /** Can't be used for now: no hover. */
+  /** Can't be used for now: no hover, and on a native `<button>` (`as="button"`) the `disabled` attribute too. */
   disabled?: boolean
 } & Omit<ComponentPropsWithoutRef<T>, 'as'>
 
@@ -24,6 +24,7 @@ export function Card<T extends ElementType = 'div'>({ as, interactive, selected,
       data-interactive={interactive || undefined}
       data-selected={selected || undefined}
       data-disabled={disabled || undefined}
+      disabled={Element === 'button' ? disabled : undefined}
       {...rest}
     />
   )

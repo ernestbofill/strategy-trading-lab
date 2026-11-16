@@ -265,42 +265,31 @@ a.stock:hover {
   gap: var(--space-2);
 }
 
-.tileLink {
+/* A tile's layout: the surface and its states are Card's. Under `.tiles`, so its padding wins over Card's whatever the CSS order. */
+.tiles > .tile {
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
   min-height: 64px;
   padding: 10px 12px;
-  background: var(--surface-sidebar);
-  border: 1px solid var(--border-hairline);
   text-decoration: none;
-  color: inherit;
-}
-.tileLink:not(:disabled):hover {
-  background: var(--surface-hover);
-  border-color: var(--primary);
 }
 
 .tileTitle {
   color: var(--primary);
 }
 
-/* "Go live with these settings" is a button that looks like the other tiles. */
-button.tileLink {
+/* "Go live with these settings" and "Archive" are buttons that look like the other tiles. */
+button.tile {
   width: 100%;
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-button.tileLink:disabled {
+button.tile:disabled {
   cursor: not-allowed;
   opacity: 0.6;
-  border-color: var(--border);
-}
-button.tileLink:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
 }
 
 .copiedFrom {

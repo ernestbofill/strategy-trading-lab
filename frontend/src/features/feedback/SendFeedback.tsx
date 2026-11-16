@@ -5,8 +5,7 @@ import { FormMessage, TextAreaField, type FormMessageState } from '../../compone
 import { useT } from '../../i18n/I18n'
 import { useCurrentAccount } from '../account/AccountContext'
 import styles from '../account/Account.module.css'
-import { feedbackErrorText } from './feedback'
-import { FEEDBACK_SUBMITTED_EVENT } from './FeedbackCapture'
+import { FEEDBACK_SUBMITTED_EVENT, feedbackErrorText } from './feedback'
 import { KindPicker } from './KindPicker'
 
 /** The hash that opens the account page at this form ("Send feedback" on the dashboard). */

@@ -127,3 +127,6 @@ export function buttonSide(selection: SelectionPosition, viewportHeight: number,
 export function topOffset(headerBottom = 0): number {
   return Math.max(16, Math.round(headerBottom) + HEADER_GAP)
 }
+
+/** Fired when a comment is sent, so an open feedback list loads again. */
+export const FEEDBACK_SUBMITTED_EVENT = 'stl:feedback-submitted'

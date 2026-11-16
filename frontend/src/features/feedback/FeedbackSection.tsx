@@ -10,10 +10,10 @@ import {
 import { PageHeader } from '../../components/PageHeader'
 import { Screen } from '../../components/Screen'
 import { AdminTopBar } from '../admin/AdminTopBar'
-import { feedbackMarkdown, isAppPath, kindMeta } from './feedback'
-import { FEEDBACK_SUBMITTED_EVENT } from './FeedbackCapture'
+import { FEEDBACK_SUBMITTED_EVENT, feedbackMarkdown } from './feedback'
 import { useCopy } from '../../components/useCopy'
 import styles from './Feedback.module.css'
+import { FeedbackItemRow } from './FeedbackItemRow'
 import { KindPicker } from './KindPicker'
 
 type Filter = 'open' | 'closed' | 'all'
@@ -38,8 +38,6 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
   const [adding, setAdding] = useState(false)
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editKind, setEditKind] = useState<FeedbackKind>('note')
-  const [editText, setEditText] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const { copied, copy } = useCopy()
@@ -98,58 +96,39 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
     }
   }
 
-  const startEdit = (item: FeedbackItem) => {
-    setEditingId(item.id)
-    setEditKind(item.kind)
-    setEditText(item.text)
-  }
-
-  const saveEdit = async (id: string) => {
-    const trimmed = editText.trim()
-    if (!trimmed) return
+  /** One item's change: busy while it runs, its failure said above the list (an ended session goes to Log-in). */
+  const act = async (id: string, failure: string, work: () => Promise<void>) => {
     setBusyId(id)
     setError(null)
     try {
-      const updated = await api.updateFeedback(id, { kind: editKind, text: trimmed })
-      setItems((prev) => prev.map((i) => (i.id === id ? updated : i)))
+      await work()
+    } catch (err) {
+      if (err instanceof UnauthorizedError) return
+      setError(err instanceof InvalidValueError ? err.message : failure)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const replace = (updated: FeedbackItem) => setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
+
+  const saveEdit = (id: string, kind: FeedbackKind, text: string) =>
+    act(id, 'Could not update comment.', async () => {
+      replace(await api.updateFeedback(id, { kind, text }))
       setEditingId(null)
-    } catch (err) {
-      if (err instanceof UnauthorizedError) return
-      setError(err instanceof InvalidValueError ? err.message : 'Could not update comment.')
-    } finally {
-      setBusyId(null)
-    }
-  }
+    })
 
-  const toggleStatus = async (item: FeedbackItem) => {
-    const nextStatus = item.status === 'open' ? 'closed' : 'open'
-    setBusyId(item.id)
-    setError(null)
-    try {
-      const updated = await api.updateFeedback(item.id, { status: nextStatus })
-      setItems((prev) => prev.map((i) => (i.id === item.id ? updated : i)))
-    } catch (err) {
-      if (err instanceof UnauthorizedError) return
-      setError('Could not update status.')
-    } finally {
-      setBusyId(null)
-    }
-  }
+  const toggleStatus = (item: FeedbackItem) =>
+    act(item.id, 'Could not update status.', async () =>
+      replace(await api.updateFeedback(item.id, { status: item.status === 'open' ? 'closed' : 'open' })),
+    )
 
-  const remove = async (id: string) => {
-    setBusyId(id)
-    setError(null)
-    try {
+  const remove = (id: string) =>
+    act(id, 'Could not delete comment.', async () => {
       await api.deleteFeedback(id)
       setItems((prev) => prev.filter((i) => i.id !== id))
       if (editingId === id) setEditingId(null)
-    } catch (err) {
-      if (err instanceof UnauthorizedError) return
-      setError('Could not delete comment.')
-    } finally {
-      setBusyId(null)
-    }
-  }
+    })
 
   const copyMarkdown = async () => {
     if (!(await copy(feedbackMarkdown(items)))) setError('Clipboard copy failed.')
@@ -237,103 +216,19 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
         </p>
       ) : (
         <ul className={styles.list}>
-          {visible.map((item) => {
-            const meta = kindMeta(item.kind)
-            const isEditing = editingId === item.id
-            const isBusy = busyId === item.id
-            return (
-              <li
-                key={item.id}
-                className={styles.item}
-                data-closed={item.status === 'closed' || undefined}
-              >
-                <div className={styles.itemHeader}>
-                  <span className={styles.badge}>
-                    <span aria-hidden="true">{meta.emoji}</span> {meta.label}
-                  </span>
-                  {item.status === 'closed' && <span className={styles.closedBadge}>Closed</span>}
-                  <span className={styles.author}>{item.userEmail}</span>
-                  <span>{new Date(item.createdAt).toLocaleString()}</span>
-                  {item.route &&
-                    (isAppPath(item.route) ? (
-                      <Link to={item.route} className={styles.routeLink}>
-                        {item.route}
-                      </Link>
-                    ) : (
-                      <code className={styles.code}>{item.route}</code>
-                    ))}
-                  {item.element && <code className={styles.code}>{item.element}</code>}
-                </div>
-
-                {item.selectedText && (
-                  <blockquote className={styles.quote}>“{item.selectedText}”</blockquote>
-                )}
-
-                {isEditing ? (
-                  <div className={styles.field}>
-                    <KindPicker value={editKind} onChange={setEditKind} />
-                    <textarea
-                      aria-label="Edit comment"
-                      className={styles.textarea}
-                      rows={3}
-                      maxLength={4000}
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                    />
-                    <div className={styles.itemActions}>
-                      <button
-                        type="button"
-                        className={`${styles.button} ${styles.primaryButton}`}
-                        disabled={isBusy || !editText.trim()}
-                        onClick={() => void saveEdit(item.id)}
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.button}
-                        disabled={isBusy}
-                        onClick={() => setEditingId(null)}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className={styles.commentText}>{item.text}</p>
-                )}
-
-                {!isEditing && (
-                  <div className={styles.itemActions}>
-                    <button
-                      type="button"
-                      className={styles.button}
-                      disabled={isBusy}
-                      onClick={() => startEdit(item)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.button}
-                      disabled={isBusy}
-                      onClick={() => void toggleStatus(item)}
-                    >
-                      {item.status === 'open' ? 'Close' : 'Reopen'}
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.button} ${styles.dangerButton}`}
-                      disabled={isBusy}
-                      onClick={() => void remove(item.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </li>
-            )
-          })}
+          {visible.map((item) => (
+            <FeedbackItemRow
+              key={item.id}
+              item={item}
+              editing={editingId === item.id}
+              busy={busyId === item.id}
+              onEdit={() => setEditingId(item.id)}
+              onCancel={() => setEditingId(null)}
+              onSave={(kind, text) => saveEdit(item.id, kind, text)}
+              onToggle={() => toggleStatus(item)}
+              onDelete={() => remove(item.id)}
+            />
+          ))}
         </ul>
       )}
     </section>

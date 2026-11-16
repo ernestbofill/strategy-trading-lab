@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { api, UnauthorizedError, type FeedbackKind } from '../../api'
 import { useT } from '../../i18n/I18n'
 import { useCurrentAccount } from '../account/AccountContext'
-import { buttonSide, elementPath, feedbackErrorText, topOffset, type ButtonSide, type SelectionPosition } from './feedback'
+import { buttonSide, elementPath, FEEDBACK_SUBMITTED_EVENT, feedbackErrorText, topOffset, type ButtonSide, type SelectionPosition } from './feedback'
 import styles from './Feedback.module.css'
 import { KindPicker } from './KindPicker'
 import { uiZoom } from '../../lib/uiZoom'
@@ -59,7 +59,6 @@ function readSelection(): CapturedSelection | null {
   }
 }
 
-export const FEEDBACK_SUBMITTED_EVENT = 'stl:feedback-submitted'
 
 /**
  * Floating "Add comment" button + desktop right-click menu + modal dialog whenever a user with a

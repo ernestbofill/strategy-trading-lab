@@ -5,6 +5,8 @@ import type { FormMessageState } from './Field'
 /**
  * A form's save: busy while it runs (a second submit does nothing), the server's refusals under their fields, else a line
  * saying why, in the server's words for a refused value or `fallback`. An ended session goes to Log-in: nothing is said.
+ * After a save that worked it stays busy for good: it is for forms whose screen moves on or unmounts on success. A form that
+ * stays open after a save needs a way to release it first.
  */
 export function useSubmit(fallback: string) {
   const [busy, setBusy] = useState(false)

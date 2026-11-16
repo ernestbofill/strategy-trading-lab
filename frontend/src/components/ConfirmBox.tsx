@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { UnauthorizedError } from '../api'
 import { Button, ButtonRow } from './Button'
 import styles from './ConfirmBox.module.css'
@@ -25,17 +25,22 @@ interface ConfirmBoxProps {
 export function ConfirmBox({ ask, confirmLabel, busyLabel, keepLabel, failedText, onConfirm, onKeep, className }: ConfirmBoxProps) {
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
+  // A double tap before React renders again would see busy as false: the ref is the real guard, as in useSubmit.
+  const running = useRef(false)
 
   const confirm = async () => {
+    if (running.current) return
+    running.current = true
     setBusy(true)
     setFailed(false)
     try {
       await onConfirm()
       // Done: the screen changes (the item goes, the page reloads); its buttons stay off meanwhile.
     } catch (e) {
-      if (e instanceof UnauthorizedError) return
-      setFailed(true)
+      running.current = false
       setBusy(false)
+      // An ended session goes to Log-in: nothing to say, but the buttons come back in case it doesn't.
+      if (!(e instanceof UnauthorizedError)) setFailed(true)
     }
   }
 

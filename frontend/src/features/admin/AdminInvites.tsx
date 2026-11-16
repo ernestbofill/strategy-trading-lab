@@ -15,6 +15,7 @@ import { AdminTopBar } from './AdminTopBar'
 import { adminCacheKeys } from './cacheKeys'
 import { useCopy } from '../../components/useCopy'
 import styles from './AdminInvites.module.css'
+import { Button, buttonLook } from '../../components/Button'
 import { useSubmit } from '../../components/useSubmit'
 
 /** The admin setting that gates sign-up (backend Admin/SettingDefinitions.cs). */
@@ -131,9 +132,9 @@ function SignUpGate() {
             : 'Anyone can sign up. An invite code still gives the vip role.'}
         </p>
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-        <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy || saved === null || choice === saved}>
+        <Button type="submit" variant="outline" disabled={busy || saved === null || choice === saved}>
           {busy ? 'Saving…' : 'Save'}
-        </button>
+        </Button>
       </form>
     </section>
   )
@@ -183,12 +184,12 @@ function NewInviteForm({ onCreated }: { onCreated: (invite: AdminInvite, sent: b
       <SegmentedField label="Language of the invite" value={locale} onChange={setLocale} options={LANGUAGES} error={errors.locale} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <div className={styles.actions}>
-        <button type="button" className={`ui-strong ${styles.primary}`} disabled={busy !== null || email.trim() === ''} onClick={() => void create(true)}>
-          {busy === 'send' ? 'Sending…' : '✉ Send by email'}
-        </button>
-        <button type="submit" className={`ui-strong ${styles.button}`} disabled={busy !== null}>
+        <Button variant="primary" disabled={busy !== null || email.trim() === ''} onClick={() => void create(true)}>
+          {busy === 'send' ? 'Sending…' : 'Send by email'}
+        </Button>
+        <Button type="submit" variant="outline" disabled={busy !== null}>
           {busy === 'copy' ? 'Making it…' : 'Make it, copy the text'}
-        </button>
+        </Button>
       </div>
     </form>
   )
@@ -215,17 +216,16 @@ function ShareCard({ invite, sent, onAnother }: { invite: AdminInvite; sent: boo
       <pre className={styles.preview}>{invite.message}</pre>
       <div className={styles.actions}>
         <CopyButton text={invite.message} label="Copy message" primary />
-        <a className={`ui-strong ${styles.button} ${styles.linkButton}`} href={whatsAppUrl(invite.message)} target="_blank" rel="noreferrer">
+        <a {...buttonLook('outline')} href={whatsAppUrl(invite.message)} target="_blank" rel="noreferrer">
           WhatsApp
         </a>
         {canShare && (
-          <button
-            type="button"
-            className={`ui-strong ${styles.button}`}
+          <Button
+            variant="outline"
             onClick={() => void navigator.share({ text: invite.message }).catch(() => undefined)}
           >
             Share…
-          </button>
+          </Button>
         )}
         <CopyButton text={invite.link} label="Copy link" />
       </div>
@@ -300,9 +300,9 @@ function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () =
 function CopyButton({ text, label, primary }: { text: string; label: string; primary?: boolean }) {
   const { copied, copy } = useCopy()
   return (
-    <button type="button" className={`ui-strong ${primary ? styles.primary : styles.button}`} onClick={() => void copy(text)}>
+    <Button variant={primary ? 'primary' : 'outline'} onClick={() => void copy(text)}>
       <span aria-live="polite">{copied === true ? '✓ Copied' : copied === false ? 'Copy failed' : label}</span>
-    </button>
+    </Button>
   )
 }
 

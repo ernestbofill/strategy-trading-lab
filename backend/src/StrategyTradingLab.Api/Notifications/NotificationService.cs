@@ -56,10 +56,10 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// <summary>Whether a channel can send at all: push needs its keys.</summary>
     bool Ready(NotificationChannel channel) => channel == NotificationChannel.Email || delivery.PushReady;
 
-    public Task<int> SendSignalAlertsAsync(DateOnly today, CancellationToken cancellationToken) => SignalAlertsAsync(NotificationChannel.Email, today, cancellationToken);
-    public Task<int> PushSignalAlertsAsync(DateOnly today, CancellationToken cancellationToken) => SignalAlertsAsync(NotificationChannel.Push, today, cancellationToken);
-    public Task<int> SendSignalEndedAsync(DateOnly today, CancellationToken cancellationToken) => SignalEndedAsync(NotificationChannel.Email, today, cancellationToken);
-    public Task<int> PushSignalEndedAsync(DateOnly today, CancellationToken cancellationToken) => SignalEndedAsync(NotificationChannel.Push, today, cancellationToken);
+    public Task<int> SendSignalAlertsAsync(DateOnly today, DateTimeOffset now, CancellationToken cancellationToken) => SignalAlertsAsync(NotificationChannel.Email, today, now, cancellationToken);
+    public Task<int> PushSignalAlertsAsync(DateOnly today, DateTimeOffset now, CancellationToken cancellationToken) => SignalAlertsAsync(NotificationChannel.Push, today, now, cancellationToken);
+    public Task<int> SendSignalEndedAsync(DateOnly today, DateTimeOffset now, CancellationToken cancellationToken) => SignalEndedAsync(NotificationChannel.Email, today, now, cancellationToken);
+    public Task<int> PushSignalEndedAsync(DateOnly today, DateTimeOffset now, CancellationToken cancellationToken) => SignalEndedAsync(NotificationChannel.Push, today, now, cancellationToken);
     public Task<int> SendSnoozeRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken) => SnoozeRemindersAsync(NotificationChannel.Email, now, cancellationToken);
     public Task<int> PushSnoozeRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken) => SnoozeRemindersAsync(NotificationChannel.Push, now, cancellationToken);
     public Task<int> SendAiRoundRemindersAsync(DateTimeOffset now, CancellationToken cancellationToken) => AiRoundRemindersAsync(NotificationChannel.Email, now, cancellationToken);
@@ -71,10 +71,9 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// check finds it. Looking back (instead of at the signals a run just made) is what retries an alert a run couldn't send
     /// (email not set up yet, a push service down, a shutdown) without ever sending one twice.
     /// </summary>
-    async Task<int> SignalAlertsAsync(NotificationChannel channel, DateOnly today, CancellationToken cancellationToken)
+    async Task<int> SignalAlertsAsync(NotificationChannel channel, DateOnly today, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (!Ready(channel)) return 0;
-        var now = time.GetUtcNow();
         var recent = now - RepeatWindow;
         var since = today.AddDays(-AlertDays);
         var rows = await (from signal in db.Signals.AsNoTracking()
@@ -119,7 +118,7 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     /// signal closed because the strategy was archived or the stock unticked: the user did that. An email waits for the
     /// notification hour; a push goes as soon as the check ends it.
     /// </summary>
-    async Task<int> SignalEndedAsync(NotificationChannel channel, DateOnly today, CancellationToken cancellationToken)
+    async Task<int> SignalEndedAsync(NotificationChannel channel, DateOnly today, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (!Ready(channel)) return 0;
         var since = today.AddDays(-AlertDays);
@@ -135,7 +134,6 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
                               && !db.Notifications.Any(x => x.SignalId == signal.Id && x.Kind == NotificationKind.SignalEnded && x.Channel == channel)
                           select new { signal, strategy, to = new Recipient(user.Id, user.Email, user.Locale, user.UnsubscribeToken, user.TimeZone, user.NotifyHour), asset }).ToListAsync(cancellationToken);
 
-        var now = time.GetUtcNow();
         var sent = 0;
         foreach (var row in rows.Where(r => Due(channel, r.signal.EndedOn!.Value, r.to, now)))
         {

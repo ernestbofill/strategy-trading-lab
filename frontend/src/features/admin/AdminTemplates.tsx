@@ -14,6 +14,7 @@ import { invalidate, update, useLoadable } from '../../lib/useLoadable'
 import { AssetPicker } from '../new-strategy/review/AssetPicker'
 import { templateCacheKey, templatesCacheKey } from '../new-strategy/useTemplate'
 import styles from './AdminTemplates.module.css'
+import { Button } from '../../components/Button'
 import { useSubmit } from '../../components/useSubmit'
 
 /** The setting's sentence with a blank for its value: "Rose at least _% from its low". */
@@ -140,13 +141,13 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
 
       {message && <p className={styles.error} role="alert">{message.text}</p>}
       <div className={styles.actions}>
-        <button type="submit" className={`ui-strong ${styles.primary}`} disabled={busy}>
+        <Button type="submit" variant="primary" disabled={busy}>
           Save as new version
-        </button>
+        </Button>
         {!version.active && (
-          <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={activate}>
+          <Button variant="outline" disabled={busy} onClick={activate}>
             Make v{version.version} active
-          </button>
+          </Button>
         )}
       </div>
     </form>

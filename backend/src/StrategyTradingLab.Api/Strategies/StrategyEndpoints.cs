@@ -513,7 +513,7 @@ public static class StrategyEndpoints
             UserClock.EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
             new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
             book.Figures(strategy, resultsDay), TemplateCustomization.PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
-            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion };
+            aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion, RareSignals = template.RareSignals };
     }
 
     /// <summary>

@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore } from 'react'
 import { FormMessage } from '../../components/Field'
 import { useT } from '../../i18n/I18n'
 import { consumePwaInstallPrompt, getPwaInstallState, subscribePwaInstall } from '../../lib/pwaInstall'
-import styles from './Account.module.css'
+import { Button } from '../../components/Button'
 
 export function InstallApp() {
   const t = useT()
@@ -39,9 +39,9 @@ export function InstallApp() {
 
   return (
     <>
-      <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={() => void install()}>
+      <Button variant="outline" disabled={busy} onClick={() => void install()}>
         {busy ? t('account.install.opening') : t('account.install.button')}
-      </button>
+      </Button>
       {status && <FormMessage tone="done">{status}</FormMessage>}
       {error && <FormMessage tone="error">{error}</FormMessage>}
     </>

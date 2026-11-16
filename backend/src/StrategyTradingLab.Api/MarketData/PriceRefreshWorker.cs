@@ -231,10 +231,11 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         {
             var notifications = services.GetRequiredService<Notifications.NotificationService>();
             if (!await notifications.EnabledAsync(stoppingToken)) return;
-            var session = UsSession.LastComplete(time.GetUtcNow());
-            logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(session, stoppingToken));
+            var now = time.GetUtcNow();
+            var session = UsSession.LastComplete(now);
+            logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(session, now, stoppingToken));
             // A buy signal that ended unanswered, after its alert (one this run just sent waits for its next day).
-            logger.LogInformation("Sent {Count} ended signal alerts.", await notifications.SendSignalEndedAsync(session, stoppingToken));
+            logger.LogInformation("Sent {Count} ended signal alerts.", await notifications.SendSignalEndedAsync(session, now, stoppingToken));
         }, stoppingToken);
         // Apart from the alerts, so a failed alert doesn't hold the overviews back.
         await TryInScopeAsync("The daily overviews couldn't be sent", async services =>
@@ -256,9 +257,9 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             if (!await notifications.EnabledAsync(stoppingToken)) return;
             var now = time.GetUtcNow();
             var session = UsSession.LastComplete(now);
-            logger.LogInformation("Pushed {Count} signal alerts.", await notifications.PushSignalAlertsAsync(session, stoppingToken));
+            logger.LogInformation("Pushed {Count} signal alerts.", await notifications.PushSignalAlertsAsync(session, now, stoppingToken));
             // A buy signal that ended unanswered, after its alert (one this run just pushed is told on a later check).
-            logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, stoppingToken));
+            logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, now, stoppingToken));
             logger.LogInformation("Pushed {Count} stock changes.", await notifications.PushStockChangesAsync(now, stoppingToken));
         }, stoppingToken);
 }

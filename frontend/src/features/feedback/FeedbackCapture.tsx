@@ -7,6 +7,7 @@ import { buttonSide, elementPath, FEEDBACK_SUBMITTED_EVENT, feedbackErrorText, t
 import styles from './Feedback.module.css'
 import { KindPicker } from './KindPicker'
 import { uiZoom } from '../../lib/uiZoom'
+import { Button } from '../../components/Button'
 
 interface CapturedSelection extends SelectionPosition {
   text: string
@@ -325,21 +326,20 @@ export function FeedbackCapture() {
               </p>
             )}
             <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.button}
+              <Button
+                variant="outline"
                 disabled={saving}
                 onClick={closeModal}
               >
                 {t('feedback.cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className={`${styles.button} ${styles.primaryButton}`}
+                variant="primary"
                 disabled={saving || !text.trim()}
               >
                 {saving ? t('feedback.saving') : t('feedback.save')}
-              </button>
+              </Button>
             </div>
           </form>
         </dialog>

@@ -91,44 +91,6 @@
   gap: var(--space-2);
 }
 
-.button,
-.primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  min-width: 88px;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.button {
-  background: transparent;
-  border: 1px solid var(--primary);
-  color: var(--primary);
-}
-.button:hover:not(:disabled) {
-  background: var(--surface-hover);
-}
-
-.primary {
-  background: var(--action-rest);
-  border: 1px solid transparent;
-  color: var(--on-action);
-}
-.primary:hover:not(:disabled),
-.primary:focus-visible {
-  background: var(--action);
-  box-shadow: var(--glow-primary);
-}
-
-.button:disabled,
-.primary:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
 .error {
   margin: 0;
   font: 14px/20px var(--font-ui);

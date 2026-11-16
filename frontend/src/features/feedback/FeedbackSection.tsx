@@ -16,6 +16,7 @@ import { reload, update, useLoadable } from '../../lib/useLoadable'
 import styles from './Feedback.module.css'
 import { FeedbackItemRow } from './FeedbackItemRow'
 import { KindPicker } from './KindPicker'
+import { Button } from '../../components/Button'
 
 type Filter = 'open' | 'closed' | 'all'
 
@@ -131,14 +132,13 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
             'Feedback'
           )}
         </h2>
-        <button
-          type="button"
-          className={styles.button}
+        <Button
+          variant="outline"
           disabled={openCount === 0}
           onClick={() => void copyMarkdown()}
         >
           {copied === true ? 'Copied Markdown ✓' : `Copy open as Markdown (${openCount})`}
-        </button>
+        </Button>
       </div>
 
       <form className={styles.block} onSubmit={(e) => void addComment(e)}>
@@ -153,13 +153,13 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
           placeholder="Add a bug, idea, note, or feature request (or select any text on any screen)…"
         />
         <div className={styles.actions}>
-          <button
+          <Button
             type="submit"
-            className={`${styles.button} ${styles.primaryButton}`}
+            variant="primary"
             disabled={adding || !newText.trim()}
           >
             {adding ? 'Adding…' : 'Add comment'}
-          </button>
+          </Button>
         </div>
       </form>
 

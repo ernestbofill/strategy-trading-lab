@@ -4,6 +4,7 @@ import type { FeedbackItem, FeedbackKind } from '../../api'
 import { isAppPath, kindMeta } from './feedback'
 import { KindPicker } from './KindPicker'
 import styles from './Feedback.module.css'
+import { Button } from '../../components/Button'
 
 interface FeedbackItemRowProps {
   item: FeedbackItem
@@ -67,22 +68,20 @@ export function FeedbackItemRow({ item, editing, busy, onEdit, onCancel, onSave,
             onChange={(e) => setText(e.target.value)}
           />
           <div className={styles.itemActions}>
-            <button
-              type="button"
-              className={`${styles.button} ${styles.primaryButton}`}
+            <Button
+              variant="primary"
               disabled={busy || !text.trim()}
               onClick={() => void onSave(kind, text.trim())}
             >
               Save
-            </button>
-            <button
-              type="button"
-              className={styles.button}
+            </Button>
+            <Button
+              variant="outline"
               disabled={busy}
               onClick={onCancel}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -91,30 +90,27 @@ export function FeedbackItemRow({ item, editing, busy, onEdit, onCancel, onSave,
 
       {!editing && (
         <div className={styles.itemActions}>
-          <button
-            type="button"
-            className={styles.button}
+          <Button
+            variant="outline"
             disabled={busy}
             onClick={startEdit}
           >
             Edit
-          </button>
-          <button
-            type="button"
-            className={styles.button}
+          </Button>
+          <Button
+            variant="outline"
             disabled={busy}
             onClick={() => void onToggle()}
           >
             {item.status === 'open' ? 'Close' : 'Reopen'}
-          </button>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.dangerButton}`}
+          </Button>
+          <Button
+            variant="outline-danger"
             disabled={busy}
             onClick={() => void onDelete()}
           >
             Delete
-          </button>
+          </Button>
         </div>
       )}
     </li>

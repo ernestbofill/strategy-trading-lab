@@ -278,6 +278,8 @@ export interface StrategyDetail {
   checkTexts?: Record<string, CheckTexts> | null
   /** The template version it started from: its settings screen shows that version's values as tested. */
   defaultsVersion?: number
+  /** The template's signals are years apart (Bear markets): the page says so next to the past results. */
+  rareSignals?: boolean
 }
 
 /** What the Confirm screen sends to start a strategy: the choices of the five steps. Its other settings start at the template's tested defaults. */

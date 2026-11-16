@@ -1,23 +1,6 @@
-/* The same confirm step and buttons as deleting a trade or the strategy. */
-.confirmBox {
-  composes: confirmBox from './SignalsAndTrades.module.css';
+/* The archive confirm step takes the whole row of the tile grid. */
+.wholeRow {
   grid-column: 1 / -1;
-}
-
-.confirmActions {
-  composes: confirmActions from './SignalsAndTrades.module.css';
-}
-
-.btnPrimary {
-  composes: btnPrimary from './SignalsAndTrades.module.css';
-}
-
-.btnDanger {
-  composes: btnDanger from './SignalsAndTrades.module.css';
-}
-
-.btnSecondary {
-  composes: btnSecondary from './SignalsAndTrades.module.css';
 }
 
 .renameForm {

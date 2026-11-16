@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { StrategyDetail, StrategySignalItem, StrategyTradeItem } from '../../api'
+import { ConfirmBox } from '../../components/ConfirmBox'
 import { Tag } from '../../components/Tag'
 import { TextAction } from '../../components/TextAction'
 import { useT } from '../../i18n/I18n'
@@ -31,38 +31,17 @@ export function TradeRow({
   onConfirmDelete: () => Promise<void>
 }) {
   const t = useT()
-  const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
-
   if (isDeleting) {
     return (
-      <div className={styles.confirmBox}>
-        <p>{t('trades.deleteAsk')}</p>
-        {failed && <p role="alert">{t('trades.errorDelete')}</p>}
-        <div className={styles.confirmActions}>
-          <button
-            type="button"
-            className={styles.btnDanger}
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true)
-              setFailed(false)
-              try {
-                await onConfirmDelete()
-              } catch {
-                setFailed(true)
-              } finally {
-                setBusy(false)
-              }
-            }}
-          >
-            {busy ? t('trades.deleting') : t('trades.delete')}
-          </button>
-          <button type="button" className={styles.btnSecondary} disabled={busy} onClick={onCancelDelete}>
-            {t('trades.cancel')}
-          </button>
-        </div>
-      </div>
+      <ConfirmBox
+        ask={t('trades.deleteAsk')}
+        confirmLabel={t('trades.delete')}
+        busyLabel={t('trades.deleting')}
+        keepLabel={t('trades.cancel')}
+        failedText={t('trades.errorDelete')}
+        onConfirm={onConfirmDelete}
+        onKeep={onCancelDelete}
+      />
     )
   }
 

@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, InvalidFieldsError, InvalidValueError, NameTakenError, UnauthorizedError, type StrategyDetail } from '../../api'
+import { Button, ButtonRow } from '../../components/Button'
+import { ConfirmBox } from '../../components/ConfirmBox'
 import { TextField } from '../../components/Field'
 import { useT } from '../../i18n/I18n'
 import { invalidateAll } from '../../lib/useLoadable'
@@ -47,14 +49,14 @@ export function RenameForm({ s, onClose }: { s: StrategyDetail; onClose: () => v
   return (
     <form className={styles.renameForm} onSubmit={save}>
       <TextField label={t('strategy.renameLabel')} value={name} onChange={setName} error={error} />
-      <div className={styles.confirmActions}>
-        <button type="submit" className={styles.btnPrimary} disabled={busy}>
+      <ButtonRow>
+        <Button type="submit" variant="primary" disabled={busy}>
           {t('strategy.renameSave')}
-        </button>
-        <button type="button" className={styles.btnSecondary} disabled={busy} onClick={onClose}>
+        </Button>
+        <Button disabled={busy} onClick={onClose}>
           {t('strategy.renameCancel')}
-        </button>
-      </div>
+        </Button>
+      </ButtonRow>
     </form>
   )
 }
@@ -67,8 +69,6 @@ export function ArchiveStrategy({ s, className, titleClassName }: {
 }) {
   const t = useT()
   const [asking, setAsking] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
 
   if (!asking)
     return (
@@ -78,37 +78,27 @@ export function ArchiveStrategy({ s, className, titleClassName }: {
     )
 
   const archive = async () => {
-    setBusy(true)
-    setFailed(false)
     try {
       await api.archiveStrategy(s.id)
     } catch (err) {
-      if (err instanceof UnauthorizedError) return
       // Already archived (another tab, another device): show it as it is.
-      if (!(err instanceof InvalidValueError)) {
-        setFailed(true)
-        setBusy(false)
-        return
-      }
+      if (!(err instanceof InvalidValueError)) throw err
     }
     // Its signals, AI rounds and the dashboard all change.
     invalidateAll()
   }
 
   return (
-    <div className={styles.confirmBox}>
-      <p>{t('strategy.archiveAsk', { name: s.name })}</p>
-      {failed && <p role="alert">{t('strategy.archiveFailed')}</p>}
-      <div className={styles.confirmActions}>
-        <button type="button" className={styles.btnDanger} disabled={busy} onClick={archive}>
-          {busy ? t('strategy.archiving') : t('strategy.archiveConfirm')}
-        </button>
-        {/* Focus on the safe choice, so the keyboard lands in the confirm step. */}
-        <button type="button" className={styles.btnSecondary} disabled={busy} onClick={() => setAsking(false)} autoFocus>
-          {t('strategy.archiveKeep')}
-        </button>
-      </div>
-    </div>
+    <ConfirmBox
+      ask={t('strategy.archiveAsk', { name: s.name })}
+      confirmLabel={t('strategy.archiveConfirm')}
+      busyLabel={t('strategy.archiving')}
+      keepLabel={t('strategy.archiveKeep')}
+      failedText={t('strategy.archiveFailed')}
+      onConfirm={archive}
+      onKeep={() => setAsking(false)}
+      className={styles.wholeRow}
+    />
   )
 }
 

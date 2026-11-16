@@ -1,6 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { api, InvalidFieldsError, InvalidValueError, type SignalTrade, type StrategyDetail, type StrategyTradeItem, type TradeSide } from '../../api'
-import { FormMessage, SegmentedField, SelectField, type FormMessageState } from '../../components/Field'
+import { api, type SignalTrade, type StrategyDetail, type StrategyTradeItem, type TradeSide } from '../../api'
+import { Button, ButtonRow } from '../../components/Button'
+import { FormMessage, SegmentedField, SelectField } from '../../components/Field'
+import { useSubmit } from '../../components/useSubmit'
 import { useT } from '../../i18n/I18n'
 import { ambiguousFields, tradeRequest, type TradeForm } from '../signal/signalForm'
 import { TradeFields } from '../signal/TradeFields'
@@ -29,9 +31,7 @@ function TradeFormCard(props: TradeFormCardProps) {
   const t = useT()
   const [form, setForm] = useState(initial)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
-  const [saving, setSaving] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<FormMessageState>(null)
+  const { busy: saving, errors, setErrors, message, run } = useSubmit(failText)
   // Another stock in another currency: a rate typed for the old pair doesn't apply, so the reference rate comes back.
   const [pair, setPair] = useState(props.assetCurrency)
   if (pair !== props.assetCurrency) {
@@ -42,20 +42,7 @@ function TradeFormCard(props: TradeFormCardProps) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (saving) return
-    setErrors({})
-    setMessage(null)
-    const unclear = ambiguousFields(form, t('signal.error.ambiguous'))
-    if (Object.keys(unclear).length > 0) return setErrors(unclear)
-    setSaving(true)
-    try {
-      await onSubmit(tradeRequest(form))
-      onDone()
-    } catch (err) {
-      if (err instanceof InvalidFieldsError) setErrors(err.fields)
-      else setMessage({ tone: 'error', text: err instanceof InvalidValueError ? err.message : failText })
-      setSaving(false)
-    }
+    if (await run(() => onSubmit(tradeRequest(form)), () => ambiguousFields(form, t('signal.error.ambiguous')))) onDone()
   }
 
   return (
@@ -73,14 +60,14 @@ function TradeFormCard(props: TradeFormCardProps) {
         maxDate={props.today}
       />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
-      <div className={styles.formActions}>
-        <button type="submit" className={styles.btnPrimary} disabled={saving}>
+      <ButtonRow className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? t('trades.saving') : saveLabel}
-        </button>
-        <button type="button" className={styles.btnSecondary} disabled={saving} onClick={onCancel}>
+        </Button>
+        <Button disabled={saving} onClick={onCancel}>
           {t('trades.cancel')}
-        </button>
-      </div>
+        </Button>
+      </ButtonRow>
     </form>
   )
 }

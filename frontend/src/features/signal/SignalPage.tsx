@@ -1,8 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, InvalidFieldsError, InvalidValueError, type SignalDetail, type SkipReason } from '../../api'
+import { api, InvalidValueError, type SignalDetail, type SkipReason } from '../../api'
 import { Callout } from '../../components/Callout'
-import { FormMessage, type FormMessageState } from '../../components/Field'
+import { FormMessage } from '../../components/Field'
+import { useSubmit } from '../../components/useSubmit'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
 import { ModeTag } from '../../components/ModeTag'
@@ -131,9 +132,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   const [answer, setAnswer] = useState<'did' | 'skip'>('did')
   const [form, setForm] = useState<TradeForm>(() => initialForm(s))
   const [reason, setReason] = useState<SkipReason | null>(null)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<FormMessageState>(null)
-  const [saving, setSaving] = useState(false)
+  const { busy: saving, errors, message, setMessage, run } = useSubmit(t('signal.error.save'))
   const [snoozedUntil, setSnoozedUntil] = useState(s.snoozedUntil)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
   const sell = s.side === 'sell'
@@ -145,25 +144,11 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
 
   async function save(e: FormEvent) {
     e.preventDefault()
-    if (saving) return
-    setSaving(true)
-    setErrors({})
-    setMessage(null)
-    const unclear = answer === 'did' ? ambiguousFields(form, t('signal.error.ambiguous')) : {}
-    if (Object.keys(unclear).length > 0) {
-      setErrors(unclear)
-      setSaving(false)
-      return
-    }
-    try {
-      if (answer === 'did') await api.confirmSignal(s.id, tradeRequest(form))
-      else await api.skipSignal(s.id, reason)
-      done()
-    } catch (error) {
-      if (error instanceof InvalidFieldsError) setErrors(error.fields)
-      else setMessage({ tone: 'error', text: error instanceof InvalidValueError ? error.message : t('signal.error.save') })
-      setSaving(false)
-    }
+    const saved = await run(
+      () => (answer === 'did' ? api.confirmSignal(s.id, tradeRequest(form)) : api.skipSignal(s.id, reason)),
+      () => (answer === 'did' ? ambiguousFields(form, t('signal.error.ambiguous')) : {}),
+    )
+    if (saved) done()
   }
 
   async function snooze() {

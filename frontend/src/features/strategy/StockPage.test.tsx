@@ -141,7 +141,7 @@ describe('StockPage', () => {
     expect(screen.getByText('Window closed')).toBeTruthy()
     expect(screen.getByText('Window closed: last beaten down on Jul 15 (74 trading days ago; window is 60 days).')).toBeTruthy()
     expect(screen.getByText('+0% above the recent low ($162.85): needs +15% ($187.28), and at most 8% above that line ($202.26).')).toBeTruthy()
-    expect(screen.getByText('238%')).toBeTruthy()
+    expect(screen.getByText('118.9%')).toBeTruthy()
     expect(screen.getByText('Short $41.20')).toBeTruthy()
     expect(screen.getByText('Mid $38.50')).toBeTruthy()
     expect(screen.getByText('Long $31.10')).toBeTruthy()

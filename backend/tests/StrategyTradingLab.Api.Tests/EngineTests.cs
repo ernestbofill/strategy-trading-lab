@@ -85,14 +85,16 @@ public class EngineTests
     {
         // Windows on days 1-2 and 5-6; days 0-3 were checked before.
         var rules = () => new OpenOn(1, 2, 5, 6) { CooldownDays = 0, Length = 10 };
-        var until = Bars(10)[3].Date;
-        CheckedDays Past(int[] buys, bool held = false) =>
-            new(until, buys.Select(i => Bars(10)[i].Date).ToHashSet(), new HashSet<DateOnly>(), _ => held);
+        CheckedDays Past(int[] buys, bool held = false, int until = 3) =>
+            new(Bars(10)[until].Date, buys.Select(i => Bars(10)[i].Date).ToHashSet(), new HashSet<DateOnly>(), _ => held);
 
         // Day 1's buy has no signal (the rules changed since): no step held, so day 5's window is step 1 again.
         var unsignalled = RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Past([]));
         Assert.Equal([5], NewBuyDays(unsignalled));
         Assert.Equal(1, unsignalled[5].StepNo);
+
+        // Its window still open on the first day not checked yet: that day gets the signal.
+        Assert.Equal([2, 5], NewBuyDays(RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Past([], until: 1))));
 
         // The budget held day 1's buy back: the rules keep the step, as on the day.
         Assert.Equal(2, RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Past([], held: true))[5].StepNo);

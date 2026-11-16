@@ -113,8 +113,9 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         var added = listed.ToDictionary(a => a.Key, a => DateOnly.FromDateTime(a.Value.UtcDateTime));
         var wanted = added.Keys.ToList();
         // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
-        var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id && (s.Status == SignalStatus.Confirmed || s.Status == SignalStatus.Waiting))
+        var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id).UsingBudget()
             .SumAsync(s => s.StepAmount ?? 0, cancellationToken));
+        var heldByBudget = await HeldByBudgetAsync(db, strategy.Id, strategy.Budget, cancellationToken);
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
@@ -151,7 +152,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 }
             }
             var from = RulesRunner.StartIndex(bars, firstChecked ?? bars[^1].Date);
-            var past = await PastDaysAsync(db, strategy.Id, strategy.Budget, asset.Id, checkedUntil, cancellationToken);
+            var past = await PastDaysAsync(db, strategy.Id, asset.Id, checkedUntil, heldByBudget, cancellationToken);
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
@@ -218,23 +219,41 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
 
     /// <summary>
     /// The days up to <paramref name="until"/> (the last day checked, <see cref="CheckedDaysAsync"/>) with what was recorded for
-    /// them, for the replay to follow (<see cref="CheckedDays"/>); null before the first check. The budget held a buy back on a day
-    /// when the steps of the strategy's signals up to then (done or waiting: a skipped or missed one uses none) left no room for one more.
+    /// them, for the replay to follow (<see cref="CheckedDays"/>); null before the first check.
     /// </summary>
-    internal static async Task<CheckedDays?> PastDaysAsync(AppDbContext db, Guid strategyId, Budget budget, Guid assetId, DateOnly? until,
-        CancellationToken cancellationToken)
+    internal static async Task<CheckedDays?> PastDaysAsync(AppDbContext db, Guid strategyId, Guid assetId, DateOnly? until,
+        Func<DateOnly, bool> heldByBudget, CancellationToken cancellationToken)
     {
         if (until is not { } last) return null;
         var own = await db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId && s.SignalDate <= last)
             .Select(s => new { s.SignalDate, s.Side }).ToListAsync(cancellationToken);
-        var spent = await db.Signals.Where(s => s.StrategyId == strategyId && s.SignalDate <= last
-                && (s.Status == SignalStatus.Confirmed || s.Status == SignalStatus.Waiting) && s.StepAmount != null)
-            .Select(s => new { s.SignalDate, Amount = s.StepAmount!.Value }).ToListAsync(cancellationToken);
-        var step = budget.Step ?? 0;
         return new CheckedDays(last,
             own.Where(s => s.Side == TradeSide.Buy).Select(s => s.SignalDate).ToHashSet(),
             own.Where(s => s.Side == TradeSide.Sell).Select(s => s.SignalDate).ToHashSet(),
-            day => spent.Where(s => s.SignalDate <= day).Sum(s => s.Amount) + step > budget.Amount);
+            heldByBudget);
+    }
+
+    /// <summary>
+    /// Whether the budget had no room for one more step on a day: the steps of the strategy's signals from the days before (the
+    /// day's own may have come after this stock's check) and one more step overrun it. From today's statuses: a signal skipped
+    /// since frees its step, so the stock then reads as not held and starts afresh, which the next check corrects if it still is.
+    /// Loaded once per strategy.
+    /// </summary>
+    internal static async Task<Func<DateOnly, bool>> HeldByBudgetAsync(AppDbContext db, Guid strategyId, Budget budget,
+        CancellationToken cancellationToken)
+    {
+        var spent = await db.Signals.Where(s => s.StrategyId == strategyId && s.StepAmount != null).UsingBudget()
+            .GroupBy(s => s.SignalDate).OrderBy(g => g.Key)
+            .Select(g => new { Day = g.Key, Amount = g.Sum(s => s.StepAmount!.Value) }).ToListAsync(cancellationToken);
+        var days = spent.Select(s => s.Day).ToList();
+        var before = new decimal[spent.Count + 1]; // before[k]: the steps of the first k days.
+        for (var k = 0; k < spent.Count; k++) before[k + 1] = before[k] + spent[k].Amount;
+        var step = budget.Step ?? 0;
+        return day =>
+        {
+            var index = days.BinarySearch(day);
+            return before[index < 0 ? ~index : index] + step > budget.Amount;
+        };
     }
 
     /// <param name="evaluatedUntil">The last day checked before (<see cref="CheckedDaysAsync"/>).</param>

@@ -100,6 +100,9 @@ public static class RulesRunner
             {
                 previous = RuleStatus.NotEnoughData;
                 previousStep = null;
+                // A signal from when the rules needed less history (a longer setting since) still counts.
+                if (checkedDays is { } early && day <= early.Until)
+                    (pendingBuy, pendingSell) = (early.Buys.Contains(day), early.Sells.Contains(day));
                 return new DayEvaluation(day, RuleStatus.NotEnoughData, null, false, null, NoFacts);
             }
 
@@ -112,14 +115,18 @@ public static class RulesRunner
                 : null;
             var newBuy = step is not null && (previous != RuleStatus.BuySignal || previousStep != step || (actedNow && !cooling));
             var newSell = decision.Status == RuleStatus.SellSignal && (previous != RuleStatus.SellSignal || (actedNow && !cooling));
-            if (checkedDays is { } past && day <= past.Until)
-            {
-                // A day already checked: its recorded signals are what happened.
-                newBuy = past.Buys.Contains(day) || (newBuy && past.HeldByBudget(day));
-                newSell = past.Sells.Contains(day);
-            }
             previous = decision.Status;
             previousStep = step;
+            if (checkedDays is { } past && day <= past.Until)
+            {
+                // A day already checked: its recorded signals are what happened. A signal the rules called for but nobody got
+                // isn't yesterday's signal either, so a window still open on the next day gives one then.
+                var wanted = (Buy: newBuy, Sell: newSell);
+                newBuy = past.Buys.Contains(day) || (newBuy && past.HeldByBudget(day));
+                newSell = past.Sells.Contains(day);
+                if (wanted.Buy && !newBuy) (previous, previousStep) = (RuleStatus.Watching, null);
+                if (wanted.Sell && !newSell) previous = RuleStatus.Holding;
+            }
             if (newBuy) pendingBuy = true;
             if (newSell) pendingSell = true;
             return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell)

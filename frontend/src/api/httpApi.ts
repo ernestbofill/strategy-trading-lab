@@ -22,8 +22,13 @@ type Problem = { errors?: Record<string, string[]>; detail?: string } | null
 /** A refusal's body: the API's problem, or its reason as a JSON string; null when it has none. */
 const readBody = (response: Response) => response.json().catch(() => null) as Promise<Problem | string>
 
-const firstError = (problem: Problem | string) =>
-  typeof problem === 'string' ? problem : problem?.errors ? Object.values(problem.errors).flat()[0] : undefined
+/** What a refusal says: the API's reason, else its first field error, else its detail. */
+const reasonOf = (problem: Problem | string) =>
+  typeof problem === 'string' ? problem : ((problem?.errors ? Object.values(problem.errors).flat()[0] : undefined) ?? problem?.detail)
+
+/** A 400's field errors, under their fields: each field's first message, or all of them joined. */
+const fieldErrors = (errors: Record<string, string[]>, joined = false) =>
+  new InvalidFieldsError(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, joined ? v.join(' ') : (v[0] ?? '')])))
 
 /** How an endpoint family's refusals read, besides what every call shares (401 ends the session, 403, 429). */
 interface Refusals {
@@ -31,7 +36,7 @@ interface Refusals {
   ok?: number[]
   /** A 401 is a refusal, not a session that ended (log-in: a wrong password). */
   noSession?: boolean
-  /** A 409: what it means, from the API's reason. Without it, a 409 fails like any other status. */
+  /** A 409: what it means, from the API's reason. By default the reason itself, as `InvalidValueError` ("Reload and try again." without one). */
   conflict?: (reason: string | null) => Error
   /** A 400's field errors: each field's first message (the default), all of them joined, or left to `refused`. */
   fields?: 'first' | 'joined' | 'none'
@@ -57,14 +62,13 @@ async function request(method: string, path: string, body?: unknown, refusals: R
   }
   if (status === 403) throw new ForbiddenError()
   if (status === 429) throw new TooManyTriesError()
-  if (status === 409 && refusals.conflict) throw refusals.conflict((await readBody(response)) as string | null)
+  if (status === 409) {
+    const reason = await readBody(response)
+    throw (refusals.conflict ?? reasonOr('Reload and try again.'))(typeof reason === 'string' ? reason : null)
+  }
   const problem = status === 400 || refusals.refused ? await readBody(response) : null
   const fields = refusals.fields ?? 'first'
-  if (status === 400 && fields !== 'none' && typeof problem !== 'string' && problem?.errors) {
-    throw new InvalidFieldsError(
-      Object.fromEntries(Object.entries(problem.errors).map(([k, v]) => [k, fields === 'joined' ? v.join(' ') : (v[0] ?? '')])),
-    )
-  }
+  if (status === 400 && fields !== 'none' && typeof problem !== 'string' && problem?.errors) throw fieldErrors(problem.errors, fields === 'joined')
   const refused = refusals.refused?.(problem, status)
   if (refused) throw refused
   throw new Error(`${method} ${path} failed: HTTP ${status}`)
@@ -97,7 +101,7 @@ const tradesRequest = (method: string, path: string, body?: unknown) =>
 /** A strategy action (rename, archive). A 409 is `InvalidValueError` with the API's reason (a rename's: the name is taken). */
 const strategyAction = (method: 'PUT' | 'POST', id: string, action: string, body?: unknown) =>
   done(request(method, `/strategies/${encodeURIComponent(id)}/${action}`, body, {
-    conflict: action === 'name' ? () => new NameTakenError() : reasonOr('Reload and try again.'),
+    conflict: action === 'name' ? () => new NameTakenError() : undefined,
   }))
 
 /** POSTs an answer to a signal. A 409 (already answered) is `InvalidValueError`. */
@@ -107,14 +111,12 @@ const signalPost = (path: string, body?: unknown) =>
 /** Sends a request to the admin API and maps its refusals to errors the page can show. */
 const admin = (method: string, path: string, body?: unknown) =>
   request(method, `/admin${path}`, body, {
-    conflict: reasonOr('Reload and try again.'),
     fields: 'none',
     refused: (problem, status) => {
       if (status !== 400 && status !== 502) return undefined
       const p = typeof problem === 'string' ? null : problem
       // A setting's one field is `value`; a form's (an asset's symbol, name and description) go by name.
-      if (p?.errors && Object.keys(p.errors).some((k) => k !== 'value'))
-        return new InvalidFieldsError(Object.fromEntries(Object.entries(p.errors).map(([k, v]) => [k, v[0] ?? ''])))
+      if (p?.errors && Object.keys(p.errors).some((k) => k !== 'value')) return fieldErrors(p.errors)
       const reason = p?.errors?.value?.[0] ?? p?.detail
       // A 502 without the API's reason is nginx: the API itself is down, not a refused value.
       if (reason) return new InvalidValueError(reason)
@@ -160,7 +162,7 @@ const feedback = (method: string, path: string, body?: unknown) =>
     fields: 'none',
     refused: (problem, status) =>
       status === 400
-        ? new InvalidValueError(firstError(problem) ?? (typeof problem === 'string' ? undefined : problem?.detail) ?? 'That comment was refused.')
+        ? new InvalidValueError(reasonOf(problem) ?? 'That comment was refused.')
         : undefined,
   })
 
@@ -169,7 +171,7 @@ const assets = (path: string, body?: unknown) =>
   request(body === undefined ? 'GET' : 'POST', `/assets${path}`, body, {
     fields: 'none',
     refused: (problem) => {
-      const message = firstError(problem) ?? (typeof problem === 'string' ? undefined : problem?.detail)
+      const message = reasonOf(problem)
       return message ? new InvalidValueError(message) : undefined
     },
   })
@@ -208,15 +210,15 @@ export const httpApi: Api = {
   updateStrategySettings: (id, settings) => put(`/strategies/${encodeURIComponent(id)}/settings`, { settings }),
   updateStrategyAssets: (id, assetIds) => put(`/strategies/${encodeURIComponent(id)}/assets`, { assetIds }),
   getSignal: (id) => get(`/signals/${encodeURIComponent(id)}`),
-  confirmSignal: async (id, trade) => void (await signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
+  confirmSignal: (id, trade) => done(signalPost(`/${encodeURIComponent(id)}/trade`, trade)),
   logManualTrade: (strategyId, trade) => json<StrategyTradeItem>(tradesRequest('POST', `/strategies/${encodeURIComponent(strategyId)}/trades`, trade)),
   updateTrade: (tradeId, trade) => done(tradesRequest('PUT', `/trades/${encodeURIComponent(tradeId)}`, trade)),
   deleteTrade: (tradeId) => done(tradesRequest('DELETE', `/trades/${encodeURIComponent(tradeId)}`)),
-  skipSignal: async (id, reason) => void (await signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
-  snoozeSignal: async (id) => ((await (await signalPost(`/${encodeURIComponent(id)}/snooze`)).json()) as { snoozedUntil: string }).snoozedUntil,
-  searchAssets: async (query, kind) =>
-    (await assets(`/search?${new URLSearchParams({ q: query, kind })}`)).json(),
-  addAsset: async (symbol, kind) => (await assets('', { symbol, kind })).json(),
+  skipSignal: (id, reason) => done(signalPost(`/${encodeURIComponent(id)}/skip`, { reason })),
+  snoozeSignal: async (id) => (await json<{ snoozedUntil: string }>(signalPost(`/${encodeURIComponent(id)}/snooze`))).snoozedUntil,
+  searchAssets: (query, kind) =>
+    json(assets(`/search?${new URLSearchParams({ q: query, kind })}`)),
+  addAsset: (symbol, kind) => json(assets('', { symbol, kind })),
   startStrategy: (strategy) => post<StrategySummary>('/strategies', strategy),
   // Already gone (another tab, or a retry after a request that went through) is what the user asked for.
   deleteStrategy: (id) => done(request('DELETE', `/strategies/${encodeURIComponent(id)}`, undefined, { ok: [404] })),
@@ -225,48 +227,48 @@ export const httpApi: Api = {
   savePushSubscription: (subscription) => put('/push/subscription', subscription),
   removePushSubscription: (endpoint) => done(request('POST', '/push/unsubscribe', { endpoint })),
   archiveStrategy: (id) => strategyAction('POST', id, 'archive'),
-  getAdminSettings: async () => (await admin('GET', '/settings')).json(),
-  getAdminInvites: async () => (await admin('GET', '/invites')).json(),
-  createAdminInvite: async (invite) => (await admin('POST', '/invites', invite)).json(),
-  sendAdminInvite: async (id) => (await admin('POST', `/invites/${encodeURIComponent(id)}/send`)).json(),
-  revokeAdminInvite: async (id) => void (await admin('POST', `/invites/${encodeURIComponent(id)}/revoke`)),
-  setAdminSetting: async (key, value, shown) => void (await admin('PUT', settingPath(key), { value, expected: shown })),
-  sendAdminTestEmail: async () => ((await (await admin('POST', '/test-email')).json()) as { sentTo: string }).sentTo,
-  resetAdminSetting: async (key, clear) => void (await admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
+  getAdminSettings: () => json(admin('GET', '/settings')),
+  getAdminInvites: () => json(admin('GET', '/invites')),
+  createAdminInvite: (invite) => json(admin('POST', '/invites', invite)),
+  sendAdminInvite: (id) => json(admin('POST', `/invites/${encodeURIComponent(id)}/send`)),
+  revokeAdminInvite: (id) => done(admin('POST', `/invites/${encodeURIComponent(id)}/revoke`)),
+  setAdminSetting: (key, value, shown) => done(admin('PUT', settingPath(key), { value, expected: shown })),
+  sendAdminTestEmail: async () => (await json<{ sentTo: string }>(admin('POST', '/test-email'))).sentTo,
+  resetAdminSetting: (key, clear) => done(admin('DELETE', `${settingPath(key)}${clear ? '?clear=true' : ''}`)),
   getVersion: () => getRequired('/version'),
-  getAdminPrices: async () => (await admin('GET', '/prices')).json(),
-  refreshAdminPrices: async () => void (await admin('POST', '/prices/refresh')),
-  testAdminYahoo: async () => (await admin('POST', '/prices/test')).json(),
-  getAdminDatabases: async () => (await admin('GET', '/database')).json(),
-  switchAdminDatabase: async (name) => void (await admin('POST', '/database/active', { name })),
-  getAdminAssets: async () => (await admin('GET', '/assets')).json(),
-  getAdminUsers: async () => (await admin('GET', '/users')).json(),
-  getAdminAlerts: async () => (await admin('GET', '/alerts')).json(),
-  dismissAdminAlert: async (id) => void (await admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
-  getAdminTemplates: async () => (await admin('GET', '/templates')).json(),
-  saveAdminTemplateVersion: async (key, change) => (await admin('POST', `/templates/${encodeURIComponent(key)}/versions`, change)).json(),
-  activateAdminTemplateVersion: async (key, version) =>
-    (await admin('PUT', `/templates/${encodeURIComponent(key)}/active`, { version })).json(),
-  setAdminAssetActive: async (id, active) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
-  addAdminAsset: async (symbol) => (await admin('POST', '/assets', { symbol })).json(),
-  updateAdminAsset: async (id, edit) => void (await admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),
-  flushAdminPrices: async () => (await admin('DELETE', '/assets/prices')).json(),
-  flushAdminAssetPrices: async (id) => void (await admin('DELETE', `/assets/${encodeURIComponent(id)}/prices`)),
-  downloadAdminAssetPrices: async (id, years) => (await admin('POST', `/assets/${encodeURIComponent(id)}/prices`, { years })).json(),
-  downloadAdminRates: async (years) => (await admin('POST', '/assets/rates', { years })).json(),
-  submitFeedback: async (item) => (await (await feedback('POST', '', item)).json()) as FeedbackItem,
-  getFeedback: async (status) =>
-    (await (await feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')).json()) as FeedbackItem[],
-  updateFeedback: async (id, patch) =>
-    (await (await feedback('PATCH', `/${encodeURIComponent(id)}`, patch)).json()) as FeedbackItem,
-  deleteFeedback: async (id) => void (await feedback('DELETE', `/${encodeURIComponent(id)}`)),
-  previewAiPrompt: async (request) => (await aiRequest('POST', '/templates/ai/prompt', request)).json(),
+  getAdminPrices: () => json(admin('GET', '/prices')),
+  refreshAdminPrices: () => done(admin('POST', '/prices/refresh')),
+  testAdminYahoo: () => json(admin('POST', '/prices/test')),
+  getAdminDatabases: () => json(admin('GET', '/database')),
+  switchAdminDatabase: (name) => done(admin('POST', '/database/active', { name })),
+  getAdminAssets: () => json(admin('GET', '/assets')),
+  getAdminUsers: () => json(admin('GET', '/users')),
+  getAdminAlerts: () => json(admin('GET', '/alerts')),
+  dismissAdminAlert: (id) => done(admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),
+  getAdminTemplates: () => json(admin('GET', '/templates')),
+  saveAdminTemplateVersion: (key, change) => json(admin('POST', `/templates/${encodeURIComponent(key)}/versions`, change)),
+  activateAdminTemplateVersion: (key, version) =>
+    json(admin('PUT', `/templates/${encodeURIComponent(key)}/active`, { version })),
+  setAdminAssetActive: (id, active) => done(admin('PUT', `/assets/${encodeURIComponent(id)}/active`, { active })),
+  addAdminAsset: (symbol) => json(admin('POST', '/assets', { symbol })),
+  updateAdminAsset: (id, edit) => done(admin('PUT', `/assets/${encodeURIComponent(id)}`, edit)),
+  flushAdminPrices: () => json(admin('DELETE', '/assets/prices')),
+  flushAdminAssetPrices: (id) => done(admin('DELETE', `/assets/${encodeURIComponent(id)}/prices`)),
+  downloadAdminAssetPrices: (id, years) => json(admin('POST', `/assets/${encodeURIComponent(id)}/prices`, { years })),
+  downloadAdminRates: (years) => json(admin('POST', '/assets/rates', { years })),
+  submitFeedback: (item) => json<FeedbackItem>(feedback('POST', '', item)),
+  getFeedback: (status) =>
+    json<FeedbackItem[]>(feedback('GET', status ? `?status=${encodeURIComponent(status)}` : '')),
+  updateFeedback: (id, patch) =>
+    json<FeedbackItem>(feedback('PATCH', `/${encodeURIComponent(id)}`, patch)),
+  deleteFeedback: (id) => done(feedback('DELETE', `/${encodeURIComponent(id)}`)),
+  previewAiPrompt: (request) => json(aiRequest('POST', '/templates/ai/prompt', request)),
   getAiRound: (strategyId) => get(aiPath(strategyId, '/ai-round')),
-  readAiAnswer: async (strategyId, answer) => (await aiRequest('POST', aiPath(strategyId, '/ai-round/read'), { answer })).json(),
-  useAiScores: async (strategyId, answer, aiModel, share, prompt, extra) =>
-    (await aiRequest('POST', aiPath(strategyId, '/ai-round'), { answer, aiModel, share, prompt, extra })).json(),
-  skipAiRound: async (strategyId, roundId) => void (await aiRequest('POST', aiPath(strategyId, '/ai-round/skip'), { roundId })),
+  readAiAnswer: (strategyId, answer) => json(aiRequest('POST', aiPath(strategyId, '/ai-round/read'), { answer })),
+  useAiScores: (strategyId, answer, aiModel, share, prompt, extra) =>
+    json(aiRequest('POST', aiPath(strategyId, '/ai-round'), { answer, aiModel, share, prompt, extra })),
+  skipAiRound: (strategyId, roundId) => done(aiRequest('POST', aiPath(strategyId, '/ai-round/skip'), { roundId })),
   getAiRounds: (strategyId) => get(aiPath(strategyId, '/ai-rounds')),
-  updateAiPrompt: async (strategyId, setup) => void (await aiRequest('PUT', aiPath(strategyId, '/ai-prompt'), setup)),
+  updateAiPrompt: (strategyId, setup) => done(aiRequest('PUT', aiPath(strategyId, '/ai-prompt'), setup)),
   setAiSharing: (enabled) => account('/ai-sharing', { enabled }, { session: true }),
 }

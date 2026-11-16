@@ -147,6 +147,13 @@ describe('httpApi admin', () => {
     await httpApi.updateStrategySettings('s1', { peakDays: 40 })
     expect(fetch).toHaveBeenCalledWith('/api/strategies/s1/settings', expect.objectContaining({ method: 'PUT', body: '{"settings":{"peakDays":40}}' }))
   })
+
+  it("passes on a 409's reason, and ignores a body that isn't one", async () => {
+    respond(409, 'This strategy is archived.')
+    await expect(httpApi.updateStrategySettings('s1', {})).rejects.toThrow(new InvalidValueError('This strategy is archived.'))
+    respond(409, { title: 'Conflict' })
+    await expect(httpApi.updateStrategySettings('s1', {})).rejects.toThrow(new InvalidValueError('Reload and try again.'))
+  })
 })
 
 describe('httpApi admin test email', () => {

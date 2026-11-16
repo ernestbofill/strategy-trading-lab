@@ -9,6 +9,7 @@ import { Section } from '../../components/Section'
 import { localDateTime as at } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import styles from './AdminAlerts.module.css'
+import { Button } from '../../components/Button'
 
 const sourceText: Record<AlertSource, string> = {
   dailyCheck: 'Daily check',
@@ -32,9 +33,9 @@ function AlertCard({ alert, onDismiss, busy }: { alert: AdminAlert; onDismiss?: 
           : `Since ${at(alert.firstSeenAt)} · last seen ${at(alert.lastSeenAt)} · ${alert.count}×`}
       </p>
       {onDismiss && (
-        <button type="button" className={styles.dismiss} onClick={onDismiss} disabled={busy}>
+        <Button variant="outline" onClick={onDismiss} disabled={busy}>
           Dismiss
-        </button>
+        </Button>
       )}
     </li>
   )

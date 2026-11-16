@@ -11,6 +11,10 @@ export function Button({ variant = 'secondary', type = 'button', className, ...r
   return <button type={type} className={className ? `${styles.button} ${className}` : styles.button} data-variant={variant} {...rest} />
 }
 
+/** The same look on a link that leads somewhere (`<a>`, react-router's `Link`): spread it onto the element. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const buttonLook = (variant: NonNullable<ButtonProps['variant']>) => ({ className: styles.button, 'data-variant': variant })
+
 /** Buttons side by side, wrapping on a narrow screen. */
 export const ButtonRow = ({ children, className }: { children: ReactNode; className?: string }) => (
   <div className={className ? `${styles.row} ${className}` : styles.row}>{children}</div>

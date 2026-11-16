@@ -18,7 +18,7 @@ import { AdminTopBar } from './AdminTopBar'
 import { adminCacheKeys } from './cacheKeys'
 import { useCopy } from '../../components/useCopy'
 import styles from './AdminInvites.module.css'
-import { Button } from '../../components/Button'
+import { Button, buttonLook } from '../../components/Button'
 
 /** The admin setting that gates sign-up (backend Admin/SettingDefinitions.cs). */
 const SIGN_UPS = 'SIGN_UPS'
@@ -202,7 +202,7 @@ function NewInviteForm({ onCreated }: { onCreated: (invite: AdminInvite, sent: b
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <div className={styles.actions}>
         <Button variant="primary" disabled={busy !== null || email.trim() === ''} onClick={() => void create(true)}>
-          {busy === 'send' ? 'Sending…' : '✉ Send by email'}
+          {busy === 'send' ? 'Sending…' : 'Send by email'}
         </Button>
         <Button type="submit" variant="outline" disabled={busy !== null}>
           {busy === 'copy' ? 'Making it…' : 'Make it, copy the text'}
@@ -233,7 +233,7 @@ function ShareCard({ invite, sent, onAnother }: { invite: AdminInvite; sent: boo
       <pre className={styles.preview}>{invite.message}</pre>
       <div className={styles.actions}>
         <CopyButton text={invite.message} label="Copy message" primary />
-        <a className={`ui-strong ${styles.button} ${styles.linkButton}`} href={whatsAppUrl(invite.message)} target="_blank" rel="noreferrer">
+        <a {...buttonLook('outline')} href={whatsAppUrl(invite.message)} target="_blank" rel="noreferrer">
           WhatsApp
         </a>
         {canShare && (

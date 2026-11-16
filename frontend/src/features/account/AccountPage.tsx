@@ -16,7 +16,7 @@ import { ResendLink } from './ResendLink'
 import { deviceSubscription, unsubscribeDevice } from '../../lib/push'
 import { AiSharingDetails } from '../ai-round/AiSharingDetails'
 import { SEND_FEEDBACK_HASH } from '../feedback/SendFeedback'
-import { Button } from '../../components/Button'
+import { Button, buttonLook } from '../../components/Button'
 
 /** Account (spec: Account): who the user is and their data. Reached from Settings' first row. */
 export function AccountPage() {
@@ -75,7 +75,7 @@ export function AccountPage() {
       {account.role === 'owner' && (
         <Section title={t('account.page.admin')}>
           <p className={styles.line}>{t('account.page.adminLine')}</p>
-          <Link to="/admin" className={`ui-strong ${styles.button} ${styles.linkButton}`}>
+          <Link to="/admin" {...buttonLook('outline')}>
             {t('account.page.adminLink')}
           </Link>
         </Section>

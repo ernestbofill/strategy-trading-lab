@@ -61,6 +61,7 @@ export function fillCheck(text: string, raw: RuleCheck, currency: string): strin
   return out
     .replace(/ Now –%[^.]*\./g, '')
     .replace(/ Ara –%[^.]*\./g, '')
+    .replace(/ (?:Price|Preu): –%[^.]*\./g, '')
     .replace(/ (?:since|on|des del|el) – \(/g, ' (')
     .replace(/\(– → –, /g, '(')
     .replace(/ \((?:up to |fins a )?–\)/g, '')

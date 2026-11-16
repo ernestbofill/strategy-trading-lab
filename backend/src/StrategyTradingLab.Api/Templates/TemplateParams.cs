@@ -66,6 +66,9 @@ public record ComebackParams
     /// <summary>The 5-day average volume is at least this multiple of the 50-day.</summary>
     [Range(1, 5)] public decimal VolumeRatio { get; init; } = 1.2m;
 
+    /// <summary>The volume only counts when the close is above the close 5 trading days before (off: the POC's rule, any volume).</summary>
+    public bool VolumeOnRise { get; init; } = true;
+
     /// <summary>A step only up to this % above the signal line or a milestone's level.</summary>
     [Range(0, 30)] public decimal MaxChasePct { get; init; } = 8;
 

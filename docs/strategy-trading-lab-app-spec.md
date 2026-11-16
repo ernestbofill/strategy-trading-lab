@@ -122,7 +122,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **The comeback (Confirmed turnaround)**
 - Candidate (beaten down): at least 30% below its 52-week high, and below the SMA 200.
-- Signal: the close is at least 10% above the recent low (lowest close of the last 50 trading days by default), and 5-day average volume is at least 20% above the 50-day average.
+- Signal: the close is at least 10% above the recent low (lowest close of the last 50 trading days by default), and 5-day average volume is at least 20% above the 50-day average, with the close above the close 5 trading days before (heavy volume on a falling price is selling, not a turn: Ernest, 2026-11-16; STL's own rule, not the POC's, `VolumeOnRise`).
 - Signal ends: the close drops back under the signal line, or the price is more than 8% above it.
 - Later steps: one per milestone (back above the SMA 200, golden cross, within 15% of the 52-week high, breakout after an 8% pullback), each within 8% above its level. Cooldown 5 days.
 
@@ -413,7 +413,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Candidate | "It stays a candidate for [n] trading days after it was last beaten down." | 60 | 10 | 0–120 |
 | Buy signal | "The buy line is [n]% above the recent low." | 10% | 1 | 5–30 |
 | Buy signal | "The recent low is the lowest close of the last [n] trading days." | 50 | 5 | 10–120 |
-| Buy signal | "The 5-day average volume is at least [n]× the 50-day." | 1.2× | 0.1 | 1–3 |
+| Buy signal | "The 5-day average volume is at least [n]× the 50-day, with the price up over those 5 days." | 1.2× | 0.1 | 1–3 |
 | Buy signal | "Chase limit: buy only up to [n]% above the buy line or a milestone's level." | 8% | 1 | 2–20 |
 | Milestones | "Milestone near the old high: within [n]% of the 52-week high." | 15% | 1 | 5–30 |
 | Milestones | "Milestone breakout: a pullback of at least [n]%, then a close above the high before it." | 8% | 1 | 3–20 |
@@ -661,7 +661,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 - **Price chart** (under the tiles), not interactive, once the rules have checked the stock (feedback, 2026-11-12: no chart under "Not checked yet"): the daily closes, with a small "90 days", "30 days" (the default) and "7 days" control at its top right, and the rules' levels drawn as they moved day by day, as lines or shaded areas. Every day draws the levels of the stock's verdict today: a candidate's buy area or zone, else the line that would make it one, never both (Ernest, 2026-11-08). A price axis on the right gives the latest close and each level's latest value (both edges of an area), when it shows on the latest day the rules checked, pushed apart so they don't overlap. A legend under the chart names each level.
   - From the strategy's first check of the stock, each day's levels come from the rules replayed from that day, as the daily check does, on today's closes (so a split doesn't leave old levels behind), up to the last day the daily check ran (an archived strategy or an unticked stock stops there). A dashed vertical line marks that day, "Started [date]" (left out when it is before the period shown).
   - Before it, buys don't apply: only the lines that make a stock a candidate show (they go back in time), from the rules run over the price history as for a stock never bought.
-  - *The comeback*: a candidate, after the start, the "Buy area" from the buy line to the chase limit; a stock that isn't one, the "Beaten down" line (the 52-week high less the drop the rules need). While the rules hold it, the next milestone's area (the first not used yet), named after its rule ("Back above SMA 200"). While that milestone is the golden cross, no area (it sat under the price and read as a discount) but the "SMA 50" and "SMA 200" lines, on every day (before the start as well), so the cross can be seen coming (Ernest, 2026-11-13).
+  - *The comeback*: a candidate, after the start, the "Buy area" from the buy line to the chase limit; a stock that isn't one, the "Beaten down" line (the 52-week high less the drop the rules need). A candidate's chart also rings the price on the day it was last beaten down ("Candidate since"), with "Beaten down [date]" in the legend, when the period reaches back to it (Ernest, 2026-11-16). While the rules hold it, the next milestone's area (the first not used yet), named after its rule ("Back above SMA 200"). While that milestone is the golden cross, no area (it sat under the price and read as a discount) but the "SMA 50" and "SMA 200" lines, on every day (before the start as well), so the cross can be seen coming (Ernest, 2026-11-13).
   - *Winners at a discount*: a candidate, after the start, the "Discount zone"; a stock that isn't one, the "Proven growth" line (its low plus the growth the rules need).
   - *Bear markets*: the "Market fall" line always; after the start, the "Bounce buy" line once a drop has started (none before a drop).
   - *Index trend*: after the start, the "Buy line" and the "Sell line"; before it, the price only.

@@ -72,11 +72,16 @@ public class DipRulesTests
         // A fast fall from 200 to 100 leaves the SMA 50 above 170, while the 50-day low is 100 (buy line 110).
         PriceBar Bar(int i, decimal close, long volume = 100) =>
             new(new DateOnly(2020, 1, 1).AddDays(i), close, close, close, close, volume);
-        var bars = Enumerable.Range(0, 250).Select(i => Bar(i, 200))
-            .Concat(Enumerable.Range(250, 5).Select(i => Bar(i, 100)))
-            .Concat(Enumerable.Range(255, 10).Select(i => Bar(i, 120)))
-            .Append(Bar(265, 112, volume: 300))
-            .ToList();
+        // Then it rises from 105 to 112 on heavy volume; `falling` reaches 112 from 120 instead, on the same volume.
+        List<PriceBar> Bars(decimal before) =>
+        [
+            .. Enumerable.Range(0, 250).Select(i => Bar(i, 200)),
+            .. Enumerable.Range(250, 5).Select(i => Bar(i, 100)),
+            .. Enumerable.Range(255, 10).Select(i => Bar(i, before)),
+            Bar(265, 112, volume: 300),
+        ];
+        var bars = Bars(105);
+        var falling = Bars(120);
 
         var fiftyDay = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5))[^1];
         var tenDay = RulesRunner.Run(new ComebackRules(bars, new ComebackParams { LowDays = 10 }), bars, new StepPlan(5))[^1];
@@ -92,5 +97,13 @@ public class DipRulesTests
         Assert.Equal(50m, buyLine.SubValue);
         Assert.Equal(8m, buyLine.EndValue);
         Assert.Equal(RuleStatus.Watching, tenDay.Status);
+
+        // Heavy volume on a falling price is no turn: the volume only counts when the close is above the one 5 days before.
+        var fell = RulesRunner.Run(new ComebackRules(falling, new ComebackParams()), falling, new StepPlan(5))[^1];
+        Assert.NotEqual(RuleStatus.BuySignal, fell.Status);
+        var volume = Assert.Single(fell.Checks, c => c.Key == "volume");
+        Assert.False(volume.Met);
+        Assert.True(volume.Value >= volume.Min);
+        Assert.Equal(-6.7m, volume.SubValue);
     }
 }

@@ -178,7 +178,7 @@
         "help": "Longer: measures the turn from a wider window's bottom. Shorter: follows recent drops more closely."
       },
       "volumeRatio": {
-        "sentence": "The 5-day average volume is at least {value} the 50-day.",
+        "sentence": "The 5-day average volume is at least {value} the 50-day, with the price up over those 5 days.",
         "value": "{n}×",
         "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
       },
@@ -245,11 +245,11 @@
       },
       "buyLine": {
         "label": "Price vs the buy line",
-        "detail": "+{value}% above the recent low ({midLevel}), needs +{min}% to +{max}% ({level} to {endLevel}).",
-        "past": "+{value}% above the recent low ({midLevel}) — past the +{max}% chase limit ({endLevel}).",
+        "detail": "+{value}% above the recent low ({midLevel}): needs +{min}% ({level}), and at most {endValue}% above that line ({endLevel}).",
+        "past": "+{value}% above the recent low ({midLevel}) — past the chase limit ({endLevel}, {endValue}% above the buy line).",
         "short": "+{value}% above its low (needs +{min}%)",
-        "pastShort": "+{value}% above its low (past +{max}% limit)",
-        "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. Above +{endValue}% past the buy line (+{max}% above the low, {endLevel}) is too late to chase."
+        "pastShort": "+{value}% above its low (past the chase limit)",
+        "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than {endValue}% above the buy line ({endLevel}) is too late to chase."
       },
       "chase": {
         "label": "Not too far past the line",
@@ -258,9 +258,9 @@
       },
       "volume": {
         "label": "Volume: 5-day vs 50-day average",
-        "detail": "{value}× its 50-day average (needs {min}×).",
-        "short": "volume {value}× (needs {min}×)",
-        "info": "Shares traded per day: more trading than usual backs the turn."
+        "detail": "{value}× its 50-day average (needs {min}×). Price: {+subValue}% over those 5 days (needs a rise).",
+        "short": "volume {value}× (needs {min}×, on a rising price)",
+        "info": "Shares traded per day: more trading than usual backs the turn, but only while the price rises. Heavy trading on a falling price is selling, so it doesn't count."
       },
       "turn": {
         "label": "The turn",

@@ -39,7 +39,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                     delay = due.Value > now ? due.Value - now : TimeSpan.Zero;
                 }
             }
-            catch (Exception error) when (error is not OperationCanceledException)
+            catch (Exception error) when (error is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
             {
                 // Typically the database in use doesn't answer: try again later, and keep the process up.
                 logger.LogWarning("The price schedule couldn't be read: {Reason}", error.Message);
@@ -110,7 +110,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             var housekeeping = scope.ServiceProvider.GetRequiredService<Auth.HousekeepingService>();
             await housekeeping.RunAsync(stoppingToken);
         }
-        catch (Exception error) when (error is not OperationCanceledException)
+        catch (Exception error) when (error is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
         {
             logger.LogError(error, "The price refresh or the evaluation failed.");
             await RaiseAsync(new NewAlert(DailyCheckKey, "The daily check failed", error.Message), stoppingToken);
@@ -152,7 +152,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
                 logger.LogInformation("Strategy {Strategy} checked at once: {Fetched} assets fetched ({Failed} failed), {Signals} new signals, {Trades} new trades, {Left} left to the daily run.",
                     id, fetched.Count, fetched.Count(r => r.Outcome == RefreshOutcome.Failed), checkedNow.NewSignals, checkedNow.NewTrades, left.Count);
             }
-            catch (Exception error) when (error is not OperationCanceledException)
+            catch (Exception error) when (error is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
             {
                 logger.LogWarning("Strategy {Strategy} couldn't be checked at once: {Reason}", id, error.Message);
             }
@@ -188,7 +188,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
         {
             found = await PriceAlertsAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>(), results, time.GetUtcNow(), stoppingToken);
         }
-        catch (Exception error) when (error is not OperationCanceledException)
+        catch (Exception error) when (error is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
         {
             logger.LogWarning("The price alerts couldn't be checked: {Reason}", error.Message);
             return;
@@ -198,16 +198,16 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
 
     /// <summary>
     /// Runs <paramref name="work"/> in a scope of its own, best effort: a failure is logged as "<paramref name="failure"/>: reason"
-    /// and never fails the caller.
+    /// and never fails the caller. Only the API's shutdown passes through: a timeout's cancellation is a failure like any other.
     /// </summary>
-    async Task TryInScopeAsync(string failure, Func<IServiceProvider, Task> work)
+    async Task TryInScopeAsync(string failure, Func<IServiceProvider, Task> work, CancellationToken stoppingToken)
     {
         try
         {
             using var scope = scopes.CreateScope();
             await work(scope.ServiceProvider);
         }
-        catch (Exception error) when (error is not OperationCanceledException)
+        catch (Exception error) when (error is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
         {
             logger.LogWarning("{Failure}: {Reason}", failure, error.Message);
         }
@@ -216,7 +216,7 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
     /// <summary>Raises an alert in a scope of its own, for when the run's scope failed.</summary>
     Task RaiseAsync(NewAlert alert, CancellationToken stoppingToken) =>
         TryInScopeAsync("The admin alert couldn't be raised", services =>
-            services.GetRequiredService<AdminAlerts>().RaiseAsync(AlertSource.DailyCheck, alert, stoppingToken));
+            services.GetRequiredService<AdminAlerts>().RaiseAsync(AlertSource.DailyCheck, alert, stoppingToken), stoppingToken);
 
     /// <summary>
     /// Right after the check, the pushes of what it changed (<see cref="PushChangesAsync"/>), then the alerts for the live signals
@@ -235,14 +235,14 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             logger.LogInformation("Sent {Count} signal alerts.", await notifications.SendSignalAlertsAsync(session, stoppingToken));
             // A buy signal that ended unanswered, after its alert (one this run just sent waits for its next day).
             logger.LogInformation("Sent {Count} ended signal alerts.", await notifications.SendSignalEndedAsync(session, stoppingToken));
-        });
+        }, stoppingToken);
         // Apart from the alerts, so a failed alert doesn't hold the overviews back.
         await TryInScopeAsync("The daily overviews couldn't be sent", async services =>
         {
             var notifications = services.GetRequiredService<Notifications.NotificationService>();
             if (await notifications.EnabledAsync(stoppingToken))
                 logger.LogInformation("Sent {Count} daily overviews.", await notifications.SendOverviewsAsync(time.GetUtcNow(), stoppingToken));
-        });
+        }, stoppingToken);
     }
 
     /// <summary>
@@ -260,5 +260,5 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             // A buy signal that ended unanswered, after its alert (one this run just pushed is told on a later check).
             logger.LogInformation("Pushed {Count} ended signal alerts.", await notifications.PushSignalEndedAsync(session, stoppingToken));
             logger.LogInformation("Pushed {Count} stock changes.", await notifications.PushStockChangesAsync(now, stoppingToken));
-        });
+        }, stoppingToken);
 }

@@ -31,25 +31,39 @@ public class PriceRefreshState
 
     public bool Running => running || pending == 1;
 
-    /// <summary>
-    /// Held while prices are written in bulk: the daily run's fetch, or one of the admin's downloads or deletes, so two of
-    /// them never delete and insert the same rows at once. The run waits for it; the admin's are refused.
-    /// </summary>
-    public SemaphoreSlim Writing { get; } = new(1, 1);
+    // The write lock, held while prices are written in bulk (the daily run's fetch, or one of the admin's downloads or deletes), so
+    // two of them never delete and insert the same rows at once. The run waits for it; the admin's are refused.
+    readonly SemaphoreSlim writing = new(1, 1);
 
-    /// <summary>Runs <paramref name="write"/> holding <see cref="Writing"/>, so no other price write runs meanwhile.</summary>
+    /// <summary>Runs <paramref name="write"/> holding the write lock, so no other bulk price write runs meanwhile; waits for it.</summary>
     public async Task<T> WithWriteLockAsync<T>(Func<Task<T>> write, CancellationToken cancellationToken)
     {
-        await Writing.WaitAsync(cancellationToken);
+        await writing.WaitAsync(cancellationToken);
         try
         {
             return await write();
         }
         finally
         {
-            Writing.Release();
+            writing.Release();
         }
     }
+
+    /// <summary>Runs <paramref name="write"/> holding the write lock if it is free; false, without running it, when another write holds it.</summary>
+    public async Task<bool> TryWithWriteLockAsync(Func<Task> write)
+    {
+        if (!await writing.WaitAsync(0)) return false;
+        try
+        {
+            await write();
+            return true;
+        }
+        finally
+        {
+            writing.Release();
+        }
+    }
+
     public DateTimeOffset? LastStarted => last.Started;
     public DateTimeOffset? LastFinished => last.Finished;
     public IReadOnlyList<RefreshResult> LastResults => last.Results;

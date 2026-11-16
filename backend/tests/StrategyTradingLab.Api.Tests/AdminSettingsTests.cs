@@ -241,7 +241,7 @@ public class SettingDefinitionTests
     [InlineData("2001:db8:1:2:aaaa:bbbb:cccc:dddd", "2001:db8:1:2::/64")]
     [InlineData("2001:db8:1:2::1", "2001:db8:1:2::/64")]
     public void The_log_in_limit_counts_an_ipv6_client_per_64(string address, string key) =>
-        Assert.Equal(key, StrategyTradingLab.Api.Common.RateLimits.ClientKey(System.Net.IPAddress.Parse(address)));
+        Assert.Equal(key, StrategyTradingLab.Api.RateLimits.ClientKey(System.Net.IPAddress.Parse(address)));
 
     [Fact]
     public void Only_the_password_is_secret_and_it_is_bound_to_the_server_port_and_user()

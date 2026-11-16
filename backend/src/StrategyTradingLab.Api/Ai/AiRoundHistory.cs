@@ -1,15 +1,7 @@
-using System.Text.Json.Nodes;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using StrategyTradingLab.Api.Auth;
-using StrategyTradingLab.Api.Common;
-using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
-using StrategyTradingLab.Api.Evaluation;
 using StrategyTradingLab.Api.MarketData;
-using StrategyTradingLab.Api.Signals;
-using StrategyTradingLab.Api.Strategies;
-using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Ai;
 

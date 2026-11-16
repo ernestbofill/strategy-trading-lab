@@ -50,7 +50,7 @@ public class NotificationWorker(DatabaseSwitch databases, IServiceScopeFactory s
                     if (pushed > 0) logger.LogInformation("Pushed {Count} notifications.", pushed);
                 }
             }
-            catch (Exception error) when (error is not OperationCanceledException)
+            catch (Exception error) when (error is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
             {
                 logger.LogWarning("The overview check failed: {Reason}", error.Message); // Typically the database doesn't answer: next hour.
             }

@@ -375,21 +375,16 @@ public static class AdminEndpoints
     static async Task<Conflict<string>?> WriteAsync(DatabaseSwitch databases, PriceRefreshState state, Func<Task> write)
     {
         if (!databases.IsHome) return TypedResults.Conflict("The API is switched to another database: switch back to change the prices.");
-        if (state.Running || !await state.Writing.WaitAsync(0))
-            return TypedResults.Conflict("Prices are being fetched (the daily refresh or another download): try again when it's done.");
+        var busy = TypedResults.Conflict("Prices are being fetched (the daily refresh or another download): try again when it's done.");
+        if (state.Running) return busy;
         try
         {
-            await write();
-            return null;
+            return await state.TryWithWriteLockAsync(write) ? null : busy;
         }
         // Only the clash itself: any other database error is a real failure, answered 500 and logged.
         catch (Exception error) when (error.IsUniqueViolation())
         {
             return TypedResults.Conflict("The prices changed meanwhile: try again.");
-        }
-        finally
-        {
-            state.Writing.Release();
         }
     }
 

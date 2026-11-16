@@ -9,10 +9,10 @@ using StrategyTradingLab.Api.Feedback;
 using StrategyTradingLab.Api.Notifications;
 using StrategyTradingLab.Api.Templates;
 
-namespace StrategyTradingLab.Api.Common;
+namespace StrategyTradingLab.Api;
 
 /// <summary>
-/// The API's rate limits, each a fixed window: per client for the account and public endpoints (guessing, sign-up spam and
+/// The API's rate limits (the host's setup, next to <see cref="Program"/>, as they name every feature's endpoints), each a fixed window: per client for the account and public endpoints (guessing, sign-up spam and
 /// email floods hit these first), per user for the asset search and adding (both call the price source). Each policy's name is
 /// a constant on its endpoints. <c>RateLimits:&lt;policy&gt;</c> overrides the permits; only the tests set it, to sign up many users.
 /// </summary>
@@ -22,14 +22,13 @@ public static class RateLimits
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            // A null key: not limited.
-            void Fixed(string policy, Func<HttpContext, string?> key, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
-                key(http) is { } partition
-                    ? RateLimitPartition.GetFixedWindowLimiter(partition, _ => new FixedWindowRateLimiterOptions
-                    {
-                        PermitLimit = configuration.GetValue($"RateLimits:{policy}", permits), Window = window,
-                    })
-                    : RateLimitPartition.GetNoLimiter("unlimited"));
+            RateLimitPartition<string> Window(string policy, string key, int permits, TimeSpan window) =>
+                RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = configuration.GetValue($"RateLimits:{policy}", permits), Window = window,
+                });
+            void Fixed(string policy, Func<HttpContext, string> key, int permits, TimeSpan window) =>
+                options.AddPolicy(policy, http => Window(policy, key(http), permits, window));
             void PerClient(string policy, int permits, TimeSpan window) => Fixed(policy, http => ClientKey(http.Connection.RemoteIpAddress), permits, window);
 
             PerClient(AccountEndpoints.SignUpLimit, 5, TimeSpan.FromHours(1));
@@ -45,9 +44,9 @@ public static class RateLimits
             PerClient(Program.VersionLimit, 60, TimeSpan.FromMinutes(1));
             // A look-up with a code tells whether it works, so it is limited like a guess; one without a code (every Sign-up
             // load, many visitors behind one address) only says whether sign-ups are invite only, and isn't limited.
-            Fixed(AccountEndpoints.InviteLimit,
-                http => string.IsNullOrEmpty(http.Request.Query["invite"]) ? null : ClientKey(http.Connection.RemoteIpAddress),
-                30, TimeSpan.FromHours(1));
+            options.AddPolicy(AccountEndpoints.InviteLimit, http => string.IsNullOrEmpty(http.Request.Query["invite"])
+                ? RateLimitPartition.GetNoLimiter("no-code")
+                : Window(AccountEndpoints.InviteLimit, ClientKey(http.Connection.RemoteIpAddress), 30, TimeSpan.FromHours(1)));
             Fixed(AssetEndpoints.SearchLimit, UserKey, 100, TimeSpan.FromHours(1));
             Fixed(AssetEndpoints.AddLimit, UserKey, 10, TimeSpan.FromHours(1));
         });

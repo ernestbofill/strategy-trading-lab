@@ -40,6 +40,6 @@ export default defineConfig({
       },
     }),
   ],
-  // Each test starts with its spies and stubbed globals undone (testSetup also unmounts and empties the load cache).
-  test: { setupFiles: ['src/testSetup.ts'], restoreMocks: true, unstubGlobals: true },
+  // testSetup tears every test down: unmount, spies and stubbed globals undone, load cache emptied.
+  test: { setupFiles: ['src/testSetup.ts'] },
 })

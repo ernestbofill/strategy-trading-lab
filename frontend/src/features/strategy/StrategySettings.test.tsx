@@ -81,5 +81,4 @@ describe('StrategySettings', () => {
 
     expect(updateSpy).toHaveBeenCalledWith('s1', expect.objectContaining({ peakDays: 90 }))
   })
-
 })

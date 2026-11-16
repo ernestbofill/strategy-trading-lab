@@ -184,5 +184,4 @@ describe('SummaryPage', () => {
     const startLink = screen.getByRole('link', { name: 'Pick a template to start' })
     expect(startLink.getAttribute('href')).toBe('/new')
   })
-
 })

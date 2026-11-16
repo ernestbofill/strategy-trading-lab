@@ -1,14 +1,19 @@
-import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import { invalidateAll } from './lib/useLoadable'
 
-// jsdom has no scrolling: a new page's scroll to the top (App's ScrollToTop) would log "Not implemented".
-if (typeof window !== 'undefined') window.scrollTo = () => {}
+const dom = typeof window !== 'undefined'
+// Loaded before any test stubs a global (Testing Library reads `navigator` as it loads), and only in jsdom files.
+const testingLibrary = dom ? await import('@testing-library/react') : null
 
-// The new-strategy draft is kept in sessionStorage: each test starts without the last one's.
-// Each test starts on an empty page, and loads its own results (they are kept per cache key).
+// jsdom has no scrolling: a new page's scroll to the top (App's ScrollToTop) would log "Not implemented".
+if (dom) window.scrollTo = () => {}
+
+// Every test's teardown, in one place: unmount (only in jsdom files, so the Node ones don't load React DOM), undo spies and
+// stubbed globals, forget the new-strategy draft (sessionStorage) and every kept load. A file's own afterEach runs first.
 afterEach(() => {
-  cleanup()
-  if (typeof sessionStorage !== 'undefined') sessionStorage.clear()
+  testingLibrary?.cleanup()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+  if (dom) sessionStorage.clear()
   invalidateAll()
 })

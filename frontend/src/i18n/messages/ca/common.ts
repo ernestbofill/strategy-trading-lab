@@ -7,6 +7,8 @@ export const common: Record<keyof typeof en, string> = {
   'common.indexTip.label': 'Què és el fons S&P 500?',
   'common.indexTip.text': 'Comprar i mantenir: els mateixos diners en un fons de l’S&P 500 (SPY) els mateixos dies, sense vendre mai.',
   'common.back': 'ENRERE',
+  /** After a list's count badge, for a screen reader. */
+  'common.countHidden': ' en aquesta llista',
   'common.up.strategy': 'ESTRATÈGIA',
   'common.up.stock': 'ACCIÓ',
   'common.up.aiRound': 'RONDA D’IA',

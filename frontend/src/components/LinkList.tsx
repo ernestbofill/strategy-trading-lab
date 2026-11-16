@@ -1,10 +1,11 @@
 import { useId, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../i18n/I18n'
 import styles from './LinkList.module.css'
 
 interface LinkSectionProps {
   title: string
-  /** A count badge after the title; `countLabel` says what it counts to a screen reader ("waiting for you"). */
+  /** A count badge after the title; `countLabel` says what it counts to a screen reader (" waiting"; else " in this list"). */
   count?: number
   countLabel?: string
   children: ReactNode
@@ -12,6 +13,7 @@ interface LinkSectionProps {
 
 /** A titled group of a screen, named by its heading, with an optional count badge (Waiting for you, What changed). */
 export function LinkSection({ title, count, countLabel, children }: LinkSectionProps) {
+  const t = useT()
   const id = useId()
   return (
     <section className={styles.section} aria-labelledby={id}>
@@ -22,7 +24,7 @@ export function LinkSection({ title, count, countLabel, children }: LinkSectionP
         {count !== undefined && (
           <span className={styles.count}>
             {count}
-            {countLabel && <span className="visually-hidden">{countLabel}</span>}
+            <span className="visually-hidden">{countLabel ?? t('common.countHidden')}</span>
           </span>
         )}
       </div>

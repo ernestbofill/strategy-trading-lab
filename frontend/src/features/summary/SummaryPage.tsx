@@ -51,7 +51,7 @@ export function SummaryPage() {
                             <span className={`ui-strong ${styles.name}`}>
                               {t('summary.waiting.signal', { stock: s.stockName, strategy: s.strategyName })}
                             </span>
-                            {s.stepNo && s.maxSteps && (
+                            {s.stepNo != null && s.maxSteps != null && (
                               <span className={styles.rowSub}>{t('summary.waiting.step', { step: s.stepNo, max: s.maxSteps })}</span>
                             )}
                           </>

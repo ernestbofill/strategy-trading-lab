@@ -23,7 +23,7 @@ import styles from './AdminInvites.module.css'
 const SIGN_UPS = 'SIGN_UPS'
 type SignUps = 'open' | 'invite_only'
 
-const LANGUAGES = [
+const LANGUAGES: { value: Locale; label: string }[] = [
   { value: 'en', label: 'English' },
   { value: 'ca', label: 'Català' },
 ]
@@ -129,7 +129,7 @@ function SignUpGate() {
           label="Who can sign up"
           hideLabel
           value={choice}
-          onChange={(v) => setChoice(v as SignUps)}
+          onChange={setChoice}
           options={[
             { value: 'open', label: 'Anyone' },
             { value: 'invite_only', label: 'Invite only' },
@@ -197,7 +197,7 @@ function NewInviteForm({ onCreated }: { onCreated: (invite: AdminInvite, sent: b
         hint="To send it by email. Without one, copy the message into WhatsApp or anywhere."
         error={errors.email}
       />
-      <SegmentedField label="Language of the invite" value={locale} onChange={(v) => setLocale(v as Locale)} options={LANGUAGES} error={errors.locale} />
+      <SegmentedField label="Language of the invite" value={locale} onChange={setLocale} options={LANGUAGES} error={errors.locale} />
       {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       <div className={styles.actions}>
         <button type="button" className={`ui-strong ${styles.primary}`} disabled={busy !== null || email.trim() === ''} onClick={() => void create(true)}>

@@ -206,12 +206,12 @@ export function SelectField({ label, value, onChange, options, error, hideLabel 
   )
 }
 
-interface SegmentedFieldProps {
+interface SegmentedFieldProps<T extends string> {
   label: string
-  value: string
-  onChange: (value: string) => void
+  value: T
+  onChange: (value: T) => void
   /** Two to four short choices; `detail` is a smaller line under the label ("Euro"). */
-  options: { value: string; label: string; detail?: string }[]
+  options: readonly { value: T; label: string; detail?: string }[]
   error?: string | null
   hideLabel?: boolean
   /** A small control sized to its choices (a chart's period), instead of full-width buttons. */
@@ -222,7 +222,7 @@ interface SegmentedFieldProps {
  * A row of radio buttons for a few short choices (currency, language): one tap, and it looks the same on every
  * device, unlike a select's menu. A long list (time zones) stays a `SelectField`.
  */
-export function SegmentedField({ label, value, onChange, options, error, hideLabel, compact }: SegmentedFieldProps) {
+export function SegmentedField<T extends string>({ label, value, onChange, options, error, hideLabel, compact }: SegmentedFieldProps<T>) {
   const id = useId()
   return (
     <fieldset className={styles.segmentedField} data-compact={compact || undefined} aria-describedby={error ? `${id}-error` : undefined}>

@@ -197,7 +197,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
         <SegmentedField
           label={t('signal.question')}
           value={answer}
-          onChange={(v) => setAnswer(v as 'did' | 'skip')}
+          onChange={setAnswer}
           options={[
             { value: 'did', label: t('signal.choice.did') },
             { value: 'skip', label: t('signal.choice.skip') },

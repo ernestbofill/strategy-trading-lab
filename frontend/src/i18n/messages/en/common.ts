@@ -9,6 +9,8 @@ export const common = {
   'common.indexTip.text': 'Buy and hold: the same money put into an S&P 500 fund (SPY) on the same days, never sold.',
   /** The top bar's up link, after a drawn arrow: the new-strategy steps, whose parent is the step before. */
   'common.back': 'BACK',
+  /** After a list's count badge, for a screen reader. */
+  'common.countHidden': ' in this list',
   /** The top bar's up link, after a drawn arrow, named after the parent. */
   'common.up.strategy': 'STRATEGY',
   'common.up.stock': 'STOCK',

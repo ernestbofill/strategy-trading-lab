@@ -103,6 +103,8 @@ describe('Dashboard', () => {
     expect(fund.getByText('−2.5%')).toBeTruthy()
     expect(fund.getByText('S&P 500: −1.1%')).toBeTruthy()
     expect(fund.getByText('CSPX: holding')).toBeTruthy()
+    // Below the limit of 10 running strategies, a new one can start.
+    expect(screen.getByRole('link', { name: /\+ New strategy/ }).getAttribute('href')).toBe('/new')
   })
 
   it('disables the new strategy button at the limit of 10 running strategies', async () => {
@@ -125,5 +127,4 @@ describe('Dashboard', () => {
     expect((btn as HTMLButtonElement).disabled).toBe(true)
     expect(screen.queryByRole('link', { name: '+ New strategy' })).toBeNull()
   })
-
 })

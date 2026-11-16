@@ -33,8 +33,6 @@ const MAX_SQUARES = 60
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 
-export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
-
 export interface BudgetSummary {
   /** Euro per stock when bought in full. */
   perStock: number

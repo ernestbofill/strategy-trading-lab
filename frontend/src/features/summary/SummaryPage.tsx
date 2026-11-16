@@ -11,7 +11,6 @@ import { pickPath } from '../new-strategy/paths'
 import styles from './SummaryPage.module.css'
 import { useSummary } from './useSummary'
 
-
 export function SummaryPage() {
   const t = useT()
   const { locale } = useCurrentAccount()

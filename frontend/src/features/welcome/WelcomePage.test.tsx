@@ -34,6 +34,14 @@ afterEach(() => {
 })
 
 describe('WelcomePage', () => {
+  it('links to the guest flow, sign-up and log-in', () => {
+    renderPage()
+
+    expect(screen.getByRole('link', { name: 'TRY AS GUEST ›' }).getAttribute('href')).toBe('/new')
+    expect(screen.getByRole('link', { name: 'Create an account' }).getAttribute('href')).toBe('/sign-up')
+    expect(screen.getByRole('link', { name: 'LOG IN' }).getAttribute('href')).toBe('/log-in')
+  })
+
   it('renders all 3 core features with roving tabindex and supports collapsing/expanding', () => {
     renderPage()
 

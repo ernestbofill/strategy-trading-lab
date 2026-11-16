@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { api, type DailySummary } from '../../api'
@@ -129,6 +129,13 @@ describe('SummaryPage', () => {
             startedOn: '2026-10-01',
             signalsCount: 1,
           },
+          {
+            strategyId: 'strat-sim',
+            strategyName: 'Sim Strat',
+            mode: 'simulation',
+            startedOn: '2026-10-01',
+            signalsCount: 0,
+          },
         ],
       }),
     )
@@ -156,6 +163,7 @@ describe('SummaryPage', () => {
     expect(screen.getByText('Stock changes')).toBeTruthy()
     const stockLink = screen.getByRole('link', { name: /Tesla, Alpha Dip: now 2.5% above discount zone/i })
     expect(stockLink.getAttribute('href')).toBe('/strategies/strat-1/stocks/asset-1')
+    expect(within(screen.getByRole('link', { name: /Sim Strat/i })).getByText('SIM')).toBeTruthy()
   })
 
   it('renders helpful empty state when user has no running strategies', async () => {

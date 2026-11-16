@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveBudget, summarize } from './budget'
+import { clamp, daysToUse, resolveBudget, summarize } from './budget'
 
 describe('summarize', () => {
   it('matches the default example', () => {
@@ -8,6 +8,11 @@ describe('summarize', () => {
   it('rounds down and caps the squares at 60', () => {
     expect(summarize(10_000, 30, 7)).toMatchObject({ totalSteps: 333, fullStocks: 47, shown: 60 })
   })
+})
+
+describe('helpers', () => {
+  it('clamps', () => expect([clamp(0, 1, 5), clamp(9, 1, 5), clamp(3, 1, 5)]).toEqual([1, 5, 3]))
+  it('counts days for AI rounds', () => expect(daysToUse(30, 14)).toBe(420))
 })
 
 describe('resolveBudget', () => {

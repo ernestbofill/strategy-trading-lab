@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, InvalidFieldsError, InvalidValueError, NameTakenError, type StrategyDetail } from '../../api'
+import { api, InvalidValueError, NameTakenError, type StrategyDetail } from '../../api'
 import { Button, ButtonRow } from '../../components/Button'
 import { ConfirmBox } from '../../components/ConfirmBox'
 import { TextField } from '../../components/Field'
@@ -20,19 +20,12 @@ import styles from './StrategyActions.module.css'
 export function RenameForm({ s, onClose }: { s: StrategyDetail; onClose: () => void }) {
   const t = useT()
   const [name, setName] = useState(s.name)
-  const { busy, errors, message, run } = useSubmit(t('strategy.renameFailed'))
+  const { busy, line, run } = useSubmit((err) => t(err instanceof NameTakenError ? 'strategy.renameTaken' : 'strategy.renameFailed'))
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
     if (name.trim() === s.name) return onClose()
-    const saved = await run(async () => {
-      try {
-        await api.renameStrategy(s.id, name.trim())
-      } catch (err) {
-        throw err instanceof NameTakenError ? new InvalidFieldsError({ name: t('strategy.renameTaken') }) : err
-      }
-    })
-    if (!saved) return
+    if (!(await run(() => api.renameStrategy(s.id, name.trim())))) return
     // The name shows on the signal and AI round pages too.
     invalidateAll()
     onClose()
@@ -40,7 +33,7 @@ export function RenameForm({ s, onClose }: { s: StrategyDetail; onClose: () => v
 
   return (
     <form className={styles.renameForm} onSubmit={save}>
-      <TextField label={t('strategy.renameLabel')} value={name} onChange={setName} error={errors.name ?? message?.text ?? null} />
+      <TextField label={t('strategy.renameLabel')} value={name} onChange={setName} error={line?.text ?? null} />
       <ButtonRow>
         <Button type="submit" variant="primary" disabled={busy}>
           {t('strategy.renameSave')}

@@ -172,7 +172,7 @@ describe('"+ Add a stock"', () => {
     open(dip([stock('NVDA')]))
 
     await search('zzzz')
-    expect(await screen.findByText("Nothing found. Try the company's name or its symbol.", undefined)).toBeTruthy()
+    expect(await screen.findByText("Nothing found. Try the company's name or its symbol.")).toBeTruthy()
 
     await typeSearch('Search stocks', 'zscaler')
     fireEvent.click(await screen.findByRole('button', { name: /Zscaler, Inc\./ }))

@@ -88,7 +88,7 @@ type Saved = () => Promise<unknown>
 /** Saves one setting: a select or segmented field, a "Saved." line and a save button, enabled once it changed. */
 function useSave<T>(current: T, save: (value: T) => Promise<void>, onSaved: Saved, field: string, savedText: string) {
   const [value, setValue] = useState(current)
-  const { busy, errors, message, setMessage, run, reset } = useSubmit(errorText)
+  const { busy, errors, line, run, done } = useSubmit(errorText)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -96,14 +96,11 @@ function useSave<T>(current: T, save: (value: T) => Promise<void>, onSaved: Save
       await save(value)
       if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
     })
-    if (!saved) return
-    reset()
-    setMessage({ tone: 'done', text: savedText })
+    if (saved) done(savedText)
   }
 
-  // The form has one line: a refused value's own words, else the save's.
-  const refused = errors[field] ?? Object.values(errors)[0]
-  return { value, setValue, message: refused ? ({ tone: 'error', text: refused } as const) : message, busy, submit, changed: value !== current }
+  // The form has one line: this setting's refusal first, else the save's.
+  return { value, setValue, message: errors[field] ? ({ tone: 'error', text: errors[field] } as const) : line, busy, submit, changed: value !== current }
 }
 
 /** The shell of one setting's form: its field(s) as children, then the "Saved." line and the save button. */

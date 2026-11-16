@@ -1,7 +1,6 @@
 export const strategy = {
   'strategy.what': 'this strategy',
   'strategy.settings.saving': 'Saving…',
-  'strategy.settings.checkSettings': 'Please check your settings.',
   'strategy.settings.saveFailed': 'Could not save settings. Please try again.',
   'strategy.startedToday': 'started today',
   'strategy.since': 'since {date}',

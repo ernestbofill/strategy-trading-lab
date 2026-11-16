@@ -14,6 +14,7 @@ export function useSubmit(fallback: string | ((error: unknown) => string)) {
   const running = useRef(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<FormMessageState>(null)
+  const fallbackText = (e: unknown) => (typeof fallback === 'function' ? fallback(e) : fallback)
 
   /**
    * Runs `action` unless `check` finds fields to fix first; resolves to whether it worked. After it worked the form stays
@@ -38,7 +39,7 @@ export function useSubmit(fallback: string | ((error: unknown) => string)) {
       setBusy(false)
       if (e instanceof UnauthorizedError) return false
       if (e instanceof InvalidFieldsError) setErrors(e.fields)
-      else setMessage({ tone: 'error', text: e instanceof InvalidValueError ? e.message : typeof fallback === 'function' ? fallback(e) : fallback })
+      else setMessage({ tone: 'error', text: e instanceof InvalidValueError ? e.message : fallbackText(e) })
       return false
     }
   }
@@ -49,5 +50,15 @@ export function useSubmit(fallback: string | ((error: unknown) => string)) {
     setBusy(false)
   }
 
-  return { busy, errors, setErrors, message, setMessage, run, reset }
+  /** After a save that worked on a form that stays open: ready for the next one, saying `text` ("Saved."). */
+  const done = (text: string) => {
+    reset()
+    setMessage({ tone: 'done', text })
+  }
+
+  // For a form with one line and no field of its own for a refusal: the line, else the first refused field's words.
+  const refused = Object.values(errors).find((text) => text)
+  const line: FormMessageState = message ?? (Object.keys(errors).length > 0 ? { tone: 'error', text: refused || fallbackText(undefined) } : null)
+
+  return { busy, errors, setErrors, message, setMessage, line, run, reset, done }
 }

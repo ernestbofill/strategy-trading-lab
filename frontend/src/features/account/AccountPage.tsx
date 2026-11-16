@@ -105,7 +105,7 @@ function NameForm({ firstName, lastName, onSaved }: { firstName: string; lastNam
   const t = useT()
   const [first, setFirst] = useState(firstName)
   const [last, setLast] = useState(lastName)
-  const { busy, errors, message, setMessage, run, reset } = useSubmit(errorText)
+  const { busy, errors, message, run, done } = useSubmit(errorText)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -113,9 +113,7 @@ function NameForm({ firstName, lastName, onSaved }: { firstName: string; lastNam
       await api.setName(first, last)
       if ((await onSaved()) === undefined) throw new Error('Could not reload the account.')
     })
-    if (!saved) return
-    reset()
-    setMessage({ tone: 'done', text: t('account.page.nameSaved') })
+    if (saved) done(t('account.page.nameSaved'))
   }
 
   return (
@@ -136,15 +134,14 @@ function ChangePassword({ email }: { email: string }) {
   const t = useT()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
-  const { busy, errors, message, setMessage, run, reset } = useSubmit(errorText)
+  const { busy, errors, message, run, done } = useSubmit(errorText)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!(await run(() => api.changePassword(current, next)))) return
-    reset()
     setCurrent('')
     setNext('')
-    setMessage({ tone: 'done', text: t('account.page.passwordChanged') })
+    done(t('account.page.passwordChanged'))
   }
 
   return (
@@ -177,7 +174,7 @@ function ChangePassword({ email }: { email: string }) {
 /** Sharing AI rounds anonymously (spec: AI round, AI data sharing): off by default, asked at the first round. */
 function AiSharing({ current, onSaved }: { current: boolean; onSaved: () => Promise<unknown> }) {
   const t = useT()
-  const { message, run, reset } = useSubmit(errorText)
+  const { line: message, run, reset } = useSubmit(errorText)
 
   const change = async (enabled: boolean) => {
     if (

@@ -50,9 +50,8 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
   const { busy, errors, message } = submit
 
   // Released after a success too: making a version active, or a save that changed nothing, keeps this form.
-  const run = async (action: () => Promise<void>) => {
-    await submit.run(action)
-    submit.reset()
+  const run = async (action: () => Promise<void>, check?: () => Record<string, string>) => {
+    if (await submit.run(action, check)) submit.reset()
   }
 
   const save = (e: FormEvent) => {
@@ -64,14 +63,10 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
       ...Object.entries(defaults).filter(([, n]) => Number.isNaN(n)).map(([key]) => [`settings.${key}`, 'Type a number.']),
       ...(closePct !== null && Number.isNaN(closePct) ? [['closePct', 'Type a number.']] : []),
     ])
-    if (Object.keys(notNumbers).length > 0) {
-      submit.setErrors(notNumbers)
-      return
-    }
     void run(async () => {
       const next = await api.saveAdminTemplateVersion(template.key, { defaults, assetIds: assets.map((a) => a.id), closePct })
       onChanged(next, next.versions.find((v) => v.active)?.version ?? version.version)
-    })
+    }, () => notNumbers)
   }
 
   const activate = () =>

@@ -83,7 +83,7 @@ export function AdminInvites() {
 function SignUpGate() {
   const [saved, setSaved] = useState<SignUps | null>(null)
   const [choice, setChoice] = useState<SignUps>('open')
-  const { busy, message, setMessage, run, reset } = useSubmit("Couldn't save it. Try again.")
+  const { busy, line: message, setMessage, run, done } = useSubmit("Couldn't save it. Try again.")
 
   useEffect(() => {
     let live = true
@@ -105,9 +105,8 @@ function SignUpGate() {
   const save = async (e: FormEvent) => {
     e.preventDefault()
     if (!(await run(() => api.setAdminSetting(SIGN_UPS, choice)))) return
-    reset()
     setSaved(choice)
-    setMessage({ tone: 'done', text: choice === 'invite_only' ? 'Saved: only people with an invite can sign up.' : 'Saved: anyone can sign up.' })
+    done(choice === 'invite_only' ? 'Saved: only people with an invite can sign up.' : 'Saved: anyone can sign up.')
   }
 
   return (
@@ -153,11 +152,11 @@ function NewInviteForm({ onCreated }: { onCreated: (invite: AdminInvite, sent: b
   const { errors, message } = submit
   const busy = submit.busy ? (sending ? 'send' : 'copy') : null
 
-  const create = async (send: boolean) => {
-    if (submit.busy) return
-    setSending(send)
-    await submit.run(async () => onCreated(await api.createAdminInvite({ firstName, lastName, email, locale, send }), send))
-  }
+  const create = (send: boolean) =>
+    submit.run(async () => {
+      setSending(send)
+      await onCreated(await api.createAdminInvite({ firstName, lastName, email, locale, send }), send)
+    })
 
   return (
     <form
@@ -240,7 +239,7 @@ function ShareCard({ invite, sent, onAnother }: { invite: AdminInvite; sent: boo
 function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () => Promise<void> }) {
   const [confirming, setConfirming] = useState(false)
   const submit = useSubmit((err) => (err instanceof TooManyTriesError ? 'Too many invite emails this hour. Copy the message instead.' : "Couldn't do it. Try again."))
-  const { busy, message, setMessage } = submit
+  const { busy, line: message } = submit
   const status = statusOf(invite)
   const usable = status === 'sent' || status === 'waiting'
 
@@ -250,8 +249,8 @@ function InviteRow({ invite, onChanged }: { invite: AdminInvite; onChanged: () =
       await onChanged()
     })
     if (!worked) return
-    submit.reset()
-    if (done) setMessage({ tone: 'done', text: done })
+    if (done) submit.done(done)
+    else submit.reset()
   }
 
   return (

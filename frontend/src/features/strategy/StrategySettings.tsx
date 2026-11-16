@@ -42,8 +42,8 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
   const t = useT()
   const leave = useLeave(strategyPath(strategy.id))
   const [values, setValues] = useState<SettingValues>(() => settingValues(template, strategy.settings ?? {}))
-  const { busy: saving, errors, message, run } = useSubmit(t('strategy.settings.saveFailed'))
-  const error = Object.keys(errors).length > 0 ? Object.values(errors)[0] || t('strategy.settings.checkSettings') : message?.text
+  const { busy: saving, line, run } = useSubmit(t('strategy.settings.saveFailed'))
+  const error = line?.text
   const top = <TopBar up={strategyPath(strategy.id)} upLabel="common.up.strategy" step={strategy.name} />
 
   if (template.settings.length === 0) {

@@ -202,7 +202,9 @@ function DeleteAccount({ email }: { email: string }) {
   const t = useT()
   const [asking, setAsking] = useState(false)
   const [password, setPassword] = useState('')
-  const { busy, errors, setErrors, message, run } = useSubmit(errorText)
+  const { busy, errors, setErrors, line, run } = useSubmit(errorText)
+  // The password's refusal goes under its field; anything else is the form's line.
+  const message = errors.password ? null : line
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()

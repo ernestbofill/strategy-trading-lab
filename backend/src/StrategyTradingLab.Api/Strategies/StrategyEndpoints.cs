@@ -118,8 +118,10 @@ public static class StrategyEndpoints
             var from = bars[^1].Date.AddDays(-StockChart.Days);
 
             var (startedOn, checkedUntil) = await StrategyEvaluator.CheckedDaysAsync(db, id, assetId, cancellationToken);
-            var past = await StrategyEvaluator.PastDaysAsync(db, id, assetId, checkedUntil,
-                await StrategyEvaluator.HeldByBudgetAsync(db, id, strategy.Budget, cancellationToken), cancellationToken);
+            var past = TemplateRules.Supports(strategy.TemplateKey) && checkedUntil is not null
+                ? await StrategyEvaluator.PastDaysAsync(db, id, assetId, checkedUntil,
+                    (await StrategyEvaluator.BudgetHistoryAsync(db, id, strategy.Budget, cancellationToken)).HeldOn, cancellationToken)
+                : null;
             var checks = TemplateRules.Supports(strategy.TemplateKey)
                 ? StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, past, strategy.Budget.MaxSteps ?? 1)
                 : [];

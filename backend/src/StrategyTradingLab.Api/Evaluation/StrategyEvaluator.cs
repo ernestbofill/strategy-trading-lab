@@ -113,9 +113,8 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         var added = listed.ToDictionary(a => a.Key, a => DateOnly.FromDateTime(a.Value.UtcDateTime));
         var wanted = added.Keys.ToList();
         // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
-        var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id).UsingBudget()
-            .SumAsync(s => s.StepAmount ?? 0, cancellationToken));
-        var heldByBudget = await HeldByBudgetAsync(db, strategy.Id, strategy.Budget, cancellationToken);
+        var (used, heldByBudget) = await BudgetHistoryAsync(db, strategy.Id, strategy.Budget, cancellationToken);
+        var budget = new BudgetUse(used);
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
@@ -234,26 +233,26 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     }
 
     /// <summary>
-    /// Whether the budget had no room for one more step on a day: the steps of the strategy's signals from the days before (the
-    /// day's own may have come after this stock's check) and one more step overrun it. From today's statuses: a signal skipped
-    /// since frees its step, so the stock then reads as not held and starts afresh, which the next check corrects if it still is.
-    /// Loaded once per strategy.
+    /// What the strategy's signals use of its budget (<see cref="SignalBudget.UsingBudget"/>), and whether it had no room for one more
+    /// step on a day: the steps signalled up to that day, its own included (another stock's signal that day may have come first),
+    /// and one more step overrun it. So a stock reads as held only when the budget really was full that day. From today's statuses:
+    /// a signal skipped or missed since frees its step, and the stock then reads as free, as it now is. Loaded once per strategy.
     /// </summary>
-    internal static async Task<Func<DateOnly, bool>> HeldByBudgetAsync(AppDbContext db, Guid strategyId, Budget budget,
+    internal static async Task<(decimal Used, Func<DateOnly, bool> HeldOn)> BudgetHistoryAsync(AppDbContext db, Guid strategyId, Budget budget,
         CancellationToken cancellationToken)
     {
         var spent = await db.Signals.Where(s => s.StrategyId == strategyId && s.StepAmount != null).UsingBudget()
             .GroupBy(s => s.SignalDate).OrderBy(g => g.Key)
             .Select(g => new { Day = g.Key, Amount = g.Sum(s => s.StepAmount!.Value) }).ToListAsync(cancellationToken);
         var days = spent.Select(s => s.Day).ToList();
-        var before = new decimal[spent.Count + 1]; // before[k]: the steps of the first k days.
-        for (var k = 0; k < spent.Count; k++) before[k + 1] = before[k] + spent[k].Amount;
+        var upTo = new decimal[spent.Count + 1]; // upTo[k]: the steps of the first k days.
+        for (var k = 0; k < spent.Count; k++) upTo[k + 1] = upTo[k] + spent[k].Amount;
         var step = budget.Step ?? 0;
-        return day =>
+        return (upTo[^1], day =>
         {
             var index = days.BinarySearch(day);
-            return before[index < 0 ? ~index : index] + step > budget.Amount;
-        };
+            return upTo[index < 0 ? ~index : index + 1] + step > budget.Amount;
+        });
     }
 
     /// <param name="evaluatedUntil">The last day checked before (<see cref="CheckedDaysAsync"/>).</param>

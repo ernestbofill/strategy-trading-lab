@@ -115,18 +115,17 @@ public static class RulesRunner
                 : null;
             var newBuy = step is not null && (previous != RuleStatus.BuySignal || previousStep != step || (actedNow && !cooling));
             var newSell = decision.Status == RuleStatus.SellSignal && (previous != RuleStatus.SellSignal || (actedNow && !cooling));
-            previous = decision.Status;
-            previousStep = step;
+            var unsignalled = false;
             if (checkedDays is { } past && day <= past.Until)
             {
-                // A day already checked: its recorded signals are what happened. A signal the rules called for but nobody got
-                // isn't yesterday's signal either, so a window still open on the next day gives one then.
+                // A day already checked: its recorded signals are what happened.
                 var wanted = (Buy: newBuy, Sell: newSell);
                 newBuy = past.Buys.Contains(day) || (newBuy && past.HeldByBudget(day));
                 newSell = past.Sells.Contains(day);
-                if (wanted.Buy && !newBuy) (previous, previousStep) = (RuleStatus.Watching, null);
-                if (wanted.Sell && !newSell) previous = RuleStatus.Holding;
+                unsignalled = (wanted.Buy && !newBuy) || (wanted.Sell && !newSell);
             }
+            // A signal the rules called for but nobody got isn't yesterday's signal either: a window still open the next day gives one then.
+            if (!unsignalled) (previous, previousStep) = (decision.Status, step);
             if (newBuy) pendingBuy = true;
             if (newSell) pendingSell = true;
             return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell)

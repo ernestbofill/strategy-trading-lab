@@ -11,6 +11,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Screen } from '../../components/Screen'
 import { AdminTopBar } from '../admin/AdminTopBar'
 import { FEEDBACK_SUBMITTED_EVENT, feedbackCacheKey, feedbackMarkdown } from './feedback'
+import { Loaded } from '../../components/Loaded'
 import { useCopy } from '../../components/useCopy'
 import { reload, update, useLoadable } from '../../lib/useLoadable'
 import styles from './Feedback.module.css'
@@ -32,8 +33,10 @@ interface FeedbackSectionProps {
 export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
   const state = useLoadable(feedbackCacheKey, () => api.getFeedback())
   const items = state.status === 'ready' ? state.data : []
-  // The shown list, changed in place by a save's reply (no load).
-  const setItems = (change: (items: FeedbackItem[]) => FeedbackItem[]) => update(feedbackCacheKey, change)
+  // The shown list, changed in place by a save's reply (no load). While it isn't shown (loading, or it failed), the save is
+  // fetched with the rest instead.
+  const setItems = (change: (items: FeedbackItem[]) => FeedbackItem[]) =>
+    state.status === 'ready' ? update(feedbackCacheKey, change) : void reload(feedbackCacheKey, { fresh: true })
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('open')
 
@@ -185,37 +188,39 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
         </div>
       </div>
 
-      {(error || state.status === 'error') && (
+      {error && (
         <div className={styles.block}>
           <p role="alert" className={styles.error}>
-            {error ?? 'Could not load feedback.'}
+            {error}
           </p>
         </div>
       )}
 
-      {state.status === 'loading' ? (
-        <p className={styles.empty}>Loading feedback…</p>
-      ) : visible.length === 0 ? (
-        <p className={styles.empty}>
-          No {filter === 'all' ? '' : `${filter} `}feedback items yet. Select any text on any screen to add a comment.
-        </p>
-      ) : (
-        <ul className={styles.list}>
-          {visible.map((item) => (
-            <FeedbackItemRow
-              key={item.id}
-              item={item}
-              editing={editingId === item.id}
-              busy={busyId === item.id}
-              onEdit={() => setEditingId(item.id)}
-              onCancel={() => setEditingId(null)}
-              onSave={(kind, text) => saveEdit(item.id, kind, text)}
-              onToggle={() => toggleStatus(item)}
-              onDelete={() => remove(item.id)}
-            />
-          ))}
-        </ul>
-      )}
+      <Loaded state={state} what="the feedback" english>
+        {() =>
+          visible.length === 0 ? (
+            <p className={styles.empty}>
+              No {filter === 'all' ? '' : `${filter} `}feedback items yet. Select any text on any screen to add a comment.
+            </p>
+          ) : (
+            <ul className={styles.list}>
+              {visible.map((item) => (
+                <FeedbackItemRow
+                  key={item.id}
+                  item={item}
+                  editing={editingId === item.id}
+                  busy={busyId === item.id}
+                  onEdit={() => setEditingId(item.id)}
+                  onCancel={() => setEditingId(null)}
+                  onSave={(kind, text) => saveEdit(item.id, kind, text)}
+                  onToggle={() => toggleStatus(item)}
+                  onDelete={() => remove(item.id)}
+                />
+              ))}
+            </ul>
+          )
+        }
+      </Loaded>
     </section>
   )
 }

@@ -8,7 +8,7 @@ type CardProps<T extends ElementType> = {
   interactive?: boolean
   /** Picked or open: the green edge and glow. */
   selected?: boolean
-  /** Can't be used for now: no hover (and, on a button, disabled). */
+  /** Can't be used for now: no hover, and on a native `<button>` (`as="button"`) the `disabled` attribute too. */
   disabled?: boolean
 } & Omit<ComponentPropsWithoutRef<T>, 'as'>
 

@@ -265,8 +265,8 @@ a.stock:hover {
   gap: var(--space-2);
 }
 
-/* A tile's layout: the surface and its states are Card's. */
-.tile {
+/* A tile's layout: the surface and its states are Card's. Under `.tiles`, so its padding wins over Card's whatever the CSS order. */
+.tiles > .tile {
   display: flex;
   flex-direction: column;
   justify-content: center;

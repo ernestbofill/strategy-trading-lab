@@ -10,8 +10,9 @@ import {
 import { PageHeader } from '../../components/PageHeader'
 import { Screen } from '../../components/Screen'
 import { AdminTopBar } from '../admin/AdminTopBar'
-import { FEEDBACK_SUBMITTED_EVENT, feedbackMarkdown } from './feedback'
+import { FEEDBACK_SUBMITTED_EVENT, feedbackCacheKey, feedbackMarkdown } from './feedback'
 import { useCopy } from '../../components/useCopy'
+import { reload, update, useLoadable } from '../../lib/useLoadable'
 import styles from './Feedback.module.css'
 import { FeedbackItemRow } from './FeedbackItemRow'
 import { KindPicker } from './KindPicker'
@@ -28,8 +29,10 @@ interface FeedbackSectionProps {
 }
 
 export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
-  const [items, setItems] = useState<FeedbackItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const state = useLoadable(feedbackCacheKey, () => api.getFeedback())
+  const items = state.status === 'ready' ? state.data : []
+  // The shown list, changed in place by a save's reply (no load).
+  const setItems = (change: (items: FeedbackItem[]) => FeedbackItem[]) => update(feedbackCacheKey, change)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('open')
 
@@ -42,29 +45,11 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
 
   const { copied, copy } = useCopy()
 
+  // A comment sent from another box (the selection's, Settings') loads the list again.
   useEffect(() => {
-    let live = true
-    const fetchFeedback = () => {
-      void api
-        .getFeedback()
-        .then((data) => {
-          if (!live) return
-          setItems(data)
-          setError(null)
-          setLoading(false)
-        })
-        .catch((e: unknown) => {
-          if (!live || e instanceof UnauthorizedError) return
-          setError('Could not load feedback.')
-          setLoading(false)
-        })
-    }
-    fetchFeedback()
-    window.addEventListener(FEEDBACK_SUBMITTED_EVENT, fetchFeedback)
-    return () => {
-      live = false
-      window.removeEventListener(FEEDBACK_SUBMITTED_EVENT, fetchFeedback)
-    }
+    const again = () => void reload(feedbackCacheKey, { fresh: true })
+    window.addEventListener(FEEDBACK_SUBMITTED_EVENT, again)
+    return () => window.removeEventListener(FEEDBACK_SUBMITTED_EVENT, again)
   }, [])
 
   const openCount = items.filter((i) => i.status === 'open').length
@@ -200,15 +185,15 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
         </div>
       </div>
 
-      {error && (
+      {(error || state.status === 'error') && (
         <div className={styles.block}>
           <p role="alert" className={styles.error}>
-            {error}
+            {error ?? 'Could not load feedback.'}
           </p>
         </div>
       )}
 
-      {loading ? (
+      {state.status === 'loading' ? (
         <p className={styles.empty}>Loading feedback…</p>
       ) : visible.length === 0 ? (
         <p className={styles.empty}>

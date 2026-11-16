@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, InvalidValueError, NameTakenError, type StrategyDetail } from '../../api'
+import { Card } from '../../components/Card'
 import { Button, ButtonRow } from '../../components/Button'
 import { ConfirmBox } from '../../components/ConfirmBox'
 import { TextField } from '../../components/Field'
@@ -57,9 +58,9 @@ export function ArchiveStrategy({ s, className, titleClassName }: {
 
   if (!asking)
     return (
-      <button type="button" className={className} onClick={() => setAsking(true)}>
+      <Card as="button" type="button" interactive className={className} onClick={() => setAsking(true)}>
         <span className={titleClassName}>{t('strategy.archive')}</span>
-      </button>
+      </Card>
     )
 
   const archive = async () => {
@@ -120,9 +121,9 @@ export function GoLive({ s, className, titleClassName, detailClassName }: {
   if (template.status !== 'ready') return null
 
   return (
-    <button type="button" className={className} onClick={goLive} disabled={atLimit}>
+    <Card as="button" type="button" interactive className={className} onClick={goLive} disabled={atLimit}>
       <span className={titleClassName}>{t('strategy.tile.goLiveTitle')}</span>
       <span className={detailClassName}>{atLimit ? t('dashboard.strategiesFull', { max: MAX_RUNNING_STRATEGIES }) : t('strategy.tile.goLiveSub')}</span>
-    </button>
+    </Card>
   )
 }

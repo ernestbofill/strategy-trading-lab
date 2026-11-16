@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { AiRoundsSummary, StrategyDetail } from '../../api'
+import { Card } from '../../components/Card'
 import { InfoTip } from '../../components/InfoTip'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PrimaryAction, Screen, TopBar } from '../../components/Screen'
@@ -276,22 +277,22 @@ function StrategyView({ s }: { s: StrategyDetail }) {
       {(running || s.aiRounds) && (
         <div className={styles.tiles}>
           {running && (
-            <Link to={strategySettingsPath(s.id)} className={styles.tileLink}>
+            <Card as={Link} to={strategySettingsPath(s.id)} interactive className={styles.tile}>
               <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
               <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
-            </Link>
+            </Card>
           )}
           {s.aiRounds && (
-            <Link to={aiRoundsPath(s.id)} className={styles.tileLink}>
+            <Card as={Link} to={aiRoundsPath(s.id)} interactive className={styles.tile}>
               <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.aiRoundsTitle')}</span>
               <span className={styles.detail}>{t('strategy.tile.aiRoundsSub')}</span>
-            </Link>
+            </Card>
           )}
           {/* A running simulation can start a live copy; the two keep separate histories. */}
           {running && !live && (
-            <GoLive s={s} className={styles.tileLink} titleClassName={`ui-strong ${styles.tileTitle}`} detailClassName={styles.detail} />
+            <GoLive s={s} className={styles.tile} titleClassName={`ui-strong ${styles.tileTitle}`} detailClassName={styles.detail} />
           )}
-          {running && <ArchiveStrategy s={s} className={styles.tileLink} titleClassName={`ui-strong ${styles.tileTitle}`} />}
+          {running && <ArchiveStrategy s={s} className={styles.tile} titleClassName={`ui-strong ${styles.tileTitle}`} />}
         </div>
       )}
       {/* One way out of each state: a running strategy is archived, and only an archived one can be deleted. */}

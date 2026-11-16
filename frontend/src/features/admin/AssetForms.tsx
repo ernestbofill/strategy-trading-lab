@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, InvalidFieldsError, InvalidValueError, UnauthorizedError, type AdminAddedAsset, type AdminAsset } from '../../api'
+import { api, type AdminAddedAsset, type AdminAsset } from '../../api'
 import { FormMessage, TextField, type FormMessageState } from '../../components/Field'
 import { Section } from '../../components/Section'
+import { useSubmit } from '../../components/useSubmit'
 import styles from './AdminAssets.module.css'
 import { AssetPricesActions } from './AssetPrices'
 
@@ -13,36 +14,26 @@ function addedText({ asset, created, problem }: AdminAddedAsset): FormMessageSta
   return { tone: 'done', text: `Added ${label}, prices to ${asset.latestPriceDate ?? '–'}.` }
 }
 
-/** The messages to show, by field (`form` for one that belongs to none); none when the session ended. */
-function failure(e: unknown): Record<string, string> {
-  if (e instanceof UnauthorizedError) return {}
-  if (e instanceof InvalidFieldsError) return e.fields
-  if (e instanceof InvalidValueError) return { form: e.message }
-  return { form: "Couldn't reach the server. Try again." }
-}
+const FAILED = "Couldn't reach the server. Try again."
 
 /** "Add an asset": a Yahoo symbol, added with its name, kind, currency and price history. */
 export function AddAssetForm({ onAdded }: { onAdded: () => Promise<void> }) {
   const [symbol, setSymbol] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<FormMessageState>(null)
+  const { busy, errors, message, setMessage, run, reset } = useSubmit(FAILED)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    setBusy(true)
-    setErrors({})
-    setMessage(null)
-    try {
-      const added = await api.addAdminAsset(symbol)
-      setMessage(addedText(added))
-      setSymbol('')
-      await onAdded()
-    } catch (error) {
-      setErrors(failure(error))
-    } finally {
-      setBusy(false)
-    }
+    let added: AdminAddedAsset | null = null
+    if (
+      !(await run(async () => {
+        added = await api.addAdminAsset(symbol)
+        await onAdded()
+      }))
+    )
+      return
+    reset()
+    setSymbol('')
+    if (added) setMessage(addedText(added))
   }
 
   return (
@@ -59,7 +50,6 @@ export function AddAssetForm({ onAdded }: { onAdded: () => Promise<void> }) {
         <button type="submit" className={`ui-strong ${styles.actionButton}`} disabled={busy}>
           {busy ? 'Adding…' : 'Add'}
         </button>
-        {errors.form && <FormMessage tone="error">{errors.form}</FormMessage>}
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>
     </Section>
@@ -74,8 +64,7 @@ export function EditAssetForm({ asset, onDone, onPricesChanged }: {
 }) {
   const [name, setName] = useState(asset.name)
   const [what, setWhat] = useState(asset.what)
-  const [busy, setBusy] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const { busy, errors, message, run } = useSubmit(FAILED)
   const form = useRef<HTMLFormElement>(null)
 
   // Opened from a row further down: bring it into view (jsdom has no scrollIntoView).
@@ -86,15 +75,7 @@ export function EditAssetForm({ asset, onDone, onPricesChanged }: {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    setBusy(true)
-    setErrors({})
-    try {
-      await api.updateAdminAsset(asset.id, { name, what })
-      await onDone(true)
-    } catch (error) {
-      setErrors(failure(error))
-      setBusy(false)
-    }
+    if (await run(() => api.updateAdminAsset(asset.id, { name, what }))) await onDone(true)
   }
 
   return (
@@ -110,7 +91,7 @@ export function EditAssetForm({ asset, onDone, onPricesChanged }: {
             Cancel
           </button>
         </div>
-        {errors.form && <FormMessage tone="error">{errors.form}</FormMessage>}
+        {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>
       <AssetPricesActions asset={asset} onChanged={onPricesChanged} />
     </Section>

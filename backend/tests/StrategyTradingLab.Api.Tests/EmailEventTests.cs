@@ -25,10 +25,8 @@ public class BrevoApi : AccountsApi
 
 public class EmailEventTests(BrevoApi api) : IClassFixture<BrevoApi>
 {
-    const string Key = BrevoApi.Key;
-
-    /// <summary>A host of its own with another webhook key: empty, or too short to count.</summary>
-    static Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> WithKey(AccountsApi api, string key) =>
+    /// <summary>A host of its own with another webhook key: none (null), or one too short to count.</summary>
+    static Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> WithKey(AccountsApi api, string? key) =>
         api.WithWebHostBuilder(b => b.ConfigureAppConfiguration((_, config) =>
             config.AddInMemoryCollection(new Dictionary<string, string?> { ["BREVO_WEBHOOK_KEY"] = key })));
 
@@ -55,7 +53,7 @@ public class EmailEventTests(BrevoApi api) : IClassFixture<BrevoApi>
         {
             using var brevo = api.CreateClient(); // No cookie and no X-Requested-With header, as Brevo calls it.
             foreach (var (kind, email) in new[] { ("hard_bounce", emails[0]), ("invalid_email", emails[1]), ("spam", emails[2]), ("complaint", emails[3]), ("delivered", emails[3]), ("soft_bounce", emails[3]) })
-                Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"{{kind}}","email":"{{email}}","id":1}"""))).StatusCode);
+                Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={BrevoApi.Key}", Json($$"""{"event":"{{kind}}","email":"{{email}}","id":1}"""))).StatusCode);
 
             var rows = (await Rows(api, emails)).ToDictionary(r => r.Email, r => r.Reason);
             Assert.Equal(SuppressionReason.Bounced, rows[emails[0]]);
@@ -78,9 +76,9 @@ public class EmailEventTests(BrevoApi api) : IClassFixture<BrevoApi>
             using var brevo = api.CreateClient();
             var body = Json($$"""[{"event":"hard_bounce","email":"{{emails[0]}}"},{"event":"hard_bounce","email":"{{emails[0]}}"},{"event":"spam","email":"{{emails[1]}}"},{"event":"hard_bounce"},"x",{"email":"nobody@example.com"}]""");
 
-            Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", body)).StatusCode);
-            Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"hard_bounce","email":"{{emails[0]}}"}"""))).StatusCode);
-            Assert.Equal(HttpStatusCode.BadRequest, (await brevo.PostAsync($"/email/events?key={Key}", Json("{not json"))).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={BrevoApi.Key}", body)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={BrevoApi.Key}", Json($$"""{"event":"hard_bounce","email":"{{emails[0]}}"}"""))).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await brevo.PostAsync($"/email/events?key={BrevoApi.Key}", Json("{not json"))).StatusCode);
 
             Assert.Equal(2, (await Rows(api, emails)).Count);
         }
@@ -97,8 +95,8 @@ public class EmailEventTests(BrevoApi api) : IClassFixture<BrevoApi>
         try
         {
             using var brevo = api.CreateClient();
-            Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={Key}", Json("""[{"event":"hard_bounce","email":5},{"event":1,"email":"a@b.c"},{"event":null,"email":null}]"""))).StatusCode);
-            Assert.Equal(HttpStatusCode.BadRequest, (await brevo.PostAsync($"/email/events?key={Key}", new StringContent("event=hard_bounce", Encoding.UTF8, "text/plain"))).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await brevo.PostAsync($"/email/events?key={BrevoApi.Key}", Json("""[{"event":"hard_bounce","email":5},{"event":1,"email":"a@b.c"},{"event":null,"email":null}]"""))).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await brevo.PostAsync($"/email/events?key={BrevoApi.Key}", new StringContent("event=hard_bounce", Encoding.UTF8, "text/plain"))).StatusCode);
             Assert.Empty(await Rows(api, email));
         }
         finally
@@ -118,7 +116,7 @@ public class EmailEventTests(BrevoApi api) : IClassFixture<BrevoApi>
             Assert.Equal(HttpStatusCode.NotFound, (await wrong.PostAsync("/email/events?key=not-the-key", body)).StatusCode);
             Assert.Equal(HttpStatusCode.NotFound, (await wrong.PostAsync("/email/events", body)).StatusCode);
 
-            using var noKeySetApi = WithKey(api, "");
+            using var noKeySetApi = WithKey(api, null);
             using var noKeySet = noKeySetApi.CreateClient();
             Assert.Equal(HttpStatusCode.NotFound, (await noKeySet.PostAsync("/email/events?key=", body)).StatusCode);
             using var shortKeyApi = WithKey(api, "short");
@@ -171,7 +169,7 @@ public class EmailEventTests(BrevoApi api) : IClassFixture<BrevoApi>
         try
         {
             using var brevo = api.CreateClient();
-            await brevo.PostAsync($"/email/events?key={Key}", Json($$"""{"event":"hard_bounce","email":"{{email}}"}"""));
+            await brevo.PostAsync($"/email/events?key={BrevoApi.Key}", Json($$"""{"event":"hard_bounce","email":"{{email}}"}"""));
 
             var users = await owner.GetFromJsonAsync<System.Text.Json.JsonElement>("/admin/users");
             var mine = users.GetProperty("users").EnumerateArray().Single(u => u.GetProperty("email").GetString() == email);

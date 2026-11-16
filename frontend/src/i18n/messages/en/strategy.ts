@@ -1,5 +1,6 @@
 export const strategy = {
   'strategy.what': 'this strategy',
+  'strategy.rareSignals': 'Its signals are rare: it may not signal for years.',
   'strategy.settings.saving': 'Saving…',
   'strategy.settings.checkSettings': 'Please check your settings.',
   'strategy.settings.saveFailed': 'Could not save settings. Please try again.',

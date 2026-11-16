@@ -2,6 +2,7 @@ import type { strategy as en } from '../en/strategy'
 
 export const strategy: Record<keyof typeof en, string> = {
   'strategy.what': 'aquesta estratègia',
+  'strategy.rareSignals': 'Els seus senyals són poc freqüents: pot passar anys sense senyal.',
   'strategy.settings.saving': 'Desant…',
   'strategy.settings.checkSettings': 'Revisa la configuració.',
   'strategy.settings.saveFailed': 'No s’ha pogut desar la configuració. Torna-ho a provar.',

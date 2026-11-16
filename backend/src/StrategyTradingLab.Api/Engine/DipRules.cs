@@ -43,13 +43,17 @@ public class DipRules : BuyRulesBase
             var isCandidate = floor[i] is { } sma50 && middle[i] is { } sma150 && trend[i] is { } sma200
                 && low[i] is { } lowest && high[i] is { } peak
                 && Indicators.PctFrom(peak, lowest) >= p.MinGainPct
-                && sma50 > sma150 && sma150 > sma200
+                && Stacked(sma50, sma150, sma200)
                 && trendRising[i];
             since = isCandidate ? (since ?? bars[i].Date) : null;
             result[i] = since;
         }
         return result;
     }
+
+    /// <summary>The floor average above the long one, with the middle one between them when the params ask for it (the POC's stack).</summary>
+    bool Stacked(decimal sma50, decimal sma150, decimal sma200) =>
+        p.MiddleAverage == 1 ? sma50 > sma150 && sma150 > sma200 : sma50 > sma200;
 
     /// <summary>
     /// The middle average of the stack (SMA 50 &gt; SMA 150 &gt; SMA 200 in the POC), kept strictly between the floor and the
@@ -79,7 +83,7 @@ public class DipRules : BuyRulesBase
         var price = close[i];
         var gain = Indicators.PctFrom(peak, lowest);
         var pullback = Indicators.PctFrom(price, peak);
-        var aligned = sma50 > sma150 && sma150 > sma200;
+        var aligned = Stacked(sma50, sma150, sma200);
         var candidate = gain >= p.MinGainPct && aligned && trendRising[i];
         var zoneHigh = peak * (1 - p.ZoneStartPct / 100);
         var zoneLow = Math.Max(peak * (1 - p.ZoneEndPct / 100), sma50);
@@ -110,8 +114,12 @@ public class DipRules : BuyRulesBase
             new("gain", CheckGroup.Candidate, gain >= p.MinGainPct, Math.Round(gain, 1), p.MinGainPct,
                 Level: Math.Round(lowest, 2), EndLevel: Math.Round(peak, 2), Progress: RuleCheck.ProgressOf(gain, p.MinGainPct),
                 Date: candidate ? candidateSince[i] : null),
-            new("stacked", CheckGroup.Candidate, aligned, Math.Round(Indicators.PctFrom(sma50, sma200), 1),
-                Level: Math.Round(sma50, 2), MidLevel: Math.Round(sma150, 2), EndLevel: Math.Round(sma200, 2)),
+            // Its own key without the middle average: the words and the strip name two averages, not three.
+            p.MiddleAverage == 1
+                ? new("stacked", CheckGroup.Candidate, aligned, Math.Round(Indicators.PctFrom(sma50, sma200), 1),
+                    Level: Math.Round(sma50, 2), MidLevel: Math.Round(sma150, 2), EndLevel: Math.Round(sma200, 2))
+                : new("stackedTwo", CheckGroup.Candidate, aligned, Math.Round(Indicators.PctFrom(sma50, sma200), 1),
+                    Level: Math.Round(sma50, 2), EndLevel: Math.Round(sma200, 2)),
             new("rising", CheckGroup.Candidate, trendRising[i], risePct, 0,
                 Level: Math.Round(sma200, 2), EndLevel: Math.Round(sma200Ago, 2)),
             new("zone", CheckGroup.Buy, price <= zoneHigh && price >= zoneBottom, belowPeak, p.ZoneStartPct, p.ZoneEndPct,

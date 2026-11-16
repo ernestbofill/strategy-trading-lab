@@ -7,7 +7,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**És un líder demostrat:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
+        "text": "**És un líder demostrat:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` per sobre de `SMA {trendDays}`)."
       },
       {
         "marker": "02",
@@ -44,6 +44,15 @@
         "value": "{n} dies",
         "help": "La base de la pila, i ha d'anar pujant. Més llarga: més estable i més lenta de girar, de manera que una tendència compta més tard i és candidata més temps."
       },
+      "middleAverage": {
+        "sentence": "Les mitjanes estan apilades quan {value}.",
+        "value": "{n}",
+        "values": {
+          "0": "la mitjana terra és per sobre de la llarga",
+          "1": "la mitjana terra és per sobre de la SMA 150, i aquesta per sobre de la llarga"
+        },
+        "help": "Dues mitjanes: més candidates. Amb les accions d'aquesta llista des del 2000 va donar un 11% més de senyals, amb els mateixos resultats després. Tres és més estricte, i és amb què es van provar els resultats que es mostren."
+      },
       "peakDays": {
         "sentence": "El màxim recent és el tancament més alt dels últims {value}.",
         "value": "{n} dies",
@@ -73,7 +82,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidata: quines accions vigila",
-        "lead": "Una acció és candidata, un líder demostrat, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
+        "lead": "Una acció és candidata, un líder demostrat, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre de la llarga (`SMA 50` > `SMA 200`; l'opció més estricta hi afegeix una `SMA 150` al mig); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
       },
       "signal": {
         "title": "2 · Senyal de compra: quan una candidata dona senyal",
@@ -97,6 +106,13 @@
         "none": "Cal la mitjana curta per sobre de la mitjana, i aquesta per sobre de la llarga.",
         "short": "mitjanes desordenades",
         "info": "La SMA 50, la SMA 150 i la SMA 200 (tancament mitjà d'aquests dies), en aquest ordre: una tendència alcista estable."
+      },
+      "stackedTwo": {
+        "label": "Mitjanes en ordre",
+        "detail": "Curta {level} · llarga {endLevel} (cal curta > llarga).",
+        "none": "Cal la mitjana curta per sobre de la llarga.",
+        "short": "mitjanes desordenades",
+        "info": "La SMA 50 per sobre de la SMA 200 (tancament mitjà d'aquests dies): una tendència alcista."
       },
       "rising": {
         "label": "Mitjana llarga a l'alça",

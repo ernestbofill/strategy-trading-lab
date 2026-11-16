@@ -42,7 +42,7 @@ public record TemplateDetail : TemplateSummary
 /// A setting on Advanced settings (2b). <c>Key</c> is its name in <c>Defaults.Params</c>, which holds the tested value.
 /// <c>Sentence</c> has <c>{value}</c> where the value goes; <c>Value</c> reads a number, with <c>{n}</c> for it.
 /// <c>Below</c> names the setting this one stays at least a step under. <c>Help</c> says what changing it does, and
-/// <c>Group</c> is the key of its <see cref="SettingGroupDto"/>.
+/// <c>Group</c> is the key of its <see cref="SettingGroupDto"/>. <c>Values</c> says a choice's values in words ("0" → "SMA 50 above SMA 200") instead of <c>Value</c>.
 /// </summary>
 public record SettingDto(
     string Key,
@@ -53,7 +53,8 @@ public record SettingDto(
     decimal Max,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Below,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Help = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Group = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Group = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? Values = null);
 
 /// <summary>A titled group of settings: the part of the rules they tune ("Which stocks it watches").</summary>
 public record SettingGroupDto(string Key, string Title, string Lead);

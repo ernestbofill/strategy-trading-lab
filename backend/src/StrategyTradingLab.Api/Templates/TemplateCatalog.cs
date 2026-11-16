@@ -136,8 +136,8 @@ public static class TemplateCatalog
             new("2020-26", 16.3m, 14.3m, -21m, -18m),
             new("All", 14.3m, 9.8m, -21m, -37m),
         ],
-        // STL's own low rule from a new strategy's first day (the params' default keeps the POC's).
-        new DipParams { LowBeforePeakFrom = DateOnly.MinValue })
+        // STL's own low rule from a new strategy's first day, and its looser stack (the params' defaults keep the POC's).
+        new DipParams { LowBeforePeakFrom = DateOnly.MinValue, MiddleAverage = 0 })
     {
         // The spec's (2b): the POC's tunable rules, plus the two averages the POC fixes at 200 and 50 days. Grouped by what they
         // decide: which stocks are candidates, when a candidate signals, and how often it may buy.
@@ -147,6 +147,8 @@ public static class TemplateCatalog
             new("gainDays", 21, 63, 252, Group: "candidate"),
             // The floor (at most 80) and long (at least 160) averages stay apart, so the middle one is always the POC's 150 days.
             new("trendDays", 10, 160, 300, Group: "candidate"),
+            // A choice, not an amount: 0 or 1, said in words (the texts' `values`).
+            new("middleAverage", 1, 0, 1, Group: "candidate"),
             new("peakDays", 5, 20, 60, Group: "signal"),
             new("zoneStartPct", 1, 1, 39, Below: "zoneEndPct", Group: "signal"),
             new("zoneEndPct", 1, 2, 40, Group: "signal"),

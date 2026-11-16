@@ -118,6 +118,8 @@ export interface Setting {
   help?: string
   /** The key of its `SettingGroup`. */
   group?: string
+  /** A choice's values in words ("0" → "the floor average is above the long one"), instead of `value`. */
+  values?: Record<string, string>
 }
 
 /** A titled group on Advanced settings: the part of the rules its settings tune. `lead` may hold `term` markup. */

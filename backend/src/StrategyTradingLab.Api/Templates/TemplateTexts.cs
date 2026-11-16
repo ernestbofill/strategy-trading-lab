@@ -79,7 +79,7 @@ public record BacktestTexts(
 /// The words of a setting on Advanced settings. <c>Sentence</c> holds <c>{value}</c> where the value goes, and <c>Value</c>
 /// how a value reads, with <c>{n}</c> for the number ("{n}%", "{n} days"). <c>Help</c> says what changing it does.
 /// </summary>
-public record SettingTexts(string Sentence, string Value, string? Help = null);
+public record SettingTexts(string Sentence, string Value, string? Help = null, IReadOnlyDictionary<string, string>? Values = null);
 
 /// <summary>A titled group of settings on Advanced settings: <c>Lead</c> says what that part of the rules decides.</summary>
 public record SettingGroupTexts(string Title, string Lead);

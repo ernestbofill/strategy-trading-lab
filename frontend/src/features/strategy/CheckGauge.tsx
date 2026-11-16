@@ -50,6 +50,17 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
     )
   }
 
+  // 1b. The stack without its middle average: Short vs Long.
+  if (check.key === 'stackedTwo' && check.level !== null && check.endLevel != null) {
+    return (
+      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
+        <span className={styles.stackChip}>{t('stock.bar.short', { price: exact(check.level, currency) })}</span>
+        <span className={styles.stackRel} data-ok={check.met === true}>{check.met ? '>' : '≤'}</span>
+        <span className={styles.stackChip}>{t('stock.bar.long', { price: exact(check.endLevel, currency) })}</span>
+      </div>
+    )
+  }
+
   // 2. Rising long average: 20 trading days ago -> today.
   if (check.key === 'rising' && check.level !== null && check.endLevel != null) {
     return (

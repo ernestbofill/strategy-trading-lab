@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [ ] POC repo (`trading-strategies-bot`): backtest *Winners at a discount* with the two-average stack (SMA 50 > SMA 200, SMA 200 rising, instead of 50 > 150 > 200) and the low taken up to the peak's day, over the template's periods (2000–12, 2013–19, 2020–26, all) on the 1,146 stocks. Give Claude the yearly results and worst years to update `TemplateCatalog.Dip` and How we tested; until then the app shows the three-average rule's results. (#259, #260)
 - [ ] GitHub: delete the branch `claude/awesome-clarke-32nvbu-admin-loading`. It holds one bad commit from the refactor (it undoes #239) and has no PR; the cloud session couldn't delete it. Its work merged as #241 from another branch. (#252)
 - [ ] QA sessions, optional: save the `qaagent` password in the desktop app's built-in browser too (sign in once there). It resizes to 390px and 360px, which Chrome can't, so signed-in screens can be checked at phone width (lead L-005). The wrong-password check on Log-in (L-006) needs you or another tool: the agent may not type a password on production. (#215)
 - [x] Getting close push: choose #212 (its own push, Manual only, under signals and reminders) or #213 (the summary push names the stocks getting close). Merge one and close the other. (#212, #213) Ernest chose #213, 2026-11-10.

@@ -59,6 +59,23 @@ public class DipRulesTests
     }
 
     [Fact]
+    public void Without_the_middle_average_a_dip_under_the_SMA_150_still_stacks()
+    {
+        // A long climb, then 45 days down: the SMA 50 (336) is under the SMA 150 (342) but still over the SMA 200 (324).
+        IReadOnlyList<PriceBar> bars = [.. Enumerable.Range(0, 345).Select(i => (Day: new DateOnly(2020, 1, 1).AddDays(i), Close: i < 300 ? 100m + i : 399m - 3 * (i - 299)))
+            .Select(x => new PriceBar(x.Day, x.Close, x.Close, x.Close, x.Close, 0))];
+        RuleCheck Stack(DipParams p, string key) =>
+            Assert.Single(new DipRules(bars, p).Decide(344, new DayContext(bars[344].Date, null, 0, default, false, false, false)).Checks, c => c.Key == key);
+
+        // The POC's stack, and what params stored without the choice mean: three averages, not met.
+        Assert.False(Stack(new DipParams(), "stacked").Met);
+        // The template's: two averages, met, with no middle level to show.
+        var two = Stack((DipParams)TemplateCatalog.Dip.Params, "stackedTwo");
+        Assert.True(two.Met);
+        Assert.Null(two.MidLevel);
+    }
+
+    [Fact]
     public void Equal_floor_and_trend_days_never_stack_instead_of_failing()
     {
         var bars = Rising(400);

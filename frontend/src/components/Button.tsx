@@ -2,7 +2,8 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import styles from './Button.module.css'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger'
+  /** `outline`: a quieter action beside a form (Save on Account, the admin pages' tools); `outline-danger`: one that deletes. */
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline' | 'outline-danger'
 }
 
 /** A form's own button (Save, Cancel, a confirm step's Delete). The screen's one action is `PrimaryAction`. */

@@ -60,10 +60,6 @@
 }
 
 /* Delete my account: the one action that can't be undone. */
-.danger {
-  border-color: var(--danger);
-  color: var(--danger-ink);
-}
 
 .linkButton {
   display: inline-flex;

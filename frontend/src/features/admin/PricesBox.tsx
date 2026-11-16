@@ -4,6 +4,7 @@ import { localDateTime as when } from '../../lib/format'
 import { reload, useLoadable } from '../../lib/useLoadable'
 import styles from './AdminSettings.module.css'
 import { adminCacheKeys } from './cacheKeys'
+import { Button } from '../../components/Button'
 
 const POLL_MS = 3000
 
@@ -73,12 +74,12 @@ export function PricesBox() {
       </div>
       <div className={styles.controls}>
         <div className={styles.buttons}>
-          <button type="button" className={`ui-strong ${styles.button}`} disabled={running} onClick={refresh}>
+          <Button variant="outline" disabled={running} onClick={refresh}>
             {running ? 'Refreshing…' : 'Refresh now'}
-          </button>
-          <button type="button" className={`ui-strong ${styles.button}`} disabled={testing} onClick={test}>
+          </Button>
+          <Button variant="outline" disabled={testing} onClick={test}>
             {testing ? 'Testing…' : 'Test Yahoo'}
-          </button>
+          </Button>
         </div>
         {checks?.map((c) => (
           <p key={c.symbol} role={c.ok ? 'status' : 'alert'} className={c.ok ? styles.done : styles.error}>

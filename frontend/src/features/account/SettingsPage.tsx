@@ -19,6 +19,7 @@ import { NotificationSettings } from './NotificationSettings'
 import { TimeZoneField } from './TimeZoneField'
 import { ZoomField } from './ZoomField'
 import { SendFeedback } from '../feedback/SendFeedback'
+import { Button } from '../../components/Button'
 
 /** Settings (spec: Settings): how the app behaves for the user. Who they are and their data are on Account, its first row. */
 export function SettingsPage() {
@@ -115,9 +116,9 @@ function SettingForm({ form, saveLabel, children }: { form: Omit<ReturnType<type
     <form className={styles.form} onSubmit={form.submit} noValidate>
       {children}
       {form.message && <FormMessage tone={form.message.tone}>{form.message.text}</FormMessage>}
-      <button type="submit" className={`ui-strong ${styles.button}`} disabled={form.busy || !form.changed}>
+      <Button type="submit" variant="outline" disabled={form.busy || !form.changed}>
         {form.busy ? t('account.saving') : saveLabel}
-      </button>
+      </Button>
     </form>
   )
 }

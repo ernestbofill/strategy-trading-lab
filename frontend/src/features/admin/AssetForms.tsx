@@ -4,6 +4,7 @@ import { FormMessage, TextField, type FormMessageState } from '../../components/
 import { Section } from '../../components/Section'
 import styles from './AdminAssets.module.css'
 import { AssetPricesActions } from './AssetPrices'
+import { Button } from '../../components/Button'
 
 /** What adding did, in one line. */
 function addedText({ asset, created, problem }: AdminAddedAsset): FormMessageState {
@@ -56,9 +57,9 @@ export function AddAssetForm({ onAdded }: { onAdded: () => Promise<void> }) {
           hint="As Yahoo writes it: AAPL, SAP.DE, ^GDAXI."
           error={errors.symbol}
         />
-        <button type="submit" className={`ui-strong ${styles.actionButton}`} disabled={busy}>
+        <Button type="submit" variant="outline" disabled={busy}>
           {busy ? 'Adding…' : 'Add'}
-        </button>
+        </Button>
         {errors.form && <FormMessage tone="error">{errors.form}</FormMessage>}
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
       </form>
@@ -103,12 +104,12 @@ export function EditAssetForm({ asset, onDone, onPricesChanged }: {
         <TextField label="Name" value={name} onChange={setName} error={errors.name} />
         <TextField label="What it does" value={what} onChange={setWhat} error={errors.what} />
         <div className={styles.buttons}>
-          <button type="submit" className={`ui-strong ${styles.actionButton}`} disabled={busy}>
+          <Button type="submit" variant="outline" disabled={busy}>
             Save
-          </button>
-          <button type="button" className={`ui-strong ${styles.actionButton}`} disabled={busy} onClick={() => void onDone(false)}>
+          </Button>
+          <Button variant="outline" disabled={busy} onClick={() => void onDone(false)}>
             Cancel
-          </button>
+          </Button>
         </div>
         {errors.form && <FormMessage tone="error">{errors.form}</FormMessage>}
       </form>

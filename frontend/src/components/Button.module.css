@@ -1,6 +1,8 @@
 /* A form's own buttons (Save, Cancel, a confirm step's Delete): not the screen's one PrimaryAction. */
 .button {
+  align-self: flex-start;
   min-height: 44px;
+  min-width: 88px;
   padding: 10px 16px;
   font: 600 13px/20px var(--font-mono);
   text-transform: uppercase;
@@ -26,6 +28,19 @@
   color: var(--on-action);
   background: var(--danger);
   border-color: var(--danger);
+}
+.button[data-variant="outline"] {
+  color: var(--primary);
+  background: transparent;
+  border-color: var(--primary);
+}
+.button[data-variant="outline-danger"] {
+  color: var(--danger-ink);
+  background: transparent;
+  border-color: var(--danger);
+}
+.button[data-variant^="outline"]:hover:not(:disabled) {
+  background: var(--surface-hover);
 }
 
 /* A row of them: Save and Cancel, Delete and Keep. */

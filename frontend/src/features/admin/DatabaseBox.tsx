@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api, InvalidValueError, UnauthorizedError, type AdminDatabase, type AdminDatabases, type DatabaseName } from '../../api'
 import { refreshBackendVersion } from '../../lib/backendVersion'
 import styles from './AdminSettings.module.css'
+import { Button } from '../../components/Button'
 
 const nameText: Record<DatabaseName, string> = { dev: 'Dev', production: 'Production' }
 
@@ -51,9 +52,9 @@ export function DatabaseBox({ databases, onChanged }: Props) {
         </div>
         <div className={styles.controls}>
           <div className={styles.buttons}>
-            <button type="button" className={`ui-strong ${styles.button}`} disabled={busy} onClick={switchTo}>
+            <Button variant="outline" disabled={busy} onClick={switchTo}>
               {busy ? 'Switching…' : `Use ${nameText[other].toLowerCase()}`}
-            </button>
+            </Button>
           </div>
           {error && (
             <p role="alert" className={styles.error}>

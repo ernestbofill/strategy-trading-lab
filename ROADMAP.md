@@ -162,6 +162,8 @@ Roughly in the order they become useful (was *After launch*):
 ## Ideas
 
 - **Log out can hang on a device without its service worker.** `unsubscribeDevice` waits on `navigator.serviceWorker.ready`, which never settles when notifications are allowed but no worker is registered (dev server, cleared site data): cap it as Delete my account does (found in the review of #195).
+- **One way to date STL's own engine rules.** Two rules now each carry a hidden date param, a data migration and a golden-test note (the comeback's volume on a rise, #257; the dip's low before the peak, #259). If a third comes, replace them with one mechanism (a rules version on the strategy), and backtest STL's own rules over the templates' periods so the tested results describe them (review of #259).
+- **A looser trend rule for Winners at a discount.** Ernest's feedback (2026-11-16): few stocks have their averages stacked. A replay on 22 list stocks since 2000 found SMA 50 > SMA 200 (with the SMA 200 rising) gives about 11% more signals with the same results after them, and that today's quiet list comes from prices far under the zone, not from the stack. Proposed: an Advanced setting (strict / simple), the default changing only after a backtest on the POC's universe. Waiting for Ernest's choice.
 - **Ask before leaving Advanced settings with unsaved changes.** Moved from item 26 (Ernest, 2026-11-08): it needs a data router (`createBrowserRouter`) for `useBlocker`, which rewrites `App.tsx`.
 
 - **An outside uptime check** (was in item 21, Ernest 2026-11-01): a free monitor that calls `/api/health` every few minutes and tells Ernest when the server is down, which the app's own alerts can't (they need the server running). A manual step when it's wanted.
@@ -181,7 +183,6 @@ Roughly in the order they become useful (was *After launch*):
 
 ## Open decisions (Ernest)
 
-- **Winners at a discount: must the low come before the peak?** (feedback, 2026-11-16) *Proven growth* compares the 60-day peak with the 168-day low whatever their order, as the POC does. A stock that halved (COHR: peak $338.36 on 6 Oct, low $169.76 on 5 Nov) reads "Rose 99.3% from its low", met. It gets no signal (its averages aren't stacked and the price is far under the zone), so only the words are wrong. Recommended: take the low up to the peak's day, if `EngineGoldenTests` still match the POC; else keep the rule and word it by what it measures. High risk (signals).
 - **The comeback: the recent low since it was beaten down?** (feedback, 2026-11-16) Today the buy line stands on the lowest close of the last 50 trading days (#234). Ernest's idea: the lowest close since the stock was last beaten down. Needs a backtest before it changes: it is the first step's signal. High risk.
 
 The rest were settled with Ernest on 2026-11-01 (see `docs/decisions.md`). The spec's [Open questions](docs/strategy-trading-lab-app-spec.md#10-open-questions) hold the ones for the lawyer and for later: regulation, AI data, the suggested prompt, web push on iPhone.

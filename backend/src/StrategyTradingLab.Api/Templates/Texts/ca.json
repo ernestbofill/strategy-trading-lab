@@ -35,7 +35,7 @@
         "help": "Més alt: només compten les pujades més fortes, i hi ha menys candidates. Més baix: hi entren més accions, amb tendències més febles."
       },
       "gainDays": {
-        "sentence": "El mínim és el tancament més baix dels últims {value}.",
+        "sentence": "El mínim és el tancament més baix dels últims {value}, fins al màxim.",
         "value": "{n} dies de mercat",
         "help": "21 dies de mercat són un mes, més o menys (168 ≈ 8 mesos). Més llarg: compta un mínim més antic, i una pujada més lenta pot entrar. Més curt: la pujada ha de ser recent."
       },
@@ -89,7 +89,7 @@
         "label": "Creixement provat",
         "detail": "Ha pujat un {value}% des del seu mínim ({level} → {endLevel}, cal un {min}%).",
         "short": "ha pujat un {value}% (cal un {min}%)",
-        "info": "El màxim recent ha de ser almenys un {min}% per sobre del tancament més baix dels últims mesos: només compten els líders demostrats."
+        "info": "El màxim recent ha de ser almenys un {min}% per sobre del tancament més baix d'abans, dins dels últims mesos: només compten els líders demostrats. Una caiguda després del màxim no és cap pujada."
       },
       "stacked": {
         "label": "Mitjanes en ordre",

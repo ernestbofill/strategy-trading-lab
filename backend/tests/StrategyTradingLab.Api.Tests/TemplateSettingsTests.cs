@@ -59,6 +59,13 @@ public class TemplateSettingsTests
         Assert.Empty(errors);
         var dip = stored!.Deserialize<DipParams>(JsonSerializerOptions.Web)!;
         Assert.Equal((80m, 126, 20), (dip.MinGainPct, dip.GainDays, dip.CooldownDays));
+        // A new strategy has STL's low rule from its first day. A running one keeps its own date through a save, and one stored
+        // without the date keeps the POC's rule: the save must not turn the rule on over its past.
+        Assert.Equal(DateOnly.MinValue, dip.LowBeforePeakFrom);
+        DipParams Saved(string current) => TemplateSettings.Apply(TemplateCatalog.Dip, new Dictionary<string, decimal> { ["cooldownDays"] = 20 }, (_, _) => { },
+            current: JsonDocument.Parse(current))!.Deserialize<DipParams>(JsonSerializerOptions.Web)!;
+        Assert.Equal(new DateOnly(2026, 11, 17), Saved("""{"lowBeforePeakFrom":"2026-11-17"}""").LowBeforePeakFrom);
+        Assert.Equal(DateOnly.MaxValue, Saved("""{"minGainPct":50}""").LowBeforePeakFrom);
 
         // The middle average is always the POC's 150 days (rule 01 says so): the floor stays under it and the long one over it.
         var floor = TemplateCatalog.Dip.Settings.Single(s => s.Key == "floorDays");

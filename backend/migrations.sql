@@ -2344,3 +2344,23 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261116132855_DipLowBeforePeakFrom') THEN
+    UPDATE strategies
+    SET params = params || jsonb_build_object('lowBeforePeakFrom', to_char(CURRENT_DATE + 1, 'YYYY-MM-DD'))
+    WHERE template_key = 'dip' AND NOT params ? 'lowBeforePeakFrom';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261116132855_DipLowBeforePeakFrom') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261116132855_DipLowBeforePeakFrom', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

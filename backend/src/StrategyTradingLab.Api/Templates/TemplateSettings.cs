@@ -20,16 +20,21 @@ public static class TemplateSettings
     /// <summary>
     /// The template's params with <paramref name="settings"/> (setting key → value) over the tested defaults, as
     /// strategies.params stores them. Params that aren't settings keep their <paramref name="current"/> values (a running
-    /// strategy's: the AI template's prompt choices). Null, with the reasons in <paramref name="fail"/>, when a value is refused.
+    /// strategy's: the AI template's prompt choices), or what a missing one means (the params record's default). Null, with the reasons in <paramref name="fail"/>, when a value is refused.
     /// </summary>
     public static JsonDocument? Apply(Template template, IReadOnlyDictionary<string, decimal>? settings, Action<string, string> fail, string locale = "en",
         JsonDocument? current = null)
     {
         var json = (JsonObject)JsonSerializer.SerializeToNode(template.Params, template.Params.GetType(), JsonSerializerOptions.Web)!;
         if (current?.RootElement.ValueKind == JsonValueKind.Object)
-            foreach (var property in current.RootElement.EnumerateObject())
-                if (json.ContainsKey(property.Name) && template.Settings.All(s => s.Key != property.Name))
-                    json[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+        {
+            // A param the strategy stores without keeps what its absence means, the record's own default, not the template's:
+            // a dip strategy without `lowBeforePeakFrom` runs the POC's rule, and a save must not turn STL's on over its past.
+            var type = template.Params.GetType();
+            var absent = (JsonObject)JsonSerializer.SerializeToNode(Activator.CreateInstance(type), type, JsonSerializerOptions.Web)!;
+            foreach (var name in json.Select(p => p.Key).Where(name => template.Settings.All(s => s.Key != name)).ToList())
+                json[name] = current.RootElement.TryGetProperty(name, out var value) ? JsonNode.Parse(value.GetRawText()) : absent[name]?.DeepClone();
+        }
         if (settings is null || settings.Count == 0) return JsonSerializer.SerializeToDocument(json, JsonSerializerOptions.Web);
 
         var ok = true;

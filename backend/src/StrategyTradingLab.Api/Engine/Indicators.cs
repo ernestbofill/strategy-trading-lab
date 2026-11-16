@@ -26,6 +26,27 @@ public static class Indicators
     /// <summary>The lowest value of the last <paramref name="days"/> days, today included.</summary>
     public static decimal?[] RollingLow(IReadOnlyList<decimal> values, int days) => Rolling(values, days, (kept, today) => kept < today);
 
+    /// <summary>
+    /// The lowest value of the last <paramref name="lowDays"/> days up to the day of the highest value of the last
+    /// <paramref name="highDays"/> (the latest such day): the low a rise to that high started from, never a fall after it.
+    /// The high itself when the low's window starts after it.
+    /// </summary>
+    public static decimal?[] LowBeforeHigh(IReadOnlyList<decimal> values, int lowDays, int highDays)
+    {
+        var result = new decimal?[values.Count];
+        for (var i = Math.Max(lowDays, highDays) - 1; i < values.Count; i++)
+        {
+            var high = i;
+            for (var k = i - 1; k > i - highDays; k--)
+                if (values[k] > values[high]) high = k;
+            var lowest = values[high];
+            for (var k = high - 1; k > i - lowDays; k--)
+                lowest = Math.Min(lowest, values[k]);
+            result[i] = lowest;
+        }
+        return result;
+    }
+
     /// <summary>How far <paramref name="value"/> is above (+) or below (−) <paramref name="reference"/>, in percent.</summary>
     public static decimal PctFrom(decimal value, decimal reference) => (value / reference - 1) * 100;
 

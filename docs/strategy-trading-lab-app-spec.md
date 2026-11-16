@@ -115,7 +115,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Engine defaults per template
 
 **Winners at a discount (Leader pullback)**
-- Candidate (trending): the recent peak is at least 50% above the lowest close of the last 168 trading days (~8 months); SMA 50 > SMA 150 > SMA 200; the SMA 200 is higher than 20 trading days ago. (The price itself isn't checked against the SMA 50 here; the SMA 50 is the zone's floor.)
+- Candidate (trending): the recent peak is at least 50% above the low, the lowest close of the last 168 trading days (~8 months) up to the peak's day (a fall after the peak is no rise; STL's own rule, the POC takes the window's low whatever the order; Ernest, 2026-11-16); SMA 50 > SMA 150 > SMA 200; the SMA 200 is higher than 20 trading days ago. (The price itself isn't checked against the SMA 50 here; the SMA 50 is the zone's floor.)
 - Signal: price in the discount zone, 5–15% below the recent peak (highest price of the last 20–60 days; the screen exposes one number, default 60, the POC's), while still above the SMA 50.
 - Signal ends: the price leaves the zone (back up to the old high, or below the SMA 50).
 - Later steps: one per signal window, at least 10 calendar days (cooldown) after the last one. The POC's default cooldown is 20; 10 is Ernest's setting there.
@@ -397,7 +397,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Group | Sentence | Default | Step | Min–max |
 | --- | --- | --- | --- | --- |
 | Candidate | "Proven growth: the recent peak is at least [n]% above the low." | 50% | 5 | 20–200 |
-| Candidate | "The low is the lowest close of the last [n] trading days." | 168 | 21 | 63–252 |
+| Candidate | "The low is the lowest close of the last [n] trading days, up to the peak." | 168 | 21 | 63–252 |
 | Candidate | "The long average is the SMA over [n] days." | 200 | 10 | 160–300 |
 | Buy signal | "The recent peak is the highest close of the last [n] days." | 60 | 5 | 20–60 |
 | Buy signal | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |

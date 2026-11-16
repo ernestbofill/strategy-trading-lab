@@ -4,7 +4,8 @@ namespace StrategyTradingLab.Api.Engine;
 
 /// <summary>
 /// Winners at a discount (POC Leader pullback, <c>stage2_pullback</c>). A candidate is a proven leader: it rose at least
-/// <c>MinGainPct</c> from its low and its averages are stacked (SMA 50 &gt; SMA 150 &gt; SMA 200) with the SMA 200 rising.
+/// <c>MinGainPct</c> from its low (the lowest close of the last <c>GainDays</c> up to the peak's day: a fall after the peak
+/// is no rise, from <c>LowBeforePeakFrom</c> on; the POC takes the window's low whatever the order; Ernest, 2026-11-16) and its averages are stacked (SMA 50 &gt; SMA 150 &gt; SMA 200) with the SMA 200 rising.
 /// The buy window is the discount zone, <c>ZoneStartPct</c>–<c>ZoneEndPct</c> below the recent peak and above the SMA 50.
 /// </summary>
 public class DipRules : BuyRulesBase
@@ -25,7 +26,9 @@ public class DipRules : BuyRulesBase
         floor = Indicators.Sma(close, p.FloorDays);
         middle = Indicators.Sma(close, MiddleDaysFor(p));
         trend = Indicators.Sma(close, p.TrendDays);
-        low = Indicators.RollingLow(close, p.GainDays);
+        var windowLow = Indicators.RollingLow(close, p.GainDays);
+        var lowBeforePeak = Indicators.LowBeforeHigh(close, p.GainDays, p.PeakDays);
+        low = [.. bars.Select((b, i) => b.Date < p.LowBeforePeakFrom ? windowLow[i] : lowBeforePeak[i])];
         high = Indicators.RollingHigh(close, p.PeakDays);
         trendRising = Indicators.Rising(trend, RisingDays);
         candidateSince = CandidateDates(bars);

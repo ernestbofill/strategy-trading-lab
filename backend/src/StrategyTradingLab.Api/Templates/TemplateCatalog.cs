@@ -136,7 +136,8 @@ public static class TemplateCatalog
             new("2020-26", 16.3m, 14.3m, -21m, -18m),
             new("All", 14.3m, 9.8m, -21m, -37m),
         ],
-        new DipParams())
+        // STL's own low rule from a new strategy's first day (the params' default keeps the POC's).
+        new DipParams { LowBeforePeakFrom = DateOnly.MinValue })
     {
         // The spec's (2b): the POC's tunable rules, plus the two averages the POC fixes at 200 and 50 days. Grouped by what they
         // decide: which stocks are candidates, when a candidate signals, and how often it may buy.

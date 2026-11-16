@@ -34,6 +34,31 @@ public class DipRulesTests
     }
 
     [Fact]
+    public void A_fall_after_the_peak_is_no_proven_growth()
+    {
+        static IReadOnlyList<PriceBar> Bars(decimal first, decimal then) =>
+            [.. Enumerable.Range(0, 240).Select(i => (Day: new DateOnly(2020, 1, 1).AddDays(i), Close: i < 230 ? first : then))
+                .Select(x => new PriceBar(x.Day, x.Close, x.Close, x.Close, x.Close, 0))];
+        static RuleCheck Gain(IReadOnlyList<PriceBar> bars, DipParams p) =>
+            Assert.Single(new DipRules(bars, p).Decide(239, new DayContext(bars[239].Date, null, 0, default, false, false, false)).Checks, c => c.Key == "gain");
+        var halved = Bars(200, 100);
+
+        // The peak (200) came before the low (100): the low up to the peak's day is the peak itself, no rise.
+        var rule = new DipParams { LowBeforePeakFrom = DateOnly.MinValue };
+        var gain = Gain(halved, rule);
+        Assert.False(gain.Met);
+        Assert.Equal(0m, gain.Value);
+        Assert.Equal(200m, gain.Level);
+        // A real rise, the low first, still counts in full.
+        Assert.Equal(100m, Gain(Bars(100, 200), rule).Value);
+        // A strategy older than the rule replays its earlier days as the POC did: the window's low, whatever the order.
+        Assert.True(Gain(halved, new DipParams { LowBeforePeakFrom = halved[^1].Date.AddDays(1) }).Met);
+        // So do params stored without the date, while a new strategy takes the template's, with the rule on.
+        Assert.True(Gain(halved, new DipParams()).Met);
+        Assert.False(Gain(halved, (DipParams)TemplateCatalog.Dip.Params).Met);
+    }
+
+    [Fact]
     public void Equal_floor_and_trend_days_never_stack_instead_of_failing()
     {
         var bars = Rising(400);

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { api, InvalidFieldsError, type Security, type StrategyDetail } from '../../api'
+import { api, InvalidFieldsError, InvalidValueError, type Security, type StrategyDetail } from '../../api'
 import { CheckList } from '../../components/CheckList'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
@@ -76,7 +76,9 @@ function EditListContent({ s }: { s: StrategyDetail }) {
       invalidateAll()
       leave()
     } catch (err) {
-      setError(err instanceof InvalidFieldsError ? Object.values(err.fields)[0] || t('strategy.list.saveFailed') : t('strategy.list.saveFailed'))
+      // A refused list says why (too many stocks; a fund, or a strategy archived meanwhile, can't change).
+      const reason = err instanceof InvalidFieldsError ? Object.values(err.fields)[0] : err instanceof InvalidValueError ? err.message : null
+      setError(reason || t('strategy.list.saveFailed'))
       setSaving(false)
     }
   }

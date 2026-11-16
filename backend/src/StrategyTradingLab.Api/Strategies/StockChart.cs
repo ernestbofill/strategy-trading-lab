@@ -23,9 +23,7 @@ public static class StockChart
         var checks = startedOn is null || startedOn > from ? WatchedChecks(newRules(), bars, from, startedOn, maxSteps) : [];
         if (startedOn is { } day)
         {
-            // No bar from that day on (a price row revised away): the latest bar, as the daily check does.
-            var start = bars.Count - 1;
-            while (start > 0 && bars[start - 1].Date >= day) start--;
+            var start = RulesRunner.StartIndex(bars, day);
             foreach (var evaluation in RulesRunner.Run(newRules(), bars, new StepPlan(maxSteps), start).Where(e => e.Date >= from && e.Date <= checkedUntil))
                 checks[evaluation.Date] = evaluation.Checks;
         }

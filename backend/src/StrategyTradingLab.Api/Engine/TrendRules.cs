@@ -8,7 +8,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// all out below the average minus <c>BandPct</c>; inside the band the trend stays what it was. Keeps state between days
 /// (whether the trend is up and when it last broke down): one instance per run.
 /// </summary>
-public class TrendRules : IBuyRules
+public class TrendRules : BuyRulesBase
 {
     readonly TrendParams p;
     readonly IReadOnlyList<decimal> close;
@@ -17,25 +17,19 @@ public class TrendRules : IBuyRules
     bool up;
     DateOnly? downSince;
 
-    public TrendRules(IReadOnlyList<PriceBar> bars, TrendParams parameters)
+    public TrendRules(IReadOnlyList<PriceBar> bars, TrendParams parameters) : base(bars.Count)
     {
         p = parameters;
         close = [.. bars.Select(b => b.Close)];
         sma = Indicators.Sma(close, p.SmaDays);
     }
 
-    public int Length => close.Count;
+    public override int MinHistory => p.SmaDays;
 
-    public int MinHistory => p.SmaDays;
+    public override int CooldownDays => p.CooldownDays;
 
-    public int CooldownDays => p.CooldownDays;
-
-    int lastDecided = -1;
-
-    public RuleDecision Decide(int i, DayContext day)
+    protected override RuleDecision DecideDay(int i, DayContext day)
     {
-        if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
-        lastDecided = i;
         if (sma[i] is not { } slow)
             return new RuleDecision(RuleStatus.NotEnoughData, $"Waiting for {p.SmaDays} trading days of history.", new Dictionary<string, object>());
 

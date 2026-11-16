@@ -121,7 +121,7 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
             .Select(s => new { s.AssetId, s.SignalDate, s.Status, s.StepAmount }).ToListAsync(cancellationToken);
         var steps = signals.GroupBy(s => s.AssetId).ToDictionary(g => g.Key, g => g.Count());
         // As the daily check counts it: confirmed and waiting signals use their step; skipped and missed ones none.
-        var used = signals.Where(s => s.Status is SignalStatus.Confirmed or SignalStatus.Waiting).Sum(s => s.StepAmount ?? 0);
+        var used = signals.Where(s => s.Status.UsesBudget()).Sum(s => s.StepAmount ?? 0);
         var ids = stocks.Select(s => s.AssetId).ToList();
         var priced = await db.Assets.Where(a => ids.Contains(a.Id) && db.Prices.Any(p => p.AssetId == a.Id && p.Date <= session))
             .Select(a => a.Id).ToListAsync(cancellationToken);

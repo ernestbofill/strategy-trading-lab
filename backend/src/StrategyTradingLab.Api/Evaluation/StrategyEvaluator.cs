@@ -113,8 +113,8 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         var added = listed.ToDictionary(a => a.Key, a => DateOnly.FromDateTime(a.Value.UtcDateTime));
         var wanted = added.Keys.ToList();
         // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
-        var budget = new BudgetUse(await db.Signals.Where(s => s.StrategyId == strategy.Id && (s.Status == SignalStatus.Confirmed || s.Status == SignalStatus.Waiting))
-            .SumAsync(s => s.StepAmount ?? 0, cancellationToken));
+        var (used, heldByBudget) = await BudgetHistoryAsync(db, strategy.Id, strategy.Budget, cancellationToken);
+        var budget = new BudgetUse(used);
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
         {
@@ -151,16 +151,17 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 }
             }
             var from = RulesRunner.StartIndex(bars, firstChecked ?? bars[^1].Date);
+            var past = await PastDaysAsync(db, strategy.Id, asset.Id, checkedUntil, heldByBudget, cancellationToken);
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
-            var days = RulesRunner.Run(rules, bars, plan, from);
+            var days = RulesRunner.Run(rules, bars, plan, from, checkedDays: past);
             // A Manual buy signal today: also where the rules stand once its step is bought, for the stock page to show as soon as it's
             // answered (a simulation's trade comes with the next check, which shows it anyway). Fresh rules: they keep state. Before
             // the transaction, so the replay doesn't hold the strategy's lock.
             var afterBuy = strategy.Mode == StrategyMode.Live && days[^1].NewBuy
                 ? RulesRunner.Run(TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from,
-                    boughtBeforeLast: UsSession.After(days[^1].Date))[^1].Checks
+                    boughtBeforeLast: UsSession.After(days[^1].Date), checkedDays: past)[^1].Checks
                 : null;
             if (days[^1].Status == RuleStatus.NotEnoughData)
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
@@ -213,6 +214,45 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         };
         // Only short-of-history days so far: a first run, but no day before the last one checked gets a signal.
         return first is null ? (null, days?.Until?.AddDays(-1)) : (first, days?.Until);
+    }
+
+    /// <summary>
+    /// The days up to <paramref name="until"/> (the last day checked, <see cref="CheckedDaysAsync"/>) with what was recorded for
+    /// them, for the replay to follow (<see cref="CheckedDays"/>); null before the first check.
+    /// </summary>
+    internal static async Task<CheckedDays?> PastDaysAsync(AppDbContext db, Guid strategyId, Guid assetId, DateOnly? until,
+        Func<DateOnly, bool> heldByBudget, CancellationToken cancellationToken)
+    {
+        if (until is not { } last) return null;
+        var own = await db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId && s.SignalDate <= last)
+            .Select(s => new { s.SignalDate, s.Side }).ToListAsync(cancellationToken);
+        return new CheckedDays(last,
+            own.Where(s => s.Side == TradeSide.Buy).Select(s => s.SignalDate).ToHashSet(),
+            own.Where(s => s.Side == TradeSide.Sell).Select(s => s.SignalDate).ToHashSet(),
+            heldByBudget);
+    }
+
+    /// <summary>
+    /// What the strategy's signals use of its budget (<see cref="SignalBudget.UsingBudget"/>), and whether it had no room for one more
+    /// step on a day: the steps signalled up to that day, its own included (another stock's signal that day may have come first),
+    /// and one more step overrun it. So a stock reads as held only when the budget really was full that day. From today's statuses:
+    /// a signal skipped or missed since frees its step, and the stock then reads as free, as it now is. Loaded once per strategy.
+    /// </summary>
+    internal static async Task<(decimal Used, Func<DateOnly, bool> HeldOn)> BudgetHistoryAsync(AppDbContext db, Guid strategyId, Budget budget,
+        CancellationToken cancellationToken)
+    {
+        var spent = await db.Signals.Where(s => s.StrategyId == strategyId && s.StepAmount != null).UsingBudget()
+            .GroupBy(s => s.SignalDate).OrderBy(g => g.Key)
+            .Select(g => new { Day = g.Key, Amount = g.Sum(s => s.StepAmount!.Value) }).ToListAsync(cancellationToken);
+        var days = spent.Select(s => s.Day).ToList();
+        var upTo = new decimal[spent.Count + 1]; // upTo[k]: the steps of the first k days.
+        for (var k = 0; k < spent.Count; k++) upTo[k + 1] = upTo[k] + spent[k].Amount;
+        var step = budget.Step ?? 0;
+        return (upTo[^1], day =>
+        {
+            var index = days.BinarySearch(day);
+            return upTo[index < 0 ? ~index : index + 1] + step > budget.Amount;
+        });
     }
 
     /// <param name="evaluatedUntil">The last day checked before (<see cref="CheckedDaysAsync"/>).</param>

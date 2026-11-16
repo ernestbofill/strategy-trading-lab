@@ -111,16 +111,25 @@ public static class StrategyEndpoints
             var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.AsNoTracking()
                 .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
-                .Select(s => new { s.TemplateKey, s.Params, s.Budget.MaxSteps }).SingleOrDefaultAsync(cancellationToken);
+                .Select(s => new { s.TemplateKey, s.Params, s.Budget }).SingleOrDefaultAsync(cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var bars = await db.FinishedBarsAsync(assetId, UsSession.LastComplete(time.GetUtcNow()), cancellationToken);
             if (bars.Count == 0) return TypedResults.Ok(new StockChartData(null, []));
             var from = bars[^1].Date.AddDays(-StockChart.Days);
 
             var (startedOn, checkedUntil) = await StrategyEvaluator.CheckedDaysAsync(db, id, assetId, cancellationToken);
-            var checks = TemplateRules.Supports(strategy.TemplateKey)
-                ? StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, checkedUntil, strategy.MaxSteps ?? 1)
-                : [];
+            Dictionary<DateOnly, IReadOnlyList<RuleCheck>> checks = [];
+            if (TemplateRules.Supports(strategy.TemplateKey))
+            {
+                CheckedDays? past = null;
+                if (checkedUntil is not null)
+                {
+                    var (_, heldOn) = await StrategyEvaluator.BudgetHistoryAsync(db, id, strategy.Budget, cancellationToken);
+                    past = await StrategyEvaluator.PastDaysAsync(db, id, assetId, checkedUntil, heldOn, cancellationToken);
+                }
+                checks = StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, past,
+                    strategy.Budget.MaxSteps ?? 1);
+            }
             return TypedResults.Ok(new StockChartData(startedOn, [.. bars.Where(b => b.Date >= from)
                 .Select(b => new ChartDay(b.Date, b.Close, checks.GetValueOrDefault(b.Date) ?? []))]));
         })

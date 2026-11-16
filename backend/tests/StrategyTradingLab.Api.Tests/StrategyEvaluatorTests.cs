@@ -649,7 +649,9 @@ public class StrategyEvaluatorTests(AccountsApi api) : IClassFixture<AccountsApi
 
             await Evaluator(db).RunAsync(default);
 
-            Assert.Equal(0, await SignalCount(db, strategyId)); // Not day 300's signal, back-dated.
+            // Not day 300's signal, back-dated; the window still open on day 301, its first day back, signals then, as for a stock just added.
+            var signal = await db.Signals.AsNoTracking().SingleAsync(s => s.StrategyId == strategyId);
+            Assert.Equal(new DateOnly(2024, 1, 1).AddDays(301), signal.SignalDate);
             Assert.True(await db.DailyEvaluations.AnyAsync(e => e.StrategyId == strategyId && e.Date == new DateOnly(2024, 1, 1).AddDays(301)));
         }
         finally

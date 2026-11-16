@@ -17,14 +17,16 @@ public static class StockChart
     /// Each day's checks from <paramref name="from"/> on, after the start until the last day the daily check ran (an archived
     /// strategy or an unticked stock stops there). <paramref name="newRules"/> builds fresh rules: they keep state, so each run needs its own.
     /// </summary>
+    /// <param name="checkedDays">The days checked, with their recorded signals, which the replay follows as the daily check does.</param>
     public static Dictionary<DateOnly, IReadOnlyList<RuleCheck>> Checks(Func<IBuyRules> newRules, IReadOnlyList<PriceBar> bars, DateOnly from,
-        DateOnly? startedOn, DateOnly? checkedUntil, int maxSteps)
+        DateOnly? startedOn, CheckedDays? checkedDays, int maxSteps)
     {
         var checks = startedOn is null || startedOn > from ? WatchedChecks(newRules(), bars, from, startedOn, maxSteps) : [];
         if (startedOn is { } day)
         {
             var start = RulesRunner.StartIndex(bars, day);
-            foreach (var evaluation in RulesRunner.Run(newRules(), bars, new StepPlan(maxSteps), start).Where(e => e.Date >= from && e.Date <= checkedUntil))
+            foreach (var evaluation in RulesRunner.Run(newRules(), bars, new StepPlan(maxSteps), start, checkedDays: checkedDays)
+                         .Where(e => e.Date >= from && e.Date <= checkedDays?.Until))
                 checks[evaluation.Date] = evaluation.Checks;
         }
         return checks;

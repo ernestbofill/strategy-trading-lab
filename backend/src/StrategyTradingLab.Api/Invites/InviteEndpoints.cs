@@ -37,7 +37,7 @@ public static class InviteEndpoints
 
         group.MapGet("/", async (AppDbContext db, Sessions sessions, InviteTexts texts, CancellationToken cancellationToken) =>
         {
-            var owner = (await sessions.CurrentAsync(cancellationToken))!;
+            var owner = await sessions.RequiredAsync(cancellationToken);
             var invites = await db.Invites.AsNoTracking().Where(i => i.CreatedBy == owner.Id)
                 .OrderByDescending(i => i.CreatedAt).ToListAsync(cancellationToken);
             var ids = invites.Select(i => i.Id).ToList();
@@ -71,7 +71,7 @@ public static class InviteEndpoints
             if (request.Send && !limit.TryAcquire())
                 return TypedResults.Problem(TooManyEmails, statusCode: StatusCodes.Status429TooManyRequests);
 
-            var owner = (await sessions.CurrentAsync(cancellationToken))!;
+            var owner = await sessions.RequiredAsync(cancellationToken);
             var invite = new Invite
             {
                 Code = InviteCodes.New(), CreatedBy = owner.Id, Role = UserRole.Vip, FirstName = firstName!, LastName = lastName,
@@ -87,7 +87,7 @@ public static class InviteEndpoints
         group.MapPost("/{id:guid}/send", async Task<Results<Ok<AdminInvite>, NotFound, ProblemHttpResult>> (Guid id, AppDbContext db,
             Sessions sessions, InviteTexts texts, EmailQueue emails, InviteEmailLimit limit, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var owner = (await sessions.CurrentAsync(cancellationToken))!;
+            var owner = await sessions.RequiredAsync(cancellationToken);
             if (await db.Invites.SingleOrDefaultAsync(i => i.Id == id && i.CreatedBy == owner.Id, cancellationToken) is not { } invite)
                 return TypedResults.NotFound();
             if (invite.Email is null)
@@ -102,7 +102,7 @@ public static class InviteEndpoints
         group.MapPost("/{id:guid}/revoke", async Task<Results<NoContent, NotFound>> (Guid id, AppDbContext db, Sessions sessions,
             TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var owner = (await sessions.CurrentAsync(cancellationToken))!;
+            var owner = await sessions.RequiredAsync(cancellationToken);
             var now = time.GetUtcNow();
             var found = await db.Invites.Where(i => i.Id == id && i.CreatedBy == owner.Id)
                 .ExecuteUpdateAsync(i => i.SetProperty(x => x.RevokedAt, x => x.RevokedAt ?? now), cancellationToken);

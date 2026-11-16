@@ -30,7 +30,7 @@ public static class SignalEndpoints
             Guid id, AppDbContext db, Sessions sessions, PriceRefresher prices, PriceRefreshState refreshes,
             Microsoft.Extensions.Options.IOptions<PriceRefreshOptions> options, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var next = await NextOpenAsync(db, found.Signal, cancellationToken);
             var latest = next is null && options.Value.FetchOnDemand && Answerable(found.Signal)
@@ -43,7 +43,7 @@ public static class SignalEndpoints
         group.MapPost("/{id:guid}/trade", async Task<Results<NoContent, ValidationProblem, NotFound, Conflict<string>>> (
             Guid id, SignalTradeRequest request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var (signal, strategy, asset) = found;
             if (!Answerable(signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
@@ -71,7 +71,7 @@ public static class SignalEndpoints
         group.MapPost("/{id:guid}/skip", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, SignalSkipRequest request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             if (!Answerable(found.Signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
@@ -84,7 +84,7 @@ public static class SignalEndpoints
         group.MapPost("/{id:guid}/snooze", async Task<Results<Ok<SnoozeResult>, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, IPushSender push, CancellationToken cancellationToken) =>
         {
-            var user = await StrategyEndpoints.CurrentUser(sessions, cancellationToken);
+            var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             // Only a waiting signal can be snoozed (the table's check): a missed one has nothing left to remind of.
             if (found.Signal.Status != SignalStatus.Waiting) return TypedResults.Conflict(Messages.OnlyWaitingCanSnooze.In(user.Locale));

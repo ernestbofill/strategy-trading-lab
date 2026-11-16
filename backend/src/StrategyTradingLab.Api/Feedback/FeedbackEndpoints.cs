@@ -41,7 +41,7 @@ public static partial class FeedbackEndpoints
             var errors = ValidateCreate(request, out var text, out var route, out var element, out var selectedText);
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             var now = time.GetUtcNow();
             var item = new FeedbackItem
             {

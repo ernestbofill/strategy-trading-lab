@@ -39,7 +39,7 @@ public static class AssetEndpoints
         group.MapGet("/search", async Task<Results<Ok<List<AssetMatch>>, ValidationProblem, ProblemHttpResult>> (string? q, string? kind,
             AppDbContext db, Sessions sessions, IMarketDataSource source, CancellationToken cancellationToken) =>
         {
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             var query = q?.Trim() ?? "";
             if (query.Length is < 2 or > MaxQueryLength) return ApiProblems.Invalid("q", Messages.SearchLength.In(user.Locale, MaxQueryLength));
             if (KindFrom(kind) is not { } wanted) return ApiProblems.Invalid("kind", Messages.PickStockOrFund.In(user.Locale));
@@ -96,7 +96,7 @@ public static class AssetEndpoints
             Sessions sessions, AssetCatalog catalog, DatabaseSwitch databases, AppDbContext db, SettingsStore settings,
             CancellationToken cancellationToken) =>
         {
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             var symbol = request.Symbol?.Trim() ?? "";
             if (KindFrom(request.Kind) is not { } wanted) return ApiProblems.Invalid("kind", Messages.PickStockOrFund.In(user.Locale));
             var refused = wanted == AssetKind.Fund ? Messages.NotAFund.In(user.Locale) : Messages.NotAStock.In(user.Locale);

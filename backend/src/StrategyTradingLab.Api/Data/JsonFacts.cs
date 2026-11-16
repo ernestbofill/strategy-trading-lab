@@ -28,6 +28,11 @@ public static class JsonFacts
             : null;
 
     /// <summary>The numbers stored under <paramref name="names"/>, leaving out the missing ones (a strategy's settings).</summary>
-    public static Dictionary<string, decimal> Numbers(this JsonElement facts, IEnumerable<string> names) =>
-        names.Select(name => (name, value: facts.Number(name))).Where(x => x.value is not null).ToDictionary(x => x.name, x => x.value!.Value);
+    public static Dictionary<string, decimal> Numbers(this JsonElement facts, IEnumerable<string> names)
+    {
+        var numbers = new Dictionary<string, decimal>();
+        foreach (var name in names)
+            if (facts.Number(name) is { } value) numbers[name] = value;
+        return numbers;
+    }
 }

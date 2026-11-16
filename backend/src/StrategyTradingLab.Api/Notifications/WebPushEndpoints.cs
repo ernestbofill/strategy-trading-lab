@@ -59,7 +59,7 @@ public static class WebPushEndpoints
         {
             if (!IsPushService(request.Endpoint, out _) || !IsKey(request.Keys?.P256dh, 65) || !IsKey(request.Keys?.Auth, 16))
                 return ApiProblems.Invalid("endpoint", Messages.PushNotSupported.In(RequestLocale.From(context.Request)));
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             // One row per device: a device someone else used before (logged out, then this user logged in) now notifies this user only.
             string endpoint = request.Endpoint!, p256dh = request.Keys!.P256dh!, auth = request.Keys.Auth!;
             // The same keys keep when the device started failing (the account page saves it on every visit); new keys start over.
@@ -88,7 +88,7 @@ public static class WebPushEndpoints
 
         group.MapPost("/unsubscribe", async (PushEndpointRequest request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
         {
-            var user = (await sessions.CurrentAsync(cancellationToken))!;
+            var user = await sessions.RequiredAsync(cancellationToken);
             await db.PushSubscriptions.Where(s => s.UserId == user.Id && s.Endpoint == request.Endpoint).ExecuteDeleteAsync(cancellationToken);
             return TypedResults.NoContent();
         })

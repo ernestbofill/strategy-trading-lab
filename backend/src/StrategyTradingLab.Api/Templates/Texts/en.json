@@ -7,7 +7,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**It's a proven winner:** it rose at least `{minGainPct}%` from its low, and its averages are stacked and rising (`SMA {floorDays}` above `SMA {trendDays}`)."
+        "text": "**It's a proven winner:** it rose at least `{minGainPct}%` from its low, and its averages are stacked and rising (`SMA {floorDays}` above `SMA {trendDays}`, with the `SMA 150` between them when the stack takes three averages)."
       },
       {
         "marker": "02",
@@ -45,13 +45,13 @@
         "help": "The bottom of the stack, and it must be rising. Longer: steadier, slower to turn, so a trend counts later and stays a candidate longer."
       },
       "middleAverage": {
-        "sentence": "The averages are stacked when {value}.",
+        "sentence": "The stack takes {value}.",
         "value": "{n}",
         "values": {
-          "0": "the floor average is above the long one",
-          "1": "the floor average is above the SMA 150, and that above the long one"
+          "0": "two averages",
+          "1": "three averages"
         },
-        "help": "Two averages: more candidates. On this list's stocks since 2000 it gave about 11% more signals, with the same results after them. Three is stricter, and what the results shown were tested with."
+        "help": "Three: the floor average above the SMA 150, and that above the long one. It is what the results shown were tested with. Two: the floor average above the long one, so more candidates; on this list's stocks since 2000 it gave about 11% more signals, with the same results after them."
       },
       "peakDays": {
         "sentence": "The recent peak is the highest close of the last {value}.",
@@ -82,7 +82,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidate: which stocks it watches",
-        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its averages are stacked, the floor average above the long one (`SMA 50` > `SMA 200`; the stricter setting adds a middle `SMA 150` between them); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
+        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its averages are stacked, the floor average above a middle one above the long average (`SMA 50` > `SMA 150` > `SMA 200` when tested; with two averages, only `SMA 50` > `SMA 200`); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
       },
       "signal": {
         "title": "2 · Buy signal: when a candidate signals",

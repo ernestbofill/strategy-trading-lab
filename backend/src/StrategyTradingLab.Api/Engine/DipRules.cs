@@ -5,7 +5,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// <summary>
 /// Winners at a discount (POC Leader pullback, <c>stage2_pullback</c>). A candidate is a proven leader: it rose at least
 /// <c>MinGainPct</c> from its low (the lowest close of the last <c>GainDays</c> up to the peak's day: a fall after the peak
-/// is no rise, from <c>LowBeforePeakFrom</c> on; the POC takes the window's low whatever the order; Ernest, 2026-11-16) and its averages are stacked (SMA 50 &gt; SMA 150 &gt; SMA 200) with the SMA 200 rising.
+/// is no rise, from <c>LowBeforePeakFrom</c> on; the POC takes the window's low whatever the order; Ernest, 2026-11-16) and its averages are stacked (SMA 50 &gt; SMA 150 &gt; SMA 200, or SMA 50 &gt; SMA 200 when <c>MiddleAverage</c> is 0) with the SMA 200 rising.
 /// The buy window is the discount zone, <c>ZoneStartPct</c>–<c>ZoneEndPct</c> below the recent peak and above the SMA 50.
 /// </summary>
 public class DipRules : BuyRulesBase
@@ -115,11 +115,8 @@ public class DipRules : BuyRulesBase
                 Level: Math.Round(lowest, 2), EndLevel: Math.Round(peak, 2), Progress: RuleCheck.ProgressOf(gain, p.MinGainPct),
                 Date: candidate ? candidateSince[i] : null),
             // Its own key without the middle average: the words and the strip name two averages, not three.
-            p.MiddleAverage == 1
-                ? new("stacked", CheckGroup.Candidate, aligned, Math.Round(Indicators.PctFrom(sma50, sma200), 1),
-                    Level: Math.Round(sma50, 2), MidLevel: Math.Round(sma150, 2), EndLevel: Math.Round(sma200, 2))
-                : new("stackedTwo", CheckGroup.Candidate, aligned, Math.Round(Indicators.PctFrom(sma50, sma200), 1),
-                    Level: Math.Round(sma50, 2), EndLevel: Math.Round(sma200, 2)),
+            new(p.MiddleAverage == 1 ? "stacked" : "stackedTwo", CheckGroup.Candidate, aligned, Math.Round(Indicators.PctFrom(sma50, sma200), 1),
+                Level: Math.Round(sma50, 2), MidLevel: p.MiddleAverage == 1 ? Math.Round(sma150, 2) : null, EndLevel: Math.Round(sma200, 2)),
             new("rising", CheckGroup.Candidate, trendRising[i], risePct, 0,
                 Level: Math.Round(sma200, 2), EndLevel: Math.Round(sma200Ago, 2)),
             new("zone", CheckGroup.Buy, price <= zoneHigh && price >= zoneBottom, belowPeak, p.ZoneStartPct, p.ZoneEndPct,

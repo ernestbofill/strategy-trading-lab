@@ -67,10 +67,11 @@ public class DipRulesTests
         RuleCheck Stack(DipParams p, string key) =>
             Assert.Single(new DipRules(bars, p).Decide(344, new DayContext(bars[344].Date, null, 0, default, false, false, false)).Checks, c => c.Key == key);
 
-        // The POC's stack, and what params stored without the choice mean: three averages, not met.
+        // The POC's stack, the template's and what params stored without the choice mean: three averages, not met.
         Assert.False(Stack(new DipParams(), "stacked").Met);
-        // The template's: two averages, met, with no middle level to show.
-        var two = Stack((DipParams)TemplateCatalog.Dip.Params, "stackedTwo");
+        Assert.False(Stack((DipParams)TemplateCatalog.Dip.Params, "stacked").Met);
+        // The looser choice: two averages, met, with no middle level to show.
+        var two = Stack(new DipParams { MiddleAverage = 0 }, "stackedTwo");
         Assert.True(two.Met);
         Assert.Null(two.MidLevel);
     }

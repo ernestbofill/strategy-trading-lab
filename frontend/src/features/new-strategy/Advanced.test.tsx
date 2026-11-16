@@ -10,11 +10,12 @@ const dip = {
   key: 'dip',
   name: 'Winners at a discount',
   backtest: { periods: [{ period: 'All', years: 10, template: 212, index: 248, worstYear: -21, indexWorstYear: -37, templatePerYear: 4, indexPerYear: 5 }] },
-  defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: { zoneStartPct: 5, zoneEndPct: 6, peakDays: 60 } },
+  defaults: { version: 1, budget: { amount: 3000, step: 100, maxSteps: 5 }, params: { zoneStartPct: 5, zoneEndPct: 6, peakDays: 60, middleAverage: 1 } },
   settings: [
     { key: 'zoneStartPct', sentence: 'The discount zone starts {value} below the recent peak.', value: '{n}%', step: 1, min: 1, max: 39, below: 'zoneEndPct', group: 'signal', help: 'The smallest dip that counts.' },
     { key: 'zoneEndPct', sentence: 'It ends {value} below the recent peak.', value: '{n}%', step: 1, min: 2, max: 40, group: 'signal' },
     { key: 'peakDays', sentence: 'The recent peak is the highest price of the last {value}.', value: '{n} days', step: 5, min: 20, max: 60, group: 'signal' },
+    { key: 'middleAverage', sentence: 'The stack takes {value}.', value: '{n}', values: { '0': 'two averages', '1': 'three averages' }, step: 1, min: 0, max: 1 },
   ],
   settingGroups: [{ key: 'signal', title: '2 · Buy signal', lead: 'A candidate signals in the zone, above the `SMA 50`.' }],
 } as unknown as TemplateDetail
@@ -92,6 +93,15 @@ describe('Advanced', () => {
 
     expect(within(peak).getByText('60 days')).toBeTruthy()
     expect(within(peak).queryByText('CHANGED')).toBeNull()
+
+    // A choice is picked from its options, in words, and resets like the numbers.
+    // The row; its options are a group of their own inside it.
+    const stack = screen.getAllByRole('group', { name: /The stack takes/ })[0]
+    fireEvent.click(within(stack).getByRole('radio', { name: 'two averages' }))
+    expect(within(stack).getByText('CHANGED')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '⟳ Reset to tested' }))
+    expect(within(stack).getByText('Tested: three averages')).toBeTruthy()
+    expect((within(stack).getByRole('radio', { name: 'three averages' }) as HTMLInputElement).checked).toBe(true)
   })
 
   it('shows Index trend settings and saves their changes', async () => {

@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { Setting, TemplateDetail, TemplateKey } from '../../api'
+import { SegmentedField } from '../../components/Field'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
@@ -71,7 +72,7 @@ export interface SettingRowProps {
   onChange: (value: number) => void
 }
 
-/** The setting as a sentence with its value highlighted, a − / + stepper and the tested value. */
+/** The setting as a sentence with its value highlighted, a − / + stepper (a choice: its options as buttons) and the tested value. */
 export function SettingRow({ setting, value, tested, bounds, onChange }: SettingRowProps) {
   const t = useT()
   const id = useId()
@@ -80,7 +81,7 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
   const down = stepSetting(setting, value, -1)
   const up = stepSetting(setting, value, 1)
   return (
-    <div className={styles.row} role="group" aria-labelledby={id} data-changed={isChanged || undefined}>
+    <div className={styles.row} role="group" aria-labelledby={id} data-changed={isChanged || undefined} data-choice={setting.values ? true : undefined}>
       <div className={styles.text}>
         <div id={id} className={styles.sentence}>
           {before}
@@ -95,6 +96,16 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
           {isChanged && <span className={styles.changed}>{t('newStrategy.advanced.changed')}</span>}
         </div>
       </div>
+      {setting.values ? (
+        <SegmentedField
+          label={setting.sentence.replace('{value}', '…')}
+          hideLabel
+          compact
+          value={String(value)}
+          onChange={(choice) => onChange(Number(choice))}
+          options={Object.entries(setting.values).map(([n, words]) => ({ value: n, label: words }))}
+        />
+      ) : (
       <div className={styles.stepper}>
         <button
           type="button"
@@ -113,6 +124,7 @@ export function SettingRow({ setting, value, tested, bounds, onChange }: Setting
           +
         </button>
       </div>
+      )}
     </div>
   )
 }

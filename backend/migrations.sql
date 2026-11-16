@@ -2364,23 +2364,3 @@ BEGIN
 END $EF$;
 COMMIT;
 
-START TRANSACTION;
-
-DO $EF$
-BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261116140803_DipMiddleAverage') THEN
-    UPDATE strategies
-    SET params = params || jsonb_build_object('middleAverage', 1)
-    WHERE template_key = 'dip' AND NOT params ? 'middleAverage';
-    END IF;
-END $EF$;
-
-DO $EF$
-BEGIN
-    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261116140803_DipMiddleAverage') THEN
-    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
-    VALUES ('20261116140803_DipMiddleAverage', '10.0.4');
-    END IF;
-END $EF$;
-COMMIT;
-

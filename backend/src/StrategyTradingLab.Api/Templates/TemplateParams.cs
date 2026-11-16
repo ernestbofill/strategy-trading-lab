@@ -27,10 +27,10 @@ public record DipParams : IValidatableObject
     public DateOnly LowBeforePeakFrom { get; init; } = DateOnly.MaxValue;
 
     /// <summary>
-    /// How the averages must be stacked. 1: floor &gt; middle (SMA 150) &gt; long, the POC's rule and what params stored without
-    /// it mean. 0: floor &gt; long only, STL's looser rule and the template's default since 2026-11-16 (Ernest; it gave about
-    /// 11% more signals with the same results after them on the list's stocks, docs/dip-trend-rule-study.md; not backtested
-    /// on the POC's universe).
+    /// How the averages must be stacked. 1: floor &gt; middle (SMA 150) &gt; long, the POC's rule, the tested default and what
+    /// params stored without it mean. 0: floor &gt; long only, STL's looser choice (Ernest, 2026-11-16; about 11% more signals
+    /// with the same results after them on the list's stocks, docs/dip-trend-rule-study.md; not backtested on the POC's
+    /// universe).
     /// </summary>
     [Range(0, 1)] public int MiddleAverage { get; init; } = 1;
 

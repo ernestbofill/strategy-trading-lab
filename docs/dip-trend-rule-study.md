@@ -1,6 +1,6 @@
 # Winners at a discount: is "Averages stacked" the right trend rule?
 
-A study from 2026-11-16, after Ernest's feedback that very few stocks seemed to have their averages stacked. It led to the default changing from three averages to two (#260, `docs/decisions.md`). The script is [dip-trend-rule-study.py](dip-trend-rule-study.py).
+A study from 2026-11-16, after Ernest's feedback that very few stocks seemed to have their averages stacked. It led to two averages becoming a choice on Advanced settings, which Ernest makes the default (#260, `docs/decisions.md`). The script is [dip-trend-rule-study.py](dip-trend-rule-study.py).
 
 ## The question
 
@@ -24,7 +24,7 @@ All 22 stocks, 370 stock-years. "6 months after" is the change over the next 126
 | --- | --- | --- | --- | --- | --- | --- |
 | **Before:** SMA 50 > 150 > 200, SMA 200 rising | 30.0% | 1,387 | – | +23.5% | 64% | −29.5% |
 | SMA 150 > 200, SMA 200 rising | 32.2% | 1,441 | +4% | +23.5% | 65% | −29.5% |
-| **Now:** SMA 50 > 200, SMA 200 rising | 34.1% | 1,543 | +11% | +22.8% | 64% | −30.0% |
+| **The new choice:** SMA 50 > 200, SMA 200 rising | 34.1% | 1,543 | +11% | +22.8% | 64% | −30.0% |
 | Price > SMA 200, SMA 200 rising | 32.6% | 1,581 | +14% | +22.8% | 65% | −30.2% |
 | Price > SMA 150 > 200, SMA 200 rising | 28.1% | 1,436 | +4% | +23.5% | 65% | −29.6% |
 | No trend rule (growth only) | 43.5% | 1,910 | +38% | +23.7% | 65% | −30.0% |
@@ -63,4 +63,4 @@ On 2026-11-13, the starter list:
 
 ## Decision and what is left
 
-Ernest chose two averages as the default now, with three as an Advanced setting (2026-11-16, #260). Still to do: backtest the two-average rule on the POC's universe (1,146 stocks) over the template's periods. Until then the template's results are the three-average rule's (`TODO.md`).
+Ernest chose two averages as the default now (2026-11-16). #260 adds the choice to Advanced settings; the catalogue keeps three, the tested rule, and Ernest makes two the default as a template version on `/admin/templates`, so strategies already running keep three. Still to do: backtest the two-average rule on the POC's universe (1,146 stocks) over the template's periods. Until then the template's results are the three-average rule's (`TODO.md`).

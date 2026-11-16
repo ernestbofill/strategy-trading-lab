@@ -16,7 +16,8 @@ public record AdminTemplate(string Key, string Name, InvestsIn InvestsIn, bool H
     IReadOnlyList<AdminTemplateVersion> Versions);
 
 /// <summary>A setting of Advanced settings, with its words (as the screen's) and range.</summary>
-public record AdminTemplateSetting(string Key, string Sentence, string Value, decimal Step, decimal Min, decimal Max, string? Below);
+public record AdminTemplateSetting(string Key, string Sentence, string Value, decimal Step, decimal Min, decimal Max, string? Below,
+    IReadOnlyDictionary<string, string>? Values = null);
 
 /// <summary>
 /// A version: every setting's default, the starter list or the fund (sorted by name), "getting close", when it was made and how
@@ -160,7 +161,7 @@ public static class AdminTemplates
             var settings = tested.Settings.Select(s =>
             {
                 var words = texts.Settings![s.Key];
-                return new AdminTemplateSetting(s.Key, words.Sentence, words.Value, s.Step, s.Min, s.Max, s.Below);
+                return new AdminTemplateSetting(s.Key, words.Sentence, words.Value, s.Step, s.Min, s.Max, s.Below, words.Values);
             }).ToList();
             var versions = Versions.Where(v => v.TemplateKey == tested.Key).OrderByDescending(v => v.Version).Select(v =>
                 new AdminTemplateVersion(v.Version, v.Active, v.CreatedAt, Values(tested, v),

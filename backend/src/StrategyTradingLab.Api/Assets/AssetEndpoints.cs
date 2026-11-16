@@ -102,7 +102,7 @@ public static class AssetEndpoints
             var refused = wanted == AssetKind.Fund ? Messages.NotAFund.In(user.Locale) : Messages.NotAStock.In(user.Locale);
             if (symbol.Length is 0 or > AssetCatalog.MaxSymbolLength) return ApiProblems.Invalid("symbol", refused);
             // Adding fetches prices, and prices belong to the database this host owns (as on /admin/assets).
-            if (databases.Active != databases.Home) return TypedResults.Conflict(Messages.CantAddNow.In(user.Locale));
+            if (!databases.IsHome) return TypedResults.Conflict(Messages.CantAddNow.In(user.Locale));
             // A user adds at most the admin's number of new assets; one already stored is returned as it is and never counts.
             var upper = symbol.ToUpperInvariant();
             if (!await db.Assets.AnyAsync(a => a.Symbol == upper, cancellationToken))
@@ -157,8 +157,4 @@ public static class AssetEndpoints
     };
 
     static string EscapeLike(string text) => text.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");
-
-    /// <summary>The rate limit's key: the user, or the client's address before the session is read.</summary>
-    public static string UserKey(HttpContext http) =>
-        http.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress);
 }

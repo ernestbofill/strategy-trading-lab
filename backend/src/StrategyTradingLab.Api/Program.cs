@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.RateLimiting;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.DataProtection;
@@ -18,6 +17,7 @@ using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Invites;
+using StrategyTradingLab.Api;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
@@ -103,47 +103,7 @@ builder.Services.AddScoped<HousekeepingService>();
 // (ForwardedHeadersOptions' default), so a client can't fake its address to dodge the log-in rate limit.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    // Accounts, per client: guessing, sign-up spam and email floods all hit these first.
-    // RateLimits:<policy> overrides the permits; only the tests set it, to sign up many users.
-    void PerClient(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
-        RateLimitPartition.GetFixedWindowLimiter(AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = builder.Configuration.GetValue($"RateLimits:{policy}", permits), Window = window,
-            }));
-    PerClient(AccountEndpoints.SignUpLimit, 5, TimeSpan.FromHours(1));
-    PerClient(AccountEndpoints.LogInLimit, 10, TimeSpan.FromMinutes(15));
-    PerClient(AccountEndpoints.EmailLimit, 5, TimeSpan.FromHours(1));
-    PerClient(AccountEndpoints.PasswordLimit, 10, TimeSpan.FromMinutes(15));
-    PerClient(AccountEndpoints.LogOutLimit, 30, TimeSpan.FromMinutes(1));
-    PerClient(FeedbackEndpoints.SubmitLimit, 30, TimeSpan.FromHours(1));
-    PerClient(UnsubscribeEndpoints.UnsubscribeLimit, 120, TimeSpan.FromMinutes(1));
-    PerClient(EmailEventEndpoints.EventsLimit, 600, TimeSpan.FromMinutes(1));
-    PerClient(TemplateEndpoints.TemplatesLimit, 60, TimeSpan.FromMinutes(1));
-    PerClient(Program.HealthLimit, 120, TimeSpan.FromMinutes(1));
-    PerClient(Program.VersionLimit, 60, TimeSpan.FromMinutes(1));
-    // A look-up with a code tells whether it works, so it is limited like a guess; one without a code (every Sign-up
-    // load, many visitors behind one address) only says whether sign-ups are invite only, and isn't limited.
-    options.AddPolicy(AccountEndpoints.InviteLimit, http => string.IsNullOrEmpty(http.Request.Query["invite"])
-        ? RateLimitPartition.GetNoLimiter("no-code")
-        : RateLimitPartition.GetFixedWindowLimiter(AdminEndpoints.ClientKey(http.Connection.RemoteIpAddress),
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = builder.Configuration.GetValue($"RateLimits:{AccountEndpoints.InviteLimit}", 30), Window = TimeSpan.FromHours(1),
-            }));
-    // Asset search and adding, per user: both call the price source, and adding loads a whole price history.
-    void PerUser(string policy, int permits, TimeSpan window) => options.AddPolicy(policy, http =>
-        RateLimitPartition.GetFixedWindowLimiter(AssetEndpoints.UserKey(http),
-            _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = builder.Configuration.GetValue($"RateLimits:{policy}", permits), Window = window,
-            }));
-    PerUser(AssetEndpoints.SearchLimit, 100, TimeSpan.FromHours(1));
-    PerUser(AssetEndpoints.AddLimit, 10, TimeSpan.FromHours(1));
-});
+builder.Services.AddAppRateLimits(builder.Configuration);
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -203,7 +163,7 @@ _ = databases.CheckActiveAsync(app.Lifetime.ApplicationStopping);
 // The launch profiles set this, so running the API locally brings the dev database up to date.
 // Tests, cloud sessions (scripts/migrate-dev-https.py) and production (the deploy's migrations bundle) don't use it.
 // Only the home database: a local API switched to production must never migrate it (the deploy does).
-if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Database:MigrateOnStartup") && databases.Active == databases.Home)
+if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("Database:MigrateOnStartup") && databases.IsHome)
 {
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();

@@ -162,6 +162,8 @@ Roughly in the order they become useful (was *After launch*):
 ## Ideas
 
 - **Log out can hang on a device without its service worker.** `unsubscribeDevice` waits on `navigator.serviceWorker.ready`, which never settles when notifications are allowed but no worker is registered (dev server, cleared site data): cap it as Delete my account does (found in the review of #195).
+- **One way to date STL's own engine rules.** Two rules now each carry a hidden date param, a data migration and a golden-test note (the comeback's volume on a rise, #257; the dip's low before the peak, #259). If a third comes, replace them with one mechanism (a rules version on the strategy), and backtest STL's own rules over the templates' periods so the tested results describe them (review of #259).
+- **A looser trend rule for Winners at a discount.** Ernest's feedback (2026-11-16): few stocks have their averages stacked. A replay on 22 list stocks since 2000 found SMA 50 > SMA 200 (with the SMA 200 rising) gives about 11% more signals with the same results after them, and that today's quiet list comes from prices far under the zone, not from the stack. Proposed: an Advanced setting (strict / simple), the default changing only after a backtest on the POC's universe. Waiting for Ernest's choice.
 - **Ask before leaving Advanced settings with unsaved changes.** Moved from item 26 (Ernest, 2026-11-08): it needs a data router (`createBrowserRouter`) for `useBlocker`, which rewrites `App.tsx`.
 
 - **An outside uptime check** (was in item 21, Ernest 2026-11-01): a free monitor that calls `/api/health` every few minutes and tells Ernest when the server is down, which the app's own alerts can't (they need the server running). A manual step when it's wanted.

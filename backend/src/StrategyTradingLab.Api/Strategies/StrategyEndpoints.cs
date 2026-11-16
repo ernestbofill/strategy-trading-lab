@@ -118,13 +118,18 @@ public static class StrategyEndpoints
             var from = bars[^1].Date.AddDays(-StockChart.Days);
 
             var (startedOn, checkedUntil) = await StrategyEvaluator.CheckedDaysAsync(db, id, assetId, cancellationToken);
-            var past = TemplateRules.Supports(strategy.TemplateKey) && checkedUntil is not null
-                ? await StrategyEvaluator.PastDaysAsync(db, id, assetId, checkedUntil,
-                    (await StrategyEvaluator.BudgetHistoryAsync(db, id, strategy.Budget, cancellationToken)).HeldOn, cancellationToken)
-                : null;
-            var checks = TemplateRules.Supports(strategy.TemplateKey)
-                ? StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, past, strategy.Budget.MaxSteps ?? 1)
-                : [];
+            Dictionary<DateOnly, IReadOnlyList<RuleCheck>> checks = [];
+            if (TemplateRules.Supports(strategy.TemplateKey))
+            {
+                CheckedDays? past = null;
+                if (checkedUntil is not null)
+                {
+                    var (_, heldOn) = await StrategyEvaluator.BudgetHistoryAsync(db, id, strategy.Budget, cancellationToken);
+                    past = await StrategyEvaluator.PastDaysAsync(db, id, assetId, checkedUntil, heldOn, cancellationToken);
+                }
+                checks = StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, past,
+                    strategy.Budget.MaxSteps ?? 1);
+            }
             return TypedResults.Ok(new StockChartData(startedOn, [.. bars.Where(b => b.Date >= from)
                 .Select(b => new ChartDay(b.Date, b.Close, checks.GetValueOrDefault(b.Date) ?? []))]));
         })

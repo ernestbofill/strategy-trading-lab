@@ -64,6 +64,13 @@ public static class RulesRunner
         DateOnly lastBuyDay;
         bool pendingBuy;
         bool pendingSell;
+        DateOnly? lastDay;
+
+        /// <summary>
+        /// A signal recorded on <paramref name="day"/>, or since the bar before it: a revised price history can lose a signal's own bar,
+        /// and the signal still counts on the next one.
+        /// </summary>
+        bool Recorded(IReadOnlySet<DateOnly> days, DateOnly day) => days.Any(d => d <= day && (lastDay is not { } prior || d > prior));
 
         /// <summary>A step is bought on <paramref name="day"/>: the cooldown counts from it.</summary>
         void Buy(DateOnly day)
@@ -101,9 +108,12 @@ public static class RulesRunner
                 previous = RuleStatus.NotEnoughData;
                 previousStep = null;
                 // A signal from when the rules needed less history (a longer setting since) still counts.
-                if (checkedDays is { } early && day <= early.Until)
-                    (pendingBuy, pendingSell) = (early.Buys.Contains(day), early.Sells.Contains(day));
-                return new DayEvaluation(day, RuleStatus.NotEnoughData, null, false, null, NoFacts);
+                var earlyBuy = checkedDays is { } early && day <= early.Until && Recorded(early.Buys, day);
+                var earlySell = checkedDays is { } e && day <= e.Until && Recorded(e.Sells, day);
+                pendingBuy |= earlyBuy;
+                pendingSell |= earlySell;
+                lastDay = day;
+                return new DayEvaluation(day, RuleStatus.NotEnoughData, null, earlyBuy, null, NoFacts, NewSell: earlySell);
             }
 
             var cooling = cooldownUntil is { } until && day < until;
@@ -120,14 +130,15 @@ public static class RulesRunner
             {
                 // A day already checked: its recorded signals are what happened.
                 var wanted = (Buy: newBuy, Sell: newSell);
-                newBuy = past.Buys.Contains(day) || (newBuy && past.HeldByBudget(day));
-                newSell = past.Sells.Contains(day);
+                newBuy = Recorded(past.Buys, day) || (newBuy && past.HeldByBudget(day));
+                newSell = Recorded(past.Sells, day);
                 unsignalled = (wanted.Buy && !newBuy) || (wanted.Sell && !newSell);
             }
             // A signal the rules called for but nobody got isn't yesterday's signal either: a window still open the next day gives one then.
             if (!unsignalled) (previous, previousStep) = (decision.Status, step);
             if (newBuy) pendingBuy = true;
             if (newSell) pendingSell = true;
+            lastDay = day;
             return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell)
                 { Checks = decision.Checks };
         }

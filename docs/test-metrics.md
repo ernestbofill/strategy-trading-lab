@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 3 | 1 | 4 |
+| Frontend (Vitest) | 3 | 3 | 6 |
 | Backend (xUnit) | 0 | 1 | 1 |
-| **All** | **3** | **2** | **5** |
+| **All** | **3** | **4** | **7** |
 
 ## Log
 
@@ -28,6 +28,8 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-16 | #246 | local | Frontend (Vitest) | `src/lib/push.test.ts` (all four) | 4 | FP | Loading Testing Library inside the shared `afterEach` ran while the test's stubbed `navigator` (no `userAgent`) was still in place; `testSetup.ts` now loads it up front, in jsdom files only. |
+| 2026-11-16 | #246 | local | Frontend (Vitest) | `src/features/summary/SummaryPage.test.tsx > renders quiet state on days with no changes and shows running strategies scoreboard` | 1 | FP | The new SIM check looked for a simulation row in the quiet-day test, but the row had gone into the active-day test's data; moved the check there. |
 | 2026-11-15 | #241 | local | Frontend (Vitest) | `src/features/admin/AdminTemplates.test.tsx` (saves a new version; makes an older one active) and `AdminAssets.test.tsx > says when an asset already there is hidden, and a failed reload apart from the add` | 3 | TP | Moving the admin screens to `useLoadable` dropped two behaviours: Templates no longer showed the save's reply, Assets no longer said its reload failed. Added `update(key, change)` and made `reload(key)` resolve to whether it loaded. |
 | 2026-11-15 | #241 | local | Frontend (Vitest) | `src/features/admin/AdminAlerts.test.tsx > shows no error when a dismiss is refused because the alert is no longer open` | 1 | TP | The first `useLoadable` draft showed an error for a 404 on an alert a run had cleared; the error now shows only while the alert is still open. |
 | 2026-11-15 | #241 | local | Frontend (Vitest) | `src/features/admin/AdminUsers.test.tsx`, `AdminAlerts.test.tsx`, `AdminInvites.test.tsx` (the second test of each file) | 4 | FP | Results kept by `useLoadable` leaked from one test to the next; `testSetup.ts` now empties the cache after each test. |

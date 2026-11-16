@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { invalidate, invalidateAll, refreshAll, useLoadable } from './useLoadable'
 
 describe('useLoadable', () => {
-  afterEach(() => {
-    cleanup()
-    vi.restoreAllMocks()
-  })
-
   it('loads again on a screen that is open when every result is forgotten (another user)', async () => {
     let user = 'a'
     const { result } = renderHook(() => useLoadable('test:dashboard', async () => `${user}'s dashboard`))

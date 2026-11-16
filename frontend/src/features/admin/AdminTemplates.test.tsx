@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, InvalidFieldsError, type AdminTemplate, type AdminTemplateVersion } from '../../api'
 import { AdminTemplates } from './AdminTemplates'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const eaton = { id: 'a1', symbol: 'ETN', name: 'Eaton', active: true }
 const vertiv = { id: 'a2', symbol: 'VRT', name: 'Vertiv', active: true }

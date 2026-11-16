@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, InvalidFieldsError, type SignUpOptions } from '../../api'
 import { I18nProvider } from '../../i18n/I18n'
 import { SignUp } from './SignUp'
@@ -11,11 +11,6 @@ vi.mock('./AccountContext', () => ({
   useIsOwner: () => false,
   useRole: () => null,
 }))
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 function open(options: SignUpOptions, url = '/sign-up') {
   vi.spyOn(api, 'getSignUpOptions').mockResolvedValue(options)

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, NameTakenError, type Dashboard, type StrategyDetail, type StrategySummary, type TemplateDetail } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from '../new-strategy/NewStrategyDraft'
@@ -9,12 +9,6 @@ import { StrategyPage } from './StrategyPage'
 
 // No push on this device: the push switch stays hidden (it has its own tests through Confirm and lib/push).
 vi.mock('../account/usePushOffered', () => ({ usePushOffered: () => false }))
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 const detail = (fields: Partial<StrategyDetail>): StrategyDetail => ({
   id: fields.id ?? 's1',

@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type StrategySummary } from '../../api'
-import { invalidateAll } from '../../lib/useLoadable'
 import { NewStrategyDraftProvider } from '../new-strategy/NewStrategyDraft'
 import { Dashboard } from './Dashboard'
 
@@ -19,12 +18,6 @@ vi.mock('../account/AccountContext', () => ({
   }),
   useIsOwner: () => false,
 }))
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 const summary = (fields: Partial<StrategySummary>): StrategySummary => ({
   id: 's',
@@ -110,6 +103,8 @@ describe('Dashboard', () => {
     expect(fund.getByText('−2.5%')).toBeTruthy()
     expect(fund.getByText('S&P 500: −1.1%')).toBeTruthy()
     expect(fund.getByText('CSPX: holding')).toBeTruthy()
+    // Below the limit of 10 running strategies, a new one can start.
+    expect(screen.getByRole('link', { name: '+ New strategy' }).getAttribute('href')).toBe('/new')
   })
 
   it('disables the new strategy button at the limit of 10 running strategies', async () => {
@@ -131,25 +126,5 @@ describe('Dashboard', () => {
     const btn = await screen.findByRole('button', { name: /You run 10 strategies, the most for now/ })
     expect((btn as HTMLButtonElement).disabled).toBe(true)
     expect(screen.queryByRole('link', { name: '+ New strategy' })).toBeNull()
-  })
-
-  it('renders the new strategy card placeholder in the running cards grid', async () => {
-    vi.spyOn(api, 'getTemplates').mockResolvedValue([])
-    vi.spyOn(api, 'getDashboard').mockResolvedValue({
-      today: '2026-10-28',
-      waiting: [],
-      strategies: [summary({ id: 'r', name: 'Running one' })],
-    })
-    render(
-      <NewStrategyDraftProvider owner="a@example.com">
-        <MemoryRouter>
-          <Dashboard />
-        </MemoryRouter>
-      </NewStrategyDraftProvider>,
-    )
-
-    const newStrategyLink = await screen.findByRole('link', { name: /\+ New strategy/i })
-    expect(newStrategyLink).toBeTruthy()
-    expect(newStrategyLink.getAttribute('href')).toBe('/new')
   })
 })

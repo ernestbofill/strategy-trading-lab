@@ -1,15 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type Account } from '../api'
 import { AccountProvider } from '../features/account/AccountContext'
 import { PrimaryAction, Screen, TopBar } from './Screen'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const makeAccount = (role: 'user' | 'owner'): Account => ({
   email: 'test@example.com',

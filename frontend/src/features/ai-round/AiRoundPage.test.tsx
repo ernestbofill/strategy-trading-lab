@@ -1,16 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type AiReading, type AiRoundDetail } from '../../api'
-import { invalidateAll } from '../../lib/useLoadable'
 import { AiRoundPage } from './AiRoundPage'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
-})
 
 const round = (fields: Partial<AiRoundDetail> = {}): AiRoundDetail => ({
   strategyId: 'st',

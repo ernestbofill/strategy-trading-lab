@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, InvalidFieldsError, type AdminAsset } from '../../api'
 import { AdminAssets } from './AdminAssets'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const assets: AdminAsset[] = [
   {

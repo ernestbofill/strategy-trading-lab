@@ -11,8 +11,6 @@ import { pickPath } from '../new-strategy/paths'
 import styles from './SummaryPage.module.css'
 import { useSummary } from './useSummary'
 
-const isLive = (mode: string) => mode?.toLowerCase() === 'live'
-
 export function SummaryPage() {
   const t = useT()
   const { locale } = useCurrentAccount()
@@ -100,7 +98,7 @@ export function SummaryPage() {
                     {data.whatChanged.map((c) => (
                       <li key={c.signalId}>
                         <Link to={`/strategies/${c.strategyId}/signals/${c.signalId}`} className={styles.row}>
-                          <ModeTag live={isLive(c.mode)} />
+                          <ModeTag live={c.mode === 'live'} />
                           <div className={styles.rowContent}>
                             <span className={styles.name}>{c.text}</span>
                           </div>
@@ -124,7 +122,7 @@ export function SummaryPage() {
                     {data.stockChanges.map((c) => (
                       <li key={`${c.strategyId}-${c.assetId}-${c.kind}`}>
                         <Link to={`/strategies/${c.strategyId}/stocks/${c.assetId}`} className={styles.row}>
-                          <ModeTag live={isLive(c.mode)} />
+                          <ModeTag live={c.mode === 'live'} />
                           <div className={styles.rowContent}>
                             <span className={styles.name}>{c.text}</span>
                           </div>
@@ -147,7 +145,7 @@ export function SummaryPage() {
                     {data.strategies.map((s) => (
                       <li key={s.strategyId}>
                         <Link to={`/strategies/${s.strategyId}`} className={styles.row}>
-                          <ModeTag live={isLive(s.mode)} />
+                          <ModeTag live={s.mode === 'live'} />
                           <div className={styles.rowContent}>
                             <div className={styles.rowMain}>
                               <span className={`ui-strong ${styles.name}`}>{s.strategyName}</span>

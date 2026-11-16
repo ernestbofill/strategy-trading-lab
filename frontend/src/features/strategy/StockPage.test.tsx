@@ -1,16 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type RuleCheck, type StockRow, type StrategyDetail } from '../../api'
 import { invalidateAll } from '../../lib/useLoadable'
 import { StockPage } from './StockPage'
-
-afterEach(() => {
-  cleanup()
-  invalidateAll()
-  vi.restoreAllMocks()
-})
 
 const check = (fields: Partial<RuleCheck> & Pick<RuleCheck, 'key' | 'group' | 'met'>): RuleCheck => ({
   value: null, min: null, max: null, level: null, progress: null, used: null, ...fields,

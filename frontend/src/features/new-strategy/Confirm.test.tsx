@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api, type Dashboard, type StrategySummary, type TemplateDetail } from '../../api'
-import { invalidateAll } from '../../lib/useLoadable'
 import { AccountProvider } from '../account/AccountContext'
 import { Confirm } from './Confirm'
 import { NewStrategyDraftProvider, useNewStrategyDraft } from './NewStrategyDraft'
@@ -28,10 +27,6 @@ beforeEach(() => {
 afterEach(() => {
   push.offered = false
   localStorage.clear()
-  vi.unstubAllGlobals()
-  cleanup()
-  vi.restoreAllMocks()
-  invalidateAll()
 })
 
 const ai = {

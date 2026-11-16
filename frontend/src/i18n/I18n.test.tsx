@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider, tNow, useI18n, useT } from './I18n'
 import { currentLocale, setCurrentLocale } from './locale'
 import { ca } from './messages/ca'
@@ -35,7 +35,6 @@ beforeEach(() => {
   invalidateAll.mockClear()
   setCurrentLocale('en')
 })
-afterEach(cleanup)
 
 describe('I18nProvider', () => {
   it('speaks English by default', () => {

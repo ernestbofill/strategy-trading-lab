@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type AdminAlert } from '../../api'
 import { AdminAlerts } from './AdminAlerts'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const alert = (over: Partial<AdminAlert>): AdminAlert => ({
   id: 'a1',

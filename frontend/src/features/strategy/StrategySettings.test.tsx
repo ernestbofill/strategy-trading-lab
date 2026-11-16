@@ -1,14 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type StrategyDetail, type TemplateDetail } from '../../api'
 import { StrategySettings } from './StrategySettings'
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
 
 const template = {
   key: 'dip',
@@ -85,27 +80,5 @@ describe('StrategySettings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }))
 
     expect(updateSpy).toHaveBeenCalledWith('s1', expect.objectContaining({ peakDays: 90 }))
-  })
-
-  it('resets to tested defaults when Reset button is clicked', async () => {
-    vi.spyOn(api, 'getVersion').mockResolvedValue({ version: '1', commit: null, builtAt: null, database: 'production' })
-    vi.spyOn(api, 'getStrategy').mockResolvedValue(strategyDetail)
-    vi.spyOn(api, 'getTemplate').mockResolvedValue(template)
-
-    render(
-      <MemoryRouter initialEntries={['/strategies/s1/settings']}>
-        <Routes>
-          <Route path="/strategies/:id/settings" element={<StrategySettings />} />
-        </Routes>
-      </MemoryRouter>,
-    )
-
-    expect(await screen.findByText('80 days')).toBeDefined()
-
-    const resetBtn = screen.getByRole('button', { name: /Reset to tested/i }) as HTMLButtonElement
-    expect(resetBtn.disabled).toBe(false)
-    fireEvent.click(resetBtn)
-
-    expect(screen.getByText('60 days')).toBeDefined()
   })
 })

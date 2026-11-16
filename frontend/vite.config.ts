@@ -40,5 +40,6 @@ export default defineConfig({
       },
     }),
   ],
+  // testSetup tears every test down: unmount, spies and stubbed globals undone, load cache emptied.
   test: { setupFiles: ['src/testSetup.ts'] },
 })

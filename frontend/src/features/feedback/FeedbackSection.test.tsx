@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, type FeedbackItem } from '../../api'
 import { FeedbackSection } from './FeedbackSection'
 
@@ -18,11 +18,6 @@ const makeItem = (overrides: Partial<FeedbackItem> = {}): FeedbackItem => ({
   createdAt: '2026-10-25T10:00:00Z',
   updatedAt: '2026-10-25T10:00:00Z',
   ...overrides,
-})
-
-afterEach(() => {
-  vi.restoreAllMocks()
-  cleanup()
 })
 
 describe('FeedbackSection', () => {

@@ -7,6 +7,17 @@ import styles from './CheckGauge.module.css'
 /** The gauge's own class, and the parent's placement when given. */
 const withClass = (own: string, extra?: string) => (extra ? `${own} ${extra}` : own)
 
+/** Two levels and how they stand: "SMA 50 $x ≤ SMA 200 $y", "20d ago $x ↗ Now $y". */
+function TwoLevelStrip({ left, right, ok, symbol, className }: { left: string; right: string; ok: boolean; symbol: string; className?: string }) {
+  return (
+    <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
+      <span className={styles.stackChip}>{left}</span>
+      <span className={styles.stackRel} data-ok={ok}>{symbol}</span>
+      <span className={styles.stackChip}>{right}</span>
+    </div>
+  )
+}
+
 const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high', 'breakout'])
 
 // Proven growth's bar says the rise itself, as its sentence does: its share of the target ("199%" for a 99.3% rise that
@@ -27,11 +38,8 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // (Checks stored before this field still have a value: a spread at or under 0 says the same.)
   if (check.key === 'golden' && (check.value === null || (check.subValue ?? 0) <= 0) && check.level !== null && check.midLevel != null) {
     return (
-      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
-        <span className={styles.stackChip}>{t('stock.bar.sma50', { price: exact(check.level, currency) })}</span>
-        <span className={styles.stackRel} data-ok={false}>≤</span>
-        <span className={styles.stackChip}>{t('stock.bar.sma200', { price: exact(check.midLevel, currency) })}</span>
-      </div>
+      <TwoLevelStrip className={className} ok={false} symbol="≤"
+        left={t('stock.bar.sma50', { price: exact(check.level, currency) })} right={t('stock.bar.sma200', { price: exact(check.midLevel, currency) })} />
     )
   }
 
@@ -50,14 +58,19 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
     )
   }
 
+  // 1b. The stack without its middle average: Short vs Long.
+  if (check.key === 'stackedTwo' && check.level !== null && check.endLevel != null) {
+    return (
+      <TwoLevelStrip className={className} ok={check.met === true} symbol={check.met ? '>' : '≤'}
+        left={t('stock.bar.short', { price: exact(check.level, currency) })} right={t('stock.bar.long', { price: exact(check.endLevel, currency) })} />
+    )
+  }
+
   // 2. Rising long average: 20 trading days ago -> today.
   if (check.key === 'rising' && check.level !== null && check.endLevel != null) {
     return (
-      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
-        <span className={styles.stackChip}>{t('stock.bar.ago20', { price: exact(check.endLevel, currency) })}</span>
-        <span className={styles.stackRel} data-ok={check.met === true}>{check.met ? '↗' : '↘'}</span>
-        <span className={styles.stackChip}>{t('stock.bar.now', { price: exact(check.level, currency) })}</span>
-      </div>
+      <TwoLevelStrip className={className} ok={check.met === true} symbol={check.met ? '↗' : '↘'}
+        left={t('stock.bar.ago20', { price: exact(check.endLevel, currency) })} right={t('stock.bar.now', { price: exact(check.level, currency) })} />
     )
   }
 

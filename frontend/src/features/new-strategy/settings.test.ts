@@ -30,6 +30,8 @@ describe('settings', () => {
 
   it('formats a value and sums up the changes', () => {
     expect(formatSetting(peak, 45)).toBe('45 days')
+    // A choice says its value in words.
+    expect(formatSetting({ ...peak, value: '{n}', values: { '0': 'two averages' } }, 0)).toBe('two averages')
     expect(settingsSummary({})).toBe('Tested defaults')
     expect(settingsSummary({ peakDays: 40, zoneEndPct: 12 })).toBe('2 changed')
   })

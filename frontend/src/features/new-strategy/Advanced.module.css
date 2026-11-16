@@ -13,6 +13,10 @@
   align-items: center;
   gap: 12px;
 }
+/* A choice's buttons are wider than a stepper: they drop under the sentence when the row is narrow. */
+.row[data-choice] {
+  flex-wrap: wrap;
+}
 .row[data-changed] {
   border-color: var(--warning);
 }

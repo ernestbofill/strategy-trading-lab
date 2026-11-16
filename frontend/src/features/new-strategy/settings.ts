@@ -49,8 +49,8 @@ export function stepSetting(setting: Setting, value: number, direction: 1 | -1):
   return Number((value + direction * setting.step).toFixed(decimals))
 }
 
-/** "5%", "60 days". */
-export const formatSetting = (setting: Setting, n: number) => setting.value.replace('{n}', String(n))
+/** "5%", "60 days"; a choice's value in its words. */
+export const formatSetting = (setting: Setting, n: number) => setting.values?.[String(n)] ?? setting.value.replace('{n}', String(n))
 
 /** The Confirm and Review line: "Tested defaults" or "2 changed". */
 export function settingsSummary(changed: SettingValues): string {

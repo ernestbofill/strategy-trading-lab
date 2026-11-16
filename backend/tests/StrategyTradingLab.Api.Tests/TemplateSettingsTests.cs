@@ -50,9 +50,9 @@ public class TemplateSettingsTests
     [Fact]
     public void Dip_in_winners_exposes_the_POCs_rules_grouped_by_candidate_signal_and_pace()
     {
-        Assert.Equal(["minGainPct", "gainDays", "trendDays", "peakDays", "zoneStartPct", "zoneEndPct", "floorDays", "cooldownDays"],
+        Assert.Equal(["minGainPct", "gainDays", "trendDays", "middleAverage", "peakDays", "zoneStartPct", "zoneEndPct", "floorDays", "cooldownDays"],
             TemplateCatalog.Dip.Settings.Select(s => s.Key));
-        Assert.Equal(["candidate", "candidate", "candidate", "signal", "signal", "signal", "signal", "pace"],
+        Assert.Equal(["candidate", "candidate", "candidate", "candidate", "signal", "signal", "signal", "signal", "pace"],
             TemplateCatalog.Dip.Settings.Select(s => s.Group));
 
         var (stored, errors) = Apply(TemplateCatalog.Dip, new() { ["minGainPct"] = 80, ["gainDays"] = 126, ["cooldownDays"] = 20 });

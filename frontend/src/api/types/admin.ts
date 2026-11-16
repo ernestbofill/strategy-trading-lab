@@ -170,6 +170,8 @@ export interface AdminTemplate {
 
 /** A setting of Advanced settings, with its words (`sentence` with `{value}`, `value` with `{n}`) and range. */
 export interface AdminTemplateSetting {
+  /** A choice's values in words, instead of a range. */
+  values?: Record<string, string>
   key: string
   sentence: string
   value: string

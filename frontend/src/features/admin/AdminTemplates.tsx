@@ -94,7 +94,7 @@ function VersionForm({ template, version, onChanged }: VersionFormProps) {
               label={labelOf(s.sentence, s.value)}
               value={values[s.key] ?? ''}
               onChange={(text) => setValues((v) => ({ ...v, [s.key]: text }))}
-              hint={`${v1(tested?.defaults[s.key])}${formatRate(s.min)} to ${formatRate(s.max)}, steps of ${formatRate(s.step)}`}
+              hint={`${v1(tested?.defaults[s.key])}${s.values ? Object.entries(s.values).map(([n, words]) => `${n}: ${words}`).join(', ') : `${formatRate(s.min)} to ${formatRate(s.max)}, steps of ${formatRate(s.step)}`}`}
               error={errors[`settings.${s.key}`]}
             />
           ))}

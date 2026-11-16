@@ -73,7 +73,7 @@ public static class TemplateEndpoints
             {
                 var words = Words(template, texts.Settings, setting.Key, english => english.Settings);
                 return new SettingDto(setting.Key, words.Sentence, words.Value, setting.Step, setting.Min, setting.Max, setting.Below,
-                    words.Help, setting.Group);
+                    words.Help, setting.Group, words.Values);
             })],
             SettingGroups = [.. template.Settings.Select(setting => setting.Group).OfType<string>().Distinct().Select(group =>
             {

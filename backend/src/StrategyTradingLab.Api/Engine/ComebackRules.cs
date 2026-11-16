@@ -83,10 +83,10 @@ public class ComebackRules : BuyRulesBase
     /// <summary>
     /// Whether the 5-day volume is at least <c>VolumeRatio</c> times the 50-day (no volume at all: no; the 50-day average is zero
     /// only when the 5-day one is, the POC's 0/0), on a price that rose over those 5 days: heavy trading on a falling price
-    /// is selling, not a turn (<c>VolumeOnRise</c>; Ernest, 2026-11-16, not in the POC).
+    /// is selling, not a turn (from <c>VolumeOnRiseFrom</c> on; Ernest, 2026-11-16, not in the POC).
     /// </summary>
     bool VolumeOk(int i) => vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 && short5 / long50 >= p.VolumeRatio
-        && (!p.VolumeOnRise || RisePct(i) > 0);
+        && (dates[i] < p.VolumeOnRiseFrom || RisePct(i) > 0);
 
     protected override RuleDecision DecideDay(int i, DayContext day)
     {
@@ -175,7 +175,8 @@ public class ComebackRules : BuyRulesBase
             SubValue: p.LowDays, EndValue: p.MaxChasePct));
         var volumeOk = VolumeOk(i);
         checks.Add(new("volume", CheckGroup.Buy, volumeOk, Math.Round(ratio, 2), p.VolumeRatio,
-            Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio),
+            // Enough volume on a price that isn't rising is not met: the bar stops short of its target, as the verdict says.
+            Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio) is { } done && !volumeOk ? Math.Min(done, 0.99m) : RuleCheck.ProgressOf(ratio, p.VolumeRatio),
             // The price over the volume's 5 days: the volume only counts on a rise.
             SubValue: RisePct(i) is { } rise ? Math.Round(rise, 1) : null));
         checks.AddRange(MilestoneChecks(i, price, BuildMilestones(i, price, pulled: false, highBeforePullback: null), preview: true));

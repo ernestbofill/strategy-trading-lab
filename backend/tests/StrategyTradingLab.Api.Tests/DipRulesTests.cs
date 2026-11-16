@@ -105,5 +105,10 @@ public class DipRulesTests
         Assert.False(volume.Met);
         Assert.True(volume.Value >= volume.Min);
         Assert.Equal(-6.7m, volume.SubValue);
+        Assert.Equal(0.99m, volume.Progress);
+
+        // A strategy older than the rule replays its earlier days as it did: the same day still signals.
+        var before = new ComebackParams { VolumeOnRiseFrom = falling[^1].Date.AddDays(1) };
+        Assert.Equal(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(falling, before), falling, new StepPlan(5))[^1].Status);
     }
 }

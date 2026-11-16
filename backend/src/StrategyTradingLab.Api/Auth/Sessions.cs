@@ -17,11 +17,11 @@ public class Sessions(AppDbContext db, TimeProvider time, IHttpContextAccessor a
 
     HttpContext Http => accessor.HttpContext ?? throw new InvalidOperationException("Sessions need a request.");
 
-    /// <summary>The logged-in user, or null. Looked up once per request.</summary>
     /// <summary>The logged-in user of an endpoint that requires one (<c>RequireUser</c>, the Owner policy), so it is there.</summary>
     public async Task<User> RequiredAsync(CancellationToken cancellationToken) =>
         await CurrentAsync(cancellationToken) ?? throw new InvalidOperationException("This endpoint requires a logged-in user.");
 
+    /// <summary>The logged-in user, or null. Looked up once per request.</summary>
     public async Task<User?> CurrentAsync(CancellationToken cancellationToken)
     {
         if (Http.Items.TryGetValue(ItemKey, out var known)) return (User?)known;

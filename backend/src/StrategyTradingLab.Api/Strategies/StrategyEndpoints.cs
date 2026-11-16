@@ -526,7 +526,10 @@ public static class StrategyEndpoints
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion };
     }
 
-    /// <summary>The page's trades, with their stock; a stock no longer on the list (sold after Edit list) is loaded too.</summary>
+    /// <summary>
+    /// The page's trades, with their stock. A stock no longer on the list (sold after Edit list) is loaded and added to
+    /// <paramref name="assetsById"/>, whose currencies the page's exchange rates are read for.
+    /// </summary>
     static async Task<List<StrategyTradeItem>> TradeItemsAsync<T>(AppDbContext db, Dictionary<Guid, Asset> assetsById, string strategyCurrency,
         List<T> trades, Func<T, Guid> assetOf, Func<T, Asset?, string, StrategyTradeItem> item, CancellationToken cancellationToken)
     {

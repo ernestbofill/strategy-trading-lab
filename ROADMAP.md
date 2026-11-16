@@ -176,6 +176,7 @@ Roughly in the order they become useful (was *After launch*):
 - **A compact list view on the dashboard** (feedback 2026-11-12, skipped for now): the strategy cards as dense rows, as an option.
 - **Find indices such as the Nikkei 225 in the fund search** (feedback 2026-11-12, skipped for now): *Bear markets*' "Search funds" doesn't find it.
 - **One control for app notifications** (feedback 2026-11-12, skipped for now): on the account page the *App* tick and *This device · Turn off* say the same thing twice; combine them.
+- **The comeback's recent low since it was beaten down** (Ernest's feedback, 2026-11-16; needs his decision): the buy line measured from the lowest close since the stock became a candidate, instead of the last 50 trading days. Not built: a stock that stays beaten down for a year keeps its old low, so once it is 19% above it the buy window never opens again, where the 50-day low lets a later turn signal; and no backtest in this repo can compare the two. Options: keep 50 days (recommended), or the lower of the two windows capped at a maximum of days.
 - **Fees outside the budget** (feedback 2026-11-12, skipped for now; Ernest's view): the fixed fee counts apart from the step and the budget, as most brokers do (a $100 buy costs $100 plus the fee), simulations show the fees they charged, and the fee is a strategy setting in Advanced settings. Today the fee is inside the step (spec: How the two modes run). Changes results and budgets: high risk.
 
 ## Open decisions (Ernest)

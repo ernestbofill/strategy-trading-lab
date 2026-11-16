@@ -23,6 +23,7 @@ export function PriceChart({
   strategyId,
   assetId,
   isCandidate,
+  beatenDate,
   currency,
   trades,
   texts,
@@ -31,6 +32,8 @@ export function PriceChart({
   assetId: string
   /** The stored verdict the page shows; null before the daily check has stored any. */
   isCandidate: boolean | null
+  /** The day a comeback candidate was last beaten down (the page's "Candidate since"), ringed on the price; null for none. */
+  beatenDate: string | null
   currency: string
   trades: StrategyTradeItem[]
   texts: Record<string, CheckTexts> | null | undefined
@@ -53,6 +56,9 @@ export function PriceChart({
   const dayOf = (date: string) => points.findIndex((p) => p.date >= date)
   // On the price line at its day's close: a trade's own price is what was paid, which a later split no longer matches.
   const dots = trades.filter((tr) => tr.tradeDate >= first && tr.tradeDate <= last.date).map((tr) => ({ ...tr, i: dayOf(tr.tradeDate) }))
+  // Where a candidate was last beaten down ("Candidate since"), when the period reaches back to it (Ernest, 2026-11-16).
+  // Not while it is still beaten down: the ring would sit on the latest price and move with it each day.
+  const beaten = beatenDate && beatenDate >= first && beatenDate < last.date ? dayOf(beatenDate) : null
   const startedOn = chart.data.startedOn
   const started = startedOn && startedOn > first && startedOn <= last.date ? dayOf(startedOn) : null
 
@@ -111,6 +117,7 @@ export function PriceChart({
           </svg>
           {/* Round marks in HTML, so the stretched SVG doesn't squash them. */}
           <span className={styles.dot} style={{ left: '100%', top: pct(y(last.close), HEIGHT) }} />
+          {beaten !== null && <span className={styles.beaten} style={{ left: pct(x(beaten), WIDTH), top: pct(y(points[beaten].close), HEIGHT) }} />}
           {dots.map((d) => (
             <span key={d.id} className={styles.trade} data-side={d.side} style={{ left: pct(x(d.i), WIDTH), top: pct(y(points[d.i].close), HEIGHT) }} />
           ))}
@@ -143,6 +150,12 @@ export function PriceChart({
             {nameOf(s)}
           </li>
         ))}
+        {beaten !== null && (
+          <li>
+            <span className={styles.beatenKey} />
+            {t('stock.chart.beatenOn', { date: shortDate(beatenDate!) })}
+          </li>
+        )}
         {(['buy', 'sell'] as const)
           .filter((side) => dots.some((d) => d.side === side))
           .map((side) => (

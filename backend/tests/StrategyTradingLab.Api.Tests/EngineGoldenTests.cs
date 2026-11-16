@@ -60,7 +60,9 @@ public class EngineGoldenTests
         var golden = Load(name);
         var bars = Bars(golden);
 
-        var days = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5));
+        // The POC counts the volume whatever the price did: STL's own rule (only on a rise) is off here.
+        var parameters = new ComebackParams { VolumeOnRiseFrom = DateOnly.MaxValue };
+        var days = RulesRunner.Run(new ComebackRules(bars, parameters), bars, new StepPlan(5));
 
         Matches(golden, days);
     }

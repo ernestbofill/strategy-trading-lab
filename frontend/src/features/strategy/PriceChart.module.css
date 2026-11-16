@@ -103,6 +103,23 @@
   background: var(--hot-pink);
 }
 
+/* The day a candidate was last beaten down: a ring around the price, so the latest price's dot shows through it. */
+.beaten,
+.beatenKey {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--warning);
+  border-radius: 50%;
+}
+.beaten {
+  position: absolute;
+  margin: -6px 0 0 -6px;
+}
+.beatenKey {
+  display: inline-block;
+  box-sizing: border-box;
+}
+
 .tradeKey {
   display: inline-block;
   width: 10px;

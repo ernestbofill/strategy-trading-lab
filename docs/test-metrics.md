@@ -19,8 +19,8 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
 | Frontend (Vitest) | 3 | 3 | 6 |
-| Backend (xUnit) | 0 | 2 | 2 |
-| **All** | **3** | **5** | **8** |
+| Backend (xUnit) | 0 | 4 | 4 |
+| **All** | **3** | **7** | **10** |
 
 ## Log
 
@@ -28,6 +28,8 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-16 | #257 | local | Backend (xUnit) | `EngineGoldenTests.The_comeback_matches_the_POC_day_by_day` (VICR, one other) | 2 | FP | The comeback's volume now counts only on a rising price (intended, not the POC's rule): two signal-ended reasons differed. The golden runs set `VolumeOnRiseFrom` past their last day. |
+| 2026-11-16 | #257 | local | Backend (xUnit) | `DipRulesTests.The_comeback_measures_the_turn_from_the_recent_low_window` | 1 | FP | Same change: its signal day closed below the close 5 days before. The test's prices now rise into the signal, and it also covers the falling case. |
 | 2026-11-16 | #255 | local | Backend (xUnit) | every `[NeonFact]` class that opens the database (AccountTests, AdminAccessTests, StockChangeTests…) | most of the suite | FP | The local PostgreSQL had stopped when the cloud session's worker restarted (connection refused). No code fix: started it again, and the suite passed. |
 | 2026-11-16 | #246 | local | Frontend (Vitest) | `src/lib/push.test.ts` (all four) | 4 | FP | Loading Testing Library inside the shared `afterEach` ran while the test's stubbed `navigator` (no `userAgent`) was still in place; `testSetup.ts` now loads it up front, in jsdom files only. |
 | 2026-11-16 | #246 | local | Frontend (Vitest) | `src/features/summary/SummaryPage.test.tsx > renders quiet state on days with no changes and shows running strategies scoreboard` | 1 | FP | The new SIM check looked for a simulation row in the quiet-day test, but the row had gone into the active-day test's data; moved the check there. |

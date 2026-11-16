@@ -2324,3 +2324,23 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261116121917_ComebackVolumeOnRiseFrom') THEN
+    UPDATE strategies
+    SET params = params || jsonb_build_object('volumeOnRiseFrom', to_char(CURRENT_DATE + 1, 'YYYY-MM-DD'))
+    WHERE template_key = 'comeback' AND NOT params ? 'volumeOnRiseFrom';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261116121917_ComebackVolumeOnRiseFrom') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261116121917_ComebackVolumeOnRiseFrom', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

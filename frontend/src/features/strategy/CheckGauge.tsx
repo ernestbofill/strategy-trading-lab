@@ -92,7 +92,8 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
     const label = isZone
       ? t('stock.bar.zone', { min: formatRate(min), max: formatRate(max) })
       : fromZero
-        ? t('stock.bar.bounce', { min: formatRate(min), max: formatRate(max) })
+        ? // The window's two prices: its % above the low (+10 to +18.8%) read as a sum gone wrong (Ernest, 2026-11-16).
+          t('stock.bar.window', { from: check.level === null ? '–' : exact(check.level, currency), to: check.endLevel == null ? '–' : exact(check.endLevel, currency) })
         : t('stock.bar.chase', { max: formatRate(max) })
     return (
       <div className={withClass(styles.progress, className)}>

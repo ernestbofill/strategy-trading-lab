@@ -81,6 +81,29 @@ public class EngineTests
     }
 
     [Fact]
+    public void Days_already_checked_follow_their_recorded_signals_not_the_rules_of_today()
+    {
+        // Windows on days 1-2 and 5-6; days 0-3 were checked before.
+        var rules = () => new OpenOn(1, 2, 5, 6) { CooldownDays = 0, Length = 10 };
+        var until = Bars(10)[3].Date;
+        CheckedDays Past(int[] buys, bool held = false) =>
+            new(until, buys.Select(i => Bars(10)[i].Date).ToHashSet(), new HashSet<DateOnly>(), _ => held);
+
+        // Day 1's buy has no signal (the rules changed since): no step held, so day 5's window is step 1 again.
+        var unsignalled = RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Past([]));
+        Assert.Equal([5], NewBuyDays(unsignalled));
+        Assert.Equal(1, unsignalled[5].StepNo);
+
+        // The budget held day 1's buy back: the rules keep the step, as on the day.
+        Assert.Equal(2, RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Past([], held: true))[5].StepNo);
+
+        // A signal the rules of today don't call for still counts: bought at day 4's open.
+        var signalled = RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Past([3]));
+        Assert.Equal(RuleStatus.Building, signalled[4].Status);
+        Assert.Equal(2, signalled[5].StepNo);
+    }
+
+    [Fact]
     public void Nothing_is_said_before_enough_history()
     {
         var days = RulesRunner.Run(new Late(new OpenOn(0, 1, 2, 3) { Length = 6 }), Bars(6), new StepPlan(3));

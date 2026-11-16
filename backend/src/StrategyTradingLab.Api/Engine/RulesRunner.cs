@@ -1,6 +1,18 @@
 namespace StrategyTradingLab.Api.Engine;
 
 /// <summary>
+/// The days a strategy already checked for a stock, up to <paramref name="Until"/>: the replay acts on what was recorded for them,
+/// not on what the rules say now. A changed rule, setting or price history gives those days no new signal (decisions, 2026-10-23),
+/// so the rules mustn't hold a step no signal stands for (the stock then read "No budget left" with the budget unused), nor drop
+/// one that was signalled.
+/// </summary>
+/// <param name="Buys">The days with a buy signal: acted on at the next open, whatever the rules say now.</param>
+/// <param name="Sells">The days with a sell signal.</param>
+/// <param name="HeldByBudget">Whether the budget had no room for a step on that day: a buy the rules call for then is kept without
+/// a signal, as on the day itself (the stock shows "No budget left").</param>
+public sealed record CheckedDays(DateOnly Until, IReadOnlySet<DateOnly> Buys, IReadOnlySet<DateOnly> Sells, Func<DateOnly, bool> HeldByBudget);
+
+/// <summary>
 /// Runs a template's rules over an asset's history, day by day, as the POC's backtest does: a signal on day D is
 /// acted on at day D+1's open, whatever the user does ("the rules carry on as if the step had been bought"), and the
 /// cooldown counts from that day. The rules decide each day's status (<see cref="IBuyRules"/>); this keeps the rules' own
@@ -19,12 +31,13 @@ public static class RulesRunner
     /// last day then reads as it will once its buy signal's step is bought, the next steps and the cooldown from its close. The
     /// stock page shows it as soon as the step is taken (Ernest, 2026-11-12), instead of the signal's own checks until the next check.
     /// </param>
+    /// <param name="checkedDays">The days already checked, which follow their recorded signals (<see cref="CheckedDays"/>); null: the rules decide every day.</param>
     public static IReadOnlyList<DayEvaluation> Run(IBuyRules rules, IReadOnlyList<PriceBar> bars, StepPlan plan, int from = 0,
-        DateOnly? boughtBeforeLast = null)
+        DateOnly? boughtBeforeLast = null, CheckedDays? checkedDays = null)
     {
         if (rules.Length != bars.Count) throw new ArgumentException($"The rules cover {rules.Length} days but {bars.Count} bars were given.", nameof(bars));
         var results = new List<DayEvaluation>(Math.Max(bars.Count - from, 0));
-        var machine = new Machine(rules, plan);
+        var machine = new Machine(rules, plan, checkedDays);
         for (var i = Math.Max(from, 0); i < bars.Count; i++)
             results.Add(machine.Step(i, bars[i].Date, i == bars.Count - 1 ? boughtBeforeLast : null));
         return results;
@@ -42,7 +55,7 @@ public static class RulesRunner
         return start;
     }
 
-    sealed class Machine(IBuyRules rules, StepPlan plan)
+    sealed class Machine(IBuyRules rules, StepPlan plan, CheckedDays? checkedDays)
     {
         RuleStatus? previous;
         int? previousStep;
@@ -99,6 +112,12 @@ public static class RulesRunner
                 : null;
             var newBuy = step is not null && (previous != RuleStatus.BuySignal || previousStep != step || (actedNow && !cooling));
             var newSell = decision.Status == RuleStatus.SellSignal && (previous != RuleStatus.SellSignal || (actedNow && !cooling));
+            if (checkedDays is { } past && day <= past.Until)
+            {
+                // A day already checked: its recorded signals are what happened.
+                newBuy = past.Buys.Contains(day) || (newBuy && past.HeldByBudget(day));
+                newSell = past.Sells.Contains(day);
+            }
             previous = decision.Status;
             previousStep = step;
             if (newBuy) pendingBuy = true;

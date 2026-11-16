@@ -254,4 +254,7 @@ public record StrategyDetail(
 
     /// <summary>The template version it started from (/admin/templates): its settings screen shows that version as tested.</summary>
     public int DefaultsVersion { get; init; }
+
+    /// <summary>The template's signals are years apart (<see cref="Templates.Template.RareSignals"/>).</summary>
+    public bool RareSignals { get; init; }
 }

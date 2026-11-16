@@ -98,7 +98,7 @@ function Summary({ s, status }: { s: StrategyDetail; status?: ReactNode }) {
               <span className={styles.mono}>{signedPct(pastResult.indexPerYear, 1)}</span> {t('strategy.pastSummary.after')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.worstYear)}</span>{t('strategy.pastSummary.indexWorst')}{' '}
               <span className={styles.mono}>{signedPct(pastResult.indexWorstYear)}</span>.
-              {s.templateKey === 'bear' && ` ${t('dashboard.card.bearRare')}`}
+              {s.rareSignals && ` ${t('strategy.rareSignals')}`}
             </>
           )}
         </p>

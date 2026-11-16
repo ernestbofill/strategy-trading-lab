@@ -242,14 +242,6 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
     static NotificationService Service(IServiceScope scope, IEmailSender sender) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
 
-    static NotificationService Service(IServiceScope scope, IEmailSender sender, DateTimeOffset now) =>
-        ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender, (TimeProvider)new FixedTime(now));
-
-    sealed class FixedTime(DateTimeOffset now) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => now;
-    }
-
     static NotificationService Service(IServiceScope scope, IPushSender push) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)new Captured(), push);
 
@@ -290,28 +282,28 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
             var push = new FlakyPush();
 
             // Down: nothing sent, the claim given back and the device marked as failing since now.
-            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default));
             Assert.False(await db.Notifications.AnyAsync(n => n.UserId == userId));
             Assert.NotNull(await db.PushSubscriptions.Where(p => p.Id == device.Id).Select(p => p.LastFailedAt).SingleAsync());
 
             // Back up: the next run sends it and clears the mark.
             push.Down = false;
-            Assert.Equal(1, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Equal(1, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default));
             Assert.Null(await db.PushSubscriptions.Where(p => p.Id == device.Id).Select(p => p.LastFailedAt).SingleAsync());
 
             // A refusal (a key the device no longer matches) isn't tried again every hour: the claim stays, as failed.
             await db.Notifications.Where(n => n.UserId == userId).ExecuteDeleteAsync();
             push.Refuse = true;
-            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default));
             Assert.NotNull(await db.Notifications.Where(n => n.UserId == userId).Select(n => n.FailedAt).SingleAsync());
-            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default));
             push.Refuse = false;
 
             // A device failing for over a week is forgotten on its next failure.
             await db.Notifications.Where(n => n.UserId == userId).ExecuteDeleteAsync();
             await db.PushSubscriptions.Where(p => p.Id == device.Id).ExecuteUpdateAsync(p => p.SetProperty(x => x.LastFailedAt, DateTimeOffset.UtcNow.AddDays(-8)));
             push.Down = true;
-            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default));
             Assert.False(await db.PushSubscriptions.AnyAsync(p => p.Id == device.Id));
         }
         finally
@@ -337,11 +329,11 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
 
             // With the user's App box off, nothing goes out and nothing is claimed.
             await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, false));
-            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Equal(0, await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default));
             await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u.SetProperty(x => x.AlertPush, true));
 
-            var first = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
-            var second = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var first = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
+            var second = await Service(scope, push).PushSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
 
             Assert.Equal((1, 0), (first, second));
             var (endpoint, payload) = Assert.Single(push.Sent);
@@ -422,10 +414,10 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
         {
             var sender = new Captured();
             // Thursday 22 October's signal waits for 07:00 on Friday in Madrid (05:00 UTC): at 23:00 there, nothing goes out.
-            Assert.Equal(0, await Service(scope, sender, new DateTimeOffset(2026, 10, 22, 21, 0, 0, TimeSpan.Zero)).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default));
+            Assert.Equal(0, await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), new DateTimeOffset(2026, 10, 22, 21, 0, 0, TimeSpan.Zero), default));
             Assert.Empty(sender.Sent);
-            var first = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
-            var second = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var first = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
+            var second = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
 
             Assert.Equal((1, 0), (first, second));
             Assert.Equal(email, Assert.Single(sender.Sent).To);
@@ -451,7 +443,7 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
         {
             var today = new DateOnly(2026, 10, 23);
             var sender = new Captured();
-            Assert.Equal(1, await Service(scope, sender).SendSignalAlertsAsync(today, default));
+            Assert.Equal(1, await Service(scope, sender).SendSignalAlertsAsync(today, DateTimeOffset.UtcNow, default));
             // An extra check the same day (a price that came in late) signals the same stock again, for the next session.
             db.Signals.Add(new Signal
             {
@@ -459,12 +451,12 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
                 ClosePrice = 187.5m, Facts = JsonDocument.Parse("{}"), Status = SignalStatus.Waiting,
             });
             await db.SaveChangesAsync();
-            Assert.Equal(0, await Service(scope, sender).SendSignalAlertsAsync(today, default));
+            Assert.Equal(0, await Service(scope, sender).SendSignalAlertsAsync(today, DateTimeOffset.UtcNow, default));
             Assert.Equal(1, await db.Notifications.CountAsync(n => n.UserId == userId && n.SentAt == null && n.Error != null));
 
             await db.Signals.Where(s => s.Id == signalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, today));
-            var first = await Service(scope, sender).SendSignalEndedAsync(today, default);
-            var second = await Service(scope, sender).SendSignalEndedAsync(today, default);
+            var first = await Service(scope, sender).SendSignalEndedAsync(today, DateTimeOffset.UtcNow, default);
+            var second = await Service(scope, sender).SendSignalEndedAsync(today, DateTimeOffset.UtcNow, default);
 
             Assert.Equal((1, 0), (first, second));
             Assert.Equal(2, sender.Sent.Count);
@@ -484,7 +476,7 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
         var (userId, _, assetId, _, _) = await SeedAsync(db);
         try
         {
-            var sent = await Service(scope, new Suppressed()).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var sent = await Service(scope, new Suppressed()).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
 
             Assert.Equal(0, sent);
             var row = await db.Notifications.AsNoTracking().SingleAsync(n => n.UserId == userId);
@@ -509,7 +501,7 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
             await db.Signals.Where(s => s.Id == signalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, new DateOnly(2026, 10, 23)));
             var sender = new Captured();
 
-            var alerts = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var alerts = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
             var reminders = await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 23, 9, 0, 0, TimeSpan.Zero), default);
 
             Assert.Equal((0, 0), (alerts, reminders));
@@ -533,7 +525,7 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
         {
             var sender = new Captured();
 
-            var sent = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var sent = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
 
             Assert.Equal(0, sent);
             Assert.Empty(sender.Sent);
@@ -555,7 +547,7 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
             await db.Signals.Where(s => s.Id == ai.SignalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.SnoozedUntil, new DateOnly(2026, 10, 23)));
             var sender = new Captured();
 
-            var alerts = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var alerts = await Service(scope, sender).SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
             var snoozes = await Service(scope, sender).SendSnoozeRemindersAsync(new DateTimeOffset(2026, 10, 23, 7, 30, 0, TimeSpan.Zero), default);
 
             Assert.Equal((0, 0), (alerts, snoozes));
@@ -758,11 +750,11 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
             var sender = new NotSetUpThenWorks();
             var service = ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
 
-            var before = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var before = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
             Assert.Equal(0, await db.Notifications.CountAsync(n => n.UserId == userId)); // The claim was given back.
             sender.SetUp = true;
-            var after = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
-            var again = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), default);
+            var after = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
+            var again = await service.SendSignalAlertsAsync(new DateOnly(2026, 10, 23), DateTimeOffset.UtcNow, default);
 
             Assert.Equal((0, 1, 0), (before, after, again));
             Assert.Equal(1, sender.Sent);

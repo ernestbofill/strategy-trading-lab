@@ -7,7 +7,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// <c>MinGainPct</c> from its low and its averages are stacked (SMA 50 &gt; SMA 150 &gt; SMA 200) with the SMA 200 rising.
 /// The buy window is the discount zone, <c>ZoneStartPct</c>–<c>ZoneEndPct</c> below the recent peak and above the SMA 50.
 /// </summary>
-public class DipRules : IBuyRules
+public class DipRules : BuyRulesBase
 {
     const int MiddleDays = 150, RisingDays = 20, MinimumHistory = 220;
 
@@ -18,7 +18,7 @@ public class DipRules : IBuyRules
     readonly DateOnly?[] candidateSince;
     readonly BuyWindow window = new();
 
-    public DipRules(IReadOnlyList<PriceBar> bars, DipParams parameters)
+    public DipRules(IReadOnlyList<PriceBar> bars, DipParams parameters) : base(bars.Count)
     {
         p = parameters;
         close = [.. bars.Select(b => b.Close)];
@@ -59,19 +59,13 @@ public class DipRules : IBuyRules
         return lowest <= highest ? Math.Clamp(MiddleDays, lowest, highest) : p.FloorDays;
     }
 
-    public int Length => close.Count;
-
     /// <summary>The POC's 220 days, and more when a window needs more: the trend average and its rise, the low, the peak.</summary>
-    public int MinHistory => new[] { MinimumHistory, p.GainDays, p.TrendDays + RisingDays, p.PeakDays, MiddleDaysFor(p) }.Max();
+    public override int MinHistory => new[] { MinimumHistory, p.GainDays, p.TrendDays + RisingDays, p.PeakDays, MiddleDaysFor(p) }.Max();
 
-    public int CooldownDays => p.CooldownDays;
+    public override int CooldownDays => p.CooldownDays;
 
-    int lastDecided = -1;
-
-    public RuleDecision Decide(int i, DayContext context)
+    protected override RuleDecision DecideDay(int i, DayContext context)
     {
-        if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
-        lastDecided = i;
         if (floor[i] is not { } sma50 || middle[i] is not { } sma150 || trend[i] is not { } sma200
             || low[i] is not { } lowest || high[i] is not { } peak)
         {

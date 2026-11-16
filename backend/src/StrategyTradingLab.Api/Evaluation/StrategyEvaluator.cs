@@ -5,6 +5,7 @@ using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.MarketData;
+using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Evaluation;
@@ -46,11 +47,8 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             .Where(s => s.Status == StrategyStatus.Running).ToListAsync(cancellationToken);
         var rates = await ExchangeRates.LoadAsync(db, null, cancellationToken);
         // A run that loaded a strategy just before it ended can leave it a waiting signal: the next run closes it.
-        var leftOver = await db.Signals.Where(s => s.Status == SignalStatus.Waiting
-                && db.Strategies.Any(st => st.Id == s.StrategyId && st.Status == StrategyStatus.Ended))
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
-                .SetProperty(x => x.EndedOn, x => x.EndedOn ?? lastSession)
-                .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+        var leftOver = await db.Signals.Where(s => db.Strategies.Any(st => st.Id == s.StrategyId && st.Status == StrategyStatus.Ended))
+            .MissWaitingAsync(lastSession, cancellationToken);
 
         int signals = 0, trades = 0, missed = leftOver, failed = 0, evaluated = 0;
         // What kept a strategy from being checked in full, for the owner's Alerts page.
@@ -123,8 +121,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             // A stock added later is evaluated from the day it was added, not from the strategy's start.
             var start = added[asset.Id] > strategy.StartedOn ? added[asset.Id] : strategy.StartedOn;
             if (start > DateOnly.FromDateTime(now.UtcDateTime).AddDays(1)) continue; // Nothing if the strategy (or stock) starts in the future.
-            var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == asset.Id && p.Date <= lastSession).OrderBy(p => p.Date)
-                .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
+            var bars = await db.FinishedBarsAsync(asset.Id, lastSession, cancellationToken);
             if (bars.Count == 0)
             {
                 missing.Add($"{asset.Symbol}: no prices stored.");
@@ -153,10 +150,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                     continue;
                 }
             }
-            var replayFrom = firstChecked ?? bars[^1].Date;
-            // No bar from that day on (a price row revised away): the latest bar, never back to the start.
-            var replayIndex = bars.FindIndex(b => b.Date >= replayFrom);
-            var from = replayIndex < 0 ? bars.Count - 1 : replayIndex;
+            var from = RulesRunner.StartIndex(bars, firstChecked ?? bars[^1].Date);
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
@@ -170,10 +164,9 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 : null;
             if (days[^1].Status == RuleStatus.NotEnoughData)
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
-            // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running: an Edit
-            // list save or an archive made since the strategy was loaded waits for this or wins, and gets no new signal.
+            // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running.
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            if (!await StillFollowedAsync(strategy.Id, asset.Id, cancellationToken)) continue;
+            if (!(await db.LockFollowedAsync(strategy.Id, cancellationToken)).Contains(asset.Id)) continue;
             var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, afterBuy, price, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             signals += run.NewSignals;
@@ -183,14 +176,6 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         return new Changes(signals, trades, missed);
     }
 
-    /// <summary>Locks the strategy's row until the transaction ends, and says whether it still runs and follows the stock.</summary>
-    async Task<bool> StillFollowedAsync(Guid strategyId, Guid assetId, CancellationToken cancellationToken) =>
-        (await db.Database.SqlQuery<Guid>($"""
-            SELECT a.asset_id AS "Value" FROM strategies s JOIN strategy_assets a ON a.strategy_id = s.id
-            WHERE s.id = {strategyId} AND s.status = 'running' AND a.asset_id = {assetId} AND a.active AND a.removed_at IS NULL
-            FOR NO KEY UPDATE OF s
-            """).ToListAsync(cancellationToken)).Count > 0;
-
     /// <summary>
     /// The waiting signals of stocks the daily check no longer follows (delisted, unticked or removed from the strategy) would
     /// never close: they become missed, ending on the last session. Returns how many.
@@ -198,12 +183,8 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     async Task<int> CloseUnfollowedAsync(Strategy strategy, DateOnly lastSession, CancellationToken cancellationToken)
     {
         var ticked = strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId).ToList();
-        // Read in the database, so an answer saved meanwhile stands. Only a waiting signal can be snoozed (the table's check).
-        return await db.Signals.Where(s => s.StrategyId == strategy.Id && s.Status == SignalStatus.Waiting
-                && !db.Assets.Any(a => a.Id == s.AssetId && a.Active && ticked.Contains(a.Id)))
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
-                .SetProperty(x => x.EndedOn, x => x.EndedOn ?? lastSession)
-                .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+        return await db.Signals.Where(s => s.StrategyId == strategy.Id && !db.Assets.Any(a => a.Id == s.AssetId && a.Active && ticked.Contains(a.Id)))
+            .MissWaitingAsync(lastSession, cancellationToken);
     }
 
     /// <summary>
@@ -251,54 +232,39 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         var live = strategy.Mode == StrategyMode.Live;
         var found = new HashSet<Signal>(); // The signals this call makes: only they may fill at the latest price.
         var hasSteps = strategy.Budget.Step is not null && strategy.Budget.MaxSteps is not null;
-        foreach (var day in days.Where(d => d.NewBuy && !signals.ContainsKey((d.Date, TradeSide.Buy)) && (evaluatedUntil is null || d.Date > evaluatedUntil)))
+        IEnumerable<DayEvaluation> Unsignalled(Func<DayEvaluation, bool> starts, TradeSide side) =>
+            days.Where(d => starts(d) && !signals.ContainsKey((d.Date, side)) && (evaluatedUntil is null || d.Date > evaluatedUntil));
+        void Add(DayEvaluation day, TradeSide side, bool steps)
+        {
+            var signal = new Signal
+            {
+                StrategyId = strategy.Id, AssetId = asset.Id, Side = side,
+                StepNo = steps ? day.StepNo : null, MaxSteps = steps ? strategy.Budget.MaxSteps : null, StepAmount = steps ? strategy.Budget.Step : null,
+                SignalDate = day.Date, ClosePrice = bars.First(b => b.Date == day.Date).Close,
+                Facts = Facts(day.Facts), Status = live ? SignalStatus.Waiting : SignalStatus.Confirmed, AnsweredAt = live ? null : now,
+            };
+            db.Signals.Add(signal);
+            signals[(day.Date, side)] = signal;
+            found.Add(signal);
+            newSignals++;
+        }
+        foreach (var day in Unsignalled(d => d.NewBuy, TradeSide.Buy))
         {
             var stepAmount = strategy.Budget.Step ?? 0;
             if (budget.Used + stepAmount > strategy.Budget.Amount) continue; // The budget is used up: no more signals.
             budget.Used += stepAmount;
-            var signal = new Signal
-            {
-                StrategyId = strategy.Id, AssetId = asset.Id, Side = TradeSide.Buy,
-                StepNo = hasSteps ? day.StepNo : null, MaxSteps = hasSteps ? strategy.Budget.MaxSteps : null,
-                StepAmount = hasSteps ? strategy.Budget.Step : null,
-                SignalDate = day.Date, ClosePrice = bars.First(b => b.Date == day.Date).Close,
-                Facts = Facts(day.Facts), Status = live ? SignalStatus.Waiting : SignalStatus.Confirmed, AnsweredAt = live ? null : now,
-            };
-            db.Signals.Add(signal);
-            signals[(day.Date, TradeSide.Buy)] = signal;
-            found.Add(signal);
-            newSignals++;
+            Add(day, TradeSide.Buy, hasSteps);
         }
-        foreach (var day in days.Where(d => d.NewSell && !signals.ContainsKey((d.Date, TradeSide.Sell)) && (evaluatedUntil is null || d.Date > evaluatedUntil)))
-        {
-            var signal = new Signal
-            {
-                StrategyId = strategy.Id, AssetId = asset.Id, Side = TradeSide.Sell,
-                StepNo = null, MaxSteps = null, StepAmount = null,
-                SignalDate = day.Date, ClosePrice = bars.First(b => b.Date == day.Date).Close,
-                Facts = Facts(day.Facts), Status = live ? SignalStatus.Waiting : SignalStatus.Confirmed, AnsweredAt = live ? null : now,
-            };
-            db.Signals.Add(signal);
-            signals[(day.Date, TradeSide.Sell)] = signal;
-            found.Add(signal);
-            newSignals++;
-        }
+        foreach (var day in Unsignalled(d => d.NewSell, TradeSide.Sell)) Add(day, TradeSide.Sell, steps: false);
 
         // Where it stands today, with the checks after the buy while today's signal exists (not when the budget held it back). Rules
         // that count their own steps (Bear markets) read the same: nothing to keep.
         var afterBuy = checksAfterBuy is not null && signals.ContainsKey((latest.Date, TradeSide.Buy)) && !checksAfterBuy.SequenceEqual(latest.Checks)
             ? checksAfterBuy : null;
         var status = Enum.Parse<EvaluationStatus>(latest.Status.ToString());
-        var row = await db.DailyEvaluations.FindAsync([strategy.Id, asset.Id, latest.Date], cancellationToken);
-        if (row is null)
-            db.DailyEvaluations.Add(new DailyEvaluation
-                { StrategyId = strategy.Id, AssetId = asset.Id, Date = latest.Date, Status = status, StepNo = latest.StepNo, Facts = TodaysFacts(latest, afterBuy) });
-        else
-        {
-            row.Status = status;
-            row.StepNo = latest.StepNo;
-            row.Facts = TodaysFacts(latest, afterBuy);
-        }
+        await db.SaveDayAsync(new DailyEvaluation
+            { StrategyId = strategy.Id, AssetId = asset.Id, Date = latest.Date, Status = status, StepNo = latest.StepNo, Facts = TodaysFacts(latest, afterBuy) },
+            cancellationToken);
 
         // Where a signal's window closed: the first later day the buy (or sell) conditions no longer hold. A signal still waiting is missed.
         foreach (var signal in signals.Values.Where(s => s.EndedOn is null))
@@ -310,10 +276,9 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         }
         await db.SaveChangesAsync(cancellationToken);
         // Every ended signal still waiting in the database is missed: not only today's, so a run stopped between the two
-        // writes is repaired by the next. Read in the database, so an answer saved since these rows were read stands.
-        missed += await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id && s.EndedOn != null && s.Status == SignalStatus.Waiting)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
-                    .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken); // Only a waiting signal can be snoozed (the table's check).
+        // writes is repaired by the next.
+        missed += await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id && s.EndedOn != null)
+            .MissWaitingAsync(null, cancellationToken);
 
         // Each signal's own trade, at the next trading day's open, once that day exists. A signal this check at once finds during a
         // session (#220), when that open has passed, trades at the latest price instead (FillOf); one found before (the evening run)

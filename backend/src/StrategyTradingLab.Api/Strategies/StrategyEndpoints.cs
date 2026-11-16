@@ -113,10 +113,7 @@ public static class StrategyEndpoints
                 .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
                 .Select(s => new { s.TemplateKey, s.Params, s.Budget.MaxSteps }).SingleOrDefaultAsync(cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
-            // Finished sessions only, as the daily check reads them: a bar refreshed during the session isn't final.
-            var lastSession = UsSession.LastComplete(time.GetUtcNow());
-            var bars = await db.Prices.AsNoTracking().Where(p => p.AssetId == assetId && p.Date <= lastSession).OrderBy(p => p.Date)
-                .Select(p => new PriceBar(p.Date, p.Open, p.High, p.Low, p.Close, p.Volume)).ToListAsync(cancellationToken);
+            var bars = await db.FinishedBarsAsync(assetId, UsSession.LastComplete(time.GetUtcNow()), cancellationToken);
             if (bars.Count == 0) return TypedResults.Ok(new StockChartData(null, []));
             var from = bars[^1].Date.AddDays(-StockChart.Days);
 
@@ -280,10 +277,7 @@ public static class StrategyEndpoints
             // Their waiting signals can't be answered in time any more: missed, ending today, as when archiving.
             var today = UserClock.Today(user, time);
             if (removed.Count > 0)
-                await db.Signals.Where(s => s.StrategyId == id && s.Status == SignalStatus.Waiting && removed.Contains(s.AssetId))
-                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
-                        .SetProperty(x => x.EndedOn, x => x.EndedOn ?? today)
-                        .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+                await db.Signals.Where(s => s.StrategyId == id && removed.Contains(s.AssetId)).MissWaitingAsync(today, cancellationToken);
             // A simulation's buy still waiting for its trade at the next open won't get one now (the daily check no longer visits the
             // stock): missed too, so it doesn't hold its step of the budget.
             if (removed.Count > 0 && strategy.Mode == StrategyMode.Simulation)
@@ -368,11 +362,7 @@ public static class StrategyEndpoints
                     cancellationToken);
             if (ended == 0) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
             // Its signals still waiting can't be answered in time any more: missed, ending today (one ended already keeps its day).
-            // Only a waiting signal can be snoozed (the table's check).
-            await db.Signals.Where(s => s.StrategyId == id && s.Status == SignalStatus.Waiting)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed)
-                    .SetProperty(x => x.EndedOn, x => x.EndedOn ?? today)
-                    .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+            await db.Signals.Where(s => s.StrategyId == id).MissWaitingAsync(today, cancellationToken);
             // Its AI round due is skipped, as one not run in time is; no new one comes (rounds are kept for running strategies only).
             await db.AiRounds.Where(r => r.StrategyId == id && r.Status == AiRoundStatus.Due)
                 .ExecuteUpdateAsync(r => r.SetProperty(x => x.Status, AiRoundStatus.Skipped), cancellationToken);

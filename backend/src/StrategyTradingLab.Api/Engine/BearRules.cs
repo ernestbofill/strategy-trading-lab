@@ -10,7 +10,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// trading days) → <c>done</c> once all steps are bought. Resets to <c>normal</c> when the price recovers the pre-drop high,
 /// or, when <c>Rearm</c> is on and the drop is at least <c>HighDays</c> trading days old, rearms for a second leg down.
 /// </summary>
-public class BearRules : IBuyRules
+public class BearRules : BuyRulesBase
 {
     readonly BearParams p;
     readonly IReadOnlyList<decimal> close;
@@ -27,7 +27,7 @@ public class BearRules : IBuyRules
     bool rearmed;
     DateOnly cycleStart;
 
-    public BearRules(IReadOnlyList<PriceBar> bars, BearParams parameters)
+    public BearRules(IReadOnlyList<PriceBar> bars, BearParams parameters) : base(bars.Count)
     {
         p = parameters;
         close = [.. bars.Select(b => b.Close)];
@@ -35,18 +35,12 @@ public class BearRules : IBuyRules
         recentHigh = Indicators.RollingHigh(close, p.HighDays);
     }
 
-    public int Length => close.Count;
+    public override int MinHistory => p.HighDays;
 
-    public int MinHistory => p.HighDays;
+    public override int CooldownDays => 0;
 
-    public int CooldownDays => 0;
-
-    int lastDecided = -1;
-
-    public RuleDecision Decide(int i, DayContext day)
+    protected override RuleDecision DecideDay(int i, DayContext day)
     {
-        if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
-        lastDecided = i;
         if (recentHigh[i] is not { } high)
             return new RuleDecision(RuleStatus.NotEnoughData, $"Waiting for {p.HighDays} trading days of history.", new Dictionary<string, object>());
 

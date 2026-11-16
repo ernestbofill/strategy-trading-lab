@@ -82,6 +82,31 @@ public interface IBuyRules
     RuleDecision Decide(int i, DayContext context);
 }
 
+/// <summary>
+/// What every template's rules share: the days they were prepared over, and the guard that each day is decided once and in
+/// order (they keep state between days). A template's rules decide one day in <see cref="DecideDay"/>.
+/// </summary>
+public abstract class BuyRulesBase(int length) : IBuyRules
+{
+    int lastDecided = -1;
+
+    public int Length => length;
+
+    public abstract int MinHistory { get; }
+
+    public abstract int CooldownDays { get; }
+
+    public RuleDecision Decide(int i, DayContext context)
+    {
+        if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
+        lastDecided = i;
+        return DecideDay(i, context);
+    }
+
+    /// <summary>Day <paramref name="i"/>'s verdict; called once per day, in order.</summary>
+    protected abstract RuleDecision DecideDay(int i, DayContext context);
+}
+
 /// <summary>How many steps the budget allows per asset (<c>budget.maxSteps</c>).</summary>
 public record StepPlan(int MaxSteps);
 

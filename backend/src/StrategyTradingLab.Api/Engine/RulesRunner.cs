@@ -30,6 +30,17 @@ public static class RulesRunner
         return results;
     }
 
+    /// <summary>
+    /// The index the rules start from for a first day checked: the first bar on or after it. No bar from that day on (a price
+    /// row revised away): the latest bar, never back to the start.
+    /// </summary>
+    public static int StartIndex(IReadOnlyList<PriceBar> bars, DateOnly firstDay)
+    {
+        var start = bars.Count - 1;
+        while (start > 0 && bars[start - 1].Date >= firstDay) start--;
+        return start;
+    }
+
     sealed class Machine(IBuyRules rules, StepPlan plan)
     {
         RuleStatus? previous;

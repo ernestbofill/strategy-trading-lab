@@ -7,6 +7,7 @@ using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Evaluation;
 using StrategyTradingLab.Api.MarketData;
+using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Strategies;
 using StrategyTradingLab.Api.Templates;
 
@@ -170,10 +171,7 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         // The stocks it follows, read under the strategy's lock as the daily check does: a stock unticked with Edit list meanwhile, or
         // every stock of a strategy archived meanwhile, gets no signal.
-        var following = await db.Database.SqlQuery<Guid>($"""
-            SELECT a.asset_id AS "Value" FROM strategies s JOIN strategy_assets a ON a.strategy_id = s.id
-            WHERE s.id = {strategy.Id} AND s.status = 'running' AND a.active AND a.removed_at IS NULL FOR NO KEY UPDATE OF s
-            """).ToListAsync(cancellationToken);
+        var following = await db.LockFollowedAsync(strategy.Id, cancellationToken);
         var scoresJson = JsonSerializer.SerializeToDocument(scores, JsonSerializerOptions.Web);
         var roundId = round.Id;
         if (extra)
@@ -228,7 +226,8 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
                     latest?.GetValueOrDefault(pick.AssetId), cancellationToken) is { } trade)
                 db.SignalTrades.Add(trade);
             // The strategy page shows the pick today, as the daily check's own signals.
-            await SaveEvaluationAsync(strategy.Id, pick.AssetId, session, EvaluationStatus.BuySignal, pick.StepNo, ScoreFacts(score.Overall), cancellationToken);
+            await db.SaveDayAsync(new DailyEvaluation { StrategyId = strategy.Id, AssetId = pick.AssetId, Date = session, Status = EvaluationStatus.BuySignal,
+                StepNo = pick.StepNo, Facts = ScoreFacts(score.Overall) }, cancellationToken);
         }
         if (!extra) db.AiRounds.Add(new AiRound { StrategyId = strategy.Id, Status = AiRoundStatus.Due, DueOn = nextDue });
 
@@ -327,21 +326,6 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
         return true;
     }
 
-    /// <summary>Stores a stock's status for a session, replacing the daily check's row for that day if there is one.</summary>
-    async Task SaveEvaluationAsync(Guid strategyId, Guid assetId, DateOnly date, EvaluationStatus status, int? stepNo, JsonDocument facts,
-        CancellationToken cancellationToken)
-    {
-        var row = await db.DailyEvaluations.FindAsync([strategyId, assetId, date], cancellationToken);
-        if (row is null)
-            db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = date, Status = status, StepNo = stepNo, Facts = facts });
-        else
-        {
-            row.Status = status;
-            row.StepNo = stepNo;
-            row.Facts = facts;
-        }
-    }
-
     static JsonDocument ScoreFacts(decimal? score) =>
         JsonSerializer.SerializeToDocument(score is null ? new JsonObject() : new JsonObject { ["score"] = score });
 
@@ -421,12 +405,12 @@ public class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimeProvider ti
                 : lastScores.ContainsKey(assetId) ? EvaluationStatus.Watching
                 : EvaluationStatus.NotCandidate;
             var facts = ScoreFacts(lastScores.TryGetValue(assetId, out var score) ? score : null);
-            await SaveEvaluationAsync(strategy.Id, assetId, session, status, todays?.StepNo, facts, cancellationToken);
+            await db.SaveDayAsync(new DailyEvaluation { StrategyId = strategy.Id, AssetId = assetId, Date = session, Status = status, StepNo = todays?.StepNo, Facts = facts },
+                cancellationToken);
         }
         await db.SaveChangesAsync(cancellationToken);
         // Read in the database, so an answer saved since these rows were read stands (as the daily check does).
-        var missed = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.EndedOn != null && s.Status == SignalStatus.Waiting)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken);
+        var missed = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.EndedOn != null).MissWaitingAsync(null, cancellationToken);
         db.ChangeTracker.Clear();
         return (trades, missed);
     }

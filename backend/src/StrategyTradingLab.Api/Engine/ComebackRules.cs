@@ -10,7 +10,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// a pullback): each new one, reached after the last buy, earns one step, bought within <c>MaxChasePct</c> above its level.
 /// Keeps state between days (the milestones used, the breakout tracker): one instance per run.
 /// </summary>
-public class ComebackRules : IBuyRules
+public class ComebackRules : BuyRulesBase
 {
     const int HighDays = 252, VolumeShort = 5, VolumeLong = 50, SmaShort = 50, SmaLong = 200;
 
@@ -34,7 +34,7 @@ public class ComebackRules : IBuyRules
     string? signalled;
     readonly Dictionary<string, DateOnly> boughtOn = [];
 
-    public ComebackRules(IReadOnlyList<PriceBar> bars, ComebackParams parameters)
+    public ComebackRules(IReadOnlyList<PriceBar> bars, ComebackParams parameters) : base(bars.Count)
     {
         p = parameters;
         close = [.. bars.Select(b => b.Close)];
@@ -49,11 +49,9 @@ public class ComebackRules : IBuyRules
         (candidate, beatenAgo, beatenOn) = Candidates();
     }
 
-    public int Length => close.Count;
+    public override int MinHistory => Math.Max(HighDays, p.LowDays);
 
-    public int MinHistory => Math.Max(HighDays, p.LowDays);
-
-    public int CooldownDays => p.CooldownDays;
+    public override int CooldownDays => p.CooldownDays;
 
     /// <summary>
     /// A candidate stays one for <c>CandidateDays</c> days after it was last beaten down (today included). Also how many
@@ -82,12 +80,8 @@ public class ComebackRules : IBuyRules
     /// <summary>Whether the 5-day volume is at least <c>VolumeRatio</c> times the 50-day (no volume at all: no; the 50-day average is zero only when the 5-day one is, the POC's 0/0).</summary>
     bool VolumeOk(int i) => vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 && short5 / long50 >= p.VolumeRatio;
 
-    int lastDecided = -1;
-
-    public RuleDecision Decide(int i, DayContext day)
+    protected override RuleDecision DecideDay(int i, DayContext day)
     {
-        if (i <= lastDecided) throw new InvalidOperationException("These rules keep state from day to day and were already run: build new ones for each run.");
-        lastDecided = i;
         if (low[i] is not { } lowest || sma50[i] is null || high252[i] is not { } high || sma200[i] is null)
         {
             var (none, noneReason) = window.Compose(day, candidate: false, entryOk: false, extended: false, "", "");

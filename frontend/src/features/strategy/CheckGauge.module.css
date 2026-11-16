@@ -1,0 +1,82 @@
+.mono {
+  font-family: var(--font-mono);
+}
+.mono[data-state="met"] {
+  color: var(--success);
+}
+.mono[data-state="past"] {
+  color: var(--warning);
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ink-muted);
+}
+
+.bar {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  background: var(--surface-editor);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.bandZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 30%;
+  width: 45%;
+  background: var(--surface-hover);
+}
+
+.targetTick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink);
+  opacity: 0.75;
+}
+
+.fill {
+  position: relative;
+  height: 100%;
+  background: var(--info);
+}
+.fill[data-state="met"] {
+  background: var(--success);
+}
+.fill[data-state="past"] {
+  background: var(--warning);
+}
+
+.stackStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 2px;
+  font: 500 12px/16px var(--font-mono);
+}
+
+.stackChip {
+  padding: 2px var(--space-2);
+  background: var(--surface-editor);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+
+.stackRel {
+  font-weight: 600;
+  color: var(--warning);
+}
+.stackRel[data-ok="true"] {
+  color: var(--success);
+}

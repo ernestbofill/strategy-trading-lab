@@ -121,8 +121,8 @@ export function PriceChart({
           </svg>
           {/* Round marks in HTML, so the stretched SVG doesn't squash them. */}
           <span className={styles.dot} style={{ left: '100%', top: pct(y(last.close), HEIGHT) }} />
-          {recentLow !== null && <span className={styles.low} style={{ left: pct(x(recentLow), WIDTH), top: pct(y(points[recentLow].close), HEIGHT) }} />}
-          {beaten !== null && <span className={styles.beaten} style={{ left: pct(x(beaten), WIDTH), top: pct(y(points[beaten].close), HEIGHT) }} />}
+          {recentLow !== null && <span className={styles.ring} data-kind="low" style={{ left: pct(x(recentLow), WIDTH), top: pct(y(points[recentLow].close), HEIGHT) }} />}
+          {beaten !== null && <span className={styles.ring} style={{ left: pct(x(beaten), WIDTH), top: pct(y(points[beaten].close), HEIGHT) }} />}
           {dots.map((d) => (
             <span key={d.id} className={styles.trade} data-side={d.side} style={{ left: pct(x(d.i), WIDTH), top: pct(y(points[d.i].close), HEIGHT) }} />
           ))}
@@ -157,13 +157,13 @@ export function PriceChart({
         ))}
         {recentLow !== null && (
           <li>
-            <span className={styles.lowKey} />
+            <span className={styles.ringKey} data-kind="low" />
             {t('stock.chart.lowOn', { date: shortDate(lowDate!) })}
           </li>
         )}
         {beaten !== null && (
           <li>
-            <span className={styles.beatenKey} />
+            <span className={styles.ringKey} />
             {t('stock.chart.beatenOn', { date: shortDate(beatenDate!) })}
           </li>
         )}

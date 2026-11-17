@@ -183,7 +183,7 @@
         "help": "Més negociació confirma el gir. Més alt: menys senyals i més ben recolzats. 1: n'hi ha prou amb un volum normal."
       },
       "maxChasePct": {
-        "sentence": "Límit de persecució: compra només fins a un {value} més enllà de la línia de compra (comptat des del mínim recent: 10% i 10% és de +10% a +20%) o per sobre del nivell d'una fita.",
+        "sentence": "Límit de persecució: compra el primer pas només fins a un {value} més per sobre del mínim recent que la línia de compra, i una fita fins a un {value} per sobre del seu nivell.",
         "value": "{n}%",
         "help": "Més alt: encara compra un gir que ha saltat molt per sobre de la línia. Més baix: deixa passar els girs massa ràpids."
       },

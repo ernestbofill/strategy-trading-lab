@@ -103,41 +103,31 @@
   background: var(--hot-pink);
 }
 
-/* The day a candidate was last beaten down: a ring around the price, so the latest price's dot shows through it. */
-.beaten,
-.beatenKey {
+/* Rings around the price, so the latest price's dot shows through: the day a candidate was last beaten down (amber), and
+   the comeback's recent low, which the buy line counts from (the chart's colour), wider so both show on one day. */
+.ring,
+.ringKey {
   width: 12px;
   height: 12px;
   border: 2px solid var(--warning);
   border-radius: 50%;
 }
-.beaten {
+.ring {
   position: absolute;
   margin: -6px 0 0 -6px;
 }
-.beatenKey {
+.ringKey {
   display: inline-block;
   box-sizing: border-box;
 }
-
-/* The comeback's recent low, which the buy line counts from: a wider ring in the buy colour, around the beaten-down one
-   when both fall on the same day. */
-.low,
-.lowKey {
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--success);
-  border-radius: 50%;
+.ring[data-kind='low'],
+.ringKey[data-kind='low'] {
+  border-color: var(--chart-price);
 }
-.low {
-  position: absolute;
+.ring[data-kind='low'] {
   width: 18px;
   height: 18px;
   margin: -9px 0 0 -9px;
-}
-.lowKey {
-  display: inline-block;
-  box-sizing: border-box;
 }
 
 .tradeKey {

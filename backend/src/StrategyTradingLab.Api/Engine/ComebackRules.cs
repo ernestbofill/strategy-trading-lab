@@ -6,7 +6,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// The comeback (POC Confirmed turnaround, <c>turnaround</c>). A candidate was beaten down (at least <c>DrawdownPct</c>
 /// below its 52-week high, and below the SMA 200) at some point in the last <c>CandidateDays</c> days. The first step is the
 /// turn: the close at least <c>AboveSma50Pct</c> above the <c>LowDays</c>-day low on rising volume, but not more than <c>MaxChasePct</c> further
-/// above the low (from <c>ChaseFromLowFrom</c> on; the POC: <c>MaxChasePct</c> above that line). Later steps are earned by milestones (back above the SMA 200, golden cross, near the old high, a breakout after
+/// above the low (<c>ChaseFromLow</c>; the POC: <c>MaxChasePct</c> above that line). Later steps are earned by milestones (back above the SMA 200, golden cross, near the old high, a breakout after
 /// a pullback): each new one, reached after the last buy, earns one step, bought within <c>MaxChasePct</c> above its level.
 /// Keeps state between days (the milestones used, the breakout tracker): one instance per run.
 /// </summary>
@@ -78,8 +78,8 @@ public class ComebackRules : BuyRulesBase
     decimal Chase(decimal level) => level * (1 + p.MaxChasePct / 100);
 
     /// <summary>The first step's chase limit: <c>MaxChasePct</c> more above the low than the buy line (POC: above the line).</summary>
-    decimal TurnLimit(int i, decimal lowest, decimal buyLine) =>
-        dates[i] >= p.ChaseFromLowFrom ? lowest * (1 + (p.AboveSma50Pct + p.MaxChasePct) / 100) : Chase(buyLine);
+    decimal TurnLimit(decimal lowest, decimal buyLine) =>
+        p.ChaseFromLow ? lowest * (1 + (p.AboveSma50Pct + p.MaxChasePct) / 100) : Chase(buyLine);
 
     /// <summary>The day of the recent low: the latest of the last <c>LowDays</c> closes at it.</summary>
     DateOnly LowOn(int i, decimal lowest)
@@ -130,9 +130,9 @@ public class ComebackRules : BuyRulesBase
             turnOn = null;
             signalled = null;
             boughtOn.Clear();
-            var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > TurnLimit(i, lowest, buyLine),
+            var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > TurnLimit(lowest, buyLine),
                 "Price or volume fell back below the buy conditions.",
-                dates[i] >= p.ChaseFromLowFrom
+                p.ChaseFromLow
                     ? $"Price is more than {p.AboveSma50Pct + p.MaxChasePct:0.##}% above the recent low: too late to chase."
                     : $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase.");
             var turn = TurnChecks(i, price, high, lowest, buyLine);
@@ -181,7 +181,7 @@ public class ComebackRules : BuyRulesBase
                 checks.Add(new("vsSma200", CheckGroup.Candidate, price < slow, vsSma200Pct, p.DrawdownPct, Level: Math.Round(slow, 2)));
         }
         var aboveLow = Math.Round(Indicators.PctFrom(price, lowest), 1);
-        var chaseLimit = TurnLimit(i, lowest, buyLine);
+        var chaseLimit = TurnLimit(lowest, buyLine);
         var maxAboveLow = Math.Round(Indicators.PctFrom(chaseLimit, lowest), 1);
         var inBuyWindow = price >= buyLine && price <= chaseLimit;
         // Date: the recent low's day, which the chart marks.

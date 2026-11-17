@@ -123,7 +123,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 **The comeback (Confirmed turnaround)**
 - Candidate (beaten down): at least 30% below its 52-week high, and below the SMA 200.
 - Signal: the close is at least 10% above the recent low (lowest close of the last 50 trading days by default), and 5-day average volume is at least 20% above the 50-day average, with the close above the close 5 trading days before (heavy volume on a falling price is selling, not a turn: Ernest, 2026-11-16; STL's own rule, not the POC's. A strategy already running when the rule came has it from that day on, `VolumeOnRiseFrom`, so the replay of its earlier days, which rebuilds the steps it holds, is unchanged).
-- Signal ends: the close drops back under the signal line, or the price is more than 8% further above the recent low (the window is +10% to +18% above the low by default; Ernest, 2026-11-17, STL's own rule: the POC's limit was 8% above the line, +18.8%. `ChaseFromLowFrom`, on for every strategy: the replay follows recorded signals on checked days, #261).
+- Signal ends: the close drops back under the signal line, or the price is more than 8% further above the recent low (the window is +10% to +18% above the low by default; Ernest, 2026-11-17, STL's own rule: the POC's limit was 8% above the line, +18.8%. `ChaseFromLow`, on for every strategy: the replay follows recorded signals on checked days, #261).
 - Later steps: one per milestone (back above the SMA 200, golden cross, within 15% of the 52-week high, breakout after an 8% pullback), each within 8% above its level. Cooldown 5 days.
 
 **Bear markets (Bear-market accumulation)**
@@ -414,7 +414,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Buy signal | "The buy line is [n]% above the recent low." | 10% | 1 | 5–30 |
 | Buy signal | "The recent low is the lowest close of the last [n] trading days." | 50 | 5 | 10–120 |
 | Buy signal | "The 5-day average volume is at least [n]× the 50-day, with the price up over those 5 days." | 1.2× | 0.1 | 1–3 |
-| Buy signal | "Chase limit: buy only up to [n]% past the buy line (counted from the recent low: 10% then 10% is +10% to +20%) or above a milestone's level." | 8% | 1 | 2–20 |
+| Buy signal | "Chase limit: buy the first step only up to [n]% more above the recent low than the buy line, and a milestone up to [n]% above its level." | 8% | 1 | 2–20 |
 | Milestones | "Milestone near the old high: within [n]% of the 52-week high." | 15% | 1 | 5–30 |
 | Milestones | "Milestone breakout: a pullback of at least [n]%, then a close above the high before it." | 8% | 1 | 3–20 |
 | Pace | "After a step, wait [n] calendar days before the next buy signal." | 5 | 1 | 0–30 |

@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 3 | 3 | 6 |
+| Frontend (Vitest) | 3 | 4 | 7 |
 | Backend (xUnit) | 0 | 6 | 6 |
-| **All** | **3** | **9** | **12** |
+| **All** | **3** | **10** | **13** |
 
 ## Log
 
@@ -28,6 +28,7 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-17 | #263 | local | Frontend (Vitest) | `src/features/feedback/FeedbackSection.test.tsx > lists open items, filters closed/all, …` | 1 | FP | The new Validate step clicked the first closed item's button, not the second's; the test picked the wrong button. |
 | 2026-11-16 | #259 | local | Backend (xUnit) | `EngineGoldenTests.Dip_in_winners_matches_the_POC_day_by_day` (dip-ETN-a) | 1 | FP | *Proven growth* now takes its low up to the peak's day (intended, not the POC's rule): ETN's 12 crash days of March 2020 read not a candidate. The golden runs keep the POC's rule (the params' default: `LowBeforePeakFrom` is off unless the template turns it on). |
 | 2026-11-16 | #259 | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
 | 2026-11-16 | #257 | local | Backend (xUnit) | `EngineGoldenTests.The_comeback_matches_the_POC_day_by_day` (VICR, one other) | 2 | FP | The comeback's volume now counts only on a rising price (intended, not the POC's rule): two signal-ended reasons differed. The golden runs set `VolumeOnRiseFrom` past their last day. |

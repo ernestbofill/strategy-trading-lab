@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-17 · Feedback has a third status, *validated*, after *closed*: the owner closes an item when it is handled and validates it once the fix is checked (Ernest's feedback). A closed item's button reads "Validate" (with "Reopen" beside it); a validated one keeps its closing time. Each item also copies as Markdown on its own. (#263)
 - 2026-11-16 · The daily check's replay follows the recorded signals on the days it already checked: a past buy or sale counts only if it got a signal (or the budget held the buy back, which keeps "No budget left"), and a signal counts even if today's rules wouldn't call it. A changed rule or setting (#234, #235) otherwise left the rules holding a step no signal stood for: MOD in *Confirmed turnaround* read "Step bought" and "No budget left" with no trade and the budget unused. Same for the stock chart. (Ernest's report, #261)
 - 2026-11-15 · Personal use only, confirmed: ROADMAP items that were only for a public launch (32 lawyer review, 34 a commercial price provider, 35 open sign-ups, 37 managing users, the quiet launch) are marked *Not needed*; what is already built for strangers (sign-up, invites, legal pages, Brevo emails) stays. (Ernest)
 - 2026-11-14 · Strategy Trading Lab is now for Ernest's personal use only, not a public launch. (Ernest, #234)

@@ -405,12 +405,12 @@ In-app feedback notes (`bug` | `idea` | `note` | `feature`). Any logged-in user 
 | id | uuid PK | |
 | user_id | uuid FK → users, cascade, not null | Author |
 | kind | text, not null | `bug` \| `idea` \| `note` \| `feature` (`CHECK`) |
-| status | text, not null, default `open` | `open` \| `closed` (`CHECK`) |
+| status | text, not null, default `open` | `open` \| `closed` \| `validated` (`CHECK`) |
 | text | text, not null | The user's comment (up to 4,000 chars) |
 | route | text, null | In-app path (`/dashboard`, `/strategies/…`) |
 | element | text, null | Short DOM selector (`main > section.card > p:nth-of-type(2)`) |
 | selected_text | text, null | Quoted text selected on the page |
-| closed_at | timestamptz, null | `CHECK ((status = 'closed') = (closed_at IS NOT NULL))` |
+| closed_at | timestamptz, null | `CHECK ((status <> 'open') = (closed_at IS NOT NULL))`; kept when an item goes from closed to validated |
 | created_at, updated_at | timestamptz | |
 
 Index `(status, created_at)` and `(user_id)`.

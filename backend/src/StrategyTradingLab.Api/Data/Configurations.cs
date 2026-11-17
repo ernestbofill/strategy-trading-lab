@@ -367,7 +367,7 @@ class FeedbackItemConfiguration : IEntityTypeConfiguration<FeedbackItem>
     public void Configure(EntityTypeBuilder<FeedbackItem> entity)
     {
         entity.ToTable("feedback_items", table =>
-            table.HasCheckConstraint("ck_feedback_items_closed_at", "(status = 'closed') = (closed_at IS NOT NULL)"));
+            table.HasCheckConstraint("ck_feedback_items_closed_at", "(status <> 'open') = (closed_at IS NOT NULL)"));
         entity.Property(item => item.Status).HasColumnDefault(FeedbackStatus.Open);
         entity.HasIndex(item => new { item.Status, item.CreatedAt });
         entity.HasIndex(item => item.UserId);

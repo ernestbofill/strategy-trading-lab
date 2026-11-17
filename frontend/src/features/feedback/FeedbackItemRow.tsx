@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { FeedbackItem, FeedbackKind } from '../../api'
-import { isAppPath, kindMeta } from './feedback'
+import type { FeedbackItem, FeedbackKind, FeedbackStatus } from '../../api'
+import { feedbackItemMarkdown, isAppPath, kindMeta, statusActions } from './feedback'
+import { useCopy } from '../../components/useCopy'
 import { KindPicker } from './KindPicker'
 import styles from './Feedback.module.css'
 import { Button } from '../../components/Button'
@@ -15,13 +16,14 @@ interface FeedbackItemRowProps {
   onEdit: () => void
   onCancel: () => void
   onSave: (kind: FeedbackKind, text: string) => Promise<void>
-  onToggle: () => Promise<void>
+  onStatus: (status: FeedbackStatus) => Promise<void>
   onDelete: () => Promise<void>
 }
 
-/** One feedback item on `/feedback`: who, where and what, and the owner's edit, close or reopen, and delete. */
-export function FeedbackItemRow({ item, editing, busy, onEdit, onCancel, onSave, onToggle, onDelete }: FeedbackItemRowProps) {
+/** One feedback item on `/feedback`: who, where and what, and the owner's edit, copy, close, validate or reopen, and delete. */
+export function FeedbackItemRow({ item, editing, busy, onEdit, onCancel, onSave, onStatus, onDelete }: FeedbackItemRowProps) {
   const meta = kindMeta(item.kind)
+  const { copied, copy } = useCopy()
   const [kind, setKind] = useState<FeedbackKind>(item.kind)
   const [text, setText] = useState(item.text)
   const startEdit = () => {
@@ -32,13 +34,15 @@ export function FeedbackItemRow({ item, editing, busy, onEdit, onCancel, onSave,
   return (
     <li
       className={styles.item}
-      data-closed={item.status === 'closed' || undefined}
+      data-status={item.status}
     >
       <div className={styles.itemHeader}>
         <span className={styles.badge}>
           <span aria-hidden="true">{meta.emoji}</span> {meta.label}
         </span>
-        {item.status === 'closed' && <span className={styles.closedBadge}>Closed</span>}
+        {item.status !== 'open' && (
+          <span className={styles.statusBadge}>{item.status === 'closed' ? 'Closed' : 'Validated'}</span>
+        )}
         <span className={styles.author}>{item.userEmail}</span>
         <span>{new Date(item.createdAt).toLocaleString()}</span>
         {item.route &&
@@ -97,13 +101,19 @@ export function FeedbackItemRow({ item, editing, busy, onEdit, onCancel, onSave,
           >
             Edit
           </Button>
-          <Button
-            variant="outline"
-            disabled={busy}
-            onClick={() => void onToggle()}
-          >
-            {item.status === 'open' ? 'Close' : 'Reopen'}
+          <Button variant="outline" onClick={() => void copy(feedbackItemMarkdown(item))}>
+            {copied === true ? 'Copied ✓' : copied === false ? 'Copy failed' : 'Copy as Markdown'}
           </Button>
+          {statusActions(item.status).map((action) => (
+            <Button
+              key={action.status}
+              variant="outline"
+              disabled={busy}
+              onClick={() => void onStatus(action.status)}
+            >
+              {action.label}
+            </Button>
+          ))}
           <Button
             variant="outline-danger"
             disabled={busy}

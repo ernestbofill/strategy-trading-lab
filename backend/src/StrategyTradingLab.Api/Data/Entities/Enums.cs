@@ -39,7 +39,8 @@ public enum AiRoundStatus { Due, Done, Skipped }
 
 public enum FeedbackKind { Bug, Idea, Note, Feature }
 
-public enum FeedbackStatus { Open, Closed }
+/// <summary>Open, then closed once handled, then validated once the owner has checked the fix.</summary>
+public enum FeedbackStatus { Open, Closed, Validated }
 
 /// <summary>Why an address is on the list the app never sends to (<see cref="EmailSuppression"/>): the mail service reported it.</summary>
 public enum SuppressionReason { Bounced, Invalid, Complaint }

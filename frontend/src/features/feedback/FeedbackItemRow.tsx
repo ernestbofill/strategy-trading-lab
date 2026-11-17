@@ -34,14 +34,14 @@ export function FeedbackItemRow({ item, editing, busy, onEdit, onCancel, onSave,
   return (
     <li
       className={styles.item}
-      data-closed={item.status !== 'open' || undefined}
+      data-status={item.status}
     >
       <div className={styles.itemHeader}>
         <span className={styles.badge}>
           <span aria-hidden="true">{meta.emoji}</span> {meta.label}
         </span>
         {item.status !== 'open' && (
-          <span className={styles.closedBadge}>{item.status === 'closed' ? 'Closed' : 'Validated'}</span>
+          <span className={styles.statusBadge}>{item.status === 'closed' ? 'Closed' : 'Validated'}</span>
         )}
         <span className={styles.author}>{item.userEmail}</span>
         <span>{new Date(item.createdAt).toLocaleString()}</span>

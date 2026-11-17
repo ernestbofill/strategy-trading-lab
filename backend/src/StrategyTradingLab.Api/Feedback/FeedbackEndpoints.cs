@@ -97,6 +97,13 @@ public static partial class FeedbackEndpoints
 
             var item = await db.FeedbackItems.SingleOrDefaultAsync(f => f.Id == id, cancellationToken);
             if (item is null) return TypedResults.NotFound();
+            // Open → closed → validated; reopening is allowed from either.
+            if (request.Status is { } next && next != item.Status && next != FeedbackStatus.Open
+                && next != item.Status + 1)
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["status"] = [next == FeedbackStatus.Validated ? "Close it before validating it." : "Reopen it before closing it again."]
+                });
 
             if (request.Kind is { } kind && item.Kind != kind) item.Kind = kind;
             if (text is not null && item.Text != text) item.Text = text;

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { api, type FeedbackItem } from '../../api'
@@ -79,7 +79,7 @@ describe('FeedbackSection', () => {
     expect(screen.getByText('Dark mode contrast fixed')).toBeTruthy()
 
     // Validate the closed one, which then shows under Validated
-    fireEvent.click(screen.getAllByRole('button', { name: 'Validate' })[1])
+    fireEvent.click(within(screen.getByText('Dark mode contrast fixed').closest('li')!).getByRole('button', { name: 'Validate' }))
     await waitFor(() => expect(updateSpy).toHaveBeenCalledWith('f2', { status: 'validated' }))
     fireEvent.click(screen.getByRole('button', { name: /Validated \(1\)/i }))
     expect(screen.getByText('Dark mode contrast fixed')).toBeTruthy()

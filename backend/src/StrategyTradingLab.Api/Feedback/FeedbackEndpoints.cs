@@ -10,7 +10,7 @@ namespace StrategyTradingLab.Api.Feedback;
 
 public record CreateFeedbackRequest(FeedbackKind? Kind, string? Text, string? Route = null, string? Element = null, string? SelectedText = null);
 
-/// <summary>What the owner can change afterwards: the comment, its type, and open / closed. Where and by whom it was made stays.</summary>
+/// <summary>What the owner can change afterwards: the comment, its type, and open / closed / validated. Where and by whom it was made stays.</summary>
 public record UpdateFeedbackRequest(FeedbackKind? Kind = null, FeedbackStatus? Status = null, string? Text = null);
 
 public record FeedbackDto(Guid Id, string UserEmail, FeedbackKind Kind, FeedbackStatus Status, string Text, string? Route,
@@ -73,7 +73,7 @@ public static partial class FeedbackEndpoints
                 if (!Enum.TryParse<FeedbackStatus>(status, ignoreCase: true, out var s))
                     return Results.BadRequest(new HttpValidationProblemDetails(new Dictionary<string, string[]>
                     {
-                        ["status"] = ["Pick open or closed."]
+                        ["status"] = ["Pick open, closed or validated."]
                     }));
                 parsedStatus = s;
             }
@@ -87,7 +87,7 @@ public static partial class FeedbackEndpoints
             return Results.Ok(await query.ToListAsync(cancellationToken));
         })
         .RequireAuthorization(Policies.Owner)
-        .WithSummary("Lists feedback comments, newest first, optionally filtered by status (open or closed). Owner only.");
+        .WithSummary("Lists feedback comments, newest first, optionally filtered by status (open, closed or validated). Owner only.");
 
         group.MapPatch("/{id:guid}", async Task<Results<Ok<FeedbackDto>, NotFound, ValidationProblem>> (Guid id,
             UpdateFeedbackRequest request, AppDbContext db, TimeProvider time, CancellationToken cancellationToken) =>
@@ -103,7 +103,8 @@ public static partial class FeedbackEndpoints
             if (request.Status is { } status && item.Status != status)
             {
                 item.Status = status;
-                item.ClosedAt = status == FeedbackStatus.Closed ? time.GetUtcNow() : null;
+                // Validated follows closed, so it keeps the day it was closed.
+                item.ClosedAt = status == FeedbackStatus.Open ? null : item.ClosedAt ?? time.GetUtcNow();
             }
             if (db.ChangeTracker.HasChanges()) await db.SaveChangesAsync(cancellationToken);
 
@@ -111,7 +112,7 @@ public static partial class FeedbackEndpoints
             return TypedResults.Ok(ToDto(item, email));
         })
         .RequireAuthorization(Policies.Owner)
-        .WithSummary("Updates a feedback comment's type, text or open/closed status. Owner only.");
+        .WithSummary("Updates a feedback comment's type, text or open/closed/validated status. Owner only.");
 
         group.MapDelete("/{id:guid}", async Task<Results<NoContent, NotFound>> (Guid id, AppDbContext db, CancellationToken cancellationToken) =>
         {
@@ -177,7 +178,7 @@ public static partial class FeedbackEndpoints
         if (request.Kind is { } kind && !Enum.IsDefined(kind))
             errors["kind"] = ["Pick a feedback type."];
         if (request.Status is { } status && !Enum.IsDefined(status))
-            errors["status"] = ["Pick open or closed."];
+            errors["status"] = ["Pick open, closed or validated."];
 
         if (request.Text is not null)
         {

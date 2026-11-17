@@ -189,6 +189,14 @@ public class FeedbackEndpointTests(AccountsApi api) : IClassFixture<AccountsApi>
         var closedList = (await owner.GetFromJsonAsync<JsonElement>("/feedback?status=closed")).EnumerateArray().ToList();
         Assert.Contains(closedList, f => f.GetProperty("id").GetGuid() == id);
 
+        // Validated follows closed and keeps the closing time.
+        var validated = await (await owner.PatchAsJsonAsync($"/feedback/{id}", new { status = "validated" }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("validated", validated.GetProperty("status").GetString());
+        Assert.Equal(closedAt, validated.GetProperty("closedAt").GetDateTimeOffset(), TimeSpan.FromMicroseconds(1));
+        var validatedList = (await owner.GetFromJsonAsync<JsonElement>("/feedback?status=validated")).EnumerateArray().ToList();
+        Assert.Contains(validatedList, f => f.GetProperty("id").GetGuid() == id);
+
         var reopened = await (await owner.PatchAsJsonAsync($"/feedback/{id}", new { status = "open" }))
             .Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("open", reopened.GetProperty("status").GetString());

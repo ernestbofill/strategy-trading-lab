@@ -1,4 +1,4 @@
-import { ForbiddenError, InvalidValueError, TooManyTriesError, type FeedbackItem, type FeedbackKind } from '../../api'
+import { ForbiddenError, InvalidValueError, TooManyTriesError, type FeedbackItem, type FeedbackKind, type FeedbackStatus } from '../../api'
 import type { Translate } from '../../i18n/I18n'
 
 export const FEEDBACK_KINDS: { value: FeedbackKind; label: string; emoji: string }[] = [
@@ -36,18 +36,15 @@ function hasControlChar(value: string): boolean {
   return false
 }
 
-/** Format open feedback items as a Markdown table ready to paste into an issue or AI agent. */
-export function feedbackMarkdown(items: FeedbackItem[]): string {
-  const open = items.filter((item) => item.status === 'open')
-  if (open.length === 0) return 'No open feedback items.'
-
+/** Feedback items as a Markdown table under a heading. */
+function feedbackTable(heading: string, items: FeedbackItem[]): string {
   const lines = [
-    `# Open feedback (${open.length})`,
+    heading,
     '',
     '| # | Kind | User | Page | Element | Selected text | Comment |',
     '| - | ---- | ---- | ---- | ------- | ------------- | ------- |',
   ]
-  open.forEach((item, index) => {
+  items.forEach((item, index) => {
     const page = item.route ? `\`${cell(item.route)}\`` : '—'
     const element = item.element ? `\`${cell(item.element)}\`` : '—'
     const quote = item.selectedText ? `"${cell(item.selectedText)}"` : '—'
@@ -56,6 +53,25 @@ export function feedbackMarkdown(items: FeedbackItem[]): string {
     )
   })
   return lines.join('\n')
+}
+
+/** Format open feedback items as a Markdown table ready to paste into an issue or AI agent. */
+export function feedbackMarkdown(items: FeedbackItem[]): string {
+  const open = items.filter((item) => item.status === 'open')
+  if (open.length === 0) return 'No open feedback items.'
+  return feedbackTable(`# Open feedback (${open.length})`, open)
+}
+
+/** One feedback item, in the same table, for a single issue. */
+export function feedbackItemMarkdown(item: FeedbackItem): string {
+  return feedbackTable('# Feedback', [item])
+}
+
+/** The statuses an item can move to from `status`: the next step forward first (open → closed → validated), then reopen. */
+export function statusActions(status: FeedbackStatus): { status: FeedbackStatus; label: string }[] {
+  if (status === 'open') return [{ status: 'closed', label: 'Close' }]
+  if (status === 'closed') return [{ status: 'validated', label: 'Validate' }, { status: 'open', label: 'Reopen' }]
+  return [{ status: 'open', label: 'Reopen' }]
 }
 
 const STOP_TAGS = new Set(['MAIN', 'HEADER', 'NAV', 'BODY', 'HTML'])

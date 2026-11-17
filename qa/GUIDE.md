@@ -129,7 +129,7 @@ Pick the ones that fit the charter. Name the one you used in the log.
 
 **Consistency:** the same figure on the dashboard card, the strategy page, the stock page and the signal; the same rule worded the same everywhere; the same component behaving the same on every screen.
 
-**Access:** a strategy, stock or signal ID changed by one in the address bar (it must not show another user's data); `/admin` as a vip (it must act as if it doesn't exist); signed-out access to a signed-in page (Log-in, then back to it).
+**Access:** a strategy, stock or signal ID changed by one in the address bar (it must not show another user's data); `/admin` as a vip, while the account isn't an admin (it must act as if it doesn't exist); signed-out access to a signed-in page (Log-in, then back to it).
 
 **Arithmetic:** add up the trades by hand and compare with *Budget used*, the steps, the gains and the per-stock results. Check the fee (about 0.2% plus 1 in the currency, inside the step). An S1 lives here.
 

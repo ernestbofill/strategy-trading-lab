@@ -41,8 +41,9 @@ When it's done, copy its Markdown block and give it to Claude or Antigravity ("r
 - **Production**, at `https://strategytradinglab.com`. It's what users see. The agent only does what a user can do.
 - **An account Ernest owns, named when the session starts** (the command's argument; the agent asks when it's missing). Normally the vip QA account. The address isn't kept in the repo. Its password is **saved in the browser** the agent drives: for Claude, the desktop app's built-in browser or Chrome with Claude in Chrome; for Antigravity, the Chrome profile its browser agent opens (which may not be your everyday profile, so save the password there too). The agent never types, reads, logs or asks for the password. When the app shows Log-in, it picks the saved login for that address from the browser's autofill. If it is signed in as a different account, it logs out first. If there is no saved login for it, or the sign-in gets stuck, the agent pauses and asks Ernest to take over and sign in. That isn't the end of the session: once he hands it back, the agent checks it is signed in as the right account and carries on.
 - **The account's label.** Logs, `STATE.md` and findings name the account by its label, never by its address: the part after `+` (`qaagent` for `…+qaagent@…`), or else a label Ernest gives. `STATE.md`'s account baseline and fixtures belong to one account: with another account, the agent adds a section for its label and doesn't touch the others' fixtures.
-- The account's email is confirmed, so Live mode and feedback work. The vip role has the same rights as a plain user for now. `/admin` is out of scope: the agent may open it once to check it is refused, and nothing more.
+- The account's email is confirmed, so Live mode and feedback work. The vip role has the same rights as a plain user for now. The QA account may be given the admin role when a task needs it (Ernest, 2026-11-17). On production, an agent uses admin pages read-only. Changing admin data or settings (invites, sign-up mode, blocks, roles, templates, feedback items) needs Ernest's explicit yes each time. While the account isn't an admin, the agent may open `/admin` once to check it is refused.
 - A cloud session without a link to Ernest's computer has no such browser, so it can't run a session. Run it locally on the Mac or the PC (the Claude desktop app, or Antigravity).
+- **The agent's own account, 2026-11-17 (Ernest):** `STL_QA_USER` is the agent's own account. Any agent may log in to it with `STL_QA_USER` and `STL_QA_PASSWORD` (Playwright in a cloud session) whenever a task needs it, with no confirmation, and may use everything the account can do as a user. This overrides the saved-login rule above. The agent reads both values only from the environment and never prints, logs or commits them. It tries the log-in once and stops on failure: retries could lock the account. The safety rules below still apply, so the agent keeps access: no password, email or account changes. It may log out of its own session, for example to check another account Ernest names. First used on 2026-11-17: the log-in succeeded and the dashboard loaded.
 
 ## Safety rules
 
@@ -50,7 +51,7 @@ This is production, with real emails and a real database. These rules come befor
 
 **Never:**
 
-- change the password or the email, log out other sessions, or delete the account;
+- change the password or the email, use "log out everywhere" (it ends the other sessions too), or delete the account. Logging out of its own session is fine, for example to switch to another account;
 - sign up a new account, or submit Sign-up (fill and check the form only);
 - try wrong passwords on the QA account (failed log-ins lock it). Test a wrong log-in only with `qa-nobody@stl.invalid`, at most twice a session;
 - send invites, or ask for password-reset emails for any address but `qa-nobody@stl.invalid`;

@@ -51,7 +51,7 @@ Ernest works from a Mac and a Windows PC with VS Code. The AI tools run both loc
 | Tools | Node 24, .NET 10. Ask before installing anything new. | The session start hook runs `npm ci` and `dotnet tool restore` where the tools exist. Tools it lacks are a setup step for Ernest in the cloud environment's settings. |
 | Dev database | The Neon `dev` branch, variables in `.env.local` (gitignored, written by `neon deploy`). | Only if Ernest has added the variables to the cloud environment. Otherwise the API can't reach a database: say so in the PR. |
 | Browser check | The built-in browser or Chrome, at phone and desktop width. | No browser: rely on tests, and say in the PR that the screens weren't checked by eye. |
-| Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
+| Production | Allowed (see below). | The database: read it through the Neon connector, if it's on (see below). The live app: as a user, in a headless browser. The server: not available (no server key), so hand that to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 
 **Test accounts.** When a feature needs a signed-in check, make disposable accounts on the dev database: sign up on the local app with a `claude-<feature>-<yyyymmdd>@stl.invalid` address and a fresh password you don't keep, and set what the check needs (a confirmed email, the owner role) on that row in the dev database. How: [docs/dev-browser-test-account.md](docs/dev-browser-test-account.md).
@@ -72,6 +72,12 @@ You can manage them as an admin. Ask Ernest first for anything critical or secur
 - anything that can't be undone.
 
 Ask for a credential when you need one.
+
+**Troubleshooting on production** (Ernest, 2026-11-17). When it's the most direct way to find a problem, read the production database on Neon or use the live app at `https://strategytradinglab.com`. Read-only SQL needs no approval. Writes still follow the list above. Keep personal data (emails, names, feedback text that identifies someone) out of PRs, commits and logs, and refer to a user by their id.
+
+**The agent's own account** (Ernest, 2026-11-17). `STL_QA_USER` is the agents' own production account. Log in with `STL_QA_USER` and `STL_QA_PASSWORD` whenever a task needs it, without asking. The account may be used in full as a user. It tries the log-in once, never prints either value, and follows `qa/README.md`'s safety rules. It may be made an admin when needed. On production, admin features are read-only for any agent: changing admin data or settings needs Ernest's explicit yes.
+
+**User feedback.** Users' feedback is in the production `feedback_items` table, and the owner sees it on `/feedback`. When Ernest asks, read the open items, group them, and work on them like any other change: one PR per fix, citing the item's id, never its sender. Closing or editing an item is a write, so ask Ernest first. Ernest plans to have an agent do this on a schedule (`ROADMAP.md`, *A feedback agent*).
 
 ## Product rules
 

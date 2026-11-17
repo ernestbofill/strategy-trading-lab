@@ -120,7 +120,8 @@
   box-sizing: border-box;
 }
 
-/* The comeback's recent low, which the buy line counts from: a ring in the buy colour. */
+/* The comeback's recent low, which the buy line counts from: a wider ring in the buy colour, around the beaten-down one
+   when both fall on the same day. */
 .low,
 .lowKey {
   width: 12px;
@@ -130,7 +131,9 @@
 }
 .low {
   position: absolute;
-  margin: -6px 0 0 -6px;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
 }
 .lowKey {
   display: inline-block;

@@ -60,9 +60,9 @@ export function PriceChart({
   // Not while it is still beaten down: the ring would sit on the latest price and move with it each day.
   const beaten = beatenDate && beatenDate >= first && beatenDate < last.date ? dayOf(beatenDate) : null
   // The comeback's recent low, which its buy line counts from (the latest checked day's): ringed when the period has it
-  // (feedback, 2026-11-17).
+  // (feedback, 2026-11-17). Not while today is the low, as for the beaten-down ring. A wider ring, so both show on one day.
   const lowDate = points[lastChecked]?.checks.find((c) => c.key === 'buyLine' && c.midLevel != null)?.date ?? null
-  const recentLow = lowDate && lowDate >= first && lowDate <= last.date ? dayOf(lowDate) : null
+  const recentLow = lowDate && lowDate >= first && lowDate < last.date ? dayOf(lowDate) : null
   const startedOn = chart.data.startedOn
   const started = startedOn && startedOn > first && startedOn <= last.date ? dayOf(startedOn) : null
 

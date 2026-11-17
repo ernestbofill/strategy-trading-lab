@@ -140,7 +140,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
           disabled={openCount === 0}
           onClick={() => void copyMarkdown()}
         >
-          {copied === true ? 'Copied Markdown ✓' : `Copy open as Markdown (${openCount})`}
+          {copied === true ? 'Copied Markdown ✓' : copied === false ? 'Copy failed' : `Copy open as Markdown (${openCount})`}
         </Button>
       </div>
 

@@ -64,7 +64,8 @@ export function feedbackMarkdown(items: FeedbackItem[]): string {
 
 /** One feedback item, in the same table, for a single issue. */
 export function feedbackItemMarkdown(item: FeedbackItem): string {
-  return feedbackTable('# Feedback', [item])
+  const handled = item.status === 'open' || !item.closedAt ? '' : ` (${item.status} ${item.closedAt.slice(0, 10)})`
+  return feedbackTable(`# ${kindMeta(item.kind).label}${handled}`, [item])
 }
 
 /** The statuses an item can move to from `status`: the next step forward first (open → closed → validated), then reopen. */

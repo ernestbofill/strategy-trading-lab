@@ -93,12 +93,6 @@ public record ComebackParams
     /// </summary>
     [Range(0, 30)] public decimal MaxChasePct { get; init; } = 8;
 
-    /// <summary>
-    /// The first step's chase limit counted from the recent low, like its buy line (Ernest, 2026-11-17). Off, the POC's rule:
-    /// <c>MaxChasePct</c> above the buy line (+18.8% by default). On for every strategy; only the golden tests turn it off.
-    /// </summary>
-    public bool ChaseFromLow { get; init; } = true;
-
     /// <summary>Milestone "near the old high": within this % of the 52-week high.</summary>
     [Range(1, 50)] public decimal NearHighPct { get; init; } = 15;
 

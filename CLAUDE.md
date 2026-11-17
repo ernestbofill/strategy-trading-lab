@@ -73,6 +73,10 @@ You can manage them as an admin. Ask Ernest first for anything critical or secur
 
 Ask for a credential when you need one.
 
+**Troubleshooting on production** (Ernest, 2026-11-17). When it's the most direct way to find a problem, read the production database on Neon or use the live app at `https://strategytradinglab.com`. Read-only SQL needs no approval. Writes still follow the list above. Keep personal data (emails, names, feedback text that identifies someone) out of PRs, commits and logs, and refer to a user by their id.
+
+**User feedback.** Users' feedback is in the production `feedback_items` table, and the owner sees it on `/feedback`. When Ernest asks, read the open items, group them, and work on them like any other change: one PR per fix, citing the item's id, never its sender. Closing or editing an item is a write, so ask Ernest first. Ernest plans to have an agent do this on a schedule (`ROADMAP.md`, *A feedback agent*).
+
 ## Product rules
 
 - **Describe, don't instruct.** No "buy now", no urgency, no price targets or return forecasts, no "recommended for you".

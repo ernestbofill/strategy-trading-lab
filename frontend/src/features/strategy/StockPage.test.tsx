@@ -44,10 +44,10 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
     buyLine: {
       label: 'Price vs the buy line',
       detail: '+{value}% above the recent low ({midLevel}): needs +{min}% to +{max}% ({level} to {endLevel}).',
-      past: '+{value}% above the recent low ({midLevel}) — past the +{max}% chase limit ({endLevel}).',
+      past: '+{value}% above the recent low ({midLevel}): past +{max}% ({endLevel}), too late to chase.',
       short: '+{value}% above its low (needs +{min}%)',
       pastShort: '+{value}% above its low (past +{max}% limit)',
-      info: 'The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. Above +{endValue}% past the buy line (+{max}% above the low, {endLevel}) is too late to chase.',
+      info: 'The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase.',
     },
     volume: { label: 'Volume: 5-day vs 50-day average', detail: '{value}× its 50-day average (needs {min}×). Price: {+subValue}% over those 5 days (needs a rise).', short: 'volume {value}× (needs {min}×)' },
     sma200: {

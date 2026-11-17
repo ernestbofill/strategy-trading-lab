@@ -75,6 +75,8 @@ Ask for a credential when you need one.
 
 **Troubleshooting on production** (Ernest, 2026-11-17). When it's the most direct way to find a problem, read the production database on Neon or use the live app at `https://strategytradinglab.com`. Read-only SQL needs no approval. Writes still follow the list above. Keep personal data (emails, names, feedback text that identifies someone) out of PRs, commits and logs, and refer to a user by their id.
 
+**The agent's own account** (Ernest, 2026-11-17). `STL_QA_USER` is the agents' own production account. Log in with `STL_QA_USER` and `STL_QA_PASSWORD` whenever a task needs it, without asking. The account may be used in full as a user. It tries the log-in once, never prints either value, and follows `qa/README.md`'s safety rules. It may be made an admin when needed. On production, admin features are read-only for any agent: changing admin data or settings needs Ernest's explicit yes.
+
 **User feedback.** Users' feedback is in the production `feedback_items` table, and the owner sees it on `/feedback`. When Ernest asks, read the open items, group them, and work on them like any other change: one PR per fix, citing the item's id, never its sender. Closing or editing an item is a write, so ask Ernest first. Ernest plans to have an agent do this on a schedule (`ROADMAP.md`, *A feedback agent*).
 
 ## Product rules

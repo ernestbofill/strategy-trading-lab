@@ -131,7 +131,7 @@ export function PriceChart({
               {t('stock.chart.started', { date: shortDate(startedOn!) })}
             </span>
           )}
-          {/* At the foot, so it doesn't meet the start's label. */}
+          {/* A row under the start's label, so the two never meet. */}
           {since !== null && (
             <span className={styles.startLabel} data-since data-left={x(since) > WIDTH * 0.6} style={{ left: pct(x(since), WIDTH) }}>
               {t('stock.chart.candidateOn', { date: shortDate(beatenDate!) })}

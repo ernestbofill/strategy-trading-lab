@@ -67,7 +67,7 @@
 ## Workflow
 
 - Before opening a PR, from `frontend/`: `npm run lint`, `npm test` and `npm run build` (which typechecks) all pass.
-- Check the changed screens in a browser at phone (390px) and desktop width. In a cloud session there is no browser: say so in the PR.
+- Check the changed screens in a browser at phone (390px) and desktop width. In a cloud session, use headless Chromium with Playwright (see *Environments* in the root `CLAUDE.md`), and say in the PR how they were checked.
 
 ## Worktrees (local only)
 

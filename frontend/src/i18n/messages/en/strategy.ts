@@ -54,6 +54,7 @@ export const strategy = {
   'strategy.pill.holding': 'HOLDING',
   'strategy.pill.building': 'BUILDING',
   'strategy.pill.candidate': 'CANDIDATE',
+  'strategy.pill.close': 'GETTING CLOSE',
   'strategy.pill.notCandidate': 'NOT A CANDIDATE',
   'strategy.pill.notChecked': 'NOT CHECKED',
   'strategy.pill.removed': 'REMOVED',

@@ -183,7 +183,7 @@
         "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
       },
       "maxChasePct": {
-        "sentence": "Chase limit: buy only up to {value} above the buy line or a milestone's level.",
+        "sentence": "Chase limit: a step only up to {value} past its line: the first step on top of the buy line's % above the recent low, a milestone above its level.",
         "value": "{n}%",
         "help": "Higher: still buys a turn that jumped well past its line. Lower: skips turns that move too fast."
       },
@@ -210,7 +210,7 @@
       },
       "signal": {
         "title": "2 · Buy signal: the first step",
-        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), on rising volume, and not too far above the line. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
+        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), on rising volume, and at most the chase limit further above the low. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
       },
       "milestones": {
         "title": "3 · Milestones: the next steps",
@@ -245,11 +245,11 @@
       },
       "buyLine": {
         "label": "Price vs the buy line",
-        "detail": "+{value}% above the recent low ({midLevel}): needs +{min}% ({level}), and at most {endValue}% above that line ({endLevel}).",
-        "past": "+{value}% above the recent low ({midLevel}) — past the chase limit ({endLevel}, {endValue}% above the buy line).",
+        "detail": "+{value}% above the recent low ({midLevel}): needs +{min}% to +{max}% ({level} to {endLevel}).",
+        "past": "+{value}% above the recent low ({midLevel}): past +{max}% ({endLevel}), too late to chase.",
         "short": "+{value}% above its low (needs +{min}%)",
         "pastShort": "+{value}% above its low (past the chase limit)",
-        "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than {endValue}% above the buy line ({endLevel}) is too late to chase."
+        "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase."
       },
       "chase": {
         "label": "Not too far past the line",

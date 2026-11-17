@@ -29,14 +29,17 @@ export function normalizeCheck(check: RuleCheck): RuleCheck {
   return check
 }
 
-/** Whether an unmet check has gone past its upper bound (window closed, fell past zone, or past chase limit). */
+/**
+ * Whether an unmet check has gone past its upper bound (window closed, fell past zone, or past chase limit). A price window
+ * (a check with a level) unmet at its rounded bound is just past it: 18.04% shows as 18% (backend StockStates.PastBuyRule).
+ */
 export const isPastMax = (raw: RuleCheck): boolean => {
   const check = normalizeCheck(raw)
   return (
     check.met === false &&
     check.value !== null &&
     check.max !== null &&
-    check.value > check.max &&
+    (check.value > check.max || (check.value === check.max && check.level !== null)) &&
     !(check.key === 'golden' && (check.subValue ?? 0) <= 0)
   )
 }

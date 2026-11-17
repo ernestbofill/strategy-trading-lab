@@ -122,7 +122,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | --- | --- | --- | --- | --- | --- |
 | D1 | Summary box, Simulation | §6 Strategy page | deep | 2026-11-08-1 | F-023. Combined single-asset status tiles. C2.4, C3.2 |
 | D2 | Summary box, Live (You, The rules alone, index fund) | §6 Strategy page | deep | 2026-11-08-1 | Live status and budget tiles verified. C1.6, C3.2 |
-| D3 | Stock rows: pills, detail lines, order, per template | §6 Strategy page | deep | 2026-11-08-1 | All stock rows evaluated after market close. L-002 closed. C1.8 |
+| D3 | Stock rows: pills, detail lines, order, per template; GETTING CLOSE pill and candidates sorted by distance, past the buy rule last (#264, not yet checked) | §6 Strategy page | deep | 2026-11-08-1 | All stock rows evaluated after market close. L-002 closed. C1.8 |
 | D4 | Edit list on a running strategy | §6 Strategy page | deep | 2026-11-08-2 | Stock list edit on running strategy verified via throwaway (Coherent unticked, count updated 9->8). C5.2–C5.4 |
 | D5 | Signals and trades timeline | §6 Strategy page | smoke | 2026-11-06-1 | F-005 |
 | D6 | Log a trade by hand (live) | §6 Strategy page | deep | 2026-11-08-3 | Oversold trades, 0-buy sales, buy/sale arithmetic, edit/delete lifecycle verified via throwaway. C3.2–C3.5 |
@@ -145,7 +145,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | smoke | 2026-11-06-1 | C3.18 |
 | E5 | Cooldown row with days left, after a step and after a sale; no chart while "Not checked yet" | §6 Stock page | untested | | New (feedback 2026-11-12) |
 | E6 | A Manual buy signal answered (Did it or Skip): Next step shows open with the milestones reached used and the cooldown, before the next daily check | §6 Stock page | untested | | New (#223) |
-| E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours, the ring on the day a comeback candidate was last beaten down (#257, not yet checked) | §6 Stock page | deep | 2026-11-08-3 | Verified on PLTR and ZS: 90/30/7 day selectors, SVG start lines, buy area polygons, price polyline colors, 390px responsive rendering. C4.1–C4.3 |
+| E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours, the comeback's Candidate [date] line (#264, was a ring in #257; not yet checked), its recent-low ring and a non-candidate's SMA 200 line (#264, not yet checked) | §6 Stock page | deep | 2026-11-08-3 | Verified on PLTR and ZS: 90/30/7 day selectors, SVG start lines, buy area polygons, price polyline colors, 390px responsive rendering. C4.1–C4.3 |
 
 ### F · Confirm a signal (live)
 

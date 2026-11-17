@@ -74,6 +74,8 @@ describe('stockLine', () => {
     const trendWords = { zone: 'the buy line', notCandidate: 'Below its long trend', holding: 'In the market' }
     const out = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, distancePct: 1.8 }), 'simulation', 'EUR', trendWords)
     expect([out.pill, out.detail]).toEqual(['CANDIDATE', '2% from the buy line'])
+    // Within the template's getting close %: the dashboard's word instead of "candidate".
+    expect(stockLine(row({ status: 'outOfTheMarket', maxSteps: null, distancePct: 1.8, gettingClose: true }), 'simulation', 'EUR', trendWords).pill).toBe('GETTING CLOSE')
     const holding = stockLine(row({ status: 'holding', maxSteps: null, steps: 1 }), 'simulation', 'EUR', trendWords)
     expect([holding.pill, holding.detail]).toEqual(['HOLDING', 'In the market'])
   })

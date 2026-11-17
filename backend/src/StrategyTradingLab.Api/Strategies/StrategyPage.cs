@@ -71,6 +71,16 @@ public static class StrategyPage
     public static StockStatus WithCandidacy(StockStatus status, IReadOnlyList<RuleCheck> checks) =>
         status == StockStatus.Watching && checks.Any(c => c.Group == CheckGroup.Candidate && c.Met == false) ? StockStatus.NotCandidate : status;
 
+    /// <summary>
+    /// The candidates' order within their pill (feedback, 2026-11-17): in the buy range first (no distance left, not past the
+    /// rule), then the closest to it, then those with no distance, and those past the buy rule (too late to chase) last.
+    /// </summary>
+    public static (int, decimal) CandidateOrder(StockStatus status, decimal? distance, IReadOnlyList<RuleCheck> checks) =>
+        Order(status) != Order(StockStatus.Watching) ? (0, 0)
+        : StockStates.PastBuyRule(checks) ? (3, 0)
+        : distance is { } d ? (d == 0 ? 0 : 1, d)
+        : (2, 0);
+
     /// <summary>The pill's order on the page: what waits for the user first, then what the rules are doing.</summary>
     public static int Order(StockStatus status) => status switch
     {

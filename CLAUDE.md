@@ -50,7 +50,7 @@ Ernest works from a Mac and a Windows PC with VS Code. The AI tools run both loc
 | --- | --- | --- |
 | Tools | Node 24, .NET 10. Ask before installing anything new. | The session start hook runs `npm ci` and `dotnet tool restore` where the tools exist. Tools it lacks are a setup step for Ernest in the cloud environment's settings. |
 | Dev database | The Neon `dev` branch, variables in `.env.local` (gitignored, written by `neon deploy`). | Only if Ernest has added the variables to the cloud environment. Otherwise the API can't reach a database: say so in the PR. |
-| Browser check | The built-in browser or Chrome, at phone and desktop width. | No browser: rely on tests, and say in the PR that the screens weren't checked by eye. |
+| Browser check | The built-in browser or Chrome, at phone and desktop width. | Headless Chromium with Playwright (pre-installed, no install step). The local API can't reach the dev database (port 5432 is blocked), so a check that needs data runs the frontend with mocked API replies, or uses the live app once deployed. Say in the PR which screens were checked and how. |
 | Production | Allowed (see below). | The database: read it through the Neon connector, if it's on (see below). The live app: as a user, in a headless browser. The server: not available (no server key), so hand that to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 

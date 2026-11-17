@@ -27,7 +27,7 @@ export const nextGoal = (checks: RuleCheck[]) =>
 
 /**
  * One day's levels from its checks' keys (not the template's): a candidate's buy area or discount zone, else the line that
- * would make it a candidate (beaten down, proven growth); a held stock's next milestone; a bear's market fall line, and its
+ * would make it a candidate (beaten down and the SMA 200, proven growth); a held stock's next milestone; a bear's market fall line, and its
  * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks (and
  * next-step previews). The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
  * 2026-11-08), except the growth line, which shows only on the days the growth isn't met (so a dip that lacks only its
@@ -67,6 +67,10 @@ export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(chec
       case 'drop':
         if ((bear || !isCandidate) && c.level !== null && c.min !== null)
           marks.push({ id: 'drop', label: bear ? 'stock.chart.fall' : 'stock.chart.beaten', tone: bear ? 'sell' : 'watch', from: below(c.level, c.min) })
+        break
+      // The comeback's other beaten-down rule: under the SMA 200, so the line shows while it isn't a candidate (feedback, 2026-11-17).
+      case 'vsSma200':
+        if (!isCandidate && c.level !== null) marks.push({ id: 'sma200', label: 'stock.chart.sma200', tone: 'long', from: c.level })
         break
       // Only once a drop started: before, there is no low to bounce off.
       case 'bounce':

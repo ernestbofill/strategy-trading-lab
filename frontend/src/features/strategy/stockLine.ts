@@ -149,7 +149,8 @@ export function stockLine(
   checks?: Texts,
   t: Translate = tNow,
 ): StockLine {
-  const [key, tone] = PILL_KEYS[row.status]
+  // A candidate within the template's getting close %: the dashboard card's word (feedback, 2026-11-17).
+  const [key, tone]: [MessageKey, PillTone] = row.gettingClose ? ['strategy.pill.close', 'watching'] : PILL_KEYS[row.status]
   const amount = money(row.invested, currency)
   return {
     pill: t(key),

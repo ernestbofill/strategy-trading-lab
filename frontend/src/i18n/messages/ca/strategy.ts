@@ -56,6 +56,7 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.pill.holding': 'EN CARTERA',
   'strategy.pill.building': 'CONSTRUINT',
   'strategy.pill.candidate': 'CANDIDATA',
+  'strategy.pill.close': 'A PROP',
   'strategy.pill.notCandidate': 'NO ÉS CANDIDATA',
   'strategy.pill.notChecked': 'SENSE COMPROVAR',
   'strategy.pill.removed': 'ELIMINADA',

@@ -87,7 +87,10 @@ public record ComebackParams
     /// </summary>
     public DateOnly VolumeOnRiseFrom { get; init; } = DateOnly.MinValue;
 
-    /// <summary>A step only up to this % above the signal line or a milestone's level.</summary>
+    /// <summary>
+    /// A step only up to this % past its line: the first step up to <c>AboveSma50Pct + MaxChasePct</c> above the recent low
+    /// (+10% to +18% by default), a milestone up to this % above its level.
+    /// </summary>
     [Range(0, 30)] public decimal MaxChasePct { get; init; } = 8;
 
     /// <summary>Milestone "near the old high": within this % of the 52-week high.</summary>

@@ -96,7 +96,9 @@ public static class StrategyEndpoints
             var template = await store.VersionAsync(strategy.TemplateKey, strategy.DefaultsVersion, cancellationToken);
             // The stocks its check at once left to the daily run during this US session (no latest price, PriceRefreshWorker.CheckAsync).
             var leftToDailyRun = strategy.Status == StrategyStatus.Running ? refreshes.LeftToDailyRun(strategy.Id, time.GetUtcNow()) : null;
-            return TypedResults.Ok(await DetailAsync(db, strategy, template, user, today, cancellationToken, ai.Summary, ai.LastScores, leftToDailyRun));
+            // "Getting close" as the dashboard card counts it: the active version's %.
+            var closePct = (await store.FindAsync(strategy.TemplateKey, cancellationToken))?.ClosePct ?? template.ClosePct;
+            return TypedResults.Ok(await DetailAsync(db, strategy, template, closePct, user, today, cancellationToken, ai.Summary, ai.LastScores, leftToDailyRun));
         })
         .RequireUser()
         .WithTags("Strategies")
@@ -400,7 +402,7 @@ public static class StrategyEndpoints
 
     static IEnumerable<StrategyAsset> Followed(Strategy strategy) => strategy.Assets.Where(a => a.IsFollowed);
 
-    static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, Template template, User user, DateOnly today, CancellationToken cancellationToken,
+    static async Task<StrategyDetail> DetailAsync(AppDbContext db, Strategy strategy, Template template, decimal closePct, User user, DateOnly today, CancellationToken cancellationToken,
         AiRoundsSummary? ai = null, IReadOnlyDictionary<Guid, decimal>? aiScores = null, IReadOnlySet<Guid>? leftToDailyRun = null)
     {
         var texts = TemplateTexts.For(template, user.Locale);
@@ -467,9 +469,12 @@ public static class StrategyEndpoints
                 PriceIsClose = priceIsClose,
                 Checks = checks,
                 AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
+                // Only while it runs, as the dashboard card counts it: an ended strategy gets no signal.
+                GettingClose = strategy.Status == StrategyStatus.Running && StockStates.IsClose(strategy.TemplateKey, closePct, status, distance),
             };
         })
-        .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
+        .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => StrategyPage.CandidateOrder(row.Status, row.DistancePct, row.Checks))
+        .ThenBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
         .ToList();
 
         var budget = strategy.Budget;

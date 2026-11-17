@@ -90,6 +90,13 @@ public record ComebackParams
     /// <summary>A step only up to this % above the signal line or a milestone's level.</summary>
     [Range(0, 30)] public decimal MaxChasePct { get; init; } = 8;
 
+    /// <summary>
+    /// From this day on the first step's chase limit is counted from the recent low, like its buy line: the turn buys from
+    /// <c>AboveSma50Pct</c> to <c>AboveSma50Pct + MaxChasePct</c> above the low (+10% to +20%), not up to <c>MaxChasePct</c>
+    /// above the buy line (+21%, the POC's rule). Ernest, 2026-11-17. On by default; the golden tests turn it off.
+    /// </summary>
+    public DateOnly ChaseFromLowFrom { get; init; } = DateOnly.MinValue;
+
     /// <summary>Milestone "near the old high": within this % of the 52-week high.</summary>
     [Range(1, 50)] public decimal NearHighPct { get; init; } = 15;
 

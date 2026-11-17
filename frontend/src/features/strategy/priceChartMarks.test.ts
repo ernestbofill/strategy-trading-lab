@@ -7,12 +7,16 @@ const check = (fields: Partial<RuleCheck> & Pick<RuleCheck, 'key' | 'group' | 'm
 })
 
 describe('chartMarks', () => {
-  it('shows the comeback its beaten-down line while not a candidate', () => {
+  it('shows the comeback its beaten-down line and SMA 200 while not a candidate', () => {
     const marks = chartMarks([
       check({ key: 'beaten', group: 'candidate', met: false, min: 30, max: 60 }),
       check({ key: 'drop', group: 'candidate', met: false, min: 30, level: 300 }),
+      check({ key: 'vsSma200', group: 'candidate', met: true, level: 250 }),
     ])
-    expect(marks).toEqual([{ id: 'drop', label: 'stock.chart.beaten', tone: 'watch', from: 210 }])
+    expect(marks).toEqual([
+      { id: 'drop', label: 'stock.chart.beaten', tone: 'watch', from: 210 },
+      { id: 'sma200', label: 'stock.chart.sma200', tone: 'long', from: 250 },
+    ])
     // A candidate today draws its buy area on every day, never this line.
     expect(chartMarks([check({ key: 'beaten', group: 'candidate', met: false }), check({ key: 'drop', group: 'candidate', met: false, min: 30, level: 300 })], true)).toEqual([])
   })

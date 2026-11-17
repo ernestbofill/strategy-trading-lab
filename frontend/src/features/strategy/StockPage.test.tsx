@@ -43,7 +43,7 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
     },
     buyLine: {
       label: 'Price vs the buy line',
-      detail: '+{value}% above the recent low ({midLevel}): needs +{min}% ({level}), and at most {endValue}% above that line ({endLevel}).',
+      detail: '+{value}% above the recent low ({midLevel}): needs +{min}% to +{max}% ({level} to {endLevel}).',
       past: '+{value}% above the recent low ({midLevel}) — past the +{max}% chase limit ({endLevel}).',
       short: '+{value}% above its low (needs +{min}%)',
       pastShort: '+{value}% above its low (past +{max}% limit)',
@@ -112,7 +112,7 @@ describe('StockPage', () => {
       ),
     ).toBeTruthy()
     expect(screen.queryByText(/Day \d+ of|^\+12%$/)).toBeNull()
-    expect(screen.getByText('+16.8% above the recent low ($203.39): needs +15% ($233.90), and at most 8% above that line ($252.61).')).toBeTruthy()
+    expect(screen.getByText('+16.8% above the recent low ($203.39): needs +15% to +24.2% ($233.90 to $252.61).')).toBeTruthy()
     expect(screen.getByText('$233.90 to $252.61')).toBeTruthy()
     expect(screen.getByText('0.84× its 50-day average (needs 1.1×). Price: −2.1% over those 5 days (needs a rise).')).toBeTruthy()
     expect(screen.getByText('76%')).toBeTruthy()
@@ -140,7 +140,7 @@ describe('StockPage', () => {
     expect(await screen.findByText('NOT A CANDIDATE')).toBeTruthy()
     expect(screen.getByText('Window closed')).toBeTruthy()
     expect(screen.getByText('Window closed: last beaten down on Jul 15 (74 trading days ago; window is 60 days).')).toBeTruthy()
-    expect(screen.getByText('+0% above the recent low ($162.85): needs +15% ($187.28), and at most 8% above that line ($202.26).')).toBeTruthy()
+    expect(screen.getByText('+0% above the recent low ($162.85): needs +15% to +24.2% ($187.28 to $202.26).')).toBeTruthy()
     expect(screen.getByText('118.9%')).toBeTruthy()
     expect(screen.getByText('Short $41.20')).toBeTruthy()
     expect(screen.getByText('Mid $38.50')).toBeTruthy()

@@ -15,8 +15,8 @@ const LABEL = 16
 
 /**
  * The stock's closes with the rules' levels of each day drawn over them, as they moved (spec: Stock page). Before the
- * strategy started only what makes a candidate shows, since buys don't apply yet; a marker shows the start, and dots its
- * trades. Every day draws the levels of the stock's verdict today. Not interactive: the right axis gives the latest price
+ * strategy started only what makes a candidate shows, since buys don't apply yet; a marker shows the start, rings the
+ * comeback's recent low and beaten-down day, and dots its trades. Every day draws the levels of the stock's verdict today. Not interactive: the right axis gives the latest price
  * and each level's latest value. Green for a candidate, violet for a stock that isn't one.
  */
 export function PriceChart({
@@ -59,6 +59,10 @@ export function PriceChart({
   // Where a candidate was last beaten down ("Candidate since"), when the period reaches back to it (Ernest, 2026-11-16).
   // Not while it is still beaten down: the ring would sit on the latest price and move with it each day.
   const beaten = beatenDate && beatenDate >= first && beatenDate < last.date ? dayOf(beatenDate) : null
+  // The comeback's recent low, which its buy line counts from (the latest checked day's): ringed when the period has it
+  // (feedback, 2026-11-17).
+  const lowDate = points[lastChecked]?.checks.find((c) => c.key === 'buyLine' && c.midLevel != null)?.date ?? null
+  const recentLow = lowDate && lowDate >= first && lowDate <= last.date ? dayOf(lowDate) : null
   const startedOn = chart.data.startedOn
   const started = startedOn && startedOn > first && startedOn <= last.date ? dayOf(startedOn) : null
 
@@ -117,6 +121,7 @@ export function PriceChart({
           </svg>
           {/* Round marks in HTML, so the stretched SVG doesn't squash them. */}
           <span className={styles.dot} style={{ left: '100%', top: pct(y(last.close), HEIGHT) }} />
+          {recentLow !== null && <span className={styles.low} style={{ left: pct(x(recentLow), WIDTH), top: pct(y(points[recentLow].close), HEIGHT) }} />}
           {beaten !== null && <span className={styles.beaten} style={{ left: pct(x(beaten), WIDTH), top: pct(y(points[beaten].close), HEIGHT) }} />}
           {dots.map((d) => (
             <span key={d.id} className={styles.trade} data-side={d.side} style={{ left: pct(x(d.i), WIDTH), top: pct(y(points[d.i].close), HEIGHT) }} />
@@ -150,6 +155,12 @@ export function PriceChart({
             {nameOf(s)}
           </li>
         ))}
+        {recentLow !== null && (
+          <li>
+            <span className={styles.lowKey} />
+            {t('stock.chart.lowOn', { date: shortDate(lowDate!) })}
+          </li>
+        )}
         {beaten !== null && (
           <li>
             <span className={styles.beatenKey} />

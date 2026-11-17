@@ -120,6 +120,23 @@
   box-sizing: border-box;
 }
 
+/* The comeback's recent low, which the buy line counts from: a ring in the buy colour. */
+.low,
+.lowKey {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--success);
+  border-radius: 50%;
+}
+.low {
+  position: absolute;
+  margin: -6px 0 0 -6px;
+}
+.lowKey {
+  display: inline-block;
+  box-sizing: border-box;
+}
+
 .tradeKey {
   display: inline-block;
   width: 10px;

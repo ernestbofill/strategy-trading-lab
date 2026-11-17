@@ -115,12 +115,13 @@ public class DipRulesTests
         var buyLine = Assert.Single(fiftyDay.Checks, c => c.Key == "buyLine");
         Assert.Equal(12m, buyLine.Value);
         Assert.Equal(10m, buyLine.Min);
-        Assert.Equal(18.8m, buyLine.Max);
+        Assert.Equal(18m, buyLine.Max);
         Assert.Equal(110m, buyLine.Level);
         Assert.Equal(100m, buyLine.MidLevel);
-        Assert.Equal(118.8m, buyLine.EndLevel);
+        Assert.Equal(118m, buyLine.EndLevel);
         Assert.Equal(50m, buyLine.SubValue);
         Assert.Equal(8m, buyLine.EndValue);
+        Assert.Equal(bars[254].Date, buyLine.Date); // The recent low's day: the last of its closes at 100.
         Assert.Equal(RuleStatus.Watching, tenDay.Status);
 
         // Heavy volume on a falling price is no turn: the volume only counts when the close is above the one 5 days before.

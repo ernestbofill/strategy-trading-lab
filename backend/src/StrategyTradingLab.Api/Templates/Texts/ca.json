@@ -183,7 +183,7 @@
         "help": "Més negociació confirma el gir. Més alt: menys senyals i més ben recolzats. 1: n'hi ha prou amb un volum normal."
       },
       "maxChasePct": {
-        "sentence": "Límit de persecució: compra només fins a un {value} per sobre de la línia de compra o del nivell d'una fita.",
+        "sentence": "Límit de persecució: compra només fins a un {value} més enllà de la línia de compra (comptat des del mínim recent: 10% i 10% és de +10% a +20%) o per sobre del nivell d'una fita.",
         "value": "{n}%",
         "help": "Més alt: encara compra un gir que ha saltat molt per sobre de la línia. Més baix: deixa passar els girs massa ràpids."
       },
@@ -245,11 +245,11 @@
       },
       "buyLine": {
         "label": "Preu respecte a la línia de compra",
-        "detail": "+{value}% per sobre del mínim recent ({midLevel}): cal +{min}% ({level}), i com a màxim un {endValue}% per sobre d'aquesta línia ({endLevel}).",
-        "past": "Massa lluny: +{value}% per sobre del mínim recent ({midLevel}); més d'un {endValue}% per sobre de la línia de compra ({endLevel}) és massa tard.",
+        "detail": "+{value}% per sobre del mínim recent ({midLevel}): cal de +{min}% a +{max}% ({level} a {endLevel}).",
+        "past": "+{value}% per sobre del mínim recent ({midLevel}): passa de +{max}% ({endLevel}), massa tard.",
         "short": "+{value}% sobre el mínim (cal +{min}%)",
         "pastShort": "massa lluny del mínim (+{value}%)",
-        "info": "El mínim recent és el tancament més baix dels últims {subValue} dies de mercat ({midLevel}). La línia de compra és un +{min}% per sobre ({level}): l'acció ha girat. Més d'un {endValue}% per sobre de la línia de compra ({endLevel}) és massa tard."
+        "info": "El mínim recent és el tancament més baix dels últims {subValue} dies de mercat ({midLevel}). La línia de compra és un +{min}% per sobre ({level}): l'acció ha girat. Més d'un +{max}% per sobre del mínim ({endLevel}) és massa tard."
       },
       "chase": {
         "label": "No massa lluny de la línia",

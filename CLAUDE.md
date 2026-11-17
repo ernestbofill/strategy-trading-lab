@@ -51,7 +51,7 @@ Ernest works from a Mac and a Windows PC with VS Code. The AI tools run both loc
 | Tools | Node 24, .NET 10. Ask before installing anything new. | The session start hook runs `npm ci` and `dotnet tool restore` where the tools exist. Tools it lacks are a setup step for Ernest in the cloud environment's settings. |
 | Dev database | The Neon `dev` branch, variables in `.env.local` (gitignored, written by `neon deploy`). | Only if Ernest has added the variables to the cloud environment. Otherwise the API can't reach a database: say so in the PR. |
 | Browser check | The built-in browser or Chrome, at phone and desktop width. | No browser: rely on tests, and say in the PR that the screens weren't checked by eye. |
-| Production | Allowed (see below). | Not available: no server key. Hand it to Ernest. |
+| Production | Allowed (see below). | The database: read it through the Neon connector, if it's on (see below). The live app: as a user, in a headless browser. The server: not available (no server key), so hand that to Ernest. |
 | GitHub | `gh` CLI. | The GitHub connector, or `gh` if it is logged in. |
 
 **Test accounts.** When a feature needs a signed-in check, make disposable accounts on the dev database: sign up on the local app with a `claude-<feature>-<yyyymmdd>@stl.invalid` address and a fresh password you don't keep, and set what the check needs (a confirmed email, the owner role) on that row in the dev database. How: [docs/dev-browser-test-account.md](docs/dev-browser-test-account.md).

@@ -17,7 +17,7 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.chart.buyArea': 'Zona de compra',
   'stock.chart.zone': 'Zona de descompte',
   'stock.chart.beaten': 'Castigada',
-  'stock.chart.beatenOn': 'Castigada {date}',
+  'stock.chart.candidateOn': 'Candidata {date}',
   'stock.chart.lowOn': 'Mínim recent {date}',
   'stock.chart.growth': 'Creixement provat',
   'stock.chart.fall': 'Caiguda del mercat',

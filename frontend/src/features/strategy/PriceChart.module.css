@@ -103,14 +103,13 @@
   background: var(--hot-pink);
 }
 
-/* Rings around the price, so the latest price's dot shows through: the day a candidate was last beaten down (amber), and
-   the comeback's recent low, which the buy line counts from (blue: apart from the price line and the buy dots), wider so
-   both show on one day. */
+/* The comeback's recent low, which the buy line counts from: a ring around the price, so the latest price's dot shows
+   through it, in blue, apart from the price line and the buy dots. */
 .ring,
 .ringKey {
   width: 12px;
   height: 12px;
-  border: 2px solid var(--warning);
+  border: 2px solid var(--info);
   border-radius: 50%;
 }
 .ring {
@@ -120,15 +119,6 @@
 .ringKey {
   display: inline-block;
   box-sizing: border-box;
-}
-.ring[data-kind='low'],
-.ringKey[data-kind='low'] {
-  border-color: var(--info);
-}
-.ring[data-kind='low'] {
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
 }
 
 .tradeKey {
@@ -156,6 +146,17 @@
 }
 
 /* Near the right edge the label goes left of the line, so it never runs off the chart. */
+/* The day a comeback stock became a candidate: a dashed line like the start's, amber, labelled at the foot. */
+.since {
+  stroke: var(--warning);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.startLabel[data-since] {
+  top: auto;
+  bottom: 0;
+  color: var(--warning);
+}
 .startLabel[data-left='true'] {
   margin-left: -4px;
   transform: translateX(-100%);

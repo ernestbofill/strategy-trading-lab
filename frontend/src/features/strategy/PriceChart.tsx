@@ -15,8 +15,8 @@ const LABEL = 16
 
 /**
  * The stock's closes with the rules' levels of each day drawn over them, as they moved (spec: Stock page). Before the
- * strategy started only what makes a candidate shows, since buys don't apply yet; a marker shows the start, rings the
- * comeback's recent low and beaten-down day, and dots its trades. Every day draws the levels of the stock's verdict today. Not interactive: the right axis gives the latest price
+ * strategy started only what makes a candidate shows, since buys don't apply yet; dashed lines mark the start and the day a
+ * comeback stock became a candidate, a ring its recent low, and dots its trades. Every day draws the levels of the stock's verdict today. Not interactive: the right axis gives the latest price
  * and each level's latest value. Green for a candidate, violet for a stock that isn't one.
  */
 export function PriceChart({
@@ -32,7 +32,7 @@ export function PriceChart({
   assetId: string
   /** The stored verdict the page shows; null before the daily check has stored any. */
   isCandidate: boolean | null
-  /** The day a comeback candidate was last beaten down (the page's "Candidate since"), ringed on the price; null for none. */
+  /** The day a comeback candidate was last beaten down (the page's "Candidate since"), marked by a line; null for none. */
   beatenDate: string | null
   currency: string
   trades: StrategyTradeItem[]
@@ -56,11 +56,11 @@ export function PriceChart({
   const dayOf = (date: string) => points.findIndex((p) => p.date >= date)
   // On the price line at its day's close: a trade's own price is what was paid, which a later split no longer matches.
   const dots = trades.filter((tr) => tr.tradeDate >= first && tr.tradeDate <= last.date).map((tr) => ({ ...tr, i: dayOf(tr.tradeDate) }))
-  // Where a candidate was last beaten down ("Candidate since"), when the period reaches back to it (Ernest, 2026-11-16).
-  // Not while it is still beaten down: the ring would sit on the latest price and move with it each day.
-  const beaten = beatenDate && beatenDate >= first && beatenDate < last.date ? dayOf(beatenDate) : null
+  // The day a comeback stock became a candidate (last beaten down, "Candidate since"): a dashed line like the start's, in
+  // place of a ring on the price (Ernest, 2026-11-17).
+  const since = beatenDate && beatenDate >= first && beatenDate <= last.date ? dayOf(beatenDate) : null
   // The comeback's recent low, which its buy line counts from (the latest checked day's): ringed when the period has it
-  // (feedback, 2026-11-17). Not while today is the low, as for the beaten-down ring. A wider ring, so both show on one day.
+  // (feedback, 2026-11-17). Not while today is the low: the ring would sit on the latest price and move with it each day.
   const lowDate = points[lastChecked]?.checks.find((c) => c.key === 'buyLine' && c.midLevel != null)?.date ?? null
   const recentLow = lowDate && lowDate >= first && lowDate < last.date ? dayOf(lowDate) : null
   const startedOn = chart.data.startedOn
@@ -106,6 +106,7 @@ export function PriceChart({
         <div className={styles.plot}>
           <svg width="100%" height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
             {started !== null && <line x1={x(started)} x2={x(started)} y1="0" y2={HEIGHT} className={styles.start} vectorEffect="non-scaling-stroke" />}
+            {since !== null && <line x1={x(since)} x2={x(since)} y1="0" y2={HEIGHT} className={styles.since} vectorEffect="non-scaling-stroke" />}
             {series.flatMap((s) =>
               segments(s.points).map((run) => {
                 const at = xs(run)
@@ -121,14 +122,19 @@ export function PriceChart({
           </svg>
           {/* Round marks in HTML, so the stretched SVG doesn't squash them. */}
           <span className={styles.dot} style={{ left: '100%', top: pct(y(last.close), HEIGHT) }} />
-          {recentLow !== null && <span className={styles.ring} data-kind="low" style={{ left: pct(x(recentLow), WIDTH), top: pct(y(points[recentLow].close), HEIGHT) }} />}
-          {beaten !== null && <span className={styles.ring} style={{ left: pct(x(beaten), WIDTH), top: pct(y(points[beaten].close), HEIGHT) }} />}
+          {recentLow !== null && <span className={styles.ring} style={{ left: pct(x(recentLow), WIDTH), top: pct(y(points[recentLow].close), HEIGHT) }} />}
           {dots.map((d) => (
             <span key={d.id} className={styles.trade} data-side={d.side} style={{ left: pct(x(d.i), WIDTH), top: pct(y(points[d.i].close), HEIGHT) }} />
           ))}
           {started !== null && (
             <span className={styles.startLabel} data-left={x(started) > WIDTH * 0.6} style={{ left: pct(x(started), WIDTH) }}>
               {t('stock.chart.started', { date: shortDate(startedOn!) })}
+            </span>
+          )}
+          {/* At the foot, so it doesn't meet the start's label. */}
+          {since !== null && (
+            <span className={styles.startLabel} data-since data-left={x(since) > WIDTH * 0.6} style={{ left: pct(x(since), WIDTH) }}>
+              {t('stock.chart.candidateOn', { date: shortDate(beatenDate!) })}
             </span>
           )}
         </div>
@@ -157,14 +163,8 @@ export function PriceChart({
         ))}
         {recentLow !== null && (
           <li>
-            <span className={styles.ringKey} data-kind="low" />
-            {t('stock.chart.lowOn', { date: shortDate(lowDate!) })}
-          </li>
-        )}
-        {beaten !== null && (
-          <li>
             <span className={styles.ringKey} />
-            {t('stock.chart.beatenOn', { date: shortDate(beatenDate!) })}
+            {t('stock.chart.lowOn', { date: shortDate(lowDate!) })}
           </li>
         )}
         {(['buy', 'sell'] as const)

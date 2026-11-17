@@ -15,7 +15,7 @@ export const stock = {
   'stock.chart.buyArea': 'Buy area',
   'stock.chart.zone': 'Discount zone',
   'stock.chart.beaten': 'Beaten down',
-  'stock.chart.beatenOn': 'Beaten down {date}',
+  'stock.chart.candidateOn': 'Candidate {date}',
   'stock.chart.lowOn': 'Recent low {date}',
   'stock.chart.growth': 'Proven growth',
   'stock.chart.fall': 'Market fall',

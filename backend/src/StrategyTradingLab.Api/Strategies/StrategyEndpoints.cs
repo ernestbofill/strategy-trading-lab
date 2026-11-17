@@ -469,7 +469,8 @@ public static class StrategyEndpoints
                 PriceIsClose = priceIsClose,
                 Checks = checks,
                 AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
-                GettingClose = StockStates.IsClose(strategy.TemplateKey, closePct, status, distance),
+                // Only while it runs, as the dashboard card counts it: an ended strategy gets no signal.
+                GettingClose = strategy.Status == StrategyStatus.Running && StockStates.IsClose(strategy.TemplateKey, closePct, status, distance),
             };
         })
         .OrderBy(row => StrategyPage.Order(row.Status)).ThenBy(row => StrategyPage.CandidateOrder(row.Status, row.DistancePct, row.Checks))

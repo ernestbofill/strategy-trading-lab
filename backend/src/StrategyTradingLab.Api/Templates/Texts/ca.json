@@ -210,7 +210,7 @@
       },
       "signal": {
         "title": "2 · Senyal de compra: la primera fase",
-        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), amb volum creixent, i no gaire per sobre de la línia. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
+        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), amb volum creixent, i com a molt el límit de persecució més per sobre del mínim. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
       },
       "milestones": {
         "title": "3 · Fites: les fases següents",

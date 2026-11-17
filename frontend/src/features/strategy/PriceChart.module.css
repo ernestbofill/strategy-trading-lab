@@ -104,7 +104,8 @@
 }
 
 /* Rings around the price, so the latest price's dot shows through: the day a candidate was last beaten down (amber), and
-   the comeback's recent low, which the buy line counts from (the chart's colour), wider so both show on one day. */
+   the comeback's recent low, which the buy line counts from (blue: apart from the price line and the buy dots), wider so
+   both show on one day. */
 .ring,
 .ringKey {
   width: 12px;
@@ -122,7 +123,7 @@
 }
 .ring[data-kind='low'],
 .ringKey[data-kind='low'] {
-  border-color: var(--chart-price);
+  border-color: var(--info);
 }
 .ring[data-kind='low'] {
   width: 18px;

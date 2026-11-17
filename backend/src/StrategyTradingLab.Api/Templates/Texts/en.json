@@ -210,7 +210,7 @@
       },
       "signal": {
         "title": "2 · Buy signal: the first step",
-        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), on rising volume, and not too far above the line. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
+        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), on rising volume, and at most the chase limit further above the low. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
       },
       "milestones": {
         "title": "3 · Milestones: the next steps",

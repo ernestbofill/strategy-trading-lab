@@ -36,9 +36,13 @@ public static class StockStates
         status is StockStatus.Watching or StockStatus.OutOfTheMarket && templateKey != TemplateKeys.Bear
         && distance is > 0 && distance <= closePct;
 
-    /// <summary>A buy rule the price went past (the comeback's chase limit, past the dip's zone): too late for this signal.</summary>
+    /// <summary>
+    /// A buy rule the price went past (the comeback's chase limit, past the dip's zone): too late for this signal. A price
+    /// window (a check with a level) unmet at its rounded bound is just past it: 18.04% is sent as 18% (the stock page's isPastMax).
+    /// </summary>
     public static bool PastBuyRule(IReadOnlyList<RuleCheck> checks) =>
-        checks.Any(c => c.Group == CheckGroup.Buy && c.Met == false && c.Value is { } value && c.Max is { } max && value > max);
+        checks.Any(c => c.Group == CheckGroup.Buy && c.Met == false && c.Value is { } value && c.Max is { } max
+            && (value > max || (value == max && c.Level is not null)));
 
     /// <summary>Where a stock stands today: its pill, the steps and signal behind it, and how far the price is from the rules.</summary>
     public record StockState(StockStatus Status, int RulesSteps, int UserSteps, decimal? Distance, Signal? Signal, IReadOnlyList<RuleCheck> Checks);

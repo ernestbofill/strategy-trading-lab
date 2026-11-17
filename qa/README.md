@@ -43,6 +43,7 @@ When it's done, copy its Markdown block and give it to Claude or Antigravity ("r
 - **The account's label.** Logs, `STATE.md` and findings name the account by its label, never by its address: the part after `+` (`qaagent` for `…+qaagent@…`), or else a label Ernest gives. `STATE.md`'s account baseline and fixtures belong to one account: with another account, the agent adds a section for its label and doesn't touch the others' fixtures.
 - The account's email is confirmed, so Live mode and feedback work. The vip role has the same rights as a plain user for now. `/admin` is out of scope: the agent may open it once to check it is refused, and nothing more.
 - A cloud session without a link to Ernest's computer has no such browser, so it can't run a session. Run it locally on the Mac or the PC (the Claude desktop app, or Antigravity).
+- **Override, 2026-11-17 (Ernest):** a cloud session may log in with Playwright using the `STL_QA_USER` and `STL_QA_PASSWORD` environment variables instead of a saved login. This is accepted. The agent reads them only from the environment and never prints, logs or commits either value. It tries the log-in once and stops on failure (no retries, so the account isn't locked). First used on 2026-11-17: the log-in succeeded and the dashboard loaded.
 
 ## Safety rules
 

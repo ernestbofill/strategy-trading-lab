@@ -1066,11 +1066,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.ToTable("feedback_items", null, t =>
                         {
-                            t.HasCheckConstraint("ck_feedback_items_closed_at", "(status = 'closed') = (closed_at IS NOT NULL)");
+                            t.HasCheckConstraint("ck_feedback_items_closed_at", "(status <> 'open') = (closed_at IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_feedback_items_kind", "kind IN ('bug', 'idea', 'note', 'feature')");
 
-                            t.HasCheckConstraint("ck_feedback_items_status", "status IN ('open', 'closed')");
+                            t.HasCheckConstraint("ck_feedback_items_status", "status IN ('open', 'closed', 'validated')");
                         });
                 });
 

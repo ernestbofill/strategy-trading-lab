@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { api, type FeedbackItem } from '../../api'
@@ -37,7 +37,7 @@ describe('FeedbackSection', () => {
       ...(id === 'f1' ? openItem : closedItem),
       ...(patch.kind ? { kind: patch.kind } : {}),
       ...(patch.text ? { text: patch.text } : {}),
-      ...(patch.status ? { status: patch.status, closedAt: patch.status === 'closed' ? '2026-10-25T12:00:00Z' : null } : {}),
+      ...(patch.status ? { status: patch.status, closedAt: patch.status !== 'open' ? '2026-10-25T12:00:00Z' : null } : {}),
     }))
     const deleteSpy = vi.spyOn(api, 'deleteFeedback').mockResolvedValue()
     const writeText = vi.fn().mockResolvedValue(undefined)
@@ -78,9 +78,19 @@ describe('FeedbackSection', () => {
     fireEvent.click(screen.getByRole('button', { name: /Closed \(2\)/i }))
     expect(screen.getByText('Dark mode contrast fixed')).toBeTruthy()
 
+    // Validate the closed one, which then shows under Validated
+    fireEvent.click(within(screen.getByText('Dark mode contrast fixed').closest('li')!).getByRole('button', { name: 'Validate' }))
+    await waitFor(() => expect(updateSpy).toHaveBeenCalledWith('f2', { status: 'validated' }))
+    fireEvent.click(screen.getByRole('button', { name: /Validated \(1\)/i }))
+    expect(screen.getByText('Dark mode contrast fixed')).toBeTruthy()
+
+    // Copy one item as Markdown
+    fireEvent.click(screen.getByRole('button', { name: 'Copy as Markdown' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2))
+    expect(writeText.mock.calls[1][0]).toContain('Dark mode contrast fixed')
+
     // Delete the second item
-    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' })
-    fireEvent.click(deleteButtons[1])
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(deleteSpy).toHaveBeenCalledWith('f2'))
   })
 

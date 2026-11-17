@@ -1,6 +1,7 @@
 export type FeedbackKind = 'bug' | 'idea' | 'note' | 'feature'
 
-export type FeedbackStatus = 'open' | 'closed'
+/** Open, then closed once handled, then validated once the owner has checked the fix. */
+export type FeedbackStatus = 'open' | 'closed' | 'validated'
 
 /** A feedback comment, optionally pinned to selected text on a screen: backend Feedback/FeedbackEndpoints.cs (FeedbackDto). */
 export interface FeedbackItem {

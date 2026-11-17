@@ -2362,5 +2362,41 @@ BEGIN
     VALUES ('20261116132855_DipLowBeforePeakFrom', '10.0.4');
     END IF;
 END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117211503_ValidatedFeedback') THEN
+    ALTER TABLE feedback_items DROP CONSTRAINT ck_feedback_items_closed_at;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117211503_ValidatedFeedback') THEN
+    ALTER TABLE feedback_items DROP CONSTRAINT ck_feedback_items_status;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117211503_ValidatedFeedback') THEN
+    ALTER TABLE feedback_items ADD CONSTRAINT ck_feedback_items_closed_at CHECK ((status <> 'open') = (closed_at IS NOT NULL));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117211503_ValidatedFeedback') THEN
+    ALTER TABLE feedback_items ADD CONSTRAINT ck_feedback_items_status CHECK (status IN ('open', 'closed', 'validated'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117211503_ValidatedFeedback') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261117211503_ValidatedFeedback', '10.0.4');
+    END IF;
+END $EF$;
 COMMIT;
 

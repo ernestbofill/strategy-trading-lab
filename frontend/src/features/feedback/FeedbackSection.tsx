@@ -6,6 +6,7 @@ import {
   UnauthorizedError,
   type FeedbackItem,
   type FeedbackKind,
+  type FeedbackStatus,
 } from '../../api'
 import { PageHeader } from '../../components/PageHeader'
 import { Screen } from '../../components/Screen'
@@ -19,12 +20,12 @@ import { FeedbackItemRow } from './FeedbackItemRow'
 import { KindPicker } from './KindPicker'
 import { Button } from '../../components/Button'
 
-type Filter = 'open' | 'closed' | 'all'
+type Filter = FeedbackStatus | 'all'
 
 /**
  * Owner feedback review box: shown on `/feedback`. Lists all feedback submitted by
- * confirmed users, filters by open/closed/all, exports open items as a Markdown table, and lets the
- * owner add, edit, close/reopen, or delete items.
+ * confirmed users, filters by status, exports open items as a Markdown table, and lets the
+ * owner add, edit, close, validate, reopen or delete items.
  */
 interface FeedbackSectionProps {
   titleLink?: string
@@ -58,6 +59,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
 
   const openCount = items.filter((i) => i.status === 'open').length
   const closedCount = items.filter((i) => i.status === 'closed').length
+  const validatedCount = items.filter((i) => i.status === 'validated').length
   const visible = items.filter((i) => (filter === 'all' ? true : i.status === filter))
 
   const addComment = async (e: FormEvent) => {
@@ -107,10 +109,8 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
       setEditingId(null)
     })
 
-  const toggleStatus = (item: FeedbackItem) =>
-    act(item.id, 'Could not update status.', async () =>
-      replace(await api.updateFeedback(item.id, { status: item.status === 'open' ? 'closed' : 'open' })),
-    )
+  const setStatus = (item: FeedbackItem, status: FeedbackStatus) =>
+    act(item.id, 'Could not update status.', async () => replace(await api.updateFeedback(item.id, { status })))
 
   const remove = (id: string) =>
     act(id, 'Could not delete comment.', async () => {
@@ -140,7 +140,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
           disabled={openCount === 0}
           onClick={() => void copyMarkdown()}
         >
-          {copied === true ? 'Copied Markdown ✓' : `Copy open as Markdown (${openCount})`}
+          {copied === true ? 'Copied Markdown ✓' : copied === false ? 'Copy failed' : `Copy open as Markdown (${openCount})`}
         </Button>
       </div>
 
@@ -172,6 +172,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
             [
               { key: 'open', label: `Open (${openCount})` },
               { key: 'closed', label: `Closed (${closedCount})` },
+              { key: 'validated', label: `Validated (${validatedCount})` },
               { key: 'all', label: `All (${items.length})` },
             ] as const
           ).map((f) => (
@@ -213,7 +214,7 @@ export function FeedbackSection({ titleLink }: FeedbackSectionProps = {}) {
                   onEdit={() => setEditingId(item.id)}
                   onCancel={() => setEditingId(null)}
                   onSave={(kind, text) => saveEdit(item.id, kind, text)}
-                  onToggle={() => toggleStatus(item)}
+                  onStatus={(status) => setStatus(item, status)}
                   onDelete={() => remove(item.id)}
                 />
               ))}

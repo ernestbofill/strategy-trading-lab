@@ -181,6 +181,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | H4 | Language (and the whole app in Catalan) | §6 Settings | deep | 2026-11-08-1 | Baseline English verified. C2.10 |
 | H5 | In-app feedback: select text, 💬 Add comment | §6 Admin, Feedback | deep | 2026-11-08-1 | Feedback form verified on /settings#feedback. C2.9 |
 | H6 | `/feedback` page | §6 Admin, Feedback | smoke | 2026-11-06-1 | Refused for a vip, as it should be. C5.7 |
+| H7 | `/feedback`: Close → Validate → Reopen, the Validated filter, and Copy as Markdown on one item | §6 Admin, Feedback | not yet | | Added in #263. |
 | H7 | Unsubscribe page (an invalid token) | §7 | smoke | 2026-11-06-1 | Don't use a real token. C5.8 |
 | H8 | Settings page: the Account row, install the app, time zone (Barcelona), notification time | §6 Settings, §7 | regressed | 2026-11-08-2 | Verified F-023 fix on /summary scoreboard and notifications; Settings push toggle and time zone (PR #200, #201, #202). C1.1–C1.5, C3.1–C3.5 |
 | H9 | Delete my account (a throwaway account only: never `qaagent`) | §6 Account | untested | | Wrong password refused; then deleted, logged out, last email. |

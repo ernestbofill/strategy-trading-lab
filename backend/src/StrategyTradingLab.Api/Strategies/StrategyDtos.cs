@@ -131,6 +131,9 @@ public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Sta
 
     /// <summary>A stock not checked yet that the check at once left to the daily run during this US session: its latest price couldn't be fetched (#220).</summary>
     public bool AfterClose { get; init; }
+
+    /// <summary>A candidate within the template's getting close % of its buy rule, as the dashboard card counts it.</summary>
+    public bool GettingClose { get; init; }
 }
 
 /// <summary>A trade in the strategy's trades list.</summary>

@@ -19,9 +19,7 @@ public static class StockStates
         var states = strategy.Assets.Where(a => a.IsFollowed).Select(a => StockStateOf(strategy, a.AssetId, false,
             latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], book, aiScores))
             .ToList();
-        // Bear markets' distance is above the low, not from a buy rule, so it is never "close".
-        bool Close(StockState s) => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket && strategy.TemplateKey != TemplateKeys.Bear
-            && s.Distance is > 0 && s.Distance <= template.ClosePct;
+        bool Close(StockState s) => IsClose(strategy.TemplateKey, template.ClosePct, s.Status, s.Distance);
         return new StockCounts(
             states.Count(s => s.Status is StockStatus.WaitingForYou or StockStatus.Signal),
             states.Count(Close),
@@ -29,6 +27,18 @@ public static class StockStates
             states.Count(s => s.Status is StockStatus.Holding or StockStatus.Building or StockStatus.Done),
             states.Count(s => s.Status == StockStatus.NotCandidate));
     }
+
+    /// <summary>
+    /// Getting close: a candidate within <paramref name="closePct"/> of its buy rule. Bear markets' distance is above the low,
+    /// not from a buy rule, so it is never close.
+    /// </summary>
+    public static bool IsClose(string templateKey, decimal closePct, StockStatus status, decimal? distance) =>
+        status is StockStatus.Watching or StockStatus.OutOfTheMarket && templateKey != TemplateKeys.Bear
+        && distance is > 0 && distance <= closePct;
+
+    /// <summary>A buy rule the price went past (the comeback's chase limit, past the dip's zone): too late for this signal.</summary>
+    public static bool PastBuyRule(IReadOnlyList<RuleCheck> checks) =>
+        checks.Any(c => c.Group == CheckGroup.Buy && c.Met == false && c.Value is { } value && c.Max is { } max && value > max);
 
     /// <summary>Where a stock stands today: its pill, the steps and signal behind it, and how far the price is from the rules.</summary>
     public record StockState(StockStatus Status, int RulesSteps, int UserSteps, decimal? Distance, Signal? Signal, IReadOnlyList<RuleCheck> Checks);

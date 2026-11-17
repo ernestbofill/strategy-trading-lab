@@ -124,6 +124,11 @@ public class DipRulesTests
         Assert.Equal(bars[254].Date, buyLine.Date); // The recent low's day: the last of its closes at 100.
         Assert.Equal(RuleStatus.Watching, tenDay.Status);
 
+        // A close between the new limit (+18% above the low) and the POC's (+18.8%, 8% above the buy line) is too late now.
+        List<PriceBar> jumped = [.. bars[..^1], Bar(265, 118.5m, volume: 300)];
+        Assert.NotEqual(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(jumped, new ComebackParams()), jumped, new StepPlan(5))[^1].Status);
+        Assert.Equal(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(jumped, new ComebackParams(), pocChaseLimit: true), jumped, new StepPlan(5))[^1].Status);
+
         // Heavy volume on a falling price is no turn: the volume only counts when the close is above the one 5 days before.
         var fell = RulesRunner.Run(new ComebackRules(falling, new ComebackParams()), falling, new StepPlan(5))[^1];
         Assert.NotEqual(RuleStatus.BuySignal, fell.Status);

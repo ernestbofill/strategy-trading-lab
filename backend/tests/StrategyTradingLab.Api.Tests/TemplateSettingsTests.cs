@@ -32,7 +32,8 @@ public class TemplateSettingsTests
                 Assert.Equal(0, (value - setting.Min) % setting.Step);
 
                 Assert.True(texts.Settings?.ContainsKey(setting.Key), label);
-                Assert.Contains("{value}", texts.Settings![setting.Key].Sentence);
+                // Exactly one: Advanced settings and /admin/templates fill a single value.
+                Assert.Single(texts.Settings![setting.Key].Sentence.Split("{value}").Skip(1));
                 Assert.Contains("{n}", texts.Settings[setting.Key].Value);
 
                 // The screen's range stays inside the params' own [Range].

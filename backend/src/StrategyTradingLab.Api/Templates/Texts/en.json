@@ -183,7 +183,7 @@
         "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
       },
       "maxChasePct": {
-        "sentence": "Chase limit: buy the first step only up to {value} more above the recent low than the buy line, and a milestone up to {value} above its level.",
+        "sentence": "Chase limit: a step only up to {value} past its line: the first step on top of the buy line's % above the recent low, a milestone above its level.",
         "value": "{n}%",
         "help": "Higher: still buys a turn that jumped well past its line. Lower: skips turns that move too fast."
       },

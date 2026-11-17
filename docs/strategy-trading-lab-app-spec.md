@@ -414,7 +414,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Buy signal | "The buy line is [n]% above the recent low." | 10% | 1 | 5–30 |
 | Buy signal | "The recent low is the lowest close of the last [n] trading days." | 50 | 5 | 10–120 |
 | Buy signal | "The 5-day average volume is at least [n]× the 50-day, with the price up over those 5 days." | 1.2× | 0.1 | 1–3 |
-| Buy signal | "Chase limit: buy the first step only up to [n]% more above the recent low than the buy line, and a milestone up to [n]% above its level." | 8% | 1 | 2–20 |
+| Buy signal | "Chase limit: a step only up to [n]% past its line: the first step on top of the buy line's % above the recent low, a milestone above its level." (One [n] only: Advanced settings fills a single value.) | 8% | 1 | 2–20 |
 | Milestones | "Milestone near the old high: within [n]% of the 52-week high." | 15% | 1 | 5–30 |
 | Milestones | "Milestone breakout: a pullback of at least [n]%, then a close above the high before it." | 8% | 1 | 3–20 |
 | Pace | "After a step, wait [n] calendar days before the next buy signal." | 5 | 1 | 0–30 |

@@ -440,8 +440,7 @@ The settings are available when starting a strategy and on a running one (Tune t
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide."
-- Re-run on each change (debounced), with a loading state.
+- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change), the periods as tabs, and columns *Default*, *Before* (the saved settings, when they differ from the defaults) and *Now*, on the same draft and data; the baselines behind *Show baselines*. Replaces the earlier "Period" / "Tested" / "Yours" table.
 - **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules). How the backtest works (money, baselines, stocks, data) is in [backtest.md](backtest.md); how this section shows it is not designed yet.
 
 **Behaviour**

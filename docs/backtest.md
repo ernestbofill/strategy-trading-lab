@@ -1,6 +1,6 @@
 # Backtest
 
-How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest on 2026-11-19 and 2026-11-20. The screens and how the backtest fits into existing screens (Advanced settings, the strategy page, How we tested) are **not designed yet** (see *Open points*).
+How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest on 2026-11-19 and 2026-11-20. The screens are drafted below (*Screens, draft*), for another round with Ernest.
 
 Today's template figures come from the POC's research ([backtest-research-findings.md](backtest-research-findings.md)). This backtest replaces them with STL's own engine, so the tested results describe the rules the app runs.
 
@@ -8,7 +8,9 @@ Today's template figures come from the POC's research ([backtest-research-findin
 
 A test is fair only if the strategy and every baseline get the same money, on the same schedule, with the same costs, and are measured with the same formulas. Everything below follows from that.
 
-The backtest runs the app's own engine (`Engine/`): the same rules, signals at the close, each trade at the next trading day's open. A rule the app changes, the backtest changes with it, so a result always describes what the app would have done.
+The backtest runs the app's own engine (`Engine/`): the same rules, signals at the close, each trade at the next trading day's open, in the strategy's currency at each day's exchange rate (the baselines too). A rule the app changes, the backtest changes with it, so a result always describes what the app would have done.
+
+**Checked against the app:** a backtest of a running simulation, with its settings and list from its start day, must give the same signals and trades the app recorded. It is the simulator's main test.
 
 ## What is tested
 
@@ -32,6 +34,7 @@ No currency fee. Taxes are not included.
 - Each window is an independent test that starts with fresh money, as *How we tested* says today.
 - **Warm-up:** the rules read about 15 months of prices before a window starts (the SMA 200, the 52-week high and the 168-day low need them), but nothing is bought before the start. It is what a strategy started that day in the app would see. Without it, the first year of each window would have no signals.
 - At a window's end, holdings are valued at the last close. Nothing is sold to close the test, for the strategy or the baselines.
+- The latest window runs to the last close, so it is shorter than the others (2023–26 is under 4 years today); its label says so.
 - With 12 years, 2008 and 2000–02 are out. The years parameter can reach back to them.
 
 ## Money
@@ -69,6 +72,13 @@ Per window and for **All**, for the strategy and each baseline:
 
 The product rules hold: every result sits next to the index fund and the worst year.
 
+## The dataset and the draft
+
+Two different things:
+
+- **The dataset** is everything a test can draw from: every stock that was in the S&P 500 at some point in the years tested (with its dates in the index), their daily prices, and the index funds. One snapshot a month (see *Data*).
+- **A draft** is the 30 stocks one test uses, drawn from the dataset's S&P 500 members on each window's start date. **Draft A** is the fixed one: tuning and comparing always use it unless another pool is chosen, so a difference comes from the settings, not from the stocks.
+
 ## Stocks
 
 Four ways to choose the pool:
@@ -90,6 +100,34 @@ A stock may only be drawn if it was in the index on the window's start date and 
 - **A snapshot a month**, not daily: one compressed file per ticker plus a manifest (membership, symbol map, missing tickers), in the backend's object storage bucket, not in the `prices` table. Each result names the snapshot it used. Yahoo re-adjusts past prices after dividends, so a test re-run on a newer snapshot can move slightly; accepted (Ernest, 2026-11-20).
 - **A quality report per snapshot**, on an owner page: members and how many have prices at each window's start, gaps over 5 trading days, one-day moves over 40% (usually a split error), renamed and missing tickers. The first report is reviewed before any result counts.
 
+## Screens (draft)
+
+Drafted in the planning chat (2026-11-20); Ernest will give them another round. All screens are owner-only. The numbers below are made up.
+
+**Results**: periods as tabs (`2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the money-invested / whole-budget switch with its "On average, [n]% of the budget was invested" line, and a value chart. The baselines open with **Show baselines** in the same tab, so the main view stays the backtest alone.
+
+**Tuning (Advanced settings)**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the saved settings, only when they differ from the defaults) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
+
+```
+Backtest                         [ Rerun tests ]
+Draft A · 12 years in 4-year parts · data 2026-11
+[2015-18][2019-22][2023-26][ All ]
+
+                       Default   Before    Now
+A year, on average      +10.8%   +11.0%  +11.6%
+Worst year               -14%     -15%    -17%
+Steps                     41       45      52
+
+▸ Show baselines
+  Same stocks, monthly   +9.8%   (the same for every column)
+  S&P 500, monthly       +9.1%   (the same for every column)
+  Alpha, same days       +1.6     +1.5    +1.4
+```
+
+*Same stocks, monthly* and *S&P 500, monthly* depend on the stocks, periods, money and costs, not on the rules, so they show once. Only the alpha follows each column's buy days.
+
+**Other screens**: the setup (stocks, index, period, money, costs, the data snapshot, *Run backtest*); the random draws (median, 10th–90th percentile range, "beat Same stocks, monthly in [n] of 25 draws"); and the data report (owner page: members and coverage per window start, missing and renamed tickers, gaps, jumps).
+
 ## Biases
 
 | Bias | How the backtest handles it |
@@ -109,8 +147,10 @@ A stock may only be drawn if it was in the index on the window's start date and 
 
 ## Open points
 
-- The default monthly limit for a template's test.
+- The default monthly limit for a template's test (proposed: the budget over 24 months, so the money has time to work within a 4-year window).
 - Carry-over of unspent money (no carry-over in v1).
-- The screens: setup, results, random draws, saved tests to compare strategies, the data report. Whether *Saved tests* is in v1.
-- How the backtest fits into existing screens: Advanced settings' "Yours" column, the strategy page's Backtest tile, *How we tested*, the template's tested figures.
+- The product rule "results always next to the index fund": the results' main view shows the backtest alone, with the baselines behind *Show baselines*. Keep one index line in the main view, or make the backtest an exception to the rule?
+- *Before* in the tuning table: the saved settings is assumed; in the new-strategy flow (nothing saved yet), the previous run's.
+- A second round on the screens; whether *Saved tests* (comparing strategies side by side) is in v1.
+- How the backtest fits into the strategy page's Backtest tile and *How we tested*.
 - The order of the PRs (proposed in `ROADMAP.md`).

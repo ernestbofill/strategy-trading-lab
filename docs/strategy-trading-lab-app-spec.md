@@ -440,9 +440,8 @@ The settings are available when starting a strategy and on a running one (Tune t
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide."
-- Re-run on each change (debounced), with a loading state.
-- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
+- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change), the periods as tabs, and columns *Default*, *Before* (the saved settings, when they differ from the defaults) and *Now*, on the same draft and data; the baselines behind *Show baselines*. Replaces the earlier "Period" / "Tested" / "Yours" table.
+- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules). How the backtest works (money, baselines, stocks, data) is in [backtest.md](backtest.md); how this section shows it is not designed yet.
 
 **Behaviour**
 - "Reset to tested" puts every value back.
@@ -870,7 +869,8 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **AI rounds:** strategy, due date, status (due, done, skipped), date run, the session its signals are dated, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons, and the step each stock got (`ai_rounds`).
 - **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round); deleting the strategy removes them too.
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
-- **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
+- **Backtest results:** per test (template or strategy settings, stocks, periods, money, costs, data snapshot): the strategy and its three baselines per window, worst year, alpha, number of steps. Cached by that key ([backtest.md](backtest.md)).
+- **Backtest data:** a monthly snapshot of index membership and daily prices, in object storage, with its quality report ([backtest.md](backtest.md)).
 - **Market data:** daily US prices and volumes, exchange rates.
 - **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed` | `validated`), comment text, optional page route, DOM selector and selected text quote, timestamps.
 
@@ -885,7 +885,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Sell signals for *Index trend*, and its "Candidate" status when not holding.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.
-- Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
+- Backtest page (how it works is decided in [backtest.md](backtest.md); its screens are not); History (every signal, trade, skip, AI round and status change, in date order).
 - Changing the budget.
 - Snooze on Confirm a signal; "Enter shares instead" and the exchange-rate line.
 - Summary settings (a time of your choice).

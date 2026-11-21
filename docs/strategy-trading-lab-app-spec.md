@@ -402,7 +402,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Buy signal | "The recent peak is the highest close of the last [n] days." | 60 | 5 | 20–60 |
 | Buy signal | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |
 | Buy signal | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
-| Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (with the long average at 160 or more, the middle one is always 150 days) |
+| Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (always under the long average, at 160 or more) |
 | Pace | "After a step, wait [n] calendar days before the next buy signal." | 10 | 5 | 0–60 |
 
 *The comeback*:

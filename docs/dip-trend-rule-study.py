@@ -12,7 +12,7 @@ OTHER=['1211.HK','AAPL','CBRAIN.CO','CRM','GROW.L','MRNA','MSFT','NOW','PLTR','S
 def load(s):
     r=json.load(open(f'{D}/{s}.json'))['chart']['result'][0]
     ts=r['timestamp']; adj=r['indicators']['adjclose'][0]['adjclose']
-    out=[(dt.datetime.utcfromtimestamp(t).date(),a) for t,a in zip(ts,adj) if a]
+    out=[(dt.datetime.fromtimestamp(t, dt.timezone.utc).date(),a) for t,a in zip(ts,adj) if a]
     return [d for d,_ in out],[a for _,a in out]
 def sma(c,n):
     o=[None]*len(c); s=0

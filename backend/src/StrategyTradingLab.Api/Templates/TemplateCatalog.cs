@@ -145,7 +145,7 @@ public static class TemplateCatalog
         [
             new("minGainPct", 5, 20, 200, Group: "candidate"),
             new("gainDays", 21, 63, 252, Group: "candidate"),
-            // The floor (at most 80) and long (at least 160) averages stay apart, so the middle one is always the POC's 150 days.
+            // The floor (at most 80) and long (at least 160) averages stay apart, so the floor is always the shorter one.
             new("trendDays", 10, 160, 300, Group: "candidate"),
             new("peakDays", 5, 20, 60, Group: "signal"),
             new("zoneStartPct", 1, 1, 39, Below: "zoneEndPct", Group: "signal"),

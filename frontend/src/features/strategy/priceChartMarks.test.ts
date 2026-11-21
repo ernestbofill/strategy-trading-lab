@@ -43,7 +43,12 @@ describe('chartMarks', () => {
     expect(chartMarks(checks, false)).toEqual([])
   })
 
-  it("shows a held comeback stock its next milestone's buy area, not a used one", () => {
+  it("shows a held comeback stock the last step's price, or its next milestone's buy area in older checks", () => {
+    const paced = chartMarks([
+      check({ key: 'pace', group: 'next', met: false, value: 4, min: 10 }),
+      check({ key: 'lastStep', group: 'next', met: true, value: 3.2, min: 0, level: 151.5 }),
+    ])
+    expect(paced).toEqual([{ id: 'lastStep', label: 'stock.chart.lastStep', tone: 'buy', from: 151.5 }])
     const marks = chartMarks([
       check({ key: 'sma200', group: 'next', met: true, used: true, max: 8, level: 160, endLevel: 172.8 }),
       check({ key: 'near_high', group: 'next', met: false, max: 8, level: 150, endLevel: 162 }),

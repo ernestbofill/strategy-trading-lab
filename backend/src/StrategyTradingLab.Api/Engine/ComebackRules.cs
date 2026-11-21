@@ -6,8 +6,11 @@ namespace StrategyTradingLab.Api.Engine;
 /// The comeback (POC Confirmed turnaround, <c>turnaround</c>). A candidate was beaten down (at least <c>DrawdownPct</c>
 /// below its 52-week high, and below the SMA 200) at some point in the last <c>CandidateDays</c> days. The first step is the
 /// turn: the close at least <c>AboveSma50Pct</c> above the <c>LowDays</c>-day low on rising volume, but not more than <c>MaxChasePct</c> further
-/// above the low (Ernest, 2026-11-17; the POC, <c>pocChaseLimit</c>: <c>MaxChasePct</c> above that line). Later steps are earned by milestones (back above the SMA 200, golden cross, near the old high, a breakout after
-/// a pullback): each new one, reached after the last buy, earns one step, bought within <c>MaxChasePct</c> above its level.
+/// above the low (Ernest, 2026-11-17; the POC: <c>MaxChasePct</c> above that line). Later steps come at a pace: one every
+/// <c>StepEveryDays</c> trading days after the last buy, while the close is above the last step's price (its open), so a step
+/// is only added while the turn is working (Ernest, 2026-11-21). The POC's later steps are milestones instead (back above the
+/// SMA 200, golden cross, near the old high, a breakout after a pullback): each new one, reached after the last buy, earns
+/// one step, bought within <c>MaxChasePct</c> above its level. STL keeps them for the golden tests (<c>poc</c>).
 /// Keeps state between days (the milestones used, the breakout tracker): one instance per run.
 /// </summary>
 public class ComebackRules : BuyRulesBase
@@ -15,8 +18,8 @@ public class ComebackRules : BuyRulesBase
     const int HighDays = 252, VolumeShort = 5, VolumeLong = 50, SmaShort = 50, SmaLong = 200;
 
     readonly ComebackParams p;
-    readonly bool pocChaseLimit;
-    readonly IReadOnlyList<decimal> close;
+    readonly bool poc;
+    readonly IReadOnlyList<decimal> close, open;
     readonly DateOnly[] dates;
     readonly decimal?[] low, sma50, sma200, high252, vol5, vol50;
     readonly bool[] candidate;
@@ -35,13 +38,14 @@ public class ComebackRules : BuyRulesBase
     string? signalled;
     readonly Dictionary<string, DateOnly> boughtOn = [];
 
-    /// <param name="pocChaseLimit">The POC's first-step chase limit (<c>MaxChasePct</c> above the buy line), for the golden
-    /// tests only: an engine option, not a saved param.</param>
-    public ComebackRules(IReadOnlyList<PriceBar> bars, ComebackParams parameters, bool pocChaseLimit = false) : base(bars.Count)
+    /// <param name="poc">The POC's rules where STL changed them, for the golden tests only (an engine option, not a saved param):
+    /// the first step's chase limit <c>MaxChasePct</c> above the buy line, and milestones for the later steps instead of a pace.</param>
+    public ComebackRules(IReadOnlyList<PriceBar> bars, ComebackParams parameters, bool poc = false) : base(bars.Count)
     {
         p = parameters;
-        this.pocChaseLimit = pocChaseLimit;
+        this.poc = poc;
         close = [.. bars.Select(b => b.Close)];
+        open = [.. bars.Select(b => b.Open)];
         dates = [.. bars.Select(b => b.Date)];
         var volume = bars.Select(b => (decimal)b.Volume).ToList();
         low = Indicators.RollingLow(close, p.LowDays);
@@ -83,7 +87,7 @@ public class ComebackRules : BuyRulesBase
 
     /// <summary>The first step's chase limit: <c>MaxChasePct</c> more above the low than the buy line (POC: above the line).</summary>
     decimal TurnLimit(decimal lowest, decimal buyLine) =>
-        pocChaseLimit ? Chase(buyLine) : lowest * (1 + (p.AboveSma50Pct + p.MaxChasePct) / 100);
+        poc ? Chase(buyLine) : lowest * (1 + (p.AboveSma50Pct + p.MaxChasePct) / 100);
 
     /// <summary>The day of the recent low: the latest of the last <c>LowDays</c> closes at it.</summary>
     DateOnly LowOn(int i, decimal lowest)
@@ -136,7 +140,7 @@ public class ComebackRules : BuyRulesBase
             boughtOn.Clear();
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > TurnLimit(lowest, buyLine),
                 "Price or volume fell back below the buy conditions.",
-                pocChaseLimit
+                poc
                     ? $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase."
                     : $"Price is more than {p.AboveSma50Pct + p.MaxChasePct:0.##}% above the recent low: too late to chase.");
             var turn = TurnChecks(i, price, high, lowest, buyLine);
@@ -144,6 +148,8 @@ public class ComebackRules : BuyRulesBase
             if (RuleCheck.Cooldown(day, p.CooldownDays) is { } wait) turn.Add(wait);
             return new RuleDecision(status, reason, facts, window.Open) { Checks = turn };
         }
+
+        if (!poc) return Paced(i, price, day, facts);
 
         var (milestones, bought) = Milestones(i, day);
         var (held, heldReason, active) = Adding(price, day, milestones, bought);
@@ -199,8 +205,50 @@ public class ComebackRules : BuyRulesBase
             // The price over the volume's 5 days: the volume only counts on a rise.
             // Never "0%" for a small move: the verdict reads the unrounded change.
             SubValue: RisePct(i) is { } rise ? (Math.Round(rise, 1) is var shown && shown == 0 && rise != 0 ? 0.1m * Math.Sign(rise) : shown) : null));
-        checks.AddRange(MilestoneChecks(i, price, BuildMilestones(i, price, pulled: false, highBeforePullback: null), preview: true));
+        if (poc) checks.AddRange(MilestoneChecks(i, price, BuildMilestones(i, price, pulled: false, highBeforePullback: null), preview: true));
+        else checks.Add(new("pace", CheckGroup.Next, false, null, p.StepEveryDays, Preview: true));
         return checks;
+    }
+
+    /// <summary>
+    /// The latest step's bar, by the runner's <c>LastBuyDay</c>: trading days since it and its price, the open it was bought at.
+    /// A step bought after the last bar (a Manual buy answered before tomorrow's open) counts from today's close.
+    /// </summary>
+    (int Since, decimal Price) LastStep(int i, DayContext day)
+    {
+        var k = Array.BinarySearch(dates, day.LastBuyDay);
+        if (k < 0) k = ~k; // No bar on that day (a revised history): the next one.
+        return k > i ? (0, close[i]) : (i - k, open[k]);
+    }
+
+    /// <summary>A held position's next steps: one every <c>StepEveryDays</c> trading days, while the close is above the last step's price.</summary>
+    RuleDecision Paced(int i, decimal price, DayContext day, Dictionary<string, object> facts)
+    {
+        turnOn ??= day.LastBuyDay; // The first day held: the turn's step was bought on it.
+        List<RuleCheck> checks = [new("turn", CheckGroup.Next, true, Used: true, Bought: true, Date: turnOn)];
+        // Every step bought: the pace has nothing left to earn, so it has no row (a used row would read as a step it bought).
+        if (day.Full) return new RuleDecision(RuleStatus.Holding, null, facts) { Checks = checks };
+
+        var (since, lastPrice) = LastStep(i, day);
+        var due = since >= p.StepEveryDays;
+        var abovePct = Indicators.PctFrom(price, lastPrice);
+        var above = price > lastPrice;
+        facts["sinceLastDays"] = since;
+        facts["aboveLastStepPct"] = Math.Round(abovePct, 2);
+        RuleStatus status;
+        string? reason = null;
+        if (day.ActedNow || day.Cooling) status = RuleStatus.Building;
+        else if (due && above) status = RuleStatus.BuySignal;
+        else
+        {
+            status = RuleStatus.Building;
+            // Its window closed without buying: the price fell back to the last step's.
+            if (day.Previous == RuleStatus.BuySignal) reason = "The price fell back to the last step's price.";
+        }
+        checks.Add(new("pace", CheckGroup.Next, due, since, p.StepEveryDays, Progress: RuleCheck.ProgressOf(since, p.StepEveryDays)));
+        checks.Add(new("lastStep", CheckGroup.Next, above, Math.Round(abovePct, 1), 0, Level: Math.Round(lastPrice, 2)));
+        if (RuleCheck.Cooldown(day, p.CooldownDays, CheckGroup.Next) is { } cooldown) checks.Add(cooldown);
+        return new RuleDecision(status, reason, facts, WindowOpen: due && above) { Checks = checks };
     }
 
     List<RuleCheck> MilestoneChecks(int i, decimal price, IReadOnlyList<Milestone> milestones, bool preview)

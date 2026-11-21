@@ -51,6 +51,7 @@ public static class EmailTexts
     static readonly Message BearDrop = new("down {0}% from its 6-month high and {1}% above its low", "un {0}% per sota del seu màxim de 6 mesos i un {1}% per sobre del seu mínim");
     static readonly Message DipBelowPeak = new("{0}% below its recent peak, still above its 50-day average", "{0}% per sota del seu màxim recent, encara per sobre de la mitjana de 50 dies");
     static readonly Message MilestoneSign = new("a new sign that the recovery is real: {0}", "un nou senyal que la recuperació és real: {0}");
+    static readonly Message PacedStep = new("{0} trading days after its last step, {1}% above that step's price", "{0} dies de mercat després de l'última fase, un {1}% per sobre del preu d'aquella fase");
     static readonly Message AboveBuyLine = new("{0}% above its buy line, on rising volume", "{0}% per sobre de la línia de compra, amb volum creixent");
     static readonly Message BelowBuyLine = new("{0}% below its buy line, on rising volume", "{0}% per sota de la línia de compra, amb volum creixent");
 
@@ -169,6 +170,9 @@ public static class EmailTexts
             var term = (locale == "ca" ? MilestoneCa(milestone) : milestone).ToLowerInvariant();
             return MilestoneSign.In(locale, term);
         }
+        // A later step at the comeback's pace (its first step has neither fact).
+        if (s.Facts.Number("sinceLastDays") is { } since && s.Facts.Number("aboveLastStepPct") is { } aboveLast)
+            return PacedStep.In(locale, since, Pct(aboveLast));
         var aboveBuyLine = s.Facts.Number("aboveBuyLinePct");
         return aboveBuyLine is null ? RulesMet.In(locale)
             : (aboveBuyLine >= 0 ? AboveBuyLine : BelowBuyLine).In(locale, Pct(Math.Abs(aboveBuyLine.Value)));

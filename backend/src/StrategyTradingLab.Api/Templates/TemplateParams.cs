@@ -89,14 +89,17 @@ public record ComebackParams
 
     /// <summary>
     /// A step only up to this % past its line: the first step up to <c>AboveSma50Pct + MaxChasePct</c> above the recent low
-    /// (+10% to +18% by default), a milestone up to this % above its level.
+    /// (+10% to +18% by default); in the POC's rules (golden tests), a milestone up to this % above its level.
     /// </summary>
     [Range(0, 30)] public decimal MaxChasePct { get; init; } = 8;
 
-    /// <summary>Milestone "near the old high": within this % of the 52-week high.</summary>
+    /// <summary>After the first step, one more every this many trading days, while the close is above the last step's price.</summary>
+    [Range(1, 60)] public int StepEveryDays { get; init; } = 10;
+
+    /// <summary>The POC's milestone "near the old high" (golden tests only): within this % of the 52-week high.</summary>
     [Range(1, 50)] public decimal NearHighPct { get; init; } = 15;
 
-    /// <summary>Milestone "breakout": a pullback of at least this %, then a close above the high before it.</summary>
+    /// <summary>The POC's milestone "breakout" (golden tests only): a pullback of at least this %, then a close above the high before it.</summary>
     [Range(2, 30)] public decimal BreakoutPullbackPct { get; init; } = 8;
 
     /// <summary>Calendar days after a step before the next buy signal.</summary>

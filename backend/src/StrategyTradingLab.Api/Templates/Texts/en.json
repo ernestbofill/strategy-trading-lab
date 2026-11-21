@@ -150,7 +150,7 @@
       "scope": "1,146 stocks, 2000-2026.",
       "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
-      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock. Tested with milestones for the later steps (back above the SMA 200, a golden cross, near the old high, a breakout); the strategy now adds them at a steady pace."
     },
     "stockStatus": {
       "zone": "the buy line",
@@ -183,24 +183,19 @@
         "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
       },
       "maxChasePct": {
-        "sentence": "Buy area: the first step up to {value} more above the recent low than the buy line; a milestone, up to that much above its level.",
+        "sentence": "Buy area: the first step up to {value} more above the recent low than the buy line.",
         "value": "{n}%",
         "help": "Higher: still buys a turn that ran well past the buy line. Lower: skips turns that move too fast."
       },
-      "nearHighPct": {
-        "sentence": "Milestone near the old high: within {value} of the 52-week high.",
-        "value": "{n}%",
-        "help": "Higher: this milestone comes earlier in the recovery."
-      },
-      "breakoutPullbackPct": {
-        "sentence": "Milestone breakout: a pullback of at least {value}, then a close above the high before it.",
-        "value": "{n}%",
-        "help": "Higher: needs a deeper pullback first, so the breakout comes less often."
+      "stepEveryDays": {
+        "sentence": "Then one more step every {value}, while the close is above the last step's price.",
+        "value": "{n} trading days",
+        "help": "10 trading days is about 2 weeks. Shorter: the budget goes in faster. Longer: spreads the buys over more of the recovery."
       },
       "cooldownDays": {
         "sentence": "After a step, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
-        "help": "Counted from the step's buy. Longer: steps spread out, even when milestones come close together."
+        "help": "Counted from the step's buy. It only holds a step back when it is longer than the steps' pace."
       }
     },
     "settingGroups": {
@@ -212,9 +207,9 @@
         "title": "2 · Buy signal: the first step",
         "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), on rising volume, and still in the buy area. The signal ends when the price or the volume falls back, or the price runs past the buy area."
       },
-      "milestones": {
-        "title": "3 · Milestones: the next steps",
-        "lead": "Once bought, each new sign that the turn is real earns one more step: back above the `SMA 200`, a golden cross (`SMA 50` above `SMA 200`), near the old high, or a breakout after a pullback. Each is bought only up to the same % above its level."
+      "steps": {
+        "title": "3 · Next steps: while the turn holds",
+        "lead": "After the turn, one more step every few trading days, but only while the close is above the price the last step was bought at, so a step is added only while the turn is working. Until your budget's steps are bought."
       },
       "pace": {
         "title": "4 · Pace: how often it buys",
@@ -250,11 +245,6 @@
         "short": "+{value}% above its low (needs +{min}%)",
         "pastShort": "+{value}% above its low (past the buy area)",
         "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase."
-      },
-      "chase": {
-        "label": "Not too far past the line",
-        "detail": "{+value}% above the buy line: more than {max}% is too late to chase.",
-        "short": "too far past the buy line"
       },
       "volume": {
         "label": "Volume: 5-day vs 50-day average",
@@ -308,6 +298,19 @@
         "detail": "{value} more days to wait after the last buy or sale ({min} in all).",
         "short": "cooldown, {value} days left",
         "info": "After each buy or sale the rules wait {min} calendar days before the next buy signal."
+      },
+      "pace": {
+        "label": "Next step",
+        "detail": "{value} of {min} trading days since the last step.",
+        "none": "After the turn, one more step every {min} trading days, while the close is above the last step's price.",
+        "short": "{value} of {min} days to the next step",
+        "info": "Spreads the next steps over the recovery: one every {min} trading days."
+      },
+      "lastStep": {
+        "label": "Above the last step",
+        "detail": "{+value}% vs the last step's price ({level}); needs above.",
+        "short": "{+value}% vs the last step (needs above)",
+        "info": "A step is added only while the turn is working: the close must be above the price the last step was bought at."
       }
     }
   },

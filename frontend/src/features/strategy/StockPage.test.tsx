@@ -59,7 +59,7 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
     gain: { label: 'Proven growth', detail: 'Rose {value}% from its low (needs {min}%).', short: 'rose {value}% (needs {min}%)' },
     stacked: {
       label: 'Averages stacked',
-      detail: 'Short {level} · middle {midLevel} · long {endLevel} (needs short > middle > long).',
+      detail: 'Short {level} · long {endLevel} (needs short > long).',
       short: 'averages not stacked in order',
     },
     zone: {
@@ -132,7 +132,7 @@ describe('StockPage', () => {
         check({ key: 'beaten', group: 'candidate', met: false, value: 74, min: 30, max: 60, date: '2026-07-15' }),
         check({ key: 'buyLine', group: 'buy', met: false, value: -13, subValue: 50, min: 15, max: 8, level: 187.28, midLevel: 162.85, endLevel: 202.26 }),
         check({ key: 'gain', group: 'candidate', met: true, value: 118.9, min: 50, progress: 2.38 }),
-        check({ key: 'stacked', group: 'candidate', met: true, value: 32.5, level: 41.2, midLevel: 38.5, endLevel: 31.1 }),
+        check({ key: 'stacked', group: 'candidate', met: true, value: 32.5, level: 41.2, endLevel: 31.1 }),
         check({ key: 'zone', group: 'buy', met: false, value: 26.7, min: 5, max: 15, level: 42.7, endLevel: 38.21 }),
       ],
     }
@@ -143,7 +143,6 @@ describe('StockPage', () => {
     expect(screen.getByText('+0% above the recent low ($162.85): needs +15% to +24.2% ($187.28 to $202.26).')).toBeTruthy()
     expect(screen.getByText('118.9%')).toBeTruthy()
     expect(screen.getByText('Short $41.20')).toBeTruthy()
-    expect(screen.getByText('Mid $38.50')).toBeTruthy()
     expect(screen.getByText('Long $31.10')).toBeTruthy()
     expect(screen.getByText('Past zone')).toBeTruthy()
     expect(screen.getByText('Fell past the discount zone: 26.7% below the peak; the zone is 5–15% ($42.70 to $38.21).')).toBeTruthy()

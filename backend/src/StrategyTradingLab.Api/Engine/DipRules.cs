@@ -61,7 +61,7 @@ public class DipRules : BuyRulesBase
         middle is null ? sma50 > sma200 : middle[i] is { } sma150 && sma50 > sma150 && sma150 > sma200;
 
     /// <summary>
-    /// The middle average of the POC's stack (SMA 50 &gt; SMA 150 &gt; SMA 200 in the POC), kept strictly between the floor and the
+    /// The middle average of the POC's stack (the SMA 150 between the SMA 50 and SMA 200), kept strictly between the floor and the
     /// trend average when either is changed. With no room between them (equal days) it is the floor's, so nothing stacks.
     /// </summary>
     static int MiddleDaysFor(DipParams p)
@@ -72,7 +72,7 @@ public class DipRules : BuyRulesBase
     }
 
     /// <summary>The POC's 220 days, and more when a window needs more: the trend average and its rise, the low, the peak.</summary>
-    public override int MinHistory => new[] { MinimumHistory, p.GainDays, p.TrendDays + RisingDays, p.PeakDays, middle is null ? 0 : MiddleDaysFor(p) }.Max();
+    public override int MinHistory => new[] { MinimumHistory, p.GainDays, p.TrendDays + RisingDays, p.PeakDays }.Max(); // The middle average's days are always fewer than the trend's.
 
     public override int CooldownDays => p.CooldownDays;
 

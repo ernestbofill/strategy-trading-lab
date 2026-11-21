@@ -183,9 +183,9 @@
         "help": "Més negociació confirma el gir. Més alt: menys senyals i més ben recolzats. 1: n'hi ha prou amb un volum normal."
       },
       "maxChasePct": {
-        "sentence": "Límit de persecució: una fase només fins a un {value} més enllà de la seva línia: el primer pas, sumat al % de la línia de compra sobre el mínim recent; una fita, per sobre del seu nivell.",
+        "sentence": "Zona de compra: la primera fase fins a un {value} més per sobre del mínim recent que la línia de compra; una fita, fins a aquest mateix % per sobre del seu nivell.",
         "value": "{n}%",
-        "help": "Més alt: encara compra un gir que ha saltat molt per sobre de la línia. Més baix: deixa passar els girs massa ràpids."
+        "help": "Més alt: encara compra un gir que ha anat molt per sobre de la línia de compra. Més baix: deixa passar els girs massa ràpids."
       },
       "nearHighPct": {
         "sentence": "Fita prop del màxim antic: a menys d'un {value} del màxim de 52 setmanes.",
@@ -210,11 +210,11 @@
       },
       "signal": {
         "title": "2 · Senyal de compra: la primera fase",
-        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), amb volum creixent, i com a molt el límit de persecució més per sobre del mínim. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
+        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), amb volum creixent, i encara dins la zona de compra. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera la zona de compra."
       },
       "milestones": {
         "title": "3 · Fites: les fases següents",
-        "lead": "Un cop comprada, cada nou senyal que el gir és real dona una fase més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'una baixada. Cadascuna es compra només fins al límit de persecució per sobre del seu nivell."
+        "lead": "Un cop comprada, cada nou senyal que el gir és real dona una fase més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'una baixada. Cadascuna es compra només fins al mateix % per sobre del seu nivell."
       },
       "pace": {
         "title": "4 · Ritme: cada quan compra",

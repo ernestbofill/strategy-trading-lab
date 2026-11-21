@@ -7,7 +7,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**És un líder demostrat:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes estan apilades i pugen (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
+        "text": "**És un líder demostrat:** ha pujat almenys un `{minGainPct}%` des del seu mínim, i les seves mitjanes apunten amunt (`SMA {floorDays}` per sobre d'una `SMA {trendDays}` que puja)."
       },
       {
         "marker": "02",
@@ -22,7 +22,7 @@
       "scope": "1.146 accions, 2000-2026.",
       "years": "2000-2026",
       "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per fase, fins a 5 per acció."
+      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per fase, fins a 5 per acció. Provada amb tres mitjanes apilades (SMA 50 > SMA 150 > SMA 200); ara l'estratègia en demana dues (SMA 50 > SMA 200)."
     },
     "stockStatus": {
       "zone": "la zona de descompte",
@@ -42,7 +42,7 @@
       "trendDays": {
         "sentence": "La mitjana llarga és la SMA de {value}.",
         "value": "{n} dies",
-        "help": "La base de la pila, i ha d'anar pujant. Més llarga: més estable i més lenta de girar, de manera que una tendència compta més tard i és candidata més temps."
+        "help": "La mitjana llarga: la mitjana terra ha d'estar per sobre, i ha d'anar pujant. Més llarga: més estable i més lenta de girar, de manera que una tendència compta més tard i és candidata més temps."
       },
       "peakDays": {
         "sentence": "El màxim recent és el tancament més alt dels últims {value}.",
@@ -62,7 +62,7 @@
       "floorDays": {
         "sentence": "La mitjana terra és la SMA de {value}.",
         "value": "{n} dies",
-        "help": "La part de dalt de la pila de la candidata i el terra de la zona: un tancament per sota és un col·lapse, no una baixada. Més curta: el terra segueix el preu de prop, i les baixades profundes el travessen."
+        "help": "La mitjana curta, per sobre de la llarga en una candidata, i el terra de la zona: un tancament per sota és un col·lapse, no una baixada. Més curta: el terra segueix el preu de prop, i les baixades profundes el travessen."
       },
       "cooldownDays": {
         "sentence": "Després d'una fase, espera {value} abans del següent senyal de compra.",
@@ -73,7 +73,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidata: quines accions vigila",
-        "lead": "Una acció és candidata, un líder demostrat, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; les seves mitjanes estan apilades, la mitjana terra per sobre d'una del mig per sobre de la mitjana llarga (`SMA 50` > `SMA 150` > `SMA 200` amb els valors provats; la del mig es manté entre les altres dues); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
+        "lead": "Una acció és candidata, un líder demostrat, mentre es compleixen les tres coses: ha pujat almenys el creixement de sota des del seu mínim; la seva mitjana terra està per sobre de la mitjana llarga (`SMA 50` > `SMA 200` per defecte); i la mitjana llarga és més alta que fa 20 dies de mercat. Una acció que no és candidata no rep cap senyal, per molt que baixi."
       },
       "signal": {
         "title": "2 · Senyal de compra: quan una candidata dona senyal",
@@ -93,10 +93,10 @@
       },
       "stacked": {
         "label": "Mitjanes en ordre",
-        "detail": "Curta {level} · mitjana {midLevel} · llarga {endLevel} (cal curta > mitjana > llarga).",
-        "none": "Cal la mitjana curta per sobre de la mitjana, i aquesta per sobre de la llarga.",
+        "detail": "Curta {level} · llarga {endLevel} (cal curta > llarga).",
+        "none": "Cal la mitjana curta per sobre de la llarga.",
         "short": "mitjanes desordenades",
-        "info": "La SMA 50, la SMA 150 i la SMA 200 (tancament mitjà d'aquests dies), en aquest ordre: una tendència alcista estable."
+        "info": "La SMA 50 per sobre de la SMA 200 (tancament mitjà d'aquests dies): una tendència alcista."
       },
       "rising": {
         "label": "Mitjana llarga a l'alça",

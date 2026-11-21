@@ -43,7 +43,8 @@ public class EngineGoldenTests
         var golden = Load(name);
         var bars = Bars(golden);
 
-        var days = RulesRunner.Run(new DipRules(bars, new DipParams { CooldownDays = 10 }), bars, new StepPlan(5));
+        // The POC stacks three averages: STL's two are off here.
+        var days = RulesRunner.Run(new DipRules(bars, new DipParams { CooldownDays = 10 }, pocStack: true), bars, new StepPlan(5));
 
         Matches(golden, days);
     }

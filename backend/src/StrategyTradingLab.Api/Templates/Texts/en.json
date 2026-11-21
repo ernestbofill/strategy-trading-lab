@@ -7,7 +7,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**It's a proven winner:** it rose at least `{minGainPct}%` from its low, and its averages are stacked and rising (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
+        "text": "**It's a proven winner:** it rose at least `{minGainPct}%` from its low, and its averages point up (`SMA {floorDays}` above a rising `SMA {trendDays}`)."
       },
       {
         "marker": "02",
@@ -22,7 +22,7 @@
       "scope": "1,146 stocks, 2000-2026.",
       "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
-      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock. Tested with three stacked averages (SMA 50 > SMA 150 > SMA 200); the strategy now needs two (SMA 50 > SMA 200)."
     },
     "stockStatus": {
       "zone": "the discount zone",
@@ -42,7 +42,7 @@
       "trendDays": {
         "sentence": "The long average is the SMA over {value}.",
         "value": "{n} days",
-        "help": "The bottom of the stack, and it must be rising. Longer: steadier, slower to turn, so a trend counts later and stays a candidate longer."
+        "help": "The long average: the floor average must be above it, and it must be rising. Longer: steadier, slower to turn, so a trend counts later and stays a candidate longer."
       },
       "peakDays": {
         "sentence": "The recent peak is the highest close of the last {value}.",
@@ -62,7 +62,7 @@
       "floorDays": {
         "sentence": "The floor average is the SMA over {value}.",
         "value": "{n} days",
-        "help": "The top of the candidate's stack and the zone's floor: a close below it is a collapse, not a dip. Shorter: the floor follows the price closely, so deep dips fall through it."
+        "help": "The short average, above the long one for a candidate, and the zone's floor: a close below it is a collapse, not a dip. Shorter: the floor follows the price closely, so deep dips fall through it."
       },
       "cooldownDays": {
         "sentence": "After a step, wait {value} before the next buy signal.",
@@ -73,7 +73,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidate: which stocks it watches",
-        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its averages are stacked, the floor average above a middle one above the long average (`SMA 50` > `SMA 150` > `SMA 200` when tested; the middle one stays between the other two); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
+        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its floor average is above the long average (`SMA 50` > `SMA 200` by default); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
       },
       "signal": {
         "title": "2 · Buy signal: when a candidate signals",
@@ -93,10 +93,10 @@
       },
       "stacked": {
         "label": "Averages stacked",
-        "detail": "Short {level} · middle {midLevel} · long {endLevel} (needs short > middle > long).",
-        "none": "Needs the short average above the middle one, and that above the long one.",
+        "detail": "Short {level} · long {endLevel} (needs short > long).",
+        "none": "Needs the short average above the long one.",
         "short": "averages not stacked",
-        "info": "The SMA 50, SMA 150 and SMA 200 (average closes over those days), in that order: a steady uptrend."
+        "info": "The SMA 50 above the SMA 200 (average closes over those days): an uptrend."
       },
       "rising": {
         "label": "Long average rising",

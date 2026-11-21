@@ -23,7 +23,7 @@ export const welcome = {
   // Mock interactive builder widget
   'welcome.builder.mock.templateLabel': 'Pick template',
   'welcome.builder.mock.t1Name': 'Winners at a discount',
-  'welcome.builder.mock.t1Rule': 'SMA 50 > 150 > 200 · 5%–15% discount zone',
+  'welcome.builder.mock.t1Rule': 'SMA 50 > 200 · 5%–15% discount zone',
   'welcome.builder.mock.t1Budget': '€100 / step · max 3 steps',
   'welcome.builder.mock.t2Name': 'The comeback',
   'welcome.builder.mock.t2Rule': '≥ 30% below 52w high · +10% above 50d low + volume',

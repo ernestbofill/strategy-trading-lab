@@ -115,7 +115,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 ### Engine defaults per template
 
 **Winners at a discount (Leader pullback)**
-- Candidate (trending): the recent peak is at least 50% above the low, the lowest close of the last 168 trading days (~8 months) up to the peak's day (a fall after the peak is no rise; STL's own rule, the POC takes the window's low whatever the order; Ernest, 2026-11-16); SMA 50 > SMA 150 > SMA 200; the SMA 200 is higher than 20 trading days ago. (The price itself isn't checked against the SMA 50 here; the SMA 50 is the zone's floor.)
+- Candidate (trending): the recent peak is at least 50% above the low, the lowest close of the last 168 trading days (~8 months) up to the peak's day (a fall after the peak is no rise; STL's own rule, the POC takes the window's low whatever the order; Ernest, 2026-11-16); SMA 50 > SMA 200 (STL's own rule, Ernest 2026-11-21: the POC also needs the SMA 150 between them, which the results were tested with; see `docs/dip-trend-rule-study.md`); the SMA 200 is higher than 20 trading days ago. (The price itself isn't checked against the SMA 50 here; the SMA 50 is the zone's floor.)
 - Signal: price in the discount zone, 5–15% below the recent peak (highest price of the last 20–60 days; the screen exposes one number, default 60, the POC's), while still above the SMA 50.
 - Signal ends: the price leaves the zone (back up to the old high, or below the SMA 50).
 - Later steps: one per signal window, at least 10 calendar days (cooldown) after the last one. The POC's default cooldown is 20; 10 is Ernest's setting there.
@@ -402,7 +402,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Buy signal | "The recent peak is the highest close of the last [n] days." | 60 | 5 | 20–60 |
 | Buy signal | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |
 | Buy signal | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
-| Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (with the long average at 160 or more, the middle one is always 150 days) |
+| Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (always under the long average, at 160 or more) |
 | Pace | "After a step, wait [n] calendar days before the next buy signal." | 10 | 5 | 0–60 |
 
 *The comeback*:
@@ -680,7 +680,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
       - **Threshold bar (with `> 100%` overflow):** shown whether met or not, with a `100%` target tick at 75% of the bar width so values that exceed the threshold visibly pass the target tick. Its label is the share of the target reached (`76%`), except *Proven growth*, which gives the rise itself, as its sentence does (`99.3%`, not `199%` of the 50% needed; feedback, 2026-11-16).
       - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`) and *The comeback*'s buy line and milestones (`0% to +8%`), showing both the entry threshold and the upper limit past which the signal is cancelled.
       - *Beaten down lately* has no bar: a bar of days read as "more is better". Its sentence says since when it is a candidate, and `Window closed` shows once the window has passed.
-      - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Mid $Y > Long $Z`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* sell line (`Sell $X · SMA $Y · Buy $Z`). *Index trend* buy line uses a threshold progress bar.
+      - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Long $Y`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* sell line (`Sell $X · SMA $Y · Buy $Z`). *Index trend* buy line uses a threshold progress bar.
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
   - Before the daily check has stored the checks: "Each rule shows here after the next daily check." AI strategies have no rules section.
 - **Position** once it has buys: Invested and Result tiles after the Status tile (the status already says the steps held, so there is no Steps tile).

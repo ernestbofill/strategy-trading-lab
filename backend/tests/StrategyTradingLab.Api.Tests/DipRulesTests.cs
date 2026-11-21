@@ -59,6 +59,23 @@ public class DipRulesTests
     }
 
     [Fact]
+    public void A_dip_under_the_SMA_150_still_stacks_with_two_averages()
+    {
+        // A long climb, then 45 days down: the SMA 50 (336) is under the SMA 150 (342) but still over the SMA 200 (324).
+        IReadOnlyList<PriceBar> bars = [.. Enumerable.Range(0, 345).Select(i => (Day: new DateOnly(2020, 1, 1).AddDays(i), Close: i < 300 ? 100m + i : 399m - 3 * (i - 299)))
+            .Select(x => new PriceBar(x.Day, x.Close, x.Close, x.Close, x.Close, 0))];
+        RuleCheck Stack(bool pocStack) =>
+            Assert.Single(new DipRules(bars, new DipParams(), pocStack).Decide(344, new DayContext(bars[344].Date, null, 0, default, false, false, false)).Checks, c => c.Key == "stacked");
+
+        // STL's stack: two averages, met, with no middle level to show.
+        var two = Stack(pocStack: false);
+        Assert.True(two.Met);
+        Assert.Null(two.MidLevel);
+        // The POC's three: not met.
+        Assert.False(Stack(pocStack: true).Met);
+    }
+
+    [Fact]
     public void Equal_floor_and_trend_days_never_stack_instead_of_failing()
     {
         var bars = Rising(400);

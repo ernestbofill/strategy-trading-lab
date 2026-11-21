@@ -214,7 +214,7 @@
       },
       "milestones": {
         "title": "3 · Milestones: the next steps",
-        "lead": "Once bought, each new sign that the turn is real earns one more step: back above the `SMA 200`, a golden cross (`SMA 50` above `SMA 200`), near the old high, or a breakout after a pullback. Each is bought only up to the buy area's % above its level."
+        "lead": "Once bought, each new sign that the turn is real earns one more step: back above the `SMA 200`, a golden cross (`SMA 50` above `SMA 200`), near the old high, or a breakout after a pullback. Each is bought only up to the same % above its level."
       },
       "pace": {
         "title": "4 · Pace: how often it buys",
@@ -271,7 +271,7 @@
       "sma200": {
         "label": "Back above the SMA 200",
         "detail": "{+value}% vs the SMA 200 ({level}). Step window: 0% to +{max}% ({level} to {endLevel}).",
-        "past": "{+value}% above the SMA 200 ({level}) — past the +{max}% buy area ({endLevel}).",
+        "past": "{+value}% above the SMA 200 ({level}) — past the +{max}% limit ({endLevel}).",
         "short": "below the SMA 200",
         "pastShort": "past the SMA 200 limit ({+value}%)",
         "info": "Milestone: reclaiming the 200-day average confirms the long-term recovery and earns one step if bought within +{max}%."
@@ -288,7 +288,7 @@
       "near_high": {
         "label": "Near the old high",
         "detail": "{+value}% vs the near-high line ({level}, within {min}% of {midLevel}). Step window: 0% to +{max}% (up to {endLevel}).",
-        "past": "{+value}% above the near-high line ({level}) — past the +{max}% buy area ({endLevel}).",
+        "past": "{+value}% above the near-high line ({level}) — past the +{max}% limit ({endLevel}).",
         "short": "{+value}% vs the near-high line",
         "pastShort": "past the near-high limit ({+value}%)",
         "info": "Milestone: price recovers to within {min}% of the 52-week high."
@@ -296,7 +296,7 @@
       "breakout": {
         "label": "Breakout",
         "detail": "{+value}% vs the high before its {min}% pullback ({level}). Step window: 0% to +{max}% ({level} to {endLevel}).",
-        "past": "{+value}% above the high before its {min}% pullback ({level}) — past the +{max}% buy area ({endLevel}).",
+        "past": "{+value}% above the high before its {min}% pullback ({level}) — past the +{max}% limit ({endLevel}).",
         "short": "no breakout yet",
         "pastShort": "past the breakout limit ({+value}%)",
         "none": "After a buy: a fall of {min}% from the highest close, then a close above that high.",

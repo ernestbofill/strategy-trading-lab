@@ -214,7 +214,7 @@
       },
       "milestones": {
         "title": "3 · Fites: les fases següents",
-        "lead": "Un cop comprada, cada nou senyal que el gir és real dona una fase més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'una baixada. Cadascuna es compra només fins al % de la zona de compra per sobre del seu nivell."
+        "lead": "Un cop comprada, cada nou senyal que el gir és real dona una fase més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'una baixada. Cadascuna es compra només fins al mateix % per sobre del seu nivell."
       },
       "pace": {
         "title": "4 · Ritme: cada quan compra",

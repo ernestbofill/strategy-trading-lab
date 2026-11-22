@@ -112,11 +112,12 @@ public class ComebackRules : BuyRulesBase
 
     /// <summary>
     /// Whether the price is back in the turn's window from above: the last close outside the window (since the recent low) was
-    /// above the chase limit. Such a pullback needs no volume: trading is usually light on one, and the turn already ran.
+    /// above the chase limit. Such a pullback needs no volume: trading is usually light on one, and the turn already ran. A
+    /// stock with no volume data never gets it, as it never meets the volume either.
     /// </summary>
     bool FromAbove(int i, decimal lowest, decimal buyLine, decimal limit)
     {
-        if (pocTurn || close[i] < buyLine || close[i] > limit) return false;
+        if (pocTurn || vol50[i] is not > 0 || close[i] < buyLine || close[i] > limit) return false;
         for (var k = i - 1; k > i - p.LowDays && k >= 0; k--)
         {
             if (close[k] > limit) return true;
@@ -157,7 +158,9 @@ public class ComebackRules : BuyRulesBase
             boughtOn.Clear();
             var limit = TurnLimit(lowest, buyLine);
             var fromAbove = FromAbove(i, lowest, buyLine, limit);
-            var entryOk = price >= buyLine && (fromAbove || VolumeOk(i)) && UpOk(i);
+            // Past the chase limit the window can't open anyway: the up day only opens it, so a down day up there keeps the
+            // "too late to chase" reason.
+            var entryOk = price >= buyLine && (fromAbove || VolumeOk(i)) && (price > limit || UpOk(i));
             var (status, reason) = window.Compose(day, candidate[i], entryOk, extended: price > limit,
                 "Price or volume fell back below the buy conditions.",
                 pocTurn

@@ -195,7 +195,7 @@
       "cooldownDays": {
         "sentence": "After a step, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
-        "help": "Counted from the step's buy. It only holds a step back when it is longer than the steps' pace."
+        "help": "Counted from the step's buy, in calendar days. Longer: steps spread out more than the pace alone."
       }
     },
     "settingGroups": {
@@ -245,6 +245,11 @@
         "short": "+{value}% above its low (needs +{min}%)",
         "pastShort": "+{value}% above its low (past the buy area)",
         "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase."
+      },
+      "chase": {
+        "label": "Not too far past the line",
+        "detail": "{+value}% above the buy line: more than {max}% is too late to chase.",
+        "short": "too far past the buy line"
       },
       "volume": {
         "label": "Volume: 5-day vs 50-day average",

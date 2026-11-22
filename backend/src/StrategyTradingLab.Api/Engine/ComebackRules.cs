@@ -35,8 +35,9 @@ public class ComebackRules : BuyRulesBase
     // For the stock page only (no verdict reads them): the first step's day, the milestone yesterday's signal was for, and
     // the milestones that bought a step, with its day. The others in `used` were already there at a buy.
     DateOnly? turnOn;
-    // The step price a later step's signal came from: its window stays open while the close is above it (see Paced).
-    decimal? signalFrom;
+    // The price a bought step's signal window follows: it stays open while the close is above it (see Paced). A later step's
+    // signal sets `pendingFrom`, which only becomes the window's price once its step is bought (the replay can drop a signal).
+    decimal? signalFrom, pendingFrom;
     string? signalled;
     readonly Dictionary<string, DateOnly> boughtOn = [];
 
@@ -142,6 +143,7 @@ public class ComebackRules : BuyRulesBase
             pulledBack = false;
             turnOn = null;
             signalFrom = null;
+            pendingFrom = null;
             signalled = null;
             boughtOn.Clear();
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > TurnLimit(lowest, buyLine),
@@ -232,14 +234,15 @@ public class ComebackRules : BuyRulesBase
     RuleDecision Paced(int i, decimal price, DayContext day, Dictionary<string, object> facts)
     {
         turnOn ??= day.LastBuyDay; // The first day held: the turn's step was bought on it.
-        // A signal's window stays open after it while the close is above the step price it came from: the rules' own buy at the
-        // next open restarts the pace, which must not close it (a Manual signal would read missed the next day).
-        // A step the pace didn't signal (the turn, or a milestone from before the pace): its window stays open while the close is
-        // above the price it was bought at, so its Manual signal isn't missed the day after either.
-        if (day.ActedNow && signalFrom is null) signalFrom = LastStep(i, day).Price;
+        // A bought step's signal window stays open while the close is above the price it came from: the rules' own buy at the
+        // next open restarts the pace, which must not close it (a Manual signal would read missed the next day). A paced step
+        // follows the step price its signal came from; one the pace didn't signal (the turn, or a milestone from before the
+        // pace), its own buy price.
+        if (day.ActedNow) signalFrom = pendingFrom ?? LastStep(i, day).Price;
+        pendingFrom = null;
         var windowClosed = signalFrom is { } from && price <= from;
         if (windowClosed) signalFrom = null;
-        var closedReason = windowClosed ? "The price fell back to the last step's price." : null;
+        var closedReason = windowClosed ? "The price fell back, so the step's signal window closed." : null;
         List<RuleCheck> checks = [new("turn", CheckGroup.Next, true, Used: true, Bought: true, Date: turnOn)];
         // Every step bought: the pace has nothing left to earn, so it has no row (a used row would read as a step it bought).
         if (day.Full) return new RuleDecision(RuleStatus.Holding, closedReason, facts, WindowOpen: signalFrom is not null) { Checks = checks };
@@ -258,7 +261,7 @@ public class ComebackRules : BuyRulesBase
         checks.Add(new("pace", CheckGroup.Next, due, shownDays, p.StepEveryDays, Progress: RuleCheck.ProgressOf(shownDays, p.StepEveryDays)));
         checks.Add(new("lastStep", CheckGroup.Next, above, Shown(abovePct), 0, Level: Math.Round(lastPrice, 2)));
         if (RuleCheck.Cooldown(day, p.CooldownDays, CheckGroup.Next) is { } cooldown) checks.Add(cooldown);
-        if (status == RuleStatus.BuySignal) signalFrom = lastPrice;
+        if (status == RuleStatus.BuySignal) pendingFrom = lastPrice;
         return new RuleDecision(status, reason, facts, WindowOpen: (due && above) || signalFrom is not null) { Checks = checks };
     }
 

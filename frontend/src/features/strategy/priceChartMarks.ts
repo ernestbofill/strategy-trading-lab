@@ -113,8 +113,11 @@ export function chartSeries(days: ChartDay[], isCandidate: boolean): ChartSeries
   const byId = new Map<string, ChartSeries>()
   const latest = days.findLast((d) => d.checks.length > 0)
   const goal = latest ? (nextGoal(latest.checks)?.key ?? null) : null
+  // The comeback's last-step line only while today has one: a position with every step bought has none.
+  const lastStep = latest?.checks.some((c) => c.key === 'lastStep') ?? false
   days.forEach((day, i) => {
     for (const { from, to, ...mark } of chartMarks(day.checks, isCandidate, goal)) {
+      if (mark.id === 'lastStep' && !lastStep) continue
       let series = byId.get(mark.id)
       if (!series) byId.set(mark.id, (series = { mark, area: to !== undefined, points: [] }))
       series.points.push({ i, from, to })

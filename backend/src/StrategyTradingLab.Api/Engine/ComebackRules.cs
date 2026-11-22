@@ -19,7 +19,7 @@ public class ComebackRules : BuyRulesBase
 
     readonly ComebackParams p;
     readonly bool poc;
-    readonly IReadOnlyList<decimal> close, open;
+    readonly IReadOnlyList<decimal> close, opens;
     readonly DateOnly[] dates;
     readonly decimal?[] low, sma50, sma200, high252, vol5, vol50;
     readonly bool[] candidate;
@@ -47,7 +47,7 @@ public class ComebackRules : BuyRulesBase
         p = parameters;
         this.poc = poc;
         close = [.. bars.Select(b => b.Close)];
-        open = [.. bars.Select(b => b.Open)];
+        opens = [.. bars.Select(b => b.Open)];
         dates = [.. bars.Select(b => b.Date)];
         var volume = bars.Select(b => (decimal)b.Volume).ToList();
         low = Indicators.RollingLow(close, p.LowDays);
@@ -84,6 +84,9 @@ public class ComebackRules : BuyRulesBase
         }
         return (result, ago, on);
     }
+
+    /// <summary>A % to one decimal, never "0%" for a small move: the verdict reads the unrounded figure.</summary>
+    static decimal Shown(decimal pct) => Math.Round(pct, 1) is var shown && shown == 0 && pct != 0 ? 0.1m * Math.Sign(pct) : shown;
 
     decimal Chase(decimal level) => level * (1 + p.MaxChasePct / 100);
 
@@ -207,7 +210,7 @@ public class ComebackRules : BuyRulesBase
             Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio) is { } done && !volumeOk ? Math.Min(done, 0.99m) : RuleCheck.ProgressOf(ratio, p.VolumeRatio),
             // The price over the volume's 5 days: the volume only counts on a rise.
             // Never "0%" for a small move: the verdict reads the unrounded change.
-            SubValue: RisePct(i) is { } rise ? (Math.Round(rise, 1) is var shown && shown == 0 && rise != 0 ? 0.1m * Math.Sign(rise) : shown) : null));
+            SubValue: RisePct(i) is { } rise ? Shown(rise) : null));
         if (poc) checks.AddRange(MilestoneChecks(i, price, BuildMilestones(i, price, pulled: false, highBeforePullback: null), preview: true));
         else checks.Add(new("pace", CheckGroup.Next, false, null, p.StepEveryDays, Preview: true));
         return checks;
@@ -222,7 +225,7 @@ public class ComebackRules : BuyRulesBase
     {
         var k = Array.BinarySearch(dates, day.LastBuyDay);
         if (k < 0) k = ~k; // No bar on that day (a revised history): the next one.
-        return k > i ? (0, close[i]) : (i - k + 1, open[k]);
+        return k > i ? (0, close[i]) : (i - k + 1, opens[k]);
     }
 
     /// <summary>A held position's next steps: one every <c>StepEveryDays</c> trading days, while the close is above the last step's price.</summary>
@@ -231,6 +234,9 @@ public class ComebackRules : BuyRulesBase
         turnOn ??= day.LastBuyDay; // The first day held: the turn's step was bought on it.
         // A signal's window stays open after it while the close is above the step price it came from: the rules' own buy at the
         // next open restarts the pace, which must not close it (a Manual signal would read missed the next day).
+        // A step the pace didn't signal (the turn, or a milestone from before the pace): its window stays open while the close is
+        // above the price it was bought at, so its Manual signal isn't missed the day after either.
+        if (day.ActedNow && signalFrom is null) signalFrom = LastStep(i, day).Price;
         var windowClosed = signalFrom is { } from && price <= from;
         if (windowClosed) signalFrom = null;
         var closedReason = windowClosed ? "The price fell back to the last step's price." : null;
@@ -247,8 +253,10 @@ public class ComebackRules : BuyRulesBase
         var status = !day.ActedNow && !day.Cooling && due && above ? RuleStatus.BuySignal : RuleStatus.Building;
         // A signal's window closed: the price fell back to the step price it came from.
         var reason = status == RuleStatus.BuySignal ? null : closedReason;
-        checks.Add(new("pace", CheckGroup.Next, due, since, p.StepEveryDays, Progress: RuleCheck.ProgressOf(since, p.StepEveryDays)));
-        checks.Add(new("lastStep", CheckGroup.Next, above, Math.Round(abovePct, 1), 0, Level: Math.Round(lastPrice, 2)));
+        // Once due, the pace reads due (not "45 of 10"): the last-step row says what it waits for.
+        var shownDays = Math.Min(since, p.StepEveryDays);
+        checks.Add(new("pace", CheckGroup.Next, due, shownDays, p.StepEveryDays, Progress: RuleCheck.ProgressOf(shownDays, p.StepEveryDays)));
+        checks.Add(new("lastStep", CheckGroup.Next, above, Shown(abovePct), 0, Level: Math.Round(lastPrice, 2)));
         if (RuleCheck.Cooldown(day, p.CooldownDays, CheckGroup.Next) is { } cooldown) checks.Add(cooldown);
         if (status == RuleStatus.BuySignal) signalFrom = lastPrice;
         return new RuleDecision(status, reason, facts, WindowOpen: (due && above) || signalFrom is not null) { Checks = checks };

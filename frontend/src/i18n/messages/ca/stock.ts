@@ -38,7 +38,7 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.group.buyMet': '{met} de {total} complertes. Totes: un senyal de compra.',
   'stock.group.buyLater': 'Compta quan sigui candidata.',
   'stock.group.next': 'Fase següent',
-  'stock.group.nextLead': 'Una fase més cada cop que es compleixen.',
+  'stock.group.nextLead': 'Una fase més quan aquestes ho permeten.',
   'stock.group.nextShow': 'Mostra les fases següents',
   'stock.group.nextPreviewLead': "S'activa després de comprar la primera fase.",
   'stock.group.sell': 'Senyal de venda',

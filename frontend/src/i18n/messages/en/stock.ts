@@ -36,7 +36,7 @@ export const stock = {
   'stock.group.buyMet': '{met} of {total} met. All of them: a buy signal.',
   'stock.group.buyLater': 'Counts once it is a candidate.',
   'stock.group.next': 'Next step',
-  'stock.group.nextLead': 'One more step each time these are met.',
+  'stock.group.nextLead': 'One more step when these allow it.',
   'stock.group.nextShow': 'Show next steps',
   'stock.group.nextPreviewLead': 'Unlocks after the first step is bought.',
   'stock.group.sell': 'Sell signal',

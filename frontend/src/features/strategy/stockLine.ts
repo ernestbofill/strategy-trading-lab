@@ -28,7 +28,8 @@ type Texts = Record<string, CheckTexts> | null | undefined
  * sign already used.
  */
 const milestonesUsed = (row: StockRow) => {
-  const next = row.checks.filter((c) => c.group === 'next' && !c.preview)
+  // The turn alone (a pace that has every step) is no milestone.
+  const next = row.checks.filter((c) => c.group === 'next' && !c.preview && c.key !== 'turn')
   return row.maxSteps !== null && row.steps < row.maxSteps && next.length > 0 && next.every((c) => c.used === true)
 }
 

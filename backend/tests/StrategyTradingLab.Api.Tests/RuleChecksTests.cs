@@ -229,6 +229,12 @@ public class RuleChecksTests
             var candidateDays = days.Where(d => Group(d, CheckGroup.Candidate).Any() && Group(d, CheckGroup.Candidate).All(c => c.Met == true)).ToList();
             Assert.NotEmpty(candidateDays);
             Assert.All(candidateDays, d => Assert.True(d.Facts?.ContainsKey("candidateSince") == true));
+            // "Candidate since" is the first day of the run: it holds from one candidate day to the next (the comeback's moved
+            // with each new beaten-down day, feedback 2026-11-21).
+            var since = candidateDays.Select(d => (string?)d.Facts!["candidateSince"].ToString()).ToList();
+            for (var k = 1; k < candidateDays.Count; k++)
+                if (days.IndexOf(candidateDays[k]) == days.IndexOf(candidateDays[k - 1]) + 1)
+                    Assert.Equal(since[k - 1], since[k]);
         }
         if (templateKey is "comeback" or "bear")
         {

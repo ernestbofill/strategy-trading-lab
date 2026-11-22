@@ -219,14 +219,12 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             services.GetRequiredService<AdminAlerts>().RaiseAsync(AlertSource.DailyCheck, alert, stoppingToken), stoppingToken);
 
     /// <summary>
-    /// Right after the check, the pushes of what it changed (<see cref="PushChangesAsync"/>), then the alerts for the live signals
-    /// it found that are still waiting, then the daily overview. After the run is recorded as finished, and apart from it: a push
-    /// or email problem is not a refresh failure.
+    /// Right after the check, the alerts for the live signals it found that are still waiting, the daily overview, then the pushes
+    /// of what it changed (<see cref="PushChangesAsync"/>). After the run is recorded as finished, and apart from it: a push or
+    /// email problem is not a refresh failure.
     /// </summary>
     async Task SendNotificationsAsync(CancellationToken stoppingToken)
     {
-        // First, and apart from the emails: pushes go out as soon as the check has run, whatever the user's notification hour.
-        await PushChangesAsync(stoppingToken);
         await TryInScopeAsync("The signal alerts couldn't be sent", async services =>
         {
             var notifications = services.GetRequiredService<Notifications.NotificationService>();
@@ -244,6 +242,9 @@ public class PriceRefreshWorker(PriceRefreshState state, DatabaseSwitch database
             if (await notifications.EnabledAsync(stoppingToken))
                 logger.LogInformation("Sent {Count} daily overviews.", await notifications.SendOverviewsAsync(time.GetUtcNow(), stoppingToken));
         }, stoppingToken);
+        // Last, and apart from the emails: pushes go out as soon as the check has run, whatever the user's notification hour; a
+        // user's pushes are a minute apart (NotificationDelivery), so these waits don't hold the emails back.
+        await PushChangesAsync(stoppingToken);
     }
 
     /// <summary>

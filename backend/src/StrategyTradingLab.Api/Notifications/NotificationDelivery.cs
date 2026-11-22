@@ -39,16 +39,35 @@ public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSen
     /// the push service says is gone, or that has failed for a week, is forgotten. When none got it but one only failed this time
     /// (not a refusal, which would fail again every hour), the claim is given back for the hourly check to retry. No admin alert: devices come and go.
     /// It waits until the user's last push is <c>pushGap</c> old: several at once seemed to reach a phone as one (Ernest, 2026-11-22).
+    /// One push at a time in the API, wait included, so the check's pushes and the hourly run's can't go out together.
     /// </summary>
     public async Task<bool> PushAsync(Guid notificationId, Guid userId, PushMessage message, CancellationToken cancellationToken)
     {
-        try { await WaitForGapAsync(userId, cancellationToken); }
-        // A shutdown while waiting sent nothing: the claim goes back for the next run.
+        var locked = false;
+        try
+        {
+            await PushLock.WaitAsync(cancellationToken);
+            locked = true;
+            return await SendPushAsync(notificationId, userId, message, cancellationToken);
+        }
+        // A shutdown before or during the send gives the claim back: a device that got it already shows it once, by its tag.
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             await ReleaseAsync(notificationId);
             throw;
         }
+        finally
+        {
+            if (locked) PushLock.Release();
+        }
+    }
+
+    /// <summary>One API process: an in-process lock is enough to keep a user's pushes apart.</summary>
+    static readonly SemaphoreSlim PushLock = new(1, 1);
+
+    async Task<bool> SendPushAsync(Guid notificationId, Guid userId, PushMessage message, CancellationToken cancellationToken)
+    {
+        await WaitForGapAsync(userId, cancellationToken);
         var devices = await db.PushSubscriptions.AsNoTracking().Where(p => p.UserId == userId).ToListAsync(cancellationToken);
         var payload = message.ToJson();
         var now = time.GetUtcNow();
@@ -57,12 +76,7 @@ public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSen
         {
             PushOutcome outcome;
             try { outcome = await push.SendAsync(device, payload, cancellationToken); }
-            // A shutdown mid-send gives the claim back: a device that got it already shows it once, by its tag.
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                await ReleaseAsync(notificationId);
-                throw;
-            }
+            // A shutdown passes through to PushAsync, which gives the claim back.
             catch (Exception error) when (error is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
                 logger.LogWarning("Couldn't push notification {Id}: {Kind}", notificationId, error.GetType().Name);

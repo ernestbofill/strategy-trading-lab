@@ -20,7 +20,12 @@ namespace StrategyTradingLab.Api.Notifications;
 public class NotificationService(AppDbContext db, IEmailSender sender, IPushSender push, SettingsStore settings, IConfiguration configuration, AdminAlerts alerts,
     DailySummary summary, TimeProvider time, ILogger<NotificationService> logger)
 {
-    readonly NotificationDelivery delivery = new(db, sender, push, alerts, time, logger);
+    readonly NotificationDelivery delivery = new(db, sender, push, alerts, time, logger,
+        TimeSpan.FromSeconds(configuration.GetValue(PushGapKey, DefaultPushGapSeconds)));
+
+    /// <summary>The least time between two pushes to a user, in seconds (60; the tests set 0).</summary>
+    public const string PushGapKey = "PUSH_GAP_SECONDS";
+    const int DefaultPushGapSeconds = 60;
 
     /// <summary>
     /// A stock's signal alert goes out once in this window per strategy and side: an extra check the same day (a re-run, a price

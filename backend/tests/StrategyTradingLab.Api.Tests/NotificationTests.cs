@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
@@ -244,8 +245,14 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
     static NotificationService Service(IServiceScope scope, IEmailSender sender) =>
         ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)sender);
 
+    /// <summary>With no gap between a user's pushes, so a test pushing twice doesn't wait a minute.</summary>
     static NotificationService Service(IServiceScope scope, IPushSender push) =>
-        ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)new Captured(), push);
+        ActivatorUtilities.CreateInstance<NotificationService>(scope.ServiceProvider, (IEmailSender)new Captured(), push, NoPushGap(scope));
+
+    static IConfiguration NoPushGap(IServiceScope scope) => new ConfigurationBuilder()
+        .AddConfiguration(scope.ServiceProvider.GetRequiredService<IConfiguration>())
+        .AddInMemoryCollection(new Dictionary<string, string?> { [NotificationService.PushGapKey] = "0" })
+        .Build();
 
     /// <summary>Delivers to every device but those whose endpoint says "gone".</summary>
     sealed class FakePush : IPushSender

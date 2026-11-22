@@ -12,9 +12,10 @@ public record Recipient(Guid Id, string Email, string Locale, string Unsubscribe
 /// <summary>
 /// The bookkeeping of one scope's notifications (spec: Notifications): each is claimed first, a row in <c>notifications</c>
 /// whose unique key is the dedupe contract, then sent by email or push, and the row says whether it worked. Emails that fail
-/// raise the admin alert, which clears after a batch where every email went out.
+/// raise the admin alert, which clears after a batch where every email went out. A user's pushes go out at least
+/// <paramref name="pushGap"/> apart.
 /// </summary>
-public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSender push, AdminAlerts alerts, TimeProvider time, ILogger logger)
+public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSender push, AdminAlerts alerts, TimeProvider time, ILogger logger, TimeSpan pushGap)
 {
     /// <summary>Whether web push is set up (its keys): without them nothing is pushed.</summary>
     public bool PushReady => push.PublicKey is not null;
@@ -37,9 +38,17 @@ public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSen
     /// Sends a claimed push notification to every device of the user and records the result: sent if one device got it. A device
     /// the push service says is gone, or that has failed for a week, is forgotten. When none got it but one only failed this time
     /// (not a refusal, which would fail again every hour), the claim is given back for the hourly check to retry. No admin alert: devices come and go.
+    /// It waits until the user's last push is <c>pushGap</c> old: several at once seemed to reach a phone as one (Ernest, 2026-11-22).
     /// </summary>
     public async Task<bool> PushAsync(Guid notificationId, Guid userId, PushMessage message, CancellationToken cancellationToken)
     {
+        try { await WaitForGapAsync(userId, cancellationToken); }
+        // A shutdown while waiting sent nothing: the claim goes back for the next run.
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await ReleaseAsync(notificationId);
+            throw;
+        }
         var devices = await db.PushSubscriptions.AsNoTracking().Where(p => p.UserId == userId).ToListAsync(cancellationToken);
         var payload = message.ToJson();
         var now = time.GetUtcNow();
@@ -89,6 +98,17 @@ public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSen
                 .SetProperty(x => x.Error, delivered ? null : "No device got it."), CancellationToken.None);
         db.ChangeTracker.Clear();
         return delivered;
+    }
+
+    /// <summary>Waits until <c>pushGap</c> has passed since the user's last push that went out.</summary>
+    async Task WaitForGapAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (pushGap <= TimeSpan.Zero) return;
+        var last = await db.Notifications.AsNoTracking()
+            .Where(n => n.UserId == userId && n.Channel == NotificationChannel.Push && n.SentAt != null)
+            .MaxAsync(n => n.SentAt, cancellationToken);
+        if (last is { } sent && sent + pushGap - time.GetUtcNow() is var wait && wait > TimeSpan.Zero)
+            await Task.Delay(wait, time, cancellationToken);
     }
 
     /// <summary>Takes the right to send this notification, once: its id, or null when it was already claimed (a retry, a second run).</summary>

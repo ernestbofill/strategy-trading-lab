@@ -868,7 +868,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **AI rounds:** strategy, due date, status (due, done, skipped), date run, the session its signals are dated, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons, and the step each stock got (`ai_rounds`).
 - **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round); deleting the strategy removes them too.
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
-- **Backtest results:** per test (template or strategy settings, stocks, periods, money, costs, data snapshot): the strategy and its three baselines per window, worst year, alpha, number of steps. Cached by that key ([backtest.md](backtest.md)).
+- **Backtest results:** per test (template or strategy settings, stocks, periods, money, costs, data snapshot): the strategy and its three baselines per window, money-weighted: a year on average, worst year, the average share of the budget invested, number of steps. Cached by that key ([backtest.md](backtest.md)).
 - **Backtest data:** a monthly snapshot of index membership and daily prices, in object storage, with its quality report ([backtest.md](backtest.md)).
 - **Market data:** daily US prices and volumes, exchange rates.
 - **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed` | `validated`), comment text, optional page route, DOM selector and selected text quote, timestamps.

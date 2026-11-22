@@ -48,27 +48,28 @@ No currency fee. Taxes are not included.
 
 ## Baselines
 
-Every baseline gets the same money, under the same monthly limit, pays the same fee and spread, never sells, and is valued at each window's last close.
+Decided by Ernest on 2026-11-22. Every baseline pays the same fee and spread, never sells, and is valued at each window's last close. The *pool* is the stocks the test uses: the draft, the list or the stock.
 
-| Baseline | What it does | The question it answers |
-| --- | --- | --- |
-| **Same stocks, monthly** (the headline comparison) | Buys the whole pool of stocks with each month's limit, split evenly across them, until the budget is used. The pool is the draft, the list or the stock; for *Bear markets* and *Index trend*, the same index fund. | Did the rules' choices, which stocks from the pool and when to buy them, beat buying the whole pool steadily? |
-| **S&P 500, monthly** | Buys SPY with each month's limit until the budget is used. | Did the whole plan beat steady buying of the index? (The product rule's index fund.) |
-| **S&P 500, same days** | Each step the strategy buys, the same amount goes into SPY that day. | Did the money the strategy invested beat the index? (Today's "alpha".) |
+| # | Baseline | What it does | The question it answers |
+| --- | --- | --- | --- |
+| 1 | **S&P 500, monthly** | Buys SPY with each month's limit until the budget is used. | Does the strategy beat the market? (The product rule's index fund.) |
+| 2 | **Same days, same money, same list** | Each time the strategy buys a step, the same amount goes into the whole pool that day, split evenly. | Does the strategy choose the right stocks in the list? Same days and money, so only the choice of stocks differs. |
+| 3 | **Same stocks, monthly** | Buys the whole pool with each month's limit, split evenly, until the budget is used. | Does the timing matter much? Read against baseline 2: both buy the whole pool, only the days differ. |
 
-With the limit equal to the budget, the two monthly baselines buy everything on the first day.
+So the gaps read as: strategy vs 1, against the market; strategy vs 2, the choice of stocks; 2 vs 3, the timing.
+
+- With the limit equal to the budget, baselines 1 and 3 buy everything on the first day.
+- Baseline 2 needs a pool of more than one: for one stock, and for *Bear markets* and *Index trend* (one fund), it is the strategy itself, so it isn't shown. For these two, baseline 3 is the same fund, monthly.
 
 ## Results
 
-Per window and for **All**, for the strategy and each baseline:
+Per window and for **All**, for the strategy and each baseline, all **money-weighted** (Ernest, 2026-11-22): each euro counts for as long as it was invested, so early buys weigh more.
 
-- **A year, on average.** A switch on the results chooses how:
-  - **On money invested** (the default, since a strategy invests over time by design): a money-weighted yearly rate, where each euro counts for as long as it was invested, so early buys weigh more.
-  - **On the whole budget:** the yearly rate of the whole account, cash included at 0%.
-  - One line under the switch explains the gap: "On average, [n]% of the budget was invested" (the share invested each day, averaged over the window). Roughly, the rate on the whole budget is the rate on money invested times that share.
-- **Worst calendar year**, measured the same way as the switch.
-- **Alpha:** the strategy's rate against *S&P 500, same days*.
+- **A year, on average**, on the money invested.
+- **Worst calendar year**, money-weighted too.
+- **Budget invested over time:** "On average, [n]% of the budget was invested": the share of the budget invested each day, averaged over the window, so money invested later counts less. For the strategy, and next to each baseline.
 - The number of steps.
+- **A note that idle money isn't counted:** "Rates count only the money invested, for as long as it was invested; budget waiting in cash isn't counted." Roughly, the rate on the whole budget would be the rate shown times the share invested.
 
 The product rules hold: every result sits next to the index fund and the worst year.
 
@@ -84,7 +85,7 @@ Two different things:
 Four ways to choose the pool:
 
 1. **A draft** (the default, for comparing). 30 stocks drawn from the S&P 500 as it stood on each window's start date (the stocks SPY held then), stratified by sector, with a published seed. The same draft (same seed, same data) makes results of different strategies and settings comparable.
-2. **Random draws.** The same method, 25 times with new seeds. Each draw runs the whole test, strategy and baselines. Shows the median, the 10th–90th percentile range, and how often the strategy beat *Same stocks, monthly* ("in 19 of 25 draws"). It says whether a result came from the luck of the stocks drawn. Draft mode only.
+2. **Random draws.** The same method, 25 times with new seeds. Each draw runs the whole test, strategy and baselines. Shows the median, the 10th–90th percentile range, and how often the strategy beat each baseline ("beat the same days in the list in 19 of 25 draws"). It says whether a result came from the luck of the stocks drawn. Draft mode only.
 3. **The strategy's own list.** For shorter periods (default: the latest window only), since a list chosen today knows how its stocks did, which flatters the past. Shown next to the draft's result for the same window and settings. A stock without enough history at a window's start sits that window out, and the result says so.
 4. **One stock.** The budget is sized for it (max steps × step size).
 
@@ -104,7 +105,7 @@ A stock may only be drawn if it was in the index on the window's start date and 
 
 Drafted in the planning chat (2026-11-20); Ernest will give them another round. All screens are owner-only. The numbers below are made up.
 
-**Results**: periods as tabs (`2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the money-invested / whole-budget switch with its "On average, [n]% of the budget was invested" line, and a value chart. The baselines open with **Show baselines** in the same tab, so the main view stays the backtest alone.
+**Results**: periods as tabs (`2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the "On average, [n]% of the budget was invested" line with the note that idle money isn't counted, and a value chart. The baselines open with **Show baselines** in the same tab, so the main view stays the backtest alone.
 
 **Tuning (Advanced settings)**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the saved settings, only when they differ from the defaults) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
 
@@ -118,15 +119,18 @@ A year, on average      +10.8%   +11.0%  +11.6%
 Worst year               -14%     -15%    -17%
 Steps                     41       45      52
 
+Budget invested           48%      51%     58%
+Rates count only the money invested; idle budget isn't counted.
+
 ▸ Show baselines
-  Same stocks, monthly   +9.8%   (the same for every column)
-  S&P 500, monthly       +9.1%   (the same for every column)
-  Alpha, same days       +1.6     +1.5    +1.4
+  1 S&P 500, monthly          +9.1%   (the same for every column)
+  2 Same days, same list      +9.9%   +10.1%  +10.4%
+  3 Same stocks, monthly      +9.8%   (the same for every column)
 ```
 
-*Same stocks, monthly* and *S&P 500, monthly* depend on the stocks, periods, money and costs, not on the rules, so they show once. Only the alpha follows each column's buy days.
+Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rules, so they show once. Baseline 2 follows each column's buy days.
 
-**Other screens**: the setup (stocks, index, period, money, costs, the data snapshot, *Run backtest*); the random draws (median, 10th–90th percentile range, "beat Same stocks, monthly in [n] of 25 draws"); and the data report (owner page: members and coverage per window start, missing and renamed tickers, gaps, jumps).
+**Other screens**: the setup (stocks, index, period, money, costs, the data snapshot, *Run backtest*); the random draws (median, 10th–90th percentile range, how often the strategy beat each baseline); and the data report (owner page: members and coverage per window start, missing and renamed tickers, gaps, jumps).
 
 ## Biases
 

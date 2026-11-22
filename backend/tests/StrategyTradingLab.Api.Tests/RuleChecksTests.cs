@@ -53,8 +53,6 @@ public class RuleChecksTests
     {
         var bars = Bars(name);
         var days = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5)).Where(d => d.Checks.Count > 0).ToList();
-        // The POC's milestones (golden tests only), kept recoverable.
-        var poc = RulesRunner.Run(new ComebackRules(bars, new ComebackParams(), poc: true), bars, new StepPlan(5)).Where(d => d.Checks.Count > 0).ToList();
 
         foreach (var day in days.Where(d => !Group(d, CheckGroup.Next).Any()))
         {
@@ -75,18 +73,13 @@ public class RuleChecksTests
             var from = signal.Checks.Single(c => c.Key == "lastStep").Level!.Value;
             Holds(next.WindowOpen == close[next.Date] > from, next, $"the window after a step's signal follows the close vs {from}");
         }
-        foreach (var day in poc.Where(d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any()))
-            Holds(Group(day, CheckGroup.Next).Any(c => c.Met == true && c.Used != true), day, "a step's signal has an open milestone");
-        // Held: the turn, step 1, comes first, bought on its day; a milestone that bought a step says so, with its day.
-        foreach (var day in days.Concat(poc).Where(d => Group(d, CheckGroup.Next).Any()))
+        // Held: the turn, step 1, comes first, bought on its day.
+        foreach (var day in days.Where(d => Group(d, CheckGroup.Next).Any()))
         {
             var turn = Group(day, CheckGroup.Next).First();
-            Holds(turn.Key == "turn" && turn.Bought == true && turn.Date is not null, day, "the turn is the first next-step row, bought");
-            Holds(Group(day, CheckGroup.Next).All(c => c.Bought != true || (c.Used == true && c.Date is not null)), day, "a bought row is used, with its day");
-            // Used without buying says so (false): null is how checks stored before the field read.
-            Holds(Group(day, CheckGroup.Next).All(c => c.Used != true || c.Bought is not null), day, "a used row says whether it bought");
+            Holds(turn.Key == "turn" && turn.Used == true && turn.Date is not null, day, "the turn is the first next-step row, bought");
+            Holds(Group(day, CheckGroup.Next).All(c => c.Used != true || c.Key == "turn"), day, "only the turn is used");
         }
-        Assert.Contains(poc, d => Group(d, CheckGroup.Next).Any(c => c.Key != "turn" && c.Bought == true));
         Assert.Contains(days, d => d.Status == RuleStatus.BuySignal);
     }
 
@@ -110,14 +103,6 @@ public class RuleChecksTests
         Assert.Equal(CheckGroup.Next, cooldown.Group);
         Assert.Equal((decimal)new ComebackParams().CooldownDays, cooldown.Value);
         Assert.Equal(buyDay, Assert.Single(after, c => c.Key == "turn").Date);
-
-        // The POC's milestones: a later step bought on its signal's day reads bought on that day, not just used.
-        var later = RulesRunner.Run(new ComebackRules(all, new ComebackParams(), poc: true), all, new StepPlan(5))
-            .First(d => d.NewBuy && Group(d, CheckGroup.Next).Any());
-        var upTo = all.TakeWhile(b => b.Date <= later.Date).ToList();
-        var laterBuy = later.Date.AddDays(1);
-        var afterLater = RulesRunner.Run(new ComebackRules(upTo, new ComebackParams(), poc: true), upTo, new StepPlan(5), 0, boughtBeforeLast: laterBuy)[^1].Checks;
-        Assert.Contains(afterLater, c => c.Key != "turn" && c.Bought == true && c.Date == laterBuy);
     }
 
     [Fact]

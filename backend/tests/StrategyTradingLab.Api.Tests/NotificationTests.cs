@@ -32,12 +32,9 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
     {
         var first = Dip("""{"aboveBuyLinePct":2.4}""") with { TemplateKey = "comeback" };
         var later = Dip("""{"aboveBuyLinePct":30.1,"sinceLastDays":10,"aboveLastStepPct":6.25}""") with { TemplateKey = "comeback" };
-        var milestone = Dip("""{"milestone":"Golden cross (SMA 50 above SMA 200)"}""") with { TemplateKey = "comeback" };
 
         Assert.Contains("2.4% above its buy line, on rising volume", EmailTexts.SignalText(first));
         Assert.Contains("10 trading days after its last step, 6.3% above that step's price", EmailTexts.SignalText(later));
-        // A signal from before the pace (a reminder of it) keeps its milestone.
-        Assert.Contains("a new sign that the recovery is real: golden cross (sma 50 above sma 200)", EmailTexts.SignalText(milestone));
     }
 
     [Fact]

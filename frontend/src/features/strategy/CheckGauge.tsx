@@ -7,7 +7,7 @@ import styles from './CheckGauge.module.css'
 /** The gauge's own class, and the parent's placement when given. */
 const withClass = (own: string, extra?: string) => (extra ? `${own} ${extra}` : own)
 
-/** Two levels and how they stand: "SMA 50 $x ≤ SMA 200 $y", "Short $x > Long $y", "20d ago $x ↗ Now $y". */
+/** Two levels and how they stand: "Short $x > Long $y", "20d ago $x ↗ Now $y". */
 function TwoLevelStrip({ left, right, ok, symbol, className }: { left: string; right: string; ok: boolean; symbol: string; className?: string }) {
   return (
     <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
@@ -18,7 +18,7 @@ function TwoLevelStrip({ left, right, ok, symbol, className }: { left: string; r
   )
 }
 
-const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high', 'breakout'])
+const WINDOW_KEYS = new Set(['zone', 'buyLine'])
 
 // Proven growth's bar says the rise itself, as its sentence does: its share of the target ("199%" for a 99.3% rise that
 // needs 50%) read as another figure (feedback, 2026-11-16). Not the drops: the comeback's is negative, and a bear's bar
@@ -33,15 +33,6 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   if (check.met === null || check.used) return null
   const past = isPastMax(check)
   const state = past ? 'past' : check.met ? 'met' : 'notMet'
-
-  // 0. No golden cross yet: the SMA 50 still under the SMA 200.
-  // (Checks stored before this field still have a value: a spread at or under 0 says the same.)
-  if (check.key === 'golden' && (check.value === null || (check.subValue ?? 0) <= 0) && check.level !== null && check.midLevel != null) {
-    return (
-      <TwoLevelStrip className={className} ok={false} symbol="≤"
-        left={t('stock.bar.sma50', { price: exact(check.level, currency) })} right={t('stock.bar.sma200', { price: exact(check.midLevel, currency) })} />
-    )
-  }
 
   // 1. Moving-average stack: Short vs Long, or Short vs Mid vs Long in the POC's stack (and checks stored before STL dropped the middle one).
   if (check.key === 'stacked' && check.level !== null && check.midLevel == null && check.endLevel != null) {
@@ -88,7 +79,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // 4. The candidate window (`beaten`) has no gauge: a bar of days read as "more is better".
   if (check.key === 'beaten') return null
 
-  // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`, milestones).
+  // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`).
   if (WINDOW_KEYS.has(check.key) && check.value !== null && check.max !== null && check.max > 0) {
     const isZone = check.key === 'zone'
     const fromZero = isZone || (check.key === 'buyLine' && (check.min ?? 0) > 0 && check.max > (check.min ?? 0))

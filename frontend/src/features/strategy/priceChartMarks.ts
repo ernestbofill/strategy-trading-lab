@@ -3,14 +3,12 @@ import type { MessageKey } from '../../i18n/messages/en'
 
 /**
  * A level the chart draws over the price on one day: a line, or an area between two prices. `id` ties the days of one
- * level together; `label` names it, or `check` when it takes the rule's own name (a next-step milestone). `tone` picks its colour.
+ * level together and `label` names it. `tone` picks its colour (`long`: the comeback's SMA 200).
  */
 export interface ChartMark {
   id: string
-  label: MessageKey | null
-  check?: string
-  /** `short` and `long` are the moving averages a goal is about (the golden cross's SMA 50 and SMA 200). */
-  tone: 'buy' | 'sell' | 'watch' | 'short' | 'long'
+  label: MessageKey
+  tone: 'buy' | 'sell' | 'watch' | 'long'
   from: number
   to?: number
 }
@@ -21,20 +19,16 @@ const above = (level: number, pct: number) => level * (1 + pct / 100)
 /** Whether the day's checks make the stock a candidate: every candidate check that has a verdict is met. */
 export const isCandidateOn = (checks: RuleCheck[]) => checks.every((c) => c.group !== 'candidate' || c.met !== false)
 
-/** A held stock's next step: the first milestone not used yet with a buy window (the chart draws it as an area, but the golden cross as its two averages). */
-export const nextGoal = (checks: RuleCheck[]) =>
-  checks.find((c) => c.group === 'next' && !c.used && !c.preview && c.level !== null && c.endLevel != null)
-
 /**
  * One day's levels from its checks' keys (not the template's): a candidate's buy area or discount zone, else the line that
- * would make it a candidate (beaten down and the SMA 200, proven growth); a held comeback stock's last step price (its POC
- * milestone's area in checks stored before the pace); a bear's market fall line, and its
+ * would make it a candidate (beaten down and the SMA 200, proven growth); a held comeback stock's last step price; a bear's
+ * market fall line, and its
  * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks (and
  * next-step previews). The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
  * 2026-11-08), except the growth line, which shows only on the days the growth isn't met (so a dip that lacks only its
- * averages draws no level); likewise `goal`, today's next step: while it is the golden cross, every day draws the SMA 50 and SMA 200.
+ * averages draws no level).
  */
-export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(checks), goal: string | null = null): ChartMark[] {
+export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(checks)): ChartMark[] {
   const marks: ChartMark[] = []
   // The comeback's `drop` comes with its `beaten` window; a bear's comes alone before the start (no bounce check then).
   const bear = !checks.some((c) => c.key === 'beaten')
@@ -83,18 +77,6 @@ export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(chec
         break
     }
   }
-  // A held stock's next step: the first milestone not used yet, from its level up to the chase limit. Not the golden cross:
-  // its area sits under the price and read as a discount, so it draws the two averages instead (Ernest, 2026-11-13).
-  const next = nextGoal(checks)
-  if (next && next.key !== 'golden')
-    marks.push({ id: `next:${next.key}`, label: null, check: next.key, tone: 'buy', from: next.level!, to: next.endLevel! })
-  // The golden cross is the SMA 50 rising above the SMA 200: both lines, so the cross can be seen coming.
-  const golden = goal === 'golden' ? checks.find((c) => c.key === 'golden') : undefined
-  if (golden?.level != null && golden.midLevel != null)
-    marks.push(
-      { id: 'sma50', label: 'stock.chart.sma50', tone: 'short', from: golden.level },
-      { id: 'sma200', label: 'stock.chart.sma200', tone: 'long', from: golden.midLevel },
-    )
   return marks
 }
 
@@ -112,11 +94,10 @@ export interface ChartSeries {
 export function chartSeries(days: ChartDay[], isCandidate: boolean): ChartSeries[] {
   const byId = new Map<string, ChartSeries>()
   const latest = days.findLast((d) => d.checks.length > 0)
-  const goal = latest ? (nextGoal(latest.checks)?.key ?? null) : null
   // The comeback's last-step line only while today has one: a position with every step bought has none.
   const lastStep = latest?.checks.some((c) => c.key === 'lastStep') ?? false
   days.forEach((day, i) => {
-    for (const { from, to, ...mark } of chartMarks(day.checks, isCandidate, goal)) {
+    for (const { from, to, ...mark } of chartMarks(day.checks, isCandidate)) {
       if (mark.id === 'lastStep' && !lastStep) continue
       let series = byId.get(mark.id)
       if (!series) byId.set(mark.id, (series = { mark, area: to !== undefined, points: [] }))

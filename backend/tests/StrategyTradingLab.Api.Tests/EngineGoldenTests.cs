@@ -18,16 +18,18 @@ public class EngineGoldenTests
     /// <summary>The POC's status words ("not_enough_data") as the engine's names.</summary>
     static RuleStatus Status(string word) => Enum.Parse<RuleStatus>(word.Replace("_", ""), ignoreCase: true);
 
-    static void Matches(Golden g, IReadOnlyList<DayEvaluation> days)
+    /// <param name="upTo">Compare only the days before this index (all of them when null).</param>
+    static void Matches(Golden g, IReadOnlyList<DayEvaluation> days, int? upTo = null)
     {
         Assert.Equal(g.Dates.Length, days.Count);
-        for (var i = 0; i < days.Count; i++)
+        var end = upTo ?? days.Count;
+        for (var i = 0; i < end; i++)
         {
             Assert.True(Status(g.Status[i]) == days[i].Status, $"{g.Symbol} {g.Dates[i]}: expected {g.Status[i]}, got {days[i].Status}");
             Assert.True(g.Step[i] == (days[i].StepNo ?? 0), $"{g.Symbol} {g.Dates[i]}: expected step {g.Step[i]}, got {days[i].StepNo}");
             Assert.True(g.Reason[i] == days[i].Reason, $"{g.Symbol} {g.Dates[i]}: expected reason '{g.Reason[i]}', got '{days[i].Reason}'");
         }
-        Assert.Equal(g.NewBuy, days.Select((d, i) => (d, i)).Where(x => x.d.NewBuy).Select(x => x.i));
+        Assert.Equal(g.NewBuy.Where(i => i < end), days.Select((d, i) => (d, i)).Where(x => x.d.NewBuy && x.i < end).Select(x => x.i));
         if (g.NewSell is not null)
             Assert.Equal(g.NewSell, days.Select((d, i) => (d, i)).Where(x => x.d.NewSell).Select(x => x.i));
     }
@@ -61,12 +63,14 @@ public class EngineGoldenTests
         var golden = Load(name);
         var bars = Bars(golden);
 
-        // The POC counts the volume whatever the price did, the turn's chase limit from the buy line, and milestones for the
-        // later steps: STL's own rules (only on a rise, the limit from the low, a pace) are off here.
+        // The POC counts the volume whatever the price did, and the turn's chase limit from the buy line: STL's own rules
+        // (only on a rise, the limit from the low) are off here.
         var parameters = new ComebackParams { VolumeOnRiseFrom = DateOnly.MaxValue };
-        var days = RulesRunner.Run(new ComebackRules(bars, parameters, poc: true), bars, new StepPlan(5));
+        var days = RulesRunner.Run(new ComebackRules(bars, parameters, pocChaseLimit: true), bars, new StepPlan(5));
 
-        Matches(golden, days);
+        // Up to the first step held: the POC's later steps are milestones, which STL replaced with a pace (#268).
+        var held = Array.FindIndex(golden.Status, s => s is "building" or "holding");
+        Matches(golden, days, held < 0 ? null : held);
     }
 
     [Theory]

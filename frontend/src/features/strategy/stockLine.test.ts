@@ -44,12 +44,6 @@ describe('stockLine', () => {
     )
     expect(stockLine(row({ status: 'holding', steps: 5, rulesSteps: 5 }), 'live', 'EUR', words).detail).toBe('5 of 5 steps')
     expect(stockLine(row({ status: 'building', steps: 2 }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
-    // The comeback holding with steps left but every milestone used (#58).
-    const milestone = (used: boolean) => ({ key: 'sma200', group: 'next' as const, met: true, value: null, min: null, max: null, level: null, progress: null, used })
-    expect(stockLine(row({ status: 'holding', steps: 2, checks: [milestone(true)] }), 'simulation', 'EUR', words).detail).toBe(
-      '2 of 5 steps · its milestones are used',
-    )
-    expect(stockLine(row({ status: 'holding', steps: 2, checks: [milestone(true), milestone(false)] }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
     // Every step skipped: the pill says where the user is, the line both.
     const skipped = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, steps: 0, rulesSteps: 1 }), 'live', 'EUR', words)
     expect([skipped.pill, skipped.detail]).toEqual(['CANDIDATE', 'Rules: In the market · You: Out of the market'])
@@ -111,14 +105,14 @@ describe('stockLine', () => {
     const pastTexts = {
       ...texts,
       zone: { ...texts.zone, pastShort: '{value}% below peak (past {max}% zone)' },
-      sma200: { label: 'SMA 200', detail: '', short: 'below the SMA 200' },
+      pace: { label: 'Next step', detail: '', short: '{value} of {min} days to the next step' },
     }
     const pastZone = row({
       status: 'watching',
       checks: [
         check('gain', 'candidate', true, 80, 50),
         check('zone', 'buy', false, 26.7, 5, 15),
-        { ...check('sma200', 'next' as 'buy', false, -5, 0, 8), preview: true },
+        { ...check('pace', 'next' as 'buy', false, 0, 10), preview: true },
       ],
     })
     expect(stockLine(pastZone, 'live', 'EUR', words, pastTexts).detail).toBe('26.7% below peak (past 15% zone)')
@@ -126,19 +120,12 @@ describe('stockLine', () => {
     const comebackTexts = {
       beaten: { label: 'Beaten', detail: '', short: 'not beaten down lately', pastShort: 'candidate window closed ({value}d ago)' },
       drop: { label: 'Drop', detail: '', short: '{+value}% from its high (needs −{min}%)' },
-      golden: { label: 'Golden cross', detail: '', short: 'no golden cross yet', pastShort: 'past the SMA 50 limit ({+value}%)' },
     }
     const notBeaten = row({
       status: 'notCandidate',
       checks: [check('beaten', 'candidate', false, 74, 30, 60), check('drop', 'candidate', false, -12, 30)],
     })
     expect(stockLine(notBeaten, 'live', 'EUR', words, comebackTexts).detail).toBe('Candidate window closed (74d ago)')
-
-    const noGoldenYet = row({
-      status: 'watching',
-      checks: [{ ...check('golden', 'next' as 'buy', false, 14.2, 0, 8), subValue: -8.5 }],
-    })
-    expect(stockLine(noGoldenYet, 'live', 'EUR', words, comebackTexts).detail).toBe('No golden cross yet')
   })
 
   it('shows the result with what was put in, or a dash with no buys', () => {

@@ -35,6 +35,8 @@ public class ComebackRules : BuyRulesBase
     // For the stock page only (no verdict reads them): the first step's day, the milestone yesterday's signal was for, and
     // the milestones that bought a step, with its day. The others in `used` were already there at a buy.
     DateOnly? turnOn;
+    // The step price a later step's signal came from: its window stays open while the close is above it (see Paced).
+    decimal? signalFrom;
     string? signalled;
     readonly Dictionary<string, DateOnly> boughtOn = [];
 
@@ -136,6 +138,7 @@ public class ComebackRules : BuyRulesBase
             breakoutHigh = null;
             pulledBack = false;
             turnOn = null;
+            signalFrom = null;
             signalled = null;
             boughtOn.Clear();
             var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > TurnLimit(lowest, buyLine),
@@ -211,23 +214,29 @@ public class ComebackRules : BuyRulesBase
     }
 
     /// <summary>
-    /// The latest step's bar, by the runner's <c>LastBuyDay</c>: trading days since it and its price, the open it was bought at.
-    /// A step bought after the last bar (a Manual buy answered before tomorrow's open) counts from today's close.
+    /// The latest step, by the runner's <c>LastBuyDay</c>: trading days since its signal (the bar before its buy, as <i>Bear
+    /// markets</i> counts, so steps come exactly <c>StepEveryDays</c> apart) and its price, the open it was bought at. A step
+    /// bought after the last bar (a Manual buy answered before tomorrow's open) was signalled today, at today's close.
     /// </summary>
     (int Since, decimal Price) LastStep(int i, DayContext day)
     {
         var k = Array.BinarySearch(dates, day.LastBuyDay);
         if (k < 0) k = ~k; // No bar on that day (a revised history): the next one.
-        return k > i ? (0, close[i]) : (i - k, open[k]);
+        return k > i ? (0, close[i]) : (i - k + 1, open[k]);
     }
 
     /// <summary>A held position's next steps: one every <c>StepEveryDays</c> trading days, while the close is above the last step's price.</summary>
     RuleDecision Paced(int i, decimal price, DayContext day, Dictionary<string, object> facts)
     {
         turnOn ??= day.LastBuyDay; // The first day held: the turn's step was bought on it.
+        // A signal's window stays open after it while the close is above the step price it came from: the rules' own buy at the
+        // next open restarts the pace, which must not close it (a Manual signal would read missed the next day).
+        var windowClosed = signalFrom is { } from && price <= from;
+        if (windowClosed) signalFrom = null;
+        var closedReason = windowClosed ? "The price fell back to the last step's price." : null;
         List<RuleCheck> checks = [new("turn", CheckGroup.Next, true, Used: true, Bought: true, Date: turnOn)];
         // Every step bought: the pace has nothing left to earn, so it has no row (a used row would read as a step it bought).
-        if (day.Full) return new RuleDecision(RuleStatus.Holding, null, facts) { Checks = checks };
+        if (day.Full) return new RuleDecision(RuleStatus.Holding, closedReason, facts, WindowOpen: signalFrom is not null) { Checks = checks };
 
         var (since, lastPrice) = LastStep(i, day);
         var due = since >= p.StepEveryDays;
@@ -235,20 +244,14 @@ public class ComebackRules : BuyRulesBase
         var above = price > lastPrice;
         facts["sinceLastDays"] = since;
         facts["aboveLastStepPct"] = Math.Round(abovePct, 2);
-        RuleStatus status;
-        string? reason = null;
-        if (day.ActedNow || day.Cooling) status = RuleStatus.Building;
-        else if (due && above) status = RuleStatus.BuySignal;
-        else
-        {
-            status = RuleStatus.Building;
-            // Its window closed without buying: the price fell back to the last step's.
-            if (day.Previous == RuleStatus.BuySignal) reason = "The price fell back to the last step's price.";
-        }
+        var status = !day.ActedNow && !day.Cooling && due && above ? RuleStatus.BuySignal : RuleStatus.Building;
+        // A signal's window closed: the price fell back to the step price it came from.
+        var reason = status == RuleStatus.BuySignal ? null : closedReason;
         checks.Add(new("pace", CheckGroup.Next, due, since, p.StepEveryDays, Progress: RuleCheck.ProgressOf(since, p.StepEveryDays)));
         checks.Add(new("lastStep", CheckGroup.Next, above, Math.Round(abovePct, 1), 0, Level: Math.Round(lastPrice, 2)));
         if (RuleCheck.Cooldown(day, p.CooldownDays, CheckGroup.Next) is { } cooldown) checks.Add(cooldown);
-        return new RuleDecision(status, reason, facts, WindowOpen: due && above) { Checks = checks };
+        if (status == RuleStatus.BuySignal) signalFrom = lastPrice;
+        return new RuleDecision(status, reason, facts, WindowOpen: (due && above) || signalFrom is not null) { Checks = checks };
     }
 
     List<RuleCheck> MilestoneChecks(int i, decimal price, IReadOnlyList<Milestone> milestones, bool preview)

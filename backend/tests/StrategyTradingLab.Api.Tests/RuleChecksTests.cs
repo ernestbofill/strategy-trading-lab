@@ -67,6 +67,14 @@ public class RuleChecksTests
         foreach (var day in days.Where(d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any()))
             Holds(Group(day, CheckGroup.Next).Where(c => c.Key is "pace" or "lastStep").Count(c => c.Met == true) == 2, day, "a step's signal is due and above the last step");
         Assert.Contains(days, d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any());
+        // The day after, the rules' own buy restarts the pace, but the signal's window stays open while the close is above the
+        // step price it came from (or a Manual signal would read missed).
+        var close = bars.ToDictionary(b => b.Date, b => b.Close);
+        foreach (var (signal, next) in days.Zip(days.Skip(1)).Where(p => p.First.Status == RuleStatus.BuySignal && Group(p.First, CheckGroup.Next).Any()))
+        {
+            var from = signal.Checks.Single(c => c.Key == "lastStep").Level!.Value;
+            Holds(next.WindowOpen == close[next.Date] > from, next, $"the window after a step's signal follows the close vs {from}");
+        }
         foreach (var day in poc.Where(d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any()))
             Holds(Group(day, CheckGroup.Next).Any(c => c.Met == true && c.Used != true), day, "a step's signal has an open milestone");
         // Held: the turn, step 1, comes first, bought on its day; a milestone that bought a step says so, with its day.

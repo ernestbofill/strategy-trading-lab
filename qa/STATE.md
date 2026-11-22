@@ -145,6 +145,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | smoke | 2026-11-06-1 | C3.18 |
 | E5 | Cooldown row with days left, after a step and after a sale; no chart while "Not checked yet" | §6 Stock page | untested | | New (feedback 2026-11-12) |
 | E6 | A Manual buy signal answered (Did it or Skip): Next step shows open with the pace counting from the buy and the cooldown, before the next daily check | §6 Stock page | untested | | New (#223) |
+| E7 | *The comeback* held: Next step (trading days since the last step, a bar) and Above the last step, the chart's Last step line, a later step's signal and its window while above the last step; the Advanced setting "one more step every [n] trading days" | §6 Stock page, §5 Advanced settings | untested | | New (#268, milestones replaced by a pace) |
 | E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours, the comeback's Candidate [date] line (#264, was a ring in #257; not yet checked), its recent-low ring and a non-candidate's SMA 200 line (#264, not yet checked) | §6 Stock page | deep | 2026-11-08-3 | Verified on PLTR and ZS: 90/30/7 day selectors, SVG start lines, buy area polygons, price polyline colors, 390px responsive rendering. C4.1–C4.3 |
 
 ### F · Confirm a signal (live)

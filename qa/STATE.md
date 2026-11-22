@@ -141,7 +141,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | ID | Area | Spec | Depth | Last | Notes |
 | --- | --- | --- | --- | --- | --- |
 | E1 | Status, position, its signals and trades | §6 Stock page | smoke | 2026-11-06-1 | C2.18, C3.17 |
-| E2 | Rules on [date]: badges and gauges, per template | §6 Stock page | deep | 2026-11-08-1 | Evaluated rules, gauges, and detail lines verified across fixtures. L-002 closed. C1.8. Not yet checked since #257: *The comeback*'s volume check (ratio and 5-day price change, met only on a rise) and the buy line's sentence and gauge in prices. |
+| E2 | Rules on [date]: badges and gauges, per template | §6 Stock page | deep | 2026-11-08-1 | Evaluated rules, gauges, and detail lines verified across fixtures. L-002 closed. C1.8. Not yet checked since #257 and #271: *The comeback*'s volume check (ratio and the day's price change, met only on an up day), its *Back from above the chase limit* line in place of the volume one on a pullback, and the buy line's sentence and gauge in prices. |
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | smoke | 2026-11-06-1 | C3.18 |
 | E5 | Cooldown row with days left, after a step and after a sale; no chart while "Not checked yet" | §6 Stock page | untested | | New (feedback 2026-11-12) |
 | E6 | A Manual buy signal answered (Did it or Skip): Next step shows open with the milestones reached used and the cooldown, before the next daily check | §6 Stock page | untested | | New (#223) |

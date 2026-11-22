@@ -121,7 +121,8 @@ public class ComebackRules : BuyRulesBase
         for (var k = i - 1; k > i - p.LowDays && k >= 0; k--)
         {
             if (close[k] > limit) return true;
-            if (close[k] < buyLine || close[k] <= lowest) return false; // Below the window, or the low itself: came from below.
+            // Below the window: came from below. The low is too, even with a 0% buy line (the params allow it), where it is on the line.
+            if (close[k] < buyLine || close[k] <= lowest) return false;
         }
         return false;
     }

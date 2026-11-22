@@ -28,7 +28,7 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
   const pastKey: MessageKey =
     check.key === 'beaten' ? 'stock.check.windowClosed' : check.key === 'zone' ? 'stock.check.pastZone' : 'stock.check.pastLimit'
   const mark = check.used
-    ? t(check.bought === false ? 'stock.check.usedAtBuy' : 'stock.check.used')
+    ? t('stock.check.used')
     : past
       ? t(pastKey)
       : check.met === null
@@ -36,14 +36,12 @@ function Check({ check, texts, currency }: { check: RuleCheck; texts: CheckTexts
         : t(check.met ? 'stock.check.met' : 'stock.check.notMet')
   const state = check.used ? 'used' : past ? 'past' : String(check.met)
   const icon = check.used || check.met ? '✓' : past ? '✕' : '○'
-  // A used rule: the step it bought and when, or that it was already there at a buy; today's figures no longer matter.
+  // A used rule: the step it bought and when; today's figures no longer matter.
   const detail = !check.used
     ? checkText(check, texts, currency, 'detail')
-    : check.bought === false
-      ? t('stock.check.usedDetail')
-      : check.date
-        ? t('stock.check.boughtOn', { date: shortDate(check.date) })
-        : fillCheck(texts.detail, check, currency)
+    : check.date
+      ? t('stock.check.boughtOn', { date: shortDate(check.date) })
+      : fillCheck(texts.detail, check, currency)
   return (
     <li className={styles.check}>
       <div className={styles.checkMain}>
@@ -186,7 +184,6 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
           beatenDate={row.checks.some((c) => c.key === 'beaten') ? since : null}
           currency={row.currency}
           trades={trades}
-          texts={s.checkTexts}
         />
       )}
 

@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 3 | 4 | 7 |
-| Backend (xUnit) | 0 | 12 | 12 |
-| **All** | **3** | **16** | **19** |
+| Frontend (Vitest) | 3 | 9 | 12 |
+| Backend (xUnit) | 2 | 15 | 17 |
+| **All** | **5** | **24** | **29** |
 
 ## Log
 
@@ -28,6 +28,9 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-22 | #268 | local | Frontend (Vitest) | `stockLine.test.ts` (2), `priceChartMarks.test.ts` (2), `StockPage.test.tsx` (1): the comeback's milestone cases | 5 | FP | The milestone code was removed on purpose (Ernest); the tests now cover the pace instead. |
+| 2026-11-21 | #268 | local | Backend (xUnit) | `RuleChecksTests.The_comeback` (NOW, MOD) | 2 | TP | Once every step was bought, the new pace row was marked used with no word on whether it bought a step, which the stock page reads as "Step bought". Fixed in the engine: a full position has no pace row. |
+| 2026-11-21 | #268 | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
 | 2026-11-21 | #267 | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
 | 2026-11-21 | #266 | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
 | 2026-11-17 | #263 | local | Frontend (Vitest) | `src/features/feedback/FeedbackSection.test.tsx > lists open items, filters closed/all, …` | 1 | FP | The new Validate step clicked the first closed item's button, not the second's; the test picked the wrong button. |

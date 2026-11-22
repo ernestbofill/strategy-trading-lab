@@ -39,8 +39,7 @@ export const isPastMax = (raw: RuleCheck): boolean => {
     check.met === false &&
     check.value !== null &&
     check.max !== null &&
-    (check.value > check.max || (check.value === check.max && check.level !== null)) &&
-    !(check.key === 'golden' && (check.subValue ?? 0) <= 0)
+    (check.value > check.max || (check.value === check.max && check.level !== null))
   )
 }
 
@@ -73,14 +72,12 @@ export function fillCheck(text: string, raw: RuleCheck, currency: string): strin
 
 /**
  * Where the stock stands on one rule: the detail sentence, or the short one for the list; `past` when past `max`, `none`
- * when it has no value, or `tracking` (the detail) when it has none but follows a level.
+ * when it has no value.
  */
 export function checkText(raw: RuleCheck, texts: CheckTexts, currency: string, kind: 'detail' | 'short'): string {
   const check = normalizeCheck(raw)
   const past = isPastMax(check) ? (kind === 'detail' ? texts.past : texts.pastShort) : null
-  const tracking = kind === 'detail' && check.midLevel != null ? texts.tracking : null
-  const noValue = tracking || texts.none
-  const text = check.value === null && noValue ? noValue : (past ?? texts[kind])
+  const text = check.value === null && texts.none ? texts.none : (past ?? texts[kind])
   return fillCheck(text, check, currency)
 }
 

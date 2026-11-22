@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api, type CheckTexts, type StrategyTradeItem } from '../../api'
+import { api, type StrategyTradeItem } from '../../api'
 import { SegmentedField } from '../../components/Field'
 import { useT } from '../../i18n/I18n'
 import { exact, shortDate } from '../../lib/format'
@@ -26,7 +26,6 @@ export function PriceChart({
   beatenDate,
   currency,
   trades,
-  texts,
 }: {
   strategyId: string
   assetId: string
@@ -36,7 +35,6 @@ export function PriceChart({
   beatenDate: string | null
   currency: string
   trades: StrategyTradeItem[]
-  texts: Record<string, CheckTexts> | null | undefined
 }) {
   const t = useT()
   const [days, setDays] = useState('30')
@@ -77,7 +75,7 @@ export function PriceChart({
   const xs = (run: { i: number }[]) =>
     run.length === 1 ? [Math.max(0, x(run[0].i) - step / 2), Math.min(WIDTH, x(run[0].i) + step / 2)] : run.map((p) => x(p.i))
   const pct = (value: number, of: number) => `${(value / of) * 100}%`
-  const nameOf = (s: (typeof series)[number]) => (s.mark.check ? (texts?.[s.mark.check]?.label ?? s.mark.check) : t(s.mark.label!))
+  const nameOf = (s: (typeof series)[number]) => t(s.mark.label)
 
   // The right axis: the latest close, then each level's latest value (both edges of an area), each price once (two levels
   // can meet).

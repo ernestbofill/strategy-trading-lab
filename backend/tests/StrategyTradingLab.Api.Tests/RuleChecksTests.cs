@@ -61,19 +61,25 @@ public class RuleChecksTests
             if (beaten.Met == false) Holds(day.Status is RuleStatus.NotCandidate or RuleStatus.SignalEnded, day, "not beaten down lately is no candidate");
             if (day.Status == RuleStatus.BuySignal) Holds(AllMet(day, CheckGroup.Candidate) && AllMet(day, CheckGroup.Buy), day, "a signal meets every check");
         }
-        // Holding a position: a step's signal comes from a milestone in its window.
+        // Holding a position: a step's signal is due by the pace, above the last step's price.
         foreach (var day in days.Where(d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any()))
-            Holds(Group(day, CheckGroup.Next).Any(c => c.Met == true && c.Used != true), day, "a step's signal has an open milestone");
-        // Held: the turn, step 1, comes first, bought on its day; a milestone that bought a step says so, with its day.
+            Holds(Group(day, CheckGroup.Next).Where(c => c.Key is "pace" or "lastStep").Count(c => c.Met == true) == 2, day, "a step's signal is due and above the last step");
+        Assert.Contains(days, d => d.Status == RuleStatus.BuySignal && Group(d, CheckGroup.Next).Any());
+        // The day after, the rules' own buy restarts the pace, but the signal's window stays open while the close is above the
+        // step price it came from (or a Manual signal would read missed).
+        var close = bars.ToDictionary(b => b.Date, b => b.Close);
+        foreach (var (signal, next) in days.Zip(days.Skip(1)).Where(p => p.First.Status == RuleStatus.BuySignal && Group(p.First, CheckGroup.Next).Any()))
+        {
+            var from = signal.Checks.Single(c => c.Key == "lastStep").Level!.Value;
+            Holds(next.WindowOpen == close[next.Date] > from, next, $"the window after a step's signal follows the close vs {from}");
+        }
+        // Held: the turn, step 1, comes first, bought on its day.
         foreach (var day in days.Where(d => Group(d, CheckGroup.Next).Any()))
         {
             var turn = Group(day, CheckGroup.Next).First();
-            Holds(turn.Key == "turn" && turn.Bought == true && turn.Date is not null, day, "the turn is the first next-step row, bought");
-            Holds(Group(day, CheckGroup.Next).All(c => c.Bought != true || (c.Used == true && c.Date is not null)), day, "a bought row is used, with its day");
-            // Used without buying says so (false): null is how checks stored before the field read.
-            Holds(Group(day, CheckGroup.Next).All(c => c.Used != true || c.Bought is not null), day, "a used row says whether it bought");
+            Holds(turn.Key == "turn" && turn.Used == true && turn.Date is not null, day, "the turn is the first next-step row, bought");
+            Holds(Group(day, CheckGroup.Next).All(c => c.Used != true || c.Key == "turn"), day, "only the turn is used");
         }
-        Assert.Contains(days, d => Group(d, CheckGroup.Next).Any(c => c.Key != "turn" && c.Bought == true));
         Assert.Contains(days, d => d.Status == RuleStatus.BuySignal);
     }
 
@@ -88,22 +94,15 @@ public class RuleChecksTests
 
         var after = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5), 0, boughtBeforeLast: buyDay)[^1].Checks;
 
-        // The milestones count from the buy, no longer in preview, and the cooldown holds the next step back, all of it to wait.
+        // The pace counts from the buy, no longer in preview, and the cooldown holds the next step back, all of it to wait.
         Assert.DoesNotContain(after, c => c.Group is CheckGroup.Candidate or CheckGroup.Buy);
         Assert.All(after.Where(c => c.Group == CheckGroup.Next), c => Assert.Null(c.Preview));
-        Assert.All(after.Where(c => c.Group == CheckGroup.Next && c.Met == true && c.Key != "cooldown"), c => Assert.True(c.Used));
+        Assert.Equal(0m, Assert.Single(after, c => c.Key == "pace").Value);
+        Assert.False(Assert.Single(after, c => c.Key == "lastStep").Met);
         var cooldown = Assert.Single(after, c => c.Key == "cooldown");
         Assert.Equal(CheckGroup.Next, cooldown.Group);
         Assert.Equal((decimal)new ComebackParams().CooldownDays, cooldown.Value);
         Assert.Equal(buyDay, Assert.Single(after, c => c.Key == "turn").Date);
-
-        // A later step bought on its signal's day: its milestone reads bought on that day, not just used.
-        var later = RulesRunner.Run(new ComebackRules(all, new ComebackParams()), all, new StepPlan(5))
-            .First(d => d.NewBuy && Group(d, CheckGroup.Next).Any());
-        var upTo = all.TakeWhile(b => b.Date <= later.Date).ToList();
-        var laterBuy = later.Date.AddDays(1);
-        var afterLater = RulesRunner.Run(new ComebackRules(upTo, new ComebackParams()), upTo, new StepPlan(5), 0, boughtBeforeLast: laterBuy)[^1].Checks;
-        Assert.Contains(afterLater, c => c.Key != "turn" && c.Bought == true && c.Date == laterBuy);
     }
 
     [Fact]
@@ -115,11 +114,11 @@ public class RuleChecksTests
         var watched = StrategyTradingLab.Api.Strategies.StockChart.WatchedChecks(new ComebackRules(bars, new ComebackParams()), bars, from, start, 5);
 
         Assert.Equal(bars.Count(b => b.Date >= from && b.Date < start), watched.Count);
-        // A run that buys swaps the candidate checks for milestones; a stock never bought keeps them every day.
+        // A run that buys swaps the candidate checks for the next steps; a stock never bought keeps them every day.
         Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "beaten"));
-        // With the next-step previews, whose averages the chart can draw back in time.
+        // With the next steps' preview.
         Assert.All(watched.Values.SelectMany(c => c), c => Assert.True(c.Group == CheckGroup.Candidate || c.Preview == true));
-        Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "golden" && c.Level is not null && c.MidLevel is not null));
+        Assert.All(watched.Values, checks => Assert.Contains(checks, c => c.Key == "pace" && c.Preview == true));
     }
 
     [Theory]

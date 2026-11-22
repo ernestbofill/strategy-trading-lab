@@ -150,7 +150,7 @@
       "scope": "1.146 accions, 2000-2026.",
       "years": "2000-2026",
       "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per fase, fins a 5 per acció."
+      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per fase, fins a 5 per acció. Provada amb fites per a les fases següents (tornar per sobre de la SMA 200, un encreuament daurat, prop del màxim antic, una ruptura); ara l'estratègia les afegeix a un ritme constant."
     },
     "stockStatus": {
       "zone": "la línia de compra",
@@ -183,24 +183,19 @@
         "help": "Més negociació confirma el gir. Més alt: menys senyals i més ben recolzats. 1: n'hi ha prou amb un volum normal."
       },
       "maxChasePct": {
-        "sentence": "Zona de compra: la primera fase fins a un {value} més per sobre del mínim recent que la línia de compra; una fita, fins a aquest mateix % per sobre del seu nivell.",
+        "sentence": "Zona de compra: la primera fase fins a un {value} més per sobre del mínim recent que la línia de compra.",
         "value": "{n}%",
         "help": "Més alt: encara compra un gir que ha anat molt per sobre de la línia de compra. Més baix: deixa passar els girs massa ràpids."
       },
-      "nearHighPct": {
-        "sentence": "Fita prop del màxim antic: a menys d'un {value} del màxim de 52 setmanes.",
-        "value": "{n}%",
-        "help": "Més alt: aquesta fita arriba abans en la recuperació."
-      },
-      "breakoutPullbackPct": {
-        "sentence": "Fita de ruptura: una baixada d'almenys un {value}, i després un tancament per sobre del màxim anterior.",
-        "value": "{n}%",
-        "help": "Més alt: cal una baixada més profunda abans, i la ruptura arriba menys sovint."
+      "stepEveryDays": {
+        "sentence": "Després, una fase més cada {value}, mentre el tancament estigui per sobre del preu de l'última fase.",
+        "value": "{n} dies de mercat",
+        "help": "10 dies de mercat són unes 2 setmanes. Més curt: el pressupost entra més de pressa. Més llarg: reparteix les compres en més part de la recuperació."
       },
       "cooldownDays": {
         "sentence": "Després d'una fase, espera {value} abans del següent senyal de compra.",
         "value": "{n} dies naturals",
-        "help": "Compta des de la compra de la fase. Més llarg: les fases es reparteixen, encara que les fites arribin juntes."
+        "help": "Es compta des de la compra de la fase, en dies naturals. Més llarg: les fases s'espaien més que només amb el ritme."
       }
     },
     "settingGroups": {
@@ -212,9 +207,9 @@
         "title": "2 · Senyal de compra: la primera fase",
         "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), amb volum creixent, i encara dins la zona de compra. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera la zona de compra."
       },
-      "milestones": {
-        "title": "3 · Fites: les fases següents",
-        "lead": "Un cop comprada, cada nou senyal que el gir és real dona una fase més: tornar per sobre de la `SMA 200`, un encreuament daurat (`SMA 50` per sobre de la `SMA 200`), prop del màxim antic, o una ruptura després d'una baixada. Cadascuna es compra només fins al mateix % per sobre del seu nivell."
+      "steps": {
+        "title": "3 · Fases següents: mentre el gir aguanta",
+        "lead": "Després del gir, una fase més cada pocs dies de mercat, però només mentre el tancament estigui per sobre del preu al qual es va comprar l'última fase, de manera que només s'afegeix una fase mentre el gir funciona. Fins a comprar les fases del teu pressupost."
       },
       "pace": {
         "title": "4 · Ritme: cada quan compra",
@@ -268,46 +263,24 @@
         "short": "el gir",
         "info": "La primera fase: el preu ha girat per sobre de la línia de compra (el mínim recent més un marge) amb volum creixent."
       },
-      "sma200": {
-        "label": "Torna per sobre de la SMA 200",
-        "detail": "{+value}% respecte a la SMA 200 ({level}). Una fase necessita de 0% a +{max}% (fins a {endLevel}).",
-        "past": "Massa lluny: {+value}% per sobre de la SMA 200 ({level}); el límit és +{max}% ({endLevel}).",
-        "short": "per sota de la SMA 200",
-        "pastShort": "massa lluny de la SMA 200 ({+value}%)",
-        "info": "Fita: recuperar la mitjana de 200 dies confirma la recuperació a llarg termini i dona una fase si es compra dins de +{max}%."
-      },
-      "golden": {
-        "label": "Golden cross",
-        "detail": "La SMA 50 ({level}) està a {+subValue}% respecte a la SMA 200 ({midLevel}). Preu {+value}% respecte a la SMA 50 (finestra de 0% a +{max}%, fins a {endLevel}).",
-        "past": "La SMA 50 ({level}) està a {+subValue}% respecte a la SMA 200 ({midLevel}), però el preu està a {+value}% per sobre de la SMA 50 (el límit és +{max}%, {endLevel}).",
-        "short": "encara sense 'Golden cross'",
-        "pastShort": "massa lluny de la SMA 50 ({+value}%)",
-        "tracking": "Encara sense creuar: la SMA 50 ({level}) ha de pujar un {endValue}% per superar la SMA 200 ({midLevel}). Després es compra una fase mentre el preu estigui de 0% a +{max}% per sobre de la SMA 50 (ara fins a {endLevel}).",
-        "info": "Fita: la mitjana de 50 dies creua per sobre de la mitjana de 200 dies, confirmant una tendència alcista a mitjà termini."
-      },
-      "near_high": {
-        "label": "A prop del màxim antic",
-        "detail": "{+value}% respecte a la línia del màxim ({level}, a menys d'un {min}% de {midLevel}). Finestra de 0% a +{max}% (fins a {endLevel}).",
-        "past": "Massa lluny: {+value}% per sobre de la línia del màxim ({level}); el límit és +{max}% ({endLevel}).",
-        "short": "{+value}% respecte a la línia del màxim",
-        "pastShort": "massa lluny de la línia del màxim ({+value}%)",
-        "info": "Fita: el preu es recupera fins a situar-se a menys d'un {min}% del màxim de 52 setmanes."
-      },
-      "breakout": {
-        "label": "Ruptura",
-        "detail": "{+value}% respecte al màxim d'abans de la baixada d'un {min}% ({level}, finestra de 0% a +{max}% fins a {endLevel}).",
-        "past": "Massa lluny: {+value}% per sobre del nivell de ruptura ({level}); el límit és +{max}% ({endLevel}).",
-        "short": "encara sense ruptura",
-        "pastShort": "massa lluny de la ruptura ({+value}%)",
-        "none": "Després d'una compra: una baixada d'un {min}% des del tancament més alt, i després un tancament per sobre d'aquest màxim.",
-        "tracking": "Tancament més alt des de l'última compra: {midLevel}. Una baixada fins a {endLevel} (−{min}%) obre la vigilància; després, un tancament per sobre de {midLevel} és una ruptura.",
-        "info": "Fita: després de baixar almenys un {min}% des d'un màxim posterior a la compra, superar aquest màxim dona una fase."
-      },
       "cooldown": {
         "label": "Espera",
         "detail": "Falten {value} dies d'espera després de l'última compra o venda ({min} en total).",
         "short": "espera, falten {value} dies",
         "info": "Després de cada compra o venda, les regles esperen {min} dies naturals abans del senyal de compra següent."
+      },
+      "pace": {
+        "label": "Fase següent",
+        "detail": "{value} de {min} dies de mercat des de l'última fase.",
+        "none": "Després del gir, una fase més cada {min} dies de mercat, mentre el tancament estigui per sobre del preu de l'última fase.",
+        "short": "{value} de {min} dies per a la fase següent",
+        "info": "Reparteix les fases següents al llarg de la recuperació: una cada {min} dies de mercat."
+      },
+      "lastStep": {
+        "label": "Per sobre de l'última fase",
+        "detail": "{+value}% respecte al preu de l'última fase ({level}); cal que estigui per sobre.",
+        "short": "{+value}% respecte a l'última fase (cal per sobre)",
+        "info": "Només s'afegeix una fase mentre el gir funciona: el tancament ha d'estar per sobre del preu al qual es va comprar l'última fase."
       }
     }
   },

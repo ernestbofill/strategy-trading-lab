@@ -167,7 +167,8 @@ public static class TemplateCatalog
         ],
         new ComebackParams())
     {
-        // The POC's tunable rules, except "below its SMA 200", a yes/no the screen has no control for.
+        // The POC's tunable rules, except "below its SMA 200", a yes/no the screen has no control for, and the milestones, which
+        // STL replaced with a pace (Ernest, 2026-11-21).
         Settings =
         [
             new("drawdownPct", 1, 10, 60, Group: "candidate"),
@@ -176,8 +177,7 @@ public static class TemplateCatalog
             new("lowDays", 5, 10, 120, Group: "signal"),
             new("volumeRatio", 0.1m, 1, 3, Group: "signal"),
             new("maxChasePct", 1, 2, 20, Group: "signal"),
-            new("nearHighPct", 1, 5, 30, Group: "milestones"),
-            new("breakoutPullbackPct", 1, 3, 20, Group: "milestones"),
+            new("stepEveryDays", 5, 5, 30, Group: "steps"),
             new("cooldownDays", 1, 0, 30, Group: "pace"),
         ],
     };

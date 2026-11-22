@@ -23,7 +23,7 @@ export function PriceChart({
   strategyId,
   assetId,
   isCandidate,
-  beatenDate,
+  candidateSince,
   currency,
   trades,
 }: {
@@ -31,8 +31,8 @@ export function PriceChart({
   assetId: string
   /** The stored verdict the page shows; null before the daily check has stored any. */
   isCandidate: boolean | null
-  /** The day a comeback candidate was last beaten down (the page's "Candidate since"), marked by a line; null for none. */
-  beatenDate: string | null
+  /** The first day of a comeback candidate's current run (the page's "Candidate since"), marked by a line; null for none. */
+  candidateSince: string | null
   currency: string
   trades: StrategyTradeItem[]
 }) {
@@ -54,9 +54,9 @@ export function PriceChart({
   const dayOf = (date: string) => points.findIndex((p) => p.date >= date)
   // On the price line at its day's close: a trade's own price is what was paid, which a later split no longer matches.
   const dots = trades.filter((tr) => tr.tradeDate >= first && tr.tradeDate <= last.date).map((tr) => ({ ...tr, i: dayOf(tr.tradeDate) }))
-  // The day a comeback stock became a candidate (last beaten down, "Candidate since"): a dashed line like the start's, in
-  // place of a ring on the price (Ernest, 2026-11-17).
-  const since = beatenDate && beatenDate >= first && beatenDate <= last.date ? dayOf(beatenDate) : null
+  // The day a comeback stock became a candidate (the first day of its current run, "Candidate since", #275): a dashed line
+  // like the start's, in place of a ring on the price (Ernest, 2026-11-17).
+  const since = candidateSince && candidateSince >= first && candidateSince <= last.date ? dayOf(candidateSince) : null
   // The comeback's recent low, which its buy line counts from (the latest checked day's): ringed when the period has it
   // (feedback, 2026-11-17). Not while today is the low: the ring would sit on the latest price and move with it each day.
   const lowDate = points[lastChecked]?.checks.find((c) => c.key === 'buyLine' && c.midLevel != null)?.date ?? null
@@ -132,7 +132,7 @@ export function PriceChart({
           {/* A row under the start's label, so the two never meet. */}
           {since !== null && (
             <span className={styles.startLabel} data-since data-left={x(since) > WIDTH * 0.6} style={{ left: pct(x(since), WIDTH) }}>
-              {t('stock.chart.candidateOn', { date: shortDate(beatenDate!) })}
+              {t('stock.chart.candidateOn', { date: shortDate(candidateSince!) })}
             </span>
           )}
         </div>

@@ -447,6 +447,8 @@ public static class StrategyEndpoints
             var (status, rulesSteps, userSteps, distance, signal, checks) = StockStates.StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
                 own, trades, book, aiScores);
             checks = StockStates.ChecksAfterBuy(evaluation, own) ?? checks;
+            // The fallback is only for facts stored without candidateSince: a met candidate check's date, which for the comeback's
+            // "beaten" is the last day it was beaten down, not the start of the run (#275).
             var candidateSince = evaluation?.Facts.RootElement.Date("candidateSince") ?? checks.FirstOrDefault(c => c.Group == CheckGroup.Candidate && c.Met == true && c.Date is not null)?.Date;
             var priceIsClose = evaluation is not null && asset.PricesCheckedAt is { } checkedAt
                 && checkedAt >= UsSession.FinalAt(evaluation.Date);

@@ -1,6 +1,6 @@
 # Backtest
 
-How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest on 2026-11-19 and 2026-11-20. The screens are drafted below (*Screens, draft*), for another round with Ernest.
+How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-22. The screens are drafted below (*Screens, draft*), for another round with Ernest.
 
 Today's template figures come from the POC's research ([backtest-research-findings.md](backtest-research-findings.md)). This backtest replaces them with STL's own engine, so the tested results describe the rules the app runs.
 
@@ -17,7 +17,7 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Parameter | Default | Notes |
 | --- | --- | --- |
 | Rules | The template's tested defaults, or a strategy's settings | Any Advanced settings values |
-| Stocks | A draft of 30 from the S&P 500 | Or random draws, the strategy's own list, or one stock (see *Stocks*) |
+| Stocks | Draft A: one fixed draft of `[n]` stocks from the S&P 500 (size open, proposed 60) | Or the strategy's own list, or one stock (see *Stocks*) |
 | Index | S&P 500 | *Bear markets* and *Index trend* only: the index fund they trade (S&P 500, Nasdaq-100, DAX, Nikkei 225…). How often a market fell 20% depends on it |
 | Period | 12 years, in 4-year parts | Both are parameters. 4 years gives the strategy time to profit from its buys |
 | Budget | €3,000 | One stock: max steps × step size, so the budget fits it |
@@ -67,7 +67,11 @@ Per window and for **All**, for the strategy and each baseline, all **money-weig
 
 - **A year, on average**, on the money invested.
 - **Worst calendar year**, money-weighted too.
-- **Budget invested over time:** "On average, [n]% of the budget was invested": the share of the budget invested each day, averaged over the window, so money invested later counts less. For the strategy, and next to each baseline.
+- **Budget invested over time:** "On average, [n]% of the budget was invested". For the strategy, and next to each baseline. The formula, over the window's trading days:
+
+  `budget invested = (1 / N) × Σ min(1, invested on day t / budget)`
+
+  where *N* is the number of trading days in the window and *invested on day t* is the money put into the holdings still held that day (their cost, not their value). The whole budget invested on the first day reads 100%; money invested on the last day adds almost nothing. Example: half the budget on the first day and the other half at the window's middle reads 0.5 × 100% + 0.5 × 50% = 75%. After a sale (*Index trend*) the money is idle until bought again; reinvested gains can't take a day above 100%.
 - The number of steps.
 - **A note that idle money isn't counted:** "Rates count only the money invested, for as long as it was invested; budget waiting in cash isn't counted." Roughly, the rate on the whole budget would be the rate shown times the share invested.
 
@@ -78,16 +82,16 @@ The product rules hold: every result sits next to the index fund and the worst y
 Two different things:
 
 - **The dataset** is everything a test can draw from: every stock that was in the S&P 500 at some point in the years tested (with its dates in the index), their daily prices, and the index funds. One snapshot a month (see *Data*).
-- **A draft** is the 30 stocks one test uses, drawn from the dataset's S&P 500 members on each window's start date. **Draft A** is the fixed one: tuning and comparing always use it unless another pool is chosen, so a difference comes from the settings, not from the stocks.
+- **Draft A** is the stocks a test uses: one fixed draft, drawn from the dataset's S&P 500 members on each window's start date (the same seed every time). Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
+- **Its size** (open, proposed 60, the most stocks a strategy can follow): large enough that the strategies find candidates in it and one lucky or unlucky stock weighs little, since no random draws measure that luck. Once the dataset exists, check how many signals each template gets from it at the defaults, and grow it if a template finds too few.
 
 ## Stocks
 
-Four ways to choose the pool:
+Three ways to choose the pool:
 
-1. **A draft** (the default, for comparing). 30 stocks drawn from the S&P 500 as it stood on each window's start date (the stocks SPY held then), stratified by sector, with a published seed. The same draft (same seed, same data) makes results of different strategies and settings comparable.
-2. **Random draws.** The same method, 25 times with new seeds. Each draw runs the whole test, strategy and baselines. Shows the median, the 10th–90th percentile range, and how often the strategy beat each baseline ("beat the same days in the list in 19 of 25 draws"). It says whether a result came from the luck of the stocks drawn. Draft mode only.
-3. **The strategy's own list.** For shorter periods (default: the latest window only), since a list chosen today knows how its stocks did, which flatters the past. Shown next to the draft's result for the same window and settings. A stock without enough history at a window's start sits that window out, and the result says so.
-4. **One stock.** The budget is sized for it (max steps × step size).
+1. **Draft A** (the default, for comparing): drawn from the S&P 500 as it stood on each window's start date (the stocks SPY held then), stratified by sector, with a fixed, published seed. The same draft and data make results of different strategies and settings comparable.
+2. **The strategy's own list.** For shorter periods (default: the latest window only), since a list chosen today knows how its stocks did, which flatters the past. Shown next to the draft's result for the same window and settings. A stock without enough history at a window's start sits that window out, and the result says so.
+3. **One stock.** The budget is sized for it (max steps × step size).
 
 Not for *Your AI's top picks*, which has no rules to replay.
 
@@ -130,7 +134,7 @@ Rates count only the money invested; idle budget isn't counted.
 
 Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rules, so they show once. Baseline 2 follows each column's buy days.
 
-**Other screens**: the setup (stocks, index, period, money, costs, the data snapshot, *Run backtest*); the random draws (median, 10th–90th percentile range, how often the strategy beat each baseline); and the data report (owner page: members and coverage per window start, missing and renamed tickers, gaps, jumps).
+**Other screens**: the setup (stocks, index, period, money, costs, the data snapshot, *Run backtest*) and the data report (owner page: members and coverage per window start, missing and renamed tickers, gaps, jumps).
 
 ## Biases
 
@@ -140,7 +144,7 @@ Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rul
 | Look-ahead in the stocks | The S&P 500 as it stood at each window's start; a warning on the own list |
 | Survivorship | Counted and shown per window; removed only by a paid data source |
 | Tuning to the past | Every window is shown, not only All |
-| Luck of the draw | Random draws |
+| Luck of the draw | One large draft, stratified by sector; the strategy's own list as a second view |
 | Unequal money or costs | The same money, limit, costs and formulas for every line |
 | Backtest ≠ app | The same engine; simulations use the same costs; the monthly limit becomes a strategy setting |
 
@@ -151,6 +155,7 @@ Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rul
 
 ## Open points
 
+- Draft A's size (proposed 60).
 - The default monthly limit for a template's test (proposed: the budget over 24 months, so the money has time to work within a 4-year window).
 - Carry-over of unspent money (no carry-over in v1).
 - The product rule "results always next to the index fund": the results' main view shows the backtest alone, with the baselines behind *Show baselines*. Keep one index line in the main view, or make the backtest an exception to the rule?

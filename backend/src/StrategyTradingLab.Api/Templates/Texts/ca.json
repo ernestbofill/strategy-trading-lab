@@ -246,11 +246,6 @@
         "pastShort": "massa lluny del mínim (+{value}%)",
         "info": "El mínim recent és el tancament més baix dels últims {subValue} dies de mercat ({midLevel}). La línia de compra és un +{min}% per sobre ({level}): l'acció ha girat. Més d'un +{max}% per sobre del mínim ({endLevel}) és massa tard."
       },
-      "chase": {
-        "label": "No massa lluny de la línia",
-        "detail": "{+value}% per sobre de la línia de compra: més d'un {max}% és massa tard.",
-        "short": "massa lluny de la línia de compra"
-      },
       "volume": {
         "label": "Volum: mitjana de 5 dies vs 50 dies",
         "detail": "{value}× la seva mitjana de 50 dies (cal {min}×). Preu: {+subValue}% en el dia (cal que pugi).",

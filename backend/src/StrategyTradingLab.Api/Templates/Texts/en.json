@@ -246,11 +246,6 @@
         "pastShort": "+{value}% above its low (past the buy area)",
         "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase."
       },
-      "chase": {
-        "label": "Not too far past the line",
-        "detail": "{+value}% above the buy line: more than {max}% is too late to chase.",
-        "short": "too far past the buy line"
-      },
       "volume": {
         "label": "Volume: 5-day vs 50-day average",
         "detail": "{value}× its 50-day average (needs {min}×). Price: {+subValue}% on the day (needs a rise).",

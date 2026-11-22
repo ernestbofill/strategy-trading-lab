@@ -163,6 +163,7 @@ public class ComebackRules : BuyRulesBase
                 pocTurn
                     ? $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase."
                     : $"Price is more than {p.AboveSma50Pct + p.MaxChasePct:0.##}% above the recent low: too late to chase.");
+            if (fromAbove) facts["turn"] = "pullback"; // The alert's words: no volume to speak of.
             var turn = TurnChecks(i, price, high, lowest, buyLine, limit, fromAbove);
             // After a sale the cooldown holds the first buy back.
             if (RuleCheck.Cooldown(day, p.CooldownDays) is { } wait) turn.Add(wait);

@@ -53,6 +53,7 @@ public static class EmailTexts
     static readonly Message MilestoneSign = new("a new sign that the recovery is real: {0}", "un nou senyal que la recuperació és real: {0}");
     static readonly Message AboveBuyLine = new("{0}% above its buy line, on rising volume", "{0}% per sobre de la línia de compra, amb volum creixent");
     static readonly Message BelowBuyLine = new("{0}% below its buy line, on rising volume", "{0}% per sota de la línia de compra, amb volum creixent");
+    static readonly Message PullbackBuyLine = new("{0}% above its buy line, back from above the chase limit", "{0}% per sobre de la línia de compra, tornant des de dalt del límit de persecució");
 
     // Signal text entries
     static readonly Message SaleTarget = new("a sale", "una venda");
@@ -170,8 +171,9 @@ public static class EmailTexts
             return MilestoneSign.In(locale, term);
         }
         var aboveBuyLine = s.Facts.Number("aboveBuyLinePct");
-        return aboveBuyLine is null ? RulesMet.In(locale)
-            : (aboveBuyLine >= 0 ? AboveBuyLine : BelowBuyLine).In(locale, Pct(Math.Abs(aboveBuyLine.Value)));
+        // A pullback from above the chase limit needs no volume (ComebackRules.FromAbove), so its words don't claim any.
+        var message = s.Facts.Text("turn") == "pullback" ? PullbackBuyLine : aboveBuyLine >= 0 ? AboveBuyLine : BelowBuyLine;
+        return aboveBuyLine is null ? RulesMet.In(locale) : message.In(locale, Pct(Math.Abs(aboveBuyLine.Value)));
     }
 
     /// <summary>The signal box's text: "Your rules for X are met for Y: …".</summary>

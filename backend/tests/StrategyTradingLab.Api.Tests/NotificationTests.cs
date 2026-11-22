@@ -34,6 +34,8 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
         var later = Dip("""{"milestone":"Golden cross (SMA 50 above SMA 200)"}""") with { TemplateKey = "comeback" };
 
         Assert.Contains("2.4% above its buy line, on rising volume", EmailTexts.SignalText(first));
+        var pullback = Dip("""{"aboveBuyLinePct":5.1,"turn":"pullback"}""") with { TemplateKey = "comeback" };
+        Assert.Contains("5.1% above its buy line, back from above the chase limit", EmailTexts.SignalText(pullback));
         Assert.Contains("a new sign that the recovery is real: golden cross (sma 50 above sma 200)", EmailTexts.SignalText(later));
     }
 

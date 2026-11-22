@@ -122,7 +122,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **The comeback (Confirmed turnaround)**
 - Candidate (beaten down): at least 30% below its 52-week high, and below the SMA 200.
-- Signal: the close is at least 10% above the recent low (lowest close of the last 50 trading days by default), and 5-day average volume is at least 20% above the 50-day average, with the close above the close 5 trading days before (heavy volume on a falling price is selling, not a turn: Ernest, 2026-11-16; STL's own rule, not the POC's. A strategy already running when the rule came has it from that day on, `VolumeOnRiseFrom`, so the replay of its earlier days, which rebuilds the steps it holds, is unchanged).
+- Signal: the close is at least 10% above the recent low (lowest close of the last 50 trading days by default), and above the last close (heavy volume on a falling price is selling, not a turn: Ernest, 2026-11-16, then 2026-11-22 for the last close instead of the one 5 trading days before; STL's own rule, not the POC's). Coming up from below, the 5-day average volume must also be at least 20% above the 50-day average. A price that comes back into the buy area from above (the last close outside the +10% to +18% window was above it) needs no volume, only the up day: trading is usually light on a pullback, and the turn already ran (Ernest, 2026-11-22). The stock page then shows a *Back from above the buy area* line in place of the volume one, and the alert says "back from above the buy area" instead of "on rising volume". A stock with no volume data gets neither.
 - Signal ends: the close drops back under the signal line, or the price is more than 8% further above the recent low (the window is +10% to +18% above the low by default; Ernest, 2026-11-17, STL's own rule: the POC's limit was 8% above the line, +18.8%. On for every strategy: the replay follows recorded signals on checked days, #261).
 - Later steps: one every 10 trading days after the last buy, while the close is above the last step's price (the open it was bought at), so a step is only added while the turn is working (STL's own rule, Ernest 2026-11-21). The POC earns them by milestones instead (back above the SMA 200, golden cross, within 15% of the 52-week high, a breakout after an 8% pullback, each within 8% above its level); STL removed them (#268). Cooldown 5 days.
 
@@ -413,7 +413,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Candidate | "It stays a candidate for [n] trading days after it was last beaten down." | 60 | 10 | 0–120 |
 | Buy signal | "The buy line is [n]% above the recent low." | 10% | 1 | 5–30 |
 | Buy signal | "The recent low is the lowest close of the last [n] trading days." | 50 | 5 | 10–120 |
-| Buy signal | "The 5-day average volume is at least [n]× the 50-day, with the price up over those 5 days." | 1.2× | 0.1 | 1–3 |
+| Buy signal | "The 5-day average volume is at least [n]× the 50-day. Not needed when the price comes back into the buy area from above." | 1.2× | 0.1 | 1–3 |
 | Buy signal | "Buy area: the first step up to [n]% more above the recent low than the buy line." | 8% | 1 | 2–20 |
 | Next steps | "Then one more step every [n] trading days, while the close is above the last step's price." | 10 | 5 | 5–30 |
 | Pace | "After a step, wait [n] calendar days before the next buy signal." | 5 | 1 | 0–30 |

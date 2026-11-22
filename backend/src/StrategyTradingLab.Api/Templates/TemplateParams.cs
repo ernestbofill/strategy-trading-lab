@@ -81,13 +81,6 @@ public record ComebackParams
     [Range(1, 5)] public decimal VolumeRatio { get; init; } = 1.2m;
 
     /// <summary>
-    /// From this day on the volume only counts when the close is above the close 5 trading days before; earlier days keep the
-    /// POC's rule (any volume). A strategy that ran before the rule existed has the day it came (set by migration), so the daily
-    /// replay of its past, which rebuilds the steps it holds, reads as it did.
-    /// </summary>
-    public DateOnly VolumeOnRiseFrom { get; init; } = DateOnly.MinValue;
-
-    /// <summary>
     /// The first step only up to <c>AboveSma50Pct + MaxChasePct</c> above the recent low (+10% to +18% by default).
     /// </summary>
     [Range(0, 30)] public decimal MaxChasePct { get; init; } = 8;

@@ -52,6 +52,7 @@ public static class EmailTexts
     static readonly Message PacedStep = new("{0} trading days after its last step, {1}% above that step's price", "{0} dies de mercat després de l'última fase, un {1}% per sobre del preu d'aquella fase");
     static readonly Message AboveBuyLine = new("{0}% above its buy line, on rising volume", "{0}% per sobre de la línia de compra, amb volum creixent");
     static readonly Message BelowBuyLine = new("{0}% below its buy line, on rising volume", "{0}% per sota de la línia de compra, amb volum creixent");
+    static readonly Message PullbackBuyLine = new("{0}% above its buy line, back from above the buy area", "{0}% per sobre de la línia de compra, tornant des de dalt de la zona de compra");
 
     // Signal text entries
     static readonly Message SaleTarget = new("a sale", "una venda");
@@ -156,8 +157,9 @@ public static class EmailTexts
         if (s.Facts.Number("sinceLastDays") is { } since && s.Facts.Number("aboveLastStepPct") is { } aboveLast)
             return PacedStep.In(locale, since, Pct(aboveLast));
         var aboveBuyLine = s.Facts.Number("aboveBuyLinePct");
-        return aboveBuyLine is null ? RulesMet.In(locale)
-            : (aboveBuyLine >= 0 ? AboveBuyLine : BelowBuyLine).In(locale, Pct(Math.Abs(aboveBuyLine.Value)));
+        // A pullback from above the buy area needs no volume (ComebackRules.FromAbove), so its words don't claim any.
+        var message = s.Facts.Text("turn") == "pullback" ? PullbackBuyLine : aboveBuyLine >= 0 ? AboveBuyLine : BelowBuyLine;
+        return aboveBuyLine is null ? RulesMet.In(locale) : message.In(locale, Pct(Math.Abs(aboveBuyLine.Value)));
     }
 
     /// <summary>The signal box's text: "Your rules for X are met for Y: …".</summary>

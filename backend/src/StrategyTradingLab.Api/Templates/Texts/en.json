@@ -178,7 +178,7 @@
         "help": "Longer: measures the turn from a wider window's bottom. Shorter: follows recent drops more closely."
       },
       "volumeRatio": {
-        "sentence": "The 5-day average volume is at least {value} the 50-day, with the price up over those 5 days.",
+        "sentence": "The 5-day average volume is at least {value} the 50-day. Not needed when the price comes back into the buy area from above.",
         "value": "{n}×",
         "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
       },
@@ -205,7 +205,7 @@
       },
       "signal": {
         "title": "2 · Buy signal: the first step",
-        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), on rising volume, and still in the buy area. The signal ends when the price or the volume falls back, or the price runs past the buy area."
+        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), still in the buy area, and above the last close. Coming up from below it also needs rising volume; coming back down from above the buy area, it doesn't. The signal ends when the price or the volume falls back, or the price runs past the buy area."
       },
       "steps": {
         "title": "3 · Next steps: while the turn holds",
@@ -246,22 +246,23 @@
         "pastShort": "+{value}% above its low (past the buy area)",
         "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase."
       },
-      "chase": {
-        "label": "Not too far past the line",
-        "detail": "{+value}% above the buy line: more than {max}% is too late to chase.",
-        "short": "too far past the buy line"
-      },
       "volume": {
         "label": "Volume: 5-day vs 50-day average",
-        "detail": "{value}× its 50-day average (needs {min}×). Price: {+subValue}% over those 5 days (needs a rise).",
-        "short": "volume {value}× (needs {min}×, on a rising price)",
-        "info": "Shares traded per day: more trading than usual backs the turn, but only while the price rises. Heavy trading on a falling price is selling, so it doesn't count."
+        "detail": "{value}× its 50-day average (needs {min}×). Price: {+subValue}% on the day (needs a rise).",
+        "short": "volume {value}× (needs {min}×, on an up day)",
+        "info": "Shares traded per day: more trading than usual backs the turn. The signal opens on a close above the last one: heavy trading on a falling price is selling, not a turn."
+      },
+      "pullback": {
+        "label": "Back from above the buy area",
+        "detail": "Came back into the buy area from above {level}: no volume needed. Price: {+subValue}% on the day (needs a rise).",
+        "short": "back from above: waiting for an up day",
+        "info": "The price already ran past the buy area and pulled back into it. Trading is usually light on a pullback, so only a close above the last one is needed."
       },
       "turn": {
         "label": "The turn",
         "detail": "Step 1 is bought.",
         "short": "the turn",
-        "info": "The first step: the price turned up above the buy line (the recent low plus a margin) on rising volume."
+        "info": "The first step: the price turned up above the buy line (the recent low plus a margin), on rising volume or on a pullback from above."
       },
       "cooldown": {
         "label": "Cooldown",

@@ -114,7 +114,7 @@ public class DipRulesTests
         // A fast fall from 200 to 100 leaves the SMA 50 above 170, while the 50-day low is 100 (buy line 110).
         PriceBar Bar(int i, decimal close, long volume = 100) =>
             new(new DateOnly(2020, 1, 1).AddDays(i), close, close, close, close, volume);
-        // Then it rises from 105 to 112 on heavy volume; `falling` reaches 112 from 120 instead, on the same volume.
+        // Then it rises from 105 to 112 on heavy volume; `falling` reaches 112 from 116 (inside the window) instead, on the same volume.
         List<PriceBar> Bars(decimal before) =>
         [
             .. Enumerable.Range(0, 250).Select(i => Bar(i, 200)),
@@ -123,7 +123,7 @@ public class DipRulesTests
             Bar(265, 112, volume: 300),
         ];
         var bars = Bars(105);
-        var falling = Bars(120);
+        var falling = Bars(116);
 
         var fiftyDay = RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5))[^1];
         var tenDay = RulesRunner.Run(new ComebackRules(bars, new ComebackParams { LowDays = 10 }), bars, new StepPlan(5))[^1];
@@ -144,19 +144,48 @@ public class DipRulesTests
         // A close between the new limit (+18% above the low) and the POC's (+18.8%, 8% above the buy line) is too late now.
         List<PriceBar> jumped = [.. bars[..^1], Bar(265, 118.5m, volume: 300)];
         Assert.NotEqual(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(jumped, new ComebackParams()), jumped, new StepPlan(5))[^1].Status);
-        Assert.Equal(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(jumped, new ComebackParams(), pocChaseLimit: true), jumped, new StepPlan(5))[^1].Status);
+        Assert.Equal(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(jumped, new ComebackParams(), pocTurn: true), jumped, new StepPlan(5))[^1].Status);
 
-        // Heavy volume on a falling price is no turn: the volume only counts when the close is above the one 5 days before.
+        // Heavy volume on a falling price is no turn: the signal needs a close above the last one. The POC's rule has none.
         var fell = RulesRunner.Run(new ComebackRules(falling, new ComebackParams()), falling, new StepPlan(5))[^1];
         Assert.NotEqual(RuleStatus.BuySignal, fell.Status);
         var volume = Assert.Single(fell.Checks, c => c.Key == "volume");
         Assert.False(volume.Met);
         Assert.True(volume.Value >= volume.Min);
-        Assert.Equal(-6.7m, volume.SubValue);
+        Assert.Equal(-3.4m, volume.SubValue);
         Assert.Equal(0.99m, volume.Progress);
+        Assert.Equal(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(falling, new ComebackParams(), pocTurn: true), falling, new StepPlan(5))[^1].Status);
+    }
 
-        // A strategy older than the rule replays its earlier days as it did: the same day still signals.
-        var before = new ComebackParams { VolumeOnRiseFrom = falling[^1].Date.AddDays(1) };
-        Assert.Equal(RuleStatus.BuySignal, RulesRunner.Run(new ComebackRules(falling, before), falling, new StepPlan(5))[^1].Status);
+    [Fact]
+    public void The_comeback_needs_no_volume_back_from_above_the_chase_limit()
+    {
+        // From 200 to a low of 100 (buy line 110, chase limit 118), then 105 for 10 days at a volume of 100.
+        PriceBar Bar(int i, decimal close, long volume = 100) =>
+            new(new DateOnly(2020, 1, 1).AddDays(i), close, close, close, close, volume);
+        List<PriceBar> Bars(params (decimal Close, long Volume)[] then) =>
+        [
+            .. Enumerable.Range(0, 250).Select(i => Bar(i, 200)),
+            .. Enumerable.Range(250, 5).Select(i => Bar(i, 100)),
+            .. Enumerable.Range(255, 10).Select(i => Bar(i, 105)),
+            .. then.Select((t, k) => Bar(265 + k, t.Close, t.Volume)),
+        ];
+        static DayEvaluation Last(List<PriceBar> bars) => RulesRunner.Run(new ComebackRules(bars, new ComebackParams()), bars, new StepPlan(5))[^1];
+
+        // Past the chase limit on normal volume, back into the window: waits for an up day, then signals without volume.
+        var pulledBack = Bars((125, 100), (115, 100), (114, 100));
+        var waiting = Last(pulledBack);
+        Assert.Equal(RuleStatus.Watching, waiting.Status);
+        Assert.DoesNotContain(waiting.Checks, c => c.Key == "volume");
+        Assert.False(Assert.Single(waiting.Checks, c => c.Key == "pullback").Met);
+        List<PriceBar> upDay = [.. pulledBack, Bar(268, 116)];
+        var signal = Last(upDay);
+        Assert.Equal(RuleStatus.BuySignal, signal.Status);
+        var pullback = Assert.Single(signal.Checks, c => c.Key == "pullback");
+        Assert.True(pullback.Met);
+        Assert.Equal(118m, pullback.Level);
+        // Coming up from below, the same day still needs the volume.
+        List<PriceBar> fromBelow = [.. Bars((112, 100), (115, 100), (114, 100)), Bar(268, 116)];
+        Assert.Equal(RuleStatus.Watching, Last(fromBelow).Status);
     }
 }

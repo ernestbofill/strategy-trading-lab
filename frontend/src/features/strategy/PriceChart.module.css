@@ -51,9 +51,6 @@
 .axisLabel[data-tone='sell'] {
   color: var(--hot-pink);
 }
-.axisLabel[data-tone='short'] {
-  color: var(--syntax-keyword);
-}
 .axisLabel[data-tone='long'] {
   color: var(--syntax-number);
 }
@@ -189,11 +186,6 @@
 }
 
 /* Moving averages: solid and thin, so they don't read as a rule's level. */
-.level[data-tone='short'] {
-  stroke: var(--syntax-keyword);
-  stroke-dasharray: none;
-  stroke-width: 1;
-}
 .level[data-tone='long'] {
   stroke: var(--syntax-number);
   stroke-dasharray: none;
@@ -248,9 +240,6 @@
 }
 .key[data-tone='watch'] {
   border-color: var(--warning);
-}
-.key[data-tone='short'] {
-  border-top: 2px solid var(--syntax-keyword);
 }
 .key[data-tone='long'] {
   border-top: 2px solid var(--syntax-number);

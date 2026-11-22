@@ -7,7 +7,18 @@ import styles from './CheckGauge.module.css'
 /** The gauge's own class, and the parent's placement when given. */
 const withClass = (own: string, extra?: string) => (extra ? `${own} ${extra}` : own)
 
-const WINDOW_KEYS = new Set(['zone', 'buyLine', 'sma200', 'golden', 'near_high', 'breakout'])
+/** Two levels and how they stand: "Short $x > Long $y", "20d ago $x ↗ Now $y". */
+function TwoLevelStrip({ left, right, ok, symbol, className }: { left: string; right: string; ok: boolean; symbol: string; className?: string }) {
+  return (
+    <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
+      <span className={styles.stackChip}>{left}</span>
+      <span className={styles.stackRel} data-ok={ok}>{symbol}</span>
+      <span className={styles.stackChip}>{right}</span>
+    </div>
+  )
+}
+
+const WINDOW_KEYS = new Set(['zone', 'buyLine'])
 
 // Proven growth's bar says the rise itself, as its sentence does: its share of the target ("199%" for a 99.3% rise that
 // needs 50%) read as another figure (feedback, 2026-11-16). Not the drops: the comeback's is negative, and a bear's bar
@@ -23,19 +34,13 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   const past = isPastMax(check)
   const state = past ? 'past' : check.met ? 'met' : 'notMet'
 
-  // 0. No golden cross yet: the SMA 50 still under the SMA 200.
-  // (Checks stored before this field still have a value: a spread at or under 0 says the same.)
-  if (check.key === 'golden' && (check.value === null || (check.subValue ?? 0) <= 0) && check.level !== null && check.midLevel != null) {
+  // 1. Moving-average stack: Short vs Long, or Short vs Mid vs Long in the POC's stack (and checks stored before STL dropped the middle one).
+  if (check.key === 'stacked' && check.level !== null && check.midLevel == null && check.endLevel != null) {
     return (
-      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
-        <span className={styles.stackChip}>{t('stock.bar.sma50', { price: exact(check.level, currency) })}</span>
-        <span className={styles.stackRel} data-ok={false}>≤</span>
-        <span className={styles.stackChip}>{t('stock.bar.sma200', { price: exact(check.midLevel, currency) })}</span>
-      </div>
+      <TwoLevelStrip className={className} ok={check.met === true} symbol={check.met ? '>' : '≤'}
+        left={t('stock.bar.short', { price: exact(check.level, currency) })} right={t('stock.bar.long', { price: exact(check.endLevel, currency) })} />
     )
   }
-
-  // 1. Moving-average stack: Short vs Mid vs Long prices.
   if (check.key === 'stacked' && check.level !== null && check.midLevel != null && check.endLevel != null) {
     const firstOk = check.level > check.midLevel
     const secondOk = check.midLevel > check.endLevel
@@ -53,11 +58,8 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // 2. Rising long average: 20 trading days ago -> today.
   if (check.key === 'rising' && check.level !== null && check.endLevel != null) {
     return (
-      <div className={withClass(styles.stackStrip, className)} aria-hidden="true">
-        <span className={styles.stackChip}>{t('stock.bar.ago20', { price: exact(check.endLevel, currency) })}</span>
-        <span className={styles.stackRel} data-ok={check.met === true}>{check.met ? '↗' : '↘'}</span>
-        <span className={styles.stackChip}>{t('stock.bar.now', { price: exact(check.level, currency) })}</span>
-      </div>
+      <TwoLevelStrip className={className} ok={check.met === true} symbol={check.met ? '↗' : '↘'}
+        left={t('stock.bar.ago20', { price: exact(check.endLevel, currency) })} right={t('stock.bar.now', { price: exact(check.level, currency) })} />
     )
   }
 
@@ -77,7 +79,7 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // 4. The candidate window (`beaten`) has no gauge: a bar of days read as "more is better".
   if (check.key === 'beaten') return null
 
-  // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`, milestones).
+  // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`).
   if (WINDOW_KEYS.has(check.key) && check.value !== null && check.max !== null && check.max > 0) {
     const isZone = check.key === 'zone'
     const fromZero = isZone || (check.key === 'buyLine' && (check.min ?? 0) > 0 && check.max > (check.min ?? 0))

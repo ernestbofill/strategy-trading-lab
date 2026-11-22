@@ -25,7 +25,7 @@ export const welcome: Record<keyof typeof welcomeEn, string> = {
   // Mock interactive builder widget
   'welcome.builder.mock.templateLabel': 'Tria plantilla',
   'welcome.builder.mock.t1Name': 'Líders amb descompte',
-  'welcome.builder.mock.t1Rule': 'SMA 50 > 150 > 200 · zona de descompte 5%–15%',
+  'welcome.builder.mock.t1Rule': 'SMA 50 > 200 · zona de descompte 5%–15%',
   'welcome.builder.mock.t1Budget': '100 € / fase · màx. 3 fases',
   'welcome.builder.mock.t2Name': 'Empreses en remuntada',
   'welcome.builder.mock.t2Rule': '≥ 30% sota el màxim anual · +10% sobre el mínim de 50d + volum',

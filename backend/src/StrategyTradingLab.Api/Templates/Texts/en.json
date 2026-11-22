@@ -7,7 +7,7 @@
     "rules": [
       {
         "marker": "01",
-        "text": "**It's a proven winner:** it rose at least `{minGainPct}%` from its low, and its averages are stacked and rising (`SMA {floorDays}` > `SMA 150` > `SMA {trendDays}`)."
+        "text": "**It's a proven winner:** it rose at least `{minGainPct}%` from its low, and its averages point up (`SMA {floorDays}` above a rising `SMA {trendDays}`)."
       },
       {
         "marker": "02",
@@ -22,7 +22,7 @@
       "scope": "1,146 stocks, 2000-2026.",
       "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
-      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock. Tested with three stacked averages (SMA 50 > SMA 150 > SMA 200); the strategy now needs two (SMA 50 > SMA 200)."
     },
     "stockStatus": {
       "zone": "the discount zone",
@@ -42,7 +42,7 @@
       "trendDays": {
         "sentence": "The long average is the SMA over {value}.",
         "value": "{n} days",
-        "help": "The bottom of the stack, and it must be rising. Longer: steadier, slower to turn, so a trend counts later and stays a candidate longer."
+        "help": "The long average: the floor average must be above it, and it must be rising. Longer: steadier, slower to turn, so a trend counts later and stays a candidate longer."
       },
       "peakDays": {
         "sentence": "The recent peak is the highest close of the last {value}.",
@@ -62,7 +62,7 @@
       "floorDays": {
         "sentence": "The floor average is the SMA over {value}.",
         "value": "{n} days",
-        "help": "The top of the candidate's stack and the zone's floor: a close below it is a collapse, not a dip. Shorter: the floor follows the price closely, so deep dips fall through it."
+        "help": "The short average, above the long one for a candidate, and the zone's floor: a close below it is a collapse, not a dip. Shorter: the floor follows the price closely, so deep dips fall through it."
       },
       "cooldownDays": {
         "sentence": "After a step, wait {value} before the next buy signal.",
@@ -73,7 +73,7 @@
     "settingGroups": {
       "candidate": {
         "title": "1 · Candidate: which stocks it watches",
-        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its averages are stacked, the floor average above a middle one above the long average (`SMA 50` > `SMA 150` > `SMA 200` when tested; the middle one stays between the other two); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
+        "lead": "A stock is a candidate, a proven winner, while all three hold: it rose at least the growth below from its low; its floor average is above the long average (`SMA 50` > `SMA 200` by default); and the long average is higher than 20 trading days ago. A stock that isn't a candidate gets no signal, however far it dips."
       },
       "signal": {
         "title": "2 · Buy signal: when a candidate signals",
@@ -93,10 +93,10 @@
       },
       "stacked": {
         "label": "Averages stacked",
-        "detail": "Short {level} · middle {midLevel} · long {endLevel} (needs short > middle > long).",
-        "none": "Needs the short average above the middle one, and that above the long one.",
+        "detail": "Short {level} · long {endLevel} (needs short > long).",
+        "none": "Needs the short average above the long one.",
         "short": "averages not stacked",
-        "info": "The SMA 50, SMA 150 and SMA 200 (average closes over those days), in that order: a steady uptrend."
+        "info": "The SMA 50 above the SMA 200 (average closes over those days): an uptrend."
       },
       "rising": {
         "label": "Long average rising",
@@ -150,7 +150,7 @@
       "scope": "1,146 stocks, 2000-2026.",
       "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
-      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock. Tested with milestones for the later steps (back above the SMA 200, a golden cross, near the old high, a breakout); the strategy now adds them at a steady pace."
     },
     "stockStatus": {
       "zone": "the buy line",
@@ -178,29 +178,24 @@
         "help": "Longer: measures the turn from a wider window's bottom. Shorter: follows recent drops more closely."
       },
       "volumeRatio": {
-        "sentence": "The 5-day average volume is at least {value} the 50-day. Not needed when the price comes back into the window from above.",
+        "sentence": "The 5-day average volume is at least {value} the 50-day. Not needed when the price comes back into the buy area from above.",
         "value": "{n}×",
         "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
       },
       "maxChasePct": {
-        "sentence": "Chase limit: a step only up to {value} past its line: the first step on top of the buy line's % above the recent low, a milestone above its level.",
+        "sentence": "Buy area: the first step up to {value} more above the recent low than the buy line.",
         "value": "{n}%",
-        "help": "Higher: still buys a turn that jumped well past its line. Lower: skips turns that move too fast."
+        "help": "Higher: still buys a turn that ran well past the buy line. Lower: skips turns that move too fast."
       },
-      "nearHighPct": {
-        "sentence": "Milestone near the old high: within {value} of the 52-week high.",
-        "value": "{n}%",
-        "help": "Higher: this milestone comes earlier in the recovery."
-      },
-      "breakoutPullbackPct": {
-        "sentence": "Milestone breakout: a pullback of at least {value}, then a close above the high before it.",
-        "value": "{n}%",
-        "help": "Higher: needs a deeper pullback first, so the breakout comes less often."
+      "stepEveryDays": {
+        "sentence": "Then one more step every {value}, while the close is above the last step's price.",
+        "value": "{n} trading days",
+        "help": "10 trading days is about 2 weeks. Shorter: the budget goes in faster. Longer: spreads the buys over more of the recovery."
       },
       "cooldownDays": {
         "sentence": "After a step, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
-        "help": "Counted from the step's buy. Longer: steps spread out, even when milestones come close together."
+        "help": "Counted from the step's buy, in calendar days. Longer: steps spread out more than the pace alone."
       }
     },
     "settingGroups": {
@@ -210,11 +205,11 @@
       },
       "signal": {
         "title": "2 · Buy signal: the first step",
-        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), at most the chase limit further above the low, and above the last close. Coming up from below it also needs rising volume; coming back down from above the chase limit, it doesn't. The signal ends when the price or the volume falls back, or the price runs past the chase limit."
+        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), still in the buy area, and above the last close. Coming up from below it also needs rising volume; coming back down from above the buy area, it doesn't. The signal ends when the price or the volume falls back, or the price runs past the buy area."
       },
-      "milestones": {
-        "title": "3 · Milestones: the next steps",
-        "lead": "Once bought, each new sign that the turn is real earns one more step: back above the `SMA 200`, a golden cross (`SMA 50` above `SMA 200`), near the old high, or a breakout after a pullback. Each is bought only up to the chase limit above its level."
+      "steps": {
+        "title": "3 · Next steps: while the turn holds",
+        "lead": "After the turn, one more step every few trading days, but only while the close is above the price the last step was bought at, so a step is added only while the turn is working. Until your budget's steps are bought."
       },
       "pace": {
         "title": "4 · Pace: how often it buys",
@@ -248,7 +243,7 @@
         "detail": "+{value}% above the recent low ({midLevel}): needs +{min}% to +{max}% ({level} to {endLevel}).",
         "past": "+{value}% above the recent low ({midLevel}): past +{max}% ({endLevel}), too late to chase.",
         "short": "+{value}% above its low (needs +{min}%)",
-        "pastShort": "+{value}% above its low (past the chase limit)",
+        "pastShort": "+{value}% above its low (past the buy area)",
         "info": "The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase."
       },
       "chase": {
@@ -263,10 +258,10 @@
         "info": "Shares traded per day: more trading than usual backs the turn. The signal opens on a close above the last one: heavy trading on a falling price is selling, not a turn."
       },
       "pullback": {
-        "label": "Back from above the chase limit",
-        "detail": "Came back into the window from above {level}: no volume needed. Price: {+subValue}% on the day (needs a rise).",
+        "label": "Back from above the buy area",
+        "detail": "Came back into the buy area from above {level}: no volume needed. Price: {+subValue}% on the day (needs a rise).",
         "short": "back from above: waiting for an up day",
-        "info": "The price already ran past the chase limit and pulled back into the window. Trading is usually light on a pullback, so only a close above the last one is needed."
+        "info": "The price already ran past the buy area and pulled back into it. Trading is usually light on a pullback, so only a close above the last one is needed."
       },
       "turn": {
         "label": "The turn",
@@ -274,46 +269,24 @@
         "short": "the turn",
         "info": "The first step: the price turned up above the buy line (the recent low plus a margin), on rising volume or on a pullback from above."
       },
-      "sma200": {
-        "label": "Back above the SMA 200",
-        "detail": "{+value}% vs the SMA 200 ({level}). Step window: 0% to +{max}% ({level} to {endLevel}).",
-        "past": "{+value}% above the SMA 200 ({level}) — past the +{max}% chase limit ({endLevel}).",
-        "short": "below the SMA 200",
-        "pastShort": "past the SMA 200 limit ({+value}%)",
-        "info": "Milestone: reclaiming the 200-day average confirms the long-term recovery and earns one step if bought within +{max}%."
-      },
-      "golden": {
-        "label": "Golden cross",
-        "detail": "SMA 50 ({level}) is {+subValue}% vs SMA 200 ({midLevel}). Price {+value}% vs SMA 50 (window 0% to +{max}%, up to {endLevel}).",
-        "past": "SMA 50 ({level}) is {+subValue}% vs SMA 200 ({midLevel}), but price is {+value}% above SMA 50 (past +{max}% limit, {endLevel}).",
-        "short": "no golden cross yet",
-        "pastShort": "past the SMA 50 limit ({+value}%)",
-        "tracking": "Not crossed yet: the SMA 50 ({level}) must rise {endValue}% to pass the SMA 200 ({midLevel}). Then one step is bought while the price is 0% to +{max}% above the SMA 50 (now up to {endLevel}).",
-        "info": "Milestone: the 50-day average crosses above the 200-day average, confirming a medium-term uptrend."
-      },
-      "near_high": {
-        "label": "Near the old high",
-        "detail": "{+value}% vs the near-high line ({level}, within {min}% of {midLevel}). Step window: 0% to +{max}% (up to {endLevel}).",
-        "past": "{+value}% above the near-high line ({level}) — past the +{max}% chase limit ({endLevel}).",
-        "short": "{+value}% vs the near-high line",
-        "pastShort": "past the near-high limit ({+value}%)",
-        "info": "Milestone: price recovers to within {min}% of the 52-week high."
-      },
-      "breakout": {
-        "label": "Breakout",
-        "detail": "{+value}% vs the high before its {min}% pullback ({level}). Step window: 0% to +{max}% ({level} to {endLevel}).",
-        "past": "{+value}% above the high before its {min}% pullback ({level}) — past the +{max}% chase limit ({endLevel}).",
-        "short": "no breakout yet",
-        "pastShort": "past the breakout limit ({+value}%)",
-        "none": "After a buy: a fall of {min}% from the highest close, then a close above that high.",
-        "tracking": "Highest close since the last buy: {midLevel}. A fall to {endLevel} (−{min}%) starts the watch; after it, a close above {midLevel} is a breakout.",
-        "info": "Milestone: after pulling back at least {min}% from a post-buy high, breaking above that high earns one step."
-      },
       "cooldown": {
         "label": "Cooldown",
         "detail": "{value} more days to wait after the last buy or sale ({min} in all).",
         "short": "cooldown, {value} days left",
         "info": "After each buy or sale the rules wait {min} calendar days before the next buy signal."
+      },
+      "pace": {
+        "label": "Next step",
+        "detail": "{value} of {min} trading days since the last step.",
+        "none": "After the turn, one more step every {min} trading days, while the close is above the last step's price.",
+        "short": "{value} of {min} days to the next step",
+        "info": "Spreads the next steps over the recovery: one every {min} trading days."
+      },
+      "lastStep": {
+        "label": "Above the last step",
+        "detail": "{+value}% vs the last step's price ({level}); needs above.",
+        "short": "{+value}% vs the last step (needs above)",
+        "info": "A step is added only while the turn is working: the close must be above the price the last step was bought at."
       }
     }
   },

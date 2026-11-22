@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using StrategyTradingLab.Api.Auth;
 using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
@@ -50,10 +49,10 @@ public static class EmailTexts
     static readonly Message TrendAboveSma = new("the market closed {0}% above its 200-day average", "el mercat ha tancat un {0}% per sobre de la seva mitjana de 200 dies");
     static readonly Message BearDrop = new("down {0}% from its 6-month high and {1}% above its low", "un {0}% per sota del seu màxim de 6 mesos i un {1}% per sobre del seu mínim");
     static readonly Message DipBelowPeak = new("{0}% below its recent peak, still above its 50-day average", "{0}% per sota del seu màxim recent, encara per sobre de la mitjana de 50 dies");
-    static readonly Message MilestoneSign = new("a new sign that the recovery is real: {0}", "un nou senyal que la recuperació és real: {0}");
+    static readonly Message PacedStep = new("{0} trading days after its last step, {1}% above that step's price", "{0} dies de mercat després de l'última fase, un {1}% per sobre del preu d'aquella fase");
     static readonly Message AboveBuyLine = new("{0}% above its buy line, on rising volume", "{0}% per sobre de la línia de compra, amb volum creixent");
     static readonly Message BelowBuyLine = new("{0}% below its buy line, on rising volume", "{0}% per sota de la línia de compra, amb volum creixent");
-    static readonly Message PullbackBuyLine = new("{0}% above its buy line, back from above the chase limit", "{0}% per sobre de la línia de compra, tornant des de dalt del límit de persecució");
+    static readonly Message PullbackBuyLine = new("{0}% above its buy line, back from above the buy area", "{0}% per sobre de la línia de compra, tornant des de dalt de la zona de compra");
 
     // Signal text entries
     static readonly Message SaleTarget = new("a sale", "una venda");
@@ -121,16 +120,6 @@ public static class EmailTexts
         return date.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
     }
 
-    /// <summary>A recovery milestone (named in English by the engine) in Catalan.</summary>
-    static string MilestoneCa(string term) => term switch
-    {
-        "Reclaims the SMA 200" => "Recupera la SMA 200",
-        "Golden cross (SMA 50 above SMA 200)" => "Golden cross (SMA 50 per sobre de la SMA 200)",
-        _ when Regex.Match(term, @"^Within ([\d.]+)% of the 52-week high$") is { Success: true } near => $"A menys d'un {near.Groups[1].Value}% del màxim de 52 setmanes",
-        _ when Regex.Match(term, @"^Higher high after pulling back ([\d.]+)% \(breakout\)$") is { Success: true } up => $"Nou màxim després d'una correcció del {up.Groups[1].Value}% (ruptura)",
-        _ => term,
-    };
-
     /// <summary>The rule facts of a signal in a sentence, by template.</summary>
     public static string FactSentence(SignalLine s, string locale = "en")
     {
@@ -164,14 +153,11 @@ public static class EmailTexts
             var below = s.Facts.Number("belowPeakPct");
             return below is null ? RulesMet.In(locale) : DipBelowPeak.In(locale, Pct(below.Value));
         }
-        var milestone = s.Facts.Text("milestone");
-        if (milestone is not null)
-        {
-            var term = (locale == "ca" ? MilestoneCa(milestone) : milestone).ToLowerInvariant();
-            return MilestoneSign.In(locale, term);
-        }
+        // A later step at the comeback's pace (its first step has neither fact).
+        if (s.Facts.Number("sinceLastDays") is { } since && s.Facts.Number("aboveLastStepPct") is { } aboveLast)
+            return PacedStep.In(locale, since, Pct(aboveLast));
         var aboveBuyLine = s.Facts.Number("aboveBuyLinePct");
-        // A pullback from above the chase limit needs no volume (ComebackRules.FromAbove), so its words don't claim any.
+        // A pullback from above the buy area needs no volume (ComebackRules.FromAbove), so its words don't claim any.
         var message = s.Facts.Text("turn") == "pullback" ? PullbackBuyLine : aboveBuyLine >= 0 ? AboveBuyLine : BelowBuyLine;
         return aboveBuyLine is null ? RulesMet.In(locale) : message.In(locale, Pct(Math.Abs(aboveBuyLine.Value)));
     }

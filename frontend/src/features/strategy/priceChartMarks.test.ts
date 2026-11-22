@@ -43,25 +43,12 @@ describe('chartMarks', () => {
     expect(chartMarks(checks, false)).toEqual([])
   })
 
-  it("shows a held comeback stock its next milestone's buy area, not a used one", () => {
-    const marks = chartMarks([
-      check({ key: 'sma200', group: 'next', met: true, used: true, max: 8, level: 160, endLevel: 172.8 }),
-      check({ key: 'near_high', group: 'next', met: false, max: 8, level: 150, endLevel: 162 }),
+  it("shows a held comeback stock the last step's price", () => {
+    const paced = chartMarks([
+      check({ key: 'pace', group: 'next', met: false, value: 4, min: 10 }),
+      check({ key: 'lastStep', group: 'next', met: true, value: 3.2, min: 0, level: 151.5 }),
     ])
-    expect(marks).toEqual([{ id: 'next:near_high', label: null, check: 'near_high', tone: 'buy', from: 150, to: 162 }])
-  })
-
-  it('draws the SMA 50 and SMA 200 on every day while the golden cross is the next step, and no area for it', () => {
-    const golden = (preview: boolean) => check({ key: 'golden', group: 'next', met: false, max: 8, level: 150, midLevel: 155, endLevel: 162, preview })
-    const used = check({ key: 'sma200', group: 'next', met: true, used: true, max: 8, level: 160, endLevel: 172.8 })
-    // Before the start (a preview) and held: both lines; its area under the price would read as a discount.
-    const days = [[golden(true)], [used, golden(false)]].map((checks, i) => ({ date: `2026-10-0${i + 1}`, close: 170, checks }))
-    expect(chartSeries(days, true).map((s) => [s.mark.id, s.points.map((p) => p.i)])).toEqual([
-      ['sma50', [0, 1]],
-      ['sma200', [0, 1]],
-    ])
-    // Another next step today: no averages.
-    expect(chartMarks([golden(false)], true, 'near_high')).toEqual([])
+    expect(paced).toEqual([{ id: 'lastStep', label: 'stock.chart.lastStep', tone: 'buy', from: 151.5 }])
   })
 
   it("shows the index trend's buy and sell lines", () => {

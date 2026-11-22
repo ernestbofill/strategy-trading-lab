@@ -28,15 +28,15 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
     }
 
     [Fact]
-    public void A_comeback_alert_names_the_milestone_for_later_steps_and_the_line_for_the_first()
+    public void A_comeback_alert_names_the_pace_for_later_steps_and_the_line_for_the_first()
     {
         var first = Dip("""{"aboveBuyLinePct":2.4}""") with { TemplateKey = "comeback" };
-        var later = Dip("""{"milestone":"Golden cross (SMA 50 above SMA 200)"}""") with { TemplateKey = "comeback" };
+        var later = Dip("""{"aboveBuyLinePct":30.1,"sinceLastDays":10,"aboveLastStepPct":6.25}""") with { TemplateKey = "comeback" };
 
         Assert.Contains("2.4% above its buy line, on rising volume", EmailTexts.SignalText(first));
         var pullback = Dip("""{"aboveBuyLinePct":5.1,"turn":"pullback"}""") with { TemplateKey = "comeback" };
-        Assert.Contains("5.1% above its buy line, back from above the chase limit", EmailTexts.SignalText(pullback));
-        Assert.Contains("a new sign that the recovery is real: golden cross (sma 50 above sma 200)", EmailTexts.SignalText(later));
+        Assert.Contains("5.1% above its buy line, back from above the buy area", EmailTexts.SignalText(pullback));
+        Assert.Contains("10 trading days after its last step, 6.3% above that step's price", EmailTexts.SignalText(later));
     }
 
     [Fact]

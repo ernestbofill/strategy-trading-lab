@@ -49,15 +49,16 @@ public class TemplateStore(AppDbContext db)
     }
 
     /// <summary>
-    /// The template as <paramref name="row"/> has it. A saved default the code no longer accepts (a range narrowed since) leaves
-    /// all the defaults as the catalogue's, so a new strategy never starts from values the API would refuse. Assets that aren't
+    /// The template as <paramref name="row"/> has it. A saved default of a setting that is gone (the comeback's milestones) is
+    /// left out, and one the code no longer accepts (a range narrowed since) leaves all the defaults as the catalogue's, so a new strategy never starts from values the API would refuse. Assets that aren't
     /// <paramref name="available"/> any more are left out, and with none left the list or fund is the catalogue's.
     /// </summary>
     public static Template Effective(Template template, TemplateVersion? row, Func<Guid, bool>? available = null)
     {
         if (row is null) return template;
         var effective = template with { DefaultsVersion = row.Version, ClosePct = row.ClosePct };
-        if (row.Defaults.Deserialize<Dictionary<string, decimal>>(JsonSerializerOptions.Web) is { Count: > 0 } defaults
+        if (row.Defaults.Deserialize<Dictionary<string, decimal>>(JsonSerializerOptions.Web) is { Count: > 0 } saved
+            && saved.Where(d => template.Settings.Any(s => s.Key == d.Key)).ToDictionary() is { Count: > 0 } defaults
             && TemplateSettings.Apply(template, defaults, (_, _) => { }) is { } json)
             effective = effective with { Params = json.Deserialize(template.Params.GetType(), JsonSerializerOptions.Web)! };
         if (row.AssetIds.Where(available ?? (_ => true)).ToList() is { Count: > 0 } ids)

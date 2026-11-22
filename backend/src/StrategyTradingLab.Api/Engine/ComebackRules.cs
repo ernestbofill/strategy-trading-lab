@@ -5,8 +5,9 @@ namespace StrategyTradingLab.Api.Engine;
 /// <summary>
 /// The comeback (POC Confirmed turnaround, <c>turnaround</c>). A candidate was beaten down (at least <c>DrawdownPct</c>
 /// below its 52-week high, and below the SMA 200) at some point in the last <c>CandidateDays</c> days. The first step is the
-/// turn: the close at least <c>AboveSma50Pct</c> above the <c>LowDays</c>-day low on rising volume, but not more than <c>MaxChasePct</c> further
-/// above the low (Ernest, 2026-11-17; the POC, <c>pocChaseLimit</c>: <c>MaxChasePct</c> above that line). Later steps are earned by milestones (back above the SMA 200, golden cross, near the old high, a breakout after
+/// turn: the close at least <c>AboveSma50Pct</c> above the <c>LowDays</c>-day low on heavier volume, but not more than <c>MaxChasePct</c> further
+/// above the low (Ernest, 2026-11-17; the POC: <c>MaxChasePct</c> above that line), on a close above the last one. A price back in
+/// that window from above the chase limit needs no volume, only the up day (Ernest, 2026-11-22). Later steps are earned by milestones (back above the SMA 200, golden cross, near the old high, a breakout after
 /// a pullback): each new one, reached after the last buy, earns one step, bought within <c>MaxChasePct</c> above its level.
 /// Keeps state between days (the milestones used, the breakout tracker): one instance per run.
 /// </summary>
@@ -15,7 +16,7 @@ public class ComebackRules : BuyRulesBase
     const int HighDays = 252, VolumeShort = 5, VolumeLong = 50, SmaShort = 50, SmaLong = 200;
 
     readonly ComebackParams p;
-    readonly bool pocChaseLimit;
+    readonly bool pocTurn;
     readonly IReadOnlyList<decimal> close;
     readonly DateOnly[] dates;
     readonly decimal?[] low, sma50, sma200, high252, vol5, vol50;
@@ -35,12 +36,12 @@ public class ComebackRules : BuyRulesBase
     string? signalled;
     readonly Dictionary<string, DateOnly> boughtOn = [];
 
-    /// <param name="pocChaseLimit">The POC's first-step chase limit (<c>MaxChasePct</c> above the buy line), for the golden
-    /// tests only: an engine option, not a saved param.</param>
-    public ComebackRules(IReadOnlyList<PriceBar> bars, ComebackParams parameters, bool pocChaseLimit = false) : base(bars.Count)
+    /// <param name="pocTurn">The POC's first step, for the golden tests only (an engine option, not a saved param): its chase limit
+    /// <c>MaxChasePct</c> above the buy line, and the volume on any price, never an up day or a pullback from above.</param>
+    public ComebackRules(IReadOnlyList<PriceBar> bars, ComebackParams parameters, bool pocTurn = false) : base(bars.Count)
     {
         p = parameters;
-        this.pocChaseLimit = pocChaseLimit;
+        this.pocTurn = pocTurn;
         close = [.. bars.Select(b => b.Close)];
         dates = [.. bars.Select(b => b.Date)];
         var volume = bars.Select(b => (decimal)b.Volume).ToList();
@@ -83,7 +84,7 @@ public class ComebackRules : BuyRulesBase
 
     /// <summary>The first step's chase limit: <c>MaxChasePct</c> more above the low than the buy line (POC: above the line).</summary>
     decimal TurnLimit(decimal lowest, decimal buyLine) =>
-        pocChaseLimit ? Chase(buyLine) : lowest * (1 + (p.AboveSma50Pct + p.MaxChasePct) / 100);
+        pocTurn ? Chase(buyLine) : lowest * (1 + (p.AboveSma50Pct + p.MaxChasePct) / 100);
 
     /// <summary>The day of the recent low: the latest of the last <c>LowDays</c> closes at it.</summary>
     DateOnly LowOn(int i, decimal lowest)
@@ -93,16 +94,36 @@ public class ComebackRules : BuyRulesBase
         return dates[i];
     }
 
-    /// <summary>The close's change over the volume's 5 days, in % (null before 5 days of history).</summary>
-    decimal? RisePct(int i) => i >= VolumeShort && close[i - VolumeShort] > 0 ? Indicators.PctFrom(close[i], close[i - VolumeShort]) : null;
+    /// <summary>The close's change since the last close, in % (null on the first day).</summary>
+    decimal? DayPct(int i) => i >= 1 && close[i - 1] > 0 ? Indicators.PctFrom(close[i], close[i - 1]) : null;
 
     /// <summary>
     /// Whether the 5-day volume is at least <c>VolumeRatio</c> times the 50-day (no volume at all: no; the 50-day average is zero
-    /// only when the 5-day one is, the POC's 0/0), on a price that rose over those 5 days: heavy trading on a falling price
-    /// is selling, not a turn (from <c>VolumeOnRiseFrom</c> on; Ernest, 2026-11-16, not in the POC).
+    /// only when the 5-day one is, the POC's 0/0).
     /// </summary>
-    bool VolumeOk(int i) => vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 && short5 / long50 >= p.VolumeRatio
-        && (dates[i] < p.VolumeOnRiseFrom || RisePct(i) > 0);
+    bool VolumeOk(int i) => vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 && short5 / long50 >= p.VolumeRatio;
+
+    /// <summary>
+    /// The first step needs a close above the last one: heavy trading on a falling price is selling, not a turn (Ernest,
+    /// 2026-11-16, then 2026-11-22 for the last close instead of the one 5 days before; not in the POC). A signal is bought the
+    /// next day, so a down day can't end one that is open.
+    /// </summary>
+    bool UpOk(int i) => pocTurn || DayPct(i) > 0;
+
+    /// <summary>
+    /// Whether the price is back in the turn's window from above: the last close outside the window (since the recent low) was
+    /// above the chase limit. Such a pullback needs no volume: trading is usually light on one, and the turn already ran.
+    /// </summary>
+    bool FromAbove(int i, decimal lowest, decimal buyLine, decimal limit)
+    {
+        if (pocTurn || close[i] < buyLine || close[i] > limit) return false;
+        for (var k = i - 1; k > i - p.LowDays && k >= 0; k--)
+        {
+            if (close[k] > limit) return true;
+            if (close[k] < buyLine || close[k] <= lowest) return false; // Below the window, or the low itself: came from below.
+        }
+        return false;
+    }
 
     protected override RuleDecision DecideDay(int i, DayContext day)
     {
@@ -134,12 +155,15 @@ public class ComebackRules : BuyRulesBase
             turnOn = null;
             signalled = null;
             boughtOn.Clear();
-            var (status, reason) = window.Compose(day, candidate[i], entryOk: price >= buyLine && VolumeOk(i), extended: price > TurnLimit(lowest, buyLine),
+            var limit = TurnLimit(lowest, buyLine);
+            var fromAbove = FromAbove(i, lowest, buyLine, limit);
+            var entryOk = price >= buyLine && (fromAbove || VolumeOk(i)) && UpOk(i);
+            var (status, reason) = window.Compose(day, candidate[i], entryOk, extended: price > limit,
                 "Price or volume fell back below the buy conditions.",
-                pocChaseLimit
+                pocTurn
                     ? $"Price is more than {p.MaxChasePct:0.##}% above the buy line: too late to chase."
                     : $"Price is more than {p.AboveSma50Pct + p.MaxChasePct:0.##}% above the recent low: too late to chase.");
-            var turn = TurnChecks(i, price, high, lowest, buyLine);
+            var turn = TurnChecks(i, price, high, lowest, buyLine, limit, fromAbove);
             // After a sale the cooldown holds the first buy back.
             if (RuleCheck.Cooldown(day, p.CooldownDays) is { } wait) turn.Add(wait);
             return new RuleDecision(status, reason, facts, window.Open) { Checks = turn };
@@ -161,7 +185,7 @@ public class ComebackRules : BuyRulesBase
     }
 
     /// <summary>The checks before the first step: beaten down lately, the turn, and the next-step milestones in preview.</summary>
-    List<RuleCheck> TurnChecks(int i, decimal price, decimal high, decimal lowest, decimal buyLine)
+    List<RuleCheck> TurnChecks(int i, decimal price, decimal high, decimal lowest, decimal buyLine, decimal chaseLimit, bool fromAbove)
     {
         var ratio = vol5[i] is { } short5 && vol50[i] is { } long50 && long50 > 0 ? short5 / long50 : 0;
         var dropPct = Math.Round(Indicators.PctFrom(price, high), 1);
@@ -185,23 +209,34 @@ public class ComebackRules : BuyRulesBase
                 checks.Add(new("vsSma200", CheckGroup.Candidate, price < slow, vsSma200Pct, p.DrawdownPct, Level: Math.Round(slow, 2)));
         }
         var aboveLow = Math.Round(Indicators.PctFrom(price, lowest), 1);
-        var chaseLimit = TurnLimit(lowest, buyLine);
         var maxAboveLow = Math.Round(Indicators.PctFrom(chaseLimit, lowest), 1);
         var inBuyWindow = price >= buyLine && price <= chaseLimit;
         // Date: the recent low's day, which the chart marks.
         checks.Add(new("buyLine", CheckGroup.Buy, inBuyWindow, aboveLow, p.AboveSma50Pct, maxAboveLow,
             Math.Round(buyLine, 2), Date: LowOn(i, lowest), MidLevel: Math.Round(lowest, 2), EndLevel: Math.Round(chaseLimit, 2),
             SubValue: p.LowDays, EndValue: p.MaxChasePct));
-        var volumeOk = VolumeOk(i);
-        checks.Add(new("volume", CheckGroup.Buy, volumeOk, Math.Round(ratio, 2), p.VolumeRatio,
-            // Enough volume on a price that isn't rising is not met: the bar stops short of its target, as the verdict says.
-            Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio) is { } done && !volumeOk ? Math.Min(done, 0.99m) : RuleCheck.ProgressOf(ratio, p.VolumeRatio),
-            // The price over the volume's 5 days: the volume only counts on a rise.
-            // Never "0%" for a small move: the verdict reads the unrounded change.
-            SubValue: RisePct(i) is { } rise ? (Math.Round(rise, 1) is var shown && shown == 0 && rise != 0 ? 0.1m * Math.Sign(rise) : shown) : null));
+        var upOk = UpOk(i);
+        var move = pocTurn ? null : Shown(DayPct(i));
+        if (fromAbove)
+        {
+            // Back from above the chase limit: no volume needed, only the up day.
+            checks.Add(new("pullback", CheckGroup.Buy, upOk, Level: Math.Round(chaseLimit, 2), SubValue: move));
+        }
+        else
+        {
+            var volumeOk = VolumeOk(i) && upOk;
+            checks.Add(new("volume", CheckGroup.Buy, volumeOk, Math.Round(ratio, 2), p.VolumeRatio,
+                // Enough volume on a price that isn't rising is not met: the bar stops short of its target, as the verdict says.
+                Progress: RuleCheck.ProgressOf(ratio, p.VolumeRatio) is { } done && !volumeOk ? Math.Min(done, 0.99m) : RuleCheck.ProgressOf(ratio, p.VolumeRatio),
+                SubValue: move));
+        }
         checks.AddRange(MilestoneChecks(i, price, BuildMilestones(i, price, pulled: false, highBeforePullback: null), preview: true));
         return checks;
     }
+
+    /// <summary>A price move as the stock page shows it: never "0%" for a small one, as the verdict reads the unrounded change.</summary>
+    static decimal? Shown(decimal? move) =>
+        move is { } m ? (Math.Round(m, 1) is var shown && shown == 0 && m != 0 ? 0.1m * Math.Sign(m) : shown) : null;
 
     List<RuleCheck> MilestoneChecks(int i, decimal price, IReadOnlyList<Milestone> milestones, bool preview)
     {

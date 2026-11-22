@@ -60,10 +60,9 @@ public class EngineGoldenTests
         var golden = Load(name);
         var bars = Bars(golden);
 
-        // The POC counts the volume whatever the price did, and the turn's chase limit from the buy line: STL's own rules
-        // (only on a rise, the limit from the low) are off here.
-        var parameters = new ComebackParams { VolumeOnRiseFrom = DateOnly.MaxValue };
-        var days = RulesRunner.Run(new ComebackRules(bars, parameters, pocChaseLimit: true), bars, new StepPlan(5));
+        // The POC counts the volume whatever the price did, and the turn's chase limit from the buy line: STL's own first step
+        // (on an up day, the limit from the low, a pullback from above without volume) is off here.
+        var days = RulesRunner.Run(new ComebackRules(bars, new ComebackParams(), pocTurn: true), bars, new StepPlan(5));
 
         Matches(golden, days);
     }

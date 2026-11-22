@@ -178,7 +178,7 @@
         "help": "Més llarg: mesura el gir des del mínim d'una finestra més àmplia. Més curt: segueix les caigudes recents de més a prop."
       },
       "volumeRatio": {
-        "sentence": "El volum mitjà de 5 dies és almenys {value} el de 50 dies, amb el preu a l'alça en aquests 5 dies.",
+        "sentence": "El volum mitjà de 5 dies és almenys {value} el de 50 dies. No cal quan el preu torna a la finestra des de dalt.",
         "value": "{n}×",
         "help": "Més negociació confirma el gir. Més alt: menys senyals i més ben recolzats. 1: n'hi ha prou amb un volum normal."
       },
@@ -210,7 +210,7 @@
       },
       "signal": {
         "title": "2 · Senyal de compra: la primera fase",
-        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), amb volum creixent, i com a molt el límit de persecució més per sobre del mínim. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
+        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), com a molt el límit de persecució més per sobre del mínim, i per sobre del tancament anterior. Si puja des de baix, també cal volum creixent; si torna des de dalt del límit de persecució, no. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera el límit de persecució."
       },
       "milestones": {
         "title": "3 · Fites: les fases següents",
@@ -258,15 +258,21 @@
       },
       "volume": {
         "label": "Volum: mitjana de 5 dies vs 50 dies",
-        "detail": "{value}× la seva mitjana de 50 dies (cal {min}×). Preu: {+subValue}% en aquests 5 dies (cal que pugi).",
-        "short": "volum {value}× (cal {min}×, amb el preu a l'alça)",
-        "info": "Accions negociades per dia: més negociació de l'habitual dona suport al gir, però només mentre el preu puja. Molta negociació amb el preu a la baixa és venda, i no compta."
+        "detail": "{value}× la seva mitjana de 50 dies (cal {min}×). Preu: {+subValue}% en el dia (cal que pugi).",
+        "short": "volum {value}× (cal {min}×, en un dia a l'alça)",
+        "info": "Accions negociades per dia: més negociació de l'habitual dona suport al gir. El senyal s'obre amb un tancament per sobre de l'anterior: molta negociació amb el preu a la baixa és venda, no un gir."
+      },
+      "pullback": {
+        "label": "Torna des de dalt del límit de persecució",
+        "detail": "Ha tornat a la finestra des de dalt de {level}: no cal volum. Preu: {+subValue}% en el dia (cal que pugi).",
+        "short": "torna des de dalt: espera un dia a l'alça",
+        "info": "El preu ja havia superat el límit de persecució i ha tornat a la finestra. En una correcció se sol negociar poc, així que només cal un tancament per sobre de l'anterior."
       },
       "turn": {
         "label": "El gir",
         "detail": "La fase 1 està comprada.",
         "short": "el gir",
-        "info": "La primera fase: el preu ha girat per sobre de la línia de compra (el mínim recent més un marge) amb volum creixent."
+        "info": "La primera fase: el preu ha girat per sobre de la línia de compra (el mínim recent més un marge), amb volum creixent o tornant des de dalt."
       },
       "sma200": {
         "label": "Torna per sobre de la SMA 200",

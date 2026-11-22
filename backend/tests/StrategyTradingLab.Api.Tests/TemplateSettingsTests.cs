@@ -160,9 +160,9 @@ public class TemplateSettingsTests
     }
 
     [Fact]
-    public void The_comeback_and_the_big_market_drop_expose_the_POCs_numeric_rules()
+    public void The_comeback_and_the_big_market_drop_expose_their_numeric_rules()
     {
-        Assert.Equal(["drawdownPct", "candidateDays", "aboveSma50Pct", "lowDays", "volumeRatio", "maxChasePct", "nearHighPct", "breakoutPullbackPct", "cooldownDays"],
+        Assert.Equal(["drawdownPct", "candidateDays", "aboveSma50Pct", "lowDays", "volumeRatio", "maxChasePct", "stepEveryDays", "cooldownDays"],
             TemplateCatalog.Comeback.Settings.Select(s => s.Key));
         Assert.Equal(["drawdownPct", "highDays", "reboundPct", "stepEveryDays"], TemplateCatalog.Bear.Settings.Select(s => s.Key));
 

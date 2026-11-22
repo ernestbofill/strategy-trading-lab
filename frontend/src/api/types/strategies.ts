@@ -184,7 +184,7 @@ export type CheckGroup = 'candidate' | 'buy' | 'sell' | 'next'
 /**
  * One rule's verdict on the latest checked day: backend Engine/BuyRules.cs (RuleCheck). `met` is a boolean verdict;
  * `progress` (0 to 1+, exceeding 1 past the threshold) is how far a figure that must grow has come; `used` marks a
- * milestone that earned its step; `preview` marks next-step rules shown before the first buy.
+ * next-step rule that can't earn a step any more (the comeback's turn); `preview` marks next-step rules shown before the first buy.
  */
 export interface RuleCheck {
   key: string
@@ -202,8 +202,6 @@ export interface RuleCheck {
   subValue?: number | null
   endValue?: number | null
   preview?: boolean | null
-  /** Whether a used next-step rule bought a step (on `date`, when known); false: it was already there at a buy; null: read as bought. */
-  bought?: boolean | null
 }
 
 /** A template's words for a check, with {value}, {+value}, {min}, {max}, {level}, {midLevel}, {endLevel}, and {date}; `past` when past `max`, `none` when no value. */
@@ -214,8 +212,6 @@ export interface CheckTexts {
   past?: string | null
   pastShort?: string | null
   none?: string | null
-  /** The detail with no value but a level followed in `midLevel` (the breakout's highest close since the last buy, the SMA 200 a golden cross must pass). */
-  tracking?: string | null
   info?: string | null
 }
 

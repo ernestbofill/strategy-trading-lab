@@ -23,7 +23,7 @@ const zs: StockRow = {
     }),
     check({ key: 'buyLine', group: 'buy', met: true, value: 16.8, subValue: 50, endValue: 8, min: 15, max: 24.2, level: 233.9, midLevel: 203.39, endLevel: 252.61 }),
     check({ key: 'volume', group: 'buy', met: false, value: 0.84, min: 1.1, progress: 0.76, subValue: -2.1 }),
-    check({ key: 'sma200', group: 'next', met: false, value: 42.5, max: 8, level: 166.86, endLevel: 180.21, preview: true }),
+    check({ key: 'pace', group: 'next', met: false, min: 10, preview: true }),
   ],
 }
 
@@ -50,16 +50,16 @@ const strategy = (stocks: StockRow[]): StrategyDetail => ({
       info: 'The recent low is the lowest close of the last {subValue} trading days ({midLevel}). The buy line is +{min}% above it ({level}): the stock has turned. More than +{max}% above the low ({endLevel}) is too late to chase.',
     },
     volume: { label: 'Volume: 5-day vs 50-day average', detail: '{value}× its 50-day average (needs {min}×). Price: {+subValue}% over those 5 days (needs a rise).', short: 'volume {value}× (needs {min}×)' },
-    sma200: {
-      label: 'Back above SMA 200',
-      detail: '{+value}% vs the SMA 200 ({level}). A step needs 0% to +{max}% (up to {endLevel}).',
-      past: 'Past chase limit: {+value}% above the SMA 200 ({level}); limit is +{max}% ({endLevel}).',
-      short: 'below the SMA 200',
+    pace: {
+      label: 'Next step',
+      detail: '{value} of {min} trading days since the last step.',
+      none: 'After the turn, one more step every {min} trading days, while the close is above the last step\'s price.',
+      short: '{value} of {min} days to the next step',
     },
     gain: { label: 'Proven growth', detail: 'Rose {value}% from its low (needs {min}%).', short: 'rose {value}% (needs {min}%)' },
     stacked: {
       label: 'Averages stacked',
-      detail: 'Short {level} · middle {midLevel} · long {endLevel} (needs short > middle > long).',
+      detail: 'Short {level} · long {endLevel} (needs short > long).',
       short: 'averages not stacked in order',
     },
     zone: {
@@ -117,9 +117,9 @@ describe('StockPage', () => {
     expect(screen.getByText('0.84× its 50-day average (needs 1.1×). Price: −2.1% over those 5 days (needs a rise).')).toBeTruthy()
     expect(screen.getByText('76%')).toBeTruthy()
     expect(screen.getAllByText('Met')).toHaveLength(2)
-    expect(screen.getByText('Not met')).toBeTruthy()
+    // The volume, and the next steps' pace in preview.
+    expect(screen.getAllByText('Not met')).toHaveLength(2)
     expect(screen.getByText('Show next steps')).toBeTruthy()
-    expect(screen.getByText('Past limit')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'About Price vs the buy line' })).toBeTruthy()
   })
 
@@ -132,7 +132,7 @@ describe('StockPage', () => {
         check({ key: 'beaten', group: 'candidate', met: false, value: 74, min: 30, max: 60, date: '2026-07-15' }),
         check({ key: 'buyLine', group: 'buy', met: false, value: -13, subValue: 50, min: 15, max: 8, level: 187.28, midLevel: 162.85, endLevel: 202.26 }),
         check({ key: 'gain', group: 'candidate', met: true, value: 118.9, min: 50, progress: 2.38 }),
-        check({ key: 'stacked', group: 'candidate', met: true, value: 32.5, level: 41.2, midLevel: 38.5, endLevel: 31.1 }),
+        check({ key: 'stacked', group: 'candidate', met: true, value: 32.5, level: 41.2, endLevel: 31.1 }),
         check({ key: 'zone', group: 'buy', met: false, value: 26.7, min: 5, max: 15, level: 42.7, endLevel: 38.21 }),
       ],
     }
@@ -143,7 +143,6 @@ describe('StockPage', () => {
     expect(screen.getByText('+0% above the recent low ($162.85): needs +15% to +24.2% ($187.28 to $202.26).')).toBeTruthy()
     expect(screen.getByText('118.9%')).toBeTruthy()
     expect(screen.getByText('Short $41.20')).toBeTruthy()
-    expect(screen.getByText('Mid $38.50')).toBeTruthy()
     expect(screen.getByText('Long $31.10')).toBeTruthy()
     expect(screen.getByText('Past zone')).toBeTruthy()
     expect(screen.getByText('Fell past the discount zone: 26.7% below the peak; the zone is 5–15% ($42.70 to $38.21).')).toBeTruthy()

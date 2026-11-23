@@ -23,7 +23,7 @@ public class ComebackRules : BuyRulesBase
     readonly decimal?[] low, sma200, high252, vol5, vol50;
     readonly bool[] candidate;
     readonly int?[] beatenAgo;
-    readonly DateOnly?[] beatenOn;
+    readonly DateOnly?[] beatenOn, candidateFrom;
     readonly BuyWindow window = new();
 
     // State between days. The turn's day, for the stock page only (no verdict reads it).
@@ -47,7 +47,7 @@ public class ComebackRules : BuyRulesBase
         high252 = Indicators.RollingHigh(close, HighDays);
         vol5 = Indicators.Sma(volume, VolumeShort);
         vol50 = Indicators.Sma(volume, VolumeLong);
-        (candidate, beatenAgo, beatenOn) = Candidates();
+        (candidate, beatenAgo, beatenOn, candidateFrom) = Candidates();
     }
 
     public override int MinHistory => Math.Max(HighDays, p.LowDays);
@@ -56,14 +56,17 @@ public class ComebackRules : BuyRulesBase
 
     /// <summary>
     /// A candidate stays one for <c>CandidateDays</c> days after it was last beaten down (today included). Also how many
-    /// trading days ago that was, and on which date, each day (null if never).
+    /// trading days ago that was, and on which date, each day (null if never), and the first day of the candidate's unbroken
+    /// run ("Candidate since"): being beaten down again every day moves the last date, never this one (feedback, 2026-11-21).
     /// </summary>
-    (bool[] Candidate, int?[] BeatenAgo, DateOnly?[] BeatenOn) Candidates()
+    (bool[] Candidate, int?[] BeatenAgo, DateOnly?[] BeatenOn, DateOnly?[] CandidateFrom) Candidates()
     {
         var result = new bool[close.Count];
         var ago = new int?[close.Count];
         var on = new DateOnly?[close.Count];
+        var from = new DateOnly?[close.Count];
         var lastBeaten = int.MinValue;
+        DateOnly? runFrom = null;
         for (var i = 0; i < close.Count; i++)
         {
             if (high252[i] is { } high && Indicators.PctFrom(close[i], high) <= -p.DrawdownPct
@@ -72,8 +75,10 @@ public class ComebackRules : BuyRulesBase
             result[i] = lastBeaten != int.MinValue && i - lastBeaten <= p.CandidateDays;
             ago[i] = lastBeaten == int.MinValue ? null : i - lastBeaten;
             on[i] = lastBeaten == int.MinValue ? null : dates[lastBeaten];
+            runFrom = result[i] ? runFrom ?? dates[i] : null;
+            from[i] = runFrom;
         }
-        return (result, ago, on);
+        return (result, ago, on, from);
     }
 
     /// <summary>A % to one decimal, never "0%" for a small move: the verdict reads the unrounded figure.</summary>
@@ -142,7 +147,7 @@ public class ComebackRules : BuyRulesBase
             // How far the price still has to rise to reach the buy line (0 at or above it): "close to the line".
             ["distancePct"] = Math.Round(Math.Max(0, Indicators.PctFrom(buyLine, price)), 2),
         };
-        if (candidate[i] && beatenOn[i] is { } sinceDate) facts["candidateSince"] = sinceDate.ToString("yyyy-MM-dd");
+        if (candidateFrom[i] is { } sinceDate) facts["candidateSince"] = sinceDate.ToString("yyyy-MM-dd");
 
         if (!day.HasPosition)
         {

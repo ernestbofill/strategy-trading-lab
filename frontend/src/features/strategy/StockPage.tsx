@@ -71,6 +71,8 @@ const GROUPS: { group: CheckGroup; title: MessageKey }[] = [
 
 function candidateDateOf(row: StockRow): string | null {
   if (row.candidateSince) return row.candidateSince
+  // Only for a check stored without it: a met candidate check's date, which for the comeback's "beaten" is the last day it
+  // was beaten down, not the start of the run (#275). The dip, comeback and bear store candidateSince on every candidate day.
   return row.checks.find((c) => c.group === 'candidate' && c.met === true && c.date)?.date ?? null
 }
 
@@ -181,7 +183,7 @@ export function StockRules({ s, row, stats }: { s: StrategyDetail; row: StockRow
           strategyId={s.id}
           assetId={row.assetId}
           isCandidate={row.checks.length > 0 ? isCandidate : null}
-          beatenDate={row.checks.some((c) => c.key === 'beaten') ? since : null}
+          candidateSince={row.checks.some((c) => c.key === 'beaten') ? since : null}
           currency={row.currency}
           trades={trades}
         />

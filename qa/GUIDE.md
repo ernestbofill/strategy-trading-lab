@@ -141,12 +141,12 @@ Pick the ones that fit the charter. Name the one you used in the log.
 
 Check these on every screen you reach. A break is a finding.
 
-**STL's product rules** (CLAUDE.md, *Product rules*):
+**STL's product rules** (CLAUDE.md, *Product rules* and *Writing*):
 
 1. The site footer ends with "Not financial advice. Signals follow your rules." and the legal links. Screens don't add other disclaimer lines.
-2. No instruction or urgency: no "buy now", no price targets or return forecasts, no "recommended for you".
+2. The copy is direct, with no filler, and trading terms are explained the first time they appear (CLAUDE.md, *Writing*).
 3. Results always sit next to the index fund and the worst year.
-4. Every strategy shows its mode, *Simulation* or *Live*. Results of the two are never mixed.
+4. Every strategy shows its mode, *Simulation* or *Manual*. Results of the two are never mixed.
 5. The words are *stock*, *fund* and *step*, never *tranche*.
 6. No horizontal scrolling at any width. Touch targets at least 44 × 44px. Readable contrast.
 

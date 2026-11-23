@@ -30,11 +30,10 @@ The user *picks a strategy template*, sets it up, names it, and *runs* it as a s
 
 ## Wording rules
 
-These keep the app on the "information and tools" side of the line between information and investment advice (see the regulation note). They apply to every screen, email and alert.
+These were written to keep the app on the "information and tools" side of the line between information and investment advice (see the regulation note), before it became a personal app (2026-11-14). They apply to every screen, email and alert. "Describe, don't instruct" was dropped (Ernest, 2026-11-23, #278); how to write copy is in `CLAUDE.md`, *Writing*.
 
-- **Describe, don't instruct.** Template names describe the situation the rules look for, not an action for the user: *Winners at a discount*, *The comeback*, *Bear markets*, *Your AI's top picks*. *Index trend* names the index and the idea, not an action ("Ride an index" would read as an order). Inside a template's page, the strategy is the subject ("It signals when…"), never the user ("Buy when…"). Template copy says the strategy *signals* a buy or a sale rather than that it *buys*.
-- **Signals report rules, not opinions.** Every signal says which rule was met, the facts that met it and, for live, what that means under the user's own settings. Never "buy now", no urgency, no price targets or return forecasts.
-- **The user owns the setup.** Lists, settings and budgets are presented as the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings", never "recommended for you".
+- **Signals report rules, not opinions.** Every signal says which rule was met, the facts that met it and, for live, what that means under the user's own settings.
+- **The user owns the setup.** Lists, settings and budgets are presented as the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings".
 - **No promises.** No claims that markets or stocks will recover or rise. Results are always shown with the comparison to an index fund and the worst year.
 - **A disclaimer everywhere results or signals appear, in two lengths.** The user sees it over and over, so screens seen again and again (Review, How we tested, the strategy page, Confirm a signal, the footer) use the short one: "Not financial advice. Signals follow your rules." Where the user commits (accepted once at sign-up, above the button on Name, preview and confirm, and the legal page) use the full one: "Not financial advice. Signals follow your rules; you decide and trade at your own broker." The wireframes still show the full one everywhere; this rule wins.
 

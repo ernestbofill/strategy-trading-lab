@@ -14,7 +14,7 @@ Read these before building a screen. Don't invent copy or behaviour that they al
 
 - [ROADMAP.md](ROADMAP.md): what is built, what comes next and the open decisions. It is the backlog: take work from it and keep it up to date.
 - [docs/strategy-trading-lab-app-spec.md](docs/strategy-trading-lab-app-spec.md): every screen and behaviour. It is work in progress, and so is the implementation:
-  - Its copy is the current version, not final. You may shorten or improve it (see *UI simplicity* in the frontend instructions), except the disclaimers, which stay word for word.
+  - Its copy is the current version, not final. You may shorten or improve it (see *Writing* below and *UI simplicity* in the frontend instructions), except the disclaimers, which stay word for word.
   - Text in `[brackets]` is a placeholder for data or copy still to be written.
   - It has gaps, and some parts are only ideas. Where it is unclear or doesn't fit, make a reasonable assumption, build it, and update the spec in the same PR. List each assumption in the PR description.
 - [wireframes/](wireframes/): one `.dc.html` per screen (design-tool format, not runnable). Use their markup for layout, spacing and colours.
@@ -81,13 +81,28 @@ Ask for a credential when you need one.
 
 ## Product rules
 
-- **Describe, don't instruct.** No "buy now", no urgency, no price targets or return forecasts, no "recommended for you".
 - **One disclaimer, in the site footer.** Every screen ends with "Not financial advice. Signals follow your rules." and the legal links; screens don't repeat it or add other disclaimer lines, because the app is already text heavy (Ernest, #105). The full one, "Not financial advice. Signals follow your rules; you decide and trade at your own broker.", is accepted once at sign-up and opens the Disclaimer and Terms pages, which hold the details (including "Past results don't promise future ones."). Emails, which have no app footer, keep the short one.
 - Results are always shown next to the index fund and the worst year. The dashboard card is the exception: it shows the index fund only, and the strategy page keeps the worst year (Ernest, 2026-11-07).
 - Words: say *stock* or *fund* and *step*, not *tranche*.
 - Every strategy shows its mode (*Simulation* or *Manual*; Manual is `live` in the code). Results of the two modes are never mixed.
 - Mobile first (wireframes are 390px wide), but every screen must also work on desktop, with no horizontal scrolling.
 - Touch targets are at least 44 × 44px. Text meets WCAG AA contrast.
+
+## Writing
+
+For app copy, emails, docs, PRs, commits and chat (Ernest, #278). AI text tends to pad; cut it.
+
+- **Direct and specific.** Say the thing. If a word or clause can go and the meaning stays, it goes.
+- **The standard term, not a paraphrase.** Use the term that exists (IRR, SMA 200, drawdown, spread), explained the first time a screen shows it, in brackets or an info tip. Never write a term out as a sentence, and never invent a name for something that has one.
+- **No filler.** No "Here's how", "Note that", "simply", "exactly", "in order to"; no restating a label; no reassurance; a "so that…" only when the reader needs the reason; no metaphors.
+- **Labels say what they do.** A button or link names its action or its destination, not where something can be found.
+- **Numbers over adjectives:** "60 stocks", not "a large sample".
+- **Before → after:**
+  - "Rates count only the money invested, for as long as it was invested; idle budget isn't counted." → "Money-weighted returns (IRR) on the money invested: idle cash is left out."
+  - "Change them in Advanced settings →" → "Edit rules"
+  - "This PR introduces a new section that aims to provide guidance on how to write." → "Adds a Writing section."
+
+Existing copy changes when it is next touched; no sweep is needed.
 
 ## Git workflow
 

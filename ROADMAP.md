@@ -141,7 +141,7 @@ Both modes work end to end for every template the pick screen offers.
 
 ### Milestone 4 · Backtest
 
-STL's own backtest, planned with Ernest on 2026-11-19 and 2026-11-20: how it works is in [docs/backtest.md](docs/backtest.md). The screens and how it fits into existing screens are still to design (see *Open decisions*). Proposed order, for Ernest to confirm:
+STL's own backtest, planned with Ernest on 2026-11-19 and 2026-11-20: how it works is in [docs/backtest.md](docs/backtest.md). The screens and how it fits into existing screens are still to design (see *Open decisions*). Order confirmed by Ernest (2026-11-23). Before item 55, the app-wide copy change in issue #277 (*amount per trade* and *trades* instead of *step*; "Describe, don't instruct" dropped), so the screens use the new words:
 
 52. **Backtest data.** Foundational, so high risk. *Spec: designed* (backtest.md, *Data*). The S&P 500's members on any date (fja05680/sp500, checked against a second list) with a symbol map for renamed tickers; Yahoo's adjusted daily prices for every member since the earliest period's warm-up, plus the index funds; a snapshot a month in object storage (one compressed file per ticker and a manifest); started by the owner. An owner page with the snapshot's quality report (coverage per period start, gaps, jumps over 40%, renamed and missing tickers). Ernest reviews the first report before any result counts. Draws the test draft (60 stocks, by sector and size, fixed seed) and runs its two checks: representative of all eligible members, and enough candidates for each stock template.
 53. **Backtest simulator.** High risk. *Spec: designed* (backtest.md). Pure code over the engine: the periods with their warm-up, the monthly limit (unspent limit carries over in full), sale proceeds reinvested, the seeded order when money is short, today's rule for a signal with no money, fee and spread on every trade, the three baselines (S&P 500 monthly; same days, same money, same list; same stocks monthly), the test draft (one fixed draft, stratified by sector), and the money-weighted results (a year on average, worst year, the average share of the budget invested, steps). Checked on a hand-worked case, against the POC's golden runs, and against the app: a backtest of a running simulation from its start day must give the trades the app recorded.
@@ -202,6 +202,6 @@ Roughly in the order they become useful (was *After launch*):
 ## Open decisions (Ernest)
 
 - **The comeback: the recent low since it was beaten down?** (feedback, 2026-11-16) Today the buy line stands on the lowest close of the last 50 trading days (#234). Ernest's idea: the lowest close since the stock was last beaten down. Needs a backtest before it changes: it is the first step's signal. High risk.
-- **Backtest, still to settle** (planning, 2026-11-20; see [docs/backtest.md](docs/backtest.md)): the screens, after the functionality; the order of Milestone 4.
+- **Backtest, still to settle** (planning, 2026-11-20; see [docs/backtest.md](docs/backtest.md)): the screens' last details while building item 55.
 
 The rest were settled with Ernest on 2026-11-01 (see `docs/decisions.md`). The spec's [Open questions](docs/strategy-trading-lab-app-spec.md#10-open-questions) hold the ones for the lawyer and for later: regulation, AI data, the suggested prompt, web push on iPhone.

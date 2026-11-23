@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-23 · Plain money words: *amount per trade* and *trades* replace *step* in the app's copy (the code keeps `step`), and the "Describe, don't instruct" rule is dropped; done app-wide in its own PR (issue #277). The backtest plan already uses the new words. Milestone 4's order confirmed. (Ernest, #265)
 - 2026-11-23 · The backtest's independent tests are called *periods* (were *parts*), as *How we tested* already calls them; the setting is *Years*: "16, in 4-year periods". (Ernest, #265)
 - 2026-11-23 · Backtest screens, second round: "Draft A" is called the test draft; the test draft's period stays within the dataset's years, while the strategy's list and one stock can reach back as far as Yahoo has their prices; no warning on a list or one stock; info tips on each baseline and on *Budget at work*; the simulated trades in the data table; Advanced settings' panel shows the average of the periods only, *Default / Saved / Current*, and one baseline (S&P 500, monthly). (Ernest, #265)
 - 2026-11-23 · Backtest periods: 16 years in 4-year periods by default (2011–14 to 2023–26), the latest period only for one stock and the strategy's own list. Entry points also from Advanced settings in the new-strategy flow and from *Review a template*. (Ernest, #265)

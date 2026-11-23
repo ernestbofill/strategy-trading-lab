@@ -1,6 +1,6 @@
 # Backtest
 
-How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-23. The screens are drafted below (*Screens, draft*), for another round with Ernest.
+How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-23. It uses the wording of the app-wide copy change in issue #277 (*amount per trade* and *trades* for what the app calls a step today). The screens are drafted below (*Screens, draft*), for another round with Ernest.
 
 Today's template figures come from the POC's research ([backtest-research-findings.md](backtest-research-findings.md)). This backtest replaces them with STL's own engine, so the tested results describe the rules the app runs.
 
@@ -20,10 +20,10 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Stocks | The test draft: one fixed draft of 60 stocks from the S&P 500 | Or the strategy's own list, or one stock (see *Stocks*) |
 | Index | S&P 500 | *Bear markets* and *Index trend* only: the index fund they trade (S&P 500, Nasdaq-100, DAX, Nikkei 225…). How often a market fell 20% depends on it |
 | Years | 16 years, in 4-year periods (Ernest, 2026-11-23) | Both are parameters. 4 years gives the strategy time to profit from its buys. One stock and the strategy's own list: the latest period only |
-| Budget | €6,000 (60 steps, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max steps × step size, so the budget fits it |
-| Step | €100, up to 5 per stock | As the strategy's budget |
+| Budget | €6,000 (60 trades, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max trades × amount per trade, so the budget fits it |
+| Amount per trade | €100, up to 5 trades a stock | As the strategy's budget |
 | Monthly limit | €400 a month (the budget over 15 months at the earliest) | A cap on new money spent; unspent limit carries over in full (see *Money*). Limit = budget means no limit |
-| Fee | 0.1% a trade | No fixed part, so results don't depend on the budget's size, only on how many steps it holds |
+| Fee | 0.1% a trade | No fixed part, so results don't depend on the budget's size, only on how many trades it holds |
 | Spread | 0.1% a trade | Added to the buy price and taken off the sell price |
 
 No currency fee. Taxes are not included.
@@ -32,7 +32,7 @@ No currency fee. Taxes are not included.
 
 - The periods are calendar years, counted back from today: with the defaults, 2011–14, 2015–18, 2019–22 and 2023–26 (to the last close). The data starts in late 2009, for the first period's warm-up.
 - Each period is an independent test that starts with a fresh budget: the strategy tested in different periods, as *How we tested* says today.
-- **All** is the unified result, the periods combined (Ernest, 2026-11-23): the average of the periods' rates, the worst year of any period, the average budget invested, the steps added up. Each period's own results stay available (the period tabs). It is not one continuous test: with the budget used in the first two years, that would mostly measure holding.
+- **All** is the unified result, the periods combined (Ernest, 2026-11-23): the average of the periods' rates, the worst year of any period, the average budget invested, the trades added up. Each period's own results stay available (the period tabs). It is not one continuous test: with the budget used in the first two years, that would mostly measure holding.
 - **Warm-up:** the rules read about 15 months of prices before a period starts (the SMA 200, the 52-week high and the 168-day low need them), but nothing is bought before the start. It is what a strategy started that day in the app would see. Without it, the first year of each period would have no signals.
 - At a period's end, holdings are valued at the last close. Nothing is sold to close the test, for the strategy or the baselines.
 - The latest period runs to the last close, so it is shorter than the others (2023–26 is under 4 years today); its label says so.
@@ -54,7 +54,7 @@ Decided by Ernest on 2026-11-22. Every baseline pays the same fee and spread, ne
 | # | Baseline | What it does | The question it answers |
 | --- | --- | --- | --- |
 | 1 | **S&P 500, monthly** | Buys SPY with each month's limit until the budget is used. | Does the strategy beat the market? (The product rule's index fund.) |
-| 2 | **Same days, same money, same list** | Each time the strategy buys a step, the same amount goes into the whole pool that day, split evenly. | Does the strategy choose the right stocks in the list? Same days and money, so only the choice of stocks differs. |
+| 2 | **Same days, same money, same list** | Each time the strategy buys, the same amount goes into the whole pool that day, split evenly. | Does the strategy choose the right stocks in the list? Same days and money, so only the choice of stocks differs. |
 | 3 | **Same stocks, monthly** | Buys the whole pool with each month's limit, split evenly, until the budget is used. | Does the timing matter much? Read against baseline 2: both buy the whole pool, only the days differ. |
 
 So the gaps read as: strategy vs 1, against the market; strategy vs 2, the choice of stocks; 2 vs 3, the timing.
@@ -73,7 +73,7 @@ Per period and for **All**, for the strategy and each baseline, all **money-weig
   `budget invested = (1 / N) × Σ min(1, invested on day t / budget)`
 
   where *N* is the number of trading days in the period and *invested on day t* is the money put into the holdings still held that day (their cost, not their value). The whole budget invested on the first day reads 100%; money invested on the last day adds almost nothing. Example: half the budget on the first day and the other half at the period's middle reads 0.5 × 100% + 0.5 × 50% = 75%. After a sale (*Index trend*) the money is idle until bought again; reinvested gains can't take a day above 100%.
-- The number of steps.
+- The number of trades.
 - **A note that idle money isn't counted:** "Money-weighted returns (IRR) on the money invested: idle cash is left out." (Not *direct alpha*: that is the gap to an index bought with the same cash flows, which baseline 2 and the dropped *S&P 500, same days* measure.) Roughly, the rate on the whole budget would be the rate shown times the share invested.
 
 The product rules hold: every result sits next to the index fund and the worst year.
@@ -94,7 +94,7 @@ Two different things:
 4. **Drawn** at random within each sector and size group with a fixed, published seed. Each period gets its own draft, from its own members, with the same seed.
 5. **Checked, never re-drawn to look better:**
    - *Representative:* per period, the draft's *same stocks, monthly* rate is within about ±2 points a year of the same baseline on all eligible members.
-   - *Candidates:* each stock template, at its defaults, finds enough signals in it to invest its budget over the period (the steps and the budget invested per template and period).
+   - *Candidates:* each stock template, at its defaults, finds enough signals in it to invest its budget over the period (the trades and the budget invested per template and period).
    A failed check is reported and decided with Ernest (a larger draft, for example); changing the seed until the numbers look right would be cherry-picking.
 
 ## Stocks
@@ -103,7 +103,7 @@ Three ways to choose the pool:
 
 1. **The test draft** (the default, for comparing): drawn from the S&P 500 as it stood on each period's start date (the stocks SPY held then), stratified by sector, with a fixed, published seed. The same draft and data make results of different strategies and settings comparable.
 2. **The strategy's own list.** Over less time (default: the latest period only), since a list chosen today knows how its stocks did, which flatters the past. Not limited to the dataset's years. A stock without enough history at a period's start sits that period out, and the result says so.
-3. **One stock.** The budget is sized for it (max steps × step size). The latest period only, by default, as for the own list: the stock is chosen knowing how it did.
+3. **One stock.** The budget is sized for it (max trades × amount per trade). The latest period only, by default, as for the own list: the stock is chosen knowing how it did.
 
 Not for *Your AI's top picks*, which has no rules to replay.
 
@@ -146,7 +146,8 @@ Rules: your saved settings · 2 changed
 ┌ TEST SETTINGS ─────────────────── [Edit] ┐
 │ Stocks   Test draft · 60 from the S&P 500│
 │ Years    16, in 4-year periods            │
-│ Money    €6,000 · €100 steps · 5 a stock │
+│ Money    €6,000 · €100 per trade · 5 a   │
+│          stock                           │
 │          at most €400 a month            │
 │ Costs    0.1% fee · 0.1% spread a trade  │
 │ Data     2009-10 to 2026-10 · snapshot   │
@@ -159,7 +160,8 @@ STOCKS   (•) Test draft · 60 from the S&P 500
          ( ) One stock        [ NVDA      ▾ ]
 INDEX    [ S&P 500 ▾ ]   (Bear, Trend only)
 YEARS    [ 16 ], in [ 4 ]-year periods
-MONEY    Budget [ 6,000 ]  Step [ 100 ]  up to [5]
+MONEY    Budget [ 6,000 ]  Per trade [ 100 ]
+         Up to [5] trades a stock
          Each month at most [ 400 ]
          Unspent room carries over.
 COSTS    Fee [0.1]%   Spread [0.1]%  a trade
@@ -183,7 +185,7 @@ Your strategy        +11.6%    -17%      58%
 2 Same days, list  i  +9.9%    -16%      58%
 3 Same stocks, mthly i +9.8%   -18%      81%
 
-52 steps · test draft: 60 stocks, 2 without prices
+52 trades · test draft: 60 stocks, 2 without prices
 Money-weighted returns (IRR) on the money
 invested: idle cash is left out.
                          See the 52 trades →
@@ -202,11 +204,11 @@ vs 2  the choice of stocks  +1.7
 
 - **Info tips:**
   - *1 S&P 500, monthly*: "Buys an S&P 500 fund with each month's money until the budget is used. Does the strategy beat the market?"
-  - *2 Same days, same list*: "Each time the strategy buys a step, the same amount goes into all the stocks in the list that day, split evenly. Does the strategy choose the right stocks?"
+  - *2 Same days, same list*: "Each time the strategy buys, the same amount goes into all the stocks in the list that day, split evenly. Does the strategy choose the right stocks?"
   - *3 Same stocks, monthly*: "Buys all the stocks in the list with each month's money, split evenly. Does the timing matter? Compare it with 2: same stocks, other days."
   - *Budget at work*: "How much of the budget was invested, on average over the period's days. All of it spent on day one is 100%; all of it spent 2 years into a 4-year period is 50%."
 - **All** tab: the average of the periods' rates, the worst year of any period, the average budget at work; under it, "Average of 4 periods, each a fresh test." The latest period's tab says it runs to the last close.
-- **See the trades**: the strategy's simulated trades in the shared data table (`DataTable`): date, stock, buy or sell, step, price, amount, fee; sortable and filterable, for the selected period.
+- **See the trades**: the strategy's simulated trades in the shared data table (`DataTable`): date, stock, buy or sell, trade number (2 of 5), price, amount, fee; sortable and filterable, for the selected period.
 - **The chart**: the strategy and baseline 1; tapping a baseline row adds its line.
 - **One stock**: baseline 2 is hidden (it would be the strategy itself); baseline 3 reads "[stock], monthly". **Bear markets** and **Index trend**: baseline 2 hidden, baseline 3 is the index fund, monthly.
 
@@ -221,7 +223,7 @@ Test draft · 16 years in 4-year periods · €6,000
 A year, on average  +10.8%  +11.0%  +11.6%
 Worst year           -14%    -15%    -17%
 Budget at work i      48%     51%     58%
-Steps                  41      45      52
+Trades                 41      45      52
 S&P 500, monthly i   +9.1%   (the same for all)
 
 Money-weighted (IRR) on the money invested.
@@ -260,4 +262,3 @@ Money-weighted (IRR) on the money invested.
 ## Open points
 
 - The screens, once the functionality is settled.
-- The order of the PRs (proposed in `ROADMAP.md`).

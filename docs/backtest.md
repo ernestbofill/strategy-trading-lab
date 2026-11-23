@@ -19,10 +19,10 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Rules | The template's tested defaults, or a strategy's settings | Any Advanced settings values |
 | Stocks | Draft A: one fixed draft of 60 stocks from the S&P 500 | Or the strategy's own list, or one stock (see *Stocks*) |
 | Index | S&P 500 | *Bear markets* and *Index trend* only: the index fund they trade (S&P 500, Nasdaq-100, DAX, Nikkei 225…). How often a market fell 20% depends on it |
-| Period | 12 years, in 4-year parts | Both are parameters. 4 years gives the strategy time to profit from its buys |
+| Period | 16 years, in 4-year parts (Ernest, 2026-11-23) | Both are parameters. 4 years gives the strategy time to profit from its buys. One stock and the strategy's own list: the latest part only |
 | Budget | €6,000 (60 steps, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max steps × step size, so the budget fits it |
 | Step | €100, up to 5 per stock | As the strategy's budget |
-| Monthly limit | €300 a month (the budget over 20 months) | A cap on new money spent; unspent limit carries over in full (see *Money*). Limit = budget means no limit |
+| Monthly limit | €400 a month (the budget over 15 months at the earliest) | A cap on new money spent; unspent limit carries over in full (see *Money*). Limit = budget means no limit |
 | Fee | 0.1% a trade | No fixed part, so results don't depend on the budget's size, only on how many steps it holds |
 | Spread | 0.1% a trade | Added to the buy price and taken off the sell price |
 
@@ -30,13 +30,13 @@ No currency fee. Taxes are not included.
 
 ## Periods
 
-- The windows are calendar years, counted back from today: with the defaults, 2015–18, 2019–22 and 2023–26 (to the last close).
+- The windows are calendar years, counted back from today: with the defaults, 2011–14, 2015–18, 2019–22 and 2023–26 (to the last close). The data starts in late 2009, for the first part's warm-up.
 - Each window is an independent test that starts with a fresh budget: the strategy tested in different periods, as *How we tested* says today.
 - **All** is the unified result, the parts combined (Ernest, 2026-11-23): the average of the parts' rates, the worst year of any part, the average budget invested, the steps added up. Each part's own results stay available (the period tabs). It is not one continuous test: with the budget used in the first two years, that would mostly measure holding.
 - **Warm-up:** the rules read about 15 months of prices before a window starts (the SMA 200, the 52-week high and the 168-day low need them), but nothing is bought before the start. It is what a strategy started that day in the app would see. Without it, the first year of each window would have no signals.
 - At a window's end, holdings are valued at the last close. Nothing is sold to close the test, for the strategy or the baselines.
 - The latest window runs to the last close, so it is shorter than the others (2023–26 is under 4 years today); its label says so.
-- With 12 years, 2008 and 2000–02 are out. The years parameter can reach back to them.
+- With 16 years, 2008 and 2000–02 are out (2011 brings a fall of almost 20%). The years parameter can reach back to them; further back, more former members have no prices (the data report counts them).
 
 ## Money
 
@@ -103,7 +103,7 @@ Three ways to choose the pool:
 
 1. **Draft A** (the default, for comparing): drawn from the S&P 500 as it stood on each window's start date (the stocks SPY held then), stratified by sector, with a fixed, published seed. The same draft and data make results of different strategies and settings comparable.
 2. **The strategy's own list.** For shorter periods (default: the latest window only), since a list chosen today knows how its stocks did, which flatters the past. Shown next to the draft's result for the same window and settings. A stock without enough history at a window's start sits that window out, and the result says so.
-3. **One stock.** The budget is sized for it (max steps × step size).
+3. **One stock.** The budget is sized for it (max steps × step size). The latest part only, by default, as for the own list: the stock is chosen knowing how it did.
 
 Not for *Your AI's top picks*, which has no rules to replay.
 
@@ -124,7 +124,8 @@ Decided by Ernest on 2026-11-23. All owner-only.
 - **The Backtest page**, its own page: the test's settings (stocks, index, period, money, costs) and the full results. It is where the *test* is tuned; the strategy's settings are tuned in Advanced settings.
 - **Entry points**, each opening the page preset:
   - the strategy page's *Backtest* tile: the strategy's settings and budget on Draft A;
-  - Advanced settings: the settings on screen;
+  - Advanced settings, on a running strategy or while starting one: the settings on screen;
+  - *Review a template* (step 2 of a new strategy): the template's defaults on Draft A;
   - the stock page: *Test this stock*, one stock under the strategy's settings, with the budget sized for it.
 - **A panel in Advanced settings**: a preview of the results with *Rerun tests* on the test defaults (Draft A, the default periods and money), with *Default / Before / Now*, so tuning the strategy rarely needs the page.
 - *How we tested* shows the template figures from the backtest (ROADMAP item 56).
@@ -134,14 +135,14 @@ Decided by Ernest on 2026-11-23. All owner-only.
 
 Drafted in the planning chat (2026-11-20); Ernest will give them another round, once the functionality is settled. The numbers below are made up.
 
-**Results**: periods as tabs (`2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the "On average, [n]% of the budget was invested" line with the note that idle money isn't counted, a value chart, and the three baselines, all shown at once (Ernest, 2026-11-23: not hidden).
+**Results**: periods as tabs (`2011-14 · 2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the "On average, [n]% of the budget was invested" line with the note that idle money isn't counted, a value chart, and the three baselines, all shown at once (Ernest, 2026-11-23: not hidden).
 
 **The panel in Advanced settings**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the strategy's saved settings, only when they differ from the defaults; otherwise the table is *Default* vs *Now*) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
 
 ```
 Backtest                         [ Rerun tests ]
-Draft A · 12 years in 4-year parts · data 2026-11
-[2015-18][2019-22][2023-26][ All ]
+Draft A · 16 years in 4-year parts · data 2026-11
+[2011-14][2015-18][2019-22][2023-26][ All ]
 
                        Default   Before    Now
 A year, on average      +10.8%   +11.0%  +11.6%
@@ -180,7 +181,5 @@ Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rul
 
 ## Open points
 
-- **How many parts:** three 4-year parts may be too few. Options: 16 years in 4-year parts (adds 2011–14), or 12 years in 3-year parts.
-- The default period for one stock (proposed: the latest part, as for the strategy's own list, since the stock is chosen today).
 - The screens, once the functionality is settled.
 - The order of the PRs (proposed in `ROADMAP.md`).

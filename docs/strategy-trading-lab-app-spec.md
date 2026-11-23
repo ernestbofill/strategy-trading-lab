@@ -289,7 +289,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2 · Review a template
 
-**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away.
+**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away. Planned: an entry to the Backtest page, preset with the template's defaults on Draft A ([backtest.md](backtest.md), *Where it lives*).
 
 **Shared layout**, top to bottom:
 1. Top bar: "← BACK" (to the pick screen) · "2 / 5".

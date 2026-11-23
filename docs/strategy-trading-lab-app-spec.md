@@ -625,7 +625,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
   - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
   - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
-- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
+- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn; planned in [backtest.md](backtest.md), *Where it lives*: preset with the strategy's settings and budget on Draft A). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For running simulations, a third tile: "Follow it manually" / "With these settings" (built, #92; not drawn), see *Following a simulation manually*. A manual copy shows "Copied from [simulation name]" under its name.
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - **No notification switches** (removed 2026-11-01): they are all in the account's Notifications. With signals and reminders off there, a strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
@@ -651,7 +651,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 ### Stock page (built, not drawn)
 
-One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page.
+One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. Planned: *Test this stock*, opening the Backtest page preset with this stock under the strategy's settings ([backtest.md](backtest.md), *Where it lives*).
 
 - Top bar: "← STRATEGY" to the strategy page.
 - H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).

@@ -22,7 +22,7 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Period | 12 years, in 4-year parts | Both are parameters. 4 years gives the strategy time to profit from its buys |
 | Budget | €6,000 (60 steps, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max steps × step size, so the budget fits it |
 | Step | €100, up to 5 per stock | As the strategy's budget |
-| Monthly limit | €250 a month (the budget over 24 months) | A cap on new money spent; unspent limit carries over in full (see *Money*). Limit = budget means no limit |
+| Monthly limit | €300 a month (the budget over 20 months) | A cap on new money spent; unspent limit carries over in full (see *Money*). Limit = budget means no limit |
 | Fee | 0.1% a trade | No fixed part, so results don't depend on the budget's size, only on how many steps it holds |
 | Spread | 0.1% a trade | Added to the buy price and taken off the sell price |
 
@@ -30,8 +30,9 @@ No currency fee. Taxes are not included.
 
 ## Periods
 
-- The windows are calendar years, counted back from today: with the defaults, 2015–18, 2019–22 and 2023–26 (to the last close), plus **All**.
-- Each window is an independent test that starts with fresh money, as *How we tested* says today.
+- The windows are calendar years, counted back from today: with the defaults, 2015–18, 2019–22 and 2023–26 (to the last close).
+- Each window is an independent test that starts with a fresh budget: the strategy tested in different periods, as *How we tested* says today.
+- **All** is the unified result, the parts combined (Ernest, 2026-11-23): the average of the parts' rates, the worst year of any part, the average budget invested, the steps added up. Each part's own results stay available (the period tabs). It is not one continuous test: with the budget used in the first two years, that would mostly measure holding.
 - **Warm-up:** the rules read about 15 months of prices before a window starts (the SMA 200, the 52-week high and the 168-day low need them), but nothing is bought before the start. It is what a strategy started that day in the app would see. Without it, the first year of each window would have no signals.
 - At a window's end, holdings are valued at the last close. Nothing is sold to close the test, for the strategy or the baselines.
 - The latest window runs to the last close, so it is shorter than the others (2023–26 is under 4 years today); its label says so.
@@ -116,13 +117,26 @@ A stock may only be drawn if it was in the index on the window's start date and 
 - **A snapshot a month**, not daily: one compressed file per ticker plus a manifest (membership, symbol map, missing tickers), in the backend's object storage bucket, not in the `prices` table. Each result names the snapshot it used. Yahoo re-adjusts past prices after dividends, so a test re-run on a newer snapshot can move slightly; accepted (Ernest, 2026-11-20).
 - **A quality report per snapshot**, on an owner page: members and how many have prices at each window's start, gaps over 5 trading days, one-day moves over 40% (usually a split error), renamed and missing tickers. The first report is reviewed before any result counts.
 
+## Where it lives
+
+Decided by Ernest on 2026-11-23. All owner-only.
+
+- **The Backtest page**, its own page: the test's settings (stocks, index, period, money, costs) and the full results. It is where the *test* is tuned; the strategy's settings are tuned in Advanced settings.
+- **Entry points**, each opening the page preset:
+  - the strategy page's *Backtest* tile: the strategy's settings and budget on Draft A;
+  - Advanced settings: the settings on screen;
+  - the stock page: *Test this stock*, one stock under the strategy's settings, with the budget sized for it.
+- **A panel in Advanced settings**: a preview of the results with *Rerun tests* on the test defaults (Draft A, the default periods and money), with *Default / Before / Now*, so tuning the strategy rarely needs the page.
+- *How we tested* shows the template figures from the backtest (ROADMAP item 56).
+- No *Saved tests* in v1 (comparing strategies side by side): later, if missed.
+
 ## Screens (draft)
 
-Drafted in the planning chat (2026-11-20); Ernest will give them another round. All screens are owner-only. The numbers below are made up.
+Drafted in the planning chat (2026-11-20); Ernest will give them another round, once the functionality is settled. The numbers below are made up.
 
 **Results**: periods as tabs (`2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the "On average, [n]% of the budget was invested" line with the note that idle money isn't counted, a value chart, and the three baselines, all shown at once (Ernest, 2026-11-23: not hidden).
 
-**Tuning (Advanced settings)**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the strategy's saved settings, only when they differ from the defaults; otherwise the table is *Default* vs *Now*) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
+**The panel in Advanced settings**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the strategy's saved settings, only when they differ from the defaults; otherwise the table is *Default* vs *Now*) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
 
 ```
 Backtest                         [ Rerun tests ]
@@ -166,8 +180,7 @@ Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rul
 
 ## Open points
 
-- **All:** one continuous 12-year test, or the parts combined (proposed: combined, the average of the parts' rates and the worst year of any part).
-- Whether *Saved tests* (keeping results to compare strategies side by side) is in v1 (proposed: later).
-- Where the backtest lives: Advanced settings, the strategy page's Backtest tile, *How we tested*.
+- **How many parts:** three 4-year parts may be too few. Options: 16 years in 4-year parts (adds 2011–14), or 12 years in 3-year parts.
+- The default period for one stock (proposed: the latest part, as for the strategy's own list, since the stock is chosen today).
 - The screens, once the functionality is settled.
 - The order of the PRs (proposed in `ROADMAP.md`).

@@ -21,8 +21,8 @@ public record SignalLine(Guid StrategyId, Guid SignalId, string StrategyName, St
 public record ScoreLine(string Name, StrategyMode Mode, DateOnly StartedOn, int Signals, Guid StrategyId = default);
 
 /// <summary>
-/// The words of the notification emails (spec: Notifications), in English and Catalan. They describe
-/// what the rules found and never tell the user what to do ("describe, don't instruct"). Pure: data in, text out.
+/// The words of the notification emails (spec: Notifications), in English and Catalan: what the rules found.
+/// Pure: data in, text out.
 /// </summary>
 public static class EmailTexts
 {

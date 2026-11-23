@@ -2,7 +2,7 @@
 
 Every agent that translates copy into Catalan uses these terms, so the app reads the same everywhere. Ernest reviews and corrects (decision #58); when he changes a term, change it here first, then in the copy.
 
-Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sentences, no Spanish loanwords. Same plain tone as the English: describe, don't instruct. Keep real trading terms (SMA 200, RSI, ...) and their one-line explanation. Numbers, tickers and money keep the app's format (`€3,000`).
+Style: standard Catalan (Barcelona), informal *tu* (never *vostè*), short sentences, no Spanish loanwords. Same direct, plain tone as the English (`CLAUDE.md`, *Writing*). Keep real trading terms (SMA 200, RSI, ...) and their one-line explanation. Numbers, tickers and money keep the app's format (`€3,000`).
 
 | English | Catalan |
 | --- | --- |

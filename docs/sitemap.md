@@ -160,11 +160,10 @@ All sent after the US market close.
 
 ## 6. Language rules
 
-See "Wording rules" in the user journey. In short:
+See "Wording rules" in the user journey, and *Writing* in `CLAUDE.md`. In short:
 
-- Describe, don't instruct: template names describe a situation; the strategy is the subject of trades, never the user.
-- Signals report rules ("Your rules for … are met"), never "buy now", no targets or forecasts.
-- The user owns the setup: "Choose stocks to watch", "Under your settings", never "recommended for you".
+- Signals report rules ("Your rules for … are met").
+- The user owns the setup: "Choose stocks to watch", "Under your settings".
 - No promises; results always shown with the index comparison and worst year.
 - Never "ticker" or "tranche": say *stock* (or *fund*) and *step*. "Discount zone", not "buy zone".
 

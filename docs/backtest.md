@@ -1,6 +1,6 @@
 # Backtest
 
-How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-22. The screens are drafted below (*Screens, draft*), for another round with Ernest.
+How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-23. The screens are drafted below (*Screens, draft*), for another round with Ernest.
 
 Today's template figures come from the POC's research ([backtest-research-findings.md](backtest-research-findings.md)). This backtest replaces them with STL's own engine, so the tested results describe the rules the app runs.
 
@@ -17,12 +17,12 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Parameter | Default | Notes |
 | --- | --- | --- |
 | Rules | The template's tested defaults, or a strategy's settings | Any Advanced settings values |
-| Stocks | Draft A: one fixed draft of `[n]` stocks from the S&P 500 (size open, proposed 60) | Or the strategy's own list, or one stock (see *Stocks*) |
+| Stocks | Draft A: one fixed draft of 60 stocks from the S&P 500 | Or the strategy's own list, or one stock (see *Stocks*) |
 | Index | S&P 500 | *Bear markets* and *Index trend* only: the index fund they trade (S&P 500, Nasdaq-100, DAX, Nikkei 225…). How often a market fell 20% depends on it |
 | Period | 12 years, in 4-year parts | Both are parameters. 4 years gives the strategy time to profit from its buys |
-| Budget | €3,000 | One stock: max steps × step size, so the budget fits it |
+| Budget | €6,000 (60 steps, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max steps × step size, so the budget fits it |
 | Step | €100, up to 5 per stock | As the strategy's budget |
-| Monthly limit | `[€x a month]` (open) | At most this much new money is spent in a calendar month. Limit = budget means no limit |
+| Monthly limit | €250 a month (the budget over 24 months) | A cap on new money spent; unspent limit carries over in full (see *Money*). Limit = budget means no limit |
 | Fee | 0.1% a trade | No fixed part, so results don't depend on the budget's size, only on how many steps it holds |
 | Spread | 0.1% a trade | Added to the buy price and taken off the sell price |
 
@@ -40,7 +40,7 @@ No currency fee. Taxes are not included.
 ## Money
 
 - The test account starts with the whole budget in cash. Every line, strategy and baselines, spends at most the monthly limit of new money in a calendar month.
-- **No carry-over in v1:** money not spent in a month doesn't raise the next month's limit. Whether unspent money should carry over (for example up to 3 months) stays open, to be settled by running the backtest with and without it.
+- **Unspent limit carries over in full** (Ernest, 2026-11-23: the simplest): by the end of month *m*, at most *m* × the limit is spent in total. A quiet stretch saves room for a busy one, up to the budget. Baselines 1 and 3 spend the limit every month anyway.
 - Sale proceeds are reinvested at once, outside the limit. Only *Index trend* sells: each month it buys with that month's limit plus any money left from sales.
 - When several signals on the same day need more money than is left, they are paid in a seeded random order (the same seed gives the same result, with no alphabetical bias). The ones that can't be paid follow the app's current rule (below).
 
@@ -83,7 +83,18 @@ Two different things:
 
 - **The dataset** is everything a test can draw from: every stock that was in the S&P 500 at some point in the years tested (with its dates in the index), their daily prices, and the index funds. One snapshot a month (see *Data*).
 - **Draft A** is the stocks a test uses: one fixed draft, drawn from the dataset's S&P 500 members on each window's start date (the same seed every time). Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
-- **Its size** (open, proposed 60, the most stocks a strategy can follow): large enough that the strategies find candidates in it and one lucky or unlucky stock weighs little, since no random draws measure that luck. Once the dataset exists, check how many signals each template gets from it at the defaults, and grow it if a template finds too few.
+- **Its size: 60** (Ernest, 2026-11-23), the most stocks a strategy can follow: large enough that the strategies find candidates in it and one lucky or unlucky stock weighs little.
+
+**How it is drawn** (Ernest, 2026-11-23):
+
+1. **Eligible:** the S&P 500 members on the part's start date with prices from the warm-up on.
+2. **By sector:** each of the 11 sectors (Yahoo's, as for added assets) gets seats in proportion to its share of the eligible members.
+3. **By size, within each sector:** low, middle and high thirds by average daily traded value (price × volume over the 60 trading days before the start), a size measure that exists for any past date.
+4. **Drawn** at random within each sector and size group with a fixed, published seed. Each part gets its own draft, from its own members, with the same seed.
+5. **Checked, never re-drawn to look better:**
+   - *Representative:* per part, the draft's *same stocks, monthly* rate is within about ±2 points a year of the same baseline on all eligible members.
+   - *Candidates:* each stock template, at its defaults, finds enough signals in it to invest its budget over the part (the steps and the budget invested per template and part).
+   A failed check is reported and decided with Ernest (a larger draft, for example); changing the seed until the numbers look right would be cherry-picking.
 
 ## Stocks
 
@@ -109,9 +120,9 @@ A stock may only be drawn if it was in the index on the window's start date and 
 
 Drafted in the planning chat (2026-11-20); Ernest will give them another round. All screens are owner-only. The numbers below are made up.
 
-**Results**: periods as tabs (`2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the "On average, [n]% of the budget was invested" line with the note that idle money isn't counted, and a value chart. The baselines open with **Show baselines** in the same tab, so the main view stays the backtest alone.
+**Results**: periods as tabs (`2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the "On average, [n]% of the budget was invested" line with the note that idle money isn't counted, a value chart, and the three baselines, all shown at once (Ernest, 2026-11-23: not hidden).
 
-**Tuning (Advanced settings)**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the saved settings, only when they differ from the defaults) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
+**Tuning (Advanced settings)**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the strategy's saved settings, only when they differ from the defaults; otherwise the table is *Default* vs *Now*) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
 
 ```
 Backtest                         [ Rerun tests ]
@@ -126,7 +137,7 @@ Steps                     41       45      52
 Budget invested           48%      51%     58%
 Rates count only the money invested; idle budget isn't counted.
 
-▸ Show baselines
+Baselines
   1 S&P 500, monthly          +9.1%   (the same for every column)
   2 Same days, same list      +9.9%   +10.1%  +10.4%
   3 Same stocks, monthly      +9.8%   (the same for every column)
@@ -150,16 +161,13 @@ Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rul
 
 ## In the app (decided, not built)
 
-- **The monthly limit becomes a strategy setting:** "Spend at most [€x] a month", part of the budget. Existing strategies get x = the budget, so nothing changes for them, and it can be lowered afterwards (with *Change the budget*).
+- **The monthly limit becomes a strategy setting:** "Spend at most [€x] a month", part of the budget, with unspent limit carried over in full as in the backtest. Existing strategies get x = the budget, so nothing changes for them, and it can be lowered afterwards (with *Change the budget*).
 - **Simulations use the backtest's costs:** fee 0.1% + spread 0.1% a trade, no fixed part, for new trades from the change on (past trades keep the fee they were recorded with). Manual strategies keep the fee the user enters (`ROADMAP.md` item 41).
 
 ## Open points
 
-- Draft A's size (proposed 60).
-- The default monthly limit for a template's test (proposed: the budget over 24 months, so the money has time to work within a 4-year window).
-- Carry-over of unspent money (no carry-over in v1).
-- The product rule "results always next to the index fund": the results' main view shows the backtest alone, with the baselines behind *Show baselines*. Keep one index line in the main view, or make the backtest an exception to the rule?
-- *Before* in the tuning table: the saved settings is assumed; in the new-strategy flow (nothing saved yet), the previous run's.
-- A second round on the screens; whether *Saved tests* (comparing strategies side by side) is in v1.
-- How the backtest fits into the strategy page's Backtest tile and *How we tested*.
+- **All:** one continuous 12-year test, or the parts combined (proposed: combined, the average of the parts' rates and the worst year of any part).
+- Whether *Saved tests* (keeping results to compare strategies side by side) is in v1 (proposed: later).
+- Where the backtest lives: Advanced settings, the strategy page's Backtest tile, *How we tested*.
+- The screens, once the functionality is settled.
 - The order of the PRs (proposed in `ROADMAP.md`).

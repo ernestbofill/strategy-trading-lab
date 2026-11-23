@@ -30,7 +30,7 @@ The user *picks a strategy template*, sets it up, names it, and *runs* it as a s
 
 ## Wording rules
 
-These were written to keep the app on the "information and tools" side of the line between information and investment advice (see the regulation note), before it became a personal app (2026-11-14). They apply to every screen, email and alert. "Describe, don't instruct" was dropped (Ernest, 2026-11-23, #PR); how to write copy is in `CLAUDE.md`, *Writing*.
+These were written to keep the app on the "information and tools" side of the line between information and investment advice (see the regulation note), before it became a personal app (2026-11-14). They apply to every screen, email and alert. "Describe, don't instruct" was dropped (Ernest, 2026-11-23, #278); how to write copy is in `CLAUDE.md`, *Writing*.
 
 - **Signals report rules, not opinions.** Every signal says which rule was met, the facts that met it and, for live, what that means under the user's own settings.
 - **The user owns the setup.** Lists, settings and budgets are presented as the user's choices, starting from our tested defaults: "Choose stocks to watch", "Under your settings".

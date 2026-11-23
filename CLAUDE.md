@@ -90,7 +90,7 @@ Ask for a credential when you need one.
 
 ## Writing
 
-For app copy, emails, docs, PRs, commits and chat (Ernest, #PR). AI text tends to pad; cut it.
+For app copy, emails, docs, PRs, commits and chat (Ernest, #278). AI text tends to pad; cut it.
 
 - **Direct and specific.** Say the thing. If a word or clause can go and the meaning stays, it goes.
 - **The standard term, not a paraphrase.** Use the term that exists (IRR, SMA 200, drawdown, spread), explained the first time a screen shows it, in brackets or an info tip. Never write a term out as a sentence, and never invent a name for something that has one.

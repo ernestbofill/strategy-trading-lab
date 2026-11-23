@@ -261,4 +261,4 @@ Money-weighted (IRR) on the money invested.
 
 ## Open points
 
-- The screens, once the functionality is settled.
+- The screens' last details, while building ROADMAP item 55.

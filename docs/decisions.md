@@ -2,6 +2,7 @@
 
 Decisions that outlive a PR, and why. One dated line each, newest first, with the PR number. The PR has the detail.
 
+- 2026-11-23 · Backtest data: the test draft passes when each stock template has 4–5 different candidates in it every calendar year. Index funds (for *Bear markets*, *Index trend* and baseline 1's SPY) aren't in the dataset: their prices are fetched from Yahoo when a test runs, like the strategy's list and one stock. (Ernest, #265)
 - 2026-11-23 · A *Writing* section in `CLAUDE.md` for every text (app copy, emails, docs, PRs, chat): direct and specific, the standard term rather than a paraphrase or an invented name, no filler, labels that say what they do, with before/after examples; existing copy changes when next touched. The "Describe, don't instruct" rule is dropped, since the app is personal and the rule made copy read oddly. (Ernest, #278)
 - 2026-11-23 · Plain money words: *amount per trade* and *trades* replace *step* in the app's copy (the code keeps `step`), and the "Describe, don't instruct" rule is dropped; done app-wide in its own PR (issue #277). The backtest plan already uses the new words. Milestone 4's order confirmed. (Ernest, #265)
 - 2026-11-23 · The backtest's independent tests are called *periods* (were *parts*), as *How we tested* already calls them; the setting is *Years*: "16, in 4-year periods". (Ernest, #265)

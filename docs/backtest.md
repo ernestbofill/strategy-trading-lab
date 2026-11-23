@@ -82,7 +82,7 @@ The product rules hold: every result sits next to the index fund and the worst y
 
 Two different things:
 
-- **The dataset** is everything a test can draw from: every stock that was in the S&P 500 at some point in the years tested (with its dates in the index), their daily prices, and the index funds. One snapshot a month (see *Data*).
+- **The dataset** is everything a test can draw from: every stock that was in the S&P 500 at some point in the years tested (with its dates in the index), and their daily prices. One snapshot a month (see *Data*). Index funds aren't in it: their prices are fetched when a test runs.
 - **The test draft** is the stocks a test uses: one fixed draft, drawn from the dataset's S&P 500 members on each period's start date (the same seed every time). Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
 - **Its size: 60** (Ernest, 2026-11-23), the most stocks a strategy can follow: large enough that the strategies find candidates in it and one lucky or unlucky stock weighs little.
 
@@ -94,7 +94,7 @@ Two different things:
 4. **Drawn** at random within each sector and size group with a fixed, published seed. Each period gets its own draft, from its own members, with the same seed.
 5. **Checked, never re-drawn to look better:**
    - *Representative:* per period, the draft's *same stocks, monthly* rate is within about ±2 points a year of the same baseline on all eligible members.
-   - *Candidates:* each stock template, at its defaults, finds enough signals in it to invest its budget over the period (the trades and the budget invested per template and period).
+   - *Candidates:* each stock template, at its defaults, has 4–5 different candidates in it every calendar year (Ernest, 2026-11-23). The report shows the count per template and year, with the trades and the budget invested.
    A failed check is reported and decided with Ernest (a larger draft, for example); changing the seed until the numbers look right would be cherry-picking.
 
 ## Stocks
@@ -112,7 +112,7 @@ A stock may only be drawn if it was in the index on the period's start date and 
 ## Data
 
 - **Index membership:** the S&P 500 on any date, from [fja05680/sp500](https://github.com/fja05680/sp500) (MIT licence, since 1996, updated every couple of months), checked against a second point-in-time list where both exist. Renamed tickers (FB → META) need a symbol map.
-- **Prices:** Yahoo's daily prices, adjusted for splits and dividends, as the app uses today. A test on the strategy's list or one stock fetches its stocks' prices from Yahoo when it runs (kept for reuse), so it isn't limited to the dataset's years; a test on the test draft is. Dividends therefore count as reinvested in the same stock, before tax. *Pending:* the 15% US withholding tax on dividends isn't deducted.
+- **Prices:** Yahoo's daily prices, adjusted for splits and dividends, as the app uses today. A test on the strategy's list, one stock or an index fund (*Bear markets*, *Index trend*, and SPY for baseline 1) fetches those prices from Yahoo when it runs (kept for reuse), so it isn't limited to the dataset's years; a test on the test draft is. Dividends therefore count as reinvested in the same stock, before tax. *Pending:* the 15% US withholding tax on dividends isn't deducted.
 - **Survivorship:** Yahoo keeps no history for delisted stocks, so former members that were delisted can't be drawn. Each period's report counts them ("31 of 503 members had no prices"), so the bias shows. Only a paid data source with delisted stocks would remove it.
 - **A snapshot a month**, not daily: one compressed file per ticker plus a manifest (membership, symbol map, missing tickers), in the backend's object storage bucket, not in the `prices` table. Each result names the snapshot it used. Yahoo re-adjusts past prices after dividends, so a test re-run on a newer snapshot can move slightly; accepted (Ernest, 2026-11-20).
 - **A quality report per snapshot**, on an owner page: members and how many have prices at each period's start, gaps over 5 trading days, one-day moves over 40% (usually a split error), renamed and missing tickers. The first report is reviewed before any result counts.

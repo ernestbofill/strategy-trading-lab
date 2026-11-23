@@ -289,7 +289,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2 · Review a template
 
-**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away. Planned: an entry to the Backtest page, preset with the template's defaults on Draft A ([backtest.md](backtest.md), *Where it lives*).
+**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away. Planned: an entry to the Backtest page, preset with the template's defaults on the test draft ([backtest.md](backtest.md), *Where it lives*).
 
 **Shared layout**, top to bottom:
 1. Top bar: "← BACK" (to the pick screen) · "2 / 5".
@@ -439,7 +439,7 @@ The settings are available when starting a strategy and on a running one (Tune t
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change), the periods as tabs, and columns *Default*, *Before* (the saved settings, when they differ from the defaults) and *Now*, on the same draft and data, with the baselines shown. Replaces the earlier "Period" / "Tested" / "Yours" table.
+- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change), the periods as tabs, and a preview with columns *Default*, *Saved* (when the saved settings differ from the defaults) and *Current*, the average of the parts only, with *S&P 500, monthly*; the periods and all baselines are on the Backtest page. Replaces the earlier "Period" / "Tested" / "Yours" table.
 - **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules). How the backtest works (money, baselines, stocks, data) is in [backtest.md](backtest.md); how this section shows it is not designed yet.
 
 **Behaviour**
@@ -625,7 +625,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
   - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
   - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
-- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn; planned in [backtest.md](backtest.md), *Where it lives*: preset with the strategy's settings and budget on Draft A). For AI strategies the second is "AI rounds" (round history, not drawn).
+- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn; planned in [backtest.md](backtest.md), *Where it lives*: preset with the strategy's settings and budget on the test draft). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For running simulations, a third tile: "Follow it manually" / "With these settings" (built, #92; not drawn), see *Following a simulation manually*. A manual copy shows "Copied from [simulation name]" under its name.
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - **No notification switches** (removed 2026-11-01): they are all in the account's Notifications. With signals and reminders off there, a strategy keeps running quietly, and signals left unanswered become *Missed* when they end.

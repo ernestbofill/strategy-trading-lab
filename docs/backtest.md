@@ -17,7 +17,7 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Parameter | Default | Notes |
 | --- | --- | --- |
 | Rules | The template's tested defaults, or a strategy's settings | Any Advanced settings values |
-| Stocks | Draft A: one fixed draft of 60 stocks from the S&P 500 | Or the strategy's own list, or one stock (see *Stocks*) |
+| Stocks | The test draft: one fixed draft of 60 stocks from the S&P 500 | Or the strategy's own list, or one stock (see *Stocks*) |
 | Index | S&P 500 | *Bear markets* and *Index trend* only: the index fund they trade (S&P 500, Nasdaq-100, DAX, Nikkei 225…). How often a market fell 20% depends on it |
 | Period | 16 years, in 4-year parts (Ernest, 2026-11-23) | Both are parameters. 4 years gives the strategy time to profit from its buys. One stock and the strategy's own list: the latest part only |
 | Budget | €6,000 (60 steps, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max steps × step size, so the budget fits it |
@@ -36,7 +36,7 @@ No currency fee. Taxes are not included.
 - **Warm-up:** the rules read about 15 months of prices before a window starts (the SMA 200, the 52-week high and the 168-day low need them), but nothing is bought before the start. It is what a strategy started that day in the app would see. Without it, the first year of each window would have no signals.
 - At a window's end, holdings are valued at the last close. Nothing is sold to close the test, for the strategy or the baselines.
 - The latest window runs to the last close, so it is shorter than the others (2023–26 is under 4 years today); its label says so.
-- With 16 years, 2008 and 2000–02 are out (2011 brings a fall of almost 20%). The years parameter can reach back to them; further back, more former members have no prices (the data report counts them).
+- With 16 years, 2008 and 2000–02 are out (2011 brings a fall of almost 20%). On the test draft the period can't go past the dataset's years; reaching back further means a longer dataset, where more former members have no prices. The strategy's list and one stock can go back as far as Yahoo has their prices.
 
 ## Money
 
@@ -68,13 +68,13 @@ Per window and for **All**, for the strategy and each baseline, all **money-weig
 
 - **A year, on average**, on the money invested.
 - **Worst calendar year**, money-weighted too.
-- **Budget invested over time:** "On average, [n]% of the budget was invested". For the strategy, and next to each baseline. The formula, over the window's trading days:
+- **Budget at work** ("Budget invested over time"): "On average, [n]% of the budget was invested". For the strategy, and next to each baseline. The formula, over the window's trading days:
 
   `budget invested = (1 / N) × Σ min(1, invested on day t / budget)`
 
   where *N* is the number of trading days in the window and *invested on day t* is the money put into the holdings still held that day (their cost, not their value). The whole budget invested on the first day reads 100%; money invested on the last day adds almost nothing. Example: half the budget on the first day and the other half at the window's middle reads 0.5 × 100% + 0.5 × 50% = 75%. After a sale (*Index trend*) the money is idle until bought again; reinvested gains can't take a day above 100%.
 - The number of steps.
-- **A note that idle money isn't counted:** "Rates count only the money invested, for as long as it was invested; budget waiting in cash isn't counted." Roughly, the rate on the whole budget would be the rate shown times the share invested.
+- **A note that idle money isn't counted:** "Money-weighted returns (IRR) on the money invested: idle cash is left out." (Not *direct alpha*: that is the gap to an index bought with the same cash flows, which baseline 2 and the dropped *S&P 500, same days* measure.) Roughly, the rate on the whole budget would be the rate shown times the share invested.
 
 The product rules hold: every result sits next to the index fund and the worst year.
 
@@ -83,7 +83,7 @@ The product rules hold: every result sits next to the index fund and the worst y
 Two different things:
 
 - **The dataset** is everything a test can draw from: every stock that was in the S&P 500 at some point in the years tested (with its dates in the index), their daily prices, and the index funds. One snapshot a month (see *Data*).
-- **Draft A** is the stocks a test uses: one fixed draft, drawn from the dataset's S&P 500 members on each window's start date (the same seed every time). Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
+- **The test draft** is the stocks a test uses: one fixed draft, drawn from the dataset's S&P 500 members on each window's start date (the same seed every time). Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
 - **Its size: 60** (Ernest, 2026-11-23), the most stocks a strategy can follow: large enough that the strategies find candidates in it and one lucky or unlucky stock weighs little.
 
 **How it is drawn** (Ernest, 2026-11-23):
@@ -101,8 +101,8 @@ Two different things:
 
 Three ways to choose the pool:
 
-1. **Draft A** (the default, for comparing): drawn from the S&P 500 as it stood on each window's start date (the stocks SPY held then), stratified by sector, with a fixed, published seed. The same draft and data make results of different strategies and settings comparable.
-2. **The strategy's own list.** For shorter periods (default: the latest window only), since a list chosen today knows how its stocks did, which flatters the past. Shown next to the draft's result for the same window and settings. A stock without enough history at a window's start sits that window out, and the result says so.
+1. **The test draft** (the default, for comparing): drawn from the S&P 500 as it stood on each window's start date (the stocks SPY held then), stratified by sector, with a fixed, published seed. The same draft and data make results of different strategies and settings comparable.
+2. **The strategy's own list.** For shorter periods (default: the latest part only), since a list chosen today knows how its stocks did, which flatters the past. Not limited to the dataset's years. A stock without enough history at a window's start sits that window out, and the result says so.
 3. **One stock.** The budget is sized for it (max steps × step size). The latest part only, by default, as for the own list: the stock is chosen knowing how it did.
 
 Not for *Your AI's top picks*, which has no rules to replay.
@@ -112,7 +112,7 @@ A stock may only be drawn if it was in the index on the window's start date and 
 ## Data
 
 - **Index membership:** the S&P 500 on any date, from [fja05680/sp500](https://github.com/fja05680/sp500) (MIT licence, since 1996, updated every couple of months), checked against a second point-in-time list where both exist. Renamed tickers (FB → META) need a symbol map.
-- **Prices:** Yahoo's daily prices, adjusted for splits and dividends, as the app uses today. Dividends therefore count as reinvested in the same stock, before tax. *Pending:* the 15% US withholding tax on dividends isn't deducted.
+- **Prices:** Yahoo's daily prices, adjusted for splits and dividends, as the app uses today. A test on the strategy's list or one stock fetches its stocks' prices from Yahoo when it runs (kept for reuse), so it isn't limited to the dataset's years; a test on the test draft is. Dividends therefore count as reinvested in the same stock, before tax. *Pending:* the 15% US withholding tax on dividends isn't deducted.
 - **Survivorship:** Yahoo keeps no history for delisted stocks, so former members that were delisted can't be drawn. Each window's report counts them ("31 of 503 members had no prices"), so the bias shows. Only a paid data source with delisted stocks would remove it.
 - **A snapshot a month**, not daily: one compressed file per ticker plus a manifest (membership, symbol map, missing tickers), in the backend's object storage bucket, not in the `prices` table. Each result names the snapshot it used. Yahoo re-adjusts past prices after dividends, so a test re-run on a newer snapshot can move slightly; accepted (Ernest, 2026-11-20).
 - **A quality report per snapshot**, on an owner page: members and how many have prices at each window's start, gaps over 5 trading days, one-day moves over 40% (usually a split error), renamed and missing tickers. The first report is reviewed before any result counts.
@@ -123,44 +123,122 @@ Decided by Ernest on 2026-11-23. All owner-only.
 
 - **The Backtest page**, its own page: the test's settings (stocks, index, period, money, costs) and the full results. It is where the *test* is tuned; the strategy's settings are tuned in Advanced settings.
 - **Entry points**, each opening the page preset:
-  - the strategy page's *Backtest* tile: the strategy's settings and budget on Draft A;
+  - the strategy page's *Backtest* tile: the strategy's settings and budget on the test draft;
   - Advanced settings, on a running strategy or while starting one: the settings on screen;
-  - *Review a template* (step 2 of a new strategy): the template's defaults on Draft A;
+  - *Review a template* (step 2 of a new strategy): the template's defaults on the test draft;
   - the stock page: *Test this stock*, one stock under the strategy's settings, with the budget sized for it.
-- **A panel in Advanced settings**: a preview of the results with *Rerun tests* on the test defaults (Draft A, the default periods and money), with *Default / Before / Now*, so tuning the strategy rarely needs the page.
+- **A panel in Advanced settings**: a preview of the results with *Rerun tests* on the test defaults (the test draft, the default periods and money), with *Default / Saved / Current*, the average of the parts and one baseline, so tuning the strategy rarely needs the page.
 - *How we tested* shows the template figures from the backtest (ROADMAP item 56).
 - No *Saved tests* in v1 (comparing strategies side by side): later, if missed.
 
 ## Screens (draft)
 
-Drafted in the planning chat (2026-11-20); Ernest will give them another round, once the functionality is settled. The numbers below are made up.
+Second round with Ernest on 2026-11-23. Text wireframes at 390px; the numbers are made up. Every *i* is an info tip (the app's `InfoTip`).
 
-**Results**: periods as tabs (`2011-14 · 2015-18 · 2019-22 · 2023-26 · All`); in each tab the strategy's figures (a year on average, worst year, steps), the "On average, [n]% of the budget was invested" line with the note that idle money isn't counted, a value chart, and the three baselines, all shown at once (Ernest, 2026-11-23: not hidden).
-
-**The panel in Advanced settings**: a **Rerun tests** button instead of a rerun on every change. Columns *Default* (the template's tested defaults), *Before* (the strategy's saved settings, only when they differ from the defaults; otherwise the table is *Default* vs *Now*) and *Now* (the values on screen), all on Draft A with the same data, so a difference comes from the settings alone:
+**A · Backtest page: test settings** (top of the page, collapsed; *Edit* opens the form in place)
 
 ```
-Backtest                         [ Rerun tests ]
-Draft A · 16 years in 4-year parts · data 2026-11
+← BACK                              Backtest
+Winners at a discount · My dip list
+Rules: your saved settings · 2 changed
+                              [ Edit rules ]
+
+┌ TEST SETTINGS ─────────────────── [Edit] ┐
+│ Stocks   Test draft · 60 from the S&P 500│
+│ Period   16 years in 4-year parts        │
+│ Money    €6,000 · €100 steps · 5 a stock │
+│          at most €400 a month            │
+│ Costs    0.1% fee · 0.1% spread a trade  │
+│ Data     2009-10 to 2026-10 · snapshot   │
+│          2026-11                         │
+└──────────────────────────────────────────┘
+
+Expanded:
+STOCKS   (•) Test draft · 60 from the S&P 500
+         ( ) This strategy's list · 12
+         ( ) One stock        [ NVDA      ▾ ]
+INDEX    [ S&P 500 ▾ ]   (Bear, Trend only)
+PERIOD   [ 16 ] years in [ 4 ]-year parts
+MONEY    Budget [ 6,000 ]  Step [ 100 ]  up to [5]
+         Each month at most [ 400 ]
+         Unspent room carries over.
+COSTS    Fee [0.1]%   Spread [0.1]%  a trade
+[ Reset to test defaults ]    [ Run backtest ]
+```
+
+- *Edit rules* opens Advanced settings for this strategy (or the draft's).
+- **Period and data:** with the test draft, the period can't reach past the dataset (16 years and their warm-up, shown on the *Data* line). The strategy's list and one stock aren't limited to the dataset: their prices come from Yahoo for those stocks alone, as far back as Yahoo has them; their default stays the latest part.
+- No warning on the strategy's list or one stock (Ernest: say nothing); the latest-part default does the work.
+
+**B · Backtest page: results**
+
+```
+RESULTS                         ran 23 Nov, 10:42
 [2011-14][2015-18][2019-22][2023-26][ All ]
 
-                       Default   Before    Now
-A year, on average      +10.8%   +11.0%  +11.6%
-Worst year               -14%     -15%    -17%
-Steps                     41       45      52
+                    A year,   Worst   Budget
+                    average    year   at work i
+Your strategy        +11.6%    -17%      58%
+1 S&P 500, monthly i  +9.1%    -19%      81%
+2 Same days, list  i  +9.9%    -16%      58%
+3 Same stocks, mthly i +9.8%   -18%      81%
 
-Budget invested           48%      51%     58%
-Rates count only the money invested; idle budget isn't counted.
+52 steps · test draft: 60 stocks, 2 without prices
+Money-weighted returns (IRR) on the money
+invested: idle cash is left out.
+                         See the 52 trades →
 
-Baselines
-  1 S&P 500, monthly          +9.1%   (the same for every column)
-  2 Same days, same list      +9.9%   +10.1%  +10.4%
-  3 Same stocks, monthly      +9.8%   (the same for every column)
+ Value of the money invested
+ €  ╭────────────────────────────────╮
+    │   ── strategy   ·· S&P 500     │
+    │   (tap a baseline to add it)   │
+    ╰────────────────────────────────╯
+
+What the gaps say
+vs 1  the market            +2.5 a year
+vs 2  the choice of stocks  +1.7
+2 vs 3  the timing          +0.1
 ```
 
-Baselines 1 and 3 depend on the stocks, periods, money and costs, not on the rules, so they show once. Baseline 2 follows each column's buy days.
+- **Info tips:**
+  - *1 S&P 500, monthly*: "Buys an S&P 500 fund with each month's money until the budget is used. Does the strategy beat the market?"
+  - *2 Same days, same list*: "Each time the strategy buys a step, the same amount goes into all the stocks in the list that day, split evenly. Does the strategy choose the right stocks?"
+  - *3 Same stocks, monthly*: "Buys all the stocks in the list with each month's money, split evenly. Does the timing matter? Compare it with 2: same stocks, other days."
+  - *Budget at work*: "How much of the budget was invested, on average over the part's days. All of it spent on day one is 100%; all of it spent 2 years into a 4-year part is 50%."
+- **All** tab: the average of the parts' rates, the worst year of any part, the average budget at work; under it, "Average of 4 parts, each a fresh test." The latest part's tab says it runs to the last close.
+- **See the trades**: the strategy's simulated trades in the shared data table (`DataTable`): date, stock, buy or sell, step, price, amount, fee; sortable and filterable, for the selected part.
+- **The chart**: the strategy and baseline 1; tapping a baseline row adds its line.
+- **One stock**: baseline 2 is hidden (it would be the strategy itself); baseline 3 reads "[stock], monthly". **Bear markets** and **Index trend**: baseline 2 hidden, baseline 3 is the index fund, monthly.
 
-**Other screens**: the setup (stocks, index, period, money, costs, the data snapshot, *Run backtest*) and the data report (owner page: members and coverage per window start, missing and renamed tickers, gaps, jumps).
+**C · Advanced settings: the preview panel** (bottom of Advanced settings, running or new strategy; the test defaults; no periods, only the average of the parts)
+
+```
+BACKTEST                      [ Rerun tests ]
+Test draft · 16 years in 4-year parts · €6,000
+⚠ Settings changed since the last run.
+
+                   Default   Saved  Current
+A year, on average  +10.8%  +11.0%  +11.6%
+Worst year           -14%    -15%    -17%
+Budget at work i      48%     51%     58%
+Steps                  41      45      52
+S&P 500, monthly i   +9.1%   (the same for all)
+
+Money-weighted (IRR) on the money invested.
+                  Open the backtest page →
+```
+
+- *Saved* only shows when the saved settings differ from the defaults (on a new strategy, nothing is saved: *Default · Current*). On the defaults with nothing changed, one column and "You're on the tested defaults. Change a setting and rerun to compare."
+- One baseline only, *S&P 500, monthly* (the market); the others are on the page.
+- While running, the button reads "Running…" and the table dims.
+
+**D · Entry points**
+
+- *Review a template*, under the *Tested* box: "How we tested →" and "Backtest these rules →".
+- The strategy page's tile, brought back: "Backtest" / "Test these rules".
+- The stock page: "Test this stock →" with "One stock under this strategy's rules."
+
+**E · Backtest data** (owner page, `/admin/backtest-data`): the snapshot and *Refresh*; members and how many have prices at each part's start; missing and renamed tickers (lists); the test draft's two checks (representative, candidates per template); warnings (gaps, jumps), each with ticker and date.
 
 ## Biases
 

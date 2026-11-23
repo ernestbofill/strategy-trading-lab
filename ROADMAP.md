@@ -138,6 +138,16 @@ Both modes work end to end for every template the pick screen offers.
 41. **Fees on top of the budget, as brokers do.** High risk (budget calculations). *Spec: gap.* Today a step is amount plus fee and the fee counts in "Budget used" (#49, #56). Change it to how brokers work (Ernest, 2026-11-01): a step is the amount, the fee comes on top, "Budget used" leaves fees out and shows them on their own line, and returns still subtract them. The fee is an Advanced setting, a percentage and a fixed amount (default the tested 0.2% + 1); simulations use the setting, live strategies the fee the user enters. Check the backtest figures and the index fund comparison still use the same fee.
 
 43. ~~**Daily summary page and summary push.**~~ Built (user decision: dedicated `/summary` page instead of a box on dashboard; links only from summary push and footer sitemap; "No changes today" on quiet days; up to date from most recent evaluations; summary push enabled on account page).
+49. **Steady winners.** High risk (strategy calculations; a new template). *Spec: gap.* Ernest's idea and rules (2026-11-23): *Winners at a discount* finds leaders that just ran up (rose 50% in ~8 months), never stocks that grow steadily, so a sixth template buys the dip in steady growers. Study: [docs/steady-winners-study.md](docs/steady-winners-study.md).
+    - **Candidate** (all three): it grew faster than the S&P 500 on average over the last 5 years; its worst fall in those years, at any time, is at most 15 points deeper than the S&P 500's worst fall in the same years; its SMA 200 is rising. Advanced settings: years 3–5 (default 5), the fall margin (default 15 points).
+    - **Buy signal:** 3–10% below the 60-day high and above the SMA 100 (the floor). Advanced settings as the dip's zone and floor.
+    - **Pace:** the dip's steps and cooldown (5 steps, 10 days).
+    - **Engine:** reuse `DipRules`' zone and floor with a steady candidate rule, its own template card, key and texts, so each card says one idea.
+    - **Five years of prices:** the rule needs about 1,260 trading days per stock and of the S&P 500 fund (SPY); the app keeps about 2 years. Load and keep them, also when a stock is added. A stock listed less than 5 years ago is never a candidate.
+    - **Starter list:** steady stocks that pass today, such as COST, AAPL, BRK-B, LIN, CTAS, RSG and ETN (pick with the study's script when it's built).
+    - **Results:** no tested results until STL's own backtest (Milestone 4); the strategy page says so, as the product rule asks for results next to the index fund and the worst year. Ernest decides whether to ship before that backtest.
+    - **Ernest's lists:** ETN moves from his dip strategy to this one (SU.PA grew slower than the S&P 500 and isn't a candidate today); the leaders stay in the dip. One stock in both strategies would mean two budgets on it, as strategies don't see each other's holdings.
+    - In the same PR: the spec (the template page, the stock page's checks and chart lines; no wireframe yet), the `qa/STATE.md` coverage row and `docs/decisions.md`.
 
 ## Later
 

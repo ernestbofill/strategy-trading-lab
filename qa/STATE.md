@@ -159,6 +159,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | F5 | Exchange-rate line (stock currency ≠ strategy currency) | §6 Signal | smoke | 2026-11-06-1 | F-004. C2.12 |
 | F6 | Sell signal (Index trend) | §6 Signal | untested | | Needs a sell signal on a live fixture |
 | F7 | Up to the stock and the name links there; the price is the next open, fetched on open, else the close with its hint | §6 Signal | untested | | New (feedback 2026-11-12) |
+| F8 | Index trend chase limit: "too late to chase" past +10%, its Chase limit row and chart line, the Advanced setting | §5 Index trend, §6 Stock page | untested | | New (#280) |
 
 ### G · AI strategies
 

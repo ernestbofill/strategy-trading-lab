@@ -140,7 +140,7 @@ public static class RulesRunner
             if (newSell) pendingSell = true;
             lastDay = day;
             return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell)
-                { Checks = decision.Checks };
+                { Checks = decision.Checks, SellClosed = decision.SellClosed ?? decision.WindowOpen };
         }
     }
 }

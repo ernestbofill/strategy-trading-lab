@@ -549,7 +549,7 @@ public class StrategyEvaluatorTests(AccountsApi api) : IClassFixture<AccountsApi
         prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(206), Open = 90, High = 90, Low = 90, Close = 90, Volume = 1000 });
         for (var i = 207; i < 212; i++)
             prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(i), Open = 120, High = 120, Low = 100, Close = 100, Volume = 1000 });
-        // Back above the buy line, inside the chase limit (+3% to +8% above the SMA 200): the next buy.
+        // Back above the buy line, inside the chase limit (+3% to +10% above the SMA 200): the next buy.
         prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(212), Open = 105, High = 105, Low = 105, Close = 105, Volume = 1000 });
         prices.Add(new PriceDaily { AssetId = asset.Id, Date = first.AddDays(213), Open = 105, High = 105, Low = 105, Close = 105, Volume = 1000 });
         db.Prices.AddRange(prices);

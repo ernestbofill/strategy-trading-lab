@@ -398,9 +398,9 @@
         "help": "Més ampla: menys operacions i menys senyals falsos, però compra i ven més tard. Amb 0, opera a cada creuament."
       },
       "maxChasePct": {
-        "sentence": "Compra només fins a un {value} per sobre de la línia de compra.",
+        "sentence": "Compra només fins a un {value} per sobre de la línia de tendència.",
         "value": "{n}%",
-        "help": "Més alt: encara compra un mercat que ha pujat molt per sobre de la línia de compra. Més baix: espera una baixada en lloc de comprar car."
+        "help": "Més alt: encara compra un mercat que ha pujat molt per sobre de la mitjana. Més baix: espera una baixada en lloc de comprar car. Ha de ser per sobre de la línia de compra."
       },
       "cooldownDays": {
         "sentence": "Després d'una venda, espera {value} abans del següent senyal de compra.",
@@ -412,7 +412,7 @@
       {
         "marker": "COMPRA",
         "tone": "buy",
-        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies). Només fins a un `{maxChasePct}%` més per sobre: més amunt és massa tard."
+        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies). Només fins a un `{maxChasePct}%` per sobre: més amunt és massa tard."
       },
       {
         "marker": "VENDA",

@@ -115,7 +115,7 @@ public record BearParams
 }
 
 /// <summary>Index trend (POC <c>index_trend</c>). All in, all out.</summary>
-public record TrendParams
+public record TrendParams : IValidatableObject
 {
     /// <summary>The trend line: SMA of this many days.</summary>
     [Range(50, 300)] public int SmaDays { get; init; } = 200;
@@ -124,13 +124,20 @@ public record TrendParams
     [Range(0, 10)] public decimal BandPct { get; init; } = 3;
 
     /// <summary>
-    /// The buy only up to <c>BandPct + MaxChasePct</c> above the trend line (+3% to +8% by default): further above, the price
-    /// got too expensive, so it waits for a pullback. Null: no limit, as the POC (its golden tests).
+    /// The buy only up to this % above the trend line (+3% to +10% by default, Ernest, 2026-11-24): further above, the price
+    /// got too expensive, so it waits for a pullback. Above <c>BandPct</c>. Null: no limit, as the POC (its golden tests).
     /// </summary>
-    [Range(1, 30)] public decimal? MaxChasePct { get; init; } = 5;
+    [Range(1, 40)] public decimal? MaxChasePct { get; init; } = 10;
 
     /// <summary>Calendar days after a signal before the next one.</summary>
     [Range(0, 120)] public int CooldownDays { get; init; } = 5;
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        // At or under the buy line the buy window would be empty: the strategy would never buy.
+        if (MaxChasePct <= BandPct)
+            yield return new ValidationResult("The chase limit must be above the buy line.", [nameof(MaxChasePct), nameof(BandPct)]);
+    }
 }
 
 /// <summary>Your AI's top picks (new, no POC rules): the round's pace and what the prompt asks for.</summary>

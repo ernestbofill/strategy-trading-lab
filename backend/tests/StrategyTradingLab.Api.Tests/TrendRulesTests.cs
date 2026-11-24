@@ -108,7 +108,7 @@ public class TrendRulesTests
             };
             return new PriceBar(new DateOnly(2020, 1, 1).AddDays(i), close, close, close, close, 0);
         }).ToList();
-        var rules = new TrendRules(bars, new TrendParams { SmaDays = 50, BandPct = 3, MaxChasePct = 5 });
+        var rules = new TrendRules(bars, new TrendParams { SmaDays = 50, BandPct = 3, MaxChasePct = 8 });
 
         var buy = rules.Decide(50, new DayContext(bars[50].Date, RuleStatus.Watching, 0, default, false, false, false, 1));
         Assert.Equal(RuleStatus.BuySignal, buy.Status);

@@ -398,9 +398,9 @@
         "help": "Wider: fewer trades and fewer false signals, but buys later and sells later. At 0, it trades every crossing."
       },
       "maxChasePct": {
-        "sentence": "Buy only up to {value} above the buy line.",
+        "sentence": "Buy only up to {value} above the trend line.",
         "value": "{n}%",
-        "help": "Higher: still buys a market that ran well past the buy line. Lower: waits for a pullback instead of buying high."
+        "help": "Higher: still buys a market that ran well above its average. Lower: waits for a pullback instead of buying high. Must be above the buy line."
       },
       "cooldownDays": {
         "sentence": "After a sale, wait {value} before the next buy signal.",
@@ -412,7 +412,7 @@
       {
         "marker": "BUY",
         "tone": "buy",
-        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days). Only up to `{maxChasePct}%` more above it: higher is too late to chase."
+        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days). Only up to `{maxChasePct}%` above it: higher is too late to chase."
       },
       {
         "marker": "SELL",

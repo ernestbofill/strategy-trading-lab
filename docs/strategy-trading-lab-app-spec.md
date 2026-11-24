@@ -131,7 +131,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Index trend (`index_trend`)**
 - Buy signal: the close is more than 3% above the SMA 200. Sell signal: the close is more than 3% below it. In between, the trend stays what it was.
-- Chase limit (STL's own, not the POC's; Ernest, 2026-11-24): the buy only up to 5% more above the buy line (+3% to +8% above the SMA 200). Higher, the price got too expensive: no buy signal until it pulls back into that range. A held position is not affected.
+- Chase limit (STL's own, not the POC's; Ernest, 2026-11-24): the buy only up to 10% above the SMA 200 (+3% to +10%). Higher, the price got too expensive: no buy signal until it pulls back into that range. A held position is not affected.
 - Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200), or rises past the chase limit ("too late to chase"). A Manual signal that ends this way is missed; the rules count it as bought, so a pullback brings no second buy signal.
 - All in, all out: one buy of the whole budget; after a sale, the next buy reinvests what the sale returned. Cooldown 5 days. One buy signal per uptrend.
 - No stop-loss: the sell line is the stop.
@@ -348,7 +348,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 *Index trend* (`ReviewTrend`)
 - The idea: "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal."
 - It signals when (labelled rows instead of numbers):
-  - **BUY**: "The market closes more than 3% above its SMA 200 (average price over the last 200 days). Only up to 5% more above it: higher is too late to chase."
+  - **BUY**: "The market closes more than 3% above its SMA 200 (average price over the last 200 days). Only up to 10% above it: higher is too late to chase."
   - **SELL**: "The market closes more than 3% below its SMA 200."
   - **ALL**: "All in, all out: each signal covers the whole budget at once."
 - Fund: "[Broad index fund name]" / "[What the index covers]" / "Change".
@@ -433,7 +433,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- | --- |
 | Buy and sell signals | "The trend line is the SMA over [n] days." | 200 | 10 | 50–300 |
 | Buy and sell signals | "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
-| Buy and sell signals | "Buy only up to [n]% above the buy line." | 5% | 1 | 1–20 |
+| Buy and sell signals | "Buy only up to [n]% above the trend line." (above the buy and sell lines' %) | 10% | 1 | 4–30 |
 | Pace | "After a sale, wait [n] calendar days before the next buy signal." (a sell is never delayed) | 5 | 1 | 0–30 |
 
 The settings are available when starting a strategy and on a running one (Tune the settings).

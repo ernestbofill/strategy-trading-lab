@@ -88,7 +88,7 @@ public class TemplateSettingsTests
         Assert.Empty(errors);
         Assert.Equal(150, stored!.RootElement.GetProperty("smaDays").GetInt32());
         Assert.Equal(4, stored.RootElement.GetProperty("bandPct").GetDecimal());
-        Assert.Equal(5, stored.RootElement.GetProperty("maxChasePct").GetDecimal());
+        Assert.Equal(10, stored.RootElement.GetProperty("maxChasePct").GetDecimal());
         Assert.Equal(5, stored.RootElement.GetProperty("cooldownDays").GetInt32());
     }
 

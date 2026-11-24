@@ -180,21 +180,22 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.Signals.Where(s => s.Id == first || s.Id == second).ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, x => x.SignalDate.AddDays(1)));
-                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(1),
-                    Status = EvaluationStatus.SignalEnded, Facts = JsonDocument.Parse("{}") });
+                // The check that missed it caught up a day: it stored a later day than the one the signal ended on.
+                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(2),
+                    Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
                 await db.SaveChangesAsync();
             }
-            // The older one has a newer signal of its side: moved on. The newer one was checked only up to the day it ended.
+            // The older one has a newer signal of its side: moved on. The newer one has had only the check that missed it.
             var older = await client.GetFromJsonAsync<JsonElement>($"/signals/{second}");
             Assert.True(older.GetProperty("movedOn").GetBoolean());
             Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{second}/skip", new { reason = "other" })).StatusCode);
             Assert.False((await client.GetFromJsonAsync<JsonElement>($"/signals/{first}")).GetProperty("movedOn").GetBoolean());
 
-            // A check of a later day: the stock moved on, so a late answer is refused.
+            // The next check: the stock moved on, so a late answer is refused.
             using (var scope = factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(2),
+                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(3),
                     Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
                 await db.SaveChangesAsync();
             }

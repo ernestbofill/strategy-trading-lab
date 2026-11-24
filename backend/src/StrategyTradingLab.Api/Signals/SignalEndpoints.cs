@@ -33,9 +33,11 @@ public static class SignalEndpoints
             var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var next = await NextOpenAsync(db, found.Signal, cancellationToken);
-            var latest = next is null && options.Value.FetchOnDemand && Answerable(found.Signal)
+            // A signal that can't be answered has no form to prefill: no latest price to fetch.
+            var movedOn = await MovedOnAsync(db, found.Signal, cancellationToken);
+            var latest = next is null && options.Value.FetchOnDemand && Answerable(found.Signal) && !movedOn
                 ? await LatestPriceAsync(prices, refreshes, found, time, cancellationToken) : null;
-            return TypedResults.Ok(await DetailAsync(db, found, user, UserClock.Today(user, time), next, latest, cancellationToken));
+            return TypedResults.Ok(await DetailAsync(db, found, user, UserClock.Today(user, time), next, latest, movedOn, cancellationToken));
         })
         .WithName("GetSignal")
         .WithSummary("A live signal, with what Confirm a signal's form starts with.");
@@ -132,22 +134,12 @@ public static class SignalEndpoints
     static bool Answerable(Signal signal) => signal.Status is SignalStatus.Waiting or SignalStatus.Missed;
 
     /// <summary>
-    /// The signals among <paramref name="signals"/> whose stock has moved on since they were missed: a check of a later day than the
-    /// one they ended on, or a newer signal of their side. A late answer is for right after the miss (Ernest, 2026-11-24): after
-    /// that a skipped or missed step can be signalled again, and answering the old signal could count it twice.
-    /// </summary>
-    static IQueryable<Signal> MovedOn(this IQueryable<Signal> signals, AppDbContext db) =>
-        signals.Where(s => s.Status == SignalStatus.Missed
-            && (db.DailyEvaluations.Any(e => e.StrategyId == s.StrategyId && e.AssetId == s.AssetId && e.Date > s.EndedOn)
-                || db.Signals.Any(n => n.StrategyId == s.StrategyId && n.AssetId == s.AssetId && n.Side == s.Side && n.SignalDate > s.SignalDate)));
-
-    /// <summary>
     /// Why an answer is refused: the missed signal's stock moved on (also since the request's own check), else it was answered.
     /// </summary>
     static async Task<Conflict<string>> RefusedAsync(AppDbContext db, Signal signal, string locale, CancellationToken cancellationToken) =>
         TypedResults.Conflict((await MovedOnAsync(db, signal, cancellationToken) ? Messages.SignalMovedOn : Messages.AlreadyAnswered).In(locale));
 
-    /// <summary>Whether a missed signal's stock has moved on (<see cref="MovedOn(IQueryable{Signal}, AppDbContext)"/>).</summary>
+    /// <summary>Whether a missed signal's stock has moved on (<see cref="SignalMisses.MovedOn"/>).</summary>
     static Task<bool> MovedOnAsync(AppDbContext db, Signal signal, CancellationToken cancellationToken) =>
         signal.Status != SignalStatus.Missed ? Task.FromResult(false)
         : db.Signals.Where(s => s.Id == signal.Id).MovedOn(db).AnyAsync(cancellationToken);
@@ -230,8 +222,9 @@ public static class SignalEndpoints
 
     /// <param name="next">The next open once stored (<see cref="NextOpenAsync"/>).</param>
     /// <param name="latest">The latest price when the next open isn't stored yet (<see cref="LatestPriceAsync"/>).</param>
+    /// <param name="movedOn">A missed signal whose stock moved on (<see cref="SignalMisses.MovedOn"/>).</param>
     static async Task<SignalDetail> DetailAsync(AppDbContext db, (Signal Signal, Strategy Strategy, Asset Asset) found, User user, DateOnly today,
-        (DateOnly Date, decimal Open)? next, LatestPrice? latest, CancellationToken cancellationToken)
+        (DateOnly Date, decimal Open)? next, LatestPrice? latest, bool movedOn, CancellationToken cancellationToken)
     {
         var (signal, strategy, asset) = found;
         var texts = TemplateTexts.For(TemplateCatalog.Find(strategy.TemplateKey)!, user.Locale);
@@ -271,7 +264,6 @@ public static class SignalEndpoints
 
         var reason = EmailTexts.FactSentence(SignalLine.From(signal, strategy, asset), user.Locale);
         var canSnooze = strategy.TemplateKey != TemplateKeys.Ai;
-        var movedOn = await MovedOnAsync(db, signal, cancellationToken);
         return new SignalDetail(signal.Id, strategy.Id, strategy.Name, texts.Name, strategy.Currency, asset.Name, asset.Currency, signal.StepNo,
             signal.MaxSteps, signal.StepAmount, signal.SignalDate, signal.ClosePrice, reason, signal.Status, signal.SnoozedUntil, signal.EndedOn,
             today, prefill, rates, answer, signal.Side, canSnooze, asset.Id,

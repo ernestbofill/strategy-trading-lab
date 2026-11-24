@@ -109,12 +109,12 @@ describe('SignalPage', () => {
     expect(await screen.findByText('Enter the price per share.')).toBeTruthy()
   })
 
-  it('skips with a reason and says the step stays open', async () => {
+  it('skips with a reason and says it buys nothing', async () => {
     open(detail())
     const skip = vi.spyOn(api, 'skipSignal').mockResolvedValue()
 
     fireEvent.click(await screen.findByLabelText('× I skipped it'))
-    expect(screen.getByText('A skip buys nothing and uses no budget: the step stays open for a later signal.')).toBeTruthy()
+    expect(screen.getByText('A skip buys nothing and uses no budget.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'No cash' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save the skip' }))
 

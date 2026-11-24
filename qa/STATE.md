@@ -155,9 +155,9 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | F1 | I did it: fields, prefill, shares instead, validation | §6 Signal | deep | 2026-11-08-2 | Palantir live signal confirmed: empty price blocked, invalid input rejected, shares toggle checked, trade saved. C2.3–C2.8 |
 | F2 | I skipped it: reasons | §6 Signal | smoke | 2026-11-06-1 | C2.16 |
 | F3 | Snooze | §6 Signal | deep | 2026-11-08-1 | Snoozed signal verified: transitioned to MISSED upon round due date. L-001 closed. C1.1 |
-| F4 | Answered and missed signals | §6 Signal | deep | 2026-11-08-1 | Missed signal verified: explanatory banner displayed, trade logging form remains submittable. L-001 closed. C1.1. Since #282 the form stays only until the stock moves on (F7) |
-| F7 | A missed signal after its stock moved on (a later check, or a newer signal): no Missed line, no form, "Back to the stock"; an answer is refused | §6 Signal | untested | | New (#282) |
-| F8 | Manual follows your trades: a skipped step isn't held (pill CANDIDATE, budget free), and the same step signals again once its window closes and reopens; no "The rules alone" | §6 Strategy page, Signal | untested | | New (#282) |
+| F4 | Answered and missed signals | §6 Signal | deep | 2026-11-08-1 | Missed signal verified: explanatory banner displayed, trade logging form remains submittable. L-001 closed. C1.1. Since #282 the form stays only until the stock moves on (F9) |
+| F9 | A missed signal after its stock moved on (a later check, or a newer signal): no Missed line, no form, "Back to the stock"; an answer is refused | §6 Signal | untested | | New (#282) |
+| F10 | Manual follows your trades: a skipped step isn't held (pill CANDIDATE, budget free), and the same step signals again once its window closes and reopens; no "The rules alone" | §6 Strategy page, Signal | untested | | New (#282) |
 | F5 | Exchange-rate line (stock currency ≠ strategy currency) | §6 Signal | smoke | 2026-11-06-1 | F-004. C2.12 |
 | F6 | Sell signal (Index trend) | §6 Signal | untested | | Needs a sell signal on a live fixture |
 | F7 | Up to the stock and the name links there; the price is the next open, fetched on open, else the close with its hint | §6 Signal | untested | | New (feedback 2026-11-12) |

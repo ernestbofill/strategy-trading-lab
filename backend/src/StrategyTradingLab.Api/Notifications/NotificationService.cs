@@ -6,6 +6,7 @@ using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Email;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Notifications;
@@ -127,7 +128,8 @@ public class NotificationService(AppDbContext db, IEmailSender sender, IPushSend
     {
         if (!Ready(channel)) return 0;
         var since = today.AddDays(-AlertDays);
-        var rows = await (from signal in db.Signals.AsNoTracking()
+        // Not once the stock moved on: the signal can't be answered any more.
+        var rows = await (from signal in db.Signals.AsNoTracking().NotMovedOn(db)
                           join strategy in db.Strategies.AsNoTracking() on signal.StrategyId equals strategy.Id
                           join user in Reachable(channel) on strategy.UserId equals user.Id
                           join asset in db.Assets.AsNoTracking() on signal.AssetId equals asset.Id

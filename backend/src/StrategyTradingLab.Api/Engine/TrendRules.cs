@@ -5,7 +5,8 @@ namespace StrategyTradingLab.Api.Engine;
 
 /// <summary>
 /// Index trend (POC <c>index_trend</c>). All in above the <c>SmaDays</c> average plus <c>BandPct</c>,
-/// all out below the average minus <c>BandPct</c>; inside the band the trend stays what it was. Keeps state between days
+/// all out below the average minus <c>BandPct</c>; inside the band the trend stays what it was. The buy only up to
+/// <c>MaxChasePct</c> above the buy line (Ernest, 2026-11-24): further above is too late to chase, so it waits for a pullback. Keeps state between days
 /// (whether the trend is up and when it last broke down): one instance per run.
 /// </summary>
 public class TrendRules : BuyRulesBase
@@ -36,6 +37,7 @@ public class TrendRules : BuyRulesBase
         var price = close[i];
         var buyLine = slow * (1 + p.BandPct / 100);
         var sellLine = slow * (1 - p.BandPct / 100);
+        decimal? chaseLimit = p.MaxChasePct is { } chase ? slow * (1 + (p.BandPct + chase) / 100) : null;
         if (price > buyLine)
         {
             up = true;
@@ -47,19 +49,24 @@ public class TrendRules : BuyRulesBase
         }
 
         var aboveBuy = price > buyLine;
+        var tooLate = price > chaseLimit;
+        var inWindow = aboveBuy && !tooLate;
         var waiting = day.Cooling || day.ActedNow;
         RuleStatus status;
         string? reason = null;
         if (!day.HasPosition)
         {
-            if (aboveBuy && !waiting)
+            if (inWindow && !waiting)
             {
                 status = RuleStatus.BuySignal;
             }
-            else if (!aboveBuy && day.Previous == RuleStatus.BuySignal && !waiting)
+            else if (!inWindow && day.Previous == RuleStatus.BuySignal && !waiting)
             {
                 status = RuleStatus.SignalEnded;
-                reason = up ? "Price fell back below the buy line." : "The trend turned down before buying.";
+                reason = tooLate
+                    ? string.Create(CultureInfo.InvariantCulture,
+                        $"Price is more than {p.BandPct + p.MaxChasePct:0.##}% above the {p.SmaDays}-day average: too late to chase.")
+                    : up ? "Price fell back below the buy line." : "The trend turned down before buying.";
             }
             else
             {
@@ -112,8 +119,12 @@ public class TrendRules : BuyRulesBase
             : [new("buyLine", CheckGroup.Buy, aboveBuy, Math.Round(Indicators.PctFrom(price, buyLine), 1), p.BandPct,
                 Level: Math.Round(buyLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(sellLine, 2), SubValue: vsSma,
                 Progress: RuleCheck.ProgressOf(price, buyLine))];
+        // The buy window's top: past it the stock is too late to chase (StockStates.PastBuyRule).
+        if (!day.HasPosition && chaseLimit is { } limit)
+            checks.Add(new("chase", CheckGroup.Buy, !tooLate, Math.Round(vsSmaPct, 1), p.BandPct, p.BandPct + p.MaxChasePct,
+                Level: Math.Round(buyLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(limit, 2)));
         // After a sale the cooldown holds the next buy back.
         if (!day.HasPosition && RuleCheck.Cooldown(day, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
-        return new RuleDecision(status, reason, facts, WindowOpen: aboveBuy) { Checks = checks };
+        return new RuleDecision(status, reason, facts, WindowOpen: inWindow) { Checks = checks };
     }
 }

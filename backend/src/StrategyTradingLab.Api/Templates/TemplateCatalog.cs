@@ -223,6 +223,7 @@ public static class TemplateCatalog
         [
             new("smaDays", 10, 50, 300, Group: "signal"),
             new("bandPct", 1, 0, 10, Group: "signal"),
+            new("maxChasePct", 1, 1, 20, Group: "signal"),
             new("cooldownDays", 1, 0, 30, Group: "pace"),
         ],
         Benchmarks =

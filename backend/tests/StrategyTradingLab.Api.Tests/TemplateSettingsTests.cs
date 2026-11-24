@@ -81,13 +81,14 @@ public class TemplateSettingsTests
     [Fact]
     public void Ride_the_long_trend_exposes_its_average_signal_band_and_cooldown()
     {
-        Assert.Equal(["smaDays", "bandPct", "cooldownDays"], TemplateCatalog.Trend.Settings.Select(s => s.Key));
+        Assert.Equal(["smaDays", "bandPct", "maxChasePct", "cooldownDays"], TemplateCatalog.Trend.Settings.Select(s => s.Key));
 
         var (stored, errors) = Apply(TemplateCatalog.Trend, new() { ["smaDays"] = 150, ["bandPct"] = 4 });
 
         Assert.Empty(errors);
         Assert.Equal(150, stored!.RootElement.GetProperty("smaDays").GetInt32());
         Assert.Equal(4, stored.RootElement.GetProperty("bandPct").GetDecimal());
+        Assert.Equal(5, stored.RootElement.GetProperty("maxChasePct").GetDecimal());
         Assert.Equal(5, stored.RootElement.GetProperty("cooldownDays").GetInt32());
     }
 

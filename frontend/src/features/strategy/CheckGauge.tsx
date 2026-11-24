@@ -18,7 +18,7 @@ function TwoLevelStrip({ left, right, ok, symbol, className }: { left: string; r
   )
 }
 
-const WINDOW_KEYS = new Set(['zone', 'buyLine'])
+const WINDOW_KEYS = new Set(['zone', 'buyLine', 'chase'])
 
 // Proven growth's bar says the rise itself, as its sentence does: its share of the target ("199%" for a 99.3% rise that
 // needs 50%) read as another figure (feedback, 2026-11-16). Not the drops: the comeback's is negative, and a bear's bar
@@ -79,10 +79,10 @@ export function CheckGauge({ check: raw, currency, className }: { check: RuleChe
   // 4. The candidate window (`beaten`) has no gauge: a bar of days read as "more is better".
   if (check.key === 'beaten') return null
 
-  // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`).
+  // 5. Band / window checks where going past `max` cancels the signal (`zone`, `buyLine`, the index's `chase`).
   if (WINDOW_KEYS.has(check.key) && check.value !== null && check.max !== null && check.max > 0) {
     const isZone = check.key === 'zone'
-    const fromZero = isZone || (check.key === 'buyLine' && (check.min ?? 0) > 0 && check.max > (check.min ?? 0))
+    const fromZero = isZone || ((check.key === 'buyLine' || check.key === 'chase') && (check.min ?? 0) > 0 && check.max > (check.min ?? 0))
     const min = fromZero ? (check.min ?? 0) : 0
     const max = check.max
     const span = Math.max(1, max - min)

@@ -131,7 +131,8 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Index trend (`index_trend`)**
 - Buy signal: the close is more than 3% above the SMA 200. Sell signal: the close is more than 3% below it. In between, the trend stays what it was.
-- Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200).
+- Chase limit (STL's own, not the POC's; Ernest, 2026-11-24): the buy only up to 5% more above the buy line (+3% to +8% above the SMA 200). Higher, the price got too expensive: no buy signal until it pulls back into that range. A held position is not affected.
+- Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200), or rises past the chase limit ("too late to chase").
 - All in, all out: one buy of the whole budget; after a sale, the next buy reinvests what the sale returned. Cooldown 5 days. One buy signal per uptrend.
 - No stop-loss: the sell line is the stop.
 
@@ -347,7 +348,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 *Index trend* (`ReviewTrend`)
 - The idea: "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal."
 - It signals when (labelled rows instead of numbers):
-  - **BUY**: "The market closes more than 3% above its SMA 200 (average price over the last 200 days)."
+  - **BUY**: "The market closes more than 3% above its SMA 200 (average price over the last 200 days). Only up to 5% more above it: higher is too late to chase."
   - **SELL**: "The market closes more than 3% below its SMA 200."
   - **ALL**: "All in, all out: each signal covers the whole budget at once."
 - Fund: "[Broad index fund name]" / "[What the index covers]" / "Change".
@@ -432,6 +433,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- | --- |
 | Buy and sell signals | "The trend line is the SMA over [n] days." | 200 | 10 | 50–300 |
 | Buy and sell signals | "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+| Buy and sell signals | "Buy only up to [n]% above the buy line." | 5% | 1 | 1–20 |
 | Pace | "After a sale, wait [n] calendar days before the next buy signal." (a sell is never delayed) | 5 | 1 | 0–30 |
 
 The settings are available when starting a strategy and on a running one (Tune the settings).
@@ -662,7 +664,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
   - *The comeback*: a candidate, after the start, the "Buy area" from the buy line to its top; a stock that isn't one, the "Beaten down" line (the 52-week high less the drop the rules need). A candidate's chart marks the day it became a candidate (the first day of its current run as one, "Candidate since"; it was the day it was last beaten down, which moved forward every day the stock stayed down, until Ernest's feedback of 2026-11-21, #274) with an amber dashed line labelled "Candidate [date]" under the start's label, like the start's line, when the period reaches back to it (it was a ring, "Beaten down [date]", until Ernest's feedback of 2026-11-17). Before the first step, a blue ring marks the recent low the buy line counts from, "Recent low [date]" in the legend, when the period has it and it is before the latest day; a stock that isn't a candidate also draws the "SMA 200" line, the other beaten-down rule (Ernest, 2026-11-17). While the rules hold it, the "Last step" line: the price the last step was bought at, which the close must stay above for the next one (2026-11-21).
   - *Winners at a discount*: a candidate, after the start, the "Discount zone"; a stock that isn't one, the "Proven growth" line (its low plus the growth the rules need) on the days the growth isn't met. Once it is met the line goes: the rule reads the recent peak, not today's price, so a price under the line read as a rule not met (feedback, 2026-11-16).
   - *Bear markets*: the "Market fall" line always; after the start, the "Bounce buy" line once a drop has started (none before a drop).
-  - *Index trend*: after the start, the "Buy line" and the "Sell line"; before it, the price only.
+  - *Index trend*: after the start, the "Buy line" and the "Sell line", and the "Chase limit" while out of the market; before it, the price only.
   - This strategy's trades are dots on the price line on their day, green for a buy and pink for a sell, with "Buy" and "Sell" in the legend.
   - The scale fits the price and every level, so the distance to a far line stays in view.
   - A candidate's chart (the stored verdict, else the latest day's checks) is framed and drawn in green, a stock that isn't one in violet. The chart is left out with fewer than two closes in all; a period with fewer than two (a gap in the prices) shows the last two, its dates under the chart. The data comes from `GET /strategies/{id}/stocks/{assetId}/chart` (the last 90 calendar days).
@@ -672,11 +674,11 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
   - "Next step" (*The comeback*'s and *Bear markets*' pace): when the strategy already holds 1+ steps, shown open with "One more step when these allow it."; before the first step is bought (`preview: true`), collapsed behind a **"Show next steps"** `<details>` disclosure ("Unlocks after the first step is bought."). **Up to date with the trade** (Ernest, 2026-11-12): once the latest check's Manual buy signal is answered (done or skipped), the rules count its step as bought at the next open, so the checks shown are the ones with that step bought, from the last close: the next steps open (the pace counting from the buy), and the cooldown. The daily check computes them with the signal (`checksAfterBuy` in the day's facts); the next check replaces them with its own. A Simulation needs none: its trade comes with the next check. *Bear markets* counts its steps itself, so its pace shows after the next check. Held, its first row is "The turn" (step 1): "Step bought", "Step counted at the open on [date]." Then "Next step" ("[n] of [10] trading days since the last step.", with a bar) and "Above the last step" ("[+n]% vs the last step's price ([price]); needs above."); once every step is bought, only the turn. Used rows have no bar. While the cooldown after a step runs, a "Cooldown" row says the days left ("[n] more days to wait after the last buy or sale ([m] in all).") with a bar; held, it sits in "Next step" (*The comeback*) or "Buy signal" (*Winners at a discount*). After a sale it sits in "Buy signal", for every template with a cooldown (feedback, 2026-11-12).
   - "Sell signal" (*Index trend* in the market): "Met: a sell signal for the whole position."
   - **Every rule row has a status badge and a visual representation** (no tickless rows):
-    - Status badge on the right: `✓ Met`, `○ Not met`, `✓ Step bought`, `✓ Used at a buy`, `✕ Window closed` (when *The comeback*'s candidate window of 60 trading days has expired), `✕ Past zone` (when a *Winners at a discount* pullback fell past the discount zone's max %), or `✕ Past limit` (when price climbed past *The comeback*'s buy area).
+    - Status badge on the right: `✓ Met`, `○ Not met`, `✓ Step bought`, `✓ Used at a buy`, `✕ Window closed` (when *The comeback*'s candidate window of 60 trading days has expired), `✕ Past zone` (when a *Winners at a discount* pullback fell past the discount zone's max %), or `✕ Past limit` (when price climbed past *The comeback*'s buy area or *Index trend*'s chase limit).
     - In *The comeback*, while the stock is a candidate (`beaten` met), today's recovery figures from the 52-week high and vs the SMA 200 are folded into the `Beaten down lately` sentence rather than shown as separate tickless rows; when not a candidate, `Drop from the 52-week high` and `Below SMA 200 at the drop` are shown as ticked candidate checks with threshold bars.
     - Visual gauges per rule type:
       - **Threshold bar (with `> 100%` overflow):** shown whether met or not, with a `100%` target tick at 75% of the bar width so values that exceed the threshold visibly pass the target tick. Its label is the share of the target reached (`76%`), except *Proven growth*, which gives the rise itself, as its sentence does (`99.3%`, not `199%` of the 50% needed; feedback, 2026-11-16).
-      - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`) and *The comeback*'s buy line, showing both the entry threshold and the upper limit past which the signal is cancelled.
+      - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`), *The comeback*'s buy line and *Index trend*'s chase limit, showing both the entry threshold and the upper limit past which the signal is cancelled.
       - *Beaten down lately* has no bar: a bar of days read as "more is better". Its sentence says since when it is a candidate, and `Window closed` shows once the window has passed.
       - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Long $Y`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* sell line (`Sell $X · SMA $Y · Buy $Z`). *Index trend* buy line uses a threshold progress bar.
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.

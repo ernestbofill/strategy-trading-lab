@@ -150,16 +150,17 @@ public class RuleChecksTests
         {
             if (day.Status == RuleStatus.BuySignal)
             {
-                var check = day.Checks.Single();
-                Holds(check.Key == "buyLine" && check.Met == true, day, "a buy is above the buy line, with no cooldown");
+                var check = day.Checks.Single(c => c.Key == "buyLine");
+                Holds(check.Met == true && day.Checks.Single(c => c.Key == "chase").Met == true && day.Checks.All(c => c.Key != "cooldown"),
+                    day, "a buy is above the buy line and below the chase limit, with no cooldown");
                 Holds(check.Progress > 0, day, "a buy has progress toward the buy line");
             }
             if (day.Status == RuleStatus.Watching)
             {
-                // After a sale the cooldown can show too, until it ends.
-                var check = day.Checks.Single(c => c.Key != "cooldown");
-                Holds(check.Key == "buyLine" && check.Met == false, day, "watching is below the buy line");
-                Holds(check.Progress is > 0 and <= 1, day, "watching has progress toward the buy line");
+                // Below the buy line, past the chase limit, or (after a sale) cooling down.
+                Holds(day.Checks.Any(c => c.Met == false), day, "watching misses a buy rule");
+                Holds(day.Checks.Single(c => c.Key == "chase").Met == false || day.Checks.Single(c => c.Key == "buyLine").Progress is > 0 and <= 1
+                    || day.Checks.Any(c => c.Key == "cooldown"), day, "watching has progress toward the buy line");
             }
             if (day.Status == RuleStatus.SellSignal) Holds(day.Checks.Single().Key == "sellLine" && day.Checks.Single().Met == true, day, "a sale is below the sell line");
             if (day.Status == RuleStatus.Holding) Holds(day.Checks.Single().Met == false, day, "holding is above the sell line");

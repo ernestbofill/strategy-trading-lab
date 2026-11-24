@@ -397,6 +397,11 @@
         "value": "{n}%",
         "help": "Wider: fewer trades and fewer false signals, but buys later and sells later. At 0, it trades every crossing."
       },
+      "maxChasePct": {
+        "sentence": "Buy only up to {value} above the buy line.",
+        "value": "{n}%",
+        "help": "Higher: still buys a market that ran well past the buy line. Lower: waits for a pullback instead of buying high."
+      },
       "cooldownDays": {
         "sentence": "After a sale, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
@@ -407,7 +412,7 @@
       {
         "marker": "BUY",
         "tone": "buy",
-        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days)."
+        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days). Only up to `{maxChasePct}%` more above it: higher is too late to chase."
       },
       {
         "marker": "SELL",
@@ -507,6 +512,14 @@
         "detail": "{+value}% vs the buy line ({level}, +{min}% above the SMA {midLevel}). Close is {+subValue}% vs the SMA.",
         "short": "{+value}% vs the buy line",
         "info": "The trend line is the average close of the last 200 days. Signals a buy above +{min}%; inside the ±{min}% band ({endLevel} to {level}), the trend stays unchanged."
+      },
+      "chase": {
+        "label": "Price vs the chase limit",
+        "detail": "{+value}% vs the SMA ({midLevel}): buys from +{min}% to +{max}% ({level} to {endLevel}).",
+        "past": "{+value}% vs the SMA ({midLevel}): past +{max}% ({endLevel}), too late to chase.",
+        "short": "{+value}% vs the SMA (buys up to +{max}%)",
+        "pastShort": "{+value}% vs the SMA (past +{max}%)",
+        "info": "Buys from +{min}% to +{max}% above the 200-day average ({level} to {endLevel}). Higher, the price got too expensive: the strategy waits for a pullback into that range."
       },
       "sellLine": {
         "label": "Price vs the sell line",

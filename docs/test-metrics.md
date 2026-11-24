@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 3 | 9 | 12 |
-| Backend (xUnit) | 2 | 22 | 24 |
-| **All** | **5** | **31** | **36** |
+| Frontend (Vitest) | 3 | 10 | 13 |
+| Backend (xUnit) | 2 | 23 | 25 |
+| **All** | **5** | **33** | **38** |
 
 ## Log
 
@@ -28,6 +28,8 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24 | #281 | local | Frontend (Vitest) | `src/features/strategy/StrategyPage.test.tsx` (the budget line, "12 of 30 steps") | 1 | FP | Copy changed on purpose (*step* → *trade*, issue #277); the expectation now reads "12 of 30 trades". |
+| 2026-11-24 | #281 | local | Backend (xUnit) | `AiAnswerReaderTests.Reads_a_table_in_catalan_and_words_its_problems_in_catalan` | 1 | FP | Copy changed on purpose (Catalan *pas* → *operació*, issue #277); the expectation updated. |
 | 2026-11-24 | #280 | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
 | 2026-11-24 | #280 | CI | Backend (xUnit) | `StrategyEvaluatorTests.A_trend_strategy_buys_all_in_sells_all_out_and_reinvests_the_proceeds_on_the_next_buy` | 1 | FP | Its rebuy closed at 120, about 19% above the SMA 200, past the new chase limit (intended). The rebuy closes at 105 now, inside the buy window. |
 | 2026-11-24 | #280 | local | Backend (xUnit) | `RuleChecksTests.Index_trend` (trend-SPY-0) | 1 | FP | A new assertion that a past-the-chase-limit day exists; that data set has none. Removed: `TrendRulesTests` covers it. |

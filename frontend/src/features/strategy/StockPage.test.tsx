@@ -119,7 +119,7 @@ describe('StockPage', () => {
     expect(screen.getAllByText('Met')).toHaveLength(2)
     // The volume, and the next steps' pace in preview.
     expect(screen.getAllByText('Not met')).toHaveLength(2)
-    expect(screen.getByText('Show next steps')).toBeTruthy()
+    expect(screen.getByText('Show next trades')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'About Price vs the buy line' })).toBeTruthy()
   })
 

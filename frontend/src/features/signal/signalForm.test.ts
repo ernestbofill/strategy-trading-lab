@@ -71,8 +71,8 @@ describe('signalForm', () => {
     })
   })
 
-  it('names the next step after a skip until the last one', () => {
-    expect(nextStep(signal(), tNow)).toBe('step 3 of 5')
+  it('names the next trade after a skip until the last one', () => {
+    expect(nextStep(signal(), tNow)).toBe('trade 3 of 5')
     expect(nextStep(signal({ stepNo: 5 }), tNow)).toBeNull()
   })
 })

@@ -309,7 +309,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         foreach (var signal in signals.Values.Where(s => s.EndedOn is null))
         {
             var closed = days.FirstOrDefault(d => d.Date > signal.SignalDate
-                && (signal.Side == TradeSide.Sell ? d.WindowOpen : !d.WindowOpen));
+                && (signal.Side == TradeSide.Sell ? d.SellClosed : !d.WindowOpen));
             if (closed is null) continue;
             signal.EndedOn = closed.Date;
         }

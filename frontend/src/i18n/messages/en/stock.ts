@@ -22,6 +22,7 @@ export const stock = {
   'stock.chart.bounce': 'Bounce buy',
   'stock.chart.buyLine': 'Buy line',
   'stock.chart.sellLine': 'Sell line',
+  'stock.chart.chase': 'Chase limit',
   'stock.chart.sma200': 'SMA 200',
   'stock.chart.lastStep': 'Last trade',
   'stock.answer': 'Answer the signal',

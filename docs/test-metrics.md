@@ -19,8 +19,8 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
 | Frontend (Vitest) | 3 | 10 | 13 |
-| Backend (xUnit) | 2 | 17 | 19 |
-| **All** | **5** | **27** | **32** |
+| Backend (xUnit) | 2 | 23 | 25 |
+| **All** | **5** | **33** | **38** |
 
 ## Log
 
@@ -30,6 +30,10 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-24 | #281 | local | Frontend (Vitest) | `src/features/strategy/StrategyPage.test.tsx` (the budget line, "12 of 30 steps") | 1 | FP | Copy changed on purpose (*step* → *trade*, issue #277); the expectation now reads "12 of 30 trades". |
 | 2026-11-24 | #281 | local | Backend (xUnit) | `AiAnswerReaderTests.Reads_a_table_in_catalan_and_words_its_problems_in_catalan` | 1 | FP | Copy changed on purpose (Catalan *pas* → *operació*, issue #277); the expectation updated. |
+| 2026-11-24 | #280 | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_to_a_database_that_answers_moves_the_api_there_and_is_kept` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
+| 2026-11-24 | #280 | CI | Backend (xUnit) | `StrategyEvaluatorTests.A_trend_strategy_buys_all_in_sells_all_out_and_reinvests_the_proceeds_on_the_next_buy` | 1 | FP | Its rebuy closed at 120, about 19% above the SMA 200, past the new chase limit (intended). The rebuy closes at 105 now, inside the buy window. |
+| 2026-11-24 | #280 | local | Backend (xUnit) | `RuleChecksTests.Index_trend` (trend-SPY-0) | 1 | FP | A new assertion that a past-the-chase-limit day exists; that data set has none. Removed: `TrendRulesTests` covers it. |
+| 2026-11-24 | #280 | local | Backend (xUnit) | `TrendRulesTests.A_buy_signal_closes_when_the_price_falls_back_below_the_buy_line_while_a_held_position_stays_held` | 1 | FP | Out of the market the trend now has a second buy check (`chase`), so `Checks.Single()` picks the `buyLine` check by key. |
 | 2026-11-22 | #271 | local | Backend (xUnit) | `DipRulesTests.The_comeback_measures_the_turn_from_the_recent_low_window` | 1 | FP | Its falling case came from 120, above the buy area (118), so it now reads as a pullback from above (intended) and has no volume check. It falls from 116, inside the buy area, instead. |
 | 2026-11-22 | #268 | local | Frontend (Vitest) | `stockLine.test.ts` (2), `priceChartMarks.test.ts` (2), `StockPage.test.tsx` (1): the comeback's milestone cases | 5 | FP | The milestone code was removed on purpose (Ernest); the tests now cover the pace instead. |
 | 2026-11-21 | #268 | local | Backend (xUnit) | `RuleChecksTests.The_comeback` (NOW, MOD) | 2 | TP | Once every step was bought, the new pace row was marked used with no word on whether it bought a step, which the stock page reads as "Step bought". Fixed in the engine: a full position has no pace row. |

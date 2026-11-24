@@ -23,7 +23,7 @@ export const isCandidateOn = (checks: RuleCheck[]) => checks.every((c) => c.grou
  * One day's levels from its checks' keys (not the template's): a candidate's buy area or discount zone, else the line that
  * would make it a candidate (beaten down and the SMA 200, proven growth); a held comeback stock's last step price; a bear's
  * market fall line, and its
- * bounce line once a drop started; the index's buy and sell lines. Before the start a day has only candidate checks (and
+ * bounce line once a drop started; the index's buy and sell lines, and its chase limit. Before the start a day has only candidate checks (and
  * next-step previews). The chart passes the stock's verdict today, so every day draws the same kind of level (Ernest,
  * 2026-11-08), except the growth line, which shows only on the days the growth isn't met (so a dip that lacks only its
  * averages draws no level).
@@ -47,6 +47,10 @@ export function chartMarks(checks: RuleCheck[], isCandidate = isCandidateOn(chec
             { id: 'sellLine', label: 'stock.chart.sellLine', tone: 'sell', from: sell },
           )
         }
+        break
+      // The index trend's top of the buy window: higher is too late to chase.
+      case 'chase':
+        if (c.endLevel != null) marks.push({ id: 'chase', label: 'stock.chart.chase', tone: 'watch', from: c.endLevel })
         break
       case 'zone':
         if (isCandidate && c.level !== null && c.endLevel != null)

@@ -24,6 +24,7 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.chart.bounce': 'Compra al rebot',
   'stock.chart.buyLine': 'Línia de compra',
   'stock.chart.sellLine': 'Línia de venda',
+  'stock.chart.chase': 'Límit de compra',
   'stock.chart.sma200': 'SMA 200',
   'stock.chart.lastStep': 'Última operació',
   'stock.answer': 'Respon el senyal',

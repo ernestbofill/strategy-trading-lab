@@ -397,6 +397,11 @@
         "value": "{n}%",
         "help": "Més ampla: menys operacions i menys senyals falsos, però compra i ven més tard. Amb 0, opera a cada creuament."
       },
+      "maxChasePct": {
+        "sentence": "Compra només fins a un {value} per sobre de la línia de tendència.",
+        "value": "{n}%",
+        "help": "Més alt: encara compra un mercat que ha pujat molt per sobre de la mitjana. Més baix: espera una baixada en lloc de comprar car. Ha de ser per sobre de la línia de compra."
+      },
       "cooldownDays": {
         "sentence": "Després d'una venda, espera {value} abans del següent senyal de compra.",
         "value": "{n} dies naturals",
@@ -407,7 +412,7 @@
       {
         "marker": "COMPRA",
         "tone": "buy",
-        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies)."
+        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies). Només fins a un `{maxChasePct}%` per sobre: més amunt és massa tard."
       },
       {
         "marker": "VENDA",
@@ -423,7 +428,7 @@
       "scope": "6 índexs principals, 2000-2026.",
       "years": "2000-2026",
       "universe": "6 grans índexs globals (S&P 500, Nasdaq-100, Desenvolupats ex-EUA, DAX, Nikkei 225, Vanguard 500)",
-      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora.",
+      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora, sense límit de compra.",
       "stories": {
         "2000-12": "Va esquivar les caigudes del 2000–02 i del 2008",
         "2013-19": "El cost de l'assegurança en un mercat alcista continu",
@@ -507,6 +512,14 @@
         "detail": "{+value}% respecte a la línia de compra ({level}, +{min}% per sobre de la SMA {midLevel}). El tancament és a {+subValue}% de la SMA.",
         "short": "{+value}% respecte a la línia de compra",
         "info": "La línia de tendència és el tancament mitjà dels últims 200 dies. Assenyala compra per sobre del +{min}%; dins la banda del ±{min}% ({endLevel} a {level}), la tendència es manté."
+      },
+      "chase": {
+        "label": "Preu respecte al límit de compra",
+        "detail": "{+value}% respecte a la SMA ({midLevel}): compra de +{min}% a +{max}% ({level} a {endLevel}).",
+        "past": "{+value}% respecte a la SMA ({midLevel}): passa de +{max}% ({endLevel}), massa tard.",
+        "short": "{+value}% respecte a la SMA (compra fins a +{max}%)",
+        "pastShort": "{+value}% respecte a la SMA (passa de +{max}%)",
+        "info": "Compra de +{min}% a +{max}% per sobre de la línia de tendència ({level} a {endLevel}). Més amunt, el preu s'ha encarit massa: l'estratègia espera una baixada fins a aquest rang."
       },
       "sellLine": {
         "label": "Preu respecte a la línia de venda",

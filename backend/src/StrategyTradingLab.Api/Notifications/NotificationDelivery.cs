@@ -109,10 +109,14 @@ public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSen
         await db.Notifications.Where(n => n.Id == notificationId)
             .ExecuteUpdateAsync(n => n.SetProperty(x => x.SentAt, delivered ? now : (DateTimeOffset?)null)
                 .SetProperty(x => x.FailedAt, delivered ? (DateTimeOffset?)null : now)
-                .SetProperty(x => x.Error, delivered ? null : "No device got it."), CancellationToken.None);
+                .SetProperty(x => x.Error, delivered ? null : "No device got it.")
+                .SetProperty(x => x.Title, Clip(message.Title, PushTexts.TitleMax))
+                .SetProperty(x => x.Body, Clip(message.Body, PushTexts.BodyMax)), CancellationToken.None);
         db.ChangeTracker.Clear();
         return delivered;
     }
+
+    static string Clip(string text, int max) => text.Length <= max ? text : text[..max];
 
     /// <summary>Waits until <c>pushGap</c> has passed since the user's last push that went out.</summary>
     async Task WaitForGapAsync(Guid userId, CancellationToken cancellationToken)

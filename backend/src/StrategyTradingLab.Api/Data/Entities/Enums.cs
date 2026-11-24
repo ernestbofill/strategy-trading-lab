@@ -25,7 +25,8 @@ public enum FxSource { Reference, User }
 public enum TradeSource { Signal, Manual }
 
 /// <summary>What a notification is about. <c>StockCandidate</c> and <c>StockClose</c> are push only: a stock in a strategy became a candidate or came close.</summary>
-public enum NotificationKind { Signal, Snoozed, Overview, AiRound, SignalEnded, StockCandidate, StockClose }
+/// <summary>What a notification is about. <c>Test</c>: a push the owner sent from /admin/notifications, never deduped.</summary>
+public enum NotificationKind { Signal, Snoozed, Overview, AiRound, SignalEnded, StockCandidate, StockClose, Test }
 
 public enum NotificationChannel { Push, Email }
 

@@ -187,6 +187,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | H8 | Settings page: the Account row, install the app, time zone (Barcelona), notification time | §6 Settings, §7 | regressed | 2026-11-08-2 | Verified F-023 fix on /summary scoreboard and notifications; Settings push toggle and time zone (PR #200, #201, #202). C1.1–C1.5, C3.1–C3.5 |
 | H9 | Delete my account (a throwaway account only: never `qaagent`) | §6 Account | untested | | Wrong password refused; then deleted, logged out, last email. |
 | H10 | Zoom (100%, 110%, 125%) on Sign-up and Settings: the whole app grows, kept after a reload, no horizontal scrolling at 125% | §6 Settings | deep | 2026-11-10-1 | 100/110/125%, at once, kept after reload, per device, keyboard, Sign-up at 360px; F-025. C1.1–C1.11 |
+| H11 | `/admin/notifications`: a test push to the QA account's own device, and the Sent list (admin: owner only; a write, so ask Ernest first on production) | §6 Admin settings | not yet | | Added in this PR. |
 
 ### X · Across the app
 

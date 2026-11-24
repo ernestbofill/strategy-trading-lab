@@ -16,6 +16,12 @@ public record PushMessage(string Title, string Body, string Url, string Tag)
 /// <summary>The words of the push notifications: the email's subject as the title and the signal box as the text, or the stock change line (spec: Notifications).</summary>
 public static class PushTexts
 {
+    /// <summary>The longest title and text kept (<c>notifications.title</c>, <c>body</c>), and allowed for a test push.</summary>
+    public const int TitleMax = 200, BodyMax = 1000;
+
+    /// <summary>A test push from /admin/notifications: it opens the dashboard, and each one shows on its own (its own tag).</summary>
+    public static PushMessage Test(Guid notificationId, string title, string body) => new(title, body, "/", $"test-{notificationId}");
+
     public static PushMessage SignalAlert(SignalLine s, string locale) => new(
         EmailTexts.AlertTitle(s, locale), EmailTexts.SignalText(s, locale), SignalPath(s), $"signal-{s.SignalId}");
 

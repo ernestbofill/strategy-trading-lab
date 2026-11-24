@@ -82,18 +82,19 @@ The product rules hold: every result sits next to the index fund and the worst y
 
 Two different things:
 
-- **The dataset** holds the test draft's stocks (one draft per period, about 200 stocks in all), SPY (baseline 1 and the default index) and the templates' starter lists (their stocks and funds), with their daily prices. One snapshot a month (see *Data*). Anything else (an edited list, another stock, another index) is fetched when a test runs.
+- **The dataset** holds the test draft's stocks (a rolling draft of 60, about 90–100 stocks over the 4 periods), SPY (baseline 1 and the default index) and the templates' starter lists (their stocks and funds), with their daily prices. One snapshot a month (see *Data*). Anything else (an edited list, another stock, another index) is fetched when a test runs.
 - **Drawing the draft** needs every stock that was in the S&P 500 in the years tested (with its dates in the index): their prices give the size thirds and the representativeness check. All of them are downloaded only when the draft is drawn (Ernest, 2026-11-24): the first time, when a new period starts (2027 adds 2027–30), when a membership correction touches a drawn period, or when the draft's size or method changes. The checks run again each time. Then only the draft's stocks are kept.
 - **The test draft** is the stocks a test uses: one fixed draft, drawn from the dataset's S&P 500 members on each period's start date (the same seed every time). Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
 - **Its size: 60** (Ernest, 2026-11-23), the most stocks a strategy can follow: large enough that the strategies find candidates in it and one lucky or unlucky stock weighs little.
 
 **How it is drawn** (Ernest, 2026-11-23):
 
-1. **Eligible:** the S&P 500 members on the period's start date with prices from the warm-up on.
+1. **Eligible:** the S&P 500 members on the first period's start date (2011) with prices from the warm-up on.
 2. **By sector:** each of the 11 sectors (Yahoo's, as for added assets) gets seats in proportion to its share of the eligible members.
 3. **By size, within each sector:** low, middle and high thirds by average daily traded value (price × volume over the 60 trading days before the start), a size measure that exists for any past date.
-4. **Drawn** at random within each sector and size group with a fixed, published seed. Each period gets its own draft, from its own members, with the same seed.
-5. **Checked, never re-drawn to look better:**
+4. **Drawn** at random within each sector and size group with a fixed, published seed: the draft for the first period.
+5. **Rolled** (Ernest, 2026-11-24): at each later period's start, the drafted stocks still in the index stay; each one that left is replaced by a member drawn with the same seed from the same sector and size third, measured on that date. Most stocks stay the same across periods, as in an index fund, with no look-ahead: a stock that leaves the index during a period stays until the period ends. A new period (2027–30) rolls from the last one. Sector shares can drift as the index changes; the representativeness check catches it.
+6. **Checked, never re-drawn to look better:**
    - *Representative:* per period, the draft's *same stocks, monthly* rate is within about ±2 points a year of the same baseline on all eligible members.
    - *Candidates:* each stock template, at its defaults, has 4–5 different candidates in it every calendar year (Ernest, 2026-11-23). The report shows the count per template and year, with the trades and the budget invested.
    A failed check is reported and decided with Ernest (a larger draft, for example); changing the seed until the numbers look right would be cherry-picking.

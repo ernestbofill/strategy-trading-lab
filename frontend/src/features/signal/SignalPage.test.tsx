@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { api, InvalidFieldsError, type SignalDetail } from '../../api'
 import { SignalPage } from './SignalPage'
+import { invalidateAll } from '../../lib/useLoadable'
 
 const detail = (fields: Partial<SignalDetail> = {}): SignalDetail => ({
   id: 'sig',
@@ -143,11 +144,15 @@ describe('SignalPage', () => {
     expect(screen.queryByRole('button', { name: 'Save the trade' })).toBeNull()
   })
 
-  it('sends a missed signal a newer one replaced to that one, without the form', async () => {
-    open(detail({ status: 'missed', endedOn: '2026-10-23', replacedBy: 'newer' }))
+  it('offers a late answer right after a miss, and none once the stock moved on', async () => {
+    open(detail({ status: 'missed', endedOn: '2026-10-23' }))
+    expect(await screen.findByText(/You can still record what you did/)).toBeTruthy()
+    cleanup()
+    invalidateAll()
 
-    expect(await screen.findByText(/a newer signal replaced it/)).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Open the newer signal' }).getAttribute('href')).toBe('/strategies/st/signals/newer')
+    open(detail({ status: 'missed', endedOn: '2026-10-23', movedOn: true }))
+    expect(await screen.findByRole('link', { name: 'Back to the strategy' })).toBeTruthy()
+    expect(screen.queryByText('Missed')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Save the trade' })).toBeNull()
   })
 })

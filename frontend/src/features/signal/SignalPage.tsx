@@ -12,7 +12,7 @@ import { useLeave } from '../../components/useLeave'
 import { exact, formatShares, money, shortDate } from '../../lib/format'
 import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { useT } from '../../i18n/I18n'
-import { signalPath, stockPath, strategyPath } from '../dashboard/paths'
+import { stockPath, strategyPath } from '../dashboard/paths'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { strategyCacheKey } from '../strategy/useStrategy'
 import styles from './SignalPage.module.css'
@@ -88,26 +88,17 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
     </div>
   )
 
-  if (s.answer) {
+  // Answered, or missed with the stock moved on since: no form. A late answer is for right after the miss.
+  if (s.answer || (s.status === 'missed' && s.movedOn)) {
     return (
       <Screen top={top} action={<PrimaryAction to={parentOf(s)}>{t(s.onStockList ? 'signal.backStock' : 'signal.back')}</PrimaryAction>}>
         {header}
         {box}
-        <Callout tone="info" title={t('signal.answered')}>
-          <AnswerLine s={s} />
-        </Callout>
-      </Screen>
-    )
-  }
-  // A newer signal for the stock stands for the step now: answering this one would count it twice.
-  if (s.status === 'missed' && s.replacedBy) {
-    return (
-      <Screen top={top} action={<PrimaryAction to={signalPath(s.strategyId, s.replacedBy)}>{t('signal.replaced.action')}</PrimaryAction>}>
-        {header}
-        {box}
-        <Callout tone="warning" title={t('signal.missed.title')}>
-          <p className={styles.plain}>{t('signal.replaced.text', { date: shortDate(s.endedOn ?? s.signalDate) })}</p>
-        </Callout>
+        {s.answer && (
+          <Callout tone="info" title={t('signal.answered')}>
+            <AnswerLine s={s} />
+          </Callout>
+        )}
       </Screen>
     )
   }

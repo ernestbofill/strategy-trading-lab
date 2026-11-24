@@ -30,8 +30,6 @@ export const signal = {
   'signal.save.skip': 'Save the skip',
   'signal.missed.title': 'Missed',
   'signal.missed.text': 'This signal ended on {date} without an answer. You can still record what you did.',
-  'signal.replaced.text': 'This signal ended on {date} without an answer, and a newer signal replaced it.',
-  'signal.replaced.action': 'Open the newer signal',
   'signal.question': 'Did you act on it?',
   'signal.choice.did': '✓ I did it',
   'signal.choice.skip': '× I skipped it',

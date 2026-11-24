@@ -712,7 +712,7 @@ Help line under the price: "Prefilled with [date]'s opening price. Change anythi
 
 The date is from the signal day to today; a field the server refuses shows why under it ("Enter the price per share.").
 
-**Answered or missed** (not drawn): an answered signal shows the box and "You did it: [n] shares at $[XXX.XX] on [date] (€[amount], fee €[fee])." or "You skipped it: [reason].", with "Back to the stock" ("Back to the strategy" for a fund strategy) instead of the form. A missed signal keeps the form, under "This signal ended on [date] without an answer. You can still record what you did.", unless a newer signal of the same side for the stock replaced it (a skipped or missed step can be signalled again): then "This signal ended on [date] without an answer, and a newer signal replaced it." with "Open the newer signal" instead of the form, and the API refuses an answer (409), so a step isn't counted twice. Its trade counts in budget used like any other, even when later signals used that budget meanwhile, so budget used can read over 100% (open decision, ROADMAP).
+**Answered or missed** (not drawn): an answered signal shows the box and "You did it: [n] shares at $[XXX.XX] on [date] (€[amount], fee €[fee])." or "You skipped it: [reason].", with "Back to the stock" ("Back to the strategy" for a fund strategy) instead of the form. A missed signal keeps the form, under "This signal ended on [date] without an answer. You can still record what you did.". A late answer is for right after the miss (Ernest, 2026-11-24): once the stock moves on (a check of a later day than the one the signal ended on, or a newer signal of its side), the signal shows only the box and "Back to the stock", with no "Missed" line and no form, and the API refuses an answer (409, "This signal was missed and its stock has moved on, so it can't be answered any more."); a skipped or missed step can be signalled again, so a later answer could count it twice. Its trade counts in budget used like any other, even when later signals used that budget meanwhile, so budget used can read over 100% (open decision, ROADMAP).
 
 **I skipped it**: "Why? (optional)" with single-choice chips "Price ran away", "Didn't trust it", "No cash", "Other". Text: "A skip buys nothing and uses no budget: the step stays open for a later signal." (a sale: "A skip sells nothing: you still hold [stock].") Button: "Save the skip".
 
@@ -720,7 +720,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 
 **Behaviour**
 - Saving records the trade or the skip and goes back to the screen it came from, or up to the stock page (the strategy page for a fund strategy) when opened directly. A trade updates budget used, steps and results.
-- Unanswered signals stay in Waiting for you and in the summary. There is no automatic reminder: the user snoozes a signal to be notified again the next day. A signal can be answered later (with the real date). After the signal ends, it is marked *Missed*.
+- Unanswered signals stay in Waiting for you and in the summary. There is no automatic reminder: the user snoozes a signal to be notified again the next day. A signal can be answered later (with the real date). After the signal ends, it is marked *Missed*, and can still be answered until its stock moves on.
 - **Log a trade by hand** on a stock (not drawn): for buys before the alert, or sales for the user's own reasons. Manual trades are marked as such and can be edited or deleted.
 - Disclaimer at the bottom.
 

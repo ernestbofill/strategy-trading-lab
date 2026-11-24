@@ -170,6 +170,43 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
+    public async Task A_missed_signal_can_be_answered_until_its_stock_moves_on()
+    {
+        var (client, strategyId, assetId, first, second) = await SeedAsync();
+        try
+        {
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await db.Signals.Where(s => s.Id == first || s.Id == second).ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, x => x.SignalDate.AddDays(1)));
+                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(1),
+                    Status = EvaluationStatus.SignalEnded, Facts = JsonDocument.Parse("{}") });
+                await db.SaveChangesAsync();
+            }
+            // The older one has a newer signal of its side: moved on. The newer one was checked only up to the day it ended.
+            var older = await client.GetFromJsonAsync<JsonElement>($"/signals/{second}");
+            Assert.True(older.GetProperty("movedOn").GetBoolean());
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{second}/skip", new { reason = "other" })).StatusCode);
+            Assert.False((await client.GetFromJsonAsync<JsonElement>($"/signals/{first}")).GetProperty("movedOn").GetBoolean());
+
+            // A check of a later day: the stock moved on, so a late answer is refused.
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(2),
+                    Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
+                await db.SaveChangesAsync();
+            }
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{first}/trade", Trade())).StatusCode);
+        }
+        finally
+        {
+            await CleanAsync(assetId);
+        }
+    }
+
+    [NeonFact]
     public async Task A_sell_signal_prefills_the_held_shares_and_records_the_sale()
     {
         var (client, strategyId, assetId, _, _) = await SeedAsync();

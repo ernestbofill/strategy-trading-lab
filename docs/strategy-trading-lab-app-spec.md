@@ -289,7 +289,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2 · Review a template
 
-**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away.
+**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away. Planned: an entry to the Backtest page, preset with the template's defaults on the test draft ([backtest.md](backtest.md), *Where it lives*).
 
 **Shared layout**, top to bottom:
 1. Top bar: "← BACK" (to the pick screen) · "2 / 5".
@@ -384,7 +384,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 **Copy**
 - Top bar: "← BACK" · "[template name]"
 - H1: "Advanced settings"
-- Intro: "Every rule as an exact number, next to the tested default." (Shortened while the backtest can't re-run; bring back "Change one and the backtest re-runs" with the re-run.)
+- Intro: "Every rule as an exact number, next to the tested default." (Shortened while the backtest can't run; with the backtest, the panel's *Rerun tests* runs it.)
 - Secondary button: "⟳ Reset to tested"
 - Button: "Save settings"
 
@@ -440,9 +440,8 @@ The settings are available when starting a strategy and on a running one (Tune t
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide."
-- Re-run on each change (debounced), with a loading state.
-- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
+- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change) and a preview with columns *Default*, *Saved* (when the saved settings differ from the defaults) and *Current*, the average of the periods only, with *S&P 500, monthly*; the periods and all baselines are on the Backtest page. Replaces the earlier "Period" / "Tested" / "Yours" table.
+- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). With the backtest, the index fund (*S&P 500, monthly*) and the worst year sit next to *Current* (product rules). How the backtest works (money, baselines, stocks, data) is in [backtest.md](backtest.md); how this section shows it is not designed yet.
 
 **Behaviour**
 - "Reset to tested" puts every value back.
@@ -627,7 +626,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
   - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
   - Engine invariance: manual trades, edits, and deletions affect only the user's positions and results (`You`), leaving the strategy rules' own position (`The rules alone`) and signal trades unchanged. This also serves as the signal history required by regulation (design rule 7).
-- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
+- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn; planned in [backtest.md](backtest.md), *Where it lives*: preset with the strategy's settings and budget on the test draft). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For running simulations, a third tile: "Follow it manually" / "With these settings" (built, #92; not drawn), see *Following a simulation manually*. A manual copy shows "Copied from [simulation name]" under its name.
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - **No notification switches** (removed 2026-11-01): they are all in the account's Notifications. With signals and reminders off there, a strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
@@ -653,7 +652,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 ### Stock page (built, not drawn)
 
-One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page.
+One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. Planned: *Test this stock*, opening the Backtest page preset with this stock under the strategy's settings ([backtest.md](backtest.md), *Where it lives*).
 
 - Top bar: "← STRATEGY" to the strategy page.
 - H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
@@ -873,7 +872,8 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **AI rounds:** strategy, due date, status (due, done, skipped), date run, the session its signals are dated, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons, and the step each stock got (`ai_rounds`).
 - **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round); deleting the strategy removes them too.
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
-- **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
+- **Backtest results:** per test (template or strategy settings, stocks, periods, money, costs, data snapshot): the strategy and its three baselines per period, money-weighted: a year on average, worst year, the average share of the budget invested, number of steps. Cached by that key ([backtest.md](backtest.md)).
+- **Backtest data:** a monthly snapshot of the test draft's stocks, SPY and the templates' starter lists with their daily prices, in object storage, with its quality report; other stocks and indexes are fetched when a test runs ([backtest.md](backtest.md)).
 - **Market data:** daily US prices and volumes, exchange rates.
 - **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed` | `validated`), comment text, optional page route, DOM selector and selected text quote, timestamps.
 
@@ -888,7 +888,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Sell signals for *Index trend*, and its "Candidate" status when not holding.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.
-- Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
+- Backtest page (how it works is decided in [backtest.md](backtest.md); its screens are not); History (every signal, trade, skip, AI round and status change, in date order).
 - Changing the budget.
 - Snooze on Confirm a signal; "Enter shares instead" and the exchange-rate line.
 - Summary settings (a time of your choice).

@@ -116,7 +116,9 @@ public class NotificationDelivery(AppDbContext db, IEmailSender sender, IPushSen
         return delivered;
     }
 
-    static string Clip(string text, int max) => text.Length <= max ? text : text[..max];
+    /// <summary>Cut to <paramref name="max"/>, never between an emoji's two halves (a lone surrogate the database refuses).</summary>
+    static string Clip(string text, int max) =>
+        text.Length <= max ? text : text[..(char.IsHighSurrogate(text[max - 1]) ? max - 1 : max)];
 
     /// <summary>Waits until <c>pushGap</c> has passed since the user's last push that went out.</summary>
     async Task WaitForGapAsync(Guid userId, CancellationToken cancellationToken)

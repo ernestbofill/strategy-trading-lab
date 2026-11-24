@@ -132,7 +132,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 **Index trend (`index_trend`)**
 - Buy signal: the close is more than 3% above the SMA 200. Sell signal: the close is more than 3% below it. In between, the trend stays what it was.
 - Chase limit (STL's own, not the POC's; Ernest, 2026-11-24): the buy only up to 5% more above the buy line (+3% to +8% above the SMA 200). Higher, the price got too expensive: no buy signal until it pulls back into that range. A held position is not affected.
-- Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200), or rises past the chase limit ("too late to chase").
+- Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200), or rises past the chase limit ("too late to chase"). A Manual signal that ends this way is missed; the rules count it as bought, so a pullback brings no second buy signal.
 - All in, all out: one buy of the whole budget; after a sale, the next buy reinvests what the sale returned. Cooldown 5 days. One buy signal per uptrend.
 - No stop-loss: the sell line is the stop.
 

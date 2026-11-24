@@ -383,7 +383,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 **Copy**
 - Top bar: "← BACK" · "[template name]"
 - H1: "Advanced settings"
-- Intro: "Every rule as an exact number, next to the tested default." (Shortened while the backtest can't re-run; bring back "Change one and the backtest re-runs" with the re-run.)
+- Intro: "Every rule as an exact number, next to the tested default." (Shortened while the backtest can't run; with the backtest, the panel's *Rerun tests* runs it.)
 - Secondary button: "⟳ Reset to tested"
 - Button: "Save settings"
 
@@ -438,8 +438,8 @@ The settings are available when starting a strategy and on a running one (Tune t
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change), the periods as tabs, and a preview with columns *Default*, *Saved* (when the saved settings differ from the defaults) and *Current*, the average of the periods only, with *S&P 500, monthly*; the periods and all baselines are on the Backtest page. Replaces the earlier "Period" / "Tested" / "Yours" table.
-- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules). How the backtest works (money, baselines, stocks, data) is in [backtest.md](backtest.md); how this section shows it is not designed yet.
+- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change) and a preview with columns *Default*, *Saved* (when the saved settings differ from the defaults) and *Current*, the average of the periods only, with *S&P 500, monthly*; the periods and all baselines are on the Backtest page. Replaces the earlier "Period" / "Tested" / "Yours" table.
+- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). With the backtest, the index fund (*S&P 500, monthly*) and the worst year sit next to *Current* (product rules). How the backtest works (money, baselines, stocks, data) is in [backtest.md](backtest.md); how this section shows it is not designed yet.
 
 **Behaviour**
 - "Reset to tested" puts every value back.
@@ -867,8 +867,8 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **AI rounds:** strategy, due date, status (due, done, skipped), date run, the session its signals are dated, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons, and the step each stock got (`ai_rounds`).
 - **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round); deleting the strategy removes them too.
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
-- **Backtest results:** per test (template or strategy settings, stocks, periods, money, costs, data snapshot): the strategy and its three baselines per window, money-weighted: a year on average, worst year, the average share of the budget invested, number of steps. Cached by that key ([backtest.md](backtest.md)).
-- **Backtest data:** a monthly snapshot of index membership and daily prices, in object storage, with its quality report ([backtest.md](backtest.md)).
+- **Backtest results:** per test (template or strategy settings, stocks, periods, money, costs, data snapshot): the strategy and its three baselines per period, money-weighted: a year on average, worst year, the average share of the budget invested, number of steps. Cached by that key ([backtest.md](backtest.md)).
+- **Backtest data:** a monthly snapshot of the test draft's stocks, SPY and the templates' starter lists with their daily prices, in object storage, with its quality report; other stocks and indexes are fetched when a test runs ([backtest.md](backtest.md)).
 - **Market data:** daily US prices and volumes, exchange rates.
 - **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed` | `validated`), comment text, optional page route, DOM selector and selected text quote, timestamps.
 

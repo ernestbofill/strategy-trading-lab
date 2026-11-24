@@ -1,12 +1,12 @@
 # Backtest
 
-How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-23. It uses the wording of the app-wide copy change in issue #277 (*amount per trade* and *trades* for what the app calls a step today). The screens are drafted below (*Screens, draft*), for another round with Ernest.
+How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-24. It uses the wording of the app-wide copy change in issue #277: *amount per trade* and *trades* for what the app calls a step today. The screens are drafted below; their last details are settled while building them (ROADMAP item 55).
 
 Today's template figures come from the POC's research ([backtest-research-findings.md](backtest-research-findings.md)). This backtest replaces them with STL's own engine, so the tested results describe the rules the app runs.
 
 ## Principle: the same money, the same costs
 
-A test is fair only if the strategy and every baseline get the same money, on the same schedule, with the same costs, and are measured with the same formulas. Everything below follows from that.
+A test is fair only if the strategy and every baseline get the same money, on the same schedule, with the same costs, and are measured with the same formulas.
 
 The backtest runs the app's own engine (`Engine/`): the same rules, signals at the close, each trade at the next trading day's open, in the strategy's currency at each day's exchange rate (the baselines too). A rule the app changes, the backtest changes with it, so a result always describes what the app would have done.
 
@@ -17,7 +17,7 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Parameter | Default | Notes |
 | --- | --- | --- |
 | Rules | The template's tested defaults, or a strategy's settings | Any Advanced settings values |
-| Stocks | The test draft: one fixed draft of 60 stocks from the S&P 500 | Or the strategy's own list, or one stock (see *Stocks*) |
+| Stocks | The test draft: 60 stocks from the S&P 500, rolled at each period's start | Or the strategy's own list, or one stock (see *Stocks*) |
 | Index | S&P 500 | *Bear markets* and *Index trend* only: the index fund they trade (S&P 500, Nasdaq-100, DAX, Nikkei 225…). How often a market fell 20% depends on it |
 | Years | 16 years, in 4-year periods (Ernest, 2026-11-23) | Both are parameters. 4 years gives the strategy time to profit from its buys. One stock and the strategy's own list: the latest period only |
 | Budget | €6,000 (60 trades, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max trades × amount per trade, so the budget fits it |
@@ -36,7 +36,7 @@ No currency fee. Taxes are not included.
 - **Warm-up:** the rules read about 15 months of prices before a period starts (the SMA 200, the 52-week high and the 168-day low need them), but nothing is bought before the start. It is what a strategy started that day in the app would see. Without it, the first year of each period would have no signals.
 - At a period's end, holdings are valued at the last close. Nothing is sold to close the test, for the strategy or the baselines.
 - The latest period runs to the last close, so it is shorter than the others (2023–26 is under 4 years today); its label says so.
-- With 16 years, 2008 and 2000–02 are out (2011 brings a fall of almost 20%). On the test draft the period can't go past the dataset's years; reaching back further means a longer dataset, where more former members have no prices. The strategy's list and one stock can go back as far as Yahoo has their prices.
+- With 16 years, 2008 and 2000–02 are out (2011 brings a fall of almost 20%). On the test draft the years can't go past the dataset's; reaching back further means drawing a longer draft, where more former members have no prices. The strategy's list, one stock and an index can go back as far as Yahoo has their prices.
 
 ## Money
 
@@ -45,7 +45,7 @@ No currency fee. Taxes are not included.
 - Sale proceeds are reinvested at once, outside the limit. Only *Index trend* sells: each month it buys with that month's limit plus any money left from sales.
 - When several signals on the same day need more money than is left, they are paid in a seeded random order (the same seed gives the same result, with no alphabetical bias). The ones that can't be paid follow the app's current rule (below).
 
-**A signal with no money** (accepted for now, to change later). Today, when the budget can't pay a step, the app makes no signal but the rules count the step as bought, as the POC's backtest does ("as if the step had been bought"). So a comeback's first step is then gone, and *Bear markets*' step counter moves on. The backtest follows that rule in v1. Ernest's rule for later, for the app and the backtest together: a signal with no money waits, and buys once money is there while its window is still open (*Bear markets*: its step stays due while the conditions hold). See `ROADMAP.md`.
+**A signal with no money** (accepted for now, to change later). Today, when the budget can't pay a trade, the app makes no signal but the rules count the trade as bought, as the POC's backtest does. So a comeback's first trade is then gone, and *Bear markets*' trade counter moves on. The backtest follows that rule in v1. Ernest's rule for later, for the app and the backtest together: a signal with no money waits, and buys once money is there while its window is still open (*Bear markets*: its trade stays due while the conditions hold). See `ROADMAP.md`.
 
 ## Baselines
 
@@ -82,9 +82,9 @@ The product rules hold: every result sits next to the index fund and the worst y
 
 Two different things:
 
-- **The dataset** holds the test draft's stocks (a rolling draft of 60, about 90–100 stocks over the 4 periods), SPY (baseline 1 and the default index) and the templates' starter lists (their stocks and funds), with their daily prices. One snapshot a month (see *Data*). Anything else (an edited list, another stock, another index) is fetched when a test runs.
+- **The dataset** holds the test draft's stocks (about 90–100 over the 4 periods, since the draft rolls), SPY (baseline 1 and the default index) and the templates' starter lists (their stocks and funds), with their daily prices. One snapshot a month (see *Data*). Anything else (an edited list, another stock, another index) is fetched when a test runs.
 - **Drawing the draft** needs every stock that was in the S&P 500 in the years tested (with its dates in the index): their prices give the size thirds and the representativeness check. All of them are downloaded only when the draft is drawn (Ernest, 2026-11-24): the first time, when a new period starts (2027 adds 2027–30), when a membership correction touches a drawn period, or when the draft's size or method changes. The checks run again each time. Then only the draft's stocks are kept.
-- **The test draft** is the stocks a test uses: one fixed draft, drawn from the dataset's S&P 500 members on each period's start date (the same seed every time). Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
+- **The test draft** is the stocks a test uses: one draft, drawn at the first period's start and rolled at each later one (below), with a fixed seed. Tuning and comparing always use it unless the strategy's list or one stock is chosen, so a difference comes from the settings, not from the stocks. There is no other draft (Ernest, 2026-11-22: random draws dropped).
 - **Its size: 60** (Ernest, 2026-11-23), the most stocks a strategy can follow: large enough that the strategies find candidates in it and one lucky or unlucky stock weighs little.
 
 **How it is drawn** (Ernest, 2026-11-23):
@@ -103,7 +103,7 @@ Two different things:
 
 Three ways to choose the pool:
 
-1. **The test draft** (the default, for comparing): drawn from the S&P 500 as it stood on each period's start date (the stocks SPY held then), stratified by sector, with a fixed, published seed. The same draft and data make results of different strategies and settings comparable.
+1. **The test draft** (the default, for comparing): 60 stocks from the S&P 500 as it stood at the first period's start (the stocks SPY held then), by sector and size, with a fixed seed, rolled at each later period's start (*How it is drawn*). The same draft and data make results of different strategies and settings comparable.
 2. **The strategy's own list.** Over less time (default: the latest period only), since a list chosen today knows how its stocks did, which flatters the past. Not limited to the dataset's years. A stock without enough history at a period's start sits that period out, and the result says so.
 3. **One stock.** The budget is sized for it (max trades × amount per trade). The latest period only, by default, as for the own list: the stock is chosen knowing how it did.
 
@@ -114,8 +114,9 @@ A stock may only be drawn if it was in the index on the period's start date and 
 ## Data
 
 - **Index membership:** the S&P 500 on any date, from [fja05680/sp500](https://github.com/fja05680/sp500) (MIT licence, since 1996, updated every couple of months), checked against a second point-in-time list where both exist. Renamed tickers (FB → META) need a symbol map.
-- **Prices:** Yahoo's daily prices, adjusted for splits and dividends, as the app uses today. Ready in the dataset: the S&P 500 members, SPY and the templates' starter lists (Ernest, 2026-11-24). A test on any other stock or index (an edited list, another single stock, another index for *Bear markets* or *Index trend*) fetches its prices from Yahoo when it runs, kept for reuse. A test on a list, one stock or an index isn't limited to the dataset's years (the missing years are fetched); a test on the test draft is. Dividends therefore count as reinvested in the same stock, before tax. *Pending:* the 15% US withholding tax on dividends isn't deducted.
-- **Survivorship:** Yahoo keeps no history for delisted stocks, so former members that were delisted can't be drawn. Each period's report counts them ("31 of 503 members had no prices"), so the bias shows. Only a paid data source with delisted stocks would remove it.
+- **Prices:** Yahoo's daily prices, adjusted for splits and dividends, as the app uses today, so dividends count as reinvested in the same stock, before tax. *Pending:* the 15% US withholding tax on dividends isn't deducted.
+- **Ready or fetched** (Ernest, 2026-11-24): the dataset holds the test draft's stocks, SPY and the templates' starter lists. A test on any other stock or index (an edited list, another single stock, another index for *Bear markets* or *Index trend*) fetches its prices from Yahoo when it runs, kept for reuse. A list, one stock or an index isn't limited to the dataset's years (the missing years are fetched); the test draft is.
+- **Survivorship:** Yahoo keeps no history for delisted stocks, so former members that were delisted can't be drawn. The report made when the draft is drawn counts them, per period ("31 of 503 members had no prices"), so the bias shows. Only a paid data source with delisted stocks would remove it.
 - **A snapshot a month**, not daily, of the dataset (the draft's stocks, SPY, the starter lists): one compressed file per ticker plus a manifest (membership, symbol map, missing tickers), in the backend's object storage bucket, not in the `prices` table. Each result names the snapshot it used. Yahoo re-adjusts past prices after dividends, so a test re-run on a newer snapshot can move slightly; accepted (Ernest, 2026-11-20).
 - **A quality report**, on an owner page: per snapshot, the draft's stocks and SPY; when the draft is drawn, all members and how many have prices at each period's start, gaps over 5 trading days, one-day moves over 40% (usually a split error), renamed and missing tickers. The first report is reviewed before any result counts.
 
@@ -123,7 +124,7 @@ A stock may only be drawn if it was in the index on the period's start date and 
 
 Decided by Ernest on 2026-11-23. All owner-only.
 
-- **The Backtest page**, its own page: the test's settings (stocks, index, period, money, costs) and the full results. It is where the *test* is tuned; the strategy's settings are tuned in Advanced settings.
+- **The Backtest page**, its own page: the test's settings (stocks, index, years, money, costs) and the full results. It is where the *test* is tuned; the strategy's settings are tuned in Advanced settings.
 - **Entry points**, each opening the page preset:
   - the strategy page's *Backtest* tile: the strategy's settings and budget on the test draft;
   - Advanced settings, on a running strategy or while starting one: the settings on screen;
@@ -170,8 +171,8 @@ COSTS    Fee [0.1]%   Spread [0.1]%  a trade
 [ Reset to test defaults ]    [ Run backtest ]
 ```
 
-- *Edit rules* opens Advanced settings for this strategy (or the draft's).
-- **Years and data:** with the test draft, the years can't reach past the dataset (16 years and their warm-up, shown on the *Data* line). The strategy's list and one stock aren't limited to the dataset: their prices come from Yahoo for those stocks alone, as far back as Yahoo has them; their default stays the latest period.
+- *Edit rules* opens Advanced settings for this strategy (or for the new strategy being set up).
+- **Years and data:** with the test draft, the years can't reach past the dataset (16 years and their warm-up, shown on the *Data* line). The strategy's list, one stock and an index aren't limited to it: their prices come from Yahoo, as far back as Yahoo has them. A list and one stock default to the latest period.
 - No warning on the strategy's list or one stock (Ernest: say nothing); the latest-period default does the work.
 
 **B · Backtest page: results**
@@ -187,7 +188,7 @@ Your strategy        +11.6%    -17%      58%
 2 Same days, list  i  +9.9%    -16%      58%
 3 Same stocks, mthly i +9.8%   -18%      81%
 
-52 trades · test draft: 60 stocks, 2 without prices
+52 trades · test draft: 60 stocks
 Money-weighted returns (IRR) on the money
 invested: idle cash is left out.
                          See the 52 trades →
@@ -242,17 +243,17 @@ Money-weighted (IRR) on the money invested.
 - The strategy page's tile, brought back: "Backtest" / "Test these rules".
 - The stock page: "Test this stock →" with "One stock under this strategy's rules."
 
-**E · Backtest data** (owner page, `/admin/backtest-data`): the snapshot and *Refresh*; members and how many have prices at each period's start; missing and renamed tickers (lists); the test draft's two checks (representative, candidates per template); warnings (gaps, jumps), each with ticker and date.
+**E · Backtest data** (owner page, `/admin/backtest-data`): the snapshot and *Refresh*; the test draft per period (stocks kept and replaced); from the last draw, the members and how many have prices at each period's start, missing and renamed tickers (lists), and the two checks (representative, candidates per template and year); warnings (gaps, jumps), each with ticker and date.
 
 ## Biases
 
 | Bias | How the backtest handles it |
 | --- | --- |
 | Look-ahead in prices | Signals at the close, trades at the next open; the warm-up reads only past prices |
-| Look-ahead in the stocks | The S&P 500 as it stood at each period's start; the own list and one stock default to the latest period |
-| Survivorship | Counted and shown per period; removed only by a paid data source |
+| Look-ahead in the stocks | The draft follows the S&P 500 as it stood at each period's start; the own list and one stock default to the latest period |
+| Survivorship | Counted per period when the draft is drawn; removed only by a paid data source |
 | Tuning to the past | Every period is shown, not only All |
-| Luck of the draw | One large draft, stratified by sector; the strategy's own list as a second view |
+| Luck of the draw | One large draft, by sector and size, checked against all members |
 | Unequal money or costs | The same money, limit, costs and formulas for every line |
 | Backtest ≠ app | The same engine; simulations use the same costs; the monthly limit becomes a strategy setting |
 

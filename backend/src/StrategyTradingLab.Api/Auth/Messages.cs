@@ -51,8 +51,8 @@ public static class Messages
 
     // Signals
     public static readonly Message AlreadyAnswered = new("This signal is already answered.", "Aquest senyal ja té resposta.");
-    public static readonly Message SignalMovedOn = new("This signal was missed and its stock has moved on, so it can't be answered any more.",
-        "Aquest senyal es va perdre i el valor ja ha canviat d'estat, així que ja no s'hi pot respondre.");
+    public static readonly Message SignalMissed = new("This signal ended without an answer, so it can't be answered any more.",
+        "Aquest senyal ha acabat sense resposta, així que ja no s'hi pot respondre.");
     public static readonly Message OnlyWaitingCanSnooze = new("Only a signal still waiting can be snoozed.", "Només es pot posposar un senyal que encara espera.");
     public static readonly Message AiSignalsCannotSnooze = new("Signals from AI rounds can't be snoozed.", "Els senyals de rondes d'IA no es poden posposar.");
     public static readonly Message StrategyEnded = new("This strategy is archived, so there is no reminder to send.",

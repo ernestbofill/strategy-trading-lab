@@ -88,15 +88,19 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
     </div>
   )
 
-  // Answered, or missed with the stock moved on since: no form. A late answer is for right after the miss.
-  if (s.answer || (s.status === 'missed' && s.movedOn)) {
+  // Answered or missed: no form. Only a waiting signal can be answered.
+  if (s.answer || s.status === 'missed') {
     return (
       <Screen top={top} action={<PrimaryAction to={parentOf(s)}>{t(s.onStockList ? 'signal.backStock' : 'signal.back')}</PrimaryAction>}>
         {header}
         {box}
-        {s.answer && (
+        {s.answer ? (
           <Callout tone="info" title={t('signal.answered')}>
             <AnswerLine s={s} />
+          </Callout>
+        ) : (
+          <Callout tone="warning" title={t('signal.missed.title')}>
+            <p className={styles.plain}>{t('signal.missed.text', { date: shortDate(s.endedOn ?? s.signalDate) })}</p>
           </Callout>
         )}
       </Screen>
@@ -188,13 +192,6 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
     >
       {header}
       {box}
-      {s.status === 'missed' && s.endedOn && (
-        <Callout tone="warning" title={t('signal.missed.title')}>
-          <p className={styles.plain}>
-            {t('signal.missed.text', { date: shortDate(s.endedOn) })}
-          </p>
-        </Callout>
-      )}
       <form id={FORM_ID} className={styles.form} onSubmit={save} noValidate>
         <SegmentedField
           label={t('signal.question')}

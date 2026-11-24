@@ -454,18 +454,14 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
             var sender = new Captured();
             Assert.Equal(1, await Service(scope, sender).SendSignalAlertsAsync(today, DateTimeOffset.UtcNow, default));
             // An extra check the same day (a price that came in late) signals the same stock again, for the next session.
-            var extra = new Signal
+            db.Signals.Add(new Signal
             {
                 StrategyId = strategyId, AssetId = assetId, Side = TradeSide.Buy, StepNo = 2, MaxSteps = 5, StepAmount = 100, SignalDate = today,
                 ClosePrice = 187.5m, Facts = JsonDocument.Parse("{}"), Status = SignalStatus.Waiting,
-            };
-            db.Signals.Add(extra);
+            });
             await db.SaveChangesAsync();
             Assert.Equal(0, await Service(scope, sender).SendSignalAlertsAsync(today, DateTimeOffset.UtcNow, default));
             Assert.Equal(1, await db.Notifications.CountAsync(n => n.UserId == userId && n.SentAt == null && n.Error != null));
-            // A newer signal would move the first one on (it can't be answered, so its end isn't told): gone for the rest.
-            await db.Notifications.Where(n => n.SignalId == extra.Id).ExecuteDeleteAsync();
-            await db.Signals.Where(s => s.Id == extra.Id).ExecuteDeleteAsync();
 
             await db.Signals.Where(s => s.Id == signalId).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, today));
             var first = await Service(scope, sender).SendSignalEndedAsync(today, DateTimeOffset.UtcNow, default);

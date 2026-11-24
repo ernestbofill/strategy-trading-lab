@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 3 | 11 | 14 |
+| Frontend (Vitest) | 3 | 12 | 15 |
 | Backend (xUnit) | 3 | 26 | 29 |
-| **All** | **6** | **37** | **43** |
+| **All** | **6** | **38** | **44** |
 
 ## Log
 
@@ -28,6 +28,7 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24 | #282 | local | Frontend (Vitest) | `src/App.test.tsx > links with a language > keeps a signed-in account's language over the link's` | 1 | FP | Failed once in the full run, passed alone; this PR doesn't touch it. Not sure of the cause: likely state leaking between test files. No fix. |
 | 2026-11-24 | #282 | local | Backend (xUnit) | `NeonBranchTests.Database_is_postgres_15_or_later_with_the_migration_applied` | 1 | FP | The local test database lacked the new `DropManualSignalTrades` migration; passed once `migrations.sql` was applied to it. Machine-dependent. |
 | 2026-11-24 | #282 | local | Backend (xUnit) | `NotificationTests.A_second_signal_for_the_same_stock_the_same_day_is_not_alerted_and_an_alerted_buy_that_ends_is_told_once` | 1 | TP | The "buy signal ended" query called `MovedOn` inside a join, which EF couldn't translate (it threw); fixed with `NotMovedOn`. The test also needed its newer signal removed before the end part: that signal now moves the missed one on, so no alert is due, on purpose. |
 | 2026-11-24 | #282 | local | Backend (xUnit) | `StrategyPageTests` (a simulation's page; a live signal waiting) | 2 | FP | They read `results.rules` and `rulesSteps`, removed on purpose with "The rules alone". Assertions updated. |

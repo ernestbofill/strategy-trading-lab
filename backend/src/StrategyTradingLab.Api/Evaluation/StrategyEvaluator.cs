@@ -330,12 +330,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var closed = days.FirstOrDefault(d => d.Date > signal.SignalDate
                 && (signal.Side == TradeSide.Sell ? d.SellClosed : !d.WindowOpen));
             if (closed is null) continue;
-            // A waiting signal ends no earlier than this check's first new day: a replay that changed (new settings, a late answer)
-            // can find its window closed on a day already checked, and a missed signal can be answered until the next check
-            // (SignalMisses.MovedOn counts the days stored from its end).
-            signal.EndedOn = signal.Status == SignalStatus.Waiting && evaluatedUntil is { } until && closed.Date <= until
-                ? days.FirstOrDefault(d => d.Date > until)?.Date ?? latest.Date
-                : closed.Date;
+            signal.EndedOn = closed.Date;
         }
         await db.SaveChangesAsync(cancellationToken);
         // Every ended signal still waiting in the database is missed: not only today's, so a run stopped between the two

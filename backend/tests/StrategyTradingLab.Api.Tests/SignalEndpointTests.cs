@@ -170,36 +170,24 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
-    public async Task A_missed_signal_can_be_answered_until_its_stock_moves_on()
+    public async Task A_missed_signal_cant_be_answered()
     {
-        var (client, strategyId, assetId, first, second) = await SeedAsync();
+        var (client, _, assetId, first, _) = await SeedAsync();
         try
         {
             using (var scope = factory.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                await db.Signals.Where(s => s.Id == first || s.Id == second).ExecuteUpdateAsync(s => s
-                    .SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, x => x.SignalDate.AddDays(1)));
-                // The check that missed it caught up a day: it stored a later day than the one the signal ended on.
-                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(2),
-                    Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
-                await db.SaveChangesAsync();
-            }
-            // The older one has a newer signal of its side: moved on. The newer one has had only the check that missed it.
-            var older = await client.GetFromJsonAsync<JsonElement>($"/signals/{second}");
-            Assert.True(older.GetProperty("movedOn").GetBoolean());
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{second}/skip", new { reason = "other" })).StatusCode);
-            Assert.False((await client.GetFromJsonAsync<JsonElement>($"/signals/{first}")).GetProperty("movedOn").GetBoolean());
+                await scope.ServiceProvider.GetRequiredService<AppDbContext>().Signals.Where(s => s.Id == first)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, SignalDay.AddDays(1)));
 
-            // The next check: the stock moved on, so a late answer is refused.
-            using (var scope = factory.Services.CreateScope())
+            foreach (var refused in new[]
             {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                db.DailyEvaluations.Add(new DailyEvaluation { StrategyId = strategyId, AssetId = assetId, Date = SignalDay.AddDays(3),
-                    Status = EvaluationStatus.Watching, Facts = JsonDocument.Parse("{}") });
-                await db.SaveChangesAsync();
+                await client.PostAsJsonAsync($"/signals/{first}/trade", Trade()),
+                await client.PostAsJsonAsync($"/signals/{first}/skip", new { reason = "other" }),
+            })
+            {
+                Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+                Assert.Equal("This signal ended without an answer, so it can't be answered any more.", await refused.Content.ReadFromJsonAsync<string>());
             }
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{first}/trade", Trade())).StatusCode);
         }
         finally
         {

@@ -22,7 +22,6 @@ public record SignalAnswer(SignalStatus Status, SkipReason? SkipReason, DateOnly
 /// Confirm a signal. <c>Reason</c> is what the rules found, in words ("8% below its recent peak, still above its 50-day
 /// average"). <c>Rates</c> are the stored reference rates of the weekdays from a week before the signal to today, for the rate line to follow the date.
 /// <c>OnStockList</c>: the strategy follows a list of stocks, so the stock (<c>AssetId</c>) has a page of its own, the signal's parent.
-/// <c>MovedOn</c>: a missed signal whose stock has moved on since (a later check or a newer signal): it can't be answered any more.
 /// </summary>
 public record SignalDetail(
     Guid Id,
@@ -48,8 +47,7 @@ public record SignalDetail(
     TradeSide Side = TradeSide.Buy,
     bool CanSnooze = true,
     Guid AssetId = default,
-    bool OnStockList = false,
-    bool MovedOn = false);
+    bool OnStockList = false);
 
 /// <summary>
 /// "I did it". <c>EnteredAs</c> says which of <c>Amount</c> and <c>Shares</c> the user typed; the other is worked out.

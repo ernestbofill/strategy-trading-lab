@@ -9,7 +9,6 @@ export const signal = {
   'signal.amountOnly': "Under your settings that's {amount}.",
   /** "2 of 5" in the sentence above. */
   'signal.stepOf': '{n} of {max}',
-  /** "step 3 of 5", the next signal's step after a skip. */
   'signal.close': 'Close on {date}: {price}',
   'signal.back': 'Back to the strategy',
   'signal.backStock': 'Back to the stock',

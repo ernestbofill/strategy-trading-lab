@@ -47,8 +47,7 @@ public static class SignalEndpoints
             var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var (signal, strategy, asset) = found;
-            if (!Answerable(signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
-            if (await MovedOnAsync(db, signal, cancellationToken)) return TypedResults.Conflict(Messages.SignalMovedOn.In(user.Locale));
+            if (!Answerable(signal) || await MovedOnAsync(db, signal, cancellationToken)) return await RefusedAsync(db, signal, user.Locale, cancellationToken);
             // An ended strategy's history is final: its missed signals stay missed.
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
@@ -65,7 +64,7 @@ public static class SignalEndpoints
                 Source = TradeSource.Signal, SignalId = signal.Id,
             };
             if (!await AnswerAsync(db, signal.Id, SignalStatus.Confirmed, null, userTrade, time, cancellationToken))
-                return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
+                return await RefusedAsync(db, signal, user.Locale, cancellationToken);
             // The step is bought now: the strategy's rules run again, so the stock reads as the user holds it before the next daily run.
             refreshes.RequestCheck(strategy.Id);
             return TypedResults.NoContent();
@@ -78,11 +77,11 @@ public static class SignalEndpoints
         {
             var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
-            if (!Answerable(found.Signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
-            if (await MovedOnAsync(db, found.Signal, cancellationToken)) return TypedResults.Conflict(Messages.SignalMovedOn.In(user.Locale));
+            if (!Answerable(found.Signal) || await MovedOnAsync(db, found.Signal, cancellationToken))
+                return await RefusedAsync(db, found.Signal, user.Locale, cancellationToken);
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
             return await AnswerAsync(db, id, SignalStatus.Skipped, request.Reason, null, time, cancellationToken)
-                ? TypedResults.NoContent() : TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
+                ? TypedResults.NoContent() : await RefusedAsync(db, found.Signal, user.Locale, cancellationToken);
         })
         .WithName("SkipSignal")
         .WithSummary("\"I skipped it\": uses no budget and buys no step.");
@@ -141,6 +140,12 @@ public static class SignalEndpoints
         signals.Where(s => s.Status == SignalStatus.Missed
             && (db.DailyEvaluations.Any(e => e.StrategyId == s.StrategyId && e.AssetId == s.AssetId && e.Date > s.EndedOn)
                 || db.Signals.Any(n => n.StrategyId == s.StrategyId && n.AssetId == s.AssetId && n.Side == s.Side && n.SignalDate > s.SignalDate)));
+
+    /// <summary>
+    /// Why an answer is refused: the missed signal's stock moved on (also since the request's own check), else it was answered.
+    /// </summary>
+    static async Task<Conflict<string>> RefusedAsync(AppDbContext db, Signal signal, string locale, CancellationToken cancellationToken) =>
+        TypedResults.Conflict((await MovedOnAsync(db, signal, cancellationToken) ? Messages.SignalMovedOn : Messages.AlreadyAnswered).In(locale));
 
     /// <summary>Whether a missed signal's stock has moved on (<see cref="MovedOn(IQueryable{Signal}, AppDbContext)"/>).</summary>
     static Task<bool> MovedOnAsync(AppDbContext db, Signal signal, CancellationToken cancellationToken) =>

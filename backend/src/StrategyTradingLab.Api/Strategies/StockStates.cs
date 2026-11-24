@@ -77,7 +77,9 @@ public static class StockStates
             ?? (aiScores is null ? null : aiScores.ContainsKey(assetId) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
         var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
-            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, live ? steps : signalled, maxSteps, strategy.TemplateKey), checks);
+            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, live ? steps : signalled, maxSteps, strategy.TemplateKey,
+                unboughtSignal: live && own.Any(s => s.Side == TradeSide.Buy && s.Status is SignalStatus.Skipped or SignalStatus.Missed
+                    && (s.EndedOn is null || s.EndedOn > evaluation?.Date))), checks);
         var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
         var distanceKey = strategy.TemplateKey == TemplateKeys.Bear && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
         var distance = evaluation?.Facts.RootElement.Number(distanceKey);

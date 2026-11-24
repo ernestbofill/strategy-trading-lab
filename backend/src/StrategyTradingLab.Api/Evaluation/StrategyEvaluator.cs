@@ -151,23 +151,31 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 }
             }
             var from = RulesRunner.StartIndex(bars, firstChecked ?? bars[^1].Date);
-            var past = await PastDaysAsync(db, strategy.Id, strategy.Mode, asset.Id, checkedUntil, heldByBudget, cancellationToken);
-
-            var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
-            var days = RulesRunner.Run(rules, bars, plan, from, checkedDays: past);
-            // A Manual buy signal today: also where the rules stand once its step is bought, for the stock page to show as soon as it's
-            // answered (a simulation's trade comes with the next check, which shows it anyway). Fresh rules: they keep state. Before
-            // the transaction, so the replay doesn't hold the strategy's lock.
-            var afterBuy = strategy.Mode == StrategyMode.Live && days[^1].NewBuy
-                ? RulesRunner.Run(TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from,
-                    boughtBeforeLast: UsSession.After(days[^1].Date), checkedDays: past)[^1].Checks
-                : null;
+            async Task<(IReadOnlyList<DayEvaluation> Days, IReadOnlyList<RuleCheck>? AfterBuy)> ReplayAsync()
+            {
+                var past = await PastDaysAsync(db, strategy.Id, strategy.Mode, asset.Id, checkedUntil, heldByBudget, cancellationToken);
+                var days = RulesRunner.Run(TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from, checkedDays: past);
+                // A Manual buy signal today: also where the rules stand once its step is bought, for the stock page to show as soon as
+                // it's answered (a simulation's trade comes with the next check, which shows it anyway). Fresh rules: they keep state.
+                var afterBuy = strategy.Mode == StrategyMode.Live && days[^1].NewBuy
+                    ? RulesRunner.Run(TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, plan, from,
+                        boughtBeforeLast: UsSession.After(days[^1].Date), checkedDays: past)[^1].Checks
+                    : null;
+                return (days, afterBuy);
+            }
+            // Before the transaction, so the replay doesn't hold the strategy's lock.
+            var answered = await LastAnswerAsync(db, strategy.Id, asset.Id, cancellationToken);
+            var (days, afterBuy) = await ReplayAsync();
             if (days[^1].Status == RuleStatus.NotEnoughData)
                 missing.Add($"{asset.Symbol}: not enough price history for the rules ({bars.Count} days stored).");
             // Saved under the strategy's lock, once the stock is known to be still followed and the strategy still running.
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             if ((await db.LockFollowedAsync(strategy.Id, cancellationToken, asset.Id)).Count == 0) continue;
+            // A Manual answer saved since the replay read them (an answer waits for the lock, so none comes after) changes what the
+            // user holds: replay again, or a late "I did it" could get its step signalled a second time.
+            if (strategy.Mode == StrategyMode.Live && await LastAnswerAsync(db, strategy.Id, asset.Id, cancellationToken) != answered)
+                (days, afterBuy) = await ReplayAsync();
             var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, afterBuy, price, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             signals += run.NewSignals;
@@ -234,6 +242,10 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             Done = mode == StrategyMode.Live ? new UserDid(Days(TradeSide.Buy, done: true), Days(TradeSide.Sell, done: true)) : null,
         };
     }
+
+    /// <summary>When a signal of the stock was last answered: an answer since changes a Manual replay (<see cref="CheckedDays.Done"/>).</summary>
+    static Task<DateTimeOffset?> LastAnswerAsync(AppDbContext db, Guid strategyId, Guid assetId, CancellationToken cancellationToken) =>
+        db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId).MaxAsync(s => s.AnsweredAt, cancellationToken);
 
     /// <summary>
     /// What the strategy's signals use of its budget (<see cref="SignalBudget.UsingBudget"/>), and whether it had no room for one more

@@ -104,7 +104,7 @@ public class PerformanceTests
     [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, true, 1, StockStatus.Signal)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, false, 0, StockStatus.NoBudget)] // No budget left for it.
     [InlineData(StrategyMode.Live, EvaluationStatus.Building, false, false, 0, StockStatus.Watching)] // Bear markets' own step, skipped.
-    [InlineData(StrategyMode.Live, EvaluationStatus.BuySignal, false, false, 0, StockStatus.NoBudget)]
+    [InlineData(StrategyMode.Live, EvaluationStatus.BuySignal, false, false, 0, StockStatus.NoBudget)] // No signal: the budget held it back.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 0, StockStatus.NoBudget)] // Every step skipped for the budget.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Building, false, false, 5, StockStatus.Holding)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 2, StockStatus.Holding)] // Comeback milestones used.
@@ -132,6 +132,9 @@ public class PerformanceTests
         Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 0, null, "trend"));
         Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 1, null, "trend"));
         Assert.Equal(StockStatus.Watching, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Building, false, false, 0, 5, "bear"));
+        // Manual, a skipped buy signal still stands while its window is open: a candidate, not "No budget left".
+        Assert.Equal(StockStatus.Watching, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.BuySignal, false, false, 0, 5, unboughtSignal: true));
+        Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.BuySignal, false, false, 0, null, "trend", unboughtSignal: true));
     }
 
     [Fact]

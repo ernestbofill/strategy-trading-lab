@@ -28,8 +28,10 @@ public sealed class StrategyBook
         CancellationToken cancellationToken)
     {
         var ids = strategies.Select(s => s.Id).ToList();
+        // A Manual strategy's results are the user's trades: its old signal trades ("the rules alone" until 2026-11-24) aren't read.
+        var simulations = strategies.Where(s => s.Mode == StrategyMode.Simulation).Select(s => s.Id).ToList();
         var signalTrades = await db.SignalTrades.AsNoTracking()
-            .Where(t => ids.Contains(t.StrategyId))
+            .Where(t => simulations.Contains(t.StrategyId))
             .Select(t => new { t.StrategyId, t.SignalId, Buy = new Buy(t.AssetId, t.TradeDate, t.Shares, t.Amount, t.Fee, t.Side) })
             .ToListAsync(cancellationToken);
         var userTrades = await db.UserTrades.AsNoTracking()

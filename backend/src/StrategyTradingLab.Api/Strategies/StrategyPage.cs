@@ -27,13 +27,16 @@ public static class StrategyPage
     /// </summary>
     /// <param name="steps">The steps held: a simulation's every buy signal; a Manual strategy's the user's buys (a step skipped or missed isn't held).</param>
     /// <param name="signalPending">A simulation's signal on the day of <paramref name="latest"/> whose trade isn't recorded yet.</param>
+    /// <param name="unboughtSignal">Manual: a buy signal skipped or missed whose window is still open. The day reads as a buy signal,
+    /// but the signal was made, so it isn't the budget that held the step back.</param>
     public static StockStatus Status(StrategyMode mode, EvaluationStatus? latest, bool waiting, bool signalPending, int steps, int? maxSteps,
-        string? templateKey = null)
+        string? templateKey = null, bool unboughtSignal = false)
     {
         if (mode == StrategyMode.Live && waiting) return StockStatus.WaitingForYou;
-        // Manual, the rules hold steps the user's trades don't (Bear markets counts its own steps, or a trade was deleted): the
-        // pill says where the user is.
-        if (mode == StrategyMode.Live && steps == 0 && latest is EvaluationStatus.Building or EvaluationStatus.Holding)
+        // Manual, the rules hold steps the user's trades don't (Bear markets counts its own steps, or a trade was deleted), or a
+        // signal the user skipped still stands: the pill says where the user is.
+        if (mode == StrategyMode.Live && steps == 0
+            && (latest is EvaluationStatus.Building or EvaluationStatus.Holding || (latest == EvaluationStatus.BuySignal && unboughtSignal)))
             return maxSteps is null || templateKey == TemplateKeys.Trend ? StockStatus.OutOfTheMarket : StockStatus.Watching;
         if (mode == StrategyMode.Simulation && latest is EvaluationStatus.BuySignal or EvaluationStatus.SellSignal && signalPending) return StockStatus.Signal;
         if (templateKey == TemplateKeys.Bear)

@@ -285,7 +285,7 @@ Lifecycle checks, so an impossible state can't be stored:
 
 ### `signal_trades`
 
-A simulation's trades, per strategy and asset: one trade per signal. Call them *signal trades*, not paper or rule trades. They are a simulation's results. Manual strategies get none since 2026-11-24 (#282); their older rows ("The rules alone" until then) stay unread.
+A simulation's trades, per strategy and asset: one trade per signal. Call them *signal trades*, not paper or rule trades. They are a simulation's results. Manual strategies get none since 2026-11-24 (#282); their older rows ("The rules alone" until then) were deleted by the `DropManualSignalTrades` migration.
 
 | Column | Type | Notes |
 | --- | --- | --- |

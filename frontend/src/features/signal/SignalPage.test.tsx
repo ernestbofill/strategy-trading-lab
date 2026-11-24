@@ -137,7 +137,7 @@ describe('SignalPage', () => {
     expect(screen.queryByRole('button', { name: 'Remind me next trading day' })).toBeNull()
   })
 
-  it('shows an answered or missed signal without the form', async () => {
+  it('shows an answered signal, or a missed one a newer signal replaced, without the form, and a missed one with only the trade', async () => {
     open(detail({ status: 'skipped', answer: { status: 'skipped', skipReason: 'noCash', date: null, price: null, amount: null, shares: null, fee: null } }))
 
     expect(await screen.findByText('You skipped it: no cash.')).toBeTruthy()
@@ -145,9 +145,16 @@ describe('SignalPage', () => {
     cleanup()
     invalidateAll()
 
-    // Missed: only a waiting signal can be answered.
-    open(detail({ status: 'missed', endedOn: '2026-10-23' }))
+    // Missed, with a newer signal since: nothing to record here.
+    open(detail({ status: 'missed', endedOn: '2026-10-23', takesTrade: false }))
     expect(await screen.findByText('This signal ended on Oct 23 without an answer.')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Save the trade' })).toBeNull()
+    cleanup()
+    invalidateAll()
+
+    // Missed, its trade not recorded in time: the trade only, no skip.
+    open(detail({ status: 'missed', endedOn: '2026-10-23', takesTrade: true }))
+    expect(await screen.findByRole('button', { name: 'Save the trade' })).toBeTruthy()
+    expect(screen.queryByText('× I skipped it')).toBeNull()
   })
 })

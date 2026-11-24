@@ -139,6 +139,8 @@ export interface SignalDetail {
   assetId?: string
   /** The strategy follows a list of stocks: the stock has its own page, the signal's parent. */
   onStockList?: boolean
+  /** The user's trade can be recorded on it: waiting, or missed with no newer signal of its side. */
+  takesTrade?: boolean
 }
 
 /** "I did it". `fxRate` is only read when `fxSource` is 'user'. */

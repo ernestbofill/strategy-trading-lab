@@ -88,8 +88,8 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
     </div>
   )
 
-  // Answered or missed: no form. Only a waiting signal can be answered.
-  if (s.answer || s.status === 'missed') {
+  // Answered, or missed with a newer signal for the trade since: no form. A missed one takes only the trade made but not recorded in time.
+  if (s.answer || (s.status === 'missed' && !s.takesTrade)) {
     return (
       <Screen top={top} action={<PrimaryAction to={parentOf(s)}>{t(s.onStockList ? 'signal.backStock' : 'signal.back')}</PrimaryAction>}>
         {header}
@@ -143,6 +143,8 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   const [snoozedUntil, setSnoozedUntil] = useState(s.snoozedUntil)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
   const sell = s.side === 'sell'
+  // A missed signal takes only the trade the user made but didn't record in time.
+  const missed = s.status === 'missed'
 
   const done = () => {
     for (const key of [dashboardCacheKey, strategyCacheKey(s.strategyId), signalCacheKey(s.id)]) invalidate(key)
@@ -192,16 +194,23 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
     >
       {header}
       {box}
+      {missed && (
+        <Callout tone="warning" title={t('signal.missed.title')}>
+          <p className={styles.plain}>{t('signal.missed.late', { date: shortDate(s.endedOn ?? s.signalDate) })}</p>
+        </Callout>
+      )}
       <form id={FORM_ID} className={styles.form} onSubmit={save} noValidate>
-        <SegmentedField
-          label={t('signal.question')}
-          value={answer}
-          onChange={setAnswer}
-          options={[
-            { value: 'did', label: t('signal.choice.did') },
-            { value: 'skip', label: t('signal.choice.skip') },
-          ]}
-        />
+        {!missed && (
+          <SegmentedField
+            label={t('signal.question')}
+            value={answer}
+            onChange={setAnswer}
+            options={[
+              { value: 'did', label: t('signal.choice.did') },
+              { value: 'skip', label: t('signal.choice.skip') },
+            ]}
+          />
+        )}
 
         {answer === 'did' ? (
           <div className={styles.fields}>

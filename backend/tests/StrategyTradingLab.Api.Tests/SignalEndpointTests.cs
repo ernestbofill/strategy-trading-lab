@@ -170,24 +170,24 @@ public class SignalEndpointTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
-    public async Task A_missed_signal_cant_be_answered()
+    public async Task A_missed_signal_takes_only_its_trade_until_a_newer_signal_comes()
     {
-        var (client, _, assetId, first, _) = await SeedAsync();
+        var (client, _, assetId, first, second) = await SeedAsync();
         try
         {
             using (var scope = factory.Services.CreateScope())
-                await scope.ServiceProvider.GetRequiredService<AppDbContext>().Signals.Where(s => s.Id == first)
-                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, SignalDay.AddDays(1)));
+                await scope.ServiceProvider.GetRequiredService<AppDbContext>().Signals.Where(s => s.Id == first || s.Id == second)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, SignalStatus.Missed).SetProperty(x => x.EndedOn, x => x.SignalDate.AddDays(1)));
 
-            foreach (var refused in new[]
-            {
-                await client.PostAsJsonAsync($"/signals/{first}/trade", Trade()),
-                await client.PostAsJsonAsync($"/signals/{first}/skip", new { reason = "other" }),
-            })
-            {
-                Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
-                Assert.Equal("This signal ended without an answer, so it can't be answered any more.", await refused.Content.ReadFromJsonAsync<string>());
-            }
+            // The older one has a newer signal of its side: that one stands for its trade now.
+            var older = await client.PostAsJsonAsync($"/signals/{second}/trade", Trade());
+            Assert.Equal(HttpStatusCode.Conflict, older.StatusCode);
+            Assert.Equal("A newer signal for this stock came since: record the trade on that one.", await older.Content.ReadFromJsonAsync<string>());
+
+            // The newest one takes the trade the user didn't record in time, but no skip.
+            Assert.True((await client.GetFromJsonAsync<JsonElement>($"/signals/{first}")).GetProperty("takesTrade").GetBoolean());
+            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/signals/{first}/skip", new { reason = "other" })).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsJsonAsync($"/signals/{first}/trade", Trade())).StatusCode);
         }
         finally
         {

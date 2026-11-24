@@ -30,6 +30,7 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.save.skip': 'Desa l’omissió',
   'signal.missed.title': 'Perdut',
   'signal.missed.text': 'Aquest senyal ha acabat el {date} sense resposta.',
+  'signal.missed.late': 'Aquest senyal ha acabat el {date} sense resposta. Si vas fer l’operació, registra-la aquí.',
   'signal.question': 'Hi has actuat?',
   'signal.choice.did': '✓ Ho he fet',
   'signal.choice.skip': '× L’he omès',

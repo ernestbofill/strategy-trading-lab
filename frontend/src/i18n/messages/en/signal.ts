@@ -29,6 +29,7 @@ export const signal = {
   'signal.save.skip': 'Save the skip',
   'signal.missed.title': 'Missed',
   'signal.missed.text': 'This signal ended on {date} without an answer.',
+  'signal.missed.late': 'This signal ended on {date} without an answer. If you made the trade, record it here.',
   'signal.question': 'Did you act on it?',
   'signal.choice.did': '✓ I did it',
   'signal.choice.skip': '× I skipped it',

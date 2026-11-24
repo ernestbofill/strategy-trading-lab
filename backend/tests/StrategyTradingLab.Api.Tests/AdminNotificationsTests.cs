@@ -69,7 +69,15 @@ public class AdminNotificationsTests
         Assert.Equal(["Test 1", "Test 0"], listed.Select(p => p.GetProperty("body").GetString()));
         Assert.All(listed, p => Assert.Equal("test", p.GetProperty("kind").GetString()));
 
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/notifications/test",
+            new { userId, title = "Hello", body = new string('é', 900) })).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/admin/notifications/test",
             new { userId = Guid.NewGuid(), title = "Hello", body = "Hi" })).StatusCode);
+        using (var scope = api.Services.CreateScope())
+            await scope.ServiceProvider.GetRequiredService<AppDbContext>().Users.Where(u => u.Id == userId)
+                .ExecuteUpdateAsync(set => set.SetProperty(u => u.AlertPush, false));
+        Assert.Equal(HttpStatusCode.Conflict, (await admin.PostAsJsonAsync("/admin/notifications/test",
+            new { userId, title = "Hello", body = "Hi" })).StatusCode);
+        Assert.Equal(2, push.Payloads.Count);
     }
 }

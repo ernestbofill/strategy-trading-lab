@@ -19,6 +19,9 @@ public static class PushTexts
     /// <summary>The longest title and text kept (<c>notifications.title</c>, <c>body</c>), and allowed for a test push.</summary>
     public const int TitleMax = 200, BodyMax = 1000;
 
+    /// <summary>The largest JSON a test push may be, in bytes: a record holds 4096 less its header and tag, with room to spare.</summary>
+    public const int PayloadMax = 3000;
+
     /// <summary>A test push from /admin/notifications: it opens the dashboard, and each one shows on its own (its own tag).</summary>
     public static PushMessage Test(Guid notificationId, string title, string body) => new(title, body, "/", $"test-{notificationId}");
 

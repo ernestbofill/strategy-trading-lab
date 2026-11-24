@@ -9,11 +9,12 @@ const sent: AdminPush = {
   id: 'n1', userId: 'u1', email: 'anna@example.com', kind: 'test', title: 'Hello', body: 'A test',
   createdAt: '2026-11-24T10:00:00Z', sentAt: '2026-11-24T10:00:01Z', failedAt: null, error: null,
 }
+const old: AdminPush = { ...sent, id: 'n0', kind: 'stockClose', title: null, body: null }
 const page: Page = { recipients: [{ id: 'u1', email: 'anna@example.com', devices: 2 }], pushes: [] }
 
 describe('AdminNotifications', () => {
   it('sends a test push to the chosen user and lists it', async () => {
-    vi.spyOn(api, 'getAdminNotifications').mockResolvedValueOnce(page).mockResolvedValue({ ...page, pushes: [sent] })
+    vi.spyOn(api, 'getAdminNotifications').mockResolvedValueOnce(page).mockResolvedValue({ ...page, pushes: [sent, old] })
     const send = vi.spyOn(api, 'sendAdminTestPush').mockResolvedValue(sent)
     render(
       <MemoryRouter>
@@ -33,5 +34,7 @@ describe('AdminNotifications', () => {
     expect(await screen.findByText('Sent to anna@example.com.')).toBeTruthy()
     expect(send).toHaveBeenCalledWith({ userId: 'u1', title: 'Hello', body: 'A test' })
     expect(screen.getAllByText('A test').length).toBeGreaterThan(0)
+    // An older push without a title is named by its kind.
+    expect(screen.getAllByText('Getting close').length).toBeGreaterThan(1)
   })
 })

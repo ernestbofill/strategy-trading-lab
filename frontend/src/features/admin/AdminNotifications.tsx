@@ -21,10 +21,10 @@ const kindText: Record<NotificationKind, string> = {
   signal: 'Signal',
   snoozed: 'Reminder',
   overview: 'Summary',
-  ai_round: 'AI round',
-  signal_ended: 'Signal ended',
-  stock_candidate: 'New candidate',
-  stock_close: 'Getting close',
+  aiRound: 'AI round',
+  signalEnded: 'Signal ended',
+  stockCandidate: 'New candidate',
+  stockClose: 'Getting close',
   test: 'Test',
 }
 
@@ -124,7 +124,7 @@ function TestPushForm({ recipients, onSent }: { recipients: AdminPushRecipient[]
       },
       () => ({
         ...(title.trim() ? {} : { title: 'Write a title.' }),
-        ...(title.length > TITLE_MAX ? { title: `Up to ${TITLE_MAX} characters.` } : {}),
+        ...(title.trim().length > TITLE_MAX ? { title: `Up to ${TITLE_MAX} characters.` } : {}),
         ...(body.trim() ? {} : { body: 'Write a text.' }),
       }),
     )

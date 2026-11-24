@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using StrategyTradingLab.Api.Data;
@@ -57,15 +58,19 @@ public static class AdminNotificationsEndpoints
             var errors = new Dictionary<string, string[]>();
             if (title.Length is 0 or > PushTexts.TitleMax) errors["title"] = [$"Write a title of up to {PushTexts.TitleMax} characters."];
             if (body.Length is 0 or > PushTexts.BodyMax) errors["body"] = [$"Write a text of up to {PushTexts.BodyMax} characters."];
+            // A push service takes about 4 KB, and the JSON escapes each accent or emoji to 6 to 12 bytes.
+            else if (errors.Count == 0 && Encoding.UTF8.GetByteCount(PushTexts.Test(Guid.Empty, title, body).ToJson()) > PushTexts.PayloadMax)
+                errors["body"] = ["Too long for a push with these accents or emoji: shorten it."];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
-            // No gap to wait for: the page waits for the answer. The send lock still keeps it apart from the check's pushes.
+            // No gap to wait for: the page waits for the answer. The send lock still keeps it apart from the check's pushes, so it may wait for those.
             var delivery = new NotificationDelivery(db, email, push, alerts, time, logger, TimeSpan.Zero);
             if (!delivery.PushReady) return TypedResults.Conflict("Push isn't set up on this server: VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are missing.");
             var user = await db.Users.AsNoTracking().Where(u => u.Id == request.UserId)
-                .Select(u => new { u.Email, Devices = db.PushSubscriptions.Count(p => p.UserId == u.Id) })
+                .Select(u => new { u.Email, u.AlertPush, Devices = db.PushSubscriptions.Count(p => p.UserId == u.Id) })
                 .FirstOrDefaultAsync(cancellationToken);
             if (user is null) return TypedResults.Conflict("That user no longer exists. Reload the page.");
+            if (!user.AlertPush) return TypedResults.Conflict("That user has turned notifications off. Reload the page.");
             if (user.Devices == 0) return TypedResults.Conflict("That user has no device with notifications on. Reload the page.");
             if (!limit.TryAcquire())
                 return TypedResults.Problem("Too many test pushes: try again in an hour.", statusCode: StatusCodes.Status429TooManyRequests);

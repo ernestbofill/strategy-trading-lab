@@ -253,7 +253,8 @@ export interface AdminPushRecipient {
   devices: number
 }
 
-export type NotificationKind = 'signal' | 'snoozed' | 'overview' | 'ai_round' | 'signal_ended' | 'stock_candidate' | 'stock_close' | 'test'
+/** As the API's JSON writes enums: camelCase. */
+export type NotificationKind = 'signal' | 'snoozed' | 'overview' | 'aiRound' | 'signalEnded' | 'stockCandidate' | 'stockClose' | 'test'
 
 /** A push on /admin/notifications. `title` and `body` are null for pushes sent before 2026-11-24. */
 export interface AdminPush {

@@ -60,7 +60,7 @@ public static class AdminNotificationsEndpoints
             if (body.Length is 0 or > PushTexts.BodyMax) errors["body"] = [$"Write a text of up to {PushTexts.BodyMax} characters."];
             // A push service takes about 4 KB, and the JSON escapes each accent or emoji to 6 to 12 bytes.
             else if (errors.Count == 0 && Encoding.UTF8.GetByteCount(PushTexts.Test(Guid.Empty, title, body).ToJson()) > PushTexts.PayloadMax)
-                errors["body"] = ["Too long for a push with these accents or emoji: shorten it."];
+                errors["body"] = ["Title and text are too long together for a push (accents and emoji count more): shorten either."];
             if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
 
             // No gap to wait for: the page waits for the answer. The send lock still keeps it apart from the check's pushes, so it may wait for those.
@@ -78,7 +78,8 @@ public static class AdminNotificationsEndpoints
             var now = time.GetUtcNow();
             var claimed = (await delivery.ClaimAsync(request.UserId, null, NotificationKind.Test, DateOnly.FromDateTime(now.UtcDateTime),
                 cancellationToken, NotificationChannel.Push))!.Value;
-            await delivery.PushAsync(claimed, request.UserId, PushTexts.Test(claimed, title, body), cancellationToken);
+            // Not the request's token: a page that gave up waiting for the lock mustn't lose a push that went out, or its row.
+            await delivery.PushAsync(claimed, request.UserId, PushTexts.Test(claimed, title, body), CancellationToken.None);
 
             // A push service that didn't answer gives the claim back (the row is gone): keep it, as failed, so the list shows the try.
             var row = await db.Notifications.AsNoTracking().FirstOrDefaultAsync(n => n.Id == claimed, cancellationToken);

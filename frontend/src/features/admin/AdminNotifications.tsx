@@ -42,7 +42,8 @@ const columns: DataTableColumn<AdminPush>[] = [
     id: 'result',
     header: 'Result',
     accessorFn: resultOf,
-    cell: (p) => (p.error ? `${resultText[resultOf(p)]}: ${p.error}` : resultText[resultOf(p)]),
+    // A skipped push's reason already says "Not sent: …"; one with no result yet is still going out.
+    cell: (p) => (p.error?.startsWith('Not sent') ? p.error : p.error ? `${resultText[resultOf(p)]}: ${p.error}` : resultOf(p) === 'skipped' ? 'Sending' : resultText[resultOf(p)]),
   },
   { id: 'createdAt', header: 'When', accessorFn: (p) => p.createdAt, cell: (p) => localDateTime(p.createdAt), mono: true },
 ]
@@ -114,6 +115,9 @@ function TestPushForm({ recipients, onSent }: { recipients: AdminPushRecipient[]
   const submit = useSubmit((err) => (err instanceof TooManyTriesError ? 'Too many test pushes this hour. Try again later.' : "Couldn't send it. Try again."))
   const { busy, errors, message } = submit
 
+  // The list reloads after each send: a user who dropped out of it (their only device gone) is no longer picked.
+  const selected = recipients.some((r) => r.id === userId) ? userId : (recipients[0]?.id ?? '')
+
   if (recipients.length === 0) return <p className={styles.muted}>No user has notifications on for a device.</p>
 
   const send = async (e: FormEvent) => {
@@ -121,7 +125,7 @@ function TestPushForm({ recipients, onSent }: { recipients: AdminPushRecipient[]
     const sent: { push?: AdminPush } = {}
     const worked = await submit.run(
       async () => {
-        sent.push = await api.sendAdminTestPush({ userId, title: title.trim(), body: body.trim() })
+        sent.push = await api.sendAdminTestPush({ userId: selected, title: title.trim(), body: body.trim() })
       },
       () => ({
         ...(title.trim() ? {} : { title: 'Write a title.' }),
@@ -143,7 +147,7 @@ function TestPushForm({ recipients, onSent }: { recipients: AdminPushRecipient[]
     <form className={styles.form} onSubmit={send} noValidate>
       <SelectField
         label="User"
-        value={userId}
+        value={selected}
         onChange={setUserId}
         options={recipients.map((r) => ({ value: r.id, label: `${r.email} (${r.devices} ${r.devices === 1 ? 'device' : 'devices'})` }))}
       />

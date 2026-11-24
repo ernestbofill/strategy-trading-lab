@@ -34,7 +34,7 @@ const resultText: Record<Result, string> = { sent: 'Sent', failed: 'Failed', ski
 
 const columns: DataTableColumn<AdminPush>[] = [
   // Older pushes have no title kept: the kind names the row instead.
-  { id: 'title', header: 'Title', accessorFn: (p) => p.title ?? '', cell: (p) => p.title ?? kindText[p.kind] },
+  { id: 'title', header: 'Title', accessorFn: (p) => p.title ?? kindText[p.kind] },
   { id: 'body', header: 'Text', accessorFn: (p) => p.body ?? '', cell: (p) => p.body ?? '–' },
   { id: 'email', header: 'User', accessorFn: (p) => p.email },
   { id: 'kind', header: 'Kind', accessorFn: (p) => p.kind, cell: (p) => kindText[p.kind] },
@@ -52,7 +52,8 @@ const filters: DataTableFilter[] = [
     columnId: 'kind',
     label: 'Kind',
     allLabel: 'All kinds',
-    options: Object.entries(kindText).map(([value, label]) => ({ value, label })),
+    // The summary goes by email only: never in this list.
+    options: Object.entries(kindText).filter(([value]) => value !== 'overview').map(([value, label]) => ({ value, label })),
   },
   {
     columnId: 'result',

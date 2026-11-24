@@ -117,6 +117,9 @@ public class TrendRulesTests
         Assert.Equal(RuleStatus.SignalEnded, ended.Status);
         Assert.Equal("Price is more than 8% above the 50-day average: too late to chase.", ended.Reason);
         Assert.True(Strategies.StockStates.PastBuyRule(ended.Checks));
+        // No buy past the limit, but the trend is up: a sell signal's window closes.
+        Assert.False(ended.WindowOpen);
+        Assert.True(ended.SellClosed);
 
         var watching = rules.Decide(52, new DayContext(bars[52].Date, RuleStatus.SignalEnded, 0, default, false, false, false, 1));
         Assert.Equal(RuleStatus.Watching, watching.Status);

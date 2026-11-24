@@ -428,7 +428,7 @@
       "scope": "6 índexs principals, 2000-2026.",
       "years": "2000-2026",
       "universe": "6 grans índexs globals (S&P 500, Nasdaq-100, Desenvolupats ex-EUA, DAX, Nikkei 225, Vanguard 500)",
-      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora.",
+      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora, sense límit de compra.",
       "stories": {
         "2000-12": "Va esquivar les caigudes del 2000–02 i del 2008",
         "2013-19": "El cost de l'assegurança en un mercat alcista continu",
@@ -519,7 +519,7 @@
         "past": "{+value}% respecte a la SMA ({midLevel}): passa de +{max}% ({endLevel}), massa tard.",
         "short": "{+value}% respecte a la SMA (compra fins a +{max}%)",
         "pastShort": "{+value}% respecte a la SMA (passa de +{max}%)",
-        "info": "Compra de +{min}% a +{max}% per sobre de la mitjana de 200 dies ({level} a {endLevel}). Més amunt, el preu s'ha encarit massa: l'estratègia espera una baixada fins a aquest rang."
+        "info": "Compra de +{min}% a +{max}% per sobre de la línia de tendència ({level} a {endLevel}). Més amunt, el preu s'ha encarit massa: l'estratègia espera una baixada fins a aquest rang."
       },
       "sellLine": {
         "label": "Preu respecte a la línia de venda",

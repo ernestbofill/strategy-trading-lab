@@ -428,7 +428,7 @@
       "scope": "6 major indexes, 2000-2026.",
       "years": "2000-2026",
       "universe": "6 major global indexes (S&P 500, Nasdaq-100, Developed ex-US, DAX, Nikkei 225, Vanguard 500)",
-      "testedDefaults": "The whole €3,000 budget, all in, all out.",
+      "testedDefaults": "The whole €3,000 budget, all in, all out, with no chase limit.",
       "stories": {
         "2000-12": "Dodged the 2000–02 and 2008 crashes",
         "2013-19": "Insurance cost in a straight bull market",
@@ -519,7 +519,7 @@
         "past": "{+value}% vs the SMA ({midLevel}): past +{max}% ({endLevel}), too late to chase.",
         "short": "{+value}% vs the SMA (buys up to +{max}%)",
         "pastShort": "{+value}% vs the SMA (past +{max}%)",
-        "info": "Buys from +{min}% to +{max}% above the 200-day average ({level} to {endLevel}). Higher, the price got too expensive: the strategy waits for a pullback into that range."
+        "info": "Buys from +{min}% to +{max}% above the trend line ({level} to {endLevel}). Higher, the price got too expensive: the strategy waits for a pullback into that range."
       },
       "sellLine": {
         "label": "Price vs the sell line",

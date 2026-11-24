@@ -125,6 +125,7 @@ public class TrendRules : BuyRulesBase
                 Level: Math.Round(buyLine, 2), MidLevel: Math.Round(slow, 2), EndLevel: Math.Round(limit, 2)));
         // After a sale the cooldown holds the next buy back.
         if (!day.HasPosition && RuleCheck.Cooldown(day, p.CooldownDays) is { } cooldown) checks.Add(cooldown);
-        return new RuleDecision(status, reason, facts, WindowOpen: inWindow) { Checks = checks };
+        // A sell signal ends once the trend is back up, past the chase limit too.
+        return new RuleDecision(status, reason, facts, WindowOpen: inWindow) { Checks = checks, SellClosed = aboveBuy };
     }
 }

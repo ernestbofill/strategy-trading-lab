@@ -64,6 +64,7 @@ export function AdminSettings() {
         />
         <NavRow label="Users" meta="accounts and their strategies" to="/admin/users" />
         <NavRow label="Invites" meta="invite people and choose who can sign up" to="/admin/invites" />
+        <NavRow label="Notifications" meta="pushes sent, and a test push" to="/admin/notifications" />
         <NavRow label="Assets" meta="stocks, funds and indexes" to="/admin/assets" />
         <NavRow label="Templates" meta="defaults, starter lists and getting close" to="/admin/templates" />
         <NavRow label="Feedback" meta="open issues, ideas and notes" to="/feedback" />

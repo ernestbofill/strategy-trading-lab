@@ -66,6 +66,7 @@ const AdminAssets = lazyPage(() => import('./features/admin/AdminAssets').then((
 const AdminUsers = lazyPage(() => import('./features/admin/AdminUsers').then((m) => m.AdminUsers))
 const AdminInvites = lazyPage(() => import('./features/admin/AdminInvites').then((m) => m.AdminInvites))
 const AdminAlerts = lazyPage(() => import('./features/admin/AdminAlerts').then((m) => m.AdminAlerts))
+const AdminNotifications = lazyPage(() => import('./features/admin/AdminNotifications').then((m) => m.AdminNotifications))
 const AdminTemplates = lazyPage(() => import('./features/admin/AdminTemplates').then((m) => m.AdminTemplates))
 
 /**
@@ -269,6 +270,14 @@ export default function App() {
                       element={
                         <LazyPage>
                           <AdminTemplates />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/admin/notifications"
+                      element={
+                        <LazyPage>
+                          <AdminNotifications />
                         </LazyPage>
                       }
                     />

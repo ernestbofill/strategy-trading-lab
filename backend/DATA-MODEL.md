@@ -357,17 +357,20 @@ Every notification the app sends, one row per channel. A notification goes out *
 | signal_id | uuid FK → signals, cascade, null | What the notification is about, for `signal`, `snoozed` and `signal_ended`. Null for kinds about nothing in particular (`overview`, `ai_round`) |
 | strategy_id | uuid FK → strategies, cascade, null | With `asset_id`, the stock a stock change push is about (`stock_candidate`, `stock_close`) |
 | asset_id | uuid FK → assets, cascade, null | See `strategy_id` |
-| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the summary, no signal; a quiet day keeps its claim with "Not sent: nothing changed.") \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) \| `signal_ended` (a buy signal ended unanswered) \| `stock_candidate`, `stock_close` (push only: a strategy's stock became a candidate or came close on the session `for_date`) |
+| kind | text, not null | `signal` (the first alert) \| `snoozed` (the next day after a Snooze) \| `overview` (the summary, no signal; a quiet day keeps its claim with "Not sent: nothing changed.") \| `ai_round` (AI rounds due: one per user and due day, `for_date` the due date, no signal) \| `signal_ended` (a buy signal ended unanswered) \| `stock_candidate`, `stock_close` (push only: a strategy's stock became a candidate or came close on the session `for_date`) \| `test` (push only: a test push the owner sent from `/admin/notifications`; not deduped) |
 | channel | text, not null | `push` \| `email` |
 | for_date | date, not null | The day it is for: the signal day, or the `snoozed_until` day |
 | sent_at | timestamptz, null | Null while queued |
 | failed_at | timestamptz, null | |
 | error | text, null | Provider error, for support |
+| title | varchar(200), null | A push's title as sent, for `/admin/notifications`. Null for emails and for pushes before 2026-11-24 |
+| body | varchar(1000), null | A push's text as sent; see `title` |
 | created_at | timestamptz | |
 
 **Identity (the dedupe contract):** a notification is identified by who it's for, what kind it is, the channel, the day, and what it is about. "What it is about" is one nullable foreign key per subject: a signal, or a strategy's stock (`strategy_id` and `asset_id`).
 
-- Unique `(user_id, kind, channel, for_date, signal_id, strategy_id, asset_id) NULLS NOT DISTINCT`, so rows with no subject (the overview) are deduplicated too.
+- Unique `(user_id, kind, channel, for_date, signal_id, strategy_id, asset_id) NULLS NOT DISTINCT WHERE kind <> 'test'`, so rows with no subject (the overview) are deduplicated too. Test pushes aren't: the owner may send several a day.
+- Index `(channel, created_at)` for the admin list of pushes.
 - `CHECK ((kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL))` and `CHECK ((kind IN ('stock_candidate', 'stock_close')) = (strategy_id IS NOT NULL AND asset_id IS NOT NULL))`.
 - A new subject adds its own column and joins the key and the check: AI rounds will add `ai_round_id` (FK → ai_rounds), not a generic id.
 

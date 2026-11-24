@@ -93,6 +93,7 @@ builder.Services.AddSessionAuthorization();
 builder.Services.AddSingleton<LogInThrottle>();
 builder.Services.AddSingleton<TestEmailLimit>();
 builder.Services.AddSingleton<TestYahooLimit>();
+builder.Services.AddSingleton<TestPushLimit>();
 builder.Services.AddSingleton<InviteEmailLimit>();
 builder.Services.AddSingleton<InviteTexts>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();

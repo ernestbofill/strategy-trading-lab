@@ -2362,6 +2362,9 @@ BEGIN
     VALUES ('20261116132855_DipLowBeforePeakFrom', '10.0.4');
     END IF;
 END $EF$;
+COMMIT;
+
+START TRANSACTION;
 
 DO $EF$
 BEGIN
@@ -2396,6 +2399,66 @@ BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117211503_ValidatedFeedback') THEN
     INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
     VALUES ('20261117211503_ValidatedFeedback', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    DROP INDEX ix_notifications_user_id_kind_channel_for_date_signal_id_strat;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    ALTER TABLE notifications DROP CONSTRAINT ck_notifications_kind;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    ALTER TABLE notifications ADD body character varying(1000);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    ALTER TABLE notifications ADD title character varying(200);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    CREATE INDEX ix_notifications_channel_created_at ON notifications (channel, created_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    CREATE UNIQUE INDEX ix_notifications_user_id_kind_channel_for_date_signal_id_strat ON notifications (user_id, kind, channel, for_date, signal_id, strategy_id, asset_id) NULLS NOT DISTINCT WHERE kind <> 'test';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    ALTER TABLE notifications ADD CONSTRAINT ck_notifications_kind CHECK (kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended', 'stock_candidate', 'stock_close', 'test'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124021610_AdminTestPushes') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261124021610_AdminTestPushes', '10.0.4');
     END IF;
 END $EF$;
 COMMIT;

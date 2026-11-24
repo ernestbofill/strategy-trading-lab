@@ -45,6 +45,7 @@ export const common: Record<keyof typeof en, string> = {
   'footer.users': 'Usuaris',
   'footer.assets': 'Accions i fons',
   'footer.invites': 'Invitacions',
+  'footer.adminNotifications': 'Notificacions',
   'footer.adminTemplates': 'Plantilles',
   'footer.feedback': 'Comentaris',
   'footer.siteMap': 'Mapa del lloc',

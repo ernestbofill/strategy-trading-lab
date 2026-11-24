@@ -254,9 +254,14 @@ class NotificationConfiguration : IEntityTypeConfiguration<Notification>
         });
 
         // The dedupe contract: once per user, kind, channel, day and subject (a signal, or a strategy's stock), a null subject included.
+        // Test pushes from the admin page aren't deduped: the owner may send several a day.
         entity.HasIndex(n => new { n.UserId, n.Kind, n.Channel, n.ForDate, n.SignalId, n.StrategyId, n.AssetId })
             .IsUnique()
-            .AreNullsDistinct(false);
+            .AreNullsDistinct(false)
+            .HasFilter("kind <> 'test'");
+        entity.HasIndex(n => new { n.Channel, n.CreatedAt });
+        entity.Property(n => n.Title).HasMaxLength(PushTexts.TitleMax);
+        entity.Property(n => n.Body).HasMaxLength(PushTexts.BodyMax);
 
         entity.HasOne<User>().WithMany()
             .HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);

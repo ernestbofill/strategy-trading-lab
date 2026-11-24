@@ -76,11 +76,20 @@ public static class StockStates
         var latestStatus = evaluation?.Status
             ?? (aiScores is null ? null : aiScores.ContainsKey(assetId) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
         var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
+        // Manual: a buy signal skipped or missed whose window is still open. It still stands, so the day reads as a buy signal.
+        var unbought = live ? own.Where(s => s.Side == TradeSide.Buy && s.Status is SignalStatus.Skipped or SignalStatus.Missed
+            && (s.EndedOn is null || s.EndedOn > evaluation?.Date)).OrderBy(s => s.SignalDate).LastOrDefault() : null;
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
             StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, live ? steps : signalled, maxSteps, strategy.TemplateKey,
-                unboughtSignal: live && own.Any(s => s.Side == TradeSide.Buy && s.Status is SignalStatus.Skipped or SignalStatus.Missed
-                    && (s.EndedOn is null || s.EndedOn > evaluation?.Date))), checks);
-        var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
+                unboughtSignal: unbought is not null), checks);
+        // The row names the signal it stands for: waiting for the user, today's, or one the user skipped (or missed) while its window is open.
+        var signal = status switch
+        {
+            StockStatus.WaitingForYou => waiting,
+            StockStatus.Signal => todays,
+            StockStatus.Watching or StockStatus.OutOfTheMarket when latestStatus == EvaluationStatus.BuySignal => unbought,
+            _ => null,
+        };
         var distanceKey = strategy.TemplateKey == TemplateKeys.Bear && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
         var distance = evaluation?.Facts.RootElement.Number(distanceKey);
         return new StockState(status, steps, distance, signal, checks);

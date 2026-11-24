@@ -118,10 +118,13 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
 
         var session = UsSession.LastComplete(time.GetUtcNow());
         var signals = await db.Signals.AsNoTracking().Where(s => s.StrategyId == strategy.Id && s.Side == TradeSide.Buy)
-            .Select(s => new { s.AssetId, s.SignalDate, s.Status, s.StepAmount }).ToListAsync(cancellationToken);
+            .Select(s => new { s.AssetId, s.SignalDate, s.Status, s.StepAmount, s.Facts }).ToListAsync(cancellationToken);
         // As the daily check counts them: confirmed and waiting signals hold their step and use its budget; a Manual one skipped
-        // or missed neither, so the stock can get that step again (Ernest, 2026-11-24).
-        var holding = signals.Where(s => s.Status.UsesBudget()).ToList();
+        // or missed neither, so the stock can get that step again (Ernest, 2026-11-24). A waiting one whose time is up (the round
+        // due now ends it) is missed at the evening's check, so it already holds nothing.
+        var today = UsSession.Today(time.GetUtcNow());
+        var holding = signals.Where(s => s.Status.UsesBudget()
+            && !(s.Status == SignalStatus.Waiting && s.Facts.RootElement.Date("endsOn") is { } ends && ends <= today)).ToList();
         var steps = holding.GroupBy(s => s.AssetId).ToDictionary(g => g.Key, g => g.Count());
         var used = holding.Sum(s => s.StepAmount ?? 0);
         var ids = stocks.Select(s => s.AssetId).ToList();

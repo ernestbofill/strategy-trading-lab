@@ -1,6 +1,6 @@
 import type { Currency } from './account'
 import type { AiRoundsSummary, AiSetup } from './ai'
-import type { CurrencyRates, StrategySignalItem, StrategyTradeItem } from './signals'
+import type { CurrencyRates, SignalStatus, StrategySignalItem, StrategyTradeItem } from './signals'
 import type { Budget, InvestsIn, TemplateKey } from './templates'
 
 export type StrategyMode = 'simulation' | 'live'
@@ -150,6 +150,8 @@ export interface StockRow {
   signalId: string | null
   signalStep: number | null
   signalSide?: TradeSide | null
+  /** The row's signal's status: a skipped or missed one (live) stands while its window is open. */
+  signalStatus?: SignalStatus | null
   /** What was put in, fees included, and its gain in percent (null with no buys). */
   invested: number
   result: number | null

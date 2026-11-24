@@ -52,7 +52,7 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.skip.noCash': 'Sense efectiu',
   'signal.skip.other': 'Altres',
   'signal.skip.note': 'Ometre no compra res ni gasta pressupost.',
-  'signal.skip.noteSale': 'Ometre no ven res: encara tens {stock}.',
+  'signal.skip.noteSale': 'Ometre no ven res.',
   'signal.snooze.until': 'T’ho recordarem el {date}.',
   'signal.snooze.action': 'Posposa-ho al proper dia de borsa',
 }

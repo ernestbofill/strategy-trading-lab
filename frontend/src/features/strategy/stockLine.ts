@@ -26,6 +26,9 @@ type Texts = Record<string, CheckTexts> | null | undefined
 function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, t: Translate): string {
   const stepOf = (n: number) => (row.maxSteps === null ? String(n) : t('signal.stepOf', { n, max: row.maxSteps }))
   const fromZone = (d: number, zone: string) => t('strategy.stock.fromZone', { dist: pct(d), zone })
+  // Manual: a buy signal the user skipped (or missed) stands while its window is open, so the buy rules are met.
+  if ((row.status === 'watching' || row.status === 'outOfTheMarket') && (row.signalStatus === 'skipped' || row.signalStatus === 'missed'))
+    return t(row.signalStatus === 'skipped' ? 'strategy.stock.signalSkipped' : 'strategy.stock.signalMissed')
   switch (row.status) {
     case 'waitingForYou':
       if (row.signalSide === 'sell') return t('strategy.stock.sellWaiting')

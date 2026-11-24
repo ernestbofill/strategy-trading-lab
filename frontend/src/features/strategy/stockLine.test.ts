@@ -37,6 +37,11 @@ describe('stockLine', () => {
     expect(stockLine(row({ status: 'signal', signalSide: 'sell' }), 'simulation', 'EUR', words).detail).toBe('Sold at the next open')
   })
 
+  it('says a skipped or missed signal stands while its window is open', () => {
+    expect(stockLine(row({ status: 'watching', signalStatus: 'skipped' }), 'live', 'EUR', words).detail).toBe('Signal skipped')
+    expect(stockLine(row({ status: 'outOfTheMarket', maxSteps: null, signalStatus: 'missed' }), 'live', 'EUR', words).detail).toBe('Signal missed')
+  })
+
   it('counts the steps held', () => {
     expect(stockLine(row({ status: 'building', steps: 2 }), 'live', 'EUR', words).detail).toBe('2 of 5 trades')
     expect(stockLine(row({ status: 'holding', steps: 5 }), 'simulation', 'EUR', words).detail).toBe('5 of 5 trades')

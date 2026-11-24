@@ -242,7 +242,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
               ))}
             </fieldset>
             <p className={styles.plain}>
-              {t(sell ? 'signal.skip.noteSale' : 'signal.skip.note', { stock: s.stockName })}
+              {t(sell ? 'signal.skip.noteSale' : 'signal.skip.note')}
             </p>
           </div>
         )}

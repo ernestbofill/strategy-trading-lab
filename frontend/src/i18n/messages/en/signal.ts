@@ -51,7 +51,7 @@ export const signal = {
   'signal.skip.noCash': 'No cash',
   'signal.skip.other': 'Other',
   'signal.skip.note': 'A skip buys nothing and uses no budget.',
-  'signal.skip.noteSale': 'A skip sells nothing: you still hold {stock}.',
+  'signal.skip.noteSale': 'A skip sells nothing.',
   'signal.snooze.until': "We'll remind you on {date}.",
   'signal.snooze.action': 'Remind me next trading day',
 } as const

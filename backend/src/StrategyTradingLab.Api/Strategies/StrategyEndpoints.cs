@@ -468,6 +468,7 @@ public static class StrategyEndpoints
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 PriceUpdatedAt = priceIsClose && evaluation is not null ? MarketClose.At(asset.Exchange, evaluation.Date) : null,
                 PriceIsClose = priceIsClose,
+                SignalStatus = signal?.Status,
                 Checks = checks,
                 AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
                 // Only while it runs, as the dashboard card counts it: an ended strategy gets no signal.

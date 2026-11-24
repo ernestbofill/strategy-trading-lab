@@ -173,9 +173,13 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             if ((await db.LockFollowedAsync(strategy.Id, cancellationToken, asset.Id)).Count == 0) continue;
             // A Manual answer saved since the replay read them (an answer waits for the lock, so none comes after) changes what the
-            // user holds: replay again, or a late "I did it" could get its step signalled a second time.
+            // user holds and the budget used: read both again and replay, or a late "I did it" could get its step signalled a second
+            // time, or a signal over the budget.
             if (strategy.Mode == StrategyMode.Live && await LastAnswerAsync(db, strategy.Id, asset.Id, cancellationToken) != answered)
+            {
+                (budget.Used, heldByBudget) = await BudgetHistoryAsync(db, strategy.Id, strategy.Budget, cancellationToken);
                 (days, afterBuy) = await ReplayAsync();
+            }
             var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, afterBuy, price, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             signals += run.NewSignals;
@@ -326,7 +330,12 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             var closed = days.FirstOrDefault(d => d.Date > signal.SignalDate
                 && (signal.Side == TradeSide.Sell ? d.SellClosed : !d.WindowOpen));
             if (closed is null) continue;
-            signal.EndedOn = closed.Date;
+            // A waiting signal ends no earlier than this check's first new day: a replay that changed (new settings, a late answer)
+            // can find its window closed on a day already checked, and a missed signal can be answered until the next check
+            // (SignalMisses.MovedOn counts the days stored from its end).
+            signal.EndedOn = signal.Status == SignalStatus.Waiting && evaluatedUntil is { } until && closed.Date <= until
+                ? days.FirstOrDefault(d => d.Date > until)?.Date ?? latest.Date
+                : closed.Date;
         }
         await db.SaveChangesAsync(cancellationToken);
         // Every ended signal still waiting in the database is missed: not only today's, so a run stopped between the two

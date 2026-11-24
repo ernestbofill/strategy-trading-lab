@@ -59,6 +59,8 @@ export const strategy = {
   'strategy.pill.removed': 'REMOVED',
   'strategy.pill.done': 'DONE',
   'strategy.stock.signalWaiting': 'Signal waiting',
+  'strategy.stock.signalSkipped': 'Signal skipped',
+  'strategy.stock.signalMissed': 'Signal missed',
   'strategy.stock.signalStep': 'Signal: trade {step}',
   'strategy.stock.boughtNextOpen': 'Bought at the next open',
   'strategy.stock.stepBoughtNextOpen': 'Trade {step}, bought at the next open',

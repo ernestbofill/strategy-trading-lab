@@ -61,6 +61,8 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.pill.removed': 'ELIMINADA',
   'strategy.pill.done': 'FET',
   'strategy.stock.signalWaiting': 'Senyal en espera',
+  'strategy.stock.signalSkipped': 'Senyal omès',
+  'strategy.stock.signalMissed': 'Senyal perdut',
   'strategy.stock.signalStep': 'Senyal: operació {step}',
   'strategy.stock.boughtNextOpen': 'Comprat a la propera obertura',
   'strategy.stock.stepBoughtNextOpen': 'Operació {step}, feta a la propera obertura',

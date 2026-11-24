@@ -73,7 +73,7 @@ v1 is for learning, testing and following simple strategies. It never tells anyo
 - **Mostly buy-only.** Strategies define when they would buy. The one exception is *Index trend*, which also signals a sale when the market's trend turns down (all in, all out).
 - **One at a time.** Onboarding sets up a single strategy. More are added from the dashboard, each through the same steps, from any template, including ones already in use.
 - **Daily, after the close.** All rules are checked once a day after the US market close, as in the POC. Every user gets a short daily overview by email; live strategies also send an alert (web push and email) as soon as there is a signal, to act on the next trading day.
-- **Plain language.** Real trading terms stay, each with a one-line explanation, e.g. "SMA 200 (average price over the last 200 days)". The words *ticker* and *tranche* never appear in the app: it says *stock* (or *fund*) and *step*.
+- **Plain language.** Real trading terms stay, each with a one-line explanation, e.g. "SMA 200 (average price over the last 200 days)". The words *ticker* and *tranche* never appear in the app: it says *stock* (or *fund*), *amount per trade* and *trades* (issue #277; *step* until then).
 - **Simple templates.** Each one fits in a few sentences, has a catchy tagline, and can be understood without trading experience. Each review page leads with the idea behind it, before its rules.
 - **Ready out of the box.** Every template ships with suggested stocks and backtested defaults (the POC's).
 - **Open about testing.** Every backtest links to *How we tested*: the data, how a test runs, results by period, and what a backtest can't show.

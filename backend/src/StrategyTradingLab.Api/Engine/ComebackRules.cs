@@ -248,7 +248,7 @@ public class ComebackRules : BuyRulesBase
         pendingFrom = null;
         var windowClosed = signalFrom is { } from && price <= from;
         if (windowClosed) signalFrom = null;
-        var closedReason = windowClosed ? "The price fell back, so the step's signal window closed." : null;
+        var closedReason = windowClosed ? "The price fell back, so the signal window closed." : null;
         List<RuleCheck> checks = [new("turn", CheckGroup.Next, true, Used: true, Date: turnOn)];
         // Every step bought: the pace has nothing left to earn, so it has no row (a used row would read as a step it bought).
         if (day.Full) return new RuleDecision(RuleStatus.Holding, closedReason, facts, WindowOpen: signalFrom is not null) { Checks = checks };

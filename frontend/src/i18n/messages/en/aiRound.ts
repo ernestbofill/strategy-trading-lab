@@ -32,15 +32,15 @@ export const aiRound = {
   'aiRound.askAgain': 'Ask your AI again',
   'aiRound.checkAnswer': 'Worth a look',
   'aiRound.allScored': '✓ Every stock scored, all scores 0-100.',
-  'aiRound.gets': '{stock} gets step {step}',
+  'aiRound.gets': '{stock} gets trade {step}',
   'aiRound.getsAmount': '{picks} ({amount}).',
   'aiRound.getsNoAmount': '{picks}.',
-  'aiRound.noStepBudget': 'No budget left: this round gives no step.',
-  'aiRound.noStepAllSteps': 'Every scored stock has all its steps: this round gives no step.',
+  'aiRound.noStepBudget': 'No budget left: this round gives no trade.',
+  'aiRound.noStepAllSteps': 'Every scored stock has all its trades: this round gives no trade.',
   'aiRound.fewerBudget': 'The budget has no room for more.',
-  'aiRound.fewerAllSteps': 'The others have all their steps.',
-  'aiRound.noStepUnavailable': "The top stocks can't get a step yet (no price, or a signal today already): this round gives no step.",
-  'aiRound.fewerUnavailable': "Some can't get a step yet: no price, or a signal today already.",
+  'aiRound.fewerAllSteps': 'The others have all their trades.',
+  'aiRound.noStepUnavailable': "The top stocks can't get a trade yet (no price, or a signal today already): this round gives no trade.",
+  'aiRound.fewerUnavailable': "Some can't get a trade yet: no price, or a signal today already.",
   'aiRound.readFailed': "We couldn't read it. Try again.",
   'aiRound.saveFailed': "We couldn't save it. Try again.",
   'aiRound.use': 'Use these scores',
@@ -56,10 +56,10 @@ export const aiRound = {
   'aiRound.keep.what':
     "For each shared round: the AI model, the day, the prompt's version and whether you edited it, the sources on, the stocks' symbols, your AI's answer and its scores. Before it is stored, anything that looks like an email address, a phone number or a link's parameters is removed.",
   'aiRound.keep.never':
-    "Never with it: your name, email, account, strategy name, budget, steps, trades, or whether you acted, and only the day, not the time. Nothing in it points to you: only your own round keeps a note of it, so turning sharing off can remove what you shared.",
+    "Never with it: your name, email, account, strategy name, budget, trades, or whether you acted, and only the day, not the time. Nothing in it points to you: only your own round keeps a note of it, so turning sharing off can remove what you shared.",
   'aiRound.scores.aria': "Your AI's scores",
   'aiRound.scores.outOf': ' out of 100',
-  'aiRound.scores.step': '· Step {step}',
+  'aiRound.scores.step': '· Trade {step}',
   // The prompt, shown as code.
   'aiRound.prompt.aria': 'Prompt',
   'aiRound.prompt.suggested': '// suggested prompt · v{version}',
@@ -85,7 +85,7 @@ export const aiRound = {
   'aiRound.history.title': 'AI rounds',
   'aiRound.history.picksVsRest': 'Picks vs the rest',
   'aiRound.history.picksLine':
-    'Since each round, the stocks that got a step moved {picks} on average, the others {rest} ({n, plural, one {# round} other {# rounds}}).',
+    'Since each round, the stocks that got a trade moved {picks} on average, the others {rest} ({n, plural, one {# round} other {# rounds}}).',
   'aiRound.history.picksNote':
     "Price changes in each stock's own currency, without fees. It shows whether the scores picked well, not your results.",
   'aiRound.history.status.due': 'DUE',

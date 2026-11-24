@@ -83,7 +83,7 @@ Ask for a credential when you need one.
 
 - **One disclaimer, in the site footer.** Every screen ends with "Not financial advice. Signals follow your rules." and the legal links; screens don't repeat it or add other disclaimer lines, because the app is already text heavy (Ernest, #105). The full one, "Not financial advice. Signals follow your rules; you decide and trade at your own broker.", is accepted once at sign-up and opens the Disclaimer and Terms pages, which hold the details (including "Past results don't promise future ones."). Emails, which have no app footer, keep the short one.
 - Results are always shown next to the index fund and the worst year. The dashboard card is the exception: it shows the index fund only, and the strategy page keeps the worst year (Ernest, 2026-11-07).
-- Words: say *stock* or *fund* and *step*, not *tranche*.
+- Words: say *stock* or *fund*, *amount per trade* and *trades*, not *step* or *tranche* (the code keeps `step`; issue #277).
 - Every strategy shows its mode (*Simulation* or *Manual*; Manual is `live` in the code). Results of the two modes are never mixed.
 - Mobile first (wireframes are 390px wide), but every screen must also work on desktop, with no horizontal scrolling.
 - Touch targets are at least 44 × 44px. Text meets WCAG AA contrast.

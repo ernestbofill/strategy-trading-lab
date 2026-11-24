@@ -6,7 +6,7 @@ export const summary = {
   'summary.quiet.body': 'Your strategies keep running with no new signals or stock changes.',
   'summary.waiting.title': 'Waiting for you',
   'summary.waiting.signal': '{stock}: your rules for {strategy} are met',
-  'summary.waiting.step': 'Step {step} of {max}',
+  'summary.waiting.step': 'Trade {step} of {max}',
   'summary.waiting.aiRound': 'Time for the AI round of {strategy}.',
   'summary.whatChanged.title': 'What changed',
   'summary.stockChanges.title': 'Stock changes',

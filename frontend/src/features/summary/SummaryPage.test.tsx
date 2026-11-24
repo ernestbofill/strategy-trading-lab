@@ -150,7 +150,7 @@ describe('SummaryPage', () => {
 
     const signalLink = screen.getByRole('link', { name: /Apple: your rules for Alpha Dip are met/i })
     expect(signalLink.getAttribute('href')).toBe('/strategies/strat-1/signals/sig-1')
-    expect(screen.getByText('Step 2 of 5')).toBeTruthy()
+    expect(screen.getByText('Trade 2 of 5')).toBeTruthy()
 
     const aiLink = screen.getByRole('link', { name: /Time for the AI round of AI Growth/i })
     expect(aiLink.getAttribute('href')).toBe('/strategies/strat-ai/ai-round')

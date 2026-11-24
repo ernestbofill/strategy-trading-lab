@@ -106,9 +106,9 @@ public static class Messages
     public static readonly Message NotStocks = new("Some of those are not stocks we can follow.", "Algunes d'aquestes no són accions que puguem seguir.");
     public static readonly Message SetBudget = new("Set a budget.", "Fixa un pressupost.");
     public static readonly Message WholeBudget = new("Use a whole amount from {0:0} to {1:0}.", "Fes servir un import sencer entre {0:0} i {1:0}.");
-    public static readonly Message NoSteps = new("This template has no steps.", "Aquesta plantilla no té fases.");
+    public static readonly Message NoSteps = new("This template has no trades.", "Aquesta plantilla no té operacions.");
     public static readonly Message WholeStep = new("Use a whole amount from {0:0} up to the budget.", "Fes servir un import sencer des de {0:0} fins al pressupost.");
-    public static readonly Message UseSteps = new("Use 1 to {0} steps.", "Fes servir d'1 a {0} fases.");
+    public static readonly Message UseSteps = new("Use 1 to {0} trades.", "Fes servir d'1 a {0} operacions.");
 
     // Advanced settings
     public static readonly Message NoSuchSetting = new("This template has no such setting.", "Aquesta plantilla no té aquest ajust.");
@@ -124,7 +124,7 @@ public static class Messages
     public static readonly Message NotYourStock = new("\"{0}\" isn't one of your stocks, so it was left out.", "«{0}» no és cap de les teves accions, així que s'ha deixat fora.");
     public static readonly Message ScoredTwice = new("{0} is scored more than once.", "{0} està puntuada més d'una vegada.");
     public static readonly Message BadScore = new("{0}: the overall score isn't a number from 0 to 100.", "{0}: la puntuació global no és un número entre 0 i 100.");
-    public static readonly Message NoScore = new("{0} has no score, so it can't get a step.", "{0} no té puntuació, així que no pot tenir cap pas.");
+    public static readonly Message NoScore = new("{0} has no score, so it can't get a trade.", "{0} no té puntuació, així que no pot rebre cap operació.");
     public static readonly Message NoneMatched = new("None of the stocks in the answer are yours. Check the Stock column.",
         "Cap de les accions de la resposta és teva. Revisa la columna Acció.");
     public static readonly Message MoreProblems = new("And {0} more.", "I {0} més.");

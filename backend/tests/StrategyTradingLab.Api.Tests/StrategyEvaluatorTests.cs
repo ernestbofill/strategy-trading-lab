@@ -286,7 +286,7 @@ public class StrategyEvaluatorTests(AccountsApi api) : IClassFixture<AccountsApi
             Assert.Equal(SignalStatus.Missed, signal.Status); // Back up to the peak: out of the zone.
             Assert.Equal(new DateOnly(2024, 1, 1).AddDays(302), signal.EndedOn);
             Assert.Null(signal.AnsweredAt);
-            Assert.Equal(1, await db.SignalTrades.CountAsync(t => t.SignalId == signal.Id)); // The rules carry on as if it was bought.
+            Assert.Equal(0, await db.SignalTrades.CountAsync(t => t.SignalId == signal.Id)); // A Manual strategy's trades are the user's.
         }
         finally
         {

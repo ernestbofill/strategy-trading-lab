@@ -8,7 +8,6 @@ const row = (fields: Partial<StockRow>): StockRow => ({
   name: 'Zscaler',
   status: 'watching',
   steps: 0,
-  rulesSteps: null,
   maxSteps: 5,
   distancePct: null,
   signalId: null,
@@ -27,7 +26,7 @@ describe('stockLine', () => {
   })
 
   it('points a live signal to the user with its step', () => {
-    const line = stockLine(row({ status: 'waitingForYou', signalStep: 2, rulesSteps: 1 }), 'live', 'EUR', words)
+    const line = stockLine(row({ status: 'waitingForYou', signalStep: 2 }), 'live', 'EUR', words)
     expect([line.pill, line.detail]).toEqual(['WAITING FOR YOU', 'Signal: step 2 of 5'])
   })
 
@@ -38,15 +37,9 @@ describe('stockLine', () => {
     expect(stockLine(row({ status: 'signal', signalSide: 'sell' }), 'simulation', 'EUR', words).detail).toBe('Sold at the next open')
   })
 
-  it('shows the rules and the user apart only when their steps differ', () => {
-    expect(stockLine(row({ status: 'building', steps: 2, rulesSteps: 3 }), 'live', 'EUR', words).detail).toBe(
-      'Rules: 3 of 5 · You: 2 of 5',
-    )
-    expect(stockLine(row({ status: 'holding', steps: 5, rulesSteps: 5 }), 'live', 'EUR', words).detail).toBe('5 of 5 steps')
-    expect(stockLine(row({ status: 'building', steps: 2 }), 'simulation', 'EUR', words).detail).toBe('2 of 5 steps')
-    // Every step skipped: the pill says where the user is, the line both.
-    const skipped = stockLine(row({ status: 'outOfTheMarket', maxSteps: null, steps: 0, rulesSteps: 1 }), 'live', 'EUR', words)
-    expect([skipped.pill, skipped.detail]).toEqual(['CANDIDATE', 'Rules: In the market · You: Out of the market'])
+  it('counts the steps held', () => {
+    expect(stockLine(row({ status: 'building', steps: 2 }), 'live', 'EUR', words).detail).toBe('2 of 5 steps')
+    expect(stockLine(row({ status: 'holding', steps: 5 }), 'simulation', 'EUR', words).detail).toBe('5 of 5 steps')
   })
 
   it('formats bear drop statuses and trend candidate pills', () => {

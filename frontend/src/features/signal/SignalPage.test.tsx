@@ -108,12 +108,12 @@ describe('SignalPage', () => {
     expect(await screen.findByText('Enter the price per share.')).toBeTruthy()
   })
 
-  it('skips with a reason and says which step comes next', async () => {
+  it('skips with a reason and says the step stays open', async () => {
     open(detail())
     const skip = vi.spyOn(api, 'skipSignal').mockResolvedValue()
 
     fireEvent.click(await screen.findByLabelText('× I skipped it'))
-    expect(screen.getByText(/A skip uses no budget/).textContent).toContain('the next signal for Zscaler is step 3 of 5.')
+    expect(screen.getByText('A skip buys nothing and uses no budget: the step stays open for a later signal.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'No cash' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save the skip' }))
 
@@ -140,6 +140,14 @@ describe('SignalPage', () => {
     open(detail({ status: 'skipped', answer: { status: 'skipped', skipReason: 'noCash', date: null, price: null, amount: null, shares: null, fee: null } }))
 
     expect(await screen.findByText('You skipped it: no cash.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Save the trade' })).toBeNull()
+  })
+
+  it('sends a missed signal a newer one replaced to that one, without the form', async () => {
+    open(detail({ status: 'missed', endedOn: '2026-10-23', replacedBy: 'newer' }))
+
+    expect(await screen.findByText(/a newer signal replaced it/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Open the newer signal' }).getAttribute('href')).toBe('/strategies/st/signals/newer')
     expect(screen.queryByRole('button', { name: 'Save the trade' })).toBeNull()
   })
 })

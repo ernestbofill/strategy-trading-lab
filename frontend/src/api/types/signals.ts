@@ -139,6 +139,8 @@ export interface SignalDetail {
   assetId?: string
   /** The strategy follows a list of stocks: the stock has its own page, the signal's parent. */
   onStockList?: boolean
+  /** A missed signal whose stock got a newer signal of the same side: that one takes the answer. */
+  replacedBy?: string | null
 }
 
 /** "I did it". `fxRate` is only read when `fxSource` is 'user'. */

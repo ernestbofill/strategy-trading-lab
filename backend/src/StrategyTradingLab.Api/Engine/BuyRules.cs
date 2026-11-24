@@ -5,7 +5,7 @@ public enum RuleStatus { NotEnoughData, NotCandidate, Watching, BuySignal, Signa
 
 /// <summary>What the runner tells the rules about the rules' own position and the day before.</summary>
 /// <param name="Previous">Yesterday's status: NotEnoughData until the history is long enough, null only on the very first day.</param>
-/// <param name="StepsBought">Steps the rules have bought so far (each signal is acted on the next day).</param>
+/// <param name="StepsBought">Steps bought so far (each signal is acted on the next day; a Manual one only once the user did it).</param>
 /// <param name="LastBuyDay">The day of the latest step; meaningless while nothing is bought.</param>
 /// <param name="ActedNow">A step was bought or the position was sold today (at today's open).</param>
 /// <param name="Cooling">The cooldown after the latest buy or sale is still running today.</param>

@@ -12,11 +12,11 @@ import { useLeave } from '../../components/useLeave'
 import { exact, formatShares, money, shortDate } from '../../lib/format'
 import { invalidate, useLoadable } from '../../lib/useLoadable'
 import { useT } from '../../i18n/I18n'
-import { stockPath, strategyPath } from '../dashboard/paths'
+import { signalPath, stockPath, strategyPath } from '../dashboard/paths'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { strategyCacheKey } from '../strategy/useStrategy'
 import styles from './SignalPage.module.css'
-import { ambiguousFields, initialForm, nextStep, SKIP_REASON_KEYS, skipReasons, tradeRequest, type TradeForm } from './signalForm'
+import { ambiguousFields, initialForm, SKIP_REASON_KEYS, skipReasons, tradeRequest, type TradeForm } from './signalForm'
 import { TradeFields } from './TradeFields'
 
 const signalCacheKey = (id: string) => `signal:${id}`
@@ -99,6 +99,18 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
       </Screen>
     )
   }
+  // A newer signal for the stock stands for the step now: answering this one would count it twice.
+  if (s.status === 'missed' && s.replacedBy) {
+    return (
+      <Screen top={top} action={<PrimaryAction to={signalPath(s.strategyId, s.replacedBy)}>{t('signal.replaced.action')}</PrimaryAction>}>
+        {header}
+        {box}
+        <Callout tone="warning" title={t('signal.missed.title')}>
+          <p className={styles.plain}>{t('signal.replaced.text', { date: shortDate(s.endedOn ?? s.signalDate) })}</p>
+        </Callout>
+      </Screen>
+    )
+  }
   return <AnswerForm s={s} top={top} header={header} box={box} />
 }
 
@@ -161,7 +173,6 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
     }
   }
 
-  const following = nextStep(s, t)
   // Before the next open is stored, the form starts with the latest price once that session has opened, else the signal day's
   // close (feedback: no typing it in).
   const priceHint =
@@ -240,10 +251,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
               ))}
             </fieldset>
             <p className={styles.plain}>
-              {t(sell ? (following ? 'signal.skip.noteSaleNext' : 'signal.skip.noteSale') : following ? 'signal.skip.noteNext' : 'signal.skip.note', {
-                stock: s.stockName,
-                next: following ?? '',
-              })}
+              {t(sell ? 'signal.skip.noteSale' : 'signal.skip.note', { stock: s.stockName })}
             </p>
           </div>
         )}

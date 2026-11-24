@@ -9,7 +9,7 @@ namespace StrategyTradingLab.Api.Strategies;
 
 /// <summary>
 /// The trades and prices behind some strategies' results, loaded once for all of them. A simulation's results come from
-/// its signal trades; a live strategy's from the trades the user confirmed, with its signal trades as "the rules alone".
+/// its signal trades; a live strategy's from the user's trades.
 /// </summary>
 public sealed class StrategyBook
 {
@@ -70,12 +70,6 @@ public sealed class StrategyBook
         [.. (strategy.Mode == StrategyMode.Live ? userBuys : signalBuys)[strategy.Id]
             .OrderBy(b => b.Date).ThenBy(b => b.Side == TradeSide.Buy ? 0 : 1)];
 
-    /// <summary>A live strategy's signal trades, "the rules alone"; null for a simulation, whose results are the rules'.</summary>
-    public IReadOnlyList<Buy>? Rules(Strategy strategy) =>
-        strategy.Mode == StrategyMode.Live
-            ? [.. signalBuys[strategy.Id].OrderBy(b => b.Date).ThenBy(b => b.Side == TradeSide.Buy ? 0 : 1)]
-            : null;
-
     /// <summary>The budget used (DATA-MODEL: strategies): cost of the buys (amount + fee) minus cost of the shares sold, at average cost.</summary>
     public decimal Used(Strategy strategy) => Performance.Used(You(strategy));
 
@@ -84,15 +78,13 @@ public sealed class StrategyBook
     {
         var you = You(strategy);
         if (Performance.GainPct(you, Prices, today, strategy.Currency) is not { } gain) return null;
-        var rules = Rules(strategy);
         // The fund gets the same money as the trades "You" counts: not those of assets that can't be valued yet.
         var valued = you.Where(b => Prices.Value(b.AssetId, 1m, today, strategy.Currency) is not null);
         var index = Performance.IndexBuys(valued, Prices, IndexFundId, strategy.Currency);
         return new StrategyFigures(
             gain,
-            rules is null ? null : Performance.GainPct(rules, Prices, today, strategy.Currency),
             index is null ? null : Performance.GainPct(index, Prices, today, strategy.Currency),
-            Performance.History(you, rules, index, Prices, today, strategy.Currency));
+            Performance.History(you, index, Prices, today, strategy.Currency));
     }
 
     /// <summary>The index fund's gain from the day the strategy started to <paramref name="today"/>; null without its prices.</summary>
@@ -102,5 +94,5 @@ public sealed class StrategyBook
             : null;
 }
 
-/// <summary>A strategy's gain since it started, in percent: the user's own, the rules' (live only) and the index fund's for the same money.</summary>
-public record StrategyFigures(decimal You, decimal? Rules, decimal? Index, IReadOnlyList<ResultPoint> History);
+/// <summary>A strategy's gain since it started, in percent, and the index fund's for the same money.</summary>
+public record StrategyFigures(decimal You, decimal? Index, IReadOnlyList<ResultPoint> History);

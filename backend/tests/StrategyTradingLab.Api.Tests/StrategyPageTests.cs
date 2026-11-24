@@ -83,7 +83,6 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             var expected = Math.Round((98.8m * 1.01m - 100m) / 100m * 100, 1);
             var results = page.GetProperty("results");
             Assert.Equal(expected, results.GetProperty("you").GetDecimal());
-            Assert.Equal(JsonValueKind.Null, results.GetProperty("rules").ValueKind);
             Assert.Equal(expected, results.GetProperty("history").EnumerateArray().Last().GetProperty("you").GetDecimal());
 
             var stock = Assert.Single(page.GetProperty("stocks").EnumerateArray());
@@ -106,7 +105,7 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
     }
 
     [NeonFact]
-    public async Task A_live_signal_waits_for_the_user_on_the_page_and_the_dashboard_and_the_rules_have_their_own_result()
+    public async Task A_live_signal_waits_for_the_user_on_the_page_and_the_dashboard_and_holds_no_step_until_done()
     {
         var (client, id, assetId) = await EvaluatedAsync(StrategyMode.Live);
         try
@@ -120,7 +119,8 @@ public class StrategyPageTests(AccountsApi factory) : IClassFixture<AccountsApi>
             var stock = Assert.Single(page.GetProperty("stocks").EnumerateArray());
             Assert.Equal("waitingForYou", stock.GetProperty("status").GetString());
             Assert.Equal(1, stock.GetProperty("signalStep").GetInt32());
-            Assert.Equal((0, 1), (stock.GetProperty("steps").GetInt32(), stock.GetProperty("rulesSteps").GetInt32()));
+            Assert.Equal(0, stock.GetProperty("steps").GetInt32());
+            Assert.False(stock.TryGetProperty("rulesSteps", out _)); // A Manual strategy has no "rules alone".
             Assert.Equal(JsonValueKind.Null, stock.GetProperty("result").ValueKind);
 
             var dashboard = await client.GetFromJsonAsync<JsonElement>("/dashboard");

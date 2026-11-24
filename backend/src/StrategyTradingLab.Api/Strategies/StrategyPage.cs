@@ -25,34 +25,31 @@ public static class StrategyPage
     /// say where the rules stand: met with no budget left for the step, watching it, not a candidate, not enough history,
     /// or not checked yet.
     /// </summary>
-    /// <param name="rulesSteps">The steps the rules currently hold: every buy signal, answered or not, since the rules carry on as if it was bought.</param>
+    /// <param name="steps">The steps held: a simulation's every buy signal; a Manual strategy's the user's buys (a step skipped or missed isn't held).</param>
     /// <param name="signalPending">A simulation's signal on the day of <paramref name="latest"/> whose trade isn't recorded yet.</param>
-    /// <param name="userSteps">Live: the steps the user bought. When they skipped every step the rules hold, the pill says where
-    /// the user is (out of the market, or a candidate), not the rules; the line under it shows both.</param>
-    public static StockStatus Status(StrategyMode mode, EvaluationStatus? latest, bool waiting, bool signalPending, int rulesSteps, int? maxSteps,
-        string? templateKey = null, int? userSteps = null)
+    public static StockStatus Status(StrategyMode mode, EvaluationStatus? latest, bool waiting, bool signalPending, int steps, int? maxSteps,
+        string? templateKey = null)
     {
         if (mode == StrategyMode.Live && waiting) return StockStatus.WaitingForYou;
-        if (mode == StrategyMode.Live && userSteps == 0 && rulesSteps > 0)
-        {
-            if (maxSteps is null || templateKey == TemplateKeys.Trend) return StockStatus.OutOfTheMarket;
-            return latest == EvaluationStatus.NotCandidate ? StockStatus.NotCandidate : StockStatus.Watching;
-        }
+        // Manual, the rules hold steps the user's trades don't (Bear markets counts its own steps, or a trade was deleted): the
+        // pill says where the user is.
+        if (mode == StrategyMode.Live && steps == 0 && latest is EvaluationStatus.Building or EvaluationStatus.Holding)
+            return maxSteps is null || templateKey == TemplateKeys.Trend ? StockStatus.OutOfTheMarket : StockStatus.Watching;
         if (mode == StrategyMode.Simulation && latest is EvaluationStatus.BuySignal or EvaluationStatus.SellSignal && signalPending) return StockStatus.Signal;
         if (templateKey == TemplateKeys.Bear)
         {
-            if (rulesSteps > 0 && (latest == EvaluationStatus.Holding || (maxSteps is { } max && rulesSteps >= max))) return StockStatus.Done;
+            if (steps > 0 && (latest == EvaluationStatus.Holding || (maxSteps is { } max && steps >= max))) return StockStatus.Done;
             if (latest == EvaluationStatus.NotCandidate) return StockStatus.NotCandidate;
             if (latest == EvaluationStatus.Watching) return StockStatus.Watching;
         }
         if (maxSteps is null || templateKey == TemplateKeys.Trend)
         {
-            if (rulesSteps > 0) return StockStatus.Holding;
+            if (steps > 0) return StockStatus.Holding;
             if (latest is EvaluationStatus.NotCandidate or EvaluationStatus.Watching or EvaluationStatus.SignalEnded or EvaluationStatus.SellSignal)
                 return StockStatus.OutOfTheMarket;
         }
-        if (rulesSteps > 0)
-            return latest == EvaluationStatus.Holding || (maxSteps is { } m && rulesSteps >= m) ? StockStatus.Holding : StockStatus.Building;
+        if (steps > 0)
+            return latest == EvaluationStatus.Holding || (maxSteps is { } m && steps >= m) ? StockStatus.Holding : StockStatus.Building;
         return latest switch
         {
             // The rules call for a step, or hold steps, that the budget had no room for: no signal was made.

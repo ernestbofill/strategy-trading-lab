@@ -1,6 +1,5 @@
 import type { SignalDetail, SignalTrade, SkipReason } from '../../api'
 import type { MessageKey } from '../../i18n/messages/en'
-import type { MessageParams } from '../../i18n/format'
 
 /** "I did it" as typed: strings, so a field can be empty or half-typed. `ownRate` is null while the reference rate is used. */
 export interface TradeForm {
@@ -93,10 +92,4 @@ export function tradeRequest(form: TradeForm): SignalTrade {
     fxSource: form.ownRate === null ? 'reference' : 'user',
     fxRate: form.ownRate === null ? null : parseNumber(form.ownRate),
   }
-}
-
-/** "step 3 of 5": the next signal's step after a skip, or null once the last step is reached (or the signal has none). */
-export const nextStep = (s: SignalDetail, t: (key: MessageKey, params?: MessageParams) => string) => {
-  if (s.stepNo === null || s.maxSteps === null || s.stepNo >= s.maxSteps) return null
-  return t('signal.nextStep', { n: s.stepNo + 1, max: s.maxSteps })
 }

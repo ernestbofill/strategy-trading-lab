@@ -62,7 +62,7 @@ public sealed class PriceBook(IReadOnlyDictionary<Guid, (string Currency, IReadO
 }
 
 /// <summary>A point of the results chart: each line's gain in percent on that day.</summary>
-public record ResultPoint(DateOnly Date, decimal You, decimal? Rules, decimal? Index);
+public record ResultPoint(DateOnly Date, decimal You, decimal? Index);
 
 /// <summary>
 /// The results maths of the strategy page (spec: Strategy page, Metrics). Pure: trades and prices in, figures out.
@@ -170,20 +170,18 @@ public static class Performance
     /// Each line's gain on the trading days from the first buy of <paramref name="you"/> to <paramref name="today"/>,
     /// thinned to <see cref="MaxPoints"/>. A day whose own line can't be valued is left out.
     /// </summary>
-    public static IReadOnlyList<ResultPoint> History(IReadOnlyList<Buy> you, IReadOnlyList<Buy>? rules, IReadOnlyList<Buy>? index,
+    public static IReadOnlyList<ResultPoint> History(IReadOnlyList<Buy> you, IReadOnlyList<Buy>? index,
         PriceBook prices, DateOnly today, string currency)
     {
         if (you.Count == 0) return [];
         var points = new List<ResultPoint>();
         // Thinned first, so only the days kept are valued.
         // The days of this strategy's own assets and the fund only: a price book can hold other strategies' too.
-        var held = you.Concat(rules ?? []).Concat(index ?? []).Select(b => b.AssetId);
+        var held = you.Concat(index ?? []).Select(b => b.AssetId);
         foreach (var day in Thin(prices.Days(held, you.Min(b => b.Date), today), MaxPoints))
         {
             if (GainPct(you, prices, day, currency) is not { } gain) continue;
-            points.Add(new ResultPoint(day, gain,
-                rules is null ? null : GainPct(rules, prices, day, currency),
-                index is null ? null : GainPct(index, prices, day, currency)));
+            points.Add(new ResultPoint(day, gain, index is null ? null : GainPct(index, prices, day, currency)));
         }
         return points;
     }

@@ -27,8 +27,8 @@ public record CheckResult(EvaluationSummary Summary, IReadOnlyList<Guid> LeftToD
 
 /// <summary>
 /// The daily check (spec: How the two modes run): runs each running strategy's rules over each of its stocks' stored
-/// prices, up to the last finished US session, and keeps what they say: a signal for each step the rules call for, its
-/// signal trade at the next day's opening price once that day has one, and where the stock stands today. A strategy's
+/// prices, up to the last finished US session, and keeps what they say: a signal for each step the rules call for, a
+/// simulation's signal trade at the next day's opening price once that day has one, and where the stock stands today. A strategy's
 /// first check looks at the latest finished day only, and the rules start fresh from there, as the POC's backtest does on its start day. Idempotent: a second run the same day changes nothing.
 /// </summary>
 public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider time, ILogger<StrategyEvaluator> logger)
@@ -151,7 +151,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
                 }
             }
             var from = RulesRunner.StartIndex(bars, firstChecked ?? bars[^1].Date);
-            var past = await PastDaysAsync(db, strategy.Id, asset.Id, checkedUntil, heldByBudget, cancellationToken);
+            var past = await PastDaysAsync(db, strategy.Id, strategy.Mode, asset.Id, checkedUntil, heldByBudget, cancellationToken);
 
             var rules = TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params);
             var plan = new StepPlan(strategy.Budget.MaxSteps ?? 1);
@@ -218,18 +218,21 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
 
     /// <summary>
     /// The days up to <paramref name="until"/> (the last day checked, <see cref="CheckedDaysAsync"/>) with what was recorded for
-    /// them, for the replay to follow (<see cref="CheckedDays"/>); null before the first check.
+    /// them, for the replay to follow (<see cref="CheckedDays"/>); null before the first check. A Manual strategy's replay acts
+    /// only on the signals the user did (<see cref="CheckedDays.Done"/>).
     /// </summary>
-    internal static async Task<CheckedDays?> PastDaysAsync(AppDbContext db, Guid strategyId, Guid assetId, DateOnly? until,
+    internal static async Task<CheckedDays?> PastDaysAsync(AppDbContext db, Guid strategyId, StrategyMode mode, Guid assetId, DateOnly? until,
         Func<DateOnly, bool> heldByBudget, CancellationToken cancellationToken)
     {
         if (until is not { } last) return null;
         var own = await db.Signals.Where(s => s.StrategyId == strategyId && s.AssetId == assetId && s.SignalDate <= last)
-            .Select(s => new { s.SignalDate, s.Side }).ToListAsync(cancellationToken);
-        return new CheckedDays(last,
-            own.Where(s => s.Side == TradeSide.Buy).Select(s => s.SignalDate).ToHashSet(),
-            own.Where(s => s.Side == TradeSide.Sell).Select(s => s.SignalDate).ToHashSet(),
-            heldByBudget);
+            .Select(s => new { s.SignalDate, s.Side, s.Status }).ToListAsync(cancellationToken);
+        HashSet<DateOnly> Days(TradeSide side, bool done = false) =>
+            [.. own.Where(s => s.Side == side && (!done || s.Status == SignalStatus.Confirmed)).Select(s => s.SignalDate)];
+        return new CheckedDays(last, Days(TradeSide.Buy), Days(TradeSide.Sell), heldByBudget)
+        {
+            Done = mode == StrategyMode.Live ? new UserDid(Days(TradeSide.Buy, done: true), Days(TradeSide.Sell, done: true)) : null,
+        };
     }
 
     /// <summary>
@@ -318,6 +321,13 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         // writes is repaired by the next.
         missed += await db.Signals.Where(s => s.StrategyId == strategy.Id && s.AssetId == asset.Id && s.EndedOn != null)
             .MissWaitingAsync(latest.Date, cancellationToken);
+
+        // A Manual strategy's trades are the user's: its signals get no trade of their own (Ernest, 2026-11-24).
+        if (live)
+        {
+            db.ChangeTracker.Clear();
+            return new Changes(newSignals, 0, missed);
+        }
 
         // Each signal's own trade, at the next trading day's open, once that day exists. A signal this check at once finds during a
         // session (#220), when that open has passed, trades at the latest price instead (FillOf); one found before (the evening run)

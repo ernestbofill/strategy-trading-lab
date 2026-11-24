@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 3 | 9 | 12 |
-| Backend (xUnit) | 2 | 16 | 18 |
-| **All** | **5** | **25** | **30** |
+| Frontend (Vitest) | 3 | 10 | 13 |
+| Backend (xUnit) | 2 | 18 | 20 |
+| **All** | **5** | **28** | **33** |
 
 ## Log
 
@@ -28,6 +28,9 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-24 | #PR | local | Backend (xUnit) | `StrategyPageTests` (a simulation's page; a live signal waiting) | 2 | FP | They read `results.rules` and `rulesSteps`, removed on purpose with "The rules alone". Assertions updated. |
+| 2026-11-24 | #PR | local | Frontend (Vitest) | `StrategyPage.test.tsx > shows a live strategy next to the index…`, `SignalPage.test.tsx > skips with a reason…` | 2 | FP | Expected "The rules alone" and the old skip note, changed on purpose. Assertions updated. |
+| 2026-11-24 | #PR | local | Backend (xUnit) | `NeonBranchTests` (object storage, health) and `AdminDatabaseTests.Switching_…` | 3 | FP | They need RustFS object storage, which a cloud session lacks (they pass in CI). No fix: machine-dependent. |
 | 2026-11-22 | #271 | local | Backend (xUnit) | `DipRulesTests.The_comeback_measures_the_turn_from_the_recent_low_window` | 1 | FP | Its falling case came from 120, above the buy area (118), so it now reads as a pullback from above (intended) and has no volume check. It falls from 116, inside the buy area, instead. |
 | 2026-11-22 | #268 | local | Frontend (Vitest) | `stockLine.test.ts` (2), `priceChartMarks.test.ts` (2), `StockPage.test.tsx` (1): the comeback's milestone cases | 5 | FP | The milestone code was removed on purpose (Ernest); the tests now cover the pace instead. |
 | 2026-11-21 | #268 | local | Backend (xUnit) | `RuleChecksTests.The_comeback` (NOW, MOD) | 2 | TP | Once every step was bought, the new pace row was marked used with no word on whether it bought a step, which the stock page reads as "Step bought". Fixed in the engine: a full position has no pace row. |

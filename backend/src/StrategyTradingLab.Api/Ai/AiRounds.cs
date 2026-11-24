@@ -119,9 +119,11 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
         var session = UsSession.LastComplete(time.GetUtcNow());
         var signals = await db.Signals.AsNoTracking().Where(s => s.StrategyId == strategy.Id && s.Side == TradeSide.Buy)
             .Select(s => new { s.AssetId, s.SignalDate, s.Status, s.StepAmount }).ToListAsync(cancellationToken);
-        var steps = signals.GroupBy(s => s.AssetId).ToDictionary(g => g.Key, g => g.Count());
-        // As the daily check counts it: confirmed and waiting signals use their step; skipped and missed ones none.
-        var used = signals.Where(s => s.Status.UsesBudget()).Sum(s => s.StepAmount ?? 0);
+        // As the daily check counts them: confirmed and waiting signals hold their step and use its budget; a Manual one skipped
+        // or missed neither, so the stock can get that step again (Ernest, 2026-11-24).
+        var holding = signals.Where(s => s.Status.UsesBudget()).ToList();
+        var steps = holding.GroupBy(s => s.AssetId).ToDictionary(g => g.Key, g => g.Count());
+        var used = holding.Sum(s => s.StepAmount ?? 0);
         var ids = stocks.Select(s => s.AssetId).ToList();
         var priced = await db.Assets.Where(a => ids.Contains(a.Id) && db.Prices.Any(p => p.AssetId == a.Id && p.Date <= session))
             .Select(a => a.Id).ToListAsync(cancellationToken);
@@ -369,13 +371,15 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
     async Task<(int Trades, int Missed)> DailyAsync(Strategy strategy, DateOnly today, DateOnly session, ExchangeRates rates, CancellationToken cancellationToken)
     {
         var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.Side == TradeSide.Buy).ToListAsync(cancellationToken);
+        var live = strategy.Mode == StrategyMode.Live;
         var traded = (await db.SignalTrades.Where(t => t.StrategyId == strategy.Id).Select(t => t.SignalId).ToListAsync(cancellationToken)).ToHashSet();
         var assetIds = signals.Select(s => s.AssetId).Concat(strategy.Assets.Select(a => a.AssetId)).Distinct().ToList();
         var assets = await db.Assets.AsNoTracking().Where(a => assetIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
 
-        // Each signal's trade, at the first open after its round, once that price is stored.
+        // Each simulation signal's trade, at the first open after its round, once that price is stored. A Manual strategy's trades
+        // are the user's.
         var trades = 0;
-        foreach (var signal in signals.Where(s => !traded.Contains(s.Id)))
+        foreach (var signal in signals.Where(s => !live && !traded.Contains(s.Id)))
         {
             var after = signal.Facts.RootElement.Date("tradeAfter") ?? signal.SignalDate;
             var next = await db.Prices.AsNoTracking().Where(p => p.AssetId == signal.AssetId && p.Date > after).OrderBy(p => p.Date)
@@ -396,7 +400,8 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
         var maxSteps = strategy.Budget.MaxSteps ?? 1;
         foreach (var assetId in strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId))
         {
-            var own = signals.Where(s => s.AssetId == assetId).ToList();
+            // A Manual step skipped or missed isn't held.
+            var own = signals.Where(s => s.AssetId == assetId && s.Status.UsesBudget()).ToList();
             var todays = own.FirstOrDefault(s => s.SignalDate == session);
             var status = todays is not null ? EvaluationStatus.BuySignal
                 : own.Count >= maxSteps ? EvaluationStatus.Holding

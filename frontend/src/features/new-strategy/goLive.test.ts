@@ -4,7 +4,7 @@ import { draftFromStrategy } from './goLive'
 
 const stock = (symbol: string): Security => ({ id: `id-${symbol}`, symbol, name: `${symbol} Inc`, what: '' })
 const row = (symbol: string): StockRow => ({
-  assetId: `id-${symbol}`, symbol, name: `${symbol} Inc`, status: 'watching', steps: 0, rulesSteps: null, maxSteps: 5,
+  assetId: `id-${symbol}`, symbol, name: `${symbol} Inc`, status: 'watching', steps: 0, maxSteps: 5,
   distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
   exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
 })

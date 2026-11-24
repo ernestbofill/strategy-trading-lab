@@ -73,14 +73,14 @@ const dipTemplate = {
 } as unknown as TemplateDetail
 
 describe('StrategyPage', () => {
-  it('shows a live strategy next to the rules alone and the index, and opens each stock page', async () => {
+  it('shows a live strategy next to the index, and opens each stock page', async () => {
     open(
       detail({
         id: 'live',
-        results: { you: 4.2, rules: 5.1, index: -1.3, history: [] },
+        results: { you: 4.2, index: -1.3, history: [] },
         stocks: [
           {
-            assetId: 'a', symbol: 'ZS', name: 'Zscaler', status: 'waitingForYou', steps: 1, rulesSteps: 2, maxSteps: 5,
+            assetId: 'a', symbol: 'ZS', name: 'Zscaler', status: 'waitingForYou', steps: 1, maxSteps: 5,
             distancePct: null, signalId: 'sig', signalStep: 2, invested: 101, result: 3.5,
             exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
           },
@@ -90,7 +90,7 @@ describe('StrategyPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Zscaler & friends' })).toBeTruthy()
     expect(screen.getByText('+4.2%')).toBeTruthy()
-    expect(screen.getByText('+5.1%')).toBeTruthy()
+    expect(screen.queryByText('The rules alone')).toBeNull()
     expect(screen.getByText('−1.3%')).toBeTruthy()
     expect(screen.getByText('€1,200 of €3,000 · 12 of 30 steps')).toBeTruthy()
     expect(screen.getByText('9 did · 2 skipped · 1 missed')).toBeTruthy()
@@ -107,7 +107,7 @@ describe('StrategyPage', () => {
 
   it('shows the first 5 stocks of a long list, and the rest on request', async () => {
     const stock = (n: number) => ({
-      assetId: `s${n}`, symbol: `S${n}`, name: `Stock ${n}`, status: 'notCandidate' as const, steps: 0, rulesSteps: 0, maxSteps: 5,
+      assetId: `s${n}`, symbol: `S${n}`, name: `Stock ${n}`, status: 'notCandidate' as const, steps: 0, maxSteps: 5,
       distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
       exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: '2026-10-22', close: 10, checks: [],
     })
@@ -129,7 +129,7 @@ describe('StrategyPage', () => {
         templateKey: 'trend',
         investsIn: 'indexFund',
         mode: 'live',
-        results: { you: 2, rules: 2, index: 3, history: [] },
+        results: { you: 2, index: 3, history: [] },
         checkTexts: {
           buyLine: {
             label: 'Price vs the buy line',
@@ -139,7 +139,7 @@ describe('StrategyPage', () => {
         },
         stocks: [
           {
-            assetId: 'cspx', symbol: 'CSPX.L', name: 'iShares Core S&P 500 UCITS ETF', status: 'waitingForYou', steps: 0, rulesSteps: 1, maxSteps: null,
+            assetId: 'cspx', symbol: 'CSPX.L', name: 'iShares Core S&P 500 UCITS ETF', status: 'waitingForYou', steps: 0, maxSteps: null,
             distancePct: 1.3, signalId: 'sig-1', signalStep: null, invested: 100, result: 2,
             exchange: 'XLON', currency: 'USD', what: 'Tracks the 500 largest US companies', checkedOn: '2026-11-06', close: 802.21,
             priceUpdatedAt: '2026-11-06T16:30:00Z', priceIsClose: true,
@@ -306,12 +306,12 @@ describe('StrategyPage', () => {
         settings: { peakDays: 40 },
         stocks: [
           {
-            assetId: 'a', symbol: 'ZS', name: 'Zscaler', status: 'watching', steps: 0, rulesSteps: null, maxSteps: 4,
+            assetId: 'a', symbol: 'ZS', name: 'Zscaler', status: 'watching', steps: 0, maxSteps: 4,
             distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
             exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
           },
           {
-            assetId: 'n', symbol: 'NET', name: 'Cloudflare', status: 'watching', steps: 0, rulesSteps: null, maxSteps: 4,
+            assetId: 'n', symbol: 'NET', name: 'Cloudflare', status: 'watching', steps: 0, maxSteps: 4,
             distancePct: null, signalId: null, signalStep: null, invested: 0, result: null,
             exchange: 'NASDAQ', currency: 'USD', what: null, checkedOn: null, close: null, checks: [],
           },

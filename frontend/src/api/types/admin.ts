@@ -245,3 +245,39 @@ export interface AdminAddedAsset {
   /** Why its prices or exchange rate didn't load; adding it again tries again. */
   problem: string | null
 }
+
+/** A user a test push can go to (push on, at least one device): backend Admin/AdminNotifications.cs. */
+export interface AdminPushRecipient {
+  id: string
+  email: string
+  devices: number
+}
+
+/** As the API's JSON writes enums: camelCase. */
+export type NotificationKind = 'signal' | 'snoozed' | 'overview' | 'aiRound' | 'signalEnded' | 'stockCandidate' | 'stockClose' | 'test'
+
+/** A push on /admin/notifications. `title` and `body` are null for pushes sent before 2026-11-24. */
+export interface AdminPush {
+  id: string
+  userId: string
+  email: string
+  kind: NotificationKind
+  title: string | null
+  body: string | null
+  createdAt: string
+  sentAt: string | null
+  failedAt: string | null
+  error: string | null
+}
+
+export interface AdminNotifications {
+  recipients: AdminPushRecipient[]
+  /** The newest 300, newest first. */
+  pushes: AdminPush[]
+}
+
+export interface TestPush {
+  userId: string
+  title: string
+  body: string
+}

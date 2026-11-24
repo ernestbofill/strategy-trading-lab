@@ -22,7 +22,7 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
 
         Assert.Equal("Zscaler: your rules for Zscaler & friends are met", subject);
         Assert.Contains("Your rules for Zscaler & friends are met for Zscaler: 8.2% below its recent peak, still above its 50-day average.", body);
-        Assert.Contains("Under your settings that's step 2 of 5 (€100).", body);
+        Assert.Contains("Under your settings that's trade 2 of 5 (€100).", body);
         Assert.Contains("Close on 22 Oct 2026: $187.5", body);
         Assert.Contains("https://app.example/en/strategies/11111111-1111-1111-1111-111111111111/signals/22222222-2222-2222-2222-222222222222", body);
         Assert.EndsWith("Not financial advice. Signals follow your rules.", body);
@@ -37,7 +37,7 @@ public class NotificationTests(AccountsApi api) : IClassFixture<AccountsApi>
         Assert.Contains("2.4% above its buy line, on rising volume", EmailTexts.SignalText(first));
         var pullback = Dip("""{"aboveBuyLinePct":5.1,"turn":"pullback"}""") with { TemplateKey = "comeback" };
         Assert.Contains("5.1% above its buy line, back from above the buy area", EmailTexts.SignalText(pullback));
-        Assert.Contains("10 trading days after its last step, 6.3% above that step's price", EmailTexts.SignalText(later));
+        Assert.Contains("10 trading days after its last trade, 6.3% above that trade's price", EmailTexts.SignalText(later));
     }
 
     [Fact]

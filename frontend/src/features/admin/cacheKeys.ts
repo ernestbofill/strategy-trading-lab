@@ -3,6 +3,7 @@ export const adminCacheKeys = {
   settings: 'admin:settings',
   alerts: 'admin:alerts',
   users: 'admin:users',
+  notifications: 'admin:notifications',
   invites: 'admin:invites',
   assets: 'admin:assets',
   templates: 'admin:templates',

@@ -95,7 +95,8 @@ public class EngineGoldenTests
         var golden = Load(name);
         var bars = Bars(golden);
 
-        var days = RulesRunner.Run(new TrendRules(bars, new TrendParams()), bars, new StepPlan(1));
+        // The POC has no chase limit.
+        var days = RulesRunner.Run(new TrendRules(bars, new TrendParams { MaxChasePct = null }), bars, new StepPlan(1));
 
         Matches(golden, days);
     }

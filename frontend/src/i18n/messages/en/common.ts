@@ -54,6 +54,7 @@ export const common = {
   'footer.users': 'Users',
   'footer.assets': 'Stocks and funds',
   'footer.invites': 'Invites',
+  'footer.adminNotifications': 'Notifications',
   'footer.adminTemplates': 'Templates',
   'footer.feedback': 'Feedback',
   'footer.siteMap': 'Site map',

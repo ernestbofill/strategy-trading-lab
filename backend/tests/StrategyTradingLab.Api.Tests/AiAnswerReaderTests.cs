@@ -98,7 +98,7 @@ public class AiAnswerReaderTests
         Assert.Equal(
             ["Zscaler is scored more than once.", "Vertiv: the overall score isn't a number from 0 to 100."],
             reading.Problems);
-        Assert.Equal(["\"NVDA\" isn't one of your stocks, so it was left out.", "Schneider Electric has no score, so it can't get a step."], reading.Warnings);
+        Assert.Equal(["\"NVDA\" isn't one of your stocks, so it was left out.", "Schneider Electric has no score, so it can't get a trade."], reading.Warnings);
         Assert.Equal([Zscaler.AssetId], reading.Scores.Select(s => s.AssetId));
     }
 
@@ -203,7 +203,7 @@ public class AiAnswerReaderTests
 
         Assert.Equal(83m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).Overall);
         Assert.Equal(82m, reading.Scores.Single(s => s.AssetId == Zscaler.AssetId).News);
-        Assert.Equal(["Schneider Electric no té puntuació, així que no pot tenir cap pas."], reading.Warnings);
+        Assert.Equal(["Schneider Electric no té puntuació, així que no pot rebre cap operació."], reading.Warnings);
         Assert.True(reading.Ok);
     }
 

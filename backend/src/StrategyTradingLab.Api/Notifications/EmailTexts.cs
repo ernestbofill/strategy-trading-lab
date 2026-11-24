@@ -49,14 +49,14 @@ public static class EmailTexts
     static readonly Message TrendAboveSma = new("the market closed {0}% above its 200-day average", "el mercat ha tancat un {0}% per sobre de la seva mitjana de 200 dies");
     static readonly Message BearDrop = new("down {0}% from its 6-month high and {1}% above its low", "un {0}% per sota del seu màxim de 6 mesos i un {1}% per sobre del seu mínim");
     static readonly Message DipBelowPeak = new("{0}% below its recent peak, still above its 50-day average", "{0}% per sota del seu màxim recent, encara per sobre de la mitjana de 50 dies");
-    static readonly Message PacedStep = new("{0} trading days after its last step, {1}% above that step's price", "{0} dies de mercat després de l'última fase, un {1}% per sobre del preu d'aquella fase");
+    static readonly Message PacedStep = new("{0} trading days after its last trade, {1}% above that trade's price", "{0} dies de mercat després de l'última operació, un {1}% per sobre del preu d'aquella operació");
     static readonly Message AboveBuyLine = new("{0}% above its buy line, on rising volume", "{0}% per sobre de la línia de compra, amb volum creixent");
     static readonly Message BelowBuyLine = new("{0}% below its buy line, on rising volume", "{0}% per sota de la línia de compra, amb volum creixent");
     static readonly Message PullbackBuyLine = new("{0}% above its buy line, back from above the buy area", "{0}% per sobre de la línia de compra, tornant des de dalt de la zona de compra");
 
     // Signal text entries
     static readonly Message SaleTarget = new("a sale", "una venda");
-    static readonly Message StepInfo = new(" Under your settings that's step {0} of {1}{2}.", " Segons la teva configuració, és la fase {0} de {1}{2}.");
+    static readonly Message StepInfo = new(" Under your settings that's trade {0} of {1}{2}.", " Segons la teva configuració, és l'operació {0} de {1}{2}.");
     static readonly Message SignalHeadline = new("Your rules for {0} are met for {1}: {2}.", "Les teves regles per a {0} es compleixen per a {1}: {2}.");
     static readonly Message CloseOn = new("Close on {0}: {1}", "Tancament del {0}: {1}");
 
@@ -89,7 +89,7 @@ public static class EmailTexts
     static readonly Message OverviewWaitingSection = new("Waiting for you", "T'espera a tu");
     static readonly Message OverviewAiRoundItem = new("Time for the AI round of {0}.", "És l'hora de la ronda d'IA de {0}.");
     static readonly Message OverviewSaleDetail = new(": sale", ": venda");
-    static readonly Message OverviewStepDetail = new(": step {0} of {1}", ": fase {0} de {1}");
+    static readonly Message OverviewStepDetail = new(": trade {0} of {1}", ": operació {0} de {1}");
     static readonly Message OverviewWaitingSignal = new("{0}, {1}{2}, close on {3}.", "{0}, {1}{2}, tancament del {3}.");
     static readonly Message OverviewWhatChangedSection = new("What changed today", "Què ha canviat avui");
     static readonly Message OverviewStockChangesSection = new("Stock changes", "Canvis de les teves accions");

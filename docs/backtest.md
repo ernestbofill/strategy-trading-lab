@@ -1,6 +1,6 @@
 # Backtest
 
-How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-24. It uses the wording of the app-wide copy change in issue #277: *amount per trade* and *trades* for what the app calls a step today. The screens are drafted below; their last details are settled while building them (ROADMAP item 55).
+How STL's own backtest works: what it tests, against what, with which money, costs and stocks, and which data. Planned with Ernest from 2026-11-19 to 2026-11-24. It uses the app's words since #281: *amount per trade* and *trades* (*step* in the code). The screens are drafted below; their last details are settled while building them (ROADMAP item 55).
 
 Today's template figures come from the POC's research ([backtest-research-findings.md](backtest-research-findings.md)). This backtest replaces them with STL's own engine, so the tested results describe the rules the app runs.
 

@@ -159,6 +159,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | F5 | Exchange-rate line (stock currency ≠ strategy currency) | §6 Signal | smoke | 2026-11-06-1 | F-004. C2.12 |
 | F6 | Sell signal (Index trend) | §6 Signal | untested | | Needs a sell signal on a live fixture |
 | F7 | Up to the stock and the name links there; the price is the next open, fetched on open, else the close with its hint | §6 Signal | untested | | New (feedback 2026-11-12) |
+| F8 | Index trend chase limit: "too late to chase" past +10%, its Chase limit row and chart line, the Advanced setting | §5 Index trend, §6 Stock page | untested | | New (#280) |
 
 ### G · AI strategies
 
@@ -187,6 +188,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | H8 | Settings page: the Account row, install the app, time zone (Barcelona), notification time | §6 Settings, §7 | regressed | 2026-11-08-2 | Verified F-023 fix on /summary scoreboard and notifications; Settings push toggle and time zone (PR #200, #201, #202). C1.1–C1.5, C3.1–C3.5 |
 | H9 | Delete my account (a throwaway account only: never `qaagent`) | §6 Account | untested | | Wrong password refused; then deleted, logged out, last email. |
 | H10 | Zoom (100%, 110%, 125%) on Sign-up and Settings: the whole app grows, kept after a reload, no horizontal scrolling at 125% | §6 Settings | deep | 2026-11-10-1 | 100/110/125%, at once, kept after reload, per device, keyboard, Sign-up at 360px; F-025. C1.1–C1.11 |
+| H11 | `/admin/notifications`: a test push to the QA account's own device, and the Sent list (admin: owner only; a write, so ask Ernest first on production) | §6 Admin settings | not yet | | Added in this PR. |
 
 ### X · Across the app
 

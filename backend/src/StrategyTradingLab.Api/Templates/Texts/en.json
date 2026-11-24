@@ -22,7 +22,7 @@
       "scope": "1,146 stocks, 2000-2026.",
       "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
-      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock. Tested with three stacked averages (SMA 50 > SMA 150 > SMA 200); the strategy now needs two (SMA 50 > SMA 200)."
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 per trade, up to 5 trades a stock. Tested with three stacked averages (SMA 50 > SMA 150 > SMA 200); the strategy now needs two (SMA 50 > SMA 200)."
     },
     "stockStatus": {
       "zone": "the discount zone",
@@ -65,9 +65,9 @@
         "help": "The short average, above the long one for a candidate, and the zone's floor: a close below it is a collapse, not a dip. Shorter: the floor follows the price closely, so deep dips fall through it."
       },
       "cooldownDays": {
-        "sentence": "After a step, wait {value} before the next buy signal.",
+        "sentence": "After a trade, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
-        "help": "Counted from the step's buy. Shorter: steps come closer together. Longer: a stock's steps spread out over more dips."
+        "help": "Counted from the last buy. Shorter: trades come closer together. Longer: a stock's trades spread out over more dips."
       }
     },
     "settingGroups": {
@@ -81,7 +81,7 @@
       },
       "pace": {
         "title": "3 · Pace: how often it buys",
-        "lead": "Each signal buys one step. A stock gets at most one step per stay in the zone, and up to your budget's steps in all."
+        "lead": "Each signal is one trade. A stock gets at most one trade per stay in the zone, and up to your budget's trades in all."
       }
     },
     "checks": {
@@ -131,7 +131,7 @@
     "name": "The comeback",
     "tagline": "Stocks on the rise",
     "idea": "A stock that fell a lot starts to recover. The strategy looks for a confirmed turnaround.",
-    "rationale": "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys in steps.",
+    "rationale": "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys over several trades.",
     "rules": [
       {
         "marker": "01",
@@ -150,7 +150,7 @@
       "scope": "1,146 stocks, 2000-2026.",
       "years": "2000-2026",
       "universe": "1,146 US stocks (S&P 500, S&P 400, Nasdaq-100, and dropouts)",
-      "testedDefaults": "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock. Tested with milestones for the later steps (back above the SMA 200, a golden cross, near the old high, a breakout); the strategy now adds them at a steady pace."
+      "testedDefaults": "The tested defaults: €3,000 budget, €100 per trade, up to 5 trades a stock. Tested with milestones for the later trades (back above the SMA 200, a golden cross, near the old high, a breakout); the strategy now adds them at a steady pace."
     },
     "stockStatus": {
       "zone": "the buy line",
@@ -183,19 +183,19 @@
         "help": "More trading confirms the turn. Higher: fewer, better-backed signals. 1: volume only has to be normal."
       },
       "maxChasePct": {
-        "sentence": "Buy area: the first step up to {value} more above the recent low than the buy line.",
+        "sentence": "Buy area: the first trade up to {value} more above the recent low than the buy line.",
         "value": "{n}%",
         "help": "Higher: still buys a turn that ran well past the buy line. Lower: skips turns that move too fast."
       },
       "stepEveryDays": {
-        "sentence": "Then one more step every {value}, while the close is above the last step's price.",
+        "sentence": "Then one more trade every {value}, while the close is above the last trade's price.",
         "value": "{n} trading days",
         "help": "10 trading days is about 2 weeks. Shorter: the budget goes in faster. Longer: spreads the buys over more of the recovery."
       },
       "cooldownDays": {
-        "sentence": "After a step, wait {value} before the next buy signal.",
+        "sentence": "After a trade, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
-        "help": "Counted from the step's buy, in calendar days. Longer: steps spread out more than the pace alone."
+        "help": "Counted from the last buy, in calendar days. Longer: trades spread out more than the pace alone."
       }
     },
     "settingGroups": {
@@ -204,16 +204,16 @@
         "lead": "A stock is a candidate, beaten down, when its close is at least the drop below its 52-week high and below its `SMA 200`. It stays a candidate for a while after that, so it can still signal once it recovers. A stock that isn't a candidate gets no signal."
       },
       "signal": {
-        "title": "2 · Buy signal: the first step",
-        "lead": "A candidate signals its first step when it turns: the close is at least the turn above its recent low (the buy line), still in the buy area, and above the last close. Coming up from below it also needs rising volume; coming back down from above the buy area, it doesn't. The signal ends when the price or the volume falls back, or the price runs past the buy area."
+        "title": "2 · Buy signal: the first trade",
+        "lead": "A candidate signals its first trade when it turns: the close is at least the turn above its recent low (the buy line), still in the buy area, and above the last close. Coming up from below it also needs rising volume; coming back down from above the buy area, it doesn't. The signal ends when the price or the volume falls back, or the price runs past the buy area."
       },
       "steps": {
-        "title": "3 · Next steps: while the turn holds",
-        "lead": "After the turn, one more step every few trading days, but only while the close is above the price the last step was bought at, so a step is added only while the turn is working. Until your budget's steps are bought."
+        "title": "3 · Next trades: while the turn holds",
+        "lead": "After the turn, one more trade every few trading days, but only while the close is above the price the last trade was bought at, so a trade is added only while the turn is working. Until your budget's trades are bought."
       },
       "pace": {
         "title": "4 · Pace: how often it buys",
-        "lead": "A step is one buy, up to your budget's steps per stock."
+        "lead": "A trade is one buy, up to your budget's trades per stock."
       }
     },
     "checks": {
@@ -260,9 +260,9 @@
       },
       "turn": {
         "label": "The turn",
-        "detail": "Step 1 is bought.",
+        "detail": "Trade 1 counted.",
         "short": "the turn",
-        "info": "The first step: the price turned up above the buy line (the recent low plus a margin), on rising volume or on a pullback from above."
+        "info": "The first trade: the price turned up above the buy line (the recent low plus a margin), on rising volume or on a pullback from above."
       },
       "cooldown": {
         "label": "Cooldown",
@@ -271,25 +271,25 @@
         "info": "After each buy or sale the rules wait {min} calendar days before the next buy signal."
       },
       "pace": {
-        "label": "Next step",
-        "detail": "{value} of {min} trading days since the last step.",
-        "none": "After the turn, one more step every {min} trading days, while the close is above the last step's price.",
-        "short": "{value} of {min} days to the next step",
-        "info": "Spreads the next steps over the recovery: one every {min} trading days."
+        "label": "Next trade",
+        "detail": "{value} of {min} trading days since the last trade.",
+        "none": "After the turn, one more trade every {min} trading days, while the close is above the last trade's price.",
+        "short": "{value} of {min} days to the next trade",
+        "info": "Spreads the next trades over the recovery: one every {min} trading days."
       },
       "lastStep": {
-        "label": "Above the last step",
-        "detail": "{+value}% vs the last step's price ({level}); needs above.",
-        "short": "{+value}% vs the last step (needs above)",
-        "info": "A step is added only while the turn is working: the close must be above the price the last step was bought at."
+        "label": "Above the last trade",
+        "detail": "{+value}% vs the last trade's price ({level}); needs above.",
+        "short": "{+value}% vs the last trade (needs above)",
+        "info": "A trade is added only while the turn is working: the close must be above the price the last trade was bought at."
       }
     }
   },
   "bear": {
     "name": "Bear markets",
     "tagline": "When the market is on sale",
-    "idea": "When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers.",
-    "rationale": "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small steps while prices are still low.",
+    "idea": "When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund a little at a time as it recovers.",
+    "rationale": "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys a little at a time while prices are still low.",
     "rules": [
       {
         "marker": "01",
@@ -297,18 +297,18 @@
       },
       {
         "marker": "02",
-        "text": "**The first bounce:** it climbs `{reboundPct}%` off its low. That's the first step."
+        "text": "**The first bounce:** it climbs `{reboundPct}%` off its low. That's the first trade."
       },
       {
         "marker": "03",
-        "text": "**Then in steps:** one more step every `{stepEveryDays}` trading days, until the budget is used."
+        "text": "**Then at a pace:** one more trade every `{stepEveryDays}` trading days, until the budget is used."
       }
     ],
     "backtest": {
       "scope": "Major indexes and sector funds, 2000-2026. Big drops are rare: it may not signal for years.",
       "years": "2000-2026",
       "universe": "Major equity indexes and 30 sector ETFs across 134 bear markets",
-      "testedDefaults": "The tested defaults: €3,000 budget, 5 steps of €600.",
+      "testedDefaults": "The tested defaults: €3,000 budget, 5 trades of €600.",
       "stories": {
         "2000-12": "Bought 2001–02 & 2008–09 lows",
         "2013-19": "No market crashes",
@@ -320,7 +320,7 @@
       "zone": "the bounce line",
       "notCandidate": "{n}% below its 6-month high",
       "watching": "In a drop: {n}% above its low",
-      "holding": "This drop's steps are bought"
+      "holding": "This drop's trades are bought"
     },
     "settings": {
       "drawdownPct": {
@@ -334,12 +334,12 @@
         "help": "21 trading days is about a month (126 ≈ 6 months). Longer: the fall is measured from an older, often higher peak."
       },
       "reboundPct": {
-        "sentence": "The first step comes {value} above the drop's lowest close.",
+        "sentence": "The first trade comes {value} above the drop's lowest close.",
         "value": "{n}%",
         "help": "Lower: buys sooner, nearer the bottom, but may catch a fall that isn't over. Higher: waits for a clearer recovery."
       },
       "stepEveryDays": {
-        "sentence": "Then one step every {value}.",
+        "sentence": "Then one trade every {value}.",
         "value": "{n} trading days",
         "help": "10 trading days is about 2 weeks. Shorter: the budget goes in faster. Longer: spreads the buys over more of the recovery."
       }
@@ -350,12 +350,12 @@
         "lead": "The fund is in a drop when its close is at least the drop below its recent high. From then on it tracks the lowest close. Without a drop, nothing signals."
       },
       "signal": {
-        "title": "2 · Buy signal: the first step",
-        "lead": "The first step comes when the close bounces the rebound above the drop's lowest close."
+        "title": "2 · Buy signal: the first trade",
+        "lead": "The first trade comes when the close bounces the rebound above the drop's lowest close."
       },
       "pace": {
-        "title": "3 · Pace: the next steps",
-        "lead": "After the first step, one more step comes at a fixed pace until your budget's steps are bought. Then the cycle ends when the price gets back to its old high, or, once the drop is older than the recent-high period, when a new drop starts."
+        "title": "3 · Pace: the next trades",
+        "lead": "After the first trade, one more trade comes at a fixed pace until your budget's trades are bought. Then the cycle ends when the price gets back to its old high, or, once the drop is older than the recent-high period, when a new drop starts."
       }
     },
     "checks": {
@@ -367,17 +367,17 @@
       },
       "bounce": {
         "label": "Bounce off the low",
-        "detail": "{value}% above the drop's low ({endLevel}). The first step comes at +{min}% ({level}).",
-        "none": "Once in a drop, the first step signals when the close climbs +{min}% off the drop's lowest close.",
+        "detail": "{value}% above the drop's low ({endLevel}). The first trade comes at +{min}% ({level}).",
+        "none": "Once in a drop, the first trade signals when the close climbs +{min}% off the drop's lowest close.",
         "short": "{value}% above its low (needs {min}%)",
         "info": "Instead of guessing the bottom of a crash, the first buy waits for a +{min}% rebound off the lowest close."
       },
       "pace": {
-        "label": "Next step",
-        "detail": "{value} of {min} trading days since the last step.",
-        "none": "After the first bounce, signals one more step every {min} trading days until all steps are bought.",
-        "short": "{value} of {min} days to the next step",
-        "info": "Spreads the remaining steps across the recovery at a steady pace of one step every {min} trading days."
+        "label": "Next trade",
+        "detail": "{value} of {min} trading days since the last trade.",
+        "none": "After the first bounce, signals one more trade every {min} trading days until all trades are bought.",
+        "short": "{value} of {min} days to the next trade",
+        "info": "Spreads the remaining trades across the recovery at a steady pace of one trade every {min} trading days."
       }
     }
   },
@@ -397,6 +397,11 @@
         "value": "{n}%",
         "help": "Wider: fewer trades and fewer false signals, but buys later and sells later. At 0, it trades every crossing."
       },
+      "maxChasePct": {
+        "sentence": "Buy only up to {value} above the trend line.",
+        "value": "{n}%",
+        "help": "Higher: still buys a market that ran well above its average. Lower: waits for a pullback instead of buying high. Must be above the buy line."
+      },
       "cooldownDays": {
         "sentence": "After a sale, wait {value} before the next buy signal.",
         "value": "{n} calendar days",
@@ -407,7 +412,7 @@
       {
         "marker": "BUY",
         "tone": "buy",
-        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days)."
+        "text": "The market closes more than `{bandPct}%` above its `SMA {smaDays}` (average price over the last {smaDays} days). Only up to `{maxChasePct}%` above it: higher is too late to chase."
       },
       {
         "marker": "SELL",
@@ -423,7 +428,7 @@
       "scope": "6 major indexes, 2000-2026.",
       "years": "2000-2026",
       "universe": "6 major global indexes (S&P 500, Nasdaq-100, Developed ex-US, DAX, Nikkei 225, Vanguard 500)",
-      "testedDefaults": "The whole €3,000 budget, all in, all out.",
+      "testedDefaults": "The whole €3,000 budget, all in, all out, with no chase limit.",
       "stories": {
         "2000-12": "Dodged the 2000–02 and 2008 crashes",
         "2013-19": "Insurance cost in a straight bull market",
@@ -508,6 +513,14 @@
         "short": "{+value}% vs the buy line",
         "info": "The trend line is the average close of the last 200 days. Signals a buy above +{min}%; inside the ±{min}% band ({endLevel} to {level}), the trend stays unchanged."
       },
+      "chase": {
+        "label": "Price vs the chase limit",
+        "detail": "{+value}% vs the SMA ({midLevel}): buys from +{min}% to +{max}% ({level} to {endLevel}).",
+        "past": "{+value}% vs the SMA ({midLevel}): past +{max}% ({endLevel}), too late to chase.",
+        "short": "{+value}% vs the SMA (buys up to +{max}%)",
+        "pastShort": "{+value}% vs the SMA (past +{max}%)",
+        "info": "Buys from +{min}% to +{max}% above the trend line ({level} to {endLevel}). Higher, the price got too expensive: the strategy waits for a pullback into that range."
+      },
       "sellLine": {
         "label": "Price vs the sell line",
         "detail": "{+value}% vs the sell line ({level}, −{min}% below the SMA {midLevel}). Close is {+subValue}% vs the SMA.",
@@ -533,7 +546,7 @@
         "value": "{n} days"
       },
       "topN": {
-        "sentence": "Each round, one step goes to each of the top {value} by overall score.",
+        "sentence": "Each round, one trade goes to each of the top {value} by overall score.",
         "value": "{n}"
       }
     },
@@ -544,7 +557,7 @@
       },
       {
         "marker": "02",
-        "text": "Each round, one step goes to each of the top `{topN}` by overall score, until the budget is used. A stock with all its steps passes its turn to the next."
+        "text": "Each round, one trade goes to each of the top `{topN}` by overall score, until the budget is used. A stock with all its trades passes its turn to the next."
       },
       {
         "marker": "03",

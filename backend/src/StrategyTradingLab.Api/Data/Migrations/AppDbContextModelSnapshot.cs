@@ -1198,6 +1198,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("asset_id");
 
+                    b.Property<string>("Body")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("body");
+
                     b.Property<string>("Channel")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1238,6 +1243,11 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("strategy_id");
 
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
@@ -1254,9 +1264,13 @@ namespace StrategyTradingLab.Api.Data.Migrations
                     b.HasIndex("StrategyId")
                         .HasDatabaseName("ix_notifications_strategy_id");
 
+                    b.HasIndex("Channel", "CreatedAt")
+                        .HasDatabaseName("ix_notifications_channel_created_at");
+
                     b.HasIndex("UserId", "Kind", "Channel", "ForDate", "SignalId", "StrategyId", "AssetId")
                         .IsUnique()
-                        .HasDatabaseName("ix_notifications_user_id_kind_channel_for_date_signal_id_strat");
+                        .HasDatabaseName("ix_notifications_user_id_kind_channel_for_date_signal_id_strat")
+                        .HasFilter("kind <> 'test'");
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("UserId", "Kind", "Channel", "ForDate", "SignalId", "StrategyId", "AssetId"), false);
 
@@ -1264,7 +1278,7 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         {
                             t.HasCheckConstraint("ck_notifications_channel", "channel IN ('push', 'email')");
 
-                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended', 'stock_candidate', 'stock_close')");
+                            t.HasCheckConstraint("ck_notifications_kind", "kind IN ('signal', 'snoozed', 'overview', 'ai_round', 'signal_ended', 'stock_candidate', 'stock_close', 'test')");
 
                             t.HasCheckConstraint("ck_notifications_signal_id", "(kind IN ('signal', 'snoozed', 'signal_ended')) = (signal_id IS NOT NULL)");
 

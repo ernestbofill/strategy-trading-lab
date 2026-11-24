@@ -29,7 +29,7 @@ AI testers stop too early. They find one bug and report it, they see a happy pat
 
 A charter is a one-line mission: **Explore** *[area]* **with** *[resources or technique]* **to discover** *[kind of problem]*.
 
-> Explore Set your budget with odd amounts, step counts and currencies to discover wrong totals or missing validation.
+> Explore Set your budget with odd amounts, trade counts and currencies to discover wrong totals or missing validation.
 
 Pick them in this order, until you have 3 to 5:
 
@@ -147,7 +147,7 @@ Check these on every screen you reach. A break is a finding.
 2. The copy is direct, with no filler, and trading terms are explained the first time they appear (CLAUDE.md, *Writing*).
 3. Results always sit next to the index fund and the worst year.
 4. Every strategy shows its mode, *Simulation* or *Manual*. Results of the two are never mixed.
-5. The words are *stock*, *fund* and *step*, never *tranche*.
+5. The words are *stock*, *fund*, *amount per trade* and *trades*, never *step* or *tranche*.
 6. No horizontal scrolling at any width. Touch targets at least 44 × 44px. Readable contrast.
 
 **The spec:** the copy, states and behaviour the spec describes for that screen (copy may be shorter or better, but not different in meaning). A difference is a finding, unless the spec looks wrong: then say so in the finding.

@@ -285,6 +285,9 @@ public class Notification
     public DateTimeOffset? SentAt { get; set; }
     public DateTimeOffset? FailedAt { get; set; }
     public string? Error { get; set; }
+    /// <summary>A push's title and text as sent (null for emails, and for pushes before 2026-11-24): for /admin/notifications.</summary>
+    public string? Title { get; set; }
+    public string? Body { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
 

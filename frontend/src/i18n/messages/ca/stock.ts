@@ -44,7 +44,7 @@ export const stock: Record<keyof typeof en, string> = {
   'stock.group.sellLead': 'Compleix: un senyal de venda de tota la posició.',
   'stock.check.met': 'Compleix',
   'stock.check.notMet': 'No compleix',
-  'stock.check.used': 'Operació feta',
+  'stock.check.used': 'Comptada',
   'stock.check.boughtOn': "Operació comptada a l'obertura del {date}.",
   'stock.check.windowClosed': 'Finestra tancada',
   'stock.check.pastZone': 'Fora de zona',

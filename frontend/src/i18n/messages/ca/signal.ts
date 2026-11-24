@@ -57,7 +57,7 @@ export const signal: Record<keyof typeof en, string> = {
     'Ometre no gasta pressupost. Les regles continuen com si s’hagués comprat, així que el proper senyal per a {stock} serà {next}.',
   'signal.skip.noteSale': 'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet.',
   'signal.skip.noteSaleNext':
-    'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet, així que el proper senyal per a {stock} serà el {next}.',
+    'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet, així que el proper senyal per a {stock} serà {next}.',
   'signal.snooze.until': 'T’ho recordarem el {date}.',
   'signal.snooze.action': 'Posposa-ho al proper dia de borsa',
 }

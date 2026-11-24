@@ -42,7 +42,7 @@ export const stock = {
   'stock.group.sellLead': 'Met: a sell signal for the whole position.',
   'stock.check.met': 'Met',
   'stock.check.notMet': 'Not met',
-  'stock.check.used': 'Trade done',
+  'stock.check.used': 'Counted',
   'stock.check.boughtOn': 'Trade counted at the open on {date}.',
   'stock.check.windowClosed': 'Window closed',
   'stock.check.pastZone': 'Past zone',

@@ -260,7 +260,7 @@
       },
       "turn": {
         "label": "The turn",
-        "detail": "Trade 1 is bought.",
+        "detail": "Trade 1 counted.",
         "short": "the turn",
         "info": "The first trade: the price turned up above the buy line (the recent low plus a margin), on rising volume or on a pullback from above."
       },

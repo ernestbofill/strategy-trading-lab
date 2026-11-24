@@ -260,7 +260,7 @@
       },
       "turn": {
         "label": "El gir",
-        "detail": "L'operació 1 està feta.",
+        "detail": "Operació 1 comptada.",
         "short": "el gir",
         "info": "La primera operació: el preu ha girat per sobre de la línia de compra (el mínim recent més un marge), amb volum creixent o tornant des de dalt."
       },

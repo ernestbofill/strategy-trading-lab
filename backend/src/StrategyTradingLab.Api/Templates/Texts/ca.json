@@ -22,7 +22,7 @@
       "scope": "1.146 accions, 2000-2026.",
       "years": "2000-2026",
       "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per fase, fins a 5 per acció. Provada amb tres mitjanes apilades (SMA 50 > SMA 150 > SMA 200); ara l'estratègia en demana dues (SMA 50 > SMA 200)."
+      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per operació, fins a 5 operacions per acció. Provada amb tres mitjanes apilades (SMA 50 > SMA 150 > SMA 200); ara l'estratègia en demana dues (SMA 50 > SMA 200)."
     },
     "stockStatus": {
       "zone": "la zona de descompte",
@@ -65,9 +65,9 @@
         "help": "La mitjana curta, per sobre de la llarga en una candidata, i el terra de la zona: un tancament per sota és un col·lapse, no una baixada. Més curta: el terra segueix el preu de prop, i les baixades profundes el travessen."
       },
       "cooldownDays": {
-        "sentence": "Després d'una fase, espera {value} abans del següent senyal de compra.",
+        "sentence": "Després d'una operació, espera {value} abans del següent senyal de compra.",
         "value": "{n} dies naturals",
-        "help": "Compta des de la compra de la fase. Més curt: les fases arriben més juntes. Més llarg: les fases d'una acció es reparteixen en més baixades."
+        "help": "Compta des de l'última compra. Més curt: les operacions arriben més juntes. Més llarg: les operacions d'una acció es reparteixen en més baixades."
       }
     },
     "settingGroups": {
@@ -81,7 +81,7 @@
       },
       "pace": {
         "title": "3 · Ritme: cada quan compra",
-        "lead": "Cada senyal compra una fase. Una acció rep com a màxim una fase per cada estada a la zona, i fins a les fases del teu pressupost en total."
+        "lead": "Cada senyal és una operació. Una acció rep com a màxim una operació per cada estada a la zona, i fins a les operacions del teu pressupost en total."
       }
     },
     "checks": {
@@ -131,7 +131,7 @@
     "name": "Empreses en remuntada",
     "tagline": "Accions a l'alça",
     "idea": "Una acció que ha caigut molt comença a recuperar-se. L'estratègia busca un canvi de tendència confirmat.",
-    "rationale": "Una acció que ha caigut molt torna a pujar. En lloc d'endevinar quan ha tocat fons, l'estratègia espera que el canvi de tendència sembli confirmat i llavors assenyala compres per fases.",
+    "rationale": "Una acció que ha caigut molt torna a pujar. En lloc d'endevinar quan ha tocat fons, l'estratègia espera que el canvi de tendència sembli confirmat i llavors assenyala compres en diverses operacions.",
     "rules": [
       {
         "marker": "01",
@@ -150,7 +150,7 @@
       "scope": "1.146 accions, 2000-2026.",
       "years": "2000-2026",
       "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per fase, fins a 5 per acció. Provada amb fites per a les fases següents (tornar per sobre de la SMA 200, un encreuament daurat, prop del màxim antic, una ruptura); ara l'estratègia les afegeix a un ritme constant."
+      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per operació, fins a 5 operacions per acció. Provada amb fites per a les operacions següents (tornar per sobre de la SMA 200, un encreuament daurat, prop del màxim antic, una ruptura); ara l'estratègia les afegeix a un ritme constant."
     },
     "stockStatus": {
       "zone": "la línia de compra",
@@ -183,19 +183,19 @@
         "help": "Més negociació confirma el gir. Més alt: menys senyals i més ben recolzats. 1: n'hi ha prou amb un volum normal."
       },
       "maxChasePct": {
-        "sentence": "Zona de compra: la primera fase fins a un {value} més per sobre del mínim recent que la línia de compra.",
+        "sentence": "Zona de compra: la primera operació fins a un {value} més per sobre del mínim recent que la línia de compra.",
         "value": "{n}%",
         "help": "Més alt: encara compra un gir que ha anat molt per sobre de la línia de compra. Més baix: deixa passar els girs massa ràpids."
       },
       "stepEveryDays": {
-        "sentence": "Després, una fase més cada {value}, mentre el tancament estigui per sobre del preu de l'última fase.",
+        "sentence": "Després, una operació més cada {value}, mentre el tancament estigui per sobre del preu de l'última operació.",
         "value": "{n} dies de mercat",
         "help": "10 dies de mercat són unes 2 setmanes. Més curt: el pressupost entra més de pressa. Més llarg: reparteix les compres en més part de la recuperació."
       },
       "cooldownDays": {
-        "sentence": "Després d'una fase, espera {value} abans del següent senyal de compra.",
+        "sentence": "Després d'una operació, espera {value} abans del següent senyal de compra.",
         "value": "{n} dies naturals",
-        "help": "Es compta des de la compra de la fase, en dies naturals. Més llarg: les fases s'espaien més que només amb el ritme."
+        "help": "Es compta des de l'última compra, en dies naturals. Més llarg: les operacions s'espaien més que només amb el ritme."
       }
     },
     "settingGroups": {
@@ -204,16 +204,16 @@
         "lead": "Una acció és candidata, castigada, quan el seu tancament és almenys la caiguda per sota del màxim de 52 setmanes i per sota de la seva `SMA 200`. Continua sent candidata una estona després, de manera que encara pot donar senyal quan es recupera. Una acció que no és candidata no rep cap senyal."
       },
       "signal": {
-        "title": "2 · Senyal de compra: la primera fase",
-        "lead": "Una candidata dona senyal de la primera fase quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), encara dins la zona de compra, i per sobre del tancament anterior. Si puja des de baix, també cal volum creixent; si torna des de dalt de la zona de compra, no. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera la zona de compra."
+        "title": "2 · Senyal de compra: la primera operació",
+        "lead": "Una candidata dona senyal de la primera operació quan gira: el tancament és almenys el gir per sobre del seu mínim recent (la línia de compra), encara dins la zona de compra, i per sobre del tancament anterior. Si puja des de baix, també cal volum creixent; si torna des de dalt de la zona de compra, no. El senyal s'acaba quan el preu o el volum tornen enrere, o el preu supera la zona de compra."
       },
       "steps": {
-        "title": "3 · Fases següents: mentre el gir aguanta",
-        "lead": "Després del gir, una fase més cada pocs dies de mercat, però només mentre el tancament estigui per sobre del preu al qual es va comprar l'última fase, de manera que només s'afegeix una fase mentre el gir funciona. Fins a comprar les fases del teu pressupost."
+        "title": "3 · Operacions següents: mentre el gir aguanta",
+        "lead": "Després del gir, una operació més cada pocs dies de mercat, però només mentre el tancament estigui per sobre del preu al qual es va comprar l'última operació, de manera que només s'afegeix una operació mentre el gir funciona. Fins a comprar les operacions del teu pressupost."
       },
       "pace": {
         "title": "4 · Ritme: cada quan compra",
-        "lead": "Una fase és una compra, fins a les fases del teu pressupost per acció."
+        "lead": "Una operació és una compra, fins a les operacions del teu pressupost per acció."
       }
     },
     "checks": {
@@ -260,9 +260,9 @@
       },
       "turn": {
         "label": "El gir",
-        "detail": "La fase 1 està comprada.",
+        "detail": "Operació 1 comptada.",
         "short": "el gir",
-        "info": "La primera fase: el preu ha girat per sobre de la línia de compra (el mínim recent més un marge), amb volum creixent o tornant des de dalt."
+        "info": "La primera operació: el preu ha girat per sobre de la línia de compra (el mínim recent més un marge), amb volum creixent o tornant des de dalt."
       },
       "cooldown": {
         "label": "Espera",
@@ -271,25 +271,25 @@
         "info": "Després de cada compra o venda, les regles esperen {min} dies naturals abans del senyal de compra següent."
       },
       "pace": {
-        "label": "Fase següent",
-        "detail": "{value} de {min} dies de mercat des de l'última fase.",
-        "none": "Després del gir, una fase més cada {min} dies de mercat, mentre el tancament estigui per sobre del preu de l'última fase.",
-        "short": "{value} de {min} dies per a la fase següent",
-        "info": "Reparteix les fases següents al llarg de la recuperació: una cada {min} dies de mercat."
+        "label": "Operació següent",
+        "detail": "{value} de {min} dies de mercat des de l'última operació.",
+        "none": "Després del gir, una operació més cada {min} dies de mercat, mentre el tancament estigui per sobre del preu de l'última operació.",
+        "short": "{value} de {min} dies per a l'operació següent",
+        "info": "Reparteix les operacions següents al llarg de la recuperació: una cada {min} dies de mercat."
       },
       "lastStep": {
-        "label": "Per sobre de l'última fase",
-        "detail": "{+value}% respecte al preu de l'última fase ({level}); cal que estigui per sobre.",
-        "short": "{+value}% respecte a l'última fase (cal per sobre)",
-        "info": "Només s'afegeix una fase mentre el gir funciona: el tancament ha d'estar per sobre del preu al qual es va comprar l'última fase."
+        "label": "Per sobre de l'última operació",
+        "detail": "{+value}% respecte al preu de l'última operació ({level}); cal que estigui per sobre.",
+        "short": "{+value}% respecte a l'última operació (cal per sobre)",
+        "info": "Només s'afegeix una operació mentre el gir funciona: el tancament ha d'estar per sobre del preu al qual es va comprar l'última operació."
       }
     }
   },
   "bear": {
     "name": "Mercats baixistes",
     "tagline": "Quan el mercat està barat",
-    "idea": "Quan tot el mercat cau un 20%, l'estratègia assenyala compres d'un fons ampli de l'S&P 500 per fases mentre es recupera.",
-    "rationale": "Les grans caigudes del mercat són rares i fan por, i la majoria de gent ven. En lloc d'endevinar quan s'ha tocat fons, l'estratègia espera el primer rebot i llavors assenyala compres per fases mentre els preus encara són baixos.",
+    "idea": "Quan tot el mercat cau un 20%, l'estratègia assenyala compres d'un fons ampli de l'S&P 500 a poc a poc mentre es recupera.",
+    "rationale": "Les grans caigudes del mercat són rares i fan por, i la majoria de gent ven. En lloc d'endevinar quan s'ha tocat fons, l'estratègia espera el primer rebot i llavors assenyala compres a poc a poc mentre els preus encara són baixos.",
     "rules": [
       {
         "marker": "01",
@@ -297,18 +297,18 @@
       },
       {
         "marker": "02",
-        "text": "**El primer rebot:** puja un `{reboundPct}%` des del seu mínim. Aquesta és la primera fase."
+        "text": "**El primer rebot:** puja un `{reboundPct}%` des del seu mínim. Aquesta és la primera operació."
       },
       {
         "marker": "03",
-        "text": "**Després, per fases:** una fase més cada `{stepEveryDays}` dies de mercat, fins que s'acabi el pressupost."
+        "text": "**Després, a ritme:** una operació més cada `{stepEveryDays}` dies de mercat, fins que s'acabi el pressupost."
       }
     ],
     "backtest": {
       "scope": "Principals índexs i fons sectorials, 2000-2026. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
       "years": "2000-2026",
       "universe": "Principals índexs i 30 ETF sectorials en 134 mercats baixistes",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, 5 fases de €600 cada una.",
+      "testedDefaults": "Els valors provats: pressupost de €3,000, 5 operacions de €600 cada una.",
       "stories": {
         "2000-12": "Va comprar els mínims del 2001–02 i del 2008–09",
         "2013-19": "Cap gran caiguda del mercat",
@@ -320,7 +320,7 @@
       "zone": "la línia de rebot",
       "notCandidate": "{n}% per sota del seu màxim de 6 mesos",
       "watching": "En una caiguda: {n}% per sobre del seu mínim",
-      "holding": "Les fases d'aquesta caiguda ja estan comprades"
+      "holding": "Les operacions d'aquesta caiguda ja estan fetes"
     },
     "settings": {
       "drawdownPct": {
@@ -334,12 +334,12 @@
         "help": "21 dies de mercat són un mes, més o menys (126 ≈ 6 mesos). Més llarg: la caiguda es mesura des d'un màxim més antic i sovint més alt."
       },
       "reboundPct": {
-        "sentence": "La primera fase arriba un {value} per sobre del tancament més baix de la caiguda.",
+        "sentence": "La primera operació arriba un {value} per sobre del tancament més baix de la caiguda.",
         "value": "{n}%",
         "help": "Més baix: compra abans, més a prop del fons, però pot agafar una caiguda que no s'ha acabat. Més alt: espera una recuperació més clara."
       },
       "stepEveryDays": {
-        "sentence": "Després, una fase cada {value}.",
+        "sentence": "Després, una operació cada {value}.",
         "value": "{n} dies de mercat",
         "help": "10 dies de mercat són unes 2 setmanes. Més curt: el pressupost entra més de pressa. Més llarg: reparteix les compres en més part de la recuperació."
       }
@@ -350,12 +350,12 @@
         "lead": "El fons és en una caiguda quan el seu tancament és almenys la caiguda per sota del màxim recent. A partir d'aquí segueix el tancament més baix. Sense caiguda, no hi ha cap senyal."
       },
       "signal": {
-        "title": "2 · Senyal de compra: la primera fase",
-        "lead": "La primera fase arriba quan el tancament rebota per sobre del tancament més baix de la caiguda."
+        "title": "2 · Senyal de compra: la primera operació",
+        "lead": "La primera operació arriba quan el tancament rebota per sobre del tancament més baix de la caiguda."
       },
       "pace": {
-        "title": "3 · Ritme: les fases següents",
-        "lead": "Després de la primera fase, arriba una fase més a ritme fix fins que es compren les fases del teu pressupost. Llavors el cicle s'acaba quan el preu torna al màxim antic, o, quan la caiguda és més antiga que el període del màxim recent, quan comença una nova caiguda."
+        "title": "3 · Ritme: les operacions següents",
+        "lead": "Després de la primera operació, arriba una operació més a ritme fix fins que es compren les operacions del teu pressupost. Llavors el cicle s'acaba quan el preu torna al màxim antic, o, quan la caiguda és més antiga que el període del màxim recent, quan comença una nova caiguda."
       }
     },
     "checks": {
@@ -367,17 +367,17 @@
       },
       "bounce": {
         "label": "Rebot des del mínim",
-        "detail": "{value}% per sobre del mínim de la caiguda ({endLevel}). La primera fase arriba al +{min}% ({level}).",
-        "none": "Un cop en una caiguda, la primera fase arriba quan el tancament puja un +{min}% des del mínim de la caiguda.",
+        "detail": "{value}% per sobre del mínim de la caiguda ({endLevel}). La primera operació arriba al +{min}% ({level}).",
+        "none": "Un cop en una caiguda, la primera operació arriba quan el tancament puja un +{min}% des del mínim de la caiguda.",
         "short": "{value}% sobre el mínim (cal un {min}%)",
         "info": "En lloc d'endevinar quan la caiguda ha tocat fons, la primera compra espera un rebot del +{min}% des del mínim."
       },
       "pace": {
-        "label": "Fase següent",
-        "detail": "{value} de {min} sessions des de l'última fase.",
-        "none": "Després del primer rebot, assenyala una fase més cada {min} sessions fins a comprar totes les fases.",
-        "short": "{value} de {min} dies fins a la fase següent",
-        "info": "Reparteix les fases restants al llarg de la recuperació a un ritme fix d'una fase cada {min} sessions."
+        "label": "Operació següent",
+        "detail": "{value} de {min} sessions des de l'última operació.",
+        "none": "Després del primer rebot, assenyala una operació més cada {min} sessions fins a comprar totes les operacions.",
+        "short": "{value} de {min} dies fins a l'operació següent",
+        "info": "Reparteix les operacions restants al llarg de la recuperació a un ritme fix d'una operació cada {min} sessions."
       }
     }
   },
@@ -397,6 +397,11 @@
         "value": "{n}%",
         "help": "Més ampla: menys operacions i menys senyals falsos, però compra i ven més tard. Amb 0, opera a cada creuament."
       },
+      "maxChasePct": {
+        "sentence": "Compra només fins a un {value} per sobre de la línia de tendència.",
+        "value": "{n}%",
+        "help": "Més alt: encara compra un mercat que ha pujat molt per sobre de la mitjana. Més baix: espera una baixada en lloc de comprar car. Ha de ser per sobre de la línia de compra."
+      },
       "cooldownDays": {
         "sentence": "Després d'una venda, espera {value} abans del següent senyal de compra.",
         "value": "{n} dies naturals",
@@ -407,7 +412,7 @@
       {
         "marker": "COMPRA",
         "tone": "buy",
-        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies)."
+        "text": "El mercat tanca més d'un `{bandPct}%` per sobre de la seva `SMA {smaDays}` (preu mitjà dels últims {smaDays} dies). Només fins a un `{maxChasePct}%` per sobre: més amunt és massa tard."
       },
       {
         "marker": "VENDA",
@@ -423,7 +428,7 @@
       "scope": "6 índexs principals, 2000-2026.",
       "years": "2000-2026",
       "universe": "6 grans índexs globals (S&P 500, Nasdaq-100, Desenvolupats ex-EUA, DAX, Nikkei 225, Vanguard 500)",
-      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora.",
+      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora, sense límit de compra.",
       "stories": {
         "2000-12": "Va esquivar les caigudes del 2000–02 i del 2008",
         "2013-19": "El cost de l'assegurança en un mercat alcista continu",
@@ -508,6 +513,14 @@
         "short": "{+value}% respecte a la línia de compra",
         "info": "La línia de tendència és el tancament mitjà dels últims 200 dies. Assenyala compra per sobre del +{min}%; dins la banda del ±{min}% ({endLevel} a {level}), la tendència es manté."
       },
+      "chase": {
+        "label": "Preu respecte al límit de compra",
+        "detail": "{+value}% respecte a la SMA ({midLevel}): compra de +{min}% a +{max}% ({level} a {endLevel}).",
+        "past": "{+value}% respecte a la SMA ({midLevel}): passa de +{max}% ({endLevel}), massa tard.",
+        "short": "{+value}% respecte a la SMA (compra fins a +{max}%)",
+        "pastShort": "{+value}% respecte a la SMA (passa de +{max}%)",
+        "info": "Compra de +{min}% a +{max}% per sobre de la línia de tendència ({level} a {endLevel}). Més amunt, el preu s'ha encarit massa: l'estratègia espera una baixada fins a aquest rang."
+      },
       "sellLine": {
         "label": "Preu respecte a la línia de venda",
         "detail": "{+value}% respecte a la línia de venda ({level}, −{min}% per sota de la SMA {midLevel}). El tancament és a {+subValue}% de la SMA.",
@@ -533,7 +546,7 @@
         "value": "{n} dies"
       },
       "topN": {
-        "sentence": "A cada ronda, cada acció del top {value} per puntuació global rep una fase.",
+        "sentence": "A cada ronda, cada acció del top {value} per puntuació global rep una operació.",
         "value": "{n}"
       }
     },
@@ -544,7 +557,7 @@
       },
       {
         "marker": "02",
-        "text": "A cada ronda, cada acció del top `{topN}` per puntuació global rep una fase, fins que s'acabi el pressupost. Una acció que ja té totes les fases cedeix el torn a la següent."
+        "text": "A cada ronda, cada acció del top `{topN}` per puntuació global rep una operació, fins que s'acabi el pressupost. Una acció que ja té totes les operacions cedeix el torn a la següent."
       },
       {
         "marker": "03",

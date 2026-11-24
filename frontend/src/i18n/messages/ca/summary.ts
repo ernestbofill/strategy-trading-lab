@@ -8,7 +8,7 @@ export const summary: Record<keyof typeof en, string> = {
   'summary.quiet.body': 'Les teves estratègies continuen actives sense nous senyals ni canvis en valors.',
   'summary.waiting.title': "T'espera a tu",
   'summary.waiting.signal': '{stock}: es compleixen les teves regles per a {strategy}',
-  'summary.waiting.step': 'Fase {step} de {max}',
+  'summary.waiting.step': 'Operació {step} de {max}',
   'summary.waiting.aiRound': "És l'hora de la ronda d'IA de {strategy}.",
   'summary.whatChanged.title': 'Què ha canviat',
   'summary.stockChanges.title': 'Canvis en valors',

@@ -68,7 +68,7 @@ Entered from sign-up (first run), from **+ New strategy** on the dashboard, and 
 ├── 3. /app/new/[template]         Template review (one page per template)
 │      └── /advanced               Advanced settings (re-runs the backtest on every change)
 ├── 4. /app/new/mode               Choose the mode: Simulation (default) or Manual
-├── 5. /app/new/budget             Set your budget: budget, step size, max steps per stock
+├── 5. /app/new/budget             Set your budget: budget, amount per trade, max trades per stock
 └── 6. /app/new/confirm            Name, preview and confirm
         → Dashboard ([AI] the first AI round waits there)
 ```
@@ -78,7 +78,7 @@ Entered from sign-up (first run), from **+ New strategy** on the dashboard, and 
 | Pick a template | "You run 2 from this template" on templates in use; nothing hidden |
 | Template review | Idea → rules → Choose stocks to watch → Tested → What can go wrong → Advanced settings. [AI] version: what the AI reads, the prompt (editable), what you need, not tested |
 | Choose the mode | Live asks for web push permission (email fallback; iPhone needs home-screen install) |
-| Set your budget | Defaults €3,000 / €100 steps / 5 per stock; live summary sentence and step squares |
+| Set your budget | Defaults €3,000 / €100 per trade / 5 per stock; live summary sentence and one square per trade |
 | Confirm | Editable name (template name by default, numbered), summary with edit links, disclaimer above the button |
 
 ---
@@ -165,7 +165,7 @@ See "Wording rules" in the user journey, and *Writing* in `CLAUDE.md`. In short:
 - Signals report rules ("Your rules for … are met").
 - The user owns the setup: "Choose stocks to watch", "Under your settings".
 - No promises; results always shown with the index comparison and worst year.
-- Never "ticker" or "tranche": say *stock* (or *fund*) and *step*. "Discount zone", not "buy zone".
+- Never "ticker" or "tranche": say *stock* (or *fund*), *amount per trade* and *trades*. "Discount zone", not "buy zone".
 
 ---
 

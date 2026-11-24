@@ -2,6 +2,8 @@
 
 This document records the research findings from the Proof of Concept (POC) repository (`ernestbofill/trading-strategies-bot/backend/research` and `docs/strategy-review-*.md`) and how they were applied to establish honest, standardized backtest figures for Strategy Trading Lab (Roadmap Item 15, PR #119).
 
+STL's own backtest, which will replace these figures, is planned in [backtest.md](backtest.md) (ROADMAP Milestone 4).
+
 ---
 
 ## 1. Principles of Strategy Backtesting in STL

@@ -52,7 +52,7 @@ describe('SignalPage', () => {
     expect(await screen.findByRole('heading', { name: 'Zscaler' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Zscaler' }).getAttribute('href')).toBe('/strategies/st/stocks/zs')
     expect(screen.getByRole('link', { name: /STOCK/ }).getAttribute('href')).toBe('/strategies/st/stocks/zs')
-    expect(screen.getByText(/8.2% below its recent peak/).textContent).toContain("Under your settings that's step 2 of 5 (€100).")
+    expect(screen.getByText(/8.2% below its recent peak/).textContent).toContain("Under your settings that's trade 2 of 5 (€100).")
     expect(screen.getByText(/At/).textContent).toContain('$1.09 per €1')
     fireEvent.change(screen.getByLabelText('Fee (EUR, optional)'), { target: { value: '1.20' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the trade' }))

@@ -92,10 +92,10 @@ describe('StrategyPage', () => {
     expect(screen.getByText('+4.2%')).toBeTruthy()
     expect(screen.queryByText('The rules alone')).toBeNull()
     expect(screen.getByText('−1.3%')).toBeTruthy()
-    expect(screen.getByText('€1,200 of €3,000 · 12 of 30 steps')).toBeTruthy()
+    expect(screen.getByText('€1,200 of €3,000 · 12 of 30 trades')).toBeTruthy()
     expect(screen.getByText('9 did · 2 skipped · 1 missed')).toBeTruthy()
     expect(screen.getByText(/Worst year, 2010-2024/).textContent).toContain('the template −21%, an S&P 500 fund −18%')
-    expect(screen.getByRole('link', { name: /Zscaler WAITING FOR YOU Signal: step 2 of 5/ }).getAttribute('href')).toBe(
+    expect(screen.getByRole('link', { name: /Zscaler WAITING FOR YOU Signal: trade 2 of 5/ }).getAttribute('href')).toBe(
       '/strategies/live/stocks/a',
     )
     expect(screen.getByRole('link', { name: /Tune the settings Change its rules/i }).getAttribute('href')).toBe(

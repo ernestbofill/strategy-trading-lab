@@ -71,13 +71,13 @@ public class TrendRulesTests
         var buy = unheld.Decide(50, new DayContext(bars[50].Date, RuleStatus.Watching, 0, default, false, false, false, 1));
         Assert.Equal(RuleStatus.BuySignal, buy.Status);
         Assert.True(buy.WindowOpen);
-        Assert.True(buy.Checks.Single().Met);
+        Assert.True(buy.Checks.Single(c => c.Key == "buyLine").Met);
 
         var dipped = unheld.Decide(51, new DayContext(bars[51].Date, RuleStatus.BuySignal, 0, default, false, false, false, 1));
         Assert.Equal(RuleStatus.SignalEnded, dipped.Status);
         Assert.Equal("Price fell back below the buy line.", dipped.Reason);
         Assert.False(dipped.WindowOpen);
-        Assert.False(dipped.Checks.Single().Met);
+        Assert.False(dipped.Checks.Single(c => c.Key == "buyLine").Met);
 
         var watching = unheld.Decide(52, new DayContext(bars[52].Date, RuleStatus.SignalEnded, 0, default, false, false, false, 1));
         Assert.Equal(RuleStatus.Watching, watching.Status);
@@ -90,5 +90,42 @@ public class TrendRulesTests
         Assert.True(days[0].WindowOpen);
         Assert.Equal(RuleStatus.Holding, days[1].Status);
         Assert.False(days[1].WindowOpen);
+    }
+
+    [Fact]
+    public void A_price_past_the_chase_limit_is_too_late_to_buy_until_it_pulls_back()
+    {
+        // SMA 50 at about 100: buy line 103, chase limit 108.
+        var bars = Enumerable.Range(0, 54).Select(i =>
+        {
+            var close = i switch
+            {
+                50 => 105m, // In the window: buy signal.
+                51 => 112m, // Past the chase limit: the signal ends, too late.
+                52 => 112m,
+                53 => 106m, // Back in the window: a new buy signal.
+                _ => 100m,
+            };
+            return new PriceBar(new DateOnly(2020, 1, 1).AddDays(i), close, close, close, close, 0);
+        }).ToList();
+        var rules = new TrendRules(bars, new TrendParams { SmaDays = 50, BandPct = 3, MaxChasePct = 8 });
+
+        var buy = rules.Decide(50, new DayContext(bars[50].Date, RuleStatus.Watching, 0, default, false, false, false, 1));
+        Assert.Equal(RuleStatus.BuySignal, buy.Status);
+
+        var ended = rules.Decide(51, new DayContext(bars[51].Date, RuleStatus.BuySignal, 0, default, false, false, false, 1));
+        Assert.Equal(RuleStatus.SignalEnded, ended.Status);
+        Assert.Equal("Price is more than 8% above the 50-day average: too late to chase.", ended.Reason);
+        Assert.True(Strategies.StockStates.PastBuyRule(ended.Checks));
+        // No buy past the limit, but the trend is up: a sell signal's window closes.
+        Assert.False(ended.WindowOpen);
+        Assert.True(ended.SellClosed);
+
+        var watching = rules.Decide(52, new DayContext(bars[52].Date, RuleStatus.SignalEnded, 0, default, false, false, false, 1));
+        Assert.Equal(RuleStatus.Watching, watching.Status);
+        Assert.False(watching.WindowOpen);
+
+        var again = rules.Decide(53, new DayContext(bars[53].Date, RuleStatus.Watching, 0, default, false, false, false, 1));
+        Assert.Equal(RuleStatus.BuySignal, again.Status);
     }
 }

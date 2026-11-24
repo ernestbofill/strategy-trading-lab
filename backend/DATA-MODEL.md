@@ -244,7 +244,7 @@ At create time every starter-list asset is inserted active, except the ones the 
 
 ### `signals`
 
-Both modes. Every signal gets exactly one signal trade (the rules carry on as if the step was bought, whatever the user does).
+A simulation's signals each get exactly one signal trade. A Manual (`live`) strategy's signals get none since 2026-11-24 (#282): its position is the user's trades, and only signals the user did count as bought in the rules' replay.
 
 - **Simulation:** the app acts on the signal itself, so it is created `confirmed`.
 - **Live:** it starts `waiting`, and the user answers **Confirm**, **Skip** or **Snooze**. Snooze doesn't answer it: it stays `waiting` and the user is notified again the next day. It can be snoozed again until its window closes; then it is `missed`. A waiting signal can be confirmed later, with the real date.
@@ -285,7 +285,7 @@ Lifecycle checks, so an impossible state can't be stored:
 
 ### `signal_trades`
 
-The rules' own trades, per strategy and asset: one trade per signal, made whatever the user does. Call them *signal trades*, not paper or rule trades. Drives signals in both modes, and the results in simulation ("The rules alone" in live). Its `price` is the next day's opening price that Confirm a signal prefills.
+A simulation's trades, per strategy and asset: one trade per signal. Call them *signal trades*, not paper or rule trades. They are a simulation's results. Manual strategies get none since 2026-11-24 (#282); their older rows ("The rules alone" until then) stay unread.
 
 | Column | Type | Notes |
 | --- | --- | --- |

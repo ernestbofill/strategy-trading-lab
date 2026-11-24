@@ -28,6 +28,12 @@ public record RuleDecision(RuleStatus Status, string? Reason, IReadOnlyDictionar
 {
     /// <summary>Each rule's own verdict today, for the stock page. Kept on the day's evaluation, not on signals.</summary>
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
+
+    /// <summary>
+    /// Whether a sell signal's window closed today (the sell conditions no longer hold). Null: when <c>WindowOpen</c> is, as a
+    /// buy is possible again. <i>Index trend</i> sets it: past its chase limit no buy is possible, yet the trend is back up.
+    /// </summary>
+    public bool? SellClosed { get; init; }
 }
 
 /// <summary>Which part of the rules a check belongs to: what makes a stock a candidate, what gives the buy (or sell) signal, or what earns the next step.</summary>
@@ -115,4 +121,7 @@ public record DayEvaluation(DateOnly Date, RuleStatus Status, int? StepNo, bool 
 {
     /// <summary>The rules' checks of the day (<see cref="RuleDecision.Checks"/>).</summary>
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
+
+    /// <summary>Whether a sell signal's window closed today (<see cref="RuleDecision.SellClosed"/>, else <c>WindowOpen</c>).</summary>
+    public bool SellClosed { get; init; }
 }

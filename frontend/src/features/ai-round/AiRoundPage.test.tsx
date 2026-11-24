@@ -77,7 +77,7 @@ describe('AiRoundPage', () => {
     paste('| Stock | Overall |\n| ZS | 83 |')
     await screen.findByText('✓ Every stock scored, all scores 0-100.')
     expect(read).toHaveBeenCalledWith('st', '| Stock | Overall |\n| ZS | 83 |')
-    expect(screen.getByText('Zscaler gets step 2 of 5 (€100).')).toBeTruthy()
+    expect(screen.getByText('Zscaler gets trade 2 of 5 (€100).')).toBeTruthy()
     expect(screen.getByText('Strong quarter')).toBeTruthy()
     expect(screen.getByText('The simulation buys at once, at the latest price.')).toBeTruthy()
 

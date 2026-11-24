@@ -3,8 +3,8 @@ export const signal = {
   /** "SIGNAL · OCT 22" in the top bar. */
   'signal.title': 'SIGNAL · {date}',
   'signal.rules': 'Your rules for {strategy} are met for {stock}: {reason}.',
-  'signal.step': "Under your settings that's step {step}.",
-  'signal.stepAmount': "Under your settings that's step {step} ({amount}).",
+  'signal.step': "Under your settings that's trade {step}.",
+  'signal.stepAmount': "Under your settings that's trade {step} ({amount}).",
   'signal.rulesSell': 'Your rules for {strategy} are met for a sale: {reason}.',
   'signal.amountOnly': "Under your settings that's {amount}.",
   /** "2 of 5" in the sentence above. */
@@ -23,7 +23,7 @@ export const signal = {
   'signal.hint.prefilled': "Prefilled with {date}'s opening price. Change anything that differs from your broker.",
   'signal.hint.close': "No opening price yet: prefilled with the close on {date}. Change it to your broker's price.",
   'signal.hint.latest': "Prefilled with the latest price. Change it to your broker's price.",
-  'signal.hint.amount': 'What bought shares. Your step of {step} includes the fee.',
+  'signal.hint.amount': 'What bought shares. Your amount per trade, {step}, includes the fee.',
   'signal.hint.amountBudget': 'What bought shares. Your budget of {step} includes the fee.',
   'signal.save.did': 'Save the trade',
   'signal.save.skip': 'Save the skip',

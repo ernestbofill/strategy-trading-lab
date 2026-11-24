@@ -33,12 +33,12 @@ There is no broker sync in either mode. The app never places orders and never re
 | **Strategy** | The user's own copy of a template: their name for it, their stocks, settings and budget, running in one mode from the day they start it. It keeps its own trades and results. A user can run any number of strategies, several from the same template. |
 | **Mode** | *Simulation* or *Manual*. Fixed for the life of a strategy; following a simulation manually means starting a new strategy. |
 | **Signal** | The moment a strategy's rules are met for a stock: a buy step, or, for *Index trend*, a sale. In simulation the app acts on it by itself; in live it asks the user. |
-| **Step** | One buy of the step size, fee included: a €100 step is about €98.80 of shares and a €1.20 fee. A stock gets at most the max steps per stock. |
+| **Trade** | One buy of the amount per trade, fee included: a €100 trade is about €98.80 of shares and a €1.20 fee. A stock gets at most the max trades per stock. A *step* in the code (`StepAmount`, `MaxSteps`; issue #277). |
 | **Discount zone** | For *Winners at a discount*: the range 5-15% below a stock's recent peak, where its rules signal. |
 | **AI round** | For strategies from *Your AI's top picks*: every 14 days by default the user runs our prompt in their own AI service and pastes the answer back. |
 | **Backtest** | How a template did in the past with given settings. It belongs to the template and settings, not to a running strategy. |
 
-The words *ticker* and *tranche* never appear in the app: use *stock* (or *fund*) and *step*.
+The words *ticker* and *tranche* never appear in the app: use *stock* (or *fund*), *amount per trade* and *trades* (issue #277: *step* is gone from the copy). Copy quoted below is the built copy's wording; prose may still say *step* for the same thing.
 
 ## 3. Product rules
 
@@ -131,7 +131,8 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 **Index trend (`index_trend`)**
 - Buy signal: the close is more than 3% above the SMA 200. Sell signal: the close is more than 3% below it. In between, the trend stays what it was.
-- Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200).
+- Chase limit (STL's own, not the POC's; Ernest, 2026-11-24): the buy only up to 10% above the SMA 200 (+3% to +10%). Higher, the price got too expensive: no buy signal until it pulls back into that range. A held position is not affected.
+- Buy signal ends: the close drops back to or below the buy line (+3% above the SMA 200), or rises past the chase limit ("too late to chase"). A Manual signal that ends this way is missed; the rules count it as bought, so a pullback brings no second buy signal.
 - All in, all out: one buy of the whole budget; after a sale, the next buy reinvests what the sale returned. Cooldown 5 days. One buy signal per uptrend.
 - No stop-loss: the sell line is the stop.
 
@@ -277,7 +278,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- |
 | Winners at a discount | "Buy the dip" | "A stock on a strong run takes a small step back. The strategy signals that dip." |
 | The comeback | "Stocks on the rise" | "A stock that fell a lot starts to recover. The strategy looks for a confirmed turnaround." |
-| Bear markets | "When the market is on sale" | "When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund in small steps as it recovers." |
+| Bear markets | "When the market is on sale" | "When the whole market falls 20%, the strategy signals buys of a broad S&P 500 fund a little at a time as it recovers." |
 | Index trend | "Take the wins, dodge the losses" | "The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down." |
 | Your AI's top picks | "Let your AI do the reading" | "Every 2 weeks the AI scores each stock from 0 to 100, and the top score should get a position. Use your own AI." |
 
@@ -288,7 +289,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 
 ### 2 · Review a template
 
-**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away.
+**Purpose:** explain the template and let the user accept its prefilled setup. Nothing has to be changed: "Use this template" works straight away. Planned: an entry to the Backtest page, preset with the template's defaults on the test draft ([backtest.md](backtest.md), *Where it lives*).
 
 **Shared layout**, top to bottom:
 1. Top bar: "← BACK" (to the pick screen) · "2 / 5".
@@ -326,7 +327,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - What can go wrong: "a stock it buys can keep falling."
 
 *The comeback* (`ReviewComeback`)
-- The idea: "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys in steps."
+- The idea: "A stock that fell a long way starts to climb again. Instead of guessing the bottom, the strategy waits until the turnaround looks confirmed, then signals buys in trades."
 - It signals when:
   1. "**It was beaten down:** the stock fell at least [X]% from its high of the last 12 months." (POC: 30% below the 52-week high.)
   2. "**It turned around:** it climbs 10% above its 50-day low (lowest close of the last 50 trading days)."
@@ -335,11 +336,11 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - What can go wrong: "a recovery can stall, and the stock can fall again."
 
 *Bear markets* (`ReviewDrop`)
-- The idea: "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small steps while prices are still low."
+- The idea: "Big market crashes are rare and scary, and most people sell. Instead of guessing the bottom, the strategy waits for the first bounce and then signals buys in small trades while prices are still low."
 - It signals when:
   1. "**The market fell hard:** the S&P 500 is 20% or more below its high."
-  2. "**The first bounce:** it climbs 5% off its low. That's the first step."
-  3. "**Then in steps:** one more step every 2 weeks, until the budget is used."
+  2. "**The first bounce:** it climbs 5% off its low. That's the first trade."
+  3. "**Then at a pace:** one more trade every 2 weeks, until the budget is used."
 - Fund: "[S&P 500 fund name]" / "Tracks the 500 largest US companies" / "Change".
 - Tested: "Major indexes and sector funds, 2000-2024. Big drops are rare: it may not signal for years." (Also added on the strategy page while there are no trades yet.)
 - What can go wrong: "the market can keep falling after the first bounce, and stay low for years."
@@ -347,7 +348,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 *Index trend* (`ReviewTrend`)
 - The idea: "Markets move in long waves. The strategy signals a buy of a broad index fund when the market moves into an uptrend, and a sale when the trend turns down, to dodge the dip. After the dip it looks for a new buy signal."
 - It signals when (labelled rows instead of numbers):
-  - **BUY**: "The market closes more than 3% above its SMA 200 (average price over the last 200 days)."
+  - **BUY**: "The market closes more than 3% above its SMA 200 (average price over the last 200 days). Only up to 10% above it: higher is too late to chase."
   - **SELL**: "The market closes more than 3% below its SMA 200."
   - **ALL**: "All in, all out: each signal covers the whole budget at once."
 - Fund: "[Broad index fund name]" / "[What the index covers]" / "Change".
@@ -358,7 +359,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - The idea: "Nobody can read every news story and financial report about every company, but an AI can. You run our prompt in the AI you already use; it scores each stock, and the strategy signals the top one. You see whether all that reading turns into better picks."
 - It signals when:
   1. "Every [14] days you run the AI round: copy the prompt, paste it into your AI, paste its answer back."
-  2. "The stock with the top score gets a signal for one step, until the budget is used."
+  2. "The stock with the top score gets a signal for one trade, until the budget is used."
   3. "If you skip a round, there's no signal that round."
 - **"What the AI reads"**: three toggle tiles, all on by default: "News" / "Recent stories", "Mood" / "How people talk about it", "Figures" / "Quarterly numbers". On shows "✓" and a highlight, off shows "+". At least one stays on: the last one on can't be turned off. Use `aria-pressed`. Caption: "At least one stays on. Each one adds a section to the prompt."
 - **"The prompt"**, with an "Edit prompt" link. Read-only, shown as code, its first lines with "Show the whole prompt". The API writes it (`POST /templates/ai/prompt`), so the review, the editor and the round always show the same words. It has three parts; only the middle one can be edited:
@@ -374,7 +375,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 - "**Not tested:** there's no backtest. Results start on the day the strategy starts, and depend on which AI you run it in."
 - "**What can go wrong:** your AI can misread the news, or make things up, and a top-scored stock can still fall."
 - Rows: "Choose stocks to watch · [n] ticked ›" (opens the stock list) and "Advanced settings · every 14 days · top 1 ›".
-- Advanced settings for it (built): "An AI round comes every [n] days." (1 to 60, default 14) and "Each round, one step goes to each of the top [n] by overall score." (1 to 3, default 1), with no backtest section. Rule 02 reads "Each round, one step goes to each of the top `[n]` by overall score, until the budget is used. A stock with all its steps passes its turn to the next."
+- Advanced settings for it (built): "An AI round comes every [n] days." (1 to 60, default 14) and "Each round, one trade goes to each of the top [n] by overall score." (1 to 3, default 1), with no backtest section. Rule 02 reads "Each round, one trade goes to each of the top `[n]` by overall score, until the budget is used. A stock with all its trades passes its turn to the next."
 
 ### 2b · Advanced settings (`Advanced`)
 
@@ -383,7 +384,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 **Copy**
 - Top bar: "← BACK" · "[template name]"
 - H1: "Advanced settings"
-- Intro: "Every rule as an exact number, next to the tested default." (Shortened while the backtest can't re-run; bring back "Change one and the backtest re-runs" with the re-run.)
+- Intro: "Every rule as an exact number, next to the tested default." (Shortened while the backtest can't run; with the backtest, the panel's *Rerun tests* runs it.)
 - Secondary button: "⟳ Reset to tested"
 - Button: "Save settings"
 
@@ -402,7 +403,7 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Buy signal | "The discount zone starts [n]% below the recent peak." | 5% | 1 | 1 – (end − 1), at most 39 |
 | Buy signal | "It ends [n]% below the recent peak." | 15% | 1 | (start + 1) – 40 |
 | Buy signal | "The floor average is the SMA over [n] days." | 50 | 5 | 20–80 (always under the long average, at 160 or more) |
-| Pace | "After a step, wait [n] calendar days before the next buy signal." | 10 | 5 | 0–60 |
+| Pace | "After a trade, wait [n] calendar days before the next buy signal." | 10 | 5 | 0–60 |
 
 *The comeback*:
 
@@ -413,9 +414,9 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | Buy signal | "The buy line is [n]% above the recent low." | 10% | 1 | 5–30 |
 | Buy signal | "The recent low is the lowest close of the last [n] trading days." | 50 | 5 | 10–120 |
 | Buy signal | "The 5-day average volume is at least [n]× the 50-day. Not needed when the price comes back into the buy area from above." | 1.2× | 0.1 | 1–3 |
-| Buy signal | "Buy area: the first step up to [n]% more above the recent low than the buy line." | 8% | 1 | 2–20 |
-| Next steps | "Then one more step every [n] trading days, while the close is above the last step's price." | 10 | 5 | 5–30 |
-| Pace | "After a step, wait [n] calendar days before the next buy signal." | 5 | 1 | 0–30 |
+| Buy signal | "Buy area: the first trade up to [n]% more above the recent low than the buy line." | 8% | 1 | 2–20 |
+| Next trades | "Then one more trade every [n] trading days, while the close is above the last trade's price." | 10 | 5 | 5–30 |
+| Pace | "After a trade, wait [n] calendar days before the next buy signal." | 5 | 1 | 0–30 |
 
 *Bear markets*:
 
@@ -423,8 +424,8 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- | --- |
 | Candidate (the drop) | "A drop is at least [n]% below the recent high." | 20% | 5 | 10–40 |
 | Candidate (the drop) | "The recent high is the highest close of the last [n] trading days." | 126 | 21 | 63–252 |
-| Buy signal | "The first step comes [n]% above the drop's lowest close." | 5% | 1 | 1–15 |
-| Pace | "Then one step every [n] trading days." | 10 | 5 | 5–30 |
+| Buy signal | "The first trade comes [n]% above the drop's lowest close." | 5% | 1 | 1–15 |
+| Pace | "Then one trade every [n] trading days." | 10 | 5 | 5–30 |
 
 *Index trend*:
 
@@ -432,22 +433,22 @@ Five templates. The first four exist in the POC; *Your AI's top picks* is new. U
 | --- | --- | --- | --- | --- |
 | Buy and sell signals | "The trend line is the SMA over [n] days." | 200 | 10 | 50–300 |
 | Buy and sell signals | "The buy and sell lines are [n]% above and below the trend line." | 3% | 1 | 0–10 |
+| Buy and sell signals | "Buy only up to [n]% above the trend line." (above the buy and sell lines' %) | 10% | 1 | 4–30 |
 | Pace | "After a sale, wait [n] calendar days before the next buy signal." (a sell is never delayed) | 5 | 1 | 0–30 |
 
 The settings are available when starting a strategy and on a running one (Tune the settings).
 
 **"Backtest"** section
 - On the defaults: "You're on the tested defaults. Change a setting to compare."
-- As soon as any value differs: a table "Period" / "Tested" / "Yours" with rows "[2010-2014]", "[2015-2019]", "[2020-2024]", "All years", and the caption "Several periods, so one lucky stretch doesn't decide."
-- Re-run on each change (debounced), with a loading state.
-- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). When the re-run comes, keep the index fund and the worst year next to "Yours" (product rules).
+- With the backtest (planned, [backtest.md](backtest.md), *Screens*): a **Rerun tests** button (not a rerun on every change) and a preview with columns *Default*, *Saved* (when the saved settings differ from the defaults) and *Current*, the average of the periods only, with *S&P 500, monthly*; the periods and all baselines are on the Backtest page. Replaces the earlier "Period" / "Tested" / "Yours" table.
+- **Until the backtest engine exists** (built version): the section only says "Backtesting your strategy is coming soon.", on the defaults or not (Ernest, 2026-11-07: the tested defaults' table read as the user's own results). With the backtest, the index fund (*S&P 500, monthly*) and the worst year sit next to *Current* (product rules). How the backtest works (money, baselines, stocks, data) is in [backtest.md](backtest.md); how this section shows it is not designed yet.
 
 **Behaviour**
 - "Reset to tested" puts every value back.
 - "Save settings" stores the values and returns to the screen that opened it. Leaving with unsaved changes asks first (not drawn, not built yet).
 - Each changed row's stepper stops at its range; the zone's start stays at least a step under its end, and the end a step over the start.
 - On Review, rules that use settings show the tested defaults or the user's chosen values.
-- During the new-strategy flow the values live in the draft; Review's row reads "Advanced settings · tested defaults" or "· [n] changed", and so does Confirm's Settings row. Templates without settings yet show "This template's settings come in a later step." and Confirm leaves out the Settings row.
+- During the new-strategy flow the values live in the draft; Review's row reads "Advanced settings · tested defaults" or "· [n] changed", and so does Confirm's Settings row. Templates without settings yet show "This template's settings come later." and Confirm leaves out the Settings row.
 - Values belong to the user's strategy; the template's defaults never change.
 
 ### 2c · How we tested (`HowTested`)
@@ -462,7 +463,7 @@ The settings are available when starting a strategy and on a running one (Tune t
 - **"How a test runs"**:
   - "The rules are checked once a day, after the close, as in the app."
   - "Each signal is bought at the next day's opening price."
-  - "The tested defaults: €3,000 budget, €100 steps, up to 5 per stock."
+  - "The tested defaults: €3,000 budget, €100 per trade, up to 5 trades a stock."
   - "Results in euro, at each day's exchange rate."
   - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
   - "Fees: [€X] per trade. Taxes not included."
@@ -514,19 +515,19 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 | Label | Default | Step | Min–max | Help line |
 | --- | --- | --- | --- | --- |
 | Budget | €3,000 | €500 | €500–€1,000,000 | "The most this strategy can invest in total." |
-| Step size | €100 | €10 | €10–budget | "How much each buy is." |
-| Max steps per stock | 5 | 1 | 1–20 | "Buying a stock in steps limits the damage of a bad first buy." |
+| Amount per trade | €100 | €10 | €10–budget | "How much each buy is." |
+| Max trades per stock | 5 | 1 | 1–20 | "Buying a stock over several trades limits the damage of a bad first buy." |
 
 **Summary box**, updated live:
-- "Each buy is [step]. A stock gets at most [max] steps ([step × max]). The budget covers [floor(budget ÷ step)] steps, enough for [floor(steps ÷ max)] stocks bought in full." Singular "step" and "stock" when the number is 1.
-- A row of small squares, one per step (at most 60), grouped by stock in alternating shades, captioned "[n] steps in the budget" or "First 60 of [n] steps".
+- "Each buy is [amount]. A stock gets at most [max] trades ([amount × max]). The budget covers [floor(budget ÷ amount)] trades, enough for [floor(trades ÷ max)] stocks bought in full." Singular "trade" and "stock" when the number is 1.
+- A row of small squares, one per step (at most 60), grouped by stock in alternating shades, captioned "[n] trades in the budget" or "First 60 of [n] trades".
 - Last line, Live: "When the budget is used up, the strategy stops signalling buys. Only trades you confirm use the budget; skipped signals don't."
 - Last line, Simulation (not drawn): "When the budget is used up, the strategy stops buying."
 
 **Variants (not drawn)**
 - *Index trend*: budget only (all in, all out).
-- *Bear markets*: one fund, so "Max steps per stock" is the number of steps for the fund (default 5).
-- *Your AI's top picks*: add "One step every [14] days uses the budget in about [n] days."
+- *Bear markets*: one fund, so "Max trades per stock" is the number of trades for the fund (default 5).
+- *Your AI's top picks*: add "One trade every [14] days uses the budget in about [n] days."
 
 The same three settings can be changed later from the strategy page (not drawn).
 
@@ -545,7 +546,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 | Mode | Manual: "Manual: alerts for each signal; you record your trades" (*Your AI's top picks*: "Manual: a reminder for each AI round; you record your trades") · Simulation: "Simulation: the app records simulated trades" | Choose the mode |
 | Stocks | "[first stock] and [n] more" (fund templates: the fund's name) | Review |
 | Settings | "Tested defaults", or "[n] changed" | Advanced settings |
-| Budget | "€[budget] · steps of €[step] · up to [max] per stock" | Set your budget |
+| Budget | "€[budget] · €[amount] per trade · up to [max] per stock" | Set your budget |
 | Notifications | Live and AI: how signals and reminders come, from the account: "App and email", "App", "Email" or "Off" (App only where the app offers push). Other simulations: "Summary by email" or "Off". | The account page's Notifications (none for a guest) |
 | Prompt (AI only, built) | "Suggested" or "Edited" | Edit prompt |
 
@@ -588,7 +589,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 - H1: the strategy name; for a single-fund strategy (`investsIn !== 'stockList'`), the fund's latest close (with "Close on [date]" under it) sits on the right of the H1 and the fund's symbol, name, exchange and one-line description sit right below it; under them the mode tag, "Archived on [date]" for an archived strategy, and "*[template]* · since [date]".
 - **Summary** (Ernest 2026-11-08: black boxes are only for the charts, the results with their chart and a stock's price chart, so two never stack; the tiles and lists are violet boxes, and a fund's status is the first tile; the page is one column at every width)
   - Tiles come first in every state: a fund's Status (its pill and sentence, on one line when they fit), Budget used, the AI rows and Signals; one per row on a phone, side by side on desktop. Then the framed figures and chart, or, before the first buy, the template's past as quieter text.
-  - Live: two figures, "You" `[+X%]` and "S&P 500 fund" `[+X%]` (with its "i"); a chart with two lines (You solid and highlighted, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] steps" and "Signals" / "[n] did · [n] skipped · [n] missed".
+  - Live: two figures, "You" `[+X%]` and "S&P 500 fund" `[+X%]` (with its "i"); a chart with two lines (You solid and highlighted, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] trades" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
   - Under the chart, until the strategy has a year of its own: "Worst year, [years]: the template [−X%], an S&P 500 fund [−X%]" (product rule: results next to the worst year).
   - Before the first buy (not drawn): "No trades yet." and the template's past, a year on average: "In the past, [years], the template did on average [+X.X%] a year vs [+X.X%] for an S&P 500 fund. Its worst year was [−X%], the fund's [−X%]." The chart appears with the first buy.
@@ -603,17 +604,17 @@ The same three settings can be changed later from the strategy page (not drawn).
   - A stock ticked again (or added) is followed from that moment: the daily check gives it no signal for the days it was off the list (it knows a re-ticked stock by a check on a session before the one last finished when it was added); its first check back looks at the latest finished day only, as for a stock just added (#45). The rules still replay its whole history, so a step the rules took while it was off counts in its step numbers (the known *replay step numbers* issue, ROADMAP *After launch*).
 - One row per stock, each a link to that stock's page (not drawn):
   - The name, a status pill and a detail line:
-    - "WAITING FOR YOU" (live; "Signal: step [n] of [max]") → Confirm a signal
-    - "SIGNAL" (simulation, a signal on the latest checked day whose trade isn't recorded yet; "Step [n] of [max], bought at the next open"). Once the trade is in, the stock reads BUILDING or HOLDING and counts as holding on the dashboard card: an AI simulation's the same day, as it buys at once (F-007).
-    - "HOLDING" ("[n] of [max] steps")
-    - "BUILDING" ("[n] of [max] steps"; live: the steps the user bought)
+    - "WAITING FOR YOU" (live; "Signal: trade [n] of [max]") → Confirm a signal
+    - "SIGNAL" (simulation, a signal on the latest checked day whose trade isn't recorded yet; "Trade [n] of [max], bought at the next open"). Once the trade is in, the stock reads BUILDING or HOLDING and counts as holding on the dashboard card: an AI simulation's the same day, as it buys at once (F-007).
+    - "HOLDING" ("[n] of [max] trades")
+    - "BUILDING" ("[n] of [max] trades"; live: the trades the user bought)
     - "CANDIDATE": the stock meets the template's candidate rules, so the rules watch it for a buy signal. The detail line names the buy rules it still misses, in a few words, from the stock page's checks (at most two, joined by " · "): "Volume 0.84× (needs 1.2×)", "24.7% below its peak (zone 5–15%) · below the floor average". Before the daily check has stored the checks: "[n]% from [the template's zone]" or "Rules not met today". There is no "WATCHING" any more: every active stock of a strategy is watched, so the pill says whether it is a candidate. A candidate within the template's *getting close* % of its buy rule says "GETTING CLOSE" instead, as the dashboard card counts it (feedback, 2026-11-17). Candidates are sorted within their pill: in the buy range first (no distance left), then the closest to their buy rule, and those past it (past the comeback's buy area or the dip's zone) last.
     - "NOT A CANDIDATE": it fails a candidate rule, so no signal comes however the price moves. The detail line names the candidate rule it misses ("Rose 31.5% (needs 50%)", "Not beaten down lately"), or the template's words before the checks are stored ("Below its long trend", "Not beaten down"). A signal that ended because the stock stopped being a candidate reads the same.
     - "NOT CHECKED": "Not enough price history yet", or "Not checked yet" before the daily check has a verdict ("Checked after the US session ends" when the check at once couldn't fetch its latest price during a US session).
-    - "CANDIDATE" with "No budget left for its steps" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
+    - "CANDIDATE" with "No budget left for its trades" when the rules call for steps, or hold steps, the budget had no room for (no signal was made).
     - Rows are ordered: waiting for you, signal, building, holding, watching, then the rest; by name within each.
     - Every row opens the stock's page; a waiting signal is answered from there ("Answer the signal").
-    - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] steps"), and "DONE" ("This drop's steps are bought") once all steps of the drop are bought. Each drop counts only the signals and buys from that drop's first step (`cycleStart`), so a later drop after the budget is used up shows "CANDIDATE" with "No budget left for its steps".
+    - *Bear markets* shows "NOT A CANDIDATE" with "[n]% below its high (drop at 20%)" in normal markets and "CANDIDATE" with "[n]% above its low (needs 5%)" once a 20% drop is underway, "BUILDING" ("[n] of [max] trades"), and "DONE" ("This drop's trades are bought") once all steps of the drop are bought. Each drop counts only the signals and buys from that drop's first step (`cycleStart`), so a later drop after the budget is used up shows "CANDIDATE" with "No budget left for its trades".
     - *Index trend* shows "CANDIDATE" ("[n]% from the buy line", or "Below its long trend" before the checks are stored) when not holding, like the other templates, and "HOLDING" ("In the market") when holding. (It said "OUT OF THE MARKET" until #156, which read like a verdict on the market next to a fund close to its buy line.)
     - Live, the pill says where the user is: a step skipped or missed isn't held. When the rules still read a step held that the user's trades don't show (*Bear markets*' own step count, a trade deleted), an all-in or *Index trend* stock is "CANDIDATE" and a stepped one a candidate.
   - On the right: the stock's own result "[+X.X%]" with "You €[invested] in" (simulation: "€[invested] in"), or "–" with "No buys yet".
@@ -625,7 +626,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Signal rows show: date, stock name and symbol, action (BUY / SELL), status badge (WAITING FOR YOU, COMPLETED, SKIPPED, MISSED, SNOOZED), trigger reason / rule explanation, close price, and link to confirm or inspect the signal.
   - Trade rows show: date, action (BUY / SELL), stock symbol and name, source (`MANUAL` badge if manual), shares count, price, total amount converted to the strategy currency, fee, and exchange rate.
   - Manual trades, edits, and deletions change only the results (`You`), not the rules' replay, which follows the signals the user did. The signals also serve as the signal history required by regulation (design rule 7).
-- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn). For AI strategies the second is "AI rounds" (round history, not drawn).
+- Two buttons: "Tune the settings" / "Change its rules" → Advanced settings; "Backtest" / "How the template did" → Backtest page (not drawn; planned in [backtest.md](backtest.md), *Where it lives*: preset with the strategy's settings and budget on the test draft). For AI strategies the second is "AI rounds" (round history, not drawn).
 - For running simulations, a third tile: "Follow it manually" / "With these settings" (built, #92; not drawn), see *Following a simulation manually*. A manual copy shows "Copied from [simulation name]" under its name.
 - "Change the budget" (budget, step size, max steps per stock; not drawn).
 - **No notification switches** (removed 2026-11-01): they are all in the account's Notifications. With signals and reminders off there, a strategy keeps running quietly, and signals left unanswered become *Missed* when they end.
@@ -650,7 +651,7 @@ The same three settings can be changed later from the strategy page (not drawn).
 
 ### Stock page (built, not drawn)
 
-One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page.
+One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, opened from its row on the strategy page. Planned: *Test this stock*, opening the Backtest page preset with this stock under the strategy's settings ([backtest.md](backtest.md), *Where it lives*).
 
 - Top bar: "← STRATEGY" to the strategy page.
 - H1: the symbol, with the latest close (the one the rules looked at) next to it as the page's main figure and "Close on [date]" under the price; under them the name and exchange, what it does, and the strategy's mode tag with its name (a link back).
@@ -658,24 +659,24 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 - **Price chart** (under the tiles), not interactive, once the rules have checked the stock (feedback, 2026-11-12: no chart under "Not checked yet"): the daily closes, with a small "90 days", "30 days" (the default) and "7 days" control at its top right, and the rules' levels drawn as they moved day by day, as lines or shaded areas. Every day draws the levels of the stock's verdict today: a candidate's buy area or zone, else the line that would make it one, never both (Ernest, 2026-11-08). A price axis on the right gives the latest close and each level's latest value (both edges of an area), when it shows on the latest day the rules checked, pushed apart so they don't overlap. A legend under the chart names each level.
   - From the strategy's first check of the stock, each day's levels come from the rules replayed from that day, as the daily check does, on today's closes (so a split doesn't leave old levels behind), up to the last day the daily check ran (an archived strategy or an unticked stock stops there). A dashed vertical line marks that day, "Started [date]" (left out when it is before the period shown).
   - Before it, buys don't apply: only the lines that make a stock a candidate show (they go back in time), from the rules run over the price history as for a stock never bought.
-  - *The comeback*: a candidate, after the start, the "Buy area" from the buy line to its top; a stock that isn't one, the "Beaten down" line (the 52-week high less the drop the rules need). A candidate's chart marks the day it became a candidate (the first day of its current run as one, "Candidate since"; it was the day it was last beaten down, which moved forward every day the stock stayed down, until Ernest's feedback of 2026-11-21, #274) with an amber dashed line labelled "Candidate [date]" under the start's label, like the start's line, when the period reaches back to it (it was a ring, "Beaten down [date]", until Ernest's feedback of 2026-11-17). Before the first step, a blue ring marks the recent low the buy line counts from, "Recent low [date]" in the legend, when the period has it and it is before the latest day; a stock that isn't a candidate also draws the "SMA 200" line, the other beaten-down rule (Ernest, 2026-11-17). While the rules hold it, the "Last step" line: the price the last step was bought at, which the close must stay above for the next one (2026-11-21).
+  - *The comeback*: a candidate, after the start, the "Buy area" from the buy line to its top; a stock that isn't one, the "Beaten down" line (the 52-week high less the drop the rules need). A candidate's chart marks the day it became a candidate (the first day of its current run as one, "Candidate since"; it was the day it was last beaten down, which moved forward every day the stock stayed down, until Ernest's feedback of 2026-11-21, #274) with an amber dashed line labelled "Candidate [date]" under the start's label, like the start's line, when the period reaches back to it (it was a ring, "Beaten down [date]", until Ernest's feedback of 2026-11-17). Before the first step, a blue ring marks the recent low the buy line counts from, "Recent low [date]" in the legend, when the period has it and it is before the latest day; a stock that isn't a candidate also draws the "SMA 200" line, the other beaten-down rule (Ernest, 2026-11-17). While the rules hold it, the "Last trade" line: the price the last step was bought at, which the close must stay above for the next one (2026-11-21).
   - *Winners at a discount*: a candidate, after the start, the "Discount zone"; a stock that isn't one, the "Proven growth" line (its low plus the growth the rules need) on the days the growth isn't met. Once it is met the line goes: the rule reads the recent peak, not today's price, so a price under the line read as a rule not met (feedback, 2026-11-16).
   - *Bear markets*: the "Market fall" line always; after the start, the "Bounce buy" line once a drop has started (none before a drop).
-  - *Index trend*: after the start, the "Buy line" and the "Sell line"; before it, the price only.
+  - *Index trend*: after the start, the "Buy line" and the "Sell line", and the "Chase limit" while out of the market; before it, the price only.
   - This strategy's trades are dots on the price line on their day, green for a buy and pink for a sell, with "Buy" and "Sell" in the legend.
   - The scale fits the price and every level, so the distance to a far line stays in view.
   - A candidate's chart (the stored verdict, else the latest day's checks) is framed and drawn in green, a stock that isn't one in violet. The chart is left out with fewer than two closes in all; a period with fewer than two (a gap in the prices) shows the last two, its dates under the chart. The data comes from `GET /strategies/{id}/stocks/{assetId}/chart` (the last 90 calendar days).
 - **"Rules on [date]"**, the checks of the latest daily check, in parts (a part with no checks is left out):
   - "Is it a candidate?", with "Yes, since [date]: the rules watch it for a buy signal." (or "Yes: the rules watch it for a buy signal." when no date is stored) or "No: it gets no signal, however the price moves."
   - "Buy signal", with "[n] of [m] met. All of them: a buy signal." (not a candidate: "Counts once it is a candidate.", the rules dimmed).
-  - "Next step" (*The comeback*'s and *Bear markets*' pace): when the strategy already holds 1+ steps, shown open with "One more step when these allow it."; before the first step is bought (`preview: true`), collapsed behind a **"Show next steps"** `<details>` disclosure ("Unlocks after the first step is bought."). **Up to date with the trade** (Ernest, 2026-11-12): once the latest check's Manual buy signal is done (*I did it*; a skip buys nothing), its step is bought at the next open, so the checks shown are the ones with that step bought, from the last close: the next steps open (the pace counting from the buy), and the cooldown. The daily check computes them with the signal (`checksAfterBuy` in the day's facts); the next check replaces them with its own. A Simulation needs none: its trade comes with the next check. *Bear markets* counts its steps itself, so its pace shows after the next check. Held, its first row is "The turn" (step 1): "Step bought", "Step counted at the open on [date]." Then "Next step" ("[n] of [10] trading days since the last step.", with a bar) and "Above the last step" ("[+n]% vs the last step's price ([price]); needs above."); once every step is bought, only the turn. Used rows have no bar. While the cooldown after a step runs, a "Cooldown" row says the days left ("[n] more days to wait after the last buy or sale ([m] in all).") with a bar; held, it sits in "Next step" (*The comeback*) or "Buy signal" (*Winners at a discount*). After a sale it sits in "Buy signal", for every template with a cooldown (feedback, 2026-11-12).
+  - "Next trade" (*The comeback*'s and *Bear markets*' pace): when the strategy already holds 1+ steps, shown open with "One more trade when these allow it."; before the first step is bought (`preview: true`), collapsed behind a **"Show next trades"** `<details>` disclosure ("Unlocks after the first trade is bought."). **Up to date with the trade** (Ernest, 2026-11-12): once the latest check's Manual buy signal is done (*I did it*; a skip buys nothing), its step is bought at the next open, so the checks shown are the ones with that step bought, from the last close: the next steps open (the pace counting from the buy), and the cooldown. The daily check computes them with the signal (`checksAfterBuy` in the day's facts); the next check replaces them with its own. A Simulation needs none: its trade comes with the next check. *Bear markets* counts its steps itself, so its pace shows after the next check. Held, its first row is "The turn" (step 1): "Trade bought", "Trade counted at the open on [date]." Then "Next trade" ("[n] of [10] trading days since the last trade.", with a bar) and "Above the last trade" ("[+n]% vs the last trade's price ([price]); needs above."); once every step is bought, only the turn. Used rows have no bar. While the cooldown after a step runs, a "Cooldown" row says the days left ("[n] more days to wait after the last buy or sale ([m] in all).") with a bar; held, it sits in "Next trade" (*The comeback*) or "Buy signal" (*Winners at a discount*). After a sale it sits in "Buy signal", for every template with a cooldown (feedback, 2026-11-12).
   - "Sell signal" (*Index trend* in the market): "Met: a sell signal for the whole position."
   - **Every rule row has a status badge and a visual representation** (no tickless rows):
-    - Status badge on the right: `✓ Met`, `○ Not met`, `✓ Step bought`, `✓ Used at a buy`, `✕ Window closed` (when *The comeback*'s candidate window of 60 trading days has expired), `✕ Past zone` (when a *Winners at a discount* pullback fell past the discount zone's max %), or `✕ Past limit` (when price climbed past *The comeback*'s buy area).
+    - Status badge on the right: `✓ Met`, `○ Not met`, `✓ Counted`, `✓ Used at a buy`, `✕ Window closed` (when *The comeback*'s candidate window of 60 trading days has expired), `✕ Past zone` (when a *Winners at a discount* pullback fell past the discount zone's max %), or `✕ Past limit` (when price climbed past *The comeback*'s buy area or *Index trend*'s chase limit).
     - In *The comeback*, while the stock is a candidate (`beaten` met), today's recovery figures from the 52-week high and vs the SMA 200 are folded into the `Beaten down lately` sentence rather than shown as separate tickless rows; when not a candidate, `Drop from the 52-week high` and `Below SMA 200 at the drop` are shown as ticked candidate checks with threshold bars.
     - Visual gauges per rule type:
       - **Threshold bar (with `> 100%` overflow):** shown whether met or not, with a `100%` target tick at 75% of the bar width so values that exceed the threshold visibly pass the target tick. Its label is the share of the target reached (`76%`), except *Proven growth*, which gives the rise itself, as its sentence does (`99.3%`, not `199%` of the 50% needed; feedback, 2026-11-16).
-      - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`) and *The comeback*'s buy line, showing both the entry threshold and the upper limit past which the signal is cancelled.
+      - **3-zone window / band bar (`[Before | Window | Past limit]`):** for *In the discount zone* (`5–15%`), *The comeback*'s buy line and *Index trend*'s chase limit, showing both the entry threshold and the upper limit past which the signal is cancelled.
       - *Beaten down lately* has no bar: a bar of days read as "more is better". Its sentence says since when it is a candidate, and `Window closed` shows once the window has passed.
       - **Moving-average & level strips:** for *Averages stacked* (`Short $X > Long $Y`), *Long average rising* (`20d ago $X ↗ Now $Y`), and *Index trend* sell line (`Sell $X · SMA $Y · Buy $Z`). *Index trend* buy line uses a threshold progress bar.
   - The rules' names and sentences are each template's (`checks` in its texts), in English and Catalan.
@@ -692,7 +693,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 - Top bar: "← STOCK" (the stock's page; a fund strategy's signal: "← STRATEGY") · "SIGNAL · [DATE]"
 - Above the H1: the "MANUAL" tag and "[strategy name] · *[template]*"
 - H1: the stock's name, a link to its stock page (a stock list's signal)
-- Signal box: "Your rules for **[strategy name]** are met for [stock]: [8]% below its recent peak, still above its 50-day average. Under your settings that's step [2] of [5] ([€100])." Then "Close on [date]: $[XXX.XX]". The fact list depends on the template's rules.
+- Signal box: "Your rules for **[strategy name]** are met for [stock]: [8]% below its recent peak, still above its 50-day average. Under your settings that's trade [2] of [5] ([€100])." Then "Close on [date]: $[XXX.XX]". The fact list depends on the template's rules.
 - Sell signal for *Index trend* (not drawn): "Your rules for **[strategy name]** are met for a sale: the market closed [3.2]% below its 200-day average."
 - **"Did you act on it?"** with two choices side by side: "✓ I did it" and "× I skipped it". "I did it" is preselected in the wireframe.
 - A third, quieter action: **Snooze**, "Remind me next trading day", under the form while the signal waits. It doesn't answer the signal; once snoozed it reads "We'll remind you on [date]." 
@@ -708,7 +709,7 @@ One stock under one strategy's rules, at `/strategies/[id]/stocks/[asset]`, open
 
 Exchange-rate line, only when the stock's currency differs from the strategy's: "At $[1.0850] per €1, the rate of [date]. Change". Without a reference rate for the day: "No reference rate for that day yet: enter your broker's." "Change" opens a field for the rate the broker used. The rate follows the date if the date is changed, unless the user entered their own.
 
-Help line under the price: "Prefilled with [date]'s opening price. Change anything that differs from your broker." Before the open is in: "No opening price yet: prefilled with the close on [date]. Change it to your broker's price." Under the amount: "What bought shares. Your step of €[100] includes the fee." The fields show their currency in the label ("Price per share (USD)", "Amount (EUR)"). Button: "Save the trade".
+Help line under the price: "Prefilled with [date]'s opening price. Change anything that differs from your broker." Before the open is in: "No opening price yet: prefilled with the close on [date]. Change it to your broker's price." Under the amount: "What bought shares. Your amount per trade, €[100], includes the fee." The fields show their currency in the label ("Price per share (USD)", "Amount (EUR)"). Button: "Save the trade".
 
 The date is from the signal day to today; a field the server refuses shows why under it ("Enter the price per share.").
 
@@ -733,10 +734,10 @@ The date is from the signal day to today; a field the server refuses shows why u
 - Intro: "It takes about two minutes. The app doesn't connect to your AI."
 - **"01 Copy the prompt"**: a preview of the prompt (filled in with today's date, the ticked stocks and the sources on), cut off after a few lines. A "Copy prompt" button, which turns into "✓ Copied". Under it: "Open in ChatGPT · Claude · Gemini", plain links that open the service in a new tab, with no connection.
 - **"02 Paste the answer"**: a text area labelled "Your AI's whole answer", and a select labelled "AI model you used" with "ChatGPT · GPT-5", "Claude · Opus", "Gemini · 2.5 Pro", "Other…" (Other shows a free-text field). Prefilled with the model from the last round.
-- **"03 Your AI's scores"**: once the answer is read, one row per stock: overall score, name, the AI's one-line reason. The top score is highlighted. Under it, when the check passes: "✓ Every stock scored, all scores 0-100. The top score gets one step."
+- **"03 Your AI's scores"**: once the answer is read, one row per stock: overall score, name, the AI's one-line reason. The top score is highlighted. Under it, when the check passes: "✓ Every stock scored, all scores 0-100. The top score gets one trade."
 - **Consent box**, until the user has answered once (here or in the account), before the button: title "Help us learn which AIs score stocks best", text "Share this round: the AI model you used and its answer, kept apart from your account. We never keep your name, email, budget or trades with it. You can stop at any time in Account → Data and privacy, which also removes what you shared.", checkbox "Share my AI rounds" (off by default), and "What we keep" (opens in place: what a shared round holds, and what it never holds). Using the scores records the answer, ticked or not. Afterwards, one line instead: "Sharing your AI rounds · Change" or "Not sharing your AI rounds · Change" (to the account).
-- Under the scores, the steps they give: "[Zscaler] gets step [2] of [5] ([€100])." (one per pick), or "No budget left: this round gives no step." / "Every scored stock has all its steps: this round gives no step." A round that gives no step can still be used: it is done, with its scores kept.
-- **Error state** (built, not drawn): a warning box "Ask your AI again" listing each problem: "[Stock] is scored more than once.", "[Stock]: the overall score isn't a number from 0 to 100.", or "We couldn't find the scores table. Ask your AI to answer only with the table."; "Use these scores" stays off. A stock with no score ("[Stock] has no score, so it can't get a step.") or one that is not yours ("\"[text]\" isn't one of your stocks, so it was left out.") only warns, in a "Worth a look" box, and the scores can still be used. Backslashes in a cell are ignored (a "Grow.<backslash>L" still matches Grow.L).
+- Under the scores, the steps they give: "[Zscaler] gets trade [2] of [5] ([€100])." (one per pick), or "No budget left: this round gives no trade." / "Every scored stock has all its trades: this round gives no trade." A round that gives no step can still be used: it is done, with its scores kept.
+- **Error state** (built, not drawn): a warning box "Ask your AI again" listing each problem: "[Stock] is scored more than once.", "[Stock]: the overall score isn't a number from 0 to 100.", or "We couldn't find the scores table. Ask your AI to answer only with the table."; "Use these scores" stays off. A stock with no score ("[Stock] has no score, so it can't get a trade.") or one that is not yours ("\"[text]\" isn't one of your stocks, so it was left out.") only warns, in a "Worth a look" box, and the scores can still be used. Backslashes in a cell are ignored (a "Grow.<backslash>L" still matches Grow.L).
 - **Before it is due** (built): H1 "Next AI round", "Your next AI round is due on [date]. You can run it until [date]; after that it's skipped. You can also run an extra round now.", links to the past rounds and back to the strategy, and the button "Run a round now". It opens the same round screen with H1 "An extra AI round" and "Outside the schedule: your next round is still due on [date]."; using its scores makes an extra round (see the template's rules).
 - **Skip** (built, a due round only, both modes): under the form, "Skip this round" with "No signal this round. The next one is due on [date]." It marks the round *Skipped* and returns to the strategy page.
 - Simulation, once the scores give a step: "The simulation buys at once, at the latest price."
@@ -748,7 +749,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 - **AI model list** (assumed): "ChatGPT · GPT-5", "Claude · Opus", "Gemini · 2.5 Pro" and "Other…" (a name of the user's own, at most 60 characters), in `frontend/src/features/ai-round/aiModels.ts`. Agents keep it current.
 - "Use these scores":
   - Simulation: records the signal-trade buy of the top-scored stock at once, at the latest available price, within max steps and the budget, and returns to the dashboard.
-  - Live: creates a signal for the top-scored stock and opens Confirm a signal for it, with the box reading "Your AI scored [stock] highest in [strategy name]. Under your settings that's step [n] of [max] ([€100])." (draft).
+  - Live: creates a signal for the top-scored stock and opens Confirm a signal for it, with the box reading "Your AI scored [stock] highest in [strategy name]. Under your settings that's trade [n] of [max] ([€100])." (draft).
 - Every round is kept in the strategy's history: date, prompt used (and whether edited), AI model, full answer, scores, reasons, and the step each stock got.
 - **AI data sharing**, when on, keeps per round: AI model, date, prompt version and whether edited, stock list (symbols), sources on, full answer, parsed scores. Never with it: name, email, account ID, strategy name, budget, step size, trades, or whether the user acted. Before storing, remove anything that looks like an email address, phone number or URL parameters (a link keeps its address without its query string). Store it apart from account data (`shared_ai_rounds`, with no key to the user). It keeps the day only, never the time, so it can't be matched to the user's round by when it was made. It has **no key to the user**; the link is kept on the user's side: their own round notes its shared copy (`ai_rounds.shared_round_id`). It isn't anonymous in the strict sense (its text is the same as the answer the user keeps), so **turning sharing off removes what the user shared**, through those notes. Deleting the account (ROADMAP item 18) must do the same, before it deletes the rounds. A round being saved while the user turns sharing off either sees the new choice or is removed with the rest. "What we keep" says so. (Changed after the code review, #70; the first version claimed it couldn't be traced, which wasn't true.)
 
@@ -756,7 +757,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 
 - Reached from the strategy page's "AI rounds" tile (it replaces "Backtest" for AI strategies) and the AI round screen.
 - Top bar "← STRATEGY" · "AI ROUNDS"; H1 "AI rounds"; the strategy's name.
-- **"Picks vs the rest"** (once a done round has later prices): "Since each round, the stocks that got a step moved [+x.x%] on average, the others [+y.y%] ([n] rounds)." Caption: "Price changes in each stock's own currency, without fees. It shows whether the scores picked well, not your results." This is the spec's *Picks vs the rest* metric: each done round compares the average change of its picks' closes and of the others' from the round's session to the latest close; the line averages the rounds.
+- **"Picks vs the rest"** (once a done round has later prices): "Since each round, the stocks that got a trade moved [+x.x%] on average, the others [+y.y%] ([n] rounds)." Caption: "Price changes in each stock's own currency, without fees. It shows whether the scores picked well, not your results." This is the spec's *Picks vs the rest* metric: each done round compares the average change of its picks' closes and of the others' from the round's session to the latest close; the line averages the rounds.
 - One card per round, newest first, with its due date and status (DUE, DONE, SKIPPED; an extra round "DONE · EXTRA"): a due one links to the round once it can be run ("Run it now") or reads "The next round."; a skipped one "Skipped: no signal that round."; a done one its AI model and day, "your prompt" when edited, its picks vs the rest, the scores (top first, the picks marked "STEP [n]"), and "The prompt" and "Your AI's answer" opening in place.
 - Bottom: the site footer (short disclaimer).
 
@@ -764,7 +765,7 @@ The date is from the signal day to today; a field the server refuses shows why u
 
 - Summary box: "No results yet. They start after your first AI round." until a round is done; then as other strategies. Two more rows: "AI round" ("Due now ›" to the round, or "Next on [date]", then "· [n] done · [n] skipped") and, once there are prices since a round, "Picks vs the rest" ("[+x.x%] vs [+y.y%]").
 - A stock's row: "SIGNAL" / "WAITING FOR YOU" / "BUILDING" / "HOLDING" as for other templates; otherwise "WATCHING" with "Last score: [n]" (its overall score in the last round that scored it) or "Not scored yet".
-- Signals read "Your rules for [strategy] are met for [stock]: your AI scored it [91] out of 100, the top score of the round. Under your settings that's step [n] of [max] ([€100])." (or "number [n] in the round" for a later pick).
+- Signals read "Your rules for [strategy] are met for [stock]: your AI scored it [91] out of 100, the top score of the round. Under your settings that's trade [n] of [max] ([€100])." (or "number [n] in the round" for a later pick).
 
 ### Admin settings (`/admin`, not drawn, for Ernest)
 
@@ -870,7 +871,8 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - **AI rounds:** strategy, due date, status (due, done, skipped), date run, the session its signals are dated, prompt text and version, edited flag, AI model, full answer, parsed scores and reasons, and the step each stock got (`ai_rounds`).
 - **Shared AI rounds:** a separate store with no account ID (`shared_ai_rounds`); the user's own round notes its shared copy, to remove it (see the AI round); deleting the strategy removes them too.
 - **Daily evaluation:** per strategy and stock: status, distance to the rules, signal start and end.
-- **Backtest results:** per template, parameter set and period: result vs the index, worst year, number of trades. Cached by parameter set.
+- **Backtest results:** per test (template or strategy settings, stocks, periods, money, costs, data snapshot): the strategy and its three baselines per period, money-weighted: a year on average, worst year, the average share of the budget invested, number of steps. Cached by that key ([backtest.md](backtest.md)).
+- **Backtest data:** a monthly snapshot of the test draft's stocks, SPY and the templates' starter lists with their daily prices, in object storage, with its quality report; other stocks and indexes are fetched when a test runs ([backtest.md](backtest.md)).
 - **Market data:** daily US prices and volumes, exchange rates.
 - **Feedback:** author user, kind (`bug` | `idea` | `note` | `feature`), status (`open` | `closed` | `validated`), comment text, optional page route, DOM selector and selected text quote, timestamps.
 
@@ -885,7 +887,7 @@ The schema is in [backend/DATA-MODEL.md](../backend/DATA-MODEL.md); this is the 
 - Sell signals for *Index trend*, and its "Candidate" status when not holding.
 - ~~Manual trade form; editing and deleting trades.~~ (built in Signals and trades section, #61)
 - The AI comparison page (later: results by AI model, never a ranking of stocks). The round history and the error state are built.
-- Backtest page; History (every signal, trade, skip, AI round and status change, in date order).
+- Backtest page (how it works is decided in [backtest.md](backtest.md); its screens are not); History (every signal, trade, skip, AI round and status change, in date order).
 - Changing the budget.
 - Snooze on Confirm a signal; "Enter shares instead" and the exchange-rate line.
 - Summary settings (a time of your choice).

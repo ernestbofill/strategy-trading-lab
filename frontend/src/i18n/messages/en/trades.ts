@@ -17,7 +17,7 @@ export const trades = {
   'trades.fee': '(fee {fee})',
   'trades.buySignal': 'Buy signal',
   'trades.sellSignal': 'Sell signal',
-  'trades.stepOf': 'Step {n} of {max}',
+  'trades.stepOf': 'Trade {n} of {max}',
   'trades.close': 'Close: {price}',
   'trades.remindOn': 'Remind on {date}',
   'trades.endedOn': 'Ended {date}',

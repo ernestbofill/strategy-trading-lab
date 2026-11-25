@@ -9,7 +9,7 @@ import { useT } from '../../i18n/I18n'
 import { AdvancedSettingsBody } from './AdvancedSettingsBody'
 import styles from './Advanced.module.css'
 import { useNewStrategyDraft } from './NewStrategyDraft'
-import { reviewPath } from './paths'
+import { advancedPath, reviewPath } from './paths'
 import {
   changedSettings,
   formatSetting,
@@ -58,7 +58,7 @@ function AdvancedContent({ template }: { template: TemplateDetail }) {
   return (
     <Screen top={top} action={<PrimaryAction onClick={save}>{t('newStrategy.advanced.save')}</PrimaryAction>}>
       <PageHeader title={t('newStrategy.advanced.title')} lead={t('newStrategy.advanced.lead')} />
-      <AdvancedSettingsBody template={template} values={values} onChange={setValues} />
+      <AdvancedSettingsBody template={template} values={values} onChange={setValues} backtest={{ from: advancedPath(template.key) }} />
     </Screen>
   )
 }

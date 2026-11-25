@@ -2,6 +2,7 @@ import { common } from './en/common'
 import { aiRound } from './en/aiRound'
 import { account } from './en/account'
 import { admin } from './en/admin'
+import { backtest } from './en/backtest'
 import { dashboard } from './en/dashboard'
 import { feedback } from './en/feedback'
 import { newStrategy } from './en/newStrategy'
@@ -18,6 +19,7 @@ export const en = {
   ...aiRound,
   ...account,
   ...admin,
+  ...backtest,
   ...dashboard,
   ...feedback,
   ...newStrategy,

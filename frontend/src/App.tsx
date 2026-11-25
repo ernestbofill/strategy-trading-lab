@@ -69,6 +69,7 @@ const AdminAlerts = lazyPage(() => import('./features/admin/AdminAlerts').then((
 const AdminNotifications = lazyPage(() => import('./features/admin/AdminNotifications').then((m) => m.AdminNotifications))
 const AdminTemplates = lazyPage(() => import('./features/admin/AdminTemplates').then((m) => m.AdminTemplates))
 const AdminBacktestData = lazyPage(() => import('./features/admin/AdminBacktestData').then((m) => m.AdminBacktestData))
+const BacktestPage = lazyPage(() => import('./features/backtest/BacktestPage').then((m) => m.BacktestPage))
 
 /**
  * The new-strategy draft belongs to one user (or a guest): another user, or a log-out, starts it over. The owner is
@@ -287,6 +288,14 @@ export default function App() {
                       element={
                         <LazyPage>
                           <AdminBacktestData />
+                        </LazyPage>
+                      }
+                    />
+                    <Route
+                      path="/backtest"
+                      element={
+                        <LazyPage>
+                          <BacktestPage />
                         </LazyPage>
                       }
                     />

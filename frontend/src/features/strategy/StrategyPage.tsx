@@ -21,6 +21,8 @@ import { StockRules, StockStatus } from './StockPage'
 import { StockPill } from './StockPill'
 import { followedStocks, stockLine, stockPriceLabel } from './stockLine'
 import { useStrategy } from './useStrategy'
+import { useRole } from '../account/AccountContext'
+import { backtestPath } from '../backtest/paths'
 
 function Figure({ label, value, highlight, tip }: { label: string; value: number | null; highlight?: boolean; tip?: ReactNode }) {
   return (
@@ -212,6 +214,7 @@ function StrategyView({ s }: { s: StrategyDetail }) {
   const [renaming, setRenaming] = useState(false)
   const live = s.mode === 'live'
   const running = s.status === 'running'
+  const owner = useRole() === 'owner'
   const fund = s.investsIn !== 'stockList' ? s.stocks[0] : undefined
   const answer =
     fund?.status === 'waitingForYou' && fund.signalId ? <PrimaryAction to={signalPath(s.id, fund.signalId)}>{t('stock.answer')}</PrimaryAction> : undefined
@@ -273,12 +276,18 @@ function StrategyView({ s }: { s: StrategyDetail }) {
         </>
       )}
       <SignalsAndTrades s={s} />
-      {(running || s.aiRounds) && (
+      {(running || s.aiRounds || (owner && s.words)) && (
         <div className={styles.tiles}>
           {running && (
             <Card as={Link} to={strategySettingsPath(s.id)} interactive className={styles.tile}>
               <span className={`ui-strong ${styles.tileTitle}`}>{t('strategy.tile.tuneTitle')}</span>
               <span className={styles.detail}>{t('strategy.tile.tuneSub')}</span>
+            </Card>
+          )}
+          {owner && s.words && (
+            <Card as={Link} to={backtestPath({ strategy: s.id, from: strategyPath(s.id) })} interactive className={styles.tile}>
+              <span className={`ui-strong ${styles.tileTitle}`}>{t('backtest.entry.tileTitle')}</span>
+              <span className={styles.detail}>{t('backtest.entry.tileSub')}</span>
             </Card>
           )}
           {s.aiRounds && (

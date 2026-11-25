@@ -320,6 +320,17 @@ Money-weighted (IRR) on the money invested.
 
 **E · Backtest data** (owner page, `/admin/backtest-data`): the snapshot and *Refresh*; the test draft per period (stocks kept and replaced); from the last draw, the members and how many have prices at each period's start, missing and renamed tickers (lists), and the two checks (representative, candidates per template and year); warnings (gaps, jumps), each with ticker and date.
 
+## The screens as built (item 55)
+
+Assumptions made while building them (listed in its PR):
+
+- **The Backtest page is `/backtest`, owner only, in English** like the owner pages; its entry links and the Advanced settings panel are translated (English and Catalan), as they sit on translated screens. The page opens preset from the URL (`template`, `strategy`, `stock`, and `from` for the top bar's way back) and runs the test at once.
+- **A strategy's test** uses its settings, budget, amount per trade, trades a stock and currency, with **no monthly limit** (limit = budget) until strategies have one (item 57). *This strategy's list* is offered in *Edit*, over the latest period.
+- **The settings on screen** (Advanced settings' *Open the backtest page*) are handed over in the page's state; the line under the title says where the rules come from and how many differ from the tested values.
+- **The panel** runs on *Rerun tests*, not on open: up to three tests (Default, Saved, Current), each kept by its key, so a repeat is quick. *Saved* shows only when a running strategy's settings differ from the defaults, *Current* only when the screen's differ from both.
+- **The chart** shows the gain on the money invested at each month's end, for the strategy and baseline 1, per period (not on *All*). Tapping a baseline to add its line is left for later.
+- **Trades** on *All* are every period's.
+
 ## Biases
 
 | Bias | How the backtest handles it |
@@ -339,4 +350,5 @@ Money-weighted (IRR) on the money invested.
 
 ## Open points
 
-- The screens' last details, while building ROADMAP item 55.
+- *Bear markets* and *Index trend*'s test money (item 54's default: the template's budget, no monthly limit), with item 56's numbers.
+- Tapping a baseline to add its line to the chart (item 55 left it out).

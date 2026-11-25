@@ -247,6 +247,12 @@ export const httpApi: Api = {
   getAdminBacktestData: () => json(admin('GET', '/backtest-data')),
   drawAdminBacktest: () => done(admin('POST', '/backtest-data/draw')),
   snapshotAdminBacktest: () => done(admin('POST', '/backtest-data/snapshot')),
+  runBacktest: (test) =>
+    json(request('POST', '/admin/backtest', test, {
+      fields: 'none',
+      // The API says why in plain text: a request out of range (400) or missing data (409).
+      refused: (problem, status) => (status === 400 ? new InvalidValueError(typeof problem === 'string' ? problem : 'That test was refused.') : undefined),
+    })),
   sendAdminTestPush: (push) => json(admin('POST', '/notifications/test', push)),
   getAdminAlerts: () => json(admin('GET', '/alerts')),
   dismissAdminAlert: (id) => done(admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),

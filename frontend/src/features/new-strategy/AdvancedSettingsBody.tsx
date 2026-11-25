@@ -1,5 +1,7 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import type { Setting, TemplateDetail } from '../../api'
+import { useRole } from '../account/AccountContext'
+import { BacktestPanel } from '../backtest/BacktestPanel'
 import { RichText } from '../../components/RichText'
 import { Section } from '../../components/Section'
 import { useT } from '../../i18n/I18n'
@@ -17,14 +19,17 @@ interface AdvancedSettingsBodyProps {
   values: SettingValues
   onChange: Dispatch<SetStateAction<SettingValues>>
   action?: ReactNode
+  /** For the backtest panel (owner only): a running strategy's saved settings and id, and the screen to come back to. */
+  backtest?: { saved?: SettingValues; strategyId?: string; from: string }
 }
 
 /**
  * The setting rows with steppers, in the template's groups when it has them (each with what that part of the rules
  * decides), a reset to tested button, optional action button, and the backtest section.
  */
-export function AdvancedSettingsBody({ template, values, onChange, action }: AdvancedSettingsBodyProps) {
+export function AdvancedSettingsBody({ template, values, onChange, action, backtest }: AdvancedSettingsBodyProps) {
   const t = useT()
+  const owner = useRole() === 'owner'
   const tested = testedValues(template)
   const changed = changedSettings(template, values)
   const anyChanged = Object.keys(changed).length > 0
@@ -68,7 +73,8 @@ export function AdvancedSettingsBody({ template, values, onChange, action }: Adv
           {action && <div className={styles.action}>{action}</div>}
         </div>
       </div>
-      {template.backtest && (
+      {owner && backtest && template.backtest && <BacktestPanel template={template} values={values} {...backtest} />}
+      {!(owner && backtest) && template.backtest && (
         <Section title={t('newStrategy.advanced.backtest')}>
           <p className={`well ${styles.message}`}>{t('newStrategy.advanced.backtestSoon')}</p>
         </Section>

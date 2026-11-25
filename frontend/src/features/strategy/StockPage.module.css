@@ -214,3 +214,13 @@
   font-size: 11px;
   font-weight: 500;
 }
+
+/* The owner's way to the Backtest page: one stock under this strategy's rules. */
+.testStock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 44px;
+  margin: var(--space-3) 0;
+  color: var(--link);
+}

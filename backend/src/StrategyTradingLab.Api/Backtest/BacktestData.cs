@@ -281,7 +281,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         member.Problem = problem;
         if (bars.Count == 0) return member;
         member.Name = raw.Name;
-        member.Sector = await SectorAsync(symbol, cancellationToken);
+        member.Sector = await SectorAsync(symbol, cancellationToken) ?? Sp500Membership.Embedded.FallbackSector(symbol);
         (member.First, member.Last, member.Days) = (bars[0].Date, bars[^1].Date, bars.Count);
         member.Warnings = PriceQuality.Check(symbol, bars, calendar);
         foreach (var period in periods)

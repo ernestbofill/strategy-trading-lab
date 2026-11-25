@@ -1,0 +1,125 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 12px var(--space-3) var(--space-3);
+  background: var(--surface-sidebar);
+  border: 1px solid var(--border-hairline);
+}
+
+.groupTitle {
+  margin: 0;
+  font: 600 16px/24px var(--font-ui);
+  color: var(--ink);
+}
+
+.subTitle {
+  margin: var(--space-2) 0 0;
+  font: 600 14px/20px var(--font-ui);
+  color: var(--ink);
+}
+
+.line,
+.muted,
+.warning,
+.error {
+  margin: 0;
+  font: 14px/20px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.warning {
+  color: var(--warning);
+}
+
+.error {
+  color: var(--danger-ink);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.period {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-top: var(--space-2);
+}
+
+.lists {
+  display: grid;
+  gap: 4px var(--space-2);
+  margin: 0;
+  font: 13px/20px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.lists dt {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.lists dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  font: 14px/20px var(--font-ui);
+  color: var(--ink-sidebar);
+}
+
+.table th,
+.table td {
+  padding: 6px 12px 6px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--surface-editor);
+  white-space: nowrap;
+}
+
+.table td {
+  font-family: var(--font-mono);
+}
+
+.table thead th {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.short {
+  color: var(--warning);
+}
+
+.replaced {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--ink-sidebar);
+}

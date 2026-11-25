@@ -1,5 +1,6 @@
 import type { Account, BackendVersion, Currency, Locale, PushSubscriptionJson, SignUp, SignUpOptions } from './account'
 import type { AdminAddedAsset, AdminAlert, AdminAsset, AdminDatabases, AdminInvite, AdminNotifications, AdminPrices, AdminPush, AdminSetting, AdminTemplate, AdminTemplateChange, AdminUsers, DatabaseName, NewInvite, PricesFlushed, RatesDownloaded, TestPush, YahooCheck } from './admin'
+import type { BacktestDataStatus } from './backtest'
 import type { AiPromptPreview, AiPromptRequest, AiReading, AiRoundDetail, AiRoundHistory, AiRoundResult, AiSetup } from './ai'
 import type { AddedAsset, AssetMatch } from './assets'
 import type { FeedbackItem, FeedbackPatch, FeedbackStatus, NewFeedback } from './feedback'
@@ -124,6 +125,12 @@ export interface Api {
   getAdminAssets(): Promise<AdminAsset[]>
   getAdminUsers(): Promise<AdminUsers>
   getAdminNotifications(): Promise<AdminNotifications>
+  /** The backtest's data: the draw or snapshot running, the latest draw's report and the latest snapshot's. */
+  getAdminBacktestData(): Promise<BacktestDataStatus>
+  /** Starts a draw of the test draft in the background. Rejects with `InvalidValueError` saying why not (one running, no object storage). */
+  drawAdminBacktest(): Promise<void>
+  /** Starts this month's snapshot in the background. Rejects with `InvalidValueError` saying why not (one running, nothing drawn yet). */
+  snapshotAdminBacktest(): Promise<void>
   /** Pushes to every device of the user and resolves with the push as recorded (sent or failed). Rejects with `InvalidFieldsError` (`title`, `body`), `InvalidValueError` saying why not (no push set up, no device), `TooManyTriesError` after 30 an hour. */
   sendAdminTestPush(push: TestPush): Promise<AdminPush>
   /** The open and dismissed alerts, and those cleared in the last 7 days, last seen first. */

@@ -56,6 +56,7 @@ export const common = {
   'footer.invites': 'Invites',
   'footer.adminNotifications': 'Notifications',
   'footer.adminTemplates': 'Templates',
+  'footer.backtestData': 'Backtest data',
   'footer.feedback': 'Feedback',
   'footer.siteMap': 'Site map',
 

@@ -103,7 +103,7 @@ export const newStrategy = {
   'newStrategy.how.run.bought': "Each signal is bought at the next day's opening price.",
   'newStrategy.how.run.euro': "Results in euro, at each day's exchange rate.",
   'newStrategy.how.run.index': 'An S&P 500 fund (SPY) gets the same budget, at the same monthly limit, and is never sold.',
-  'newStrategy.how.run.indexFund': 'The same fund, bought with the whole budget on the first day and never sold.',
+  'newStrategy.how.run.indexFund': 'The same fund or index, bought with the whole budget on the first day and never sold.',
   'newStrategy.how.run.irr': 'Money-weighted returns (IRR) on the money invested: idle cash is left out.',
   'newStrategy.how.run.fees': 'Fee and spread: {fee} a trade. Taxes not included.',
   'newStrategy.how.byPeriod': 'By period',

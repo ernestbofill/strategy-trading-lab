@@ -306,7 +306,7 @@
     ],
     "backtest": {
       "scope": "Un fons de l'S&P 500 (SPY), 2011–2026. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
-      "years": "2011–2026",
+      "years": "2011–2026 (va operar el 2019–22)",
       "universe": "Un fons de l'S&P 500 (SPY)",
       "testedDefaults": "Els valors provats: pressupost de 3.000 €, 5 operacions de 600 €.",
       "stories": {
@@ -426,48 +426,48 @@
       }
     ],
     "backtest": {
-      "scope": "6 fons indexats, 2011–2026.",
+      "scope": "6 índexs, 2011–2026.",
       "years": "2011–2026",
-      "universe": "6 fons indexats (S&P 500, Nasdaq-100, Desenvolupats ex-EUA, DAX, Nikkei 225, Vanguard 500)",
+      "universe": "6 índexs, amb un fons on se n'ha provat un (S&P 500, Nasdaq-100, Desenvolupats ex-EUA, Vanguard 500) o l'índex mateix (DAX, Nikkei 225)",
       "testedDefaults": "Tot el pressupost de 3.000 €, tot dins, tot fora.",
       "stories": {
-        "All": "3,1 l'any per sota; pitjor el 2022 (−18,6% vs −13,1%)"
+        "All": "3,1 punts l'any per sota; pitjor el 2022 (−18,6% vs −13,1%)"
       },
       "benchmarks": {
         "sp500": {
           "name": "S&P 500",
           "stories": {
-            "All": "3,1 l'any per sota; pitjor el 2022 (−18,6% vs −13,1%)"
+            "All": "3,1 punts l'any per sota; pitjor el 2022 (−18,6% vs −13,1%)"
           }
         },
         "qqq": {
           "name": "Nasdaq-100",
           "stories": {
-            "All": "Pitjor any −13,4% vs −28,4%, per 2,1 l'any menys"
+            "All": "Pitjor any −13,4% vs −28,4%, per 2,1 punts l'any menys"
           }
         },
         "efa": {
           "name": "Desenvolupats ex-EUA",
           "stories": {
-            "All": "3,9 l'any per sota"
+            "All": "3,9 punts l'any per sota"
           }
         },
         "dax": {
           "name": "DAX",
           "stories": {
-            "All": "Pitjor any −11,3% vs −18,3%, per 1,2 l'any menys"
+            "All": "Pitjor any −11,3% vs −18,3%, per 1,2 punts l'any menys"
           }
         },
         "nikkei": {
           "name": "Nikkei 225",
           "stories": {
-            "All": "7,9 l'any per sota"
+            "All": "7,9 punts l'any per sota"
           }
         },
         "vfinx": {
           "name": "Vanguard 500",
           "stories": {
-            "All": "2,5 l'any per sota"
+            "All": "2,5 punts l'any per sota"
           }
         }
       }

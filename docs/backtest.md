@@ -342,7 +342,7 @@ Run on production on 2026-11-25 (snapshot 2026-11, the defaults in use, in euro)
 | *Bear markets* (SPY) | no trade (17.9) | no trade (8.5) | +16.5% (15.6) | no trade (18.2) | **+16.5%** (15.6) | −13.1% (−13.1), 2022 |
 | *Index trend* (SPY) | +16.6% (17.9) | +5.8% (8.5) | +9.2% (15.6) | +15.9% (18.2) | **+11.9%** (15.0) | −18.6% (−13.1), 2022 |
 
-The index's figure in brackets. *Index trend* on the other tabs (All, against the fund held): Nasdaq-100 +17.1% (19.2), worst −13.4% (−28.4); Developed ex-US +3.9% (7.8); DAX +7.1% (8.3), worst −11.3% (−18.3); Nikkei 225 +0.3% (8.2); Vanguard 500 +12.4% (14.9).
+The index's figure in brackets. *Index trend* on the other tabs (All, against the fund held): Nasdaq-100 +17.1% (19.2), worst −13.4% (−28.4); Developed ex-US +3.9% (7.8), worst −10.2% (−10.3); DAX (the index, ^GDAXI) +7.1% (8.3), worst −11.3% (−18.3); Nikkei 225 (the index, ^N225) +0.3% (8.2); Vanguard 500 +12.4% (14.9).
 
 - **Budget at work:** about 73% (*Winners at a discount*) and 83% (*The comeback*) against 85% for the S&P 500, monthly; *Index trend* 80%; *Bear markets* 17% (it trades in one period of four).
 - **The budget runs out early:** at €400 a month, both stock templates spend the €6,000 within about 15 months of each period's start (60 trades a period), so the later years only hold, and the signals after go unpaid (54 to 218 a period).

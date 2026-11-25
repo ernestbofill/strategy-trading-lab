@@ -306,7 +306,7 @@
     ],
     "backtest": {
       "scope": "An S&P 500 fund (SPY), 2011–2026. Big drops are rare: it may not signal for years.",
-      "years": "2011–2026",
+      "years": "2011–2026 (traded 2019–22)",
       "universe": "An S&P 500 fund (SPY)",
       "testedDefaults": "The tested defaults: €3,000 budget, 5 trades of €600.",
       "stories": {
@@ -426,48 +426,48 @@
       }
     ],
     "backtest": {
-      "scope": "6 index funds, 2011–2026.",
+      "scope": "6 indexes, 2011–2026.",
       "years": "2011–2026",
-      "universe": "6 index funds (S&P 500, Nasdaq-100, Developed ex-US, DAX, Nikkei 225, Vanguard 500)",
+      "universe": "6 indexes, through a fund where one is tested (S&P 500, Nasdaq-100, Developed ex-US, Vanguard 500) or the index itself (DAX, Nikkei 225)",
       "testedDefaults": "The whole €3,000 budget, all in, all out.",
       "stories": {
-        "All": "3.1 a year behind; 2022 worse (−18.6% vs −13.1%)"
+        "All": "3.1 points a year behind; 2022 worse (−18.6% vs −13.1%)"
       },
       "benchmarks": {
         "sp500": {
           "name": "S&P 500",
           "stories": {
-            "All": "3.1 a year behind; 2022 worse (−18.6% vs −13.1%)"
+            "All": "3.1 points a year behind; 2022 worse (−18.6% vs −13.1%)"
           }
         },
         "qqq": {
           "name": "Nasdaq-100",
           "stories": {
-            "All": "Worst year −13.4% vs −28.4%, for 2.1 a year less"
+            "All": "Worst year −13.4% vs −28.4%, for 2.1 points a year less"
           }
         },
         "efa": {
           "name": "Developed ex-US",
           "stories": {
-            "All": "3.9 a year behind"
+            "All": "3.9 points a year behind"
           }
         },
         "dax": {
           "name": "DAX",
           "stories": {
-            "All": "Worst year −11.3% vs −18.3%, for 1.2 a year less"
+            "All": "Worst year −11.3% vs −18.3%, for 1.2 points a year less"
           }
         },
         "nikkei": {
           "name": "Nikkei 225",
           "stories": {
-            "All": "7.9 a year behind"
+            "All": "7.9 points a year behind"
           }
         },
         "vfinx": {
           "name": "Vanguard 500",
           "stories": {
-            "All": "2.5 a year behind"
+            "All": "2.5 points a year behind"
           }
         }
       }

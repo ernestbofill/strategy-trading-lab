@@ -100,7 +100,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.how.run.bought': "Cada senyal es compra al preu d'obertura del dia següent.",
   'newStrategy.how.run.euro': 'Resultats en euros, al tipus de canvi de cada dia.',
   'newStrategy.how.run.index': 'Un fons de l’S&P 500 (SPY) rep el mateix pressupost, amb el mateix límit mensual, i no es ven mai.',
-  'newStrategy.how.run.indexFund': 'El mateix fons, comprat amb tot el pressupost el primer dia i sense vendre mai.',
+  'newStrategy.how.run.indexFund': 'El mateix fons o índex, comprat amb tot el pressupost el primer dia i sense vendre mai.',
   'newStrategy.how.run.irr': 'Rendiments ponderats pels diners (TIR) sobre els diners invertits: els diners sense invertir no hi compten.',
   'newStrategy.how.run.fees': 'Comissió i diferencial: {fee} per operació. Sense impostos.',
   'newStrategy.how.byPeriod': 'Per període',

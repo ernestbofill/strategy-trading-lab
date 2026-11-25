@@ -139,27 +139,30 @@ public sealed class BacktestLine(TestMoney money, FxRate fx)
             var to = new DateOnly(year, 12, 31) > period.End ? period.End : new DateOnly(year, 12, 31);
             ReplayTo(from.AddDays(-1));
             // Holdings carried into the year count as put in on its first day, at their value then.
-            var yearFlows = new List<(DateOnly Date, decimal Amount)>();
-            if (replay.ValueOn(from.AddDays(-1)) is > 0 and var carried) yearFlows.Add((from, -carried));
-            yearFlows.AddRange(flows.Where(f => f.Date >= from && f.Date <= to));
-            for (var month = from; month <= to; month = new DateOnly(month.Year, month.Month, 1).AddMonths(1))
+            var carried = replay.ValueOn(from.AddDays(-1));
+            // The year's clock runs only while the line holds something (after each day's trades at the open): a fund sold in February
+            // and not bought again had its year from January to February, and money put in during December earns a few days.
+            var heldBefore = new Dictionary<DateOnly, int>();
+            var held = 0;
+            for (var day = from; day <= to; day = day.AddDays(1))
             {
-                var end = new DateOnly(month.Year, month.Month, 1).AddMonths(1).AddDays(-1);
-                if (end > to) end = to;
-                ReplayTo(end);
-                values.Add(new(end, Math.Round(replay.Cost, 2), Math.Round(replay.ValueOn(end), 2)));
+                heldBefore[day] = held;
+                ReplayTo(day);
+                if (replay.holdings.Count > 0) held++;
+                if (day.Day == DateTime.DaysInMonth(day.Year, day.Month) || day == to)
+                    values.Add(new(day, Math.Round(replay.Cost, 2), Math.Round(replay.ValueOn(day), 2)));
             }
-            yearFlows.Add((to, replay.ValueOn(to)));
-            if (MoneyWeighted.AnnualRate(yearFlows) is { } rate)
-            {
-                // The year's own return, not a yearly rate: money put in during December earns a month, not a year.
-                var span = (to.DayNumber - yearFlows.Min(f => f.Date).DayNumber) / 365.0;
-                years.Add(new(year, Math.Pow(1 + rate, span) - 1));
-            }
+            if (held == 0) continue;
+            var points = new List<(double Time, decimal Amount)>();
+            if (carried > 0) points.Add((0, -carried));
+            points.AddRange(flows.Where(f => f.Date >= from && f.Date <= to).Select(f => ((double)heldBefore[f.Date] / held, f.Amount)));
+            points.Add((1, replay.ValueOn(to)));
+            // The rate per unit of time held is the year's own return, not a yearly rate.
+            if (MoneyWeighted.Rate(points) is { } yearReturn) years.Add(new(year, yearReturn));
         }
 
-        var held = ValueOn(period.End);
-        return new(MoneyWeighted.AnnualRate([.. flows, (period.End, held)]), years, atWork, trades.Count, Math.Round(NewMoney, 2),
-            Math.Round(held + Idle, 2), values);
+        var endValue = ValueOn(period.End);
+        return new(MoneyWeighted.AnnualRate([.. flows, (period.End, endValue)]), years, atWork, trades.Count, Math.Round(NewMoney, 2),
+            Math.Round(endValue + Idle, 2), values);
     }
 }

@@ -76,8 +76,8 @@ public class BacktestSimulatorTests(AccountsApi api) : IClassFixture<AccountsApi
         var expected = MoneyWeighted.AnnualRate([(new(2024, 1, 3), -100m), (new(2024, 3, 6), -200m), (new(2024, 3, 31), 330m)])!.Value;
         Assert.Equal(expected, period.Strategy.Rate!.Value, 9);
         Assert.Equal((300m, 330m, 3), (period.Strategy.Invested, period.Strategy.EndValue, period.Strategy.Trades));
-        // The year's own return, from the first money in: (1 + rate) over 88 days of the year.
-        Assert.Equal(Math.Pow(1 + expected, 88 / 365.0) - 1, period.Strategy.Worst!.Return, 9);
+        // The year's own return over the 89 days held (3 Jan to 31 Mar), the second buy 63 days in.
+        Assert.Equal(MoneyWeighted.Rate([(0, -100m), (63 / 89.0, -200m), (1, 330m)])!.Value, period.Strategy.Worst!.Return, 9);
         // €100 from 3 Jan to 5 Mar (63 days at a third), €300 from 6 Mar (26 days), over the quarter's 91 days.
         Assert.Equal(47 / 91.0, period.Strategy.BudgetAtWork, 9);
 
@@ -131,6 +131,22 @@ public class BacktestSimulatorTests(AccountsApi api) : IClassFixture<AccountsApi
         Assert.Null(t[1].StepNo); // A top-up, not a signal's trade.
         Assert.Equal(300m, period.Strategy.Invested); // New money: the sale's €240 went back in outside the limit.
         Assert.Null(period.SameDays); // A pool of one: it would be the strategy itself.
+    }
+
+    [Fact]
+    public void A_year_counts_only_the_days_something_was_held()
+    {
+        // €100 in on 2 Jan at 10, all sold on 14 Feb at 9.5, nothing bought again: the year lost 5%, not more for the months out.
+        var money = new TestMoney(Budget: 100, MonthlyLimit: 100, FeePct: 0, SpreadPct: 0);
+        var line = new BacktestLine(money, Euro);
+        var fund = Flat("SPY");
+        line.Buy(fund, fund.Bars[Day(new(2024, 1, 2))], 100);
+        line.SellAll("SPY", fund.Bars[Day(new(2024, 2, 14))] with { Open = 9.5m });
+
+        var result = line.Result(Quarter, [.. fund.Bars.Where(b => b.Date >= Quarter.Start).Select(b => b.Date)]);
+
+        Assert.Equal(-0.05, result.Worst!.Return, 9);
+        Assert.Equal(95m, result.EndValue); // The proceeds, not reinvested.
     }
 
     record Golden(string Symbol, string[] Dates, decimal[] Close, long[]? Volume, string[] Status, int[] NewBuy, int[]? NewSell = null);

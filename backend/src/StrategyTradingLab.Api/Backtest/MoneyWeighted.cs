@@ -24,10 +24,19 @@ public static class MoneyWeighted
     /// </summary>
     public static double? AnnualRate(IReadOnlyList<(DateOnly Date, decimal Amount)> flows)
     {
-        if (!flows.Any(f => f.Amount < 0) || !flows.Any(f => f.Amount > 0)) return null;
+        if (flows.Count == 0) return null;
         var start = flows.Min(f => f.Date);
-        var points = flows.Select(f => (Years: (f.Date.DayNumber - start.DayNumber) / 365.0, Amount: (double)f.Amount)).ToList();
-        double Value(double rate) => points.Sum(p => p.Amount / Math.Pow(1 + rate, p.Years));
+        return Rate([.. flows.Select(f => ((f.Date.DayNumber - start.DayNumber) / 365.0, f.Amount))]);
+    }
+
+    /// <summary>
+    /// The rate per unit of <c>Time</c> that brings the cash flows to zero: money put in is negative, the value at the end positive.
+    /// Null without both, or when no rate between −99.99% and +1,000% a unit fits.
+    /// </summary>
+    public static double? Rate(IReadOnlyList<(double Time, decimal Amount)> flows)
+    {
+        if (!flows.Any(f => f.Amount < 0) || !flows.Any(f => f.Amount > 0)) return null;
+        double Value(double rate) => flows.Sum(p => (double)p.Amount / Math.Pow(1 + rate, p.Time));
         double low = -0.9999, high = 10;
         var atLow = Value(low);
         if (Math.Sign(atLow) == Math.Sign(Value(high))) return null;
@@ -130,6 +139,13 @@ public static class Bars
             else high = mid;
         }
         return low;
+    }
+
+    /// <summary>The bar of <paramref name="day"/>, or null when the stock didn't trade that day.</summary>
+    public static PriceBar? On(IReadOnlyList<PriceBar> bars, DateOnly day)
+    {
+        var at = FirstOnOrAfter(bars, day);
+        return at < bars.Count && bars[at].Date == day ? bars[at] : null;
     }
 
     /// <summary>The last bar on or before <paramref name="day"/>, or null.</summary>

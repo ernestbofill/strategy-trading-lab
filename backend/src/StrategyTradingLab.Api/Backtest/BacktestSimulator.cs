@@ -58,9 +58,6 @@ public record BacktestResult(IReadOnlyList<BacktestPeriodResult> Periods, AllLin
 /// </summary>
 public static class BacktestSimulator
 {
-    /// <summary>A stock whose prices start more than this after the warm-up's start sits the period out (the draw allows the same).</summary>
-    public const int WarmUpSlackDays = 7;
-
     /// <param name="index">The index fund (SPY): baseline 1, and its days are the period's trading days and months.</param>
     /// <param name="fx">Units of a stock's currency for one unit of the test's, each day.</param>
     /// <param name="seed">Orders the signals of a day when money is short (<see cref="DraftDraw.DefaultSeed"/>).</param>
@@ -89,7 +86,7 @@ public static class BacktestSimulator
         foreach (var stock in pool.Stocks)
         {
             var bars = stock.Bars.Where(b => b.Date <= period.End).ToList();
-            if (bars.Count == 0 || bars[0].Date > period.WarmUpStart.AddDays(WarmUpSlackDays) || bars[^1].Date < period.Start)
+            if (bars.Count == 0 || bars[0].Date > period.WarmUpStart.AddDays(BacktestPeriods.WarmUpSlackDays) || bars[^1].Date < period.Start)
             {
                 satOut.Add(stock.Symbol);
                 continue;
@@ -141,8 +138,7 @@ public static class BacktestSimulator
                 foreach (var stock in stocks.Where(s => strategy.Holds(s.Symbol) && !pending.Any(p => p.Signal.Stock.Symbol == s.Symbol && p.Signal.Side == TradeSide.Sell)))
                 {
                     var room = Allowed(today) - strategy.NewMoney - Reserved();
-                    var at = Bars.FirstOnOrAfter(stock.Bars, today);
-                    if (room >= Cent && at < stock.Bars.Count && stock.Bars[at].Date == today) strategy.Buy(stock, stock.Bars[at], room);
+                    if (room >= Cent && Bars.On(stock.Bars, today) is { } bar) strategy.Buy(stock, bar, room);
                 }
             }
 
@@ -184,7 +180,7 @@ public static class BacktestSimulator
             sameDays = new BacktestLine(money, fx);
             foreach (var buy in trades.Where(t => t.Side == TradeSide.Buy))
             {
-                var priced = stocks.Select(s => (Stock: s, Bar: s.Bars.FirstOrDefault(b => b.Date == buy.Date))).Where(x => x.Bar is not null).ToList();
+                var priced = stocks.Select(s => (Stock: s, Bar: Bars.On(s.Bars, buy.Date))).Where(x => x.Bar is not null).ToList();
                 foreach (var (stock, bar) in priced) sameDays.Buy(stock, bar!, buy.Amount / priced.Count);
             }
         }

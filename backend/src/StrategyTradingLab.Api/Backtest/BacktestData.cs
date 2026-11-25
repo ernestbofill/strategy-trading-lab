@@ -105,7 +105,8 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
             eligible.Add((period, candidates));
         }
 
-        var drafts = DraftDraw.Draw(eligible);
+        var memberSymbols = periods.ToDictionary(p => p, p => (IReadOnlySet<string>)entries.Where(e => e.Period == p).Select(e => e.Yahoo.Symbol).OfType<string>().ToHashSet());
+        var drafts = DraftDraw.Draw(eligible, members: p => memberSymbols[p]);
         var drafted = drafts.SelectMany(d => d.Stocks).Select(s => s.Symbol).Distinct().Order(StringComparer.Ordinal).ToList();
         var histories = drafted.ToDictionary(s => s, s => PriceFile.Read(members[s].File!));
 
@@ -137,7 +138,8 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         }
 
         var now = time.GetUtcNow();
-        var folder = store.SnapshotFolder(Month(now));
+        var month = Month(now);
+        var folder = store.SnapshotFolder(month);
         var draw = new DrawReport(now, DraftDraw.DefaultSeed, DraftDraw.DefaultSize, membership.Hash, membership.LastRow, reports,
             [.. missing.OrderBy(m => m.Key.Ticker, StringComparer.Ordinal)
                 .Select(m => new MissingMember(m.Key.Ticker, m.Value.Symbol, m.Value.Periods, m.Key.Reason, m.Value.Detail))],
@@ -147,7 +149,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
 
         var known = drafted.ToDictionary(s => s, s => (Name: members[s].Name, Bars: histories[s]));
         known[IndexSymbol] = (null, indexBars);
-        var (snapshot, manifest) = await TakeSnapshotAsync(draw, known, progress, cancellationToken);
+        var (snapshot, manifest) = await TakeSnapshotAsync(draw, month, known, progress, cancellationToken);
         await store.SaveDrawAsync(draw, cancellationToken);
         await store.SaveSnapshotAsync(snapshot, manifest, cancellationToken);
         logger.LogInformation("Drew the backtest's test draft: {Symbols} symbols asked, {Missing} members missing; snapshot {Month}.",
@@ -159,7 +161,8 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     public async Task<SnapshotReport> SnapshotAsync(Action<JobProgress> progress, CancellationToken cancellationToken)
     {
         var draw = await store.DrawAsync(cancellationToken) ?? throw new BacktestDataException("Draw the test draft first: a snapshot holds its stocks.");
-        var (snapshot, manifest) = await TakeSnapshotAsync(draw with { Snapshot = store.SnapshotFolder(Month(time.GetUtcNow())) }, [], progress, cancellationToken);
+        var month = Month(time.GetUtcNow());
+        var (snapshot, manifest) = await TakeSnapshotAsync(draw with { Snapshot = store.SnapshotFolder(month) }, month, [], progress, cancellationToken);
         await store.SaveSnapshotAsync(snapshot, manifest, cancellationToken);
         logger.LogInformation("Took the backtest's snapshot {Month}: {Tickers} tickers.", snapshot.Month, snapshot.Tickers.Count);
         return snapshot;
@@ -171,11 +174,11 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     /// Writes a price file per ticker to the draw's snapshot folder and returns the report and the manifest, for the caller to save last.
     /// <paramref name="known"/> are histories the draw already holds; the others are fetched now.
     /// </summary>
-    async Task<(SnapshotReport, object)> TakeSnapshotAsync(DrawReport draw, Dictionary<string, (string? Name, IReadOnlyList<PriceBar> Bars)> known,
+    async Task<(SnapshotReport, object)> TakeSnapshotAsync(DrawReport draw, string month, Dictionary<string, (string? Name, IReadOnlyList<PriceBar> Bars)> known,
         Action<JobProgress> progress, CancellationToken cancellationToken)
     {
-        var periods = BacktestPeriods.For(Today);
-        var since = periods[0].WarmUpStart.AddDays(-WarmUpSlackDays);
+        // From the draw's own first warm-up: in a later year today's periods start a year later.
+        var since = draw.Periods[0].Start.AddMonths(-BacktestPeriods.WarmUpMonths).AddDays(-WarmUpSlackDays);
         var roles = new SortedDictionary<string, List<SnapshotRole>>(StringComparer.Ordinal);
         void Add(string symbol, SnapshotRole role)
         {
@@ -209,8 +212,8 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         }
         foreach (var (symbol, bars) in histories) warnings.AddRange(PriceQuality.Check(symbol, bars, calendar!));
 
-        var now = time.GetUtcNow();
-        var snapshot = new SnapshotReport(Month(now), now, draw.Snapshot, draw.DrawnAt, draw.MembershipHash, tickers, warnings);
+        // The month the caller named the folder by, read once: a run that crosses midnight at a month's end stays in one month.
+        var snapshot = new SnapshotReport(month, time.GetUtcNow(), draw.Snapshot, draw.DrawnAt, draw.MembershipHash, tickers, warnings);
         var manifest = new
         {
             snapshot.Month, snapshot.TakenAt, draw.DrawnAt, draw.Seed, draw.Size, draw.MembershipHash, draw.MembershipLastRow,
@@ -293,7 +296,9 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         var (x, y) = (Words(a), Words(b));
         if (x.Count == 0 || y.Count == 0) return true;
         var (joinedX, joinedY) = (string.Concat(x), string.Concat(y));
-        return joinedX.StartsWith(y[0], StringComparison.Ordinal) || joinedY.StartsWith(x[0], StringComparison.Ordinal);
+        // The first word, or the first 3 letters when it is shorter: "A. O. Smith" mustn't match every name that starts with "a".
+        static string Key(List<string> words, string joined) => words[0].Length >= 3 ? words[0] : joined[..Math.Min(3, joined.Length)];
+        return joinedX.StartsWith(Key(y, joinedY), StringComparison.Ordinal) || joinedY.StartsWith(Key(x, joinedX), StringComparison.Ordinal);
     }
 
     async Task<(IReadOnlyList<PriceBar> Bars, DailyHistory Raw, string? Problem)> HistoryAsync(string symbol, DateOnly since, CancellationToken cancellationToken)
@@ -301,13 +306,14 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         var empty = new DailyHistory([], [], null);
         try
         {
-            var history = await WithRetriesAsync(() => yahoo.HistoryAsync(symbol, since, cancellationToken), cancellationToken);
+            var history = await WithRetriesAsync(() => yahoo.HistoryAsync(symbol, since, cancellationToken), symbol, cancellationToken);
             return history.Adjusted.Count == 0
                 ? ([], empty, "Yahoo has no prices.")
                 : ([.. history.Adjusted.Select(c => new PriceBar(c.Date, c.Open, c.High, c.Low, c.Close, c.Volume))], history, null);
         }
         catch (MarketDataException error)
         {
+            // Yahoo's answer for this symbol (no data, not found); a failure of Yahoo itself stopped the run in WithRetriesAsync.
             return ([], empty, error.Message);
         }
     }
@@ -323,7 +329,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     {
         try
         {
-            var matches = await WithRetriesAsync(() => yahoo.SearchAsync(symbol, cancellationToken), cancellationToken);
+            var matches = await WithRetriesAsync(() => yahoo.SearchAsync(symbol, cancellationToken), symbol, cancellationToken);
             return matches.FirstOrDefault(m => string.Equals(m.Symbol, symbol, StringComparison.OrdinalIgnoreCase))?.Sector;
         }
         catch (MarketDataException)
@@ -332,8 +338,18 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         }
     }
 
-    /// <summary>One request to Yahoo, asked again after a 429 or a server error, with the pause after it.</summary>
-    async Task<T> WithRetriesAsync<T>(Func<Task<T>> request, CancellationToken cancellationToken)
+    /// <summary>
+    /// Whether Yahoo failed rather than answered: too many requests (429), a server error, a timeout or no connection. Only an answer
+    /// (no such symbol, no prices, an answer we can't read) says something about the member.
+    /// </summary>
+    static bool Transient(MarketDataException error) =>
+        error.Status is 429 or >= 500 || error.InnerException is HttpRequestException or TaskCanceledException;
+
+    /// <summary>
+    /// One request to Yahoo, with the pause after it, asked again after a transient failure. Still failing after the retries, the run
+    /// stops: counting the member as missing would draw from a smaller pool, so a throttled stretch would change the draft.
+    /// </summary>
+    async Task<T> WithRetriesAsync<T>(Func<Task<T>> request, string symbol, CancellationToken cancellationToken)
     {
         for (var attempt = 0; ; attempt++)
         {
@@ -341,10 +357,14 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
             {
                 return await request();
             }
-            catch (MarketDataException error) when (error.Status is 429 or >= 500 && attempt < options.Value.Retries.Length)
+            catch (MarketDataException error) when (Transient(error) && attempt < options.Value.Retries.Length)
             {
-                logger.LogInformation("Yahoo answered {Status}: asking again in {Wait}.", error.Status, options.Value.Retries[attempt]);
+                logger.LogInformation("Yahoo failed for {Symbol} ({Reason}): asking again in {Wait}.", symbol, error.Message, options.Value.Retries[attempt]);
                 await Task.Delay(options.Value.Retries[attempt], time, cancellationToken);
+            }
+            catch (MarketDataException error) when (Transient(error))
+            {
+                throw new BacktestDataException($"Yahoo kept failing at {symbol} ({error.Message}), so it stopped; the stored draw and snapshot are unchanged. Try again later.");
             }
             finally
             {

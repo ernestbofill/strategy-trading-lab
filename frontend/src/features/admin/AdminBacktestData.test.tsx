@@ -42,6 +42,7 @@ const status = (over: Partial<BacktestDataStatus>): BacktestDataStatus => ({
   running: null,
   last: null,
   membership: { hash: 'abc', lastRow: '2026-08-18', changedSinceDraw: false },
+  periodsChangedSinceDraw: false,
   draw: null,
   snapshot: null,
   ...over,

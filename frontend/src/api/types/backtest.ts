@@ -26,9 +26,11 @@ export interface DraftStock {
   third: 1 | 2 | 3
 }
 
+/** A drafted stock that gave up its seat: it left the index, or is still in it but can't be drawn (`stillInIndex`). */
 export interface DraftReplacement {
   left: DraftStock
   replacement: DraftStock | null
+  stillInIndex: boolean
 }
 
 export interface DrawPeriodReport {
@@ -116,6 +118,8 @@ export interface BacktestDataStatus {
   running: { kind: BacktestJobKind; started: string; progress: { step: string; done: number; total: number } | null } | null
   last: { kind: BacktestJobKind; started: string; finished: string; error: string | null } | null
   membership: { hash: string; lastRow: string; changedSinceDraw: boolean }
+  /** A new year moved the periods since the draw: draw again. */
+  periodsChangedSinceDraw: boolean
   draw: DrawReport | null
   snapshot: SnapshotReport | null
 }

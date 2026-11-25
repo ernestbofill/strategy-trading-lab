@@ -11,8 +11,11 @@ public record DrawCandidate(string Ticker, string Symbol, string Sector, decimal
 /// <summary>A drafted stock: its fja ticker, Yahoo symbol, sector and size third (1 low, 2 middle, 3 high) in its seat.</summary>
 public record DraftStock(string Ticker, string Symbol, string Sector, int Third);
 
-/// <summary>A drafted stock that left the index before a period's start, and the member that took its seat (null: none could).</summary>
-public record DraftReplacement(DraftStock Left, DraftStock? Replacement);
+/// <summary>
+/// A drafted stock that can't stay at a period's start, and the member that took its seat (null: none could). Usually it left the index;
+/// <c>StillInIndex</c> when it is still a member but can't be drawn (its prices stopped, say), so it can't be bought that period either.
+/// </summary>
+public record DraftReplacement(DraftStock Left, DraftStock? Replacement, bool StillInIndex = false);
 
 /// <summary>The test draft in one period: its stocks, and for a rolled period those kept and replaced. <c>Notes</c> say where a rule couldn't be followed.</summary>
 public record DraftPeriod(BacktestPeriod Period, IReadOnlyList<DraftStock> Stocks, IReadOnlyList<DraftStock> Kept,
@@ -31,12 +34,14 @@ public static class DraftDraw
     /// <summary>The published seed (docs/backtest.md). Changing it to get nicer numbers would be cherry-picking.</summary>
     public const ulong DefaultSeed = 20261125;
 
+    /// <param name="members">Each period's members on its start, by Yahoo symbol, eligible or not: a drafted stock among them that can't
+    /// be drawn is replaced as still in the index, not as gone. Null: every stock that can't be drawn left.</param>
     public static IReadOnlyList<DraftPeriod> Draw(IReadOnlyList<(BacktestPeriod Period, IReadOnlyList<DrawCandidate> Eligible)> periods,
-        int size = DefaultSize, ulong seed = DefaultSeed)
+        int size = DefaultSize, ulong seed = DefaultSeed, Func<BacktestPeriod, IReadOnlySet<string>>? members = null)
     {
         var drafts = new List<DraftPeriod>();
         foreach (var (period, eligible) in periods)
-            drafts.Add(drafts.Count == 0 ? First(period, eligible, size, seed) : Roll(drafts[^1], period, eligible, seed));
+            drafts.Add(drafts.Count == 0 ? First(period, eligible, size, seed) : Roll(drafts[^1], period, eligible, seed, members?.Invoke(period)));
         return drafts;
     }
 
@@ -91,7 +96,7 @@ public static class DraftDraw
         return new(period, stocks, [], [], notes);
     }
 
-    static DraftPeriod Roll(DraftPeriod previous, BacktestPeriod period, IReadOnlyList<DrawCandidate> eligible, ulong seed)
+    static DraftPeriod Roll(DraftPeriod previous, BacktestPeriod period, IReadOnlyList<DrawCandidate> eligible, ulong seed, IReadOnlySet<string>? members)
     {
         var bySymbol = eligible.ToDictionary(c => c.Symbol);
         var thirds = Thirds(eligible);
@@ -119,7 +124,9 @@ public static class DraftDraw
                 used.Add(replacement.Symbol);
                 stocks.Add(replacement);
             }
-            replaced.Add(new(left, replacement));
+            var stillIn = members?.Contains(left.Symbol) ?? false;
+            if (stillIn) notes.Add($"{left.Symbol} is still in the index but can't be drawn (see the members that can't be drawn): its seat was refilled.");
+            replaced.Add(new(left, replacement, stillIn));
         }
         return new(period, stocks, kept, replaced, notes);
     }

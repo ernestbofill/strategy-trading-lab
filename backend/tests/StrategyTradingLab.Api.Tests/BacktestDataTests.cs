@@ -70,10 +70,13 @@ public class BacktestDataTests
         var leaving = drafted.Where(s => s.Sector == "Healthcare").Take(3).Select(s => s.Symbol).ToHashSet();
         var later = first.Where(c => !leaving.Contains(c.Symbol)).ToList();
 
-        var rolled = DraftDraw.Draw([(periods[0], first), (periods[1], later)])[1];
+        // One of the three is still a member but can't be drawn (its prices stopped): it gives up its seat too, as still in the index.
+        var stillIn = leaving.Order().First();
+        var rolled = DraftDraw.Draw([(periods[0], first), (periods[1], later)], members: _ => later.Select(c => c.Symbol).Append(stillIn).ToHashSet())[1];
 
         Assert.Equal(57, rolled.Kept.Count);
         Assert.Equal(3, rolled.Replaced.Count);
+        Assert.Equal([stillIn], rolled.Replaced.Where(r => r.StillInIndex).Select(r => r.Left.Symbol));
         Assert.All(rolled.Replaced, r =>
         {
             Assert.Equal("Healthcare", r.Replacement!.Sector);
@@ -127,6 +130,8 @@ public class BacktestDataTests
     [InlineData("Alphabet Inc. (Class A)", "Alphabet Inc.", true)]
     [InlineData("Sprint Nextel", "SentinelOne, Inc.", false)]
     [InlineData("Qwest Communications", "Qnity Electronics, Inc.", false)]
+    [InlineData("A. O. Smith", "A. O. Smith Corporation", true)]
+    [InlineData("A. O. Smith", "Apple Inc.", false)]
     public void A_name_check_catches_a_ticker_reused_by_another_company(string wikipedia, string yahoo, bool match) =>
         Assert.Equal(match, BacktestData.NamesMatch(wikipedia, yahoo));
 }

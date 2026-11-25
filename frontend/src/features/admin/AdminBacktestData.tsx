@@ -70,7 +70,8 @@ export function AdminBacktestData() {
         {(status) => (
           <>
             <JobBox status={status} />
-            {status.draw && <DrawSections draw={status.draw} warnings={status.snapshot?.warnings ?? status.draw.warnings} />}
+            {/* Keyed by the draw, so a new draw (other periods after a new year) starts on its first tab. */}
+            {status.draw && <DrawSections key={status.draw.drawnAt} draw={status.draw} warnings={status.snapshot?.warnings ?? status.draw.warnings} />}
             {status.snapshot && <SnapshotSection tickers={status.snapshot.tickers} />}
           </>
         )}
@@ -102,7 +103,7 @@ function JobBox({ status }: { status: BacktestDataStatus }) {
       <p className={styles.line}>
         {draw
           ? `Drawn ${localDateTime(draw.drawnAt)} · seed ${draw.seed} · ${draw.size} stocks · membership to ${draw.membershipLastRow} · ${draw.symbols} symbols asked of Yahoo`
-          : 'Not drawn yet. A draw asks Yahoo for every member since 2009: about 15 minutes.'}
+          : "Not drawn yet. A draw asks Yahoo for every member of the periods' starts: about 15 minutes."}
       </p>
       {snapshot && (
         <p className={styles.line}>
@@ -113,6 +114,11 @@ function JobBox({ status }: { status: BacktestDataStatus }) {
       {membership.changedSinceDraw && (
         <p role="note" className={styles.warning}>
           The membership files changed since this draw (fja to {membership.lastRow}): draw again.
+        </p>
+      )}
+      {status.periodsChangedSinceDraw && (
+        <p role="note" className={styles.warning}>
+          A new period started since this draw: draw again.
         </p>
       )}
       {!status.storage && (
@@ -149,7 +155,8 @@ function JobBox({ status }: { status: BacktestDataStatus }) {
 
 function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWarning[] }) {
   const tabsId = useId()
-  const [shown, setShown] = useState(draw.periods[0]?.label ?? '')
+  const [chosen, setChosen] = useState(draw.periods[0]?.label ?? '')
+  const shown = draw.periods.some((p) => p.label === chosen) ? chosen : (draw.periods[0]?.label ?? '')
 
   return (
     <>
@@ -157,7 +164,7 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
         <h2 id="backtest-periods" className={styles.groupTitle}>
           Periods
         </h2>
-        <Tabs id={tabsId} label="Period" items={draw.periods.map((p) => ({ key: p.label, label: p.label }))} selected={shown} onSelect={setShown} />
+        <Tabs id={tabsId} label="Period" items={draw.periods.map((p) => ({ key: p.label, label: p.label }))} selected={shown} onSelect={setChosen} />
         {draw.periods.map((p) => (
           <div key={p.label} {...tabPanel(tabsId, p.label)} hidden={p.label !== shown}>
             <PeriodPanel period={p} />
@@ -295,7 +302,11 @@ function PeriodPanel({ period: p }: { period: DrawPeriodReport }) {
           <ul className={styles.replaced}>
             {p.replaced.map((x) => (
               <li key={x.left.symbol} className={styles.mono}>
-                {x.left.symbol} → {x.replacement?.symbol ?? 'none'} <span className={styles.muted}>({x.left.sector}, {thirdText[x.left.third].toLowerCase()})</span>
+                {x.left.symbol} → {x.replacement?.symbol ?? 'none'}{' '}
+                <span className={styles.muted}>
+                  ({x.left.sector}, {thirdText[x.left.third].toLowerCase()}
+                  {x.stillInIndex ? ', still in the index' : ''})
+                </span>
               </li>
             ))}
           </ul>

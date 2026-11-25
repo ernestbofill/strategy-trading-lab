@@ -96,7 +96,8 @@ public class BacktestDataDrawTests
             Assert.Equal(JsonValueKind.Null, status.GetProperty("last").GetProperty("error").ValueKind);
             var draw = status.GetProperty("draw");
             var periods = draw.GetProperty("periods").EnumerateArray().ToList();
-            Assert.Equal(["2011–14", "2015–18", "2019–22", "2023–26"], periods.Select(p => p.GetProperty("label").GetString()).Take(4));
+            // The draw runs on the real clock: the periods move each 1 January.
+            Assert.Equal(BacktestPeriods.For(DateOnly.FromDateTime(DateTime.UtcNow)).Select(p => p.Label), periods.Select(p => p.GetProperty("label").GetString()));
             Assert.All(periods, p =>
             {
                 Assert.Equal(60, p.GetProperty("draft").GetArrayLength());
@@ -118,6 +119,7 @@ public class BacktestDataDrawTests
             Assert.Contains(tickers, t => t.GetProperty("symbol").GetString() == "SPY" && t.GetProperty("roles")[0].GetString() == "index");
             Assert.Contains(tickers, t => t.GetProperty("symbol").GetString() == "ETN" && t.GetProperty("roles").EnumerateArray().Any(r => r.GetString() == "starter"));
             Assert.False(status.GetProperty("membership").GetProperty("changedSinceDraw").GetBoolean());
+            Assert.False(status.GetProperty("periodsChangedSinceDraw").GetBoolean());
 
             // The files are there and read back as the draw wrote them.
             var store = api.Services.CreateScope().ServiceProvider.GetRequiredService<BacktestStore>();

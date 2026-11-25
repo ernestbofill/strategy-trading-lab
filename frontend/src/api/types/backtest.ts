@@ -91,6 +91,8 @@ export interface DrawReport {
   unchecked: UncheckedName[]
   candidates: CandidateYear[]
   warnings: PriceWarning[]
+  /** The other drawable members' one-day moves over 40%: they count in the representative check. */
+  memberJumps: PriceWarning[]
   /** How many Yahoo symbols were asked. */
   symbols: number
   /** The snapshot folder the draw wrote. */

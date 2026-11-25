@@ -23,7 +23,7 @@ public static class CandidateCheck
 {
     public const int MinStocks = 4;
 
-    /// <summary>Trading days each year's run starts before 1 January, so it knows which signals were already open.</summary>
+    /// <summary>Trading days the look at the year before runs over, to know which buy window was still open on its last day.</summary>
     const int LeadIn = 5;
 
     public static IReadOnlyList<CandidateYear> Count(string templateKey, JsonDocument parameters, int maxSteps,
@@ -39,32 +39,46 @@ public static class CandidateCheck
                 // held since still counts when it meets the rules again. The rules read the history before, as at a period's start.
                 var (from, to) = (new DateOnly(y, 1, 1), y == period.End.Year ? period.End : new DateOnly(y, 12, 31));
                 foreach (var stock in stocks)
-                    CountYear(templateKey, parameters, maxSteps, stock, from, to, years);
+                    CountYear(templateKey, parameters, maxSteps, stock, from, to, y == period.FirstYear, years);
             }
         }
         return [.. years.Select(y => new CandidateYear(templateKey, y.Key, y.Value.Candidates.Count, y.Value.Signalled.Count, y.Value.Signals))];
     }
 
-    static void CountYear(string templateKey, JsonDocument parameters, int maxSteps, DraftHistory stock, DateOnly from, DateOnly to,
+    /// <param name="periodStart">The period's first year: a window open on its first day is a buy the period makes (the simulator buys it), so it counts.</param>
+    static void CountYear(string templateKey, JsonDocument parameters, int maxSteps, DraftHistory stock, DateOnly from, DateOnly to, bool periodStart,
         SortedDictionary<int, (HashSet<string> Candidates, HashSet<string> Signalled, int Signals)> years)
     {
         var bars = stock.Bars.Where(b => b.Date <= to).ToList();
         if (bars.Count == 0 || bars[^1].Date < from) return;
+        var start = RulesRunner.StartIndex(bars, from);
+        // A buy window already open on the last trading day before 1 January: the year's first signal for that step is the same one
+        // going on, counted last year, not a new one. Only the count skips it; the run itself starts from scratch on 1 January.
+        var openStep = start > 0 && !periodStart ? OpenAtYearEnd(templateKey, parameters, maxSteps, [.. bars.Take(start)]) : null;
         var rules = TemplateRules.Create(templateKey, bars, parameters);
-        // The run starts a few trading days before 1 January and counts from it: a buy window already open at New Year then reads as
-        // the same signal going on, not as a new one counted in both years.
-        var start = Math.Max(0, RulesRunner.StartIndex(bars, from) - LeadIn);
         var days = RulesRunner.Run(rules, bars, new StepPlan(maxSteps), start);
-        foreach (var day in days.Where(d => d.Date >= from))
+        for (var i = 0; i < days.Count; i++)
         {
+            var day = days[i];
             var year = years[day.Date.Year];
             // A candidate meets the candidate rules that day; a stock only held (building, holding) isn't one.
             if (day.Status is RuleStatus.Watching or RuleStatus.BuySignal or RuleStatus.SignalEnded) year.Candidates.Add(stock.Symbol);
-            if (day.NewBuy)
+            if (day.NewBuy && !(i == 0 && openStep is { } open && open == day.StepNo))
             {
                 year.Signalled.Add(stock.Symbol);
                 years[day.Date.Year] = year with { Signals = year.Signals + 1 };
             }
         }
+    }
+
+    /// <summary>
+    /// The step of the buy signal open on the last of <paramref name="bars"/> (the trading day before a year starts), or null: a run of the
+    /// rules over the few days before it, as fresh as the year's own run, so it says only whether the window was open that day.
+    /// </summary>
+    static int? OpenAtYearEnd(string templateKey, JsonDocument parameters, int maxSteps, IReadOnlyList<PriceBar> bars)
+    {
+        var rules = TemplateRules.Create(templateKey, bars, parameters);
+        var last = RulesRunner.Run(rules, bars, new StepPlan(maxSteps), Math.Max(0, bars.Count - LeadIn))[^1];
+        return last.Status == RuleStatus.BuySignal ? last.StepNo : null;
     }
 }

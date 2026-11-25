@@ -182,12 +182,17 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         var draw = new DrawReport(now, DraftDraw.DefaultSeed, DraftDraw.DefaultSize, membership.Hash, membership.LastRow, reports,
             [.. missing.OrderBy(m => m.Key.Ticker, StringComparer.Ordinal)
                 .Select(m => new MissingMember(m.Key.Ticker, m.Value.Symbol, m.Value.Periods, m.Key.Reason, m.Value.Detail))],
-            // A map row that only vouches for a name (IBM stays IBM) isn't a rename.
-            [.. entries.Where(e => e.Yahoo.Note is not null && e.Yahoo.Symbol != e.Ticker).Select(e => new RenamedTicker(e.Ticker, e.Yahoo.Symbol, e.Yahoo.Note!)).Distinct()
+            [.. entries.Where(e => e.Yahoo.Note is not null).Select(e => new RenamedTicker(e.Ticker, e.Yahoo.Symbol, e.Yahoo.Note!)).Distinct()
                 .OrderBy(r => r.Ticker, StringComparer.Ordinal)],
             [.. noNameCheck.OrderBy(u => u.Key.Ticker, StringComparer.Ordinal)
                 .Select(u => new UncheckedName(u.Key.Ticker, u.Key.Symbol, members[u.Key.Symbol].Name, u.Value))],
-            candidatesPerYear, [.. drafted.SelectMany(s => members[s].Warnings)], symbols.Count, folder);
+            candidatesPerYear, [.. drafted.SelectMany(s => members[s].Warnings)], symbols.Count, folder)
+        {
+            // The other drawable members' one-day moves over 40%: they count in the representative check, where a split Yahoo didn't
+            // adjust (or a spin-off, as Aimco's in 2020) would move the rate unseen.
+            MemberJumps = [.. eligible.SelectMany(e => e.Eligible).Select(c => c.Symbol).Distinct().Except(drafted).Order(StringComparer.Ordinal)
+                .SelectMany(s => members[s].Warnings.Where(w => w.Kind == PriceWarningKind.Jump && w.Date >= periods[0].WarmUpStart))],
+        };
 
         var known = drafted.ToDictionary(s => s, s => (Name: members[s].Name, Bars: histories[s]));
         known[IndexSymbol] = (null, indexBars);

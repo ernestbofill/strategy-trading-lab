@@ -61,6 +61,32 @@ public class BacktestStore(IServiceProvider services, IOptions<ObjectStorageOpti
     public async Task<byte[]?> PricesAsync(string folder, string symbol, CancellationToken cancellationToken) =>
         await GetAsync(PriceKey(folder, symbol), cancellationToken);
 
+    /// <summary>The latest snapshot's manifest: its folder, and the draft per period.</summary>
+    public async Task<SnapshotManifest?> ManifestAsync(SnapshotReport snapshot, CancellationToken cancellationToken) =>
+        await ReadAsync<SnapshotManifest>(snapshot.Key + "manifest.json", cancellationToken);
+
+    /// <summary>
+    /// A stock, fund or exchange rate outside the snapshot, fetched from Yahoo when a test needed it and kept for the month
+    /// (<c>fetched/yyyy-MM/</c>): the next month's tests fetch it again, as the snapshot is taken again.
+    /// </summary>
+    public string FetchedFolder(string month) => $"{Root}fetched/{month}/";
+
+    public Task<FetchedAsset?> FetchedAsync(string month, string symbol, CancellationToken cancellationToken) =>
+        ReadAsync<FetchedAsset>($"{FetchedFolder(month)}{Uri.EscapeDataString(symbol)}.json", cancellationToken);
+
+    /// <summary>Writes the prices first and the description last: a description is only there once its prices are.</summary>
+    public async Task SaveFetchedAsync(string month, FetchedAsset asset, byte[] prices, CancellationToken cancellationToken)
+    {
+        await PutPricesAsync(FetchedFolder(month), asset.Symbol, prices, cancellationToken);
+        await PutAsync($"{FetchedFolder(month)}{Uri.EscapeDataString(asset.Symbol)}.json", JsonSerializer.SerializeToUtf8Bytes(asset, Json), "application/json", cancellationToken);
+    }
+
+    /// <summary>A test's result, kept by its key (<c>results/{key}.json</c>): the same rules, stocks, periods, money, costs and data give it back.</summary>
+    public Task<byte[]?> ResultAsync(string key, CancellationToken cancellationToken) => GetAsync($"{Root}results/{key}.json", cancellationToken);
+
+    public Task SaveResultAsync(string key, byte[] result, CancellationToken cancellationToken) =>
+        PutAsync($"{Root}results/{key}.json", result, "application/json", cancellationToken);
+
     async Task PutAsync(string key, byte[] bytes, string contentType, CancellationToken cancellationToken)
     {
         var s3 = S3 ?? throw new InvalidOperationException("Object storage isn't configured.");
@@ -87,3 +113,11 @@ public class BacktestStore(IServiceProvider services, IOptions<ObjectStorageOpti
     async Task<T?> ReadAsync<T>(string key, CancellationToken cancellationToken) where T : class =>
         await GetAsync(key, cancellationToken) is { } bytes ? JsonSerializer.Deserialize<T>(bytes, Json) : null;
 }
+
+/// <summary>What a test reads of a snapshot's manifest: the periods drawn, with the draft of each.</summary>
+public record SnapshotManifest(string Month, IReadOnlyList<ManifestPeriod> Periods);
+
+public record ManifestPeriod(string Label, DateOnly Start, DateOnly End, bool Partial, IReadOnlyList<string> Draft);
+
+/// <summary>A symbol fetched for a test: its currency and name, and its prices' first and last day (the prices are a file beside it).</summary>
+public record FetchedAsset(string Symbol, string Currency, string? Name, DateOnly Since, DateOnly First, DateOnly Last);

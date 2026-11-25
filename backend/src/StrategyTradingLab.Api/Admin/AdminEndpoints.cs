@@ -98,6 +98,7 @@ public static class AdminEndpoints
         AdminTemplates.MapTemplates(group);
         AdminNotificationsEndpoints.MapNotifications(group);
         Backtest.BacktestDataEndpoints.MapBacktestData(group);
+        Backtest.BacktestEndpoints.MapBacktest(group);
 
         // Only ever to the signed-in owner's own address (not the SMTP login, which a mail service like Brevo gives no inbox),
         // so the page can't be used to send mail from it to anyone else.

@@ -91,6 +91,8 @@ builder.Services.AddHostedService<NotificationWorker>();
 builder.Services.Configure<BacktestDataOptions>(builder.Configuration.GetSection("BacktestData"));
 builder.Services.AddScoped<BacktestStore>();
 builder.Services.AddScoped<BacktestData>();
+builder.Services.AddScoped<BacktestPrices>();
+builder.Services.AddScoped<BacktestRunner>();
 builder.Services.AddSingleton<BacktestDataJob>();
 
 // Accounts (backend/AUTH.md).

@@ -35,6 +35,7 @@ const reasonText: Record<MissingReason, string> = {
   noSector: 'No sector',
   startsLate: 'Prices start too late',
   noPricesAtStart: 'No prices at the start',
+  otherClass: 'Other share class drawn',
 }
 
 const thirdText = { 1: 'Low', 2: 'Middle', 3: 'High' } as const
@@ -71,7 +72,14 @@ export function AdminBacktestData() {
           <>
             <JobBox status={status} />
             {/* Keyed by the draw, so a new draw (other periods after a new year) starts on its first tab. */}
-            {status.draw && <DrawSections key={status.draw.drawnAt} draw={status.draw} warnings={status.snapshot?.warnings ?? status.draw.warnings} />}
+            {status.draw && (
+              <DrawSections
+                key={status.draw.drawnAt}
+                draw={status.draw}
+                // The snapshot's warnings only when it belongs to this draw (a draw whose snapshot failed to save keeps the older one).
+                warnings={status.snapshot?.drawnAt === status.draw.drawnAt ? status.snapshot.warnings : status.draw.warnings}
+              />
+            )}
             {status.snapshot && <SnapshotSection tickers={status.snapshot.tickers} />}
           </>
         )}
@@ -217,6 +225,21 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
           emptyMessage="No renamed tickers."
         />
       </section>
+      {draw.unchecked.length > 0 && (
+        <section className={styles.group} aria-labelledby="backtest-unchecked">
+          <h2 id="backtest-unchecked" className={styles.groupTitle}>
+            Names not checked ({draw.unchecked.length})
+          </h2>
+          <p className={styles.muted}>Wikipedia doesn't name these tickers. Check Yahoo's name is the company that was in the index, or add a symbol-map row.</p>
+          <ul className={styles.replaced}>
+            {draw.unchecked.map((u) => (
+              <li key={`${u.ticker}-${u.symbol}`}>
+                <span className={styles.mono}>{u.ticker}</span> {u.yahooName ?? '–'} <span className={styles.muted}>({u.periods.join(', ')})</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className={styles.group} aria-labelledby="backtest-warnings">
         <h2 id="backtest-warnings" className={styles.groupTitle}>
           Price warnings ({warnings.length})

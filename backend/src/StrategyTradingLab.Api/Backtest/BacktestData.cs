@@ -45,6 +45,9 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
 
     const int TradedDays = 60, MinTradedDays = 40, WarmUpSlackDays = 7;
 
+    /// <summary>Under 60% of a period's members drawable, the run stops: in 2011 about 15% have no prices on Yahoo (survivorship).</summary>
+    const double MinDrawable = 0.6;
+
     static readonly TestMoney Money = new();
 
     /// <summary>What the draw keeps of one symbol: no full history, except the compressed file until the draft is known.</summary>
@@ -87,6 +90,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
 
         var missing = new Dictionary<(string Ticker, MissingReason Reason), (string? Symbol, List<string> Periods, string Detail)>();
         var eligible = new List<(BacktestPeriod Period, IReadOnlyList<DrawCandidate> Eligible)>();
+        var noNameCheck = new Dictionary<(string Ticker, string Symbol), List<string>>();
         foreach (var period in periods)
         {
             var candidates = new List<DrawCandidate>();
@@ -102,6 +106,28 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
                 else if (candidates.All(c => c.Symbol != member!.Symbol))
                     candidates.Add(new(ticker, member!.Symbol, member.Sector!, member.Traded[period.Start]!.Value));
             }
+            // One share class per company (GOOG and GOOGL, FOX and FOXA): the one most traded, so no company holds two seats.
+            foreach (var company in candidates.GroupBy(c => membership.Company(c.Ticker, period.Start)).Where(g => g.Count() > 1).ToList())
+            {
+                var kept = company.OrderByDescending(c => c.TradedValue).ThenBy(c => c.Symbol, StringComparer.Ordinal).First();
+                foreach (var other in company.Where(c => c != kept))
+                {
+                    candidates.Remove(other);
+                    var key = (other.Ticker, MissingReason.OtherClass);
+                    if (!missing.TryGetValue(key, out var seen)) missing[key] = seen = (other.Symbol, [], $"Another share class of the company, {kept.Ticker}, is drawn instead.");
+                    seen.Periods.Add(period.Label);
+                }
+            }
+            // Drawable without a name check: listed, so a reused ticker among them can be caught by eye.
+            foreach (var c in candidates.Where(c => membership.Resolve(c.Ticker, period.Start).Note is null && membership.WikipediaName(c.Ticker, period.Start) is null))
+            {
+                if (!noNameCheck.TryGetValue((c.Ticker, c.Symbol), out var labels)) noNameCheck[(c.Ticker, c.Symbol)] = labels = [];
+                labels.Add(period.Label);
+            }
+            // A pool this small means Yahoo failed in a way it didn't say, not that the members are gone: draw nothing.
+            var asked = entries.Count(e => e.Period == period);
+            if (candidates.Count < asked * MinDrawable)
+                throw new BacktestDataException($"Only {candidates.Count} of {asked} members of {period.Label} can be drawn, so Yahoo may be refusing: nothing was saved. See the server log, and try again later.");
             eligible.Add((period, candidates));
         }
 
@@ -139,12 +165,14 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
 
         var now = time.GetUtcNow();
         var month = Month(now);
-        var folder = store.SnapshotFolder(month);
+        var folder = store.SnapshotFolder(month, now);
         var draw = new DrawReport(now, DraftDraw.DefaultSeed, DraftDraw.DefaultSize, membership.Hash, membership.LastRow, reports,
             [.. missing.OrderBy(m => m.Key.Ticker, StringComparer.Ordinal)
                 .Select(m => new MissingMember(m.Key.Ticker, m.Value.Symbol, m.Value.Periods, m.Key.Reason, m.Value.Detail))],
             [.. entries.Where(e => e.Yahoo.Note is not null).Select(e => new RenamedTicker(e.Ticker, e.Yahoo.Symbol, e.Yahoo.Note!)).Distinct()
                 .OrderBy(r => r.Ticker, StringComparer.Ordinal)],
+            [.. noNameCheck.OrderBy(u => u.Key.Ticker, StringComparer.Ordinal)
+                .Select(u => new UncheckedName(u.Key.Ticker, u.Key.Symbol, members[u.Key.Symbol].Name, u.Value))],
             candidatesPerYear, [.. drafted.SelectMany(s => members[s].Warnings)], symbols.Count, folder);
 
         var known = drafted.ToDictionary(s => s, s => (Name: members[s].Name, Bars: histories[s]));
@@ -161,8 +189,9 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     public async Task<SnapshotReport> SnapshotAsync(Action<JobProgress> progress, CancellationToken cancellationToken)
     {
         var draw = await store.DrawAsync(cancellationToken) ?? throw new BacktestDataException("Draw the test draft first: a snapshot holds its stocks.");
-        var month = Month(time.GetUtcNow());
-        var (snapshot, manifest) = await TakeSnapshotAsync(draw with { Snapshot = store.SnapshotFolder(month) }, month, [], progress, cancellationToken);
+        var started = time.GetUtcNow();
+        var month = Month(started);
+        var (snapshot, manifest) = await TakeSnapshotAsync(draw with { Snapshot = store.SnapshotFolder(month, started) }, month, [], progress, cancellationToken);
         await store.SaveSnapshotAsync(snapshot, manifest, cancellationToken);
         logger.LogInformation("Took the backtest's snapshot {Month}: {Tickers} tickers.", snapshot.Month, snapshot.Tickers.Count);
         return snapshot;
@@ -339,14 +368,14 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     }
 
     /// <summary>
-    /// Whether Yahoo failed rather than answered: too many requests (429), a server error, a timeout or no connection. Only an answer
-    /// (no such symbol, no prices, an answer we can't read) says something about the member.
+    /// Whether Yahoo failed rather than answered: any HTTP error but 404 (429 when asked too often, 401 or 403 when it blocks, a server
+    /// error), a timeout or no connection. Only an answer (404, Yahoo's own "no data", an answer we can't read) says something about the member.
     /// </summary>
-    static bool Transient(MarketDataException error) =>
-        error.Status is 429 or >= 500 || error.InnerException is HttpRequestException or TaskCanceledException;
+    static bool YahooFailed(MarketDataException error) =>
+        error.Status is { } status && status != 404 || error.InnerException is HttpRequestException or TaskCanceledException;
 
     /// <summary>
-    /// One request to Yahoo, with the pause after it, asked again after a transient failure. Still failing after the retries, the run
+    /// One request to Yahoo, with the pause after it, asked again after Yahoo failed. Still failing after the retries, the run
     /// stops: counting the member as missing would draw from a smaller pool, so a throttled stretch would change the draft.
     /// </summary>
     async Task<T> WithRetriesAsync<T>(Func<Task<T>> request, string symbol, CancellationToken cancellationToken)
@@ -357,12 +386,12 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
             {
                 return await request();
             }
-            catch (MarketDataException error) when (Transient(error) && attempt < options.Value.Retries.Length)
+            catch (MarketDataException error) when (YahooFailed(error) && attempt < options.Value.Retries.Length)
             {
                 logger.LogInformation("Yahoo failed for {Symbol} ({Reason}): asking again in {Wait}.", symbol, error.Message, options.Value.Retries[attempt]);
                 await Task.Delay(options.Value.Retries[attempt], time, cancellationToken);
             }
-            catch (MarketDataException error) when (Transient(error))
+            catch (MarketDataException error) when (YahooFailed(error))
             {
                 throw new BacktestDataException($"Yahoo kept failing at {symbol} ({error.Message}), so it stopped; the stored draw and snapshot are unchanged. Try again later.");
             }

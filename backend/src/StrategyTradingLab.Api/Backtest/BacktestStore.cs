@@ -10,7 +10,7 @@ namespace StrategyTradingLab.Api.Backtest;
 
 /// <summary>
 /// The backtest's data in the branch's object storage bucket, under <c>backtest/</c>: the latest draw (<c>draw.json</c>, with a dated
-/// copy under <c>draws/</c>) and a snapshot a month (<c>snapshots/yyyy-MM/</c>: <c>manifest.json</c> and <c>prices/{symbol}.csv.gz</c>),
+/// copy under <c>draws/</c>) and a snapshot a month (<c>snapshots/yyyy-MM/{run}/</c>: <c>manifest.json</c> and <c>prices/{symbol}.csv.gz</c>),
 /// with the latest one's report in <c>snapshot.json</c>. Not in the <c>prices</c> table: a snapshot never changes once taken.
 /// </summary>
 public class BacktestStore(IServiceProvider services, IOptions<ObjectStorageOptions> options, IOptions<BacktestDataOptions> data)
@@ -28,7 +28,11 @@ public class BacktestStore(IServiceProvider services, IOptions<ObjectStorageOpti
 
     string Bucket => options.Value.Bucket;
 
-    public string SnapshotFolder(string month) => $"{Root}snapshots/{month}/";
+    /// <summary>
+    /// A run's own folder in its month: a run that fails partway writes no file of the snapshot in use, which <c>snapshot.json</c> and
+    /// its manifest name until a run finishes.
+    /// </summary>
+    public string SnapshotFolder(string month, DateTimeOffset run) => $"{Root}snapshots/{month}/{run:yyyyMMdd-HHmmss}/";
 
     /// <summary>A price file's key: the symbol escaped, so <c>^NDX</c> or <c>BRK-B</c> are safe in a path.</summary>
     public static string PriceKey(string folder, string symbol) => $"{folder}prices/{Uri.EscapeDataString(symbol)}.csv.gz";

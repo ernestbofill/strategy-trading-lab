@@ -31,6 +31,7 @@ const draw: DrawReport = {
   ],
   missing: [{ ticker: 'S', symbol: null, periods: ['2011–14'], reason: 'noSymbol', detail: 'Sprint Nextel was acquired (2013)' }],
   renamed: [],
+  unchecked: [],
   candidates: [{ template: 'dip', year: 2011, candidates: 9, signalled: 3, buySignals: 5, passed: false }],
   warnings: [],
   symbols: 709,

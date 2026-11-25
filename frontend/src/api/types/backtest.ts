@@ -1,6 +1,6 @@
 /** The backtest's data, for the owner page /admin/backtest-data: backend Backtest/BacktestDataReport.cs and BacktestDataEndpoints.cs. */
 
-export type MissingReason = 'noSymbol' | 'noPrices' | 'nameDiffers' | 'noSector' | 'startsLate' | 'noPricesAtStart'
+export type MissingReason = 'noSymbol' | 'noPrices' | 'nameDiffers' | 'noSector' | 'startsLate' | 'noPricesAtStart' | 'otherClass'
 
 /** A member that can't be drawn, in the periods (labels) where it was a member. */
 export interface MissingMember {
@@ -16,6 +16,14 @@ export interface RenamedTicker {
   ticker: string
   symbol: string | null
   note: string
+}
+
+/** A member drawn without a name check: Wikipedia doesn't name it and no symbol-map row vouches for it. */
+export interface UncheckedName {
+  ticker: string
+  symbol: string
+  yahooName: string | null
+  periods: string[]
 }
 
 /** A drafted stock: third 1 is the low size third, 3 the high one. */
@@ -80,6 +88,7 @@ export interface DrawReport {
   periods: DrawPeriodReport[]
   missing: MissingMember[]
   renamed: RenamedTicker[]
+  unchecked: UncheckedName[]
   candidates: CandidateYear[]
   warnings: PriceWarning[]
   /** How many Yahoo symbols were asked. */

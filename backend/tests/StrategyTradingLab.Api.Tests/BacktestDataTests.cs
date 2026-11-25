@@ -36,6 +36,9 @@ public class BacktestDataTests
         // The second list mostly agrees; the names come from it.
         Assert.True(members.Intersect(membership.WikipediaOn(new DateOnly(2011, 1, 1))).Count() > 440);
         Assert.Equal("Sprint Nextel", membership.WikipediaName("S", new DateOnly(2011, 1, 1)));
+        // Two share classes are one company, so only one can be drawn.
+        Assert.Equal(membership.Company("GOOGL", new DateOnly(2015, 1, 1)), membership.Company("GOOG", new DateOnly(2015, 1, 1)));
+        Assert.NotEqual(membership.Company("AAPL", new DateOnly(2015, 1, 1)), membership.Company("GOOG", new DateOnly(2015, 1, 1)));
     }
 
     static List<DrawCandidate> Members(int perSector, params string[] sectors) =>

@@ -13,7 +13,7 @@ public record YahooSymbol(string Ticker, string? Symbol, string? Note);
 /// The S&amp;P 500's members on any date, from the files in Backtest/Data (their README says where each comes from): fja05680/sp500's
 /// membership, Wikipedia's list and changes as the second list and for the names, and the symbol map to Yahoo's tickers.
 /// </summary>
-public sealed class Sp500Membership
+public sealed partial class Sp500Membership
 {
     record Interval(string Ticker, DateOnly Start, DateOnly? End);
     record Change(DateOnly Date, string? Added, string? AddedName, string? Removed, string? RemovedName);
@@ -89,6 +89,16 @@ public sealed class Sp500Membership
         changes.Where(c => c.Removed == ticker && c.Date > date).OrderBy(c => c.Date).Select(c => c.RemovedName).FirstOrDefault()
         ?? current.GetValueOrDefault(ticker)
         ?? changes.Where(c => c.Added == ticker && c.Date <= date).OrderByDescending(c => c.Date).Select(c => c.AddedName).FirstOrDefault();
+
+    /// <summary>
+    /// Which company the ticker is on <paramref name="date"/>, so two share classes count once: Wikipedia's name without its class
+    /// ("Alphabet Inc. (Class A)" and "(Class C)", "Discovery, Inc." twice), lower case; the ticker when Wikipedia doesn't name it.
+    /// </summary>
+    public string Company(string ticker, DateOnly date) =>
+        WikipediaName(ticker, date) is { } name ? ClassSuffix().Replace(name, "").Trim().ToLowerInvariant() : ticker;
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\s*\(Class [A-Z]\)", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex ClassSuffix();
 
     /// <summary>
     /// The ticker's Yahoo symbol on <paramref name="date"/>: the symbol map's row for that date, or the ticker with <c>.</c> written <c>-</c>

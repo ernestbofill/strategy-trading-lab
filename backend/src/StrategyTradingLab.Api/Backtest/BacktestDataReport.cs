@@ -15,6 +15,8 @@ public enum MissingReason
     StartsLate,
     /// <summary>Its prices stop before the period's start, or it barely traded in the 60 days before it.</summary>
     NoPricesAtStart,
+    /// <summary>Another share class of the same company is drawn instead (the one most traded).</summary>
+    OtherClass,
 }
 
 /// <summary>A member that can't be drawn, in the periods where it was a member.</summary>
@@ -22,6 +24,9 @@ public record MissingMember(string Ticker, string? Symbol, IReadOnlyList<string>
 
 /// <summary>A ticker the symbol map sent to another Yahoo symbol, or to none.</summary>
 public record RenamedTicker(string Ticker, string? Symbol, string Note);
+
+/// <summary>A member that can be drawn without a name check: Wikipedia doesn't name it and no row of the symbol map vouches for it.</summary>
+public record UncheckedName(string Ticker, string Symbol, string? YahooName, IReadOnlyList<string> Periods);
 
 /// <summary>The two point-in-time lists on a period's start: fja's members missing from the Wikipedia list, and the other way round.</summary>
 public record SecondListCheck(int Members, int WikipediaMembers, IReadOnlyList<string> OnlyFja, IReadOnlyList<string> OnlyWikipedia);
@@ -42,11 +47,13 @@ public record DrawPeriodReport(string Label, DateOnly Start, DateOnly End, bool 
 
 /// <summary>
 /// What a draw found (docs/backtest.md, *Data* and *How it is drawn*): per period the members, the coverage and the draft; the members
-/// that can't be drawn and why; the renamed tickers; the candidates per stock template and year; and the drafted stocks' price warnings.
+/// that can't be drawn and why; the renamed tickers; those drawn without a name check; the candidates per stock template and year; and
+/// the drafted stocks' price warnings.
 /// </summary>
 public record DrawReport(DateTimeOffset DrawnAt, ulong Seed, int Size, string MembershipHash, DateOnly MembershipLastRow,
     IReadOnlyList<DrawPeriodReport> Periods, IReadOnlyList<MissingMember> Missing, IReadOnlyList<RenamedTicker> Renamed,
-    IReadOnlyList<CandidateYear> Candidates, IReadOnlyList<PriceWarning> Warnings, int Symbols, string Snapshot);
+    IReadOnlyList<UncheckedName> Unchecked, IReadOnlyList<CandidateYear> Candidates, IReadOnlyList<PriceWarning> Warnings, int Symbols,
+    string Snapshot);
 
 /// <summary>Why a ticker is in a snapshot: a drafted stock, the S&amp;P 500 fund (baseline 1 and the default index) or a template's starter list.</summary>
 public enum SnapshotRole { Draft, Index, Starter }

@@ -100,7 +100,9 @@ public static class DraftDraw
     {
         var bySymbol = eligible.ToDictionary(c => c.Symbol);
         var thirds = Thirds(eligible);
-        var kept = previous.Stocks.Where(s => bySymbol.ContainsKey(s.Symbol)).Select(s => s with { Ticker = bySymbol[s.Symbol].Ticker }).ToList();
+        // A kept stock keeps its seat's sector; its ticker and size third are this period's (a later replacement draws from that third).
+        var kept = previous.Stocks.Where(s => bySymbol.ContainsKey(s.Symbol))
+            .Select(s => s with { Ticker = bySymbol[s.Symbol].Ticker, Third = thirds[s.Symbol] }).ToList();
         var used = kept.Select(s => s.Symbol).ToHashSet();
         var stocks = new List<DraftStock>(kept);
         var replaced = new List<DraftReplacement>();

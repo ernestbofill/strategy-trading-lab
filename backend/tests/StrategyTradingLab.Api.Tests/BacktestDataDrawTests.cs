@@ -109,6 +109,7 @@ public class BacktestDataDrawTests
             Assert.Contains(missing, m => m.GetProperty("ticker").GetString() == "S" && m.GetProperty("reason").GetString() == "noSymbol");
             Assert.Contains(missing, m => m.GetProperty("reason").GetString() == "noPrices");
             Assert.Contains(missing, m => m.GetProperty("reason").GetString() == "startsLate");
+            Assert.Contains(missing, m => m.GetProperty("reason").GetString() == "otherClass" && m.GetProperty("ticker").GetString() is "GOOG" or "GOOGL");
             Assert.Contains(draw.GetProperty("renamed").EnumerateArray(), r => r.GetProperty("ticker").GetString() == "IR" && r.GetProperty("symbol").GetString() == "TT");
             var candidates = draw.GetProperty("candidates").EnumerateArray().ToList();
             Assert.Equal(16, candidates.Count(c => c.GetProperty("template").GetString() == "dip"));

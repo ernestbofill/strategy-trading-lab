@@ -1,6 +1,6 @@
 
 ## Todos from Claude to Ernest
-- [ ] Backtest data: once #284 is merged and deployed, press *Draw again* on `/admin/backtest-data` (the symbol map and sectors changed, so the page asks for it), and look at the new report. (#284)
+- [x] Backtest data: once #284 is merged and deployed, press *Draw again* on `/admin/backtest-data` (the symbol map and sectors changed, so the page asks for it), and look at the new report. (#284) Done 2026-11-25: second report reviewed in the chat, accepted.
 - [x] Backtest data: once #283 is merged and deployed, open `/admin/backtest-data` on production and press *Draw the test draft* (about 15 minutes; the page shows its progress). Then review the report (missing members, renamed tickers, name mismatches, the second list's differences, the two checks, the price warnings) before any backtest result counts. Fixes to the symbol map come as a PR and a new draw. The cloud sessions can't run it: Yahoo refuses them. (#283) Done 2026-11-25, reviewed in the chat.
 - [ ] GitHub: delete the branch `claude/awesome-clarke-32nvbu-admin-loading`. It holds one bad commit from the refactor (it undoes #239) and has no PR; the cloud session couldn't delete it. Its work merged as #241 from another branch. (#252)
 - [ ] QA sessions, optional: save the `qaagent` password in the desktop app's built-in browser too (sign in once there). It resizes to 390px and 360px, which Chrome can't, so signed-in screens can be checked at phone width (lead L-005). The wrong-password check on Log-in (L-006) needs you or another tool: the agent may not type a password on production. (#215)
@@ -62,6 +62,7 @@
 - [x] CI / CD on github
 
 ## Minor
+- [ ] Backtest data, Danaher: Yahoo recorded the Fortive spin-off (2 July 2016) as a split, so DHR's history before it is scaled down and shows a fake +61% on 5 July 2016. It sits in the 2015–18 pool (not drafted) and lifts that period's all-members rate by about 0.1 point. Fix: two symbol-map rows that leave DHR out of 2015–18 only (`DHR,2015-01-01,DHR,…` and `DHR,2019-01-01,,…`), then *Draw again*. Found in the second report (2026-11-25, #285).
 - [ ] On Oracle Cloud, review if it should be more isolated from the trading bot.
 - [ ] Admin ssh
 - [x] Fix git history 

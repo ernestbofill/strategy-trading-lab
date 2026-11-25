@@ -106,14 +106,16 @@ public sealed class BacktestLine(TestMoney money, FxRate fx)
     /// </summary>
     public LineResult Result(BacktestPeriod period, IReadOnlyList<DateOnly> days)
     {
-        // The book as it stood on each day: its trades replayed in order into a fresh one.
+        // The book as it stood on each day: its trades replayed by date into a fresh one (a baseline's stock that didn't trade on the
+        // month's buy day fills later in the month, after another stock's buy of a later day may be in).
+        var ordered = trades.OrderBy(t => t.Date).ToList();
         var replay = new BacktestLine(money, fx);
         var next = 0;
         void ReplayTo(DateOnly day)
         {
-            for (; next < trades.Count && trades[next].Date <= day; next++)
+            for (; next < ordered.Count && ordered[next].Date <= day; next++)
             {
-                var t = trades[next];
+                var t = ordered[next];
                 if (t.Side == TradeSide.Sell) { replay.holdings.Remove(t.Symbol); continue; }
                 if (!replay.holdings.TryGetValue(t.Symbol, out var h)) replay.holdings[t.Symbol] = h = new(traded[t.Symbol]);
                 (h.Shares, h.Cost) = (h.Shares + t.Shares, h.Cost + t.Amount);

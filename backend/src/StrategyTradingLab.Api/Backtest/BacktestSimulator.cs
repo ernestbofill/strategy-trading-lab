@@ -119,7 +119,7 @@ public static class BacktestSimulator
         decimal Reserved() => pending.Sum(p => p.Amount - p.FromIdle);
         var bySignalDay = signals.GroupBy(s => s.Day).ToDictionary(g => g.Key, g => g.ToList());
         var timeline = signals.Select(s => s.Day).Concat(signals.Select(s => s.Fill.Date)).Concat(days).Distinct().Order().ToList();
-        var lastTopUpMonth = (Year: 0, Month: 0);
+        var topUpMonth = new Dictionary<string, (int Year, int Month)>();
         foreach (var today in timeline)
         {
             // 1) The trades of today's open: sales first, so their proceeds are known before today's close decides any buy.
@@ -130,17 +130,17 @@ public static class BacktestSimulator
             }
             pending.RemoveAll(p => p.Signal.Fill.Date == today);
 
-            // 2) All in under a monthly limit (Index trend): a held fund takes each new month's limit at the month's first open, so a
-            // limit below the budget still puts the budget to work. Not while a sale is pending.
-            if (rules.StepAmount is null && (today.Year, today.Month) != lastTopUpMonth && tradingDays.Contains(today))
-            {
-                lastTopUpMonth = (today.Year, today.Month);
+            // 2) All in under a monthly limit (Index trend): a held fund takes each new month's limit at its first open of the month, so a
+            // limit below the budget still puts the budget to work. Not while a sale is pending. A fund that doesn't trade on the
+            // month's first day (another exchange's holiday) tops up at its next open in the month, as baselines 1 and 3 buy.
+            if (rules.StepAmount is null && tradingDays.Contains(today))
                 foreach (var stock in stocks.Where(s => strategy.Holds(s.Symbol) && !pending.Any(p => p.Signal.Stock.Symbol == s.Symbol && p.Signal.Side == TradeSide.Sell)))
                 {
+                    if (topUpMonth.GetValueOrDefault(stock.Symbol) == (today.Year, today.Month) || Bars.On(stock.Bars, today) is not { } bar) continue;
+                    topUpMonth[stock.Symbol] = (today.Year, today.Month);
                     var room = Allowed(today) - strategy.NewMoney - Reserved();
-                    if (room >= Cent && Bars.On(stock.Bars, today) is { } bar) strategy.Buy(stock, bar, room);
+                    if (room >= Cent) strategy.Buy(stock, bar, room);
                 }
-            }
 
             // 3) Today's signals, paid in a seeded order (the same seed, the same result, no alphabetical bias).
             if (!bySignalDay.TryGetValue(today, out var todays)) continue;

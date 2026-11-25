@@ -35,6 +35,7 @@ The account's settings before any session changed them. Restore them before endi
 | This device (push) | Off for this device (Chrome) |
 | AI data sharing | Off. Answered "no" on the first round |
 | Strategies not starting with `QA ` (leave alone) | None |
+| Role | Owner since 2026-11-25 (Ernest, to read `/admin/backtest-data`; was vip). Vip-only checks (H6, X6: `/admin` and `/feedback` refused for a vip) need another vip account now. On production, admin pages stay read-only for the agent |
 
 The browser's `stl.pushAsked` is set in that Chrome, because Confirm's "Allow notifications" was unticked: the ask stays unticked there.
 

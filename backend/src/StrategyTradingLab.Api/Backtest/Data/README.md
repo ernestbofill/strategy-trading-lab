@@ -9,6 +9,7 @@ The S&P 500's members on any date, for drawing the test draft ([docs/backtest.md
 | `wikipedia-changes.csv` | `date,added,added_name,removed,removed_name`: the index changes Wikipedia lists | Wikipedia, [Historical components of the S&P 500](https://en.wikipedia.org/wiki/Historical_components_of_the_S%26P_500) | CC BY-SA 4.0 |
 | `sources.json` | fja's last row and the Wikipedia revisions read | | |
 | `symbol-map.csv` | `ticker,until,yahoo,note`: written by hand (below) | | |
+| `sectors.csv` | `symbol,sector,note`: written by hand, Yahoo's sector names for listings its search no longer finds while their prices are still there (delisted or renamed lately); used only when Yahoo gives no sector | | |
 
 Regenerate the first four with `python3 backend/scripts/backtest-membership.py`, and redraw the test draft if a period start's members changed.
 

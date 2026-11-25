@@ -23,6 +23,7 @@ public sealed partial class Sp500Membership
     readonly Dictionary<string, string> current;
     readonly List<Change> changes;
     readonly List<MapRow> map;
+    readonly Dictionary<string, string> sectors;
 
     /// <summary>A SHA-256 of the files, so a draw records which membership it used and the page sees when it changed.</summary>
     public string Hash { get; }
@@ -30,8 +31,9 @@ public sealed partial class Sp500Membership
     /// <summary>The date of fja's last row: the membership isn't known after it.</summary>
     public DateOnly LastRow { get; }
 
-    Sp500Membership(string membership, string currentList, string changeList, string symbolMap, string hash)
+    Sp500Membership(string membership, string currentList, string changeList, string symbolMap, string sectorList, string hash)
     {
+        sectors = Csv.Rows(sectorList).ToDictionary(r => r[0], r => r[1]);
         intervals = [.. Csv.Rows(membership).Select(r => new Interval(r[0], Date(r[1]), r[2].Length == 0 ? null : Date(r[2])))];
         current = Csv.Rows(currentList).ToDictionary(r => r[0], r => r[1]);
         changes = [.. Csv.Rows(changeList).Select(r => new Change(Date(r[0]), Text(r[1]), Text(r[2]), Text(r[3]), Text(r[4])))];
@@ -43,13 +45,20 @@ public sealed partial class Sp500Membership
     static DateOnly Date(string text) => DateOnly.ParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture);
     static string? Text(string text) => text.Length == 0 ? null : text;
 
-    /// <summary>From the four CSV files' text, header rows included.</summary>
-    public static Sp500Membership Parse(string membership, string currentList, string changeList, string symbolMap) =>
-        new(membership, currentList, changeList, symbolMap,
-            Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(membership + currentList + changeList + symbolMap))));
+    /// <summary>From the CSV files' text, header rows included.</summary>
+    public static Sp500Membership Parse(string membership, string currentList, string changeList, string symbolMap, string sectorList = "symbol,sector,note\n") =>
+        new(membership, currentList, changeList, symbolMap, sectorList,
+            Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(membership + currentList + changeList + symbolMap + sectorList))));
 
     static readonly Lazy<Sp500Membership> embedded = new(() =>
-        Parse(Resource("sp500-membership.csv"), Resource("wikipedia-current.csv"), Resource("wikipedia-changes.csv"), Resource("symbol-map.csv")));
+        Parse(Resource("sp500-membership.csv"), Resource("wikipedia-current.csv"), Resource("wikipedia-changes.csv"), Resource("symbol-map.csv"),
+            Resource("sectors.csv")));
+
+    /// <summary>
+    /// The sector of a Yahoo symbol whose search no longer lists it (delisted or renamed lately) while its prices are still there, from
+    /// sectors.csv, in Yahoo's sector names; null when the file has none. Used only when Yahoo gives no sector.
+    /// </summary>
+    public string? FallbackSector(string symbol) => sectors.GetValueOrDefault(symbol);
 
     /// <summary>The files embedded in the API.</summary>
     public static Sp500Membership Embedded => embedded.Value;

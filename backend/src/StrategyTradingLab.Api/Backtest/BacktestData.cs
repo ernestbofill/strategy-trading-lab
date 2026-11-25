@@ -84,7 +84,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         for (var i = 0; i < symbols.Count; i++)
         {
             progress(new("Fetching the members' prices", i, symbols.Count));
-            members[symbols[i]] = await MemberAsync(symbols[i], since, periods, calendar, buyDays, cancellationToken);
+            members[symbols[i]] = await MemberAsync(symbols[i], since, periods, calendar, buyDays, membership, cancellationToken);
         }
         progress(new("Drawing the test draft", 0, 1));
 
@@ -186,7 +186,16 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
                 .OrderBy(r => r.Ticker, StringComparer.Ordinal)],
             [.. noNameCheck.OrderBy(u => u.Key.Ticker, StringComparer.Ordinal)
                 .Select(u => new UncheckedName(u.Key.Ticker, u.Key.Symbol, members[u.Key.Symbol].Name, u.Value))],
-            candidatesPerYear, [.. drafted.SelectMany(s => members[s].Warnings)], symbols.Count, folder);
+            candidatesPerYear, [.. drafted.SelectMany(s => members[s].Warnings)], symbols.Count, folder)
+        {
+            // The other drawable members' one-day moves over 40%: they count in the representative check, where a split Yahoo didn't
+            // adjust (or a spin-off, as Aimco's in 2020) would move the rate unseen.
+            // Per period, only while the member is in that period's pool (from its warm-up to its end), and not drafted in it.
+            MemberJumps = [.. eligible.Select((e, i) => (e.Period, Pool: e.Eligible.Select(c => c.Symbol).Except(drafts[i].Stocks.Select(s => s.Symbol))))
+                .SelectMany(p => p.Pool.SelectMany(s => members[s].Warnings.Where(w =>
+                    w.Kind == PriceWarningKind.Jump && w.Date >= p.Period.WarmUpStart && w.Date <= p.Period.End)))
+                .Distinct().OrderBy(w => w.Symbol, StringComparer.Ordinal).ThenBy(w => w.Date)],
+        };
 
         var known = drafted.ToDictionary(s => s, s => (Name: members[s].Name, Bars: histories[s]));
         known[IndexSymbol] = (null, indexBars);
@@ -274,14 +283,14 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     /// traded value before the start and the prices the representative check needs. Then the history is kept only compressed.
     /// </summary>
     async Task<Member> MemberAsync(string symbol, DateOnly since, IReadOnlyList<BacktestPeriod> periods, IReadOnlyList<DateOnly> calendar,
-        IReadOnlyDictionary<DateOnly, IReadOnlyList<DateOnly>> buyDays, CancellationToken cancellationToken)
+        IReadOnlyDictionary<DateOnly, IReadOnlyList<DateOnly>> buyDays, Sp500Membership membership, CancellationToken cancellationToken)
     {
         var member = new Member(symbol);
         var (bars, raw, problem) = await HistoryAsync(symbol, since, cancellationToken);
         member.Problem = problem;
         if (bars.Count == 0) return member;
         member.Name = raw.Name;
-        member.Sector = await SectorAsync(symbol, cancellationToken);
+        member.Sector = await SectorAsync(symbol, cancellationToken) ?? membership.FallbackSector(symbol);
         (member.First, member.Last, member.Days) = (bars[0].Date, bars[^1].Date, bars.Count);
         member.Warnings = PriceQuality.Check(symbol, bars, calendar);
         foreach (var period in periods)

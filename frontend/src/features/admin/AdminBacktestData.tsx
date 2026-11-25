@@ -184,7 +184,7 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
           Candidates per template and year
         </h2>
         <p className={styles.muted}>
-          Different stocks with a buy signal (needs 4), stocks that were candidates, and buy signals; up to 5 trades a stock, with no budget.
+          Different stocks with a buy signal (needs 4), stocks that were candidates, and buy signals. Each year from scratch, up to the template's max trades a stock, with no budget.
         </p>
         <CandidatesTable rows={draw.candidates} />
       </section>
@@ -212,11 +212,11 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
       </section>
       <section className={styles.group} aria-labelledby="backtest-renamed">
         <h2 id="backtest-renamed" className={styles.groupTitle}>
-          Renamed tickers ({draw.renamed.length})
+          Symbol map rows used ({draw.renamed.length})
         </h2>
-        <p className={styles.muted}>From the symbol map. Without a Yahoo symbol, the ticker is another company today.</p>
+        <p className={styles.muted}>Renames, names the map vouches for, and tickers that are another company today (no Yahoo symbol).</p>
         <DataTable
-          label="Renamed tickers"
+          label="Symbol map rows used"
           data={draw.renamed}
           getRowId={(r) => `${r.ticker}-${r.symbol ?? ''}`}
           columns={renamedColumns}
@@ -261,6 +261,21 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
           searchPlaceholder="Search tickers…"
           initialSort={{ id: 'symbol', desc: false }}
           emptyMessage="No warnings."
+        />
+      </section>
+      <section className={styles.group} aria-labelledby="backtest-member-jumps">
+        <h2 id="backtest-member-jumps" className={styles.groupTitle}>
+          Big moves in the other members ({draw.memberJumps?.length ?? 0})
+        </h2>
+        <p className={styles.muted}>One-day moves over 40% in drawable members outside the draft, during the periods they are in the pool. They count in the representative check, so a split or spin-off Yahoo didn't adjust shows here.</p>
+        <DataTable
+          label="Big moves in the other members"
+          data={draw.memberJumps ?? []}
+          getRowId={(w) => `${w.symbol}-${w.date}`}
+          columns={warningColumns}
+          searchPlaceholder="Search tickers…"
+          initialSort={{ id: 'symbol', desc: false }}
+          emptyMessage="None."
         />
       </section>
     </>

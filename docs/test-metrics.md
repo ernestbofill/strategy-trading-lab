@@ -19,8 +19,8 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
 | Frontend (Vitest) | 3 | 13 | 16 |
-| Backend (xUnit) | 3 | 26 | 29 |
-| **All** | **6** | **39** | **45** |
+| Backend (xUnit) | 3 | 27 | 30 |
+| **All** | **6** | **40** | **46** |
 
 ## Log
 
@@ -28,6 +28,7 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25 | #284 | local | Backend | `BacktestDataDrawTests` › The_owner_draws_the_test_draft_and_gets_its_report_and_snapshot | 1 | FP | The cloud container had restarted, stopping the local PostgreSQL and S3 stand-in the test needs; restarted them, no code change. |
 | 2026-11-25 | #283 | local | Frontend | `AdminBacktestData.test.tsx` › shows a running draw and the checks that failed | 1 | FP | A new test's text query matched the reason both in the table and in the filter's options; it now asks for the table cell. |
 | 2026-11-24 | #282 | local | Frontend (Vitest) | `src/App.test.tsx > links with a language > keeps a signed-in account's language over the link's` | 1 | FP | Failed once in the full run, passed alone; this PR doesn't touch it. Not sure of the cause: likely state leaking between test files. No fix. |
 | 2026-11-24 | #282 | local | Backend (xUnit) | `NeonBranchTests.Database_is_postgres_15_or_later_with_the_migration_applied` | 1 | FP | The local test database lacked the new `DropManualSignalTrades` migration; passed once `migrations.sql` was applied to it. Machine-dependent. |

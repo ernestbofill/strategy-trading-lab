@@ -32,6 +32,11 @@ public class BacktestDataTests
         Assert.Equal("IR", membership.Resolve("IR", new DateOnly(2023, 1, 1)).Symbol);
         Assert.Equal("META", membership.Resolve("FB", new DateOnly(2015, 1, 1)).Symbol);
         Assert.Null(membership.Resolve("S", new DateOnly(2011, 1, 1)).Symbol);
+        // A map row vouches for a name the check can't match (IBM, "International Business Machines").
+        Assert.NotNull(membership.Resolve("IBM", new DateOnly(2011, 1, 1)).Note);
+        // A sector for a listing Yahoo's search dropped; none for the others, whose sector comes from Yahoo.
+        Assert.Equal("Communication Services", membership.FallbackSector("EA"));
+        Assert.Null(membership.FallbackSector("AAPL"));
         Assert.Equal(new YahooSymbol("BRK.B", "BRK-B", null), membership.Resolve("BRK.B", new DateOnly(2011, 1, 1)));
         // The second list mostly agrees; the names come from it.
         Assert.True(members.Intersect(membership.WikipediaOn(new DateOnly(2011, 1, 1))).Count() > 440);

@@ -1,50 +1,79 @@
 ticker,until,yahoo,note
 ABC,,COR,AmerisourceBergen became Cencora (2023)
 ADS,,BFH,Alliance Data Systems became Bread Financial (2022)
+AIV,2019-01-01,AIV,Apartment Investment and Management (Aimco): Wikipedia says Aimco; vouched only before the 2019 start
+AIV,,,Aimco's December 2020 spin-off (AIR) falls in 2019–22 and Yahoo doesn't adjust a spin-off: left out from 2019
+ANSS,,,Ansys was acquired by Synopsys (2025); ANSS is an ETF today
 ANTM,,ELV,Anthem became Elevance Health (2022)
+APC,,,Anadarko was acquired by Occidental (2019); APC is another company today
 ARNC,2020-04-01,HWM,Alcoa Inc. became Arconic (2016) then Howmet Aerospace (2020); today's ARNC was a 2020 spin-off
+ATI,,ATI,"Allegheny Technologies, ATI Inc. since 2022"
+BBBY,,,Bed Bath & Beyond went bankrupt (2023); BBBY is the former Overstock today (renamed 2025)
 BBT,,TFC,BB&T became Truist Financial (2019)
+BEAM,,,Beam Inc. was acquired by Suntory (2014); BEAM is Beam Therapeutics today
 BHGE,,BKR,Baker Hughes (BHGE then BKR); the pre-2017 Baker Hughes Inc. history isn't on Yahoo
 BK,,BNY,BNY Mellon's ticker became BNY (2026)
 BLL,,BALL,Ball Corporation's ticker became BALL (2022)
+CAM,,,Cameron was acquired by Schlumberger (2016); CAM is an ETF today
 CBS,,PSKY,CBS became ViacomCBS then Paramount Global then Paramount Skydance (2025)
 CDAY,,DAY,Ceridian became Dayforce (2024)
+CLF,,CLF,Cliffs Natural Resources became Cleveland-Cliffs (2017)
+CNX,2015-01-01,CNX,Consol Energy became CNX Resources (2017); vouched only for 2011–14
+CNX,,,"CNX's coal spin-off (CONSOL Energy, November 2017) falls in 2015–18 and Yahoo doesn't adjust a spin-off: left out from 2015"
 COG,,CTRA,Cabot Oil & Gas became Coterra Energy (2021)
+CPWR,,,Compuware was taken private (2014); CPWR is another company today
 CTL,,LUMN,CenturyLink became Lumen Technologies (2020)
 DISCA,,WBD,Discovery became Warner Bros. Discovery (2022)
 DO,,,Diamond Offshore went bankrupt (2020); its later listing isn't the same history
 DWDP,,DD,DowDuPont became DuPont (2019)
+EMC,,,EMC was acquired by Dell (2016); EMC is an ETF today
 EP,,,El Paso Corporation was acquired (2012); EP is another company today
 FB,,META,Facebook became Meta Platforms (2022)
 FBHS,,FBIN,Fortune Brands Home & Security became Fortune Brands Innovations (2022)
 FII,,FHI,Federated Investors became Federated Hermes (2020)
 FLT,,CPAY,FleetCor became Corpay (2024)
 GAS,,,AGL Resources was acquired (2016); GAS is another company today
+GENZ,,,Genzyme was acquired by Sanofi (2011); GENZ is an ETF today
 GPS,,GAP,Gap's ticker became GAP (2024)
+GR,,,Goodrich was acquired by United Technologies (2012); GR is another listing today
 HCP,,DOC,HCP became Healthpeak (PEAK) and took the ticker DOC (2024)
 HFC,,DINO,HollyFrontier became HF Sinclair (2022)
 HRS,,LHX,Harris became L3Harris (2019)
+IBM,,IBM,International Business Machines: Wikipedia says IBM
+INFO,,,IHS Markit merged into S&P Global (2022); INFO is an ETF today
 IR,2020-03-02,TT,Ingersoll-Rand plc became Trane Technologies (2020); today's IR is the former Gardner Denver
 JEC,,J,Jacobs Engineering's ticker became J (2019)
 KORS,,CPRI,Michael Kors became Capri Holdings (2018)
 LB,,BBWI,L Brands became Bath & Body Works (2021)
 LIFE,,,Life Technologies was acquired (2014); LIFE was aTyr Pharma's ticker later
+LLY,,LLY,Eli Lilly: Wikipedia says Lilly (Eli)
 MI,,,Marshall & Ilsley was acquired (2011); MI is another company today
 MMC,,MRSH,Marsh McLennan's ticker became MRSH (2026)
 MYL,,VTRS,Mylan became Viatris (2020)
 NE,2021-02-05,,The old Noble Corporation went bankrupt (2020); today's NE is the company that emerged
+NFX,,,Newfield Exploration was acquired by Encana (2019); NFX is an ETF today
+OI,,OI,Owens-Illinois became O-I Glass (2019)
 PARA,,PSKY,Paramount Global became Paramount Skydance (2025)
+PCG,,PCG,"Pacific Gas & Electric's holding company, PG&E Corporation"
+PCL,,,Plum Creek merged into Weyerhaeuser (2016); PCL is an ETF today
 PEAK,,DOC,Healthpeak's ticker became DOC (2024)
 PKI,,RVTY,PerkinElmer became Revvity (2023)
+POM,,,Pepco Holdings was acquired by Exelon (2016); POM is another company today
 PX,,LIN,Praxair merged into Linde (2018); Yahoo may not hold Praxair's history under LIN
 Q,2025-11-03,,Qwest was acquired (2011); today's Q is Qnity Electronics (2025)
 RE,,EG,Everest Re became Everest Group (2023)
 S,,,Sprint Nextel was acquired (2013); S is SentinelOne today
 SE,,,Spectra Energy was acquired (2017); SE is Sea Limited today
+SHLD,,,Sears Holdings went bankrupt (2018); SHLD is an ETF today
+SLB,,SLB,"Schlumberger, renamed SLB (2022)"
+SPLS,,,Staples was taken private (2017); SPLS is an ETF today
+STI,,,SunTrust merged into Truist (2019); STI is another company today
 SUN,,,Sunoco was acquired (2012); SUN is Sunoco LP today
 SYMC,,GEN,Symantec became NortonLifeLock then Gen Digital (2022)
 TE,,,TECO Energy was acquired (2016); TE is another company today
 TMK,,GL,Torchmark became Globe Life (2019)
 UTX,,RTX,United Technologies became Raytheon Technologies then RTX (2020)
+VIAV,,VIAV,JDS Uniphase became Viavi Solutions (2015)
+WAB,,WAB,Westinghouse Air Brake Technologies: Wikipedia says Wabtec
 WLTW,,WTW,Willis Towers Watson's ticker became WTW (2022)
 WYND,,TNL,Wyndham Worldwide became Wyndham Destinations then Travel + Leisure (2021)

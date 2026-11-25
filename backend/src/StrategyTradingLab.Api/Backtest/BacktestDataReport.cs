@@ -53,7 +53,11 @@ public record DrawPeriodReport(string Label, DateOnly Start, DateOnly End, bool 
 public record DrawReport(DateTimeOffset DrawnAt, ulong Seed, int Size, string MembershipHash, DateOnly MembershipLastRow,
     IReadOnlyList<DrawPeriodReport> Periods, IReadOnlyList<MissingMember> Missing, IReadOnlyList<RenamedTicker> Renamed,
     IReadOnlyList<UncheckedName> Unchecked, IReadOnlyList<CandidateYear> Candidates, IReadOnlyList<PriceWarning> Warnings, int Symbols,
-    string Snapshot);
+    string Snapshot)
+{
+    /// <summary>The other drawable members' one-day moves over 40%, from the first warm-up on (the drafted stocks' are in <c>Warnings</c>).</summary>
+    public IReadOnlyList<PriceWarning> MemberJumps { get; init; } = [];
+}
 
 /// <summary>Why a ticker is in a snapshot: a drafted stock, the S&amp;P 500 fund (baseline 1 and the default index) or a template's starter list.</summary>
 public enum SnapshotRole { Draft, Index, Starter }

@@ -34,6 +34,7 @@ const draw: DrawReport = {
   unchecked: [],
   candidates: [{ template: 'dip', year: 2011, candidates: 9, signalled: 3, buySignals: 5, passed: false }],
   warnings: [],
+  memberJumps: [],
   symbols: 709,
   snapshot: 'backtest/snapshots/2026-11/',
 }

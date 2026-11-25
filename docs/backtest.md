@@ -153,6 +153,21 @@ The first draw on production (seed 20261125, 709 symbols asked):
 - **The candidates check** counted positions across the whole period, so the last years read low once stocks had taken their trades; it now runs each year from scratch (above).
 - **Fixed from the report** (#284): 25 *Name differs* were 15 reused tickers (now map rows saying so) and 10 of the same company under a name the check couldn't match (IBM, LLY, SLB, PCG, WAB…, now map rows), plus VIAV (JDSU) unchecked (the page lists every map row used, as *Symbol map rows used*); 10 of the 11 *No sector* were listings Yahoo's search dropped (EA, CMA, AVB, EQR…), now in `sectors.csv`; the 11th, BBBY, is the former Overstock today (it took the name and ticker in 2025), now a map row that keeps it out. A map row vouches for a name only before a spin-off Yahoo doesn't adjust: AIV (Aimco, December 2020) is left out from 2019, CNX (coal, November 2017) from 2015. The 4 price warnings are real moves (GL −53% in April 2024, LUMN +93% in August 2024, FMC −47%, NWL +41%), not split errors.
 
+### The second report (2026-11-25), accepted
+
+After #284's fixes (Ernest accepted it, #285):
+
+| Period | Can be drawn | Can't | Representative (draft vs all) |
+| --- | --- | --- | --- |
+| 2011–14 | 345 | 152 | +17.2% vs +19.1% |
+| 2015–18 | 379 | 120 | +10.0% vs +7.8% (2.2 points, accepted as before) |
+| 2019–22 | 440 | 65 | +10.7% vs +10.2% |
+| 2023–26 | 472 | 31 | +14.5% vs +14.0% |
+
+- No member is left out for its name or its sector any more; what remains is delisted companies, tickers that are another company today, and prices that start too late. The larger pools moved about 17 of the 60 seats; 68 stocks over the four periods.
+- **Candidates:** 31 of 32 template-years pass. *The comeback* in 2013 (2 stocks, a strong bull year) is **accepted** (Ernest, 2026-11-25).
+- **Price moves:** all real (GameStop's 2021 squeeze, March 2020, Moderna +177% on 19 August 2026 on its melanoma vaccine data) except **Danaher, +61% on 5 July 2016**: Yahoo recorded the Fortive spin-off as a split. It lifts 2015–18's all-members rate by about 0.1 point; the fix (DHR left out of 2015–18) waits in `TODO.md`.
+
 ## Where it lives
 
 Decided by Ernest on 2026-11-23. All owner-only.

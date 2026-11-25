@@ -19,8 +19,8 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
 | Frontend (Vitest) | 3 | 13 | 16 |
-| Backend (xUnit) | 3 | 27 | 30 |
-| **All** | **6** | **40** | **46** |
+| Backend (xUnit) | 3 | 29 | 32 |
+| **All** | **6** | **42** | **48** |
 
 ## Log
 
@@ -28,6 +28,8 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25 | #286 | local | Backend (xUnit) | `BacktestSimulatorTests.A_backtest_of_a_running_simulation_from_its_start_gives_the_trades_the_app_recorded` | 1 | FP | The new test ran the daily check once over 400 days, which pays the new signals stock by stock, not by date; it now checks each evening, as production does. The catch-up order went to `ROADMAP.md`'s ideas. |
+| 2026-11-25 | #286 | local | Backend (xUnit) | `BacktestSimulatorTests.With_money_for_every_signal_it_trades_the_POCs_signals_at_the_next_open(comeback-TSLA-0)` | 1 | FP | The new test's golden loader dropped the volumes the comeback reads; it reads them now. |
 | 2026-11-25 | #284 | local | Backend | `BacktestDataDrawTests` › The_owner_draws_the_test_draft_and_gets_its_report_and_snapshot | 1 | FP | The cloud container had restarted, stopping the local PostgreSQL and S3 stand-in the test needs; restarted them, no code change. |
 | 2026-11-25 | #283 | local | Frontend | `AdminBacktestData.test.tsx` › shows a running draw and the checks that failed | 1 | FP | A new test's text query matched the reason both in the table and in the filter's options; it now asks for the table cell. |
 | 2026-11-24 | #282 | local | Frontend (Vitest) | `src/App.test.tsx > links with a language > keeps a signed-in account's language over the link's` | 1 | FP | Failed once in the full run, passed alone; this PR doesn't touch it. Not sure of the cause: likely state leaking between test files. No fix. |

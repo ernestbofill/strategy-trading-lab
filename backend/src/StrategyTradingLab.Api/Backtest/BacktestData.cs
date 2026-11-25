@@ -84,7 +84,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         for (var i = 0; i < symbols.Count; i++)
         {
             progress(new("Fetching the members' prices", i, symbols.Count));
-            members[symbols[i]] = await MemberAsync(symbols[i], since, periods, calendar, buyDays, cancellationToken);
+            members[symbols[i]] = await MemberAsync(symbols[i], since, periods, calendar, buyDays, membership, cancellationToken);
         }
         progress(new("Drawing the test draft", 0, 1));
 
@@ -182,7 +182,8 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         var draw = new DrawReport(now, DraftDraw.DefaultSeed, DraftDraw.DefaultSize, membership.Hash, membership.LastRow, reports,
             [.. missing.OrderBy(m => m.Key.Ticker, StringComparer.Ordinal)
                 .Select(m => new MissingMember(m.Key.Ticker, m.Value.Symbol, m.Value.Periods, m.Key.Reason, m.Value.Detail))],
-            [.. entries.Where(e => e.Yahoo.Note is not null).Select(e => new RenamedTicker(e.Ticker, e.Yahoo.Symbol, e.Yahoo.Note!)).Distinct()
+            // A map row that only vouches for a name (IBM stays IBM) isn't a rename.
+            [.. entries.Where(e => e.Yahoo.Note is not null && e.Yahoo.Symbol != e.Ticker).Select(e => new RenamedTicker(e.Ticker, e.Yahoo.Symbol, e.Yahoo.Note!)).Distinct()
                 .OrderBy(r => r.Ticker, StringComparer.Ordinal)],
             [.. noNameCheck.OrderBy(u => u.Key.Ticker, StringComparer.Ordinal)
                 .Select(u => new UncheckedName(u.Key.Ticker, u.Key.Symbol, members[u.Key.Symbol].Name, u.Value))],
@@ -274,14 +275,14 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     /// traded value before the start and the prices the representative check needs. Then the history is kept only compressed.
     /// </summary>
     async Task<Member> MemberAsync(string symbol, DateOnly since, IReadOnlyList<BacktestPeriod> periods, IReadOnlyList<DateOnly> calendar,
-        IReadOnlyDictionary<DateOnly, IReadOnlyList<DateOnly>> buyDays, CancellationToken cancellationToken)
+        IReadOnlyDictionary<DateOnly, IReadOnlyList<DateOnly>> buyDays, Sp500Membership membership, CancellationToken cancellationToken)
     {
         var member = new Member(symbol);
         var (bars, raw, problem) = await HistoryAsync(symbol, since, cancellationToken);
         member.Problem = problem;
         if (bars.Count == 0) return member;
         member.Name = raw.Name;
-        member.Sector = await SectorAsync(symbol, cancellationToken) ?? Sp500Membership.Embedded.FallbackSector(symbol);
+        member.Sector = await SectorAsync(symbol, cancellationToken) ?? membership.FallbackSector(symbol);
         (member.First, member.Last, member.Days) = (bars[0].Date, bars[^1].Date, bars.Count);
         member.Warnings = PriceQuality.Check(symbol, bars, calendar);
         foreach (var period in periods)

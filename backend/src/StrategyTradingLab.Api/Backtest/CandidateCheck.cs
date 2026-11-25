@@ -23,6 +23,9 @@ public static class CandidateCheck
 {
     public const int MinStocks = 4;
 
+    /// <summary>Trading days each year's run starts before 1 January, so it knows which signals were already open.</summary>
+    const int LeadIn = 5;
+
     public static IReadOnlyList<CandidateYear> Count(string templateKey, JsonDocument parameters, int maxSteps,
         IReadOnlyList<(BacktestPeriod Period, IReadOnlyList<DraftHistory> Stocks)> periods)
     {
@@ -48,7 +51,10 @@ public static class CandidateCheck
         var bars = stock.Bars.Where(b => b.Date <= to).ToList();
         if (bars.Count == 0 || bars[^1].Date < from) return;
         var rules = TemplateRules.Create(templateKey, bars, parameters);
-        var days = RulesRunner.Run(rules, bars, new StepPlan(maxSteps), RulesRunner.StartIndex(bars, from));
+        // The run starts a few trading days before 1 January and counts from it: a buy window already open at New Year then reads as
+        // the same signal going on, not as a new one counted in both years.
+        var start = Math.Max(0, RulesRunner.StartIndex(bars, from) - LeadIn);
+        var days = RulesRunner.Run(rules, bars, new StepPlan(maxSteps), start);
         foreach (var day in days.Where(d => d.Date >= from))
         {
             var year = years[day.Date.Year];

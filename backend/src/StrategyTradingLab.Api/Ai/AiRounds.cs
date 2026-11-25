@@ -107,7 +107,7 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
     }
 
     /// <summary>
-    /// Reads an answer and works out the steps it would give now: the rules' steps so far, the budget the strategy's signals
+    /// Reads an answer and works out the steps it would give now: the steps held so far, the budget the strategy's signals
     /// use, and which stocks can't get a signal on the last finished session (no price yet, or one already that day).
     /// </summary>
     public async Task<AiPlan> PlanAsync(Strategy strategy, string? answer, string locale, CancellationToken cancellationToken)
@@ -375,7 +375,7 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
     {
         var signals = await db.Signals.Where(s => s.StrategyId == strategy.Id && s.Side == TradeSide.Buy).ToListAsync(cancellationToken);
         var live = strategy.Mode == StrategyMode.Live;
-        var traded = (await db.SignalTrades.Where(t => t.StrategyId == strategy.Id).Select(t => t.SignalId).ToListAsync(cancellationToken)).ToHashSet();
+        var traded = live ? [] : (await db.SignalTrades.Where(t => t.StrategyId == strategy.Id).Select(t => t.SignalId).ToListAsync(cancellationToken)).ToHashSet();
         var assetIds = signals.Select(s => s.AssetId).Concat(strategy.Assets.Select(a => a.AssetId)).Distinct().ToList();
         var assets = await db.Assets.AsNoTracking().Where(a => assetIds.Contains(a.Id)).ToDictionaryAsync(a => a.Id, cancellationToken);
 

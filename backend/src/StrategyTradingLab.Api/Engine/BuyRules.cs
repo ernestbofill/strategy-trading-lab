@@ -3,7 +3,7 @@ namespace StrategyTradingLab.Api.Engine;
 /// <summary>Where one asset stands under a strategy's rules on one day (the POC's status words).</summary>
 public enum RuleStatus { NotEnoughData, NotCandidate, Watching, BuySignal, SignalEnded, Building, Holding, SellSignal }
 
-/// <summary>What the runner tells the rules about the rules' own position and the day before.</summary>
+/// <summary>What the runner tells the rules about the position (a simulation's every signal, a Manual strategy's trades the user did) and the day before.</summary>
 /// <param name="Previous">Yesterday's status: NotEnoughData until the history is long enough, null only on the very first day.</param>
 /// <param name="StepsBought">Steps bought so far (each signal is acted on the next day; a Manual one only once the user did it).</param>
 /// <param name="LastBuyDay">The day of the latest step; meaningless while nothing is bought.</param>
@@ -21,7 +21,7 @@ public readonly record struct DayContext(DateOnly Day, RuleStatus? Previous, int
 /// <summary>
 /// A day's verdict. <c>Facts</c> are the numbers (and words) behind it, for the signal's text, e.g. <c>belowPeakPct</c>.
 /// <c>WindowOpen</c> is whether a buy could be made at today's close: the buy conditions hold. It is what keeps a signal's
-/// window open, whatever the rules' own position does. <c>StepNo</c> overrides the runner's step count when the rules track
+/// window open, whatever the position does. <c>StepNo</c> overrides the runner's step count when the rules track
 /// their own cycle steps (as <i>Bear markets</i> does).
 /// </summary>
 public record RuleDecision(RuleStatus Status, string? Reason, IReadOnlyDictionary<string, object> Facts, bool WindowOpen = false, int? StepNo = null)

@@ -360,7 +360,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
             var history = await WithRetriesAsync(() => yahoo.HistoryAsync(symbol, since, cancellationToken), symbol, cancellationToken);
             return history.Adjusted.Count == 0
                 ? ([], empty, "Yahoo has no prices.")
-                : ([.. history.Adjusted.Select(c => new PriceBar(c.Date, c.Open, c.High, c.Low, c.Close, c.Volume))], history, null);
+                : (Bars(history), history, null);
         }
         catch (MarketDataException error)
         {
@@ -368,6 +368,10 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
             return ([], empty, error.Message);
         }
     }
+
+    /// <summary>A history's adjusted days as the engine's bars.</summary>
+    internal static IReadOnlyList<PriceBar> Bars(DailyHistory history) =>
+        [.. history.Adjusted.Select(c => new PriceBar(c.Date, c.Open, c.High, c.Low, c.Close, c.Volume))];
 
     async Task<(string? Name, IReadOnlyList<PriceBar> Bars, string? Problem)> FetchAsync(string symbol, DateOnly since, CancellationToken cancellationToken)
     {
@@ -394,7 +398,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     /// answer), failed itself (5xx, 999) or couldn't be reached. Any other answer (404, 400 or 422 for a symbol or range it has no data for,
     /// its own "no data", an answer we can't read) says something about the member, and the same symbol would fail every draw.
     /// </summary>
-    static bool YahooFailed(MarketDataException error) =>
+    internal static bool YahooFailed(MarketDataException error) =>
         error.Status is 401 or 403 or 408 or 429 or >= 500 || error.InnerException is HttpRequestException or TaskCanceledException;
 
     /// <summary>

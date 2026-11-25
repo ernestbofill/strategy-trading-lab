@@ -159,12 +159,13 @@ public class BacktestDataDrawTests
             // Index trend on SPY: the template's budget, no monthly limit.
             var trend = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "trend" })).Content.ReadFromJsonAsync<JsonElement>();
             Assert.Equal((3000m, 3000m), (trend.GetProperty("setup").GetProperty("budget").GetDecimal(), trend.GetProperty("setup").GetProperty("monthlyLimit").GetDecimal()));
-            // A changed setting goes over the template's defaults; one the rules don't have is refused.
-            var tuned = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", @params = new { cooldownDays = 20 } })).Content.ReadFromJsonAsync<JsonElement>();
+            // A changed setting goes over the template's defaults; one the rules don't have, or out of range, is refused as a strategy's would be.
+            var tuned = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", settings = new { cooldownDays = 20 } })).Content.ReadFromJsonAsync<JsonElement>();
             Assert.Equal(20, tuned.GetProperty("setup").GetProperty("params").GetProperty("cooldownDays").GetInt32());
             Assert.True(tuned.GetProperty("setup").GetProperty("params").TryGetProperty("minGainPct", out _));
             Assert.NotEqual(result.GetProperty("key").GetString(), tuned.GetProperty("key").GetString());
-            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", @params = new { nope = 1 } })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", settings = new { nope = 1 } })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", settings = new { cooldownDays = -5 } })).StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "ai" })).StatusCode);
             Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", years = 6 })).StatusCode);
 

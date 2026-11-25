@@ -18,11 +18,12 @@ public enum TestStocks { Draft, List, Stock }
 /// A test to run. Everything but the template may be left out: the rules are then the template's defaults in use, the stocks the test
 /// draft, and the money and years the test defaults (docs/backtest.md, *What is tested*); see <see cref="BacktestRunner.Resolve"/>.
 /// </summary>
-/// <param name="Params">Settings over the template's defaults in use, by the params' names (a strategy's changed settings); null: the defaults.</param>
+/// <param name="Settings">Settings over the template's defaults in use, by key (a strategy's, or Advanced settings' values on screen),
+/// checked as a strategy's are; null: the defaults.</param>
 /// <param name="Symbols">The strategy's list, or the one stock, by Yahoo symbol.</param>
 /// <param name="Index">The index fund <i>Bear markets</i> and <i>Index trend</i> trade; null: SPY.</param>
 /// <param name="Currency">The test's currency: EUR, USD or GBP.</param>
-public record BacktestRequest(string TemplateKey, JsonElement? Params = null, TestStocks Stocks = TestStocks.Draft,
+public record BacktestRequest(string TemplateKey, IReadOnlyDictionary<string, decimal>? Settings = null, TestStocks Stocks = TestStocks.Draft,
     IReadOnlyList<string>? Symbols = null, string? Index = null, int? Years = null, int? PeriodYears = null, decimal? Budget = null,
     decimal? AmountPerTrade = null, int? MaxTrades = null, decimal? MonthlyLimit = null, decimal? FeePct = null, decimal? SpreadPct = null,
     string Currency = "EUR");
@@ -85,8 +86,10 @@ public class BacktestRunner(BacktestStore store, BacktestPrices prices, Template
             return done;
 
         var assets = new Dictionary<string, TestAsset>();
+        // How far back the snapshot's files go: every ticker from the draw's first warm-up, whenever it was listed.
+        var reach = manifest.Periods[0].Start.AddMonths(-BacktestPeriods.WarmUpMonths).AddDays(-BacktestPeriods.WarmUpSlackDays);
         foreach (var symbol in symbols)
-            assets[symbol] = await prices.AssetAsync(snapshot, month, symbol, since, cancellationToken);
+            assets[symbol] = await prices.AssetAsync(snapshot, reach, month, symbol, since, cancellationToken);
         var fx = await prices.RatesAsync(month, setup.Currency, assets.Values.Select(a => a.Currency), since, cancellationToken);
         FxRate rate = (currency, day) => fx.Between(setup.Currency, currency, day)
             ?? throw new BacktestRunException($"No exchange rate from {setup.Currency} to {currency} on {day:yyyy-MM-dd}.", missingData: true);
@@ -140,27 +143,13 @@ public class BacktestRunner(BacktestStore store, BacktestPrices prices, Template
             throw new BacktestRunException("The money is out of range: a budget above 0, an amount per trade up to the budget, 1 to 20 trades a stock, a monthly limit above 0, fee and spread 0–5%.");
         if (!Currencies.Contains(request.Currency)) throw new BacktestRunException($"The test's currency is one of {string.Join(", ", Currencies)}.");
 
-        var parameters = Merged(template.ParamsJson().RootElement, request.Params);
+        // As a strategy's settings are checked: known keys, in range and on a step, and those that must stay below another.
+        var refused = new List<string>();
+        using var applied = TemplateSettings.Apply(template, request.Settings, (field, reason) => refused.Add($"{field}: {reason}"))
+            ?? throw new BacktestRunException(string.Join(" ", refused));
+        var parameters = applied.RootElement.Clone();
         return new(template.Key, parameters, stocks, symbols, fund ? symbols[0] : BacktestData.IndexSymbol, years, periodYears,
             budget, amount, maxTrades, Math.Min(limit, budget), fee, spread, request.Currency);
-    }
-
-    /// <summary>
-    /// The template's defaults in use with the given settings over them (a strategy's changed settings, or Advanced settings' values on
-    /// screen), so a setting left out keeps the template's value, not the code's.
-    /// </summary>
-    static JsonElement Merged(JsonElement defaults, JsonElement? given)
-    {
-        var merged = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(defaults.GetRawText())!;
-        if (given is { ValueKind: JsonValueKind.Object } settings)
-            foreach (var setting in settings.EnumerateObject())
-            {
-                // The names as the params store them (camelCase); a key the rules don't know is refused, not ignored.
-                var key = merged.Keys.FirstOrDefault(k => string.Equals(k, setting.Name, StringComparison.OrdinalIgnoreCase))
-                    ?? throw new BacktestRunException($"The rules have no setting '{setting.Name}'.");
-                merged[key] = setting.Value.Clone();
-            }
-        return JsonSerializer.SerializeToElement(merged);
     }
 
     sealed record Pool(BacktestPeriod Period, IReadOnlyList<string> Symbols);
@@ -209,12 +198,12 @@ public class BacktestPrices(BacktestStore store, IMarketDataSource yahoo, AppDbC
     static readonly Dictionary<string, IReadOnlyList<PriceBar>> Parsed = [];
     static readonly Lock Gate = new();
 
-    public async Task<TestAsset> AssetAsync(SnapshotReport snapshot, string month, string symbol, DateOnly since, CancellationToken cancellationToken)
+    /// <param name="reach">The first day the snapshot asked for (its first warm-up): a test that starts later reads the snapshot's file,
+    /// whatever day the stock's own prices start.</param>
+    public async Task<TestAsset> AssetAsync(SnapshotReport snapshot, DateOnly reach, string month, string symbol, DateOnly since, CancellationToken cancellationToken)
     {
         var known = snapshot.Tickers.FirstOrDefault(t => t.Symbol == symbol && t.Days > 0);
-        // A snapshot holds the draft's US stocks and SPY from the draw's first warm-up, and the starter lists: enough unless the test
-        // reaches further back than the snapshot's history.
-        if (known is not null && known.First <= since.AddDays(BacktestPeriods.WarmUpSlackDays)
+        if (known is not null && since >= reach
             && await ParsedAsync(BacktestStore.PriceKey(snapshot.Key, symbol), () => store.PricesAsync(snapshot.Key, symbol, cancellationToken)) is { } bars)
             return new(symbol, await CurrencyAsync(symbol, known.Roles, cancellationToken), bars);
 
@@ -226,13 +215,19 @@ public class BacktestPrices(BacktestStore store, IMarketDataSource yahoo, AppDbC
             {
                 history = await yahoo.HistoryAsync(symbol, since, cancellationToken);
             }
+            // In the request, no retries (the draw's wait minutes): a refusal or a timeout says to try again, apart from a symbol
+            // Yahoo has nothing for.
+            catch (MarketDataException error) when (BacktestData.YahooFailed(error))
+            {
+                throw new BacktestRunException($"Yahoo isn't answering for {symbol} now ({error.Message}): try again in a few minutes.", missingData: true);
+            }
             catch (MarketDataException error)
             {
                 throw new BacktestRunException($"Yahoo gave no prices for {symbol}: {error.Message}", missingData: true);
             }
             if (history.Adjusted.Count == 0) throw new BacktestRunException($"Yahoo has no prices for {symbol}.", missingData: true);
             var currency = await CurrencyAsync(symbol, [], cancellationToken);
-            var file = PriceFile.Write([.. history.Adjusted.Select(c => new PriceBar(c.Date, c.Open, c.High, c.Low, c.Close, c.Volume))]);
+            var file = PriceFile.Write(BacktestData.Bars(history));
             fetched = new(symbol, currency, history.Name, since, history.Adjusted[0].Date, history.Adjusted[^1].Date);
             await store.SaveFetchedAsync(month, fetched, file, cancellationToken);
             logger.LogInformation("Fetched {Symbol} for a backtest, from {Since}.", symbol, since);
@@ -256,7 +251,7 @@ public class BacktestPrices(BacktestStore store, IMarketDataSource yahoo, AppDbC
         var rates = new Dictionary<string, List<(DateOnly, decimal)>>();
         foreach (var quote in quotes)
         {
-            var asset = await AssetAsync(NoSnapshot, month, $"{ExchangeRates.Base}{quote}=X", since, cancellationToken);
+            var asset = await AssetAsync(NoSnapshot, DateOnly.MaxValue, month, $"{ExchangeRates.Base}{quote}=X", since, cancellationToken);
             rates[quote] = [.. asset.Bars.Where(b => b.Close > 0).Select(b => (b.Date, b.Close))];
         }
         return new(rates);

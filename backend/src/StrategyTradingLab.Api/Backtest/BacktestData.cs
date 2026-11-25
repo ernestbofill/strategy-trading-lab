@@ -43,7 +43,7 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     /// <summary>The S&amp;P 500 fund: baseline 1, the default index, and the trading calendar the checks count days on.</summary>
     public const string IndexSymbol = "SPY";
 
-    const int TradedDays = 60, MinTradedDays = 40, WarmUpSlackDays = 7;
+    const int TradedDays = 60, MinTradedDays = 40, WarmUpSlackDays = BacktestPeriods.WarmUpSlackDays;
 
     /// <summary>Under 60% of a period's members drawable, the run stops: in 2011 about 15% have no prices on Yahoo (survivorship).</summary>
     const double MinDrawable = 0.6;

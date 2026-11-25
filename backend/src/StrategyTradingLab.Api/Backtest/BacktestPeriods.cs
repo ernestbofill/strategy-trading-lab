@@ -16,6 +16,9 @@ public static class BacktestPeriods
 {
     public const int DefaultYears = 16, DefaultLength = 4, WarmUpMonths = 15;
 
+    /// <summary>A stock whose prices start more than this after a warm-up's start can't be tested in that period (nor drawn).</summary>
+    public const int WarmUpSlackDays = 7;
+
     /// <summary>
     /// <paramref name="years"/> calendar years up to this one, in periods of <paramref name="length"/> years: with the defaults in 2026,
     /// 2011–14, 2015–18, 2019–22 and 2023–26 (to <paramref name="today"/>).

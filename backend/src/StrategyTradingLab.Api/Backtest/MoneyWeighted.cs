@@ -10,6 +10,9 @@ public record TestMoney(decimal Budget = 6000, decimal MonthlyLimit = 400, decim
 
     /// <summary>The shares an amount buys at a price: the fee comes out of the amount, the spread is added to the price.</summary>
     public decimal SharesFor(decimal amount, decimal price) => amount / (1 + FeePct / 100) / (price * (1 + SpreadPct / 100));
+
+    /// <summary>What a sale of <paramref name="shares"/> at <paramref name="price"/> brings: the spread is taken off the price, the fee off the amount.</summary>
+    public decimal ProceedsOf(decimal shares, decimal price) => shares * price * (1 - SpreadPct / 100) * (1 - FeePct / 100);
 }
 
 /// <summary>Money-weighted returns (IRR): each euro counts for as long as it was invested.</summary>
@@ -21,10 +24,19 @@ public static class MoneyWeighted
     /// </summary>
     public static double? AnnualRate(IReadOnlyList<(DateOnly Date, decimal Amount)> flows)
     {
-        if (!flows.Any(f => f.Amount < 0) || !flows.Any(f => f.Amount > 0)) return null;
+        if (flows.Count == 0) return null;
         var start = flows.Min(f => f.Date);
-        var points = flows.Select(f => (Years: (f.Date.DayNumber - start.DayNumber) / 365.0, Amount: (double)f.Amount)).ToList();
-        double Value(double rate) => points.Sum(p => p.Amount / Math.Pow(1 + rate, p.Years));
+        return Rate([.. flows.Select(f => ((f.Date.DayNumber - start.DayNumber) / 365.0, f.Amount))]);
+    }
+
+    /// <summary>
+    /// The rate per unit of <c>Time</c> that brings the cash flows to zero: money put in is negative, the value at the end positive.
+    /// Null without both, or when no rate between −99.99% and +1,000% a unit fits.
+    /// </summary>
+    public static double? Rate(IReadOnlyList<(double Time, decimal Amount)> flows)
+    {
+        if (!flows.Any(f => f.Amount < 0) || !flows.Any(f => f.Amount > 0)) return null;
+        double Value(double rate) => flows.Sum(p => (double)p.Amount / Math.Pow(1 + rate, p.Time));
         double low = -0.9999, high = 10;
         var atLow = Value(low);
         if (Math.Sign(atLow) == Math.Sign(Value(high))) return null;
@@ -48,12 +60,20 @@ public sealed class PeriodPrices(IReadOnlyDictionary<DateOnly, decimal> opens, d
     public decimal? OpenOn(DateOnly day) => opens.TryGetValue(day, out var open) ? open : null;
     public decimal? EndClose => endClose;
 
-    public static PeriodPrices From(IReadOnlyList<PriceBar> bars, IEnumerable<DateOnly> buyDays, DateOnly end)
+    /// <param name="sameMonth">
+    /// A buy day the stock didn't trade (another exchange's holiday) takes its first open after it in the same month, so a fund abroad
+    /// still buys that month. The draw's US members trade on SPY's days, and it keeps the exact day.
+    /// </param>
+    public static PeriodPrices From(IReadOnlyList<PriceBar> bars, IEnumerable<DateOnly> buyDays, DateOnly end, bool sameMonth = false)
     {
-        var days = buyDays.ToHashSet();
-        var opens = bars.Where(b => days.Contains(b.Date)).ToDictionary(b => b.Date, b => b.Open);
-        var last = bars.LastOrDefault(b => b.Date <= end);
-        return new(opens, last?.Close);
+        var opens = new Dictionary<DateOnly, decimal>();
+        foreach (var day in buyDays)
+        {
+            var at = Bars.FirstOnOrAfter(bars, day);
+            if (at < bars.Count && bars[at].Date <= end && (bars[at].Date == day || (sameMonth && bars[at].Date.Month == day.Month && bars[at].Date.Year == day.Year)))
+                opens[day] = bars[at].Open;
+        }
+        return new(opens, Bars.LastOnOrBefore(bars, end)?.Close);
     }
 }
 
@@ -61,10 +81,27 @@ public sealed class PeriodPrices(IReadOnlyDictionary<DateOnly, decimal> opens, d
 /// Baseline 3, <i>same stocks, monthly</i> (docs/backtest.md, *Baselines*): on the first trading day of each month it buys the whole pool,
 /// split evenly, with the month's limit, until the budget is used; never sells; valued at the period's last close. For the draw's
 /// representative check it runs in the stocks' currency (dollars): both pools buy on the same days, so the exchange rate moves them
-/// alike. The simulator (ROADMAP item 53) runs it in the strategy's currency.
+/// alike. The simulator (<see cref="BacktestSimulator"/>) runs the same plan in the test's currency.
 /// </summary>
 public static class SameStocksMonthly
 {
+    /// <summary>
+    /// What each buy day spends on each stock, in the money's currency: the month's limit (the budget's rest in the last month), split
+    /// among the stocks with a price that day. A stock whose prices stop before the end is still bought while it has them.
+    /// </summary>
+    public static IEnumerable<(DateOnly Day, int Stock, decimal Amount)> Plan(IReadOnlyList<PeriodPrices> pool, IReadOnlyList<DateOnly> buyDays, TestMoney money)
+    {
+        var spent = 0m;
+        foreach (var day in buyDays)
+        {
+            var amount = Math.Min(money.MonthlyLimit, money.Budget - spent);
+            var priced = Enumerable.Range(0, pool.Count).Where(i => pool[i].OpenOn(day) is not null && pool[i].EndClose is not null).ToList();
+            if (amount <= 0 || priced.Count == 0) continue;
+            foreach (var i in priced) yield return (day, i, amount / priced.Count);
+            spent += amount;
+        }
+    }
+
     /// <summary>The first trading day of each month from the period's start, as many months as the budget lasts.</summary>
     public static IReadOnlyList<DateOnly> BuyDays(IReadOnlyList<DateOnly> calendar, BacktestPeriod period, TestMoney money) =>
         [.. calendar.Where(d => d >= period.Start && d <= period.End).GroupBy(d => (d.Year, d.Month)).Select(g => g.Min()).Take(money.Months)];
@@ -77,18 +114,44 @@ public static class SameStocksMonthly
     {
         var shares = new decimal[pool.Count];
         var flows = new List<(DateOnly, decimal)>();
-        var spent = 0m;
-        foreach (var day in buyDays)
+        foreach (var (day, i, amount) in Plan(pool, buyDays, money))
         {
-            var amount = Math.Min(money.MonthlyLimit, money.Budget - spent);
-            var priced = Enumerable.Range(0, pool.Count).Where(i => pool[i].OpenOn(day) is not null && pool[i].EndClose is not null).ToList();
-            if (amount <= 0 || priced.Count == 0) continue;
-            foreach (var i in priced) shares[i] += money.SharesFor(amount / priced.Count, pool[i].OpenOn(day)!.Value);
+            shares[i] += money.SharesFor(amount, pool[i].OpenOn(day)!.Value);
             flows.Add((day, -amount));
-            spent += amount;
         }
         var value = Enumerable.Range(0, pool.Count).Sum(i => shares[i] * (pool[i].EndClose ?? 0));
         flows.Add((period.End, value));
         return MoneyWeighted.AnnualRate(flows);
+    }
+}
+
+/// <summary>Lookups in a stock's bars, oldest first.</summary>
+public static class Bars
+{
+    /// <summary>The index of the first bar on or after <paramref name="day"/>; the count when none.</summary>
+    public static int FirstOnOrAfter(IReadOnlyList<PriceBar> bars, DateOnly day)
+    {
+        int low = 0, high = bars.Count;
+        while (low < high)
+        {
+            var mid = (low + high) / 2;
+            if (bars[mid].Date < day) low = mid + 1;
+            else high = mid;
+        }
+        return low;
+    }
+
+    /// <summary>The bar of <paramref name="day"/>, or null when the stock didn't trade that day.</summary>
+    public static PriceBar? On(IReadOnlyList<PriceBar> bars, DateOnly day)
+    {
+        var at = FirstOnOrAfter(bars, day);
+        return at < bars.Count && bars[at].Date == day ? bars[at] : null;
+    }
+
+    /// <summary>The last bar on or before <paramref name="day"/>, or null.</summary>
+    public static PriceBar? LastOnOrBefore(IReadOnlyList<PriceBar> bars, DateOnly day)
+    {
+        var at = FirstOnOrAfter(bars, day.AddDays(1));
+        return at == 0 ? null : bars[at - 1];
     }
 }

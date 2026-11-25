@@ -184,7 +184,7 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
           Candidates per template and year
         </h2>
         <p className={styles.muted}>
-          Different stocks with a buy signal (needs 4), stocks that were candidates, and buy signals; up to 5 trades a stock, with no budget.
+          Different stocks with a buy signal (needs 4), stocks that were candidates, and buy signals. Each year from scratch, up to 5 trades a stock, with no budget.
         </p>
         <CandidatesTable rows={draw.candidates} />
       </section>

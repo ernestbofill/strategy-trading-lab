@@ -114,46 +114,6 @@
   font-size: 13px;
 }
 
-.chart {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.lineStrategy,
-.lineIndex {
-  fill: none;
-  stroke-linejoin: round;
-}
-
-.lineStrategy {
-  stroke: var(--success);
-  stroke-width: 2;
-}
-
-.lineIndex {
-  stroke: var(--ink-muted);
-  stroke-width: 1.5;
-  stroke-dasharray: 3 3;
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 11px;
-  color: var(--ink-muted);
-}
-
-.keyStrategy {
-  color: var(--success);
-}
-
-.keyIndex {
-  color: var(--ink-muted);
-}
-
 .gaps h3 {
   margin: 0 0 var(--space-2);
   font-size: 12px;
@@ -181,18 +141,4 @@
 
 .gaps dd {
   margin: 0;
-}
-
-.toggle {
-  align-self: flex-start;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--link);
-  cursor: pointer;
-}
-
-.toggle:focus-visible {
-  outline: 2px solid var(--border-focus);
 }

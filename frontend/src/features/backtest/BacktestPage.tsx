@@ -20,9 +20,10 @@ import { PageHeader } from '../../components/PageHeader'
 import { Screen, TopBar } from '../../components/Screen'
 import { Section } from '../../components/Section'
 import { Tabs } from '../../components/Tabs'
+import { TextAction } from '../../components/TextAction'
+import { TwoLineChart } from '../../components/TwoLineChart'
 import { tabPanel } from '../../components/tabPanel'
 import { exact, formatShares, localDateTime, money, signedPctOrDash } from '../../lib/format'
-import { chartLines } from '../../lib/sparkline'
 import type { Loadable } from '../../lib/useLoadable'
 import { advancedPath } from '../new-strategy/paths'
 import { changedSettings, settingValues } from '../new-strategy/settings'
@@ -84,7 +85,7 @@ function Page({ template, strategy, loading }: { template: Loadable<TemplateDeta
   const up = search.get('from') ?? '/'
   return (
     <Screen top={<TopBar up={up} step="Backtest" />}>
-      <Loaded state={template.status === 'ready' ? template : loading} what="the rules" english>
+      <Loaded state={loading.status !== 'ready' ? loading : template} what="the rules" english>
         {() => template.status === 'ready' && <Backtest template={template.data} strategy={strategy} />}
       </Loaded>
     </Screen>
@@ -160,39 +161,61 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
         request={request}
         run={run}
         busy={busy}
-        onChange={setRequest}
-        onRun={() => void start(request)}
-        onReset={() => setRequest(preset(template, strategy, null, state?.settings))}
+        // Reset keeps the entry point's stocks (one stock stays that stock) and its rules.
+        reset={() => preset(template, strategy, search.get('stock'), state?.settings)}
+        onRun={(test) => {
+          setRequest(test)
+          void start(test)
+        }}
       />
       {error && (
         <p className={styles.error} role="alert">
           {error}
         </p>
       )}
-      {run && <Results run={run} busy={busy} />}
+      {/* Keyed by the run: another test can have other periods, so the tab starts again. */}
+      {run && <Results key={run.key} run={run} busy={busy} />}
       {!run && busy && <p className={styles.busy}>Running the backtest…</p>}
     </>
   )
 }
 
+/** The form's numbers as typed: blank means the test default. */
+const NUMBERS = ['years', 'periodYears', 'budget', 'amountPerTrade', 'maxTrades', 'monthlyLimit', 'feePct', 'spreadPct'] as const
+type NumberKey = (typeof NUMBERS)[number]
+type Fields = Record<NumberKey, string> & { stocks: TestStocks; symbol: string; index: string }
+
+/** The form for a request: its own values, else the last run's, so Edit opens on what ran. */
+function fieldsOf(request: BacktestRequest, setup: BacktestRun['setup'] | undefined): Fields {
+  const text = (key: NumberKey) => {
+    const value = request[key] ?? setup?.[key]
+    return value === undefined || value === null ? '' : String(value)
+  }
+  return {
+    ...(Object.fromEntries(NUMBERS.map((k) => [k, text(k)])) as Record<NumberKey, string>),
+    stocks: request.stocks ?? 'draft',
+    symbol: request.symbols?.[0] ?? '',
+    index: request.index ?? setup?.index ?? 'SPY',
+  }
+}
+
 const num = (s: string) => (s.trim() === '' ? undefined : Number(s.replace(',', '.')))
 
-function TestSettings({ template, strategy, request, run, busy, onChange, onRun, onReset }: {
+function TestSettings({ template, strategy, request, run, busy, reset, onRun }: {
   template: TemplateDetail
   strategy: StrategyDetail | null
   request: BacktestRequest
   run: BacktestRun | null
   busy: boolean
-  onChange: (r: BacktestRequest) => void
-  onRun: () => void
-  onReset: () => void
+  reset: () => BacktestRequest
+  onRun: (test: BacktestRequest) => void
 }) {
-  const [editing, setEditing] = useState(false)
+  const [fields, setFields] = useState<Fields | null>(null)
   const fund = template.investsIn !== 'stockList'
   const setup = run?.setup
   const currency = (setup?.currency ?? request.currency ?? 'EUR') as 'EUR' | 'USD' | 'GBP'
-  const field = (value: number | undefined) => (value === undefined ? '' : String(value))
-  const set = (patch: Partial<BacktestRequest>) => onChange({ ...request, ...patch })
+  const allIn = setup ? setup.amountPerTrade === null : template.defaults.budget.step === null
+  const set = (patch: Partial<Fields>) => setFields((f) => (f ? { ...f, ...patch } : f))
 
   const stocksText = !setup
     ? '…'
@@ -204,9 +227,33 @@ function TestSettings({ template, strategy, request, run, busy, onChange, onRun,
           ? `One stock · ${setup.symbols[0]}`
           : `This strategy's list · ${setup.symbols.length}`
 
+  const submit = () => {
+    if (!fields) return
+    const test: BacktestRequest = { templateKey: request.templateKey, settings: request.settings, currency: request.currency }
+    for (const key of NUMBERS) {
+      const value = num(fields[key])
+      if (value !== undefined) test[key] = value
+    }
+    if (fund) test.index = fields.index.trim().toUpperCase() || undefined
+    else {
+      test.stocks = fields.stocks
+      if (fields.stocks === 'stock') test.symbols = [fields.symbol.trim().toUpperCase()]
+      if (fields.stocks === 'list') test.symbols = strategy?.stocks.map((s) => s.symbol)
+    }
+    onRun(test)
+    setFields(null)
+  }
+
+  const number = (key: NumberKey, label: string, hint?: string) => (
+    <TextField label={label} type="decimal" value={fields![key]} onChange={(v) => set({ [key]: v })} placeholder="Default" hint={hint} />
+  )
+
   return (
-    <Section title="Test settings" aside={!editing && <Button variant="outline" onClick={() => setEditing(true)}>Edit</Button>}>
-      {!editing && setup && run && (
+    <Section
+      title="Test settings"
+      aside={!fields && <Button variant="outline" onClick={() => setFields(fieldsOf(request, setup))}>Edit</Button>}
+    >
+      {!fields && setup && run && (
         <dl className={`well ${styles.summary}`}>
           <dt>Stocks</dt>
           <dd>{stocksText}</dd>
@@ -230,25 +277,20 @@ function TestSettings({ template, strategy, request, run, busy, onChange, onRun,
           </dd>
         </dl>
       )}
-      {editing && (
+      {fields && (
         <form
           className={styles.form}
           onSubmit={(e) => {
             e.preventDefault()
-            onRun()
+            submit()
           }}
         >
           {!fund && (
             <SegmentedField<TestStocks>
               label="Stocks"
-              value={request.stocks ?? 'draft'}
-              onChange={(stocks) =>
-                set({
-                  stocks,
-                  symbols: stocks === 'list' ? strategy?.stocks.map((s) => s.symbol) : stocks === 'stock' ? request.symbols?.slice(0, 1) : undefined,
-                  years: stocks === 'draft' ? undefined : request.years,
-                })
-              }
+              value={fields.stocks}
+              // Another pool has its own default years: the draft's 16, a list's or a stock's latest period.
+              onChange={(stocks) => set({ stocks, years: '' })}
               options={[
                 { value: 'draft', label: 'Test draft' },
                 ...(strategy ? [{ value: 'list' as const, label: 'This list' }] : []),
@@ -256,38 +298,28 @@ function TestSettings({ template, strategy, request, run, busy, onChange, onRun,
               ]}
             />
           )}
-          {!fund && request.stocks === 'stock' && (
-            <TextField label="Stock" value={request.symbols?.[0] ?? ''} onChange={(v) => set({ symbols: [v.toUpperCase()] })} autoCapitalize="characters" />
+          {!fund && fields.stocks === 'stock' && (
+            <TextField label="Stock" value={fields.symbol} onChange={(v) => set({ symbol: v })} autoCapitalize="characters" />
           )}
-          {fund && <TextField label="Index fund" value={request.index ?? 'SPY'} onChange={(v) => set({ index: v.toUpperCase() })} autoCapitalize="characters" />}
+          {fund && <TextField label="Index fund" value={fields.index} onChange={(v) => set({ index: v })} autoCapitalize="characters" />}
           <div className={styles.pair}>
-            <TextField label="Years" type="decimal" value={field(request.years ?? setup?.years)} onChange={(v) => set({ years: num(v) })} />
-            <TextField label="Years a period" type="decimal" value={field(request.periodYears ?? setup?.periodYears)} onChange={(v) => set({ periodYears: num(v) })} />
+            {number('years', 'Years')}
+            {number('periodYears', 'Years a period')}
           </div>
           <div className={styles.pair}>
-            <TextField label="Budget" type="decimal" value={field(request.budget ?? setup?.budget)} onChange={(v) => set({ budget: num(v) })} />
-            {(setup?.amountPerTrade ?? request.amountPerTrade) != null && (
-              <TextField label="Per trade" type="decimal" value={field(request.amountPerTrade ?? setup?.amountPerTrade ?? undefined)} onChange={(v) => set({ amountPerTrade: num(v) })} />
-            )}
+            {number('budget', 'Budget')}
+            {!allIn && number('amountPerTrade', 'Per trade')}
           </div>
           <div className={styles.pair}>
-            {(setup?.amountPerTrade ?? request.amountPerTrade) != null && (
-              <TextField label="Trades a stock" type="decimal" value={field(request.maxTrades ?? setup?.maxTrades)} onChange={(v) => set({ maxTrades: num(v) })} />
-            )}
-            <TextField
-              label="Each month at most"
-              type="decimal"
-              value={field(request.monthlyLimit ?? setup?.monthlyLimit)}
-              onChange={(v) => set({ monthlyLimit: num(v) })}
-              hint="Unspent room carries over."
-            />
+            {!allIn && number('maxTrades', 'Trades a stock')}
+            {number('monthlyLimit', 'Each month at most', 'Unspent room carries over.')}
           </div>
           <div className={styles.pair}>
-            <TextField label="Fee %" type="decimal" value={field(request.feePct ?? setup?.feePct)} onChange={(v) => set({ feePct: num(v) })} />
-            <TextField label="Spread %" type="decimal" value={field(request.spreadPct ?? setup?.spreadPct)} onChange={(v) => set({ spreadPct: num(v) })} />
+            {number('feePct', 'Fee %')}
+            {number('spreadPct', 'Spread %')}
           </div>
           <ButtonRow>
-            <Button variant="outline" onClick={onReset}>
+            <Button variant="outline" onClick={() => setFields(fieldsOf(reset(), undefined))}>
               Reset to test defaults
             </Button>
             <Button variant="primary" type="submit" disabled={busy}>
@@ -375,9 +407,9 @@ function Results({ run, busy }: { run: BacktestRun; busy: boolean }) {
             </div>
           )}
           {trades.length > 0 && (
-            <TextToggle open={showTrades} onToggle={() => setShowTrades((s) => !s)}>
+            <TextAction expanded={showTrades} onClick={() => setShowTrades((s) => !s)}>
               {showTrades ? 'Hide the trades' : `See the ${trades.length} trades`}
-            </TextToggle>
+            </TextAction>
           )}
           {showTrades && <TradesTable trades={trades} currency={currency} />}
         </div>
@@ -392,39 +424,10 @@ function lineName(key: LineRow['key'], run: BacktestRun) {
   return LINES[key].name
 }
 
-function TextToggle({ open, onToggle, children }: { open: boolean; onToggle: () => void; children: string }) {
-  return (
-    <button type="button" className={`ui-strong ${styles.toggle}`} aria-expanded={open} onClick={onToggle}>
-      {children}
-    </button>
-  )
-}
-
-const WIDTH = 326
-const HEIGHT = 80
-
-/** The value of the money invested, as a gain in %: the strategy and baseline 1. */
+/** The value of the money invested, as a gain in % at each month's end: the strategy and baseline 1. */
 function ValueChart({ run, tab }: { run: BacktestRun; tab: string }) {
   const series = chartSeries(run, tab)
-  const [strategy, index] = chartLines([series.strategy, series.index], WIDTH, HEIGHT)
-  if (!strategy) return null
-  return (
-    <figure className={styles.chart}>
-      <svg width="100%" height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
-        {index && <polyline points={index} className={styles.lineIndex} vectorEffect="non-scaling-stroke" />}
-        <polyline points={strategy} className={styles.lineStrategy} vectorEffect="non-scaling-stroke" />
-      </svg>
-      <figcaption className={styles.legend}>
-        <span>
-          <span className={styles.keyStrategy}>━</span> strategy
-        </span>
-        <span>
-          <span className={styles.keyIndex}>┅</span> S&amp;P 500, monthly
-        </span>
-        <span className="visually-hidden">Gain on the money invested, at each month's end.</span>
-      </figcaption>
-    </figure>
-  )
+  return <TwoLineChart first={series.strategy} second={series.index} labels={['strategy', 'S&P 500, monthly']} height={80} />
 }
 
 function TradesTable({ trades, currency }: { trades: BacktestTrade[]; currency: 'EUR' | 'USD' | 'GBP' }) {

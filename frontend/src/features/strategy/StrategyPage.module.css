@@ -118,45 +118,6 @@
   color: var(--danger-ink);
 }
 
-.chart {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.axis {
-  stroke: var(--border-hairline);
-  stroke-width: 1;
-}
-.lineYou,
-.lineIndex {
-  fill: none;
-  stroke-linejoin: round;
-}
-.lineYou {
-  stroke: var(--success);
-  stroke-width: 2;
-}
-.lineIndex {
-  stroke: var(--ink-muted);
-  stroke-width: 1.5;
-  stroke-dasharray: 3 3;
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 11px;
-  line-height: 16px;
-}
-.keyYou {
-  color: var(--success);
-}
-.keyIndex {
-  color: var(--ink-muted);
-}
-
 /* What was tested is context for the figures above it, so it reads quieter. */
 .text {
   margin: 0;

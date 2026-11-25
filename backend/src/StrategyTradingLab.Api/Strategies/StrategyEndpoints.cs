@@ -103,7 +103,7 @@ public static class StrategyEndpoints
         .RequireUser()
         .WithTags("Strategies")
         .WithName("GetStrategy")
-        .WithSummary("The strategy page: results next to the rules' and the index fund's, the budget used, and where each stock stands.");
+        .WithSummary("The strategy page: results next to the index fund's, the budget used, and where each stock stands.");
 
         var group = app.MapGroup("/strategies").WithTags("Strategies").RequireUser();
 
@@ -113,7 +113,7 @@ public static class StrategyEndpoints
             var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.AsNoTracking()
                 .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
-                .Select(s => new { s.TemplateKey, s.Params, s.Budget }).SingleOrDefaultAsync(cancellationToken);
+                .Select(s => new { s.TemplateKey, s.Params, s.Budget, s.Mode }).SingleOrDefaultAsync(cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var bars = await db.FinishedBarsAsync(assetId, UsSession.LastComplete(time.GetUtcNow()), cancellationToken);
             if (bars.Count == 0) return TypedResults.Ok(new StockChartData(null, []));
@@ -127,7 +127,7 @@ public static class StrategyEndpoints
                 if (checkedUntil is not null)
                 {
                     var (_, heldOn) = await StrategyEvaluator.BudgetHistoryAsync(db, id, strategy.Budget, cancellationToken);
-                    past = await StrategyEvaluator.PastDaysAsync(db, id, assetId, checkedUntil, heldOn, cancellationToken);
+                    past = await StrategyEvaluator.PastDaysAsync(db, id, strategy.Mode, assetId, checkedUntil, heldOn, cancellationToken);
                 }
                 checks = StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, past,
                     strategy.Budget.MaxSteps ?? 1);
@@ -416,8 +416,8 @@ public static class StrategyEndpoints
 
         var shown = strategy.Assets.Where(a => a.IsFollowed).Select(a => a.AssetId).ToList();
         var you = book.You(strategy);
-        // A stock unticked with Edit list keeps its row, dimmed, while it has trades in the results, the user's or (live) the rules' (spec: strategy page).
-        var traded = you.Concat(book.Rules(strategy) ?? []).Select(t => t.AssetId).ToHashSet();
+        // A stock unticked with Edit list keeps its row, dimmed, while it has trades in the results (spec: strategy page).
+        var traded = you.Select(t => t.AssetId).ToHashSet();
         var removed = strategy.Assets.Where(a => !shown.Contains(a.AssetId) && traded.Contains(a.AssetId)).Select(a => a.AssetId).ToList();
 
         // Assets referenced by the strategy, its signals, or its trades.
@@ -444,7 +444,7 @@ public static class StrategyEndpoints
             var trades = you.Where(b => b.AssetId == asset.Id).ToList();
             var invested = Performance.Used(trades);
             var own = signalEntities.Where(s => s.AssetId == asset.Id).ToList();
-            var (status, rulesSteps, userSteps, distance, signal, checks) = StockStates.StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
+            var (status, held, distance, signal, checks) = StockStates.StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
                 own, trades, book, aiScores);
             checks = StockStates.ChecksAfterBuy(evaluation, own) ?? checks;
             // The fallback is only for facts stored without candidateSince: a met candidate check's date, which for the comeback's
@@ -453,8 +453,7 @@ public static class StrategyEndpoints
             var priceIsClose = evaluation is not null && asset.PricesCheckedAt is { } checkedAt
                 && checkedAt >= UsSession.FinalAt(evaluation.Date);
             return new StockRow(asset.Id, asset.Symbol, asset.Name, status,
-                Steps: userSteps,
-                RulesSteps: live ? rulesSteps : null,
+                Steps: held,
                 maxSteps, distance, signal?.Id, signal?.StepNo,
                 Invested: invested,
                 Result: Performance.GainPct(trades, book.Prices, resultsDay, strategy.Currency),
@@ -469,6 +468,7 @@ public static class StrategyEndpoints
                 Close = evaluation is not null && closes.TryGetValue((asset.Id, evaluation.Date), out var close) ? close : null,
                 PriceUpdatedAt = priceIsClose && evaluation is not null ? MarketClose.At(asset.Exchange, evaluation.Date) : null,
                 PriceIsClose = priceIsClose,
+                SignalStatus = signal?.Status,
                 Checks = checks,
                 AfterClose = status == StockStatus.NotChecked && leftToDailyRun?.Contains(asset.Id) == true,
                 // Only while it runs, as the dashboard card counts it: an ended strategy gets no signal.

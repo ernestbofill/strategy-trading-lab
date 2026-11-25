@@ -45,7 +45,7 @@ No currency fee. Taxes are not included.
 - Sale proceeds are reinvested at once, outside the limit. Only *Index trend* sells: each month it buys with that month's limit plus any money left from sales.
 - When several signals on the same day need more money than is left, they are paid in a seeded random order (the same seed gives the same result, with no alphabetical bias). The ones that can't be paid follow the app's current rule (below).
 
-**A signal with no money** (accepted for now, to change later). Today, when the budget can't pay a trade, the app makes no signal but the rules count the trade as bought, as the POC's backtest does. So a comeback's first trade is then gone, and *Bear markets*' trade counter moves on. The backtest follows that rule in v1. Ernest's rule for later, for the app and the backtest together: a signal with no money waits, and buys once money is there while its window is still open (*Bear markets*: its trade stays due while the conditions hold). See `ROADMAP.md`.
+**A signal with no money** (accepted for now, to change later). Today, when the budget can't pay a trade, the app makes no signal but a Simulation's rules count the trade as bought, as the POC's backtest does (a Manual strategy holds only the trades the user did, since #282). So a comeback's first trade is then gone, and *Bear markets*' trade counter moves on. The backtest follows that rule in v1. Ernest's rule for later, for the app and the backtest together: a signal with no money waits, and buys once money is there while its window is still open (*Bear markets*: its trade stays due while the conditions hold). See `ROADMAP.md`.
 
 ## Baselines
 

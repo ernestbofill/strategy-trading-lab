@@ -2463,3 +2463,21 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124133036_DropManualSignalTrades') THEN
+    DELETE FROM signal_trades WHERE strategy_id IN (SELECT id FROM strategies WHERE mode = 'live');
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124133036_DropManualSignalTrades') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261124133036_DropManualSignalTrades', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

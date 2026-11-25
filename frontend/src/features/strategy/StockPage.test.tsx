@@ -11,7 +11,7 @@ const check = (fields: Partial<RuleCheck> & Pick<RuleCheck, 'key' | 'group' | 'm
 })
 
 const zs: StockRow = {
-  assetId: 'zs', symbol: 'ZS', name: 'Zscaler', status: 'watching', steps: 0, rulesSteps: 0, maxSteps: 5,
+  assetId: 'zs', symbol: 'ZS', name: 'Zscaler', status: 'watching', steps: 0, maxSteps: 5,
   distancePct: 0, signalId: null, signalStep: null, invested: 0, result: null,
   exchange: 'NASDAQ', currency: 'USD', what: 'Cloud security.', checkedOn: '2026-10-30', close: 237.62,
   priceUpdatedAt: null, priceIsClose: false,

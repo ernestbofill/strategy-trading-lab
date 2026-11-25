@@ -26,14 +26,9 @@ type Texts = Record<string, CheckTexts> | null | undefined
 function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, t: Translate): string {
   const stepOf = (n: number) => (row.maxSteps === null ? String(n) : t('signal.stepOf', { n, max: row.maxSteps }))
   const fromZone = (d: number, zone: string) => t('strategy.stock.fromZone', { dist: pct(d), zone })
-  const place = (n: number) => t(n > 0 ? 'strategy.stock.inMarket' : 'strategy.stock.outMarket')
-  // Live, when the user's steps differ from the rules' (a skipped signal): both.
-  const rulesAndYou =
-    row.rulesSteps !== null && row.rulesSteps !== row.steps
-      ? row.maxSteps === null
-        ? t('strategy.stock.rulesAndYou', { rules: place(row.rulesSteps), you: place(row.steps) })
-        : t('strategy.stock.rulesAndYou', { rules: stepOf(row.rulesSteps), you: stepOf(row.steps) })
-      : null
+  // Manual: a buy signal the user skipped (or missed) stands while its window is open, so the buy rules are met.
+  if ((row.status === 'watching' || row.status === 'outOfTheMarket') && (row.signalStatus === 'skipped' || row.signalStatus === 'missed'))
+    return t(row.signalStatus === 'skipped' ? 'strategy.stock.signalSkipped' : 'strategy.stock.signalMissed')
   switch (row.status) {
     case 'waitingForYou':
       if (row.signalSide === 'sell') return t('strategy.stock.sellWaiting')
@@ -49,20 +44,14 @@ function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, 
       return words?.holding ?? t('strategy.stock.dropBought')
     case 'holding':
     case 'building':
-      return (
-        rulesAndYou ??
-        (row.maxSteps === null
-          ? (words?.holding ?? t('strategy.stock.inMarket'))
-          : steps(row.steps, row.maxSteps, t))
-      )
+      return row.maxSteps === null ? (words?.holding ?? t('strategy.stock.inMarket')) : steps(row.steps, row.maxSteps, t)
     case 'noBudget':
       return t(row.maxSteps === null ? 'strategy.stock.noBudgetShort' : 'strategy.stock.noBudget')
     case 'outOfTheMarket':
-      return rulesAndYou ?? unmetLine(row, checks, ['buy']) ?? (row.distancePct !== null && row.distancePct > 0 && words
+      return unmetLine(row, checks, ['buy']) ?? (row.distancePct !== null && row.distancePct > 0 && words
         ? fromZone(row.distancePct, words.zone)
         : (words?.notCandidate ?? t('strategy.stock.rulesNotMet')))
     case 'watching': {
-      if (rulesAndYou) return rulesAndYou
       if (row.aiScore !== undefined && row.aiScore !== null) return t('strategy.stock.lastScore', { score: row.aiScore })
       // A candidate: the buy rules it still misses, as the stock page shows them.
       const fromChecks = unmetLine(row, checks, ['buy', 'next'])

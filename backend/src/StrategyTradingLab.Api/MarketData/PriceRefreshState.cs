@@ -81,7 +81,7 @@ public class PriceRefreshState
     }
 
     /// <summary>
-    /// A strategy just started, or its list gained a stock: the worker fetches the prices it lacks and runs its rules now,
+    /// A strategy just started, its list gained a stock, or a Manual signal's trade was recorded: the worker fetches the prices it lacks and runs its rules now,
     /// instead of leaving it "not checked yet" until the next daily run. In the worker's loop, so never at once with that run.
     /// </summary>
     public void RequestCheck(Guid strategyId)

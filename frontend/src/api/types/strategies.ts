@@ -1,6 +1,6 @@
 import type { Currency } from './account'
 import type { AiRoundsSummary, AiSetup } from './ai'
-import type { CurrencyRates, StrategySignalItem, StrategyTradeItem } from './signals'
+import type { CurrencyRates, SignalStatus, StrategySignalItem, StrategyTradeItem } from './signals'
 import type { Budget, InvestsIn, TemplateKey } from './templates'
 
 export type StrategyMode = 'simulation' | 'live'
@@ -101,14 +101,12 @@ export interface BudgetUsed {
 export interface ResultPoint {
   date: string
   you: number
-  rules: number | null
   index: number | null
 }
 
-/** A strategy's gain since it started, in percent. `rules` is live only: the rules' own trades. */
+/** A strategy's gain since it started, in percent. */
 export interface StrategyFigures {
   you: number
-  rules: number | null
   index: number | null
   history: ResultPoint[]
 }
@@ -143,10 +141,8 @@ export interface StockRow {
   symbol: string
   name: string
   status: StockStatus
-  /** Steps the results count (live: the user's confirmed buys). */
+  /** Steps the results count (live: the user's buys). */
   steps: number
-  /** The rules' own steps, live only. */
-  rulesSteps: number | null
   maxSteps: number | null
   /** How far the price is from the rules, in percent (0 when there or past it). */
   distancePct: number | null
@@ -154,6 +150,8 @@ export interface StockRow {
   signalId: string | null
   signalStep: number | null
   signalSide?: TradeSide | null
+  /** The row's signal's status: a skipped or missed one (live) stands while its window is open. */
+  signalStatus?: SignalStatus | null
   /** What was put in, fees included, and its gain in percent (null with no buys). */
   invested: number
   result: number | null

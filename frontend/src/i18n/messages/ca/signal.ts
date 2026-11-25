@@ -9,7 +9,6 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.rulesSell': 'Les teves regles per a {strategy} es compleixen per a una venda: {reason}.',
   'signal.amountOnly': 'Segons la teva configuració, són {amount}.',
   'signal.stepOf': '{n} de {max}',
-  'signal.nextStep': 'l’operació {n} de {max}',
   'signal.close': 'Tancament del {date}: {price}',
   'signal.back': 'Torna a l’estratègia',
   'signal.backStock': 'Torna a l’acció',
@@ -30,7 +29,8 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.save.did': 'Desa l’operació',
   'signal.save.skip': 'Desa l’omissió',
   'signal.missed.title': 'Perdut',
-  'signal.missed.text': 'Aquest senyal ha acabat el {date} sense resposta. Encara pots registrar què has fet.',
+  'signal.missed.text': 'Aquest senyal ha acabat el {date} sense resposta.',
+  'signal.missed.late': 'Aquest senyal ha acabat el {date} sense resposta. Si vas fer l’operació, registra-la aquí.',
   'signal.question': 'Hi has actuat?',
   'signal.choice.did': '✓ Ho he fet',
   'signal.choice.skip': '× L’he omès',
@@ -52,12 +52,8 @@ export const signal: Record<keyof typeof en, string> = {
   'signal.skip.didntTrustIt': 'No m’hi fiava',
   'signal.skip.noCash': 'Sense efectiu',
   'signal.skip.other': 'Altres',
-  'signal.skip.note': 'Ometre no gasta pressupost. Les regles continuen com si s’hagués comprat.',
-  'signal.skip.noteNext':
-    'Ometre no gasta pressupost. Les regles continuen com si s’hagués comprat, així que el proper senyal per a {stock} serà {next}.',
-  'signal.skip.noteSale': 'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet.',
-  'signal.skip.noteSaleNext':
-    'Ometre no gasta pressupost. Les regles continuen com si la venda s’hagués fet, així que el proper senyal per a {stock} serà {next}.',
+  'signal.skip.note': 'Ometre no compra res ni gasta pressupost.',
+  'signal.skip.noteSale': 'Ometre no ven res.',
   'signal.snooze.until': 'T’ho recordarem el {date}.',
   'signal.snooze.action': 'Posposa-ho al proper dia de borsa',
 }

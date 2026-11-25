@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SignalDetail } from '../../api'
-import { tNow } from '../../i18n/I18n'
-import { ambiguousFields, initialForm, isAmbiguous, nextStep, parseNumber, rateOn, tradeRequest } from './signalForm'
+import { ambiguousFields, initialForm, isAmbiguous, parseNumber, rateOn, tradeRequest } from './signalForm'
 
 const signal = (fields: Partial<SignalDetail> = {}): SignalDetail => ({
   id: 's',
@@ -69,10 +68,5 @@ describe('signalForm', () => {
     expect(tradeRequest({ ...form, enteredAs: 'shares', shares: '0.5', ownRate: '1.07' })).toMatchObject({
       enteredAs: 'shares', amount: null, shares: 0.5, fxSource: 'user', fxRate: 1.07,
     })
-  })
-
-  it('names the next trade after a skip until the last one', () => {
-    expect(nextStep(signal(), tNow)).toBe('trade 3 of 5')
-    expect(nextStep(signal({ stepNo: 5 }), tNow)).toBeNull()
   })
 })

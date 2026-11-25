@@ -67,7 +67,7 @@ v1 is for learning, testing and following simple strategies. It never tells anyo
 - **Templates are ours, strategies are the user's.** We set each template's defaults; once a user makes a strategy from it, the name, stocks, settings and budget belong to the user.
 - **No broker sync.** No broker connection, no order placement, no reading the user's account. In live mode the app is a parallel monitor: it knows only what the user confirms.
 - **The user confirms, the app records.** For each live signal the user says *I did it* or *I skipped it*. Confirmed trades become the strategy's record; skipped ones are kept too, so the user can see what skipping cost or saved.
-- **Signals follow the rules, not the user's trades.** A live strategy's signals come from its rules' own position (its signal trades), the same for anyone running the same rules on the same stocks. The user's confirmed trades only feed their results. (This keeps signals generic, which matters legally; see the regulation note.)
+- **Signals follow the user's trades.** A live strategy's signals come from what the user did: a skipped or missed step isn't held, so it can be signalled again when the conditions next apply (Ernest, 2026-11-24; this makes signals depend on the user's answers, which the regulation note flags).
 - **Bring your own AI.** The app runs no AI to rate stocks. The AI template gives the user a ready-made prompt to run in their own AI service (ChatGPT, Claude, Gemini or similar); the scores that come back are the user's, and the app applies the strategy's rule to them.
 - **AI data only with consent.** We keep AI rounds for product research (the AI model and the full answer) only if the user opts in, separately from the terms of use, and they can withdraw at any time. Nothing that identifies the user is kept with that data.
 - **Mostly buy-only.** Strategies define when they would buy. The one exception is *Index trend*, which also signals a sale when the market's trend turns down (all in, all out).
@@ -223,10 +223,10 @@ This step exists only for live strategies. It is the core loop of live mode.
 3. **The user confirms in the app**, from the alert, the *Waiting for you* list or the stock row, with one of two answers:
    - **I did it.** A short form: date, price, amount (or number of shares) and an optional fee. The price is prefilled with the **next trading day's opening price** once the market has opened (before that, the field is empty with the signal day's close shown as a reference). The amount is prefilled with the step size. The user corrects what differs and saves. The app records the trade and updates the budget used, the steps and the results.
    - **I skipped it.** One tap, with an optional reason ("Price ran away", "Didn't trust it", "No cash", "Other"). The app records the skip; no budget is used.
-4. **Unanswered signals** stay in *Waiting for you* on the dashboard and in the overview, and get one reminder. A signal can still be answered later (the user enters the real date); after the signal ends, it is marked *Missed*.
+4. **Unanswered signals** stay in *Waiting for you* on the dashboard and in the overview, and get one reminder. A signal can still be answered later, while it waits (the user enters the real date); after the signal ends, it is marked *Missed*, and the user can still record a trade they made but didn't record in time, until a newer signal for the stock comes.
 5. **The user can also log a trade by hand** on a stock (e.g. they bought before the alert came, or sold for their own reasons), and edit or delete a trade they entered wrongly. Manual trades are marked as such, since they weren't a strategy signal.
 
-**Signals follow the rules, not the user's trades.** After a skip, the rules carry on as if the step had been bought (their signal trades), so the next signal for that stock is step 3 of 5, and a *Index trend* sell signal arrives even if the user never bought. The strategy page shows both: what the rules hold and what the user holds.
+**Signals follow the user's trades.** After a skip, the step isn't held: the next signal for that stock is the same step, once its buy conditions apply again, and an *Index trend* sell signal only comes for a buy the user did.
 
 Only *Index trend* has sell signals. In the buy-only templates, if the user sells at their broker, they log the sale by hand so the live results stay right.
 
@@ -267,7 +267,7 @@ At the user's first AI round, before *Use these scores*, a short consent box ask
 
 **Simulation results** come from the strategy's rules applied to market prices, with its budget, since the strategy started. Signal trades use an assumed price (the next trading day's open), stated on the page. The template's backtest is shown alongside, for the past.
 
-**Live results** come only from the trades the user confirmed, at the prices they entered. Next to them, the page shows how the rules would have done on their own, with the same budget, so the user sees the gap: "You: +6.2% · The rules on their own: +8.9% · Index fund: +4.1%". Skips and missed signals explain most of the gap, so they're listed.
+**Live results** come only from the trades the user confirmed, at the prices they entered. Next to them, the index fund for the same money: "You: +6.2% · Index fund: +4.1%". Skips and missed signals are counted.
 
 **AI strategy results** also show how the AI's picks did against the rest of the user's stock list since each round ("Top-scored picks: +5.1% · The rest of your list: +2.3%"), and, once the AI comparison page exists, a link to how other AI models have done.
 
@@ -275,7 +275,7 @@ All results are in euro, including the effect of the euro-dollar rate.
 
 **Dashboard (home).** The app's main page. At the top, *Waiting for you* lists unanswered live signals and AI rounds that are due, each linking straight to its screen. Below, one card per strategy: the user's name for it, the template's name, a *Simulation* or *Live* label, the result since start, the same money in an index fund, a small chart, and the budget used. A card with something waiting shows a small dot by its mode label; the detail stays in *Waiting for you*, so it isn't repeated. A strategy started today has no result yet, so its card shows the template's past (backtest) result instead (AI strategies show "No results yet"). Below the cards, *+ New strategy* runs steps 2-6. The disclaimer sits at the bottom.
 
-**Strategy page.** A card opens its page: the name (editable), the template and mode, its result since start against the index (and, for live, against the rules on their own), the budget used, how many signals were acted on, skipped or missed (live), and one row per stock with its status (Watching, Signal, Building, Holding; live adds *Waiting for you*), the steps bought and its own result. For live strategies each row shows what the rules hold and what the user holds when they differ. AI strategies also show each stock's latest score. Each row opens that stock's page. *Edit list* changes the stocks the strategy watches: removing a stock stops its signals, and the user's trades in it stay in the results. Links: *Tune the settings* (the advanced settings), *Backtest* (for AI strategies: *AI rounds*, the round history), and for simulations *Go live with these settings*. Strategies can be paused or ended from here (not designed yet). The disclaimer sits at the bottom.
+**Strategy page.** A card opens its page: the name (editable), the template and mode, its result since start against the index, the budget used, how many signals were acted on, skipped or missed (live), and one row per stock with its status (Watching, Signal, Building, Holding; live adds *Waiting for you*), the steps bought and its own result. AI strategies also show each stock's latest score. Each row opens that stock's page. *Edit list* changes the stocks the strategy watches: removing a stock stops its signals, and the user's trades in it stay in the results. Links: *Tune the settings* (the advanced settings), *Backtest* (for AI strategies: *AI rounds*, the round history), and for simulations *Go live with these settings*. Strategies can be paused or ended from here (not designed yet). The disclaimer sits at the bottom.
 
 | Metric | In plain words | Simulation: built from | Live: built from |
 | --- | --- | --- | --- |
@@ -284,7 +284,6 @@ All results are in euro, including the effect of the euro-dollar rate.
 | Current value | What the position is worth today, in euro | Signal-trade buys, latest price and exchange rate | Confirmed trades, latest price and exchange rate |
 | Gain or loss | Current value minus what was invested, in money and % | Same | Same |
 | Versus the index | The same money bought into a broad index on the same days | Signal-trade buys and index prices | Confirmed buys and index prices |
-| Versus the rules | What the rules would have made on their own | – | The rules' own position (signal trades), which also drives the signals |
 | Followed signals | How many signals the user acted on, skipped or missed | – | Confirmations |
 | Winning buys | How many buys are ahead of their cost today | Signal-trade buys and latest prices | Confirmed buys and latest prices |
 | Picks vs the rest (AI only) | How the top-scored stocks did against the unpicked ones since each round | AI rounds and prices | AI rounds and prices |
@@ -293,7 +292,7 @@ All results are in euro, including the effect of the euro-dollar rate.
 Still to design:
 
 - **Simulation variants** of the budget, confirm and strategy screens, and the live result of an AI round.
-- **Stock page:** the chart with the discount zone shaded, the status history and the trades for that stock (live: confirmed, skipped and manual, each marked; rules' position vs the user's).
+- **Stock page:** the chart with the discount zone shaded, the status history and the trades for that stock (live: confirmed, skipped and manual, each marked).
 - **Stock list editor** from the strategy page, stock search, fund picker, and the prompt editor.
 - **Manual trade form**, and editing or deleting trades.
 - **Sell signals** and the "candidate" status for *Index trend* when not holding.
@@ -311,7 +310,7 @@ Still to design:
 - **Naming:** the catalogue holds *strategy templates*; what the user runs is *their strategy*, named by them or after the template. Simulation and live are its *mode*.
 - **Several strategies per template:** yes, any number. Templates are never hidden on the pick screen.
 - **Switching modes:** no switching in place. *Go live with these settings* starts a new live strategy from a simulation; histories stay separate.
-- **Live position vs the rules:** signals follow the rules' own position (signal trades), not the user's real trades (no preference given; chosen because it keeps signals generic, per the regulation note).
+- **Live position vs the rules:** signals follow the user's real trades, not the rules' own position (Ernest, 2026-11-24; it was the rules' position until then).
 - **Signal timing:** once a day, after the US market close, as in the POC. Users act the next trading day.
 - **Live alert channels:** web push (PWA) and email. Telegram is not in v1.
 - **Prefilled price on "I did it":** the next trading day's opening price.

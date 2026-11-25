@@ -9,8 +9,6 @@ export const signal = {
   'signal.amountOnly': "Under your settings that's {amount}.",
   /** "2 of 5" in the sentence above. */
   'signal.stepOf': '{n} of {max}',
-  /** "trade 3 of 5", the next signal's trade after a skip. */
-  'signal.nextStep': 'trade {n} of {max}',
   'signal.close': 'Close on {date}: {price}',
   'signal.back': 'Back to the strategy',
   'signal.backStock': 'Back to the stock',
@@ -30,7 +28,8 @@ export const signal = {
   'signal.save.did': 'Save the trade',
   'signal.save.skip': 'Save the skip',
   'signal.missed.title': 'Missed',
-  'signal.missed.text': 'This signal ended on {date} without an answer. You can still record what you did.',
+  'signal.missed.text': 'This signal ended on {date} without an answer.',
+  'signal.missed.late': 'This signal ended on {date} without an answer. If you made the trade, record it here.',
   'signal.question': 'Did you act on it?',
   'signal.choice.did': '✓ I did it',
   'signal.choice.skip': '× I skipped it',
@@ -52,12 +51,8 @@ export const signal = {
   'signal.skip.didntTrustIt': "Didn't trust it",
   'signal.skip.noCash': 'No cash',
   'signal.skip.other': 'Other',
-  'signal.skip.note': 'A skip uses no budget. The rules carry on as if the trade was bought.',
-  'signal.skip.noteNext':
-    'A skip uses no budget. The rules carry on as if the trade was bought, so the next signal for {stock} is {next}.',
-  'signal.skip.noteSale': 'A skip uses no budget. The rules carry on as if the sale was made.',
-  'signal.skip.noteSaleNext':
-    'A skip uses no budget. The rules carry on as if the sale was made, so the next signal for {stock} is {next}.',
+  'signal.skip.note': 'A skip buys nothing and uses no budget.',
+  'signal.skip.noteSale': 'A skip sells nothing.',
   'signal.snooze.until': "We'll remind you on {date}.",
   'signal.snooze.action': 'Remind me next trading day',
 } as const

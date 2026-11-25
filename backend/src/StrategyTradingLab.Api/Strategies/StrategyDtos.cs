@@ -107,14 +107,15 @@ public enum StockStatus
 
 /// <summary>
 /// A stock of a strategy. <c>Steps</c> are the buys the results count (simulation: signal trades; live: the user's
-/// confirmed buys), <c>RulesSteps</c> the rules' own signals (live only). <c>Signal</c> is the waiting signal (live) or
+/// buys). <c>Signal</c> is the waiting signal (live), a skipped or missed one whose window is still open (live, with its
+/// <c>SignalStatus</c>), or
 /// today's (simulation). <c>Invested</c> is the cost of its buys, fees included, minus the cost of shares sold, as budget
 /// used counts it; <c>Result</c> is the gain in percent of it, null with no buys. <c>AiScore</c> is its overall score in the
 /// last AI round that scored it (AI strategies). For the stock page: its exchange, currency and what it does; <c>CheckedOn</c>,
 /// the day of its latest evaluation, with that day's <c>Close</c> and each rule's <c>Checks</c> (none before the daily check
 /// stored them, and for the AI template).
 /// </summary>
-public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Status, int Steps, int? RulesSteps, int? MaxSteps,
+public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Status, int Steps, int? MaxSteps,
     decimal? DistancePct, Guid? SignalId, int? SignalStep, decimal Invested, decimal? Result, TradeSide? SignalSide = null, decimal? AiScore = null)
 {
     public string Exchange { get; init; } = "";
@@ -127,6 +128,7 @@ public record StockRow(Guid AssetId, string Symbol, string Name, StockStatus Sta
     public DateTimeOffset? PriceUpdatedAt { get; init; }
     /// <summary>True when <see cref="Close"/> was fetched after <see cref="CheckedOn"/>'s session closed.</summary>
     public bool PriceIsClose { get; init; }
+    public SignalStatus? SignalStatus { get; init; }
     public IReadOnlyList<RuleCheck> Checks { get; init; } = [];
 
     /// <summary>A stock not checked yet that the check at once left to the daily run during this US session: its latest price couldn't be fetched (#220).</summary>

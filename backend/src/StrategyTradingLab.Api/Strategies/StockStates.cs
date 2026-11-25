@@ -45,7 +45,7 @@ public static class StockStates
             && (value > max || (value == max && c.Level is not null)));
 
     /// <summary>Where a stock stands today: its pill, the steps and signal behind it, and how far the price is from the rules.</summary>
-    public record StockState(StockStatus Status, int RulesSteps, int UserSteps, decimal? Distance, Signal? Signal, IReadOnlyList<RuleCheck> Checks);
+    public record StockState(StockStatus Status, int Steps, decimal? Distance, Signal? Signal, IReadOnlyList<RuleCheck> Checks);
 
     /// <summary>
     /// A stock's state from its latest evaluation, its signals and the trades the results count (spec: Strategy page). For an AI
@@ -61,19 +61,14 @@ public static class StockStates
         // AI round (spec §5, F-007). Of several that day, the one still waiting.
         var todays = evaluation is null ? null : own.FirstOrDefault(s => s.SignalDate == evaluation.Date && !book.HasTrade(s.Id));
         var (doneSteps, cycleStart) = strategy.TemplateKey == TemplateKeys.Bear ? StrategyPage.BearCycle(evaluation?.Facts.RootElement) : default;
+        // A simulation holds a step for every buy signal; a Manual strategy what the user bought: a step skipped or missed isn't held
+        // (Ernest, 2026-11-24).
         var buySignals = own.Count(s => s.Side == TradeSide.Buy && (cycleStart is null || s.SignalDate >= cycleStart));
-        int rulesSteps;
-        if (maxSteps is null)
-        {
-            var lastSignal = own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault();
-            rulesSteps = lastSignal?.Side == TradeSide.Buy ? 1 : 0;
-        }
-        else
-        {
-            rulesSteps = doneSteps is { } done ? Math.Min(done, buySignals) : buySignals;
-        }
-        var userSteps = maxSteps is null ? (Performance.Used(trades) > 0 ? 1 : 0)
-            : strategy.TemplateKey == TemplateKeys.Bear && !live ? rulesSteps
+        var signalled = maxSteps is null
+            ? (own.OrderBy(s => s.SignalDate).ThenBy(s => s.CreatedAt).LastOrDefault()?.Side == TradeSide.Buy ? 1 : 0)
+            : doneSteps is { } done ? Math.Min(done, buySignals) : buySignals;
+        var steps = maxSteps is null ? (Performance.Used(trades) > 0 ? 1 : 0)
+            : strategy.TemplateKey == TemplateKeys.Bear && !live ? signalled
             : doneSteps == 0 ? 0
             : trades.Count(b => b.Side == TradeSide.Buy && (cycleStart is null || b.Date >= cycleStart));
 
@@ -81,21 +76,31 @@ public static class StockStates
         var latestStatus = evaluation?.Status
             ?? (aiScores is null ? null : aiScores.ContainsKey(assetId) ? EvaluationStatus.Watching : EvaluationStatus.NotCandidate);
         var checks = evaluation is null ? [] : ChecksOf(evaluation.Facts);
+        // Manual: a buy signal skipped or missed whose window is still open. It still stands, so the day reads as a buy signal.
+        var unbought = live ? own.Where(s => s.Side == TradeSide.Buy && s.Status is SignalStatus.Skipped or SignalStatus.Missed
+            && (s.EndedOn is null || s.EndedOn > evaluation?.Date)).OrderBy(s => s.SignalDate).LastOrDefault() : null;
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
-            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, rulesSteps, maxSteps, strategy.TemplateKey, userSteps), checks);
-        var signal = status switch { StockStatus.WaitingForYou => waiting, StockStatus.Signal => todays, _ => null };
+            StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, live ? steps : signalled, maxSteps, strategy.TemplateKey,
+                unboughtSignal: unbought is not null), checks);
+        // The row names the signal it stands for: waiting for the user, today's, or one the user skipped (or missed) while its window is open.
+        var signal = status switch
+        {
+            StockStatus.WaitingForYou => waiting,
+            StockStatus.Signal => todays,
+            StockStatus.Watching or StockStatus.OutOfTheMarket when latestStatus == EvaluationStatus.BuySignal => unbought,
+            _ => null,
+        };
         var distanceKey = strategy.TemplateKey == TemplateKeys.Bear && evaluation?.Status == EvaluationStatus.Watching ? "aboveLowPct" : "distancePct";
         var distance = evaluation?.Facts.RootElement.Number(distanceKey);
-        return new StockState(status, rulesSteps, userSteps, distance, signal, checks);
+        return new StockState(status, steps, distance, signal, checks);
     }
 
     /// <summary>
-    /// The latest check's Manual buy signal is answered (done or skipped): the rules count its step as bought at the next open, so
-    /// the page shows where they stand after it, its next steps and cooldown, without waiting for the next check. Null otherwise.
+    /// The latest check's Manual buy signal is done: its step is bought at the next open, so the page shows where the rules stand
+    /// after it, its next steps and cooldown, without waiting for the next check. Null otherwise (a skip buys nothing).
     /// </summary>
     public static IReadOnlyList<RuleCheck>? ChecksAfterBuy(DailyEvaluation? evaluation, IReadOnlyList<Signal> own) =>
-        evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date
-                && s.Status is SignalStatus.Confirmed or SignalStatus.Skipped)
+        evaluation is not null && own.Any(s => s.Side == TradeSide.Buy && s.SignalDate == evaluation.Date && s.Status == SignalStatus.Confirmed)
             && ChecksOf(evaluation.Facts, StrategyEvaluator.ChecksAfterBuyKey) is { Count: > 0 } afterBuy
             ? afterBuy : null;
 

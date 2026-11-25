@@ -79,20 +79,19 @@ public class PerformanceTests
     {
         Buy[] you = [new(Stock, Tue, 10, 5, 0)];
 
-        var history = Performance.History(you, null, Performance.IndexBuys(you, Book(), Index, "EUR"), Book(), Thu, "EUR");
+        var history = Performance.History(you, Performance.IndexBuys(you, Book(), Index, "EUR"), Book(), Thu, "EUR");
 
         Assert.Equal([Tue, Wed], history.Select(p => p.Date));
         Assert.Equal(Performance.GainPct(you, Book(), Wed, "EUR"), history[1].You);
-        Assert.Null(history[1].Rules);
         Assert.Equal(10m, history[1].Index); // $100 to $110.
-        Assert.Empty(Performance.History([], null, null, Book(), Thu, "EUR"));
+        Assert.Empty(Performance.History([], null, Book(), Thu, "EUR"));
         // Another asset in the book doesn't add its days.
         var other = new PriceBook(new Dictionary<Guid, (string, IReadOnlyList<DayPrice>)>
         {
             [Stock] = ("USD", [new(Tue, 10, 12), new(Thu, 12, 15)]),
             [Guid.NewGuid()] = ("USD", [new(Wed, 1, 1)]),
         }, new ExchangeRates(new() { ["USD"] = [(Mon, 2m)] }));
-        Assert.Equal([Tue, Thu], Performance.History(you, null, null, other, Thu, "EUR").Select(p => p.Date));
+        Assert.Equal([Tue, Thu], Performance.History(you, null, other, Thu, "EUR").Select(p => p.Date));
 
         var thinned = Performance.Thin(Enumerable.Range(0, 1000).ToList(), 120);
         Assert.Equal(120, thinned.Count);
@@ -104,7 +103,8 @@ public class PerformanceTests
     [InlineData(StrategyMode.Live, EvaluationStatus.BuySignal, false, true, 1, StockStatus.Building)] // Answered.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, true, 1, StockStatus.Signal)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.BuySignal, false, false, 0, StockStatus.NoBudget)] // No budget left for it.
-    [InlineData(StrategyMode.Live, EvaluationStatus.Building, false, false, 0, StockStatus.NoBudget)]
+    [InlineData(StrategyMode.Live, EvaluationStatus.Building, false, false, 0, StockStatus.Watching)] // Bear markets' own step, skipped.
+    [InlineData(StrategyMode.Live, EvaluationStatus.BuySignal, false, false, 0, StockStatus.NoBudget)] // No signal: the budget held it back.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 0, StockStatus.NoBudget)] // Every step skipped for the budget.
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Building, false, false, 5, StockStatus.Holding)]
     [InlineData(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 2, StockStatus.Holding)] // Comeback milestones used.
@@ -114,8 +114,8 @@ public class PerformanceTests
     [InlineData(StrategyMode.Live, EvaluationStatus.NotEnoughData, false, false, 0, StockStatus.NotEnoughData)]
     [InlineData(StrategyMode.Live, null, false, false, 0, StockStatus.NotChecked)]
     public void A_stocks_pill_follows_the_waiting_signal_then_the_steps_then_the_rules(StrategyMode mode, EvaluationStatus? latest,
-        bool waiting, bool signalPending, int rulesSteps, StockStatus expected) =>
-        Assert.Equal(expected, StrategyPage.Status(mode, latest, waiting, signalPending, rulesSteps, maxSteps: 5));
+        bool waiting, bool signalPending, int steps, StockStatus expected) =>
+        Assert.Equal(expected, StrategyPage.Status(mode, latest, waiting, signalPending, steps, maxSteps: 5));
 
     [Fact]
     public void Bear_and_trend_pills_show_done_and_out_of_the_market()
@@ -128,10 +128,13 @@ public class PerformanceTests
         Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.Holding, false, false, 1, null, "trend"));
         Assert.Equal(StockStatus.Signal, StrategyPage.Status(StrategyMode.Simulation, EvaluationStatus.SellSignal, false, true, 0, null, "trend"));
         Assert.Equal(StockStatus.WaitingForYou, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.SellSignal, true, true, 1, null, "trend"));
-        // Live, the buy skipped: the rules hold it, the user doesn't.
-        Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 1, null, "trend", userSteps: 0));
-        Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 1, null, "trend", userSteps: 1));
-        Assert.Equal(StockStatus.Watching, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Building, false, false, 2, 5, "bear", userSteps: 0));
+        // Manual, the rules hold a step the user's trades don't (a trade deleted, Bear markets' own count): where the user is.
+        Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 0, null, "trend"));
+        Assert.Equal(StockStatus.Holding, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Holding, false, false, 1, null, "trend"));
+        Assert.Equal(StockStatus.Watching, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.Building, false, false, 0, 5, "bear"));
+        // Manual, a skipped buy signal still stands while its window is open: a candidate, not "No budget left".
+        Assert.Equal(StockStatus.Watching, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.BuySignal, false, false, 0, 5, unboughtSignal: true));
+        Assert.Equal(StockStatus.OutOfTheMarket, StrategyPage.Status(StrategyMode.Live, EvaluationStatus.BuySignal, false, false, 0, null, "trend", unboughtSignal: true));
     }
 
     [Fact]

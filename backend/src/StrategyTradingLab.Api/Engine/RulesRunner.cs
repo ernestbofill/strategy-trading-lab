@@ -6,17 +6,28 @@ namespace StrategyTradingLab.Api.Engine;
 /// so the rules mustn't hold a step no signal stands for (the stock then read "No budget left" with the budget unused), nor drop
 /// one that was signalled.
 /// </summary>
-/// <param name="Buys">The days with a buy signal: acted on at the next open, whatever the rules say now.</param>
+/// <param name="Buys">The days with a buy signal: the signal stands, so its window gives no second one while it stays open.</param>
 /// <param name="Sells">The days with a sell signal.</param>
-/// <param name="HeldByBudget">Whether the budget had no room for a step on that day: a buy the rules call for then is kept without
+/// <param name="HeldByBudget">Whether the budget had no room for a step on that day: a buy the rules call for then stands without
 /// a signal, as on the day itself (the stock shows "No budget left").</param>
-public sealed record CheckedDays(DateOnly Until, IReadOnlySet<DateOnly> Buys, IReadOnlySet<DateOnly> Sells, Func<DateOnly, bool> HeldByBudget);
+public sealed record CheckedDays(DateOnly Until, IReadOnlySet<DateOnly> Buys, IReadOnlySet<DateOnly> Sells, Func<DateOnly, bool> HeldByBudget)
+{
+    /// <summary>
+    /// Manual: the days of the buy and sell signals the user did. Only these are bought or sold at the next open; a signal skipped,
+    /// missed or still waiting, and a buy the budget held back, buys and sells nothing (Ernest, 2026-11-24). A new signal on a day
+    /// not checked yet waits for the user, so it buys nothing either. Null for a simulation: the rules act on every signal.
+    /// </summary>
+    public UserDid? Done { get; init; }
+}
+
+/// <summary>The days of a Manual strategy's buy and sell signals the user did (<see cref="CheckedDays.Done"/>).</summary>
+public sealed record UserDid(IReadOnlySet<DateOnly> Buys, IReadOnlySet<DateOnly> Sells);
 
 /// <summary>
 /// Runs a template's rules over an asset's history, day by day, as the POC's backtest does: a signal on day D is
-/// acted on at day D+1's open, whatever the user does ("the rules carry on as if the step had been bought"), and the
-/// cooldown counts from that day. The rules decide each day's status (<see cref="IBuyRules"/>); this keeps the rules' own
-/// position, the cooldown and the step numbers, as the POC's <c>Strategy.step</c> does. Pure: bars in, evaluations out.
+/// acted on at day D+1's open, and the cooldown counts from that day. A Manual strategy acts only on the signals the user did
+/// (<see cref="CheckedDays.Done"/>), so its position is the user's. The rules decide each day's status (<see cref="IBuyRules"/>);
+/// this keeps the position, the cooldown and the step numbers, as the POC's <c>Strategy.step</c> does. Pure: bars in, evaluations out.
 /// </summary>
 public static class RulesRunner
 {
@@ -110,8 +121,9 @@ public static class RulesRunner
                 // A signal from when the rules needed less history (a longer setting since) still counts.
                 var earlyBuy = checkedDays is { } early && day <= early.Until && Recorded(early.Buys, day);
                 var earlySell = checkedDays is { } e && day <= e.Until && Recorded(e.Sells, day);
-                pendingBuy |= earlyBuy;
-                pendingSell |= earlySell;
+                var did = checkedDays?.Done;
+                pendingBuy |= earlyBuy && (did is null || Recorded(did.Buys, day));
+                pendingSell |= earlySell && (did is null || Recorded(did.Sells, day));
                 lastDay = day;
                 return new DayEvaluation(day, RuleStatus.NotEnoughData, null, earlyBuy, null, NoFacts, NewSell: earlySell);
             }
@@ -126,6 +138,8 @@ public static class RulesRunner
             var newBuy = step is not null && (previous != RuleStatus.BuySignal || previousStep != step || (actedNow && !cooling));
             var newSell = decision.Status == RuleStatus.SellSignal && (previous != RuleStatus.SellSignal || (actedNow && !cooling));
             var unsignalled = false;
+            // What is bought or sold at the next open: every signal, or for a Manual strategy only those the user did.
+            var (buys, sells) = checkedDays?.Done is null ? (newBuy, newSell) : (false, false);
             if (checkedDays is { } past && day <= past.Until)
             {
                 // A day already checked: its recorded signals are what happened.
@@ -133,11 +147,13 @@ public static class RulesRunner
                 newBuy = Recorded(past.Buys, day) || (newBuy && past.HeldByBudget(day));
                 newSell = Recorded(past.Sells, day);
                 unsignalled = (wanted.Buy && !newBuy) || (wanted.Sell && !newSell);
+                (buys, sells) = past.Done is { } done ? (Recorded(done.Buys, day), Recorded(done.Sells, day)) : (newBuy, newSell);
             }
-            // A signal the rules called for but nobody got isn't yesterday's signal either: a window still open the next day gives one then.
+            // A signal the rules called for but nobody got isn't yesterday's signal either: a window still open the next day gives one
+            // then. One that stands, done or not, is: its window gives no second signal while it stays open.
             if (!unsignalled) (previous, previousStep) = (decision.Status, step);
-            if (newBuy) pendingBuy = true;
-            if (newSell) pendingSell = true;
+            if (buys) pendingBuy = true;
+            if (sells) pendingSell = true;
             lastDay = day;
             return new DayEvaluation(day, decision.Status, step, newBuy, decision.Reason, decision.Facts, decision.WindowOpen, newSell)
                 { Checks = decision.Checks, SellClosed = decision.SellClosed ?? decision.WindowOpen };

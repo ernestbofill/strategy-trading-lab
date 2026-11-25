@@ -11,7 +11,7 @@ What the next session reads first. The agent updates it at the end of every sess
 **Done in 2026-11-10-1:** Zoom (H10) deep; Live → Manual rename swept in English and Catalan; both AI rounds of Nov 10 run (tie-breaks, duplicate row, missing row, lowercase symbol); log-out, signed-out addresses, `next` and an open-redirect try (A4, X6). L-009 and L-019 closed.
 
 **Next session, do first:**
-1. **L-022:** the Tesla signal on `QA fixture · AI · Live` was left waiting on purpose. Once the Nov 11 round is due it should read MISSED, ended Nov 11, form still open. Run the Nov 11 rounds of both AI fixtures.
+1. **L-022:** the Tesla signal on `QA fixture · AI · Live` was left waiting on purpose. Once the Nov 11 round is due it should read MISSED, ended Nov 11, with the trade form only (#282). Run the Nov 11 rounds of both AI fixtures.
 2. **L-005:** signed-in screens at 390px / 360px. Chrome stops at 658px; the built-in browser resizes but has no saved `qaagent` login (Ernest could save it there).
 3. **L-020:** a tie on AI · Live between a stock the rules hold and one the user holds.
 4. A charter on whatever merged since `v0.214.0-alpha`.
@@ -57,7 +57,7 @@ Open leads to follow, most important first. **next** means the next session take
 
 | ID | Area | What to try | From | Priority |
 | --- | --- | --- | --- | --- |
-| L-022 | F4, G2 | The Tesla signal on AI · Live (Nov 10 round) left waiting: after the Nov 11 round is due it should be MISSED, ended Nov 11, with the form still open; its price prefill | 2026-11-10-1 C3.10 | **next** |
+| L-022 | F4, G2 | The Tesla signal on AI · Live (Nov 10 round) left waiting: after the Nov 11 round is due it should be MISSED, ended Nov 11, with the trade form only (#282) | 2026-11-10-1 C3.10 | **next** |
 | L-005 | X3 | Signed-in screens at 390px and 360px, long names, 125% zoom. Chrome stops at 658px; the built-in browser resizes but needs the `qaagent` login saved there (Ernest) | 2026-11-06-1 C5 | **next** |
 | L-020 | G2, G4 | A tie on AI · Live between a stock the rules hold a step of (user none) and one the user holds (rules none): which steps does Manual's tie-break count? Spec §5 says "fewer steps" | 2026-11-10-1 C3.9 | **next** |
 | L-006 | A4 | The wrong-password check with `qa-nobody@stl.invalid`. Claude may not type a password on production, not even a made-up one: needs Ernest or another tool. Log-in, log-out and coming back are done (2026-11-10-1 C4) | 2026-11-06-1 C4.8 | |
@@ -121,7 +121,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | ID | Area | Spec | Depth | Last | Notes |
 | --- | --- | --- | --- | --- | --- |
 | D1 | Summary box, Simulation | §6 Strategy page | deep | 2026-11-08-1 | F-023. Combined single-asset status tiles. C2.4, C3.2 |
-| D2 | Summary box, Live (You, The rules alone, index fund) | §6 Strategy page | deep | 2026-11-08-1 | Live status and budget tiles verified. C1.6, C3.2 |
+| D2 | Summary box, Live (You, index fund; no "The rules alone" since 2026-11-24) | §6 Strategy page | deep | 2026-11-08-1 | Live status and budget tiles verified. C1.6, C3.2 |
 | D3 | Stock rows: pills, detail lines, order, per template; GETTING CLOSE pill and candidates sorted by distance, past the buy rule last (#264, not yet checked) | §6 Strategy page | deep | 2026-11-08-1 | All stock rows evaluated after market close. L-002 closed. C1.8 |
 | D4 | Edit list on a running strategy | §6 Strategy page | deep | 2026-11-08-2 | Stock list edit on running strategy verified via throwaway (Coherent unticked, count updated 9->8). C5.2–C5.4 |
 | D5 | Signals and trades timeline | §6 Strategy page | smoke | 2026-11-06-1 | F-005 |
@@ -144,7 +144,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | E2 | Rules on [date]: badges and gauges, per template | §6 Stock page | deep | 2026-11-08-1 | Evaluated rules, gauges, and detail lines verified across fixtures. L-002 closed. C1.8. Not yet checked since #257 and #271: *The comeback*'s volume check (ratio and the day's price change, met only on an up day), its *Back from above the buy area* line in place of the volume one on a pullback, and the buy line's sentence and gauge in prices. |
 | E3 | A stock not in the strategy, a wrong ID | §6 Stock page | smoke | 2026-11-06-1 | C3.18 |
 | E5 | Cooldown row with days left, after a step and after a sale; no chart while "Not checked yet" | §6 Stock page | untested | | New (feedback 2026-11-12) |
-| E6 | A Manual buy signal answered (Did it or Skip): Next step shows open with the pace counting from the buy and the cooldown, before the next daily check | §6 Stock page | untested | | New (#223) |
+| E6 | A Manual buy signal answered Did it (a skip buys nothing since #282): Next step shows open with the pace counting from the buy and the cooldown, before the next daily check | §6 Stock page | untested | | New (#223) |
 | E7 | *The comeback* held: Next step (trading days since the last step, a bar) and Above the last step, the chart's Last step line, a later step's signal and its window while above the last step; the Advanced setting "one more step every [n] trading days" | §6 Stock page, §5 Advanced settings | untested | | New (#268, milestones replaced by a pace) |
 | E4 | Price chart: 90/30/7 days, each template's levels day by day, candidate lines only before the start, Started marker, trade dots, candidate vs not colours, the comeback's Candidate [date] line (#264, was a ring in #257; not yet checked), its recent-low ring and a non-candidate's SMA 200 line (#264, not yet checked) | §6 Stock page | deep | 2026-11-08-3 | Verified on PLTR and ZS: 90/30/7 day selectors, SVG start lines, buy area polygons, price polyline colors, 390px responsive rendering. C4.1–C4.3 |
 
@@ -155,7 +155,9 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | F1 | I did it: fields, prefill, shares instead, validation | §6 Signal | deep | 2026-11-08-2 | Palantir live signal confirmed: empty price blocked, invalid input rejected, shares toggle checked, trade saved. C2.3–C2.8 |
 | F2 | I skipped it: reasons | §6 Signal | smoke | 2026-11-06-1 | C2.16 |
 | F3 | Snooze | §6 Signal | deep | 2026-11-08-1 | Snoozed signal verified: transitioned to MISSED upon round due date. L-001 closed. C1.1 |
-| F4 | Answered and missed signals | §6 Signal | deep | 2026-11-08-1 | Missed signal verified: explanatory banner displayed, trade logging form remains submittable. L-001 closed. C1.1 |
+| F4 | Answered and missed signals | §6 Signal | deep | 2026-11-08-1 | Missed signal verified: explanatory banner displayed, trade logging form remains submittable. L-001 closed. C1.1. Since #282 a missed signal takes only its trade, until a newer signal comes (F9) |
+| F9 | A missed signal: "Missed", the trade form only (no skip, no snooze), saved as a late trade; once a newer signal of its side came, no form and its trade is refused | §6 Signal | untested | | New (#282) |
+| F10 | Manual follows your trades: a skipped step isn't held (pill CANDIDATE, budget free), and the same step signals again once its window closes and reopens; no "The rules alone" | §6 Strategy page, Signal | untested | | New (#282) |
 | F5 | Exchange-rate line (stock currency ≠ strategy currency) | §6 Signal | smoke | 2026-11-06-1 | F-004. C2.12 |
 | F6 | Sell signal (Index trend) | §6 Signal | untested | | Needs a sell signal on a live fixture |
 | F7 | Up to the stock and the name links there; the price is the next open, fetched on open, else the close with its hint | §6 Signal | untested | | New (feedback 2026-11-12) |

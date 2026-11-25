@@ -76,7 +76,6 @@ const mockStrategy = (fields: Partial<StrategyDetail>): StrategyDetail => ({
       name: 'Zscaler',
       status: 'building',
       steps: 1,
-      rulesSteps: 1,
       maxSteps: 5,
       distancePct: null,
       signalId: null,

@@ -59,9 +59,8 @@ function Summary({ s, status }: { s: StrategyDetail; status?: ReactNode }) {
       </Stats>
       {results ? (
         <div className={styles.results}>
-          <div className={styles.figures} data-count={live ? 3 : 2}>
+          <div className={styles.figures}>
             <Figure label={live ? t('strategy.figure.you') : t('strategy.figure.sinceStart')} value={results.you} highlight />
-            {live && <Figure label={t('strategy.figure.rules')} value={results.rules} />}
             <Figure
               label={t('strategy.figure.index')}
               value={results.index}

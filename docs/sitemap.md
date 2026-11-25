@@ -121,7 +121,7 @@ Entered from sign-up (first run), from **+ New strategy** on the dashboard, and 
 | Page | Purpose | Key content |
 |---|---|---|
 | **Dashboard** | See every strategy at a glance | Waiting for you (signals, AI rounds due); cards with name, template, mode label, result since start, same money in an index fund, small chart, budget used, badges ("1 signal waiting", "AI round due"); new strategies show the backtest result |
-| **Strategy page** | Is it working? | Name, template and mode; result vs index ([Live] also vs the rules on their own); budget used; one row per stock with status (Watching, Signal, Building, Holding; [Live] Waiting for you), steps and result; [Live] rules' position vs the user's; [AI] latest scores |
+| **Strategy page** | Is it working? | Name, template and mode; result vs index; budget used; one row per stock with status (Watching, Signal, Building, Holding; [Live] Waiting for you), steps and result; [AI] latest scores |
 | **Stock page** | One stock in one strategy | Chart with the discount zone, status history, trades ([Live] confirmed, skipped, manual, each marked) |
 | **Confirm signal** | Core loop of live mode | The rule that was met and why; I did it / I skipped it; unanswered signals get one reminder, then *Missed* |
 | **AI round** | Bring your own AI | Prompt filled with date, stocks and sources; paste answer; parsed scores table with the AI's reasons; consent box on first round |

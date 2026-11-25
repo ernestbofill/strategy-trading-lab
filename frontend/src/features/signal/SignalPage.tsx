@@ -16,7 +16,7 @@ import { stockPath, strategyPath } from '../dashboard/paths'
 import { dashboardCacheKey } from '../dashboard/useDashboard'
 import { strategyCacheKey } from '../strategy/useStrategy'
 import styles from './SignalPage.module.css'
-import { ambiguousFields, initialForm, nextStep, SKIP_REASON_KEYS, skipReasons, tradeRequest, type TradeForm } from './signalForm'
+import { ambiguousFields, initialForm, SKIP_REASON_KEYS, skipReasons, tradeRequest, type TradeForm } from './signalForm'
 import { TradeFields } from './TradeFields'
 
 const signalCacheKey = (id: string) => `signal:${id}`
@@ -88,14 +88,21 @@ function SignalScreen({ s, top }: { s: SignalDetail; top: ReactNode }) {
     </div>
   )
 
-  if (s.answer) {
+  // Answered, or missed with a newer signal for the trade since: no form. A missed one takes only the trade made but not recorded in time.
+  if (s.answer || (s.status === 'missed' && !s.takesTrade)) {
     return (
       <Screen top={top} action={<PrimaryAction to={parentOf(s)}>{t(s.onStockList ? 'signal.backStock' : 'signal.back')}</PrimaryAction>}>
         {header}
         {box}
-        <Callout tone="info" title={t('signal.answered')}>
-          <AnswerLine s={s} />
-        </Callout>
+        {s.answer ? (
+          <Callout tone="info" title={t('signal.answered')}>
+            <AnswerLine s={s} />
+          </Callout>
+        ) : (
+          <Callout tone="warning" title={t('signal.missed.title')}>
+            <p className={styles.plain}>{t('signal.missed.text', { date: shortDate(s.endedOn ?? s.signalDate) })}</p>
+          </Callout>
+        )}
       </Screen>
     )
   }
@@ -136,6 +143,8 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
   const [snoozedUntil, setSnoozedUntil] = useState(s.snoozedUntil)
   const set = (patch: Partial<TradeForm>) => setForm((f) => ({ ...f, ...patch }))
   const sell = s.side === 'sell'
+  // A missed signal takes only the trade the user made but didn't record in time.
+  const missed = s.status === 'missed'
 
   const done = () => {
     for (const key of [dashboardCacheKey, strategyCacheKey(s.strategyId), signalCacheKey(s.id)]) invalidate(key)
@@ -161,7 +170,6 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
     }
   }
 
-  const following = nextStep(s, t)
   // Before the next open is stored, the form starts with the latest price once that session has opened, else the signal day's
   // close (feedback: no typing it in).
   const priceHint =
@@ -186,23 +194,23 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
     >
       {header}
       {box}
-      {s.status === 'missed' && s.endedOn && (
+      {missed && (
         <Callout tone="warning" title={t('signal.missed.title')}>
-          <p className={styles.plain}>
-            {t('signal.missed.text', { date: shortDate(s.endedOn) })}
-          </p>
+          <p className={styles.plain}>{t('signal.missed.late', { date: shortDate(s.endedOn ?? s.signalDate) })}</p>
         </Callout>
       )}
       <form id={FORM_ID} className={styles.form} onSubmit={save} noValidate>
-        <SegmentedField
-          label={t('signal.question')}
-          value={answer}
-          onChange={setAnswer}
-          options={[
-            { value: 'did', label: t('signal.choice.did') },
-            { value: 'skip', label: t('signal.choice.skip') },
-          ]}
-        />
+        {!missed && (
+          <SegmentedField
+            label={t('signal.question')}
+            value={answer}
+            onChange={setAnswer}
+            options={[
+              { value: 'did', label: t('signal.choice.did') },
+              { value: 'skip', label: t('signal.choice.skip') },
+            ]}
+          />
+        )}
 
         {answer === 'did' ? (
           <div className={styles.fields}>
@@ -240,10 +248,7 @@ function AnswerForm({ s, top, header, box }: { s: SignalDetail; top: ReactNode; 
               ))}
             </fieldset>
             <p className={styles.plain}>
-              {t(sell ? (following ? 'signal.skip.noteSaleNext' : 'signal.skip.noteSale') : following ? 'signal.skip.noteNext' : 'signal.skip.note', {
-                stock: s.stockName,
-                next: following ?? '',
-              })}
+              {t(sell ? 'signal.skip.noteSale' : 'signal.skip.note')}
             </p>
           </div>
         )}

@@ -103,6 +103,18 @@ public class EngineTests
         var signalled = RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Past([3]));
         Assert.Equal(RuleStatus.Building, signalled[4].Status);
         Assert.Equal(2, signalled[5].StepNo);
+
+        // Manual: only the signals the user did are bought. One skipped, missed or still waiting stands, so its window gives no
+        // second signal, but the next window signals step 1 again; so does a buy the budget held back.
+        CheckedDays Manual(CheckedDays past, params int[] did) =>
+            past with { Done = new(did.Select(i => Bars(10)[i].Date).ToHashSet(), new HashSet<DateOnly>()) };
+        var skipped = RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Manual(Past([1])));
+        Assert.Equal([1, 5], NewBuyDays(skipped));
+        Assert.Equal(1, skipped[5].StepNo);
+        Assert.Equal(2, RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Manual(Past([1]), 1))[5].StepNo);
+        Assert.Equal(1, RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Manual(Past([], held: true)))[5].StepNo);
+        // A new signal on a day not checked yet waits for the user: nothing is bought.
+        Assert.Equal(1, RulesRunner.Run(rules(), Bars(10), new StepPlan(3), checkedDays: Manual(Past([], until: 0)))[5].StepNo);
     }
 
     [Fact]

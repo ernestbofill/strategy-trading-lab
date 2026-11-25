@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { api, InvalidFieldsError, type SignalDetail } from '../../api'
 import { SignalPage } from './SignalPage'
+import { invalidateAll } from '../../lib/useLoadable'
 
 const detail = (fields: Partial<SignalDetail> = {}): SignalDetail => ({
   id: 'sig',
@@ -108,12 +109,12 @@ describe('SignalPage', () => {
     expect(await screen.findByText('Enter the price per share.')).toBeTruthy()
   })
 
-  it('skips with a reason and says which step comes next', async () => {
+  it('skips with a reason and says it buys nothing', async () => {
     open(detail())
     const skip = vi.spyOn(api, 'skipSignal').mockResolvedValue()
 
     fireEvent.click(await screen.findByLabelText('× I skipped it'))
-    expect(screen.getByText(/A skip uses no budget/).textContent).toContain('the next signal for Zscaler is trade 3 of 5.')
+    expect(screen.getByText('A skip buys nothing and uses no budget.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'No cash' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save the skip' }))
 
@@ -136,10 +137,24 @@ describe('SignalPage', () => {
     expect(screen.queryByRole('button', { name: 'Remind me next trading day' })).toBeNull()
   })
 
-  it('shows an answered signal without the form', async () => {
+  it('shows an answered signal, or a missed one a newer signal replaced, without the form, and a missed one with only the trade', async () => {
     open(detail({ status: 'skipped', answer: { status: 'skipped', skipReason: 'noCash', date: null, price: null, amount: null, shares: null, fee: null } }))
 
     expect(await screen.findByText('You skipped it: no cash.')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Save the trade' })).toBeNull()
+    cleanup()
+    invalidateAll()
+
+    // Missed, with a newer signal since: nothing to record here.
+    open(detail({ status: 'missed', endedOn: '2026-10-23', takesTrade: false }))
+    expect(await screen.findByText('This signal ended on Oct 23 without an answer.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Save the trade' })).toBeNull()
+    cleanup()
+    invalidateAll()
+
+    // Missed, its trade not recorded in time: the trade only, no skip.
+    open(detail({ status: 'missed', endedOn: '2026-10-23', takesTrade: true }))
+    expect(await screen.findByRole('button', { name: 'Save the trade' })).toBeTruthy()
+    expect(screen.queryByText('× I skipped it')).toBeNull()
   })
 })

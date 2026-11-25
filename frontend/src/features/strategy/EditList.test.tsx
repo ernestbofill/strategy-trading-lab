@@ -6,7 +6,7 @@ import { api, InvalidFieldsError, type StockRow, type StrategyDetail } from '../
 import { EditList } from './EditList'
 
 const row = (assetId: string, name: string, status: StockRow['status'] = 'watching'): StockRow => ({
-  assetId, symbol: assetId.toUpperCase(), name, status, steps: 0, rulesSteps: null, maxSteps: 5, distancePct: null, signalId: null,
+  assetId, symbol: assetId.toUpperCase(), name, status, steps: 0, maxSteps: 5, distancePct: null, signalId: null,
   signalStep: null, invested: 0, result: null, exchange: 'NASDAQ', currency: 'USD', what: `${name} does things`, checkedOn: null,
   close: null, checks: [],
 })

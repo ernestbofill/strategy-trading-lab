@@ -14,8 +14,9 @@ namespace StrategyTradingLab.Api.Signals;
 
 /// <summary>
 /// Confirm a signal (spec: Confirm a signal), live strategies only: the signal with what the form starts with, and its three
-/// answers: the trade the user made, a skip, or a snooze until the next weekday. A waiting or missed signal can be answered
-/// (later, with the real date); an answered one can't be answered again.
+/// answers: the trade the user made, a skip, or a snooze until the next weekday. A waiting signal takes any answer (later, with the
+/// real date). A missed one takes only the trade the user made but didn't record in time, until a newer signal of its side comes
+/// (<see cref="SignalMisses.TakesItsTrade"/>); an answered one takes none (Ernest, 2026-11-24).
 /// </summary>
 public static class SignalEndpoints
 {
@@ -33,21 +34,25 @@ public static class SignalEndpoints
             var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var next = await NextOpenAsync(db, found.Signal, cancellationToken);
-            var latest = next is null && options.Value.FetchOnDemand && Answerable(found.Signal)
+            // A signal that can't be answered has no form to prefill: no latest price to fetch.
+            var latest = next is null && options.Value.FetchOnDemand && found.Signal.Status == SignalStatus.Waiting
                 ? await LatestPriceAsync(prices, refreshes, found, time, cancellationToken) : null;
-            return TypedResults.Ok(await DetailAsync(db, found, user, UserClock.Today(user, time), next, latest, cancellationToken));
+            var takesTrade = await db.Signals.Where(s => s.Id == id).TakesItsTrade(db).AnyAsync(cancellationToken);
+            return TypedResults.Ok(await DetailAsync(db, found, user, UserClock.Today(user, time), next, latest, cancellationToken)
+                with { TakesTrade = takesTrade });
         })
         .WithName("GetSignal")
         .WithSummary("A live signal, with what Confirm a signal's form starts with.");
 
         group.MapPost("/{id:guid}/trade", async Task<Results<NoContent, ValidationProblem, NotFound, Conflict<string>>> (
-            Guid id, SignalTradeRequest request, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
+            Guid id, SignalTradeRequest request, AppDbContext db, Sessions sessions, PriceRefreshState refreshes, TimeProvider time,
+            CancellationToken cancellationToken) =>
         {
             var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
             var (signal, strategy, asset) = found;
-            if (!Answerable(signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
-            // An ended strategy's history is final: its missed signals stay missed.
+            if (!await db.Signals.Where(s => s.Id == id).TakesItsTrade(db).AnyAsync(cancellationToken))
+                return await RefusedAsync(db, signal.Id, trade: true, user.Locale, cancellationToken);
             if (strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
 
             // The same currency needs no rate (it is 1): nothing to load.
@@ -62,8 +67,11 @@ public static class SignalEndpoints
                 Amount = trade.Amount, Shares = trade.Shares, Fee = trade.Fee, FxRate = trade.FxRate, FxSource = trade.FxSource,
                 Source = TradeSource.Signal, SignalId = signal.Id,
             };
-            return await AnswerAsync(db, signal.Id, SignalStatus.Confirmed, null, userTrade, time, cancellationToken)
-                ? TypedResults.NoContent() : TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
+            if (!await AnswerAsync(db, signal.Id, SignalStatus.Confirmed, null, userTrade, time, cancellationToken))
+                return await RefusedAsync(db, signal.Id, trade: true, user.Locale, cancellationToken);
+            // The step is bought now: the strategy's rules run again, so the stock reads as the user holds it before the next daily run.
+            refreshes.RequestCheck(strategy.Id);
+            return TypedResults.NoContent();
         })
         .WithName("ConfirmSignal")
         .WithSummary("\"I did it\": records the user's trade for the signal.");
@@ -73,13 +81,13 @@ public static class SignalEndpoints
         {
             var user = await sessions.RequiredAsync(cancellationToken);
             if (await FindAsync(db, id, user.Id, cancellationToken) is not { } found) return TypedResults.NotFound();
-            if (!Answerable(found.Signal)) return TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
+            if (found.Signal.Status != SignalStatus.Waiting) return await RefusedAsync(db, id, trade: false, user.Locale, cancellationToken);
             if (found.Strategy.Status != StrategyStatus.Running) return TypedResults.Conflict(Messages.StrategyIsEnded.In(user.Locale));
             return await AnswerAsync(db, id, SignalStatus.Skipped, request.Reason, null, time, cancellationToken)
-                ? TypedResults.NoContent() : TypedResults.Conflict(Messages.AlreadyAnswered.In(user.Locale));
+                ? TypedResults.NoContent() : await RefusedAsync(db, id, trade: false, user.Locale, cancellationToken);
         })
         .WithName("SkipSignal")
-        .WithSummary("\"I skipped it\": uses no budget; the rules carry on as if the step was bought.");
+        .WithSummary("\"I skipped it\": uses no budget and buys no step.");
 
         group.MapPost("/{id:guid}/snooze", async Task<Results<Ok<SnoozeResult>, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, IPushSender push, CancellationToken cancellationToken) =>
@@ -124,7 +132,13 @@ public static class SignalEndpoints
         return row is null ? null : (row.signal, row.strategy, row.asset);
     }
 
-    static bool Answerable(Signal signal) => signal.Status is SignalStatus.Waiting or SignalStatus.Missed;
+    /// <summary>
+    /// Why an answer is refused, as the signal stands now (a check may have missed it since it was read): a missed signal takes no
+    /// skip, and no trade once a newer signal came; an answered one takes nothing.
+    /// </summary>
+    static async Task<Conflict<string>> RefusedAsync(AppDbContext db, Guid signalId, bool trade, string locale, CancellationToken cancellationToken) =>
+        TypedResults.Conflict((!await db.Signals.AnyAsync(s => s.Id == signalId && s.Status == SignalStatus.Missed, cancellationToken)
+            ? Messages.AlreadyAnswered : trade ? Messages.SignalReplaced : Messages.SignalMissed).In(locale));
 
     /// <summary>How long the page waits for the latest price from Yahoo, and how often an asset is asked for it.</summary>
     static readonly TimeSpan LatestTimeout = TimeSpan.FromSeconds(5), LatestEvery = TimeSpan.FromMinutes(5);
@@ -157,8 +171,9 @@ public static class SignalEndpoints
     }
 
     /// <summary>
-    /// Answers the signal and stores its trade, if any, in one transaction; false when it was already answered. The status
-    /// changes only where it is still waiting or missed in the database, and that update locks the row, so of two answers at
+    /// Answers the signal and stores its trade, if any, in one transaction; false when it can't take that answer any more. The
+    /// status changes only where the signal still takes it in the database (a trade: <see cref="SignalMisses.TakesItsTrade"/>;
+    /// a skip: still waiting), and that update locks the row, so of two answers at
     /// once (a phone and a computer, or the daily check marking it missed) only one wins and none is overwritten.
     /// </summary>
     static async Task<bool> AnswerAsync(AppDbContext db, Guid signalId, SignalStatus status, SkipReason? reason, UserTrade? trade,
@@ -174,10 +189,12 @@ public static class SignalEndpoints
             """).ToListAsync(cancellationToken);
         if (running is not ["running"]) return false;
         var now = time.GetUtcNow();
-        var answered = await db.Signals
-            .Where(s => s.Id == signalId && (s.Status == SignalStatus.Waiting || s.Status == SignalStatus.Missed)
-                // Checked again in the update: a strategy ended since the request's check takes no answer.
-                && db.Strategies.Any(st => st.Id == s.StrategyId && st.Status == StrategyStatus.Running))
+        // A newer signal is made by the daily check under the strategy's lock, which this answer's lock waits for (or it for this).
+        var open = db.Signals.Where(s => s.Id == signalId);
+        open = status == SignalStatus.Confirmed ? open.TakesItsTrade(db) : open.Where(s => s.Status == SignalStatus.Waiting);
+        var answered = await open
+            // Checked again in the update: a strategy ended since the request's check takes no answer.
+            .Where(s => db.Strategies.Any(st => st.Id == s.StrategyId && st.Status == StrategyStatus.Running))
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, status).SetProperty(x => x.SkipReason, reason)
                 .SetProperty(x => x.AnsweredAt, now)
                 .SetProperty(x => x.SnoozedUntil, (DateOnly?)null), cancellationToken); // Only a waiting signal can be snoozed (the table's check).

@@ -89,11 +89,8 @@
 .figures {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-.figures[data-count="2"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
 }
 
 .figure {
@@ -132,7 +129,6 @@
   stroke-width: 1;
 }
 .lineYou,
-.lineRules,
 .lineIndex {
   fill: none;
   stroke-linejoin: round;
@@ -140,10 +136,6 @@
 .lineYou {
   stroke: var(--success);
   stroke-width: 2;
-}
-.lineRules {
-  stroke: var(--ink);
-  stroke-width: 1.5;
 }
 .lineIndex {
   stroke: var(--ink-muted);
@@ -160,9 +152,6 @@
 }
 .keyYou {
   color: var(--success);
-}
-.keyRules {
-  color: var(--ink);
 }
 .keyIndex {
   color: var(--ink-muted);

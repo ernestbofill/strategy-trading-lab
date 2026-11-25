@@ -41,7 +41,7 @@ public static class AiRoundRules
     /// <summary>
     /// The stocks a round gives a step: from the top overall score down, each stock with steps left gets its next one, until
     /// <c>TopN</c> have one or the next step wouldn't fit in the budget. A tie goes to the stock with fewer steps, then by name.
-    /// <paramref name="steps"/> are the steps the rules hold per stock (every buy signal, answered or not), <paramref name="used"/>
+    /// <paramref name="steps"/> are the steps held per stock (every buy signal but a Manual one skipped or missed), <paramref name="used"/>
     /// what the strategy's signals use of the budget, and <paramref name="unavailable"/> stocks that can't get a signal now
     /// (no price yet, or already one on that day).
     /// </summary>

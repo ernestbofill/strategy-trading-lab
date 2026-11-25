@@ -18,3 +18,5 @@ dotnet test
 **Why:** Without it the database tests only run in CI, after the push. Worked on 2026-10-25 (#68): every test passed but the three that need object storage (`NeonBranchTests` ×2, `AdminDatabaseTests.Switching_…`), which need CI's RustFS.
 
 **How to apply:** Use it before pushing backend changes from a cloud session. A test must never write fake prices or exchange rates for a real symbol or currency: on a developer's Neon `dev` branch it would corrupt real data. (2026-10-25, #68)
+
+**Object storage too** (2026-11-25, #283): moto stands in for CI's RustFS, so the tests that need a bucket run here as well. In a scratch virtualenv (the system pip refuses): `python3 -m venv <scratch>/venv && <scratch>/venv/bin/pip install "moto[server]"`, start `<scratch>/venv/bin/moto_server -p 9000` in the background, `curl -X PUT http://localhost:9000/assets` for the bucket, then CI's `AWS_*` values with `NO_PROXY=localhost,127.0.0.1`.

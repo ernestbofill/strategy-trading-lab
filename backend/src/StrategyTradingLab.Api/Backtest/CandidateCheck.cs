@@ -23,9 +23,6 @@ public static class CandidateCheck
 {
     public const int MinStocks = 4;
 
-    /// <summary>Trading days the look at the year before runs over, to know which buy window was still open on its last day.</summary>
-    const int LeadIn = 5;
-
     public static IReadOnlyList<CandidateYear> Count(string templateKey, JsonDocument parameters, int maxSteps,
         IReadOnlyList<(BacktestPeriod Period, IReadOnlyList<DraftHistory> Stocks)> periods)
     {
@@ -72,13 +69,14 @@ public static class CandidateCheck
     }
 
     /// <summary>
-    /// The step of the buy signal open on the last of <paramref name="bars"/> (the trading day before a year starts), or null: a run of the
-    /// rules over the few days before it, as fresh as the year's own run, so it says only whether the window was open that day.
+    /// The step of the buy signal open on the last of <paramref name="bars"/> (the trading day before a year starts), or null: that day alone,
+    /// evaluated as fresh as the year's own first day, so it says only whether the window was open then.
     /// </summary>
     static int? OpenAtYearEnd(string templateKey, JsonDocument parameters, int maxSteps, IReadOnlyList<PriceBar> bars)
     {
+        // Only the last day, fresh (no position, no day before): a run over more days would act on its own signal and read Building.
         var rules = TemplateRules.Create(templateKey, bars, parameters);
-        var last = RulesRunner.Run(rules, bars, new StepPlan(maxSteps), Math.Max(0, bars.Count - LeadIn))[^1];
+        var last = RulesRunner.Run(rules, bars, new StepPlan(maxSteps), bars.Count - 1)[^1];
         return last.Status == RuleStatus.BuySignal ? last.StepNo : null;
     }
 }

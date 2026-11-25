@@ -190,8 +190,11 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         {
             // The other drawable members' one-day moves over 40%: they count in the representative check, where a split Yahoo didn't
             // adjust (or a spin-off, as Aimco's in 2020) would move the rate unseen.
-            MemberJumps = [.. eligible.SelectMany(e => e.Eligible).Select(c => c.Symbol).Distinct().Except(drafted).Order(StringComparer.Ordinal)
-                .SelectMany(s => members[s].Warnings.Where(w => w.Kind == PriceWarningKind.Jump && w.Date >= periods[0].WarmUpStart))],
+            // Per period, only while the member is in that period's pool (from its warm-up to its end), and not drafted in it.
+            MemberJumps = [.. eligible.Select((e, i) => (e.Period, Pool: e.Eligible.Select(c => c.Symbol).Except(drafts[i].Stocks.Select(s => s.Symbol))))
+                .SelectMany(p => p.Pool.SelectMany(s => members[s].Warnings.Where(w =>
+                    w.Kind == PriceWarningKind.Jump && w.Date >= p.Period.WarmUpStart && w.Date <= p.Period.End)))
+                .Distinct().OrderBy(w => w.Symbol, StringComparer.Ordinal).ThenBy(w => w.Date)],
         };
 
         var known = drafted.ToDictionary(s => s, s => (Name: members[s].Name, Bars: histories[s]));

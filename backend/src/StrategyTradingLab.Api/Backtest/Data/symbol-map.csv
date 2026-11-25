@@ -1,12 +1,14 @@
 ticker,until,yahoo,note
 ABC,,COR,AmerisourceBergen became Cencora (2023)
 ADS,,BFH,Alliance Data Systems became Bread Financial (2022)
-AIV,,AIV,Apartment Investment and Management (Aimco): Wikipedia says Aimco
+AIV,2019-01-01,AIV,Apartment Investment and Management (Aimco): Wikipedia says Aimco; vouched only before the 2019 start
+AIV,,,Aimco's December 2020 spin-off (AIR) falls in 2019–22 and Yahoo doesn't adjust a spin-off: left out from 2019
 ANSS,,,Ansys was acquired by Synopsys (2025); ANSS is an ETF today
 ANTM,,ELV,Anthem became Elevance Health (2022)
 APC,,,Anadarko was acquired by Occidental (2019); APC is another company today
 ARNC,2020-04-01,HWM,Alcoa Inc. became Arconic (2016) then Howmet Aerospace (2020); today's ARNC was a 2020 spin-off
 ATI,,ATI,"Allegheny Technologies, ATI Inc. since 2022"
+BBBY,,,Bed Bath & Beyond went bankrupt (2023); BBBY is the former Overstock today (renamed 2025)
 BBT,,TFC,BB&T became Truist Financial (2019)
 BEAM,,,Beam Inc. was acquired by Suntory (2014); BEAM is Beam Therapeutics today
 BHGE,,BKR,Baker Hughes (BHGE then BKR); the pre-2017 Baker Hughes Inc. history isn't on Yahoo
@@ -16,7 +18,8 @@ CAM,,,Cameron was acquired by Schlumberger (2016); CAM is an ETF today
 CBS,,PSKY,CBS became ViacomCBS then Paramount Global then Paramount Skydance (2025)
 CDAY,,DAY,Ceridian became Dayforce (2024)
 CLF,,CLF,Cliffs Natural Resources became Cleveland-Cliffs (2017)
-CNX,,CNX,Consol Energy became CNX Resources (2017)
+CNX,2015-01-01,CNX,Consol Energy became CNX Resources (2017); vouched only for 2011–14
+CNX,,,"CNX's coal spin-off (CONSOL Energy, November 2017) falls in 2015–18 and Yahoo doesn't adjust a spin-off: left out from 2015"
 COG,,CTRA,Cabot Oil & Gas became Coterra Energy (2021)
 CPWR,,,Compuware was taken private (2014); CPWR is another company today
 CTL,,LUMN,CenturyLink became Lumen Technologies (2020)

@@ -265,12 +265,12 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
       </section>
       <section className={styles.group} aria-labelledby="backtest-member-jumps">
         <h2 id="backtest-member-jumps" className={styles.groupTitle}>
-          Big moves in the other members ({draw.memberJumps.length})
+          Big moves in the other members ({draw.memberJumps?.length ?? 0})
         </h2>
-        <p className={styles.muted}>One-day moves over 40% in drawable members outside the draft. They count in the representative check, so a split or spin-off Yahoo didn't adjust shows here.</p>
+        <p className={styles.muted}>One-day moves over 40% in drawable members outside the draft, during the periods they are in the pool. They count in the representative check, so a split or spin-off Yahoo didn't adjust shows here.</p>
         <DataTable
           label="Big moves in the other members"
-          data={draw.memberJumps}
+          data={draw.memberJumps ?? []}
           getRowId={(w) => `${w.symbol}-${w.date}`}
           columns={warningColumns}
           searchPlaceholder="Search tickers…"

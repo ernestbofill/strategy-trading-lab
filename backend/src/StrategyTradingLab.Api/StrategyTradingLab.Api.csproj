@@ -11,6 +11,9 @@
     <!-- Template texts, one file per language, read as templates/{locale}.json -->
     <Content Remove="Templates\Texts\*.json" />
     <EmbeddedResource Include="Templates\Texts\*.json" LogicalName="templates/%(Filename)%(Extension)" />
+    <!-- The backtest's S&P 500 membership and symbol map (Backtest/Data/README.md), read as backtest/{file} -->
+    <Content Remove="Backtest\Data\*.json" />
+    <EmbeddedResource Include="Backtest\Data\*.csv;Backtest\Data\*.json" LogicalName="backtest/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

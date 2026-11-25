@@ -18,9 +18,19 @@ public record SymbolMatch(string Symbol, string Name, string Exchange, string Ty
 /// </summary>
 public record LatestPrice(decimal Price, DateOnly Date, DateTimeOffset At);
 
+/// <summary>
+/// A long daily history for the backtest's data: the candles adjusted for splits and dividends, the same days only split-adjusted
+/// (their close × volume is the money traded), and the listing's name.
+/// </summary>
+public record DailyHistory(IReadOnlyList<Candle> Adjusted, IReadOnlyList<Candle> Raw, string? Name);
+
 /// <summary>Where daily candles come from, so the refresh can be tested without the network.</summary>
 public interface IMarketDataSource
 {
+    /// <summary>The days from <paramref name="since"/> on, adjusted and not, with the name. A source without one call for it asks twice.</summary>
+    async Task<DailyHistory> HistoryAsync(string symbol, DateOnly since, CancellationToken cancellationToken) =>
+        new(await DailyAsync(symbol, since, true, cancellationToken), await DailyAsync(symbol, since, false, cancellationToken), null);
+
     /// <summary>The days from <paramref name="since"/> on, or the last month when it is null. Oldest first; days without prices are left out.</summary>
     Task<IReadOnlyList<Candle>> DailyAsync(string symbol, DateOnly? since, bool adjusted, CancellationToken cancellationToken);
 
@@ -34,7 +44,11 @@ public interface IMarketDataSource
     Task<LatestPrice> LatestAsync(string symbol, CancellationToken cancellationToken);
 }
 
-public class MarketDataException(string message, Exception? inner = null) : Exception(message, inner);
+public class MarketDataException(string message, Exception? inner = null) : Exception(message, inner)
+{
+    /// <summary>Yahoo's HTTP status when it answered with an error (429 when asked too often); null otherwise.</summary>
+    public int? Status { get; init; }
+}
 
 /// <summary>Yahoo answered, but the asset is quoted in something the app can't use yet (a minor unit it doesn't scale, no currency).</summary>
 public class UnsupportedCurrencyException(string message) : MarketDataException(message);
@@ -61,6 +75,29 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         return Parse(json, symbol, adjusted);
     }
 
+    /// <summary>One chart answer read twice, adjusted and not, so the backtest's draw asks Yahoo once per member.</summary>
+    public async Task<DailyHistory> HistoryAsync(string symbol, DateOnly since, CancellationToken cancellationToken)
+    {
+        var from = new DateTimeOffset(since.AddDays(-1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds();
+        var json = await GetAsync($"v8/finance/chart/{Uri.EscapeDataString(symbol)}?period1={from}&period2={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}&interval=1d&events=div%2Csplits", symbol, cancellationToken);
+        return new(Parse(json, symbol, true), Parse(json, symbol, false), ParseName(json));
+    }
+
+    /// <summary>The listing's name in a chart answer's meta (<c>longName</c>, else <c>shortName</c>); null when it has none.</summary>
+    public static string? ParseName(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var meta = document.RootElement.GetProperty("chart").GetProperty("result")[0].GetProperty("meta");
+            return Text(meta, "longName") ?? Text(meta, "shortName");
+        }
+        catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
+        {
+            return null;
+        }
+    }
+
     public async Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, CancellationToken cancellationToken)
     {
         var json = await GetAsync($"v1/finance/search?q={Uri.EscapeDataString(query)}&quotesCount=10&newsCount=0&listsCount=0", query, cancellationToken);
@@ -84,7 +121,7 @@ public class YahooClient(HttpClient http) : IMarketDataSource
         try
         {
             using var response = await http.GetAsync(path, cancellationToken);
-            if (!response.IsSuccessStatusCode) throw new MarketDataException($"Yahoo answered HTTP {(int)response.StatusCode} for {what}.");
+            if (!response.IsSuccessStatusCode) throw new MarketDataException($"Yahoo answered HTTP {(int)response.StatusCode} for {what}.") { Status = (int)response.StatusCode };
             return await response.Content.ReadAsStringAsync(cancellationToken);
         }
         catch (Exception error) when (error is HttpRequestException || (error is TaskCanceledException && !cancellationToken.IsCancellationRequested))

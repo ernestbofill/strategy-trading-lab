@@ -55,7 +55,7 @@ public class BacktestRunException(string message, bool missingData = false) : Ex
 /// fetches from Yahoo any other stock, fund or exchange rate the test needs (kept for the month in object storage), runs
 /// <see cref="BacktestSimulator"/> and keeps the result by its key.
 /// </summary>
-public class BacktestRunner(BacktestStore store, BacktestPrices prices, TemplateStore templates, AppDbContext db, TimeProvider time)
+public class BacktestRunner(BacktestStore store, BacktestPrices prices, TemplateStore templates, TimeProvider time)
 {
     /// <summary>The test defaults (docs/backtest.md, *What is tested*).</summary>
     public static readonly TestMoney DefaultMoney = new();

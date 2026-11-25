@@ -16,7 +16,9 @@ import { TextAction } from '../../../components/TextAction'
 import { ToggleTiles } from '../../../components/ToggleTiles'
 import { useT } from '../../../i18n/I18n'
 import { useNewStrategyDraft, type AiSource } from '../NewStrategyDraft'
-import { advancedPath, howTestedPath, modePath, pickPath, promptPath } from '../paths'
+import { advancedPath, howTestedPath, modePath, pickPath, promptPath, reviewPath } from '../paths'
+import { backtestPath } from '../../backtest/paths'
+import { useRole } from '../../account/AccountContext'
 import { rulesWithSettings, settingsSummary } from '../settings'
 import { useTemplate } from '../useTemplate'
 import { PromptText } from '../../ai-round/PromptText'
@@ -42,6 +44,7 @@ export function ReviewTemplate() {
 
 function ReviewContent({ template }: { template: TemplateDetail }) {
   const t = useT()
+  const owner = useRole() === 'owner'
   const draft = useNewStrategyDraft()
   const { aiRound, watches } = template
   const [adding, setAdding] = useState(false)
@@ -130,7 +133,11 @@ function ReviewContent({ template }: { template: TemplateDetail }) {
   const aside = (
     <>
       {template.backtest ? (
-        <TestedBox backtest={template.backtest} howTestedTo={howTestedPath(template.key)} />
+        <TestedBox
+          backtest={template.backtest}
+          howTestedTo={howTestedPath(template.key)}
+          backtestTo={owner ? backtestPath({ template: template.key, from: reviewPath(template.key) }) : undefined}
+        />
       ) : (
         <>
           <Callout tone="info">

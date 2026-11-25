@@ -10,7 +10,9 @@ import { ModeTag } from '../../components/ModeTag'
 import { useI18n, useT } from '../../i18n/I18n'
 import type { MessageKey } from '../../i18n/messages/en'
 import { exact, money, pctTone, shortDate } from '../../lib/format'
-import { signalPath, strategyPath } from '../dashboard/paths'
+import { signalPath, stockPath, strategyPath } from '../dashboard/paths'
+import { useRole } from '../account/AccountContext'
+import { backtestPath } from '../backtest/paths'
 import { checkText, fillCheck, isPastMax } from './checks'
 import { CheckGauge } from './CheckGauge'
 import { PriceChart } from './PriceChart'
@@ -209,6 +211,7 @@ export function StockPage() {
 function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
   const t = useT()
   const { locale } = useI18n()
+  const owner = useRole() === 'owner'
   if (s.investsIn !== 'stockList') return <Navigate to={strategyPath(s.id)} replace />
   const top = <TopBar up={strategyPath(s.id)} upLabel="common.up.strategy" />
   const row = s.stocks.find((r) => r.assetId === assetId)
@@ -271,6 +274,12 @@ function StockView({ s, assetId }: { s: StrategyDetail; assetId: string }) {
           </Stats>
         }
       />
+      {owner && s.investsIn === 'stockList' && s.words && (
+        <Link className={styles.testStock} to={backtestPath({ strategy: s.id, stock: row.symbol, from: stockPath(s.id, row.assetId) })}>
+          <span>{t('backtest.entry.stock')}</span>
+          <span className={styles.muted}>{t('backtest.entry.stockSub')}</span>
+        </Link>
+      )}
       <SignalsAndTrades s={own} />
     </Screen>
   )

@@ -1,0 +1,28 @@
+import type { backtest as en } from '../en/backtest'
+
+export const backtest: Record<keyof typeof en, string> = {
+  'backtest.entry.review': "Fes el backtest d'aquestes regles ›",
+  'backtest.entry.tileTitle': 'Backtest',
+  'backtest.entry.tileSub': 'Prova aquestes regles',
+  'backtest.entry.stock': 'Prova aquesta acció ›',
+  'backtest.entry.stockSub': "Una acció amb les regles d'aquesta estratègia.",
+  'backtest.panel.rerun': 'Torna a provar',
+  'backtest.panel.running': 'Provant…',
+  'backtest.panel.scope': 'Mostra de prova · 16 anys en períodes de 4 · 6.000 €',
+  'backtest.panel.changed': "La configuració ha canviat des de l'última prova.",
+  'backtest.panel.onDefaults': 'Tens els valors provats. Canvia una opció i torna a provar per comparar.',
+  'backtest.panel.first': 'Torna a provar per comparar aquesta configuració amb la de per defecte.',
+  'backtest.panel.default': 'Per defecte',
+  'backtest.panel.saved': 'Desada',
+  'backtest.panel.current': 'Actual',
+  'backtest.panel.rate': "Un any, de mitjana",
+  'backtest.panel.worst': 'Pitjor any',
+  'backtest.panel.atWork': 'Pressupost invertit',
+  'backtest.panel.atWorkTip': "Quina part del pressupost estava invertida, de mitjana durant els dies del període. Tot invertit el primer dia és el 100%.",
+  'backtest.panel.trades': 'Operacions',
+  'backtest.panel.index': 'S&P 500, cada mes',
+  'backtest.panel.sameForAll': '(igual per a totes)',
+  'backtest.panel.irr': 'Ponderat pels diners (TIR), sobre els diners invertits.',
+  'backtest.panel.open': 'Obre la pàgina del backtest ›',
+  'backtest.panel.failed': 'El backtest ha fallat. Torna-ho a provar.',
+}

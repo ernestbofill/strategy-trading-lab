@@ -5,8 +5,8 @@ import { useT } from '../../../i18n/I18n'
 import { ResultFigures } from './Results'
 import styles from './TestedBox.module.css'
 
-/** "Tested" section on a review: scope, the whole-period figures, caveat and the How we tested link. */
-export function TestedBox({ backtest, howTestedTo }: { backtest: Backtest; howTestedTo: string }) {
+/** "Tested" section on a review: scope, the whole-period figures, caveat and the How we tested link; for the owner, the Backtest page too. */
+export function TestedBox({ backtest, howTestedTo, backtestTo }: { backtest: Backtest; howTestedTo: string; backtestTo?: string }) {
   const t = useT()
   return (
     <Section title={t('newStrategy.tested.title')}>
@@ -16,6 +16,11 @@ export function TestedBox({ backtest, howTestedTo }: { backtest: Backtest; howTe
         <Link to={howTestedTo} className={styles.link}>
           {t('newStrategy.tested.howLink')}
         </Link>
+        {backtestTo && (
+          <Link to={backtestTo} className={styles.link}>
+            {t('backtest.entry.review')}
+          </Link>
+        )}
       </div>
     </Section>
   )

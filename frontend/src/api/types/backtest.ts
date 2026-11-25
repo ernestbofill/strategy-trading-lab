@@ -134,3 +134,133 @@ export interface BacktestDataStatus {
   draw: DrawReport | null
   snapshot: SnapshotReport | null
 }
+
+/** Which stocks a test uses: the test draft, the strategy's list, or one stock. */
+export type TestStocks = 'draft' | 'list' | 'stock'
+
+/** A test to run (backend Backtest/BacktestRunner.cs): anything left out takes the test defaults. */
+export interface BacktestRequest {
+  templateKey: string
+  /** Settings over the template's defaults in use, by key (checked as a strategy's are); left out: the defaults. */
+  settings?: Record<string, number>
+  stocks?: TestStocks
+  symbols?: string[]
+  /** The fund Bear markets and Index trend trade; left out: SPY. */
+  index?: string
+  years?: number
+  periodYears?: number
+  budget?: number
+  amountPerTrade?: number
+  maxTrades?: number
+  monthlyLimit?: number
+  feePct?: number
+  spreadPct?: number
+  currency?: string
+}
+
+/** The test as run, with its defaults filled in. `amountPerTrade` is null for all in (Index trend). */
+export interface BacktestSetup {
+  templateKey: string
+  params: Record<string, unknown>
+  stocks: TestStocks
+  symbols: string[]
+  index: string
+  years: number
+  periodYears: number
+  budget: number
+  amountPerTrade: number | null
+  maxTrades: number
+  monthlyLimit: number
+  feePct: number
+  spreadPct: number
+  currency: string
+}
+
+export interface BacktestPeriod {
+  firstYear: number
+  lastYear: number
+  start: string
+  end: string
+  warmUpStart: string
+  partial: boolean
+  label: string
+}
+
+export interface YearReturn {
+  year: number
+  /** A fraction: −0.12 is −12%. */
+  return: number
+}
+
+export interface ValuePoint {
+  date: string
+  invested: number
+  value: number
+}
+
+/** One line in one period: rates are fractions (0.116 is +11.6% a year), `budgetAtWork` 0–1. */
+export interface LineResult {
+  rate: number | null
+  years: YearReturn[]
+  budgetAtWork: number
+  trades: number
+  invested: number
+  endValue: number
+  values: ValuePoint[]
+  worst: YearReturn | null
+}
+
+export interface BacktestTrade {
+  date: string
+  symbol: string
+  side: 'buy' | 'sell'
+  stepNo: number | null
+  maxSteps: number | null
+  /** The open, in the stock's currency. */
+  price: number
+  shares: number
+  /** In the test's currency: what went in (a buy) or came back (a sale). */
+  amount: number
+  costs: number
+  fxRate: number
+  signalDate: string | null
+}
+
+export interface BacktestPeriodResult {
+  period: BacktestPeriod
+  stocks: number
+  strategy: LineResult
+  index: LineResult
+  /** Null for a pool of one: it would be the strategy itself. */
+  sameDays: LineResult | null
+  sameStocks: LineResult
+  trades: BacktestTrade[]
+  unpaid: number
+  satOut: string[]
+}
+
+/** All: the average of the periods' rates, the worst year of any, the average budget at work, the trades added up. */
+export interface AllLine {
+  rate: number | null
+  worst: YearReturn | null
+  budgetAtWork: number
+  trades: number
+}
+
+export interface BacktestRun {
+  key: string
+  ranAt: string
+  /** The snapshot's month. */
+  snapshot: string
+  setup: BacktestSetup
+  dataFrom: string
+  dataTo: string
+  pools: { label: string; stocks: string[]; satOut: string[] }[]
+  result: {
+    periods: BacktestPeriodResult[]
+    strategy: AllLine
+    index: AllLine
+    sameDays: AllLine | null
+    sameStocks: AllLine
+  }
+}

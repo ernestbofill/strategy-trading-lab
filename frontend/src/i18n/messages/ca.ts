@@ -2,6 +2,7 @@ import { common } from './ca/common'
 import { aiRound } from './ca/aiRound'
 import { account } from './ca/account'
 import { admin } from './ca/admin'
+import { backtest } from './ca/backtest'
 import { dashboard } from './ca/dashboard'
 import { feedback } from './ca/feedback'
 import { newStrategy } from './ca/newStrategy'
@@ -19,6 +20,7 @@ export const ca: Record<MessageKey, string> = {
   ...aiRound,
   ...account,
   ...admin,
+  ...backtest,
   ...dashboard,
   ...feedback,
   ...newStrategy,

@@ -1,0 +1,43 @@
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.axis {
+  stroke: var(--border-hairline);
+  stroke-width: 1;
+}
+
+.first,
+.second {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+.first {
+  stroke: var(--success);
+  stroke-width: 2;
+}
+
+.second {
+  stroke: var(--ink-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.keyFirst {
+  color: var(--success);
+}
+
+.keySecond {
+  color: var(--ink-muted);
+}

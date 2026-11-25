@@ -5,7 +5,7 @@ import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
 import { useLeave } from '../../components/useLeave'
-import { strategyPath } from '../dashboard/paths'
+import { strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { AdvancedSettingsBody } from '../new-strategy/AdvancedSettingsBody'
 import { settingValues, type SettingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
@@ -73,6 +73,7 @@ function StrategySettingsContent({ strategy, template }: { strategy: StrategyDet
         template={template}
         values={values}
         onChange={setValues}
+        backtest={{ saved: settingValues(template, strategy.settings ?? {}), strategyId: strategy.id, from: strategySettingsPath(strategy.id) }}
         action={
           <PrimaryAction onClick={() => void save()} disabled={saving}>
             {saving ? t('strategy.settings.saving') : t('newStrategy.advanced.save')}

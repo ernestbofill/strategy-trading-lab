@@ -5,7 +5,8 @@ import styles from './TextAction.module.css'
 type TextActionProps = { children: ReactNode } & (
   | { to: string }
   /** A button instead of a link: "Send the link again", "Try again". */
-  | { onClick: () => void; disabled?: boolean }
+  /** `expanded`: the button shows or hides something below it ("See the trades"), for screen readers. */
+  | { onClick: () => void; disabled?: boolean; expanded?: boolean }
 )
 
 /**
@@ -21,7 +22,7 @@ export function TextAction(props: TextActionProps) {
       </Link>
     )
   return (
-    <button type="button" className={`${className} ${styles.button}`} disabled={props.disabled} onClick={props.onClick}>
+    <button type="button" className={`${className} ${styles.button}`} disabled={props.disabled} aria-expanded={props.expanded} onClick={props.onClick}>
       {props.children}
     </button>
   )

@@ -128,13 +128,16 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  /** Runs a test; resolves to whether it ran, so a refused one leaves the form open on the field to fix. */
   const start = useCallback(async (test: BacktestRequest) => {
     setBusy(true)
     setError(null)
     try {
       setRun(await api.runBacktest(test))
+      return true
     } catch (e) {
       setError(e instanceof InvalidValueError ? e.message : 'The backtest failed. Try again.')
+      return false
     } finally {
       setBusy(false)
     }
@@ -165,7 +168,7 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
         reset={() => preset(template, strategy, search.get('stock'), state?.settings)}
         onRun={(test) => {
           setRequest(test)
-          void start(test)
+          return start(test)
         }}
       />
       {error && (
@@ -208,7 +211,7 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
   run: BacktestRun | null
   busy: boolean
   reset: () => BacktestRequest
-  onRun: (test: BacktestRequest) => void
+  onRun: (test: BacktestRequest) => Promise<boolean>
 }) {
   const [fields, setFields] = useState<Fields | null>(null)
   const fund = template.investsIn !== 'stockList'
@@ -227,7 +230,7 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
           ? `One stock · ${setup.symbols[0]}`
           : `This strategy's list · ${setup.symbols.length}`
 
-  const submit = () => {
+  const submit = async () => {
     if (!fields) return
     const test: BacktestRequest = { templateKey: request.templateKey, settings: request.settings, currency: request.currency }
     for (const key of NUMBERS) {
@@ -240,8 +243,8 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
       if (fields.stocks === 'stock') test.symbols = [fields.symbol.trim().toUpperCase()]
       if (fields.stocks === 'list') test.symbols = strategy?.stocks.map((s) => s.symbol)
     }
-    onRun(test)
-    setFields(null)
+    // Closed once it ran, so the summary shows what ran; a refused run keeps the form for the fix.
+    if (await onRun(test)) setFields(null)
   }
 
   const number = (key: NumberKey, label: string, hint?: string) => (
@@ -282,7 +285,7 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
           className={styles.form}
           onSubmit={(e) => {
             e.preventDefault()
-            submit()
+            void submit()
           }}
         >
           {!fund && (

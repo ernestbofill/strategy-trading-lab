@@ -30,8 +30,10 @@ public class BacktestDataDrawTests
         public Task<DailyHistory> HistoryAsync(string symbol, DateOnly since, CancellationToken cancellationToken)
         {
             var hash = Hash(symbol);
-            if (symbol != BacktestData.IndexSymbol && hash % 20 == 0) throw new MarketDataException($"Yahoo answered HTTP 404 for {symbol}.") { Status = 404 };
-            var start = symbol != BacktestData.IndexSymbol && hash % 20 == 1 ? new DateOnly(2016, 3, 1) : since;
+            // An exchange rate (EURUSD=X) always has prices, as SPY does.
+            var always = symbol == BacktestData.IndexSymbol || symbol.EndsWith("=X", StringComparison.Ordinal);
+            if (!always && hash % 20 == 0) throw new MarketDataException($"Yahoo answered HTTP 404 for {symbol}.") { Status = 404 };
+            var start = !always && hash % 20 == 1 ? new DateOnly(2016, 3, 1) : since;
             var random = new Random(hash);
             var price = 20 + hash % 80m;
             var candles = new List<Candle>();
@@ -128,8 +130,46 @@ public class BacktestDataDrawTests
             var file = await store.PricesAsync(snapshot.GetProperty("key").GetString()!, first, CancellationToken.None);
             Assert.True(PriceFile.Read(file!).Count > 4000);
 
+            // A backtest on the test draft, with the defaults: every period, the three baselines, kept by its key.
+            var run = await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip" });
+            Assert.True(run.StatusCode == HttpStatusCode.OK, await run.Content.ReadAsStringAsync());
+            var result = await run.Content.ReadFromJsonAsync<JsonElement>();
+            var tested = result.GetProperty("result").GetProperty("periods").EnumerateArray().ToList();
+            Assert.Equal(periods.Count, tested.Count);
+            Assert.All(tested, p =>
+            {
+                Assert.Equal(60, p.GetProperty("stocks").GetInt32());
+                Assert.Equal(JsonValueKind.Number, p.GetProperty("index").GetProperty("rate").ValueKind);
+                Assert.Equal(JsonValueKind.Object, p.GetProperty("sameDays").ValueKind);
+            });
+            var setup = result.GetProperty("setup");
+            Assert.Equal((6000m, 100m, 400m, "EUR"), (setup.GetProperty("budget").GetDecimal(), setup.GetProperty("amountPerTrade").GetDecimal(),
+                setup.GetProperty("monthlyLimit").GetDecimal(), setup.GetProperty("currency").GetString()));
+            var again = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip" })).Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(result.GetProperty("key").GetString(), again.GetProperty("key").GetString());
+            Assert.Equal(result.GetProperty("ranAt").GetString(), again.GetProperty("ranAt").GetString()); // Kept, not run again.
+
+            // One stock outside the snapshot, fetched and kept for the month; the latest period only, its budget sized for it.
+            var one = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "comeback", stocks = "stock", symbols = new[] { "zzzq" }, currency = "USD" }))
+                .Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Single(one.GetProperty("result").GetProperty("periods").EnumerateArray());
+            Assert.Equal(500m, one.GetProperty("setup").GetProperty("budget").GetDecimal());
+            Assert.Equal(JsonValueKind.Null, one.GetProperty("result").GetProperty("periods")[0].GetProperty("sameDays").ValueKind);
+            Assert.NotNull(await store.FetchedAsync(DateTime.UtcNow.ToString("yyyy-MM"), "ZZZQ", CancellationToken.None));
+            // Index trend on SPY: the template's budget, no monthly limit.
+            var trend = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "trend" })).Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal((3000m, 3000m), (trend.GetProperty("setup").GetProperty("budget").GetDecimal(), trend.GetProperty("setup").GetProperty("monthlyLimit").GetDecimal()));
+            // A changed setting goes over the template's defaults; one the rules don't have is refused.
+            var tuned = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", @params = new { cooldownDays = 20 } })).Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(20, tuned.GetProperty("setup").GetProperty("params").GetProperty("cooldownDays").GetInt32());
+            Assert.True(tuned.GetProperty("setup").GetProperty("params").TryGetProperty("minGainPct", out _));
+            Assert.NotEqual(result.GetProperty("key").GetString(), tuned.GetProperty("key").GetString());
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", @params = new { nope = 1 } })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "ai" })).StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "dip", years = 6 })).StatusCode);
+
             Assert.Equal(HttpStatusCode.Accepted, (await admin.PostAsync("/admin/backtest-data/snapshot", null)).StatusCode);
-            var again = await FinishedAsync(admin);
+            again = await FinishedAsync(admin);
             Assert.Equal("snapshot", again.GetProperty("last").GetProperty("kind").GetString());
             Assert.Equal(JsonValueKind.Null, again.GetProperty("last").GetProperty("error").ValueKind);
         }

@@ -83,7 +83,7 @@ export const newStrategy = {
   'newStrategy.results.alpha': 'Alpha',
   'newStrategy.results.alphaTip.label': 'What is alpha?',
   'newStrategy.results.alphaTip.text':
-    'How much more (or less) the template made per year than the index (Template minus the index). When a template buys on different days, the index column invests the same money on those same days so the comparison is fair.',
+    'How much more (or less) the template made a year than the index (Template minus the index). The index gets the same budget: for a stock template, an S&P 500 fund bought each month with the same monthly limit; for a fund template, the fund bought on the first day.',
   'newStrategy.results.story': 'Story',
   'newStrategy.results.indexTabs': 'Tested indexes',
   'newStrategy.how.noBacktest': 'There is no backtest for this template.',
@@ -102,14 +102,16 @@ export const newStrategy = {
   'newStrategy.how.run.checked': 'The rules are checked once a day, after the close, as in the app.',
   'newStrategy.how.run.bought': "Each signal is bought at the next day's opening price.",
   'newStrategy.how.run.euro': "Results in euro, at each day's exchange rate.",
-  'newStrategy.how.run.index': 'An S&P 500 fund (SPY) gets the same money on the same days, and is never sold.',
-  'newStrategy.how.run.fees': 'Fees: {fee} per trade. Taxes not included.',
+  'newStrategy.how.run.index': 'An S&P 500 fund (SPY) gets the same budget, at the same monthly limit, and is never sold.',
+  'newStrategy.how.run.indexFund': 'The same fund, bought with the whole budget on the first day and never sold.',
+  'newStrategy.how.run.irr': 'Money-weighted returns (IRR) on the money invested: idle cash is left out.',
+  'newStrategy.how.run.fees': 'Fee and spread: {fee} a trade. Taxes not included.',
   'newStrategy.how.byPeriod': 'By period',
   'newStrategy.how.independentPeriods':
     'All figures are yearly averages. Each period is an independent test that starts with fresh money.',
   'newStrategy.how.cantShow': "What a backtest can't show",
   'newStrategy.how.survivors':
-    "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results.",
+    "The stocks are drawn from the S&P 500 as it stood at each period's start, but companies delisted since have no prices and can't be drawn, which flatters past results.",
   'newStrategy.how.realPrices': 'Real prices can differ from the opening price, especially on busy days.',
 
   // 2b Advanced settings

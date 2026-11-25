@@ -80,7 +80,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.results.alpha': 'Alfa',
   'newStrategy.results.alphaTip.label': 'Què és l’alfa?',
   'newStrategy.results.alphaTip.text':
-    'Quant més (o menys) ha guanyat la plantilla per any respecte a l’índex (Plantilla menys l’índex). Quan una plantilla compra en dies diferents, la columna de l’índex inverteix els mateixos diners aquells mateixos dies perquè la comparació sigui justa.',
+    'Quant més (o menys) ha guanyat la plantilla l’any respecte a l’índex (Plantilla menys l’índex). L’índex rep el mateix pressupost: en una plantilla d’accions, un fons de l’S&P 500 comprat cada mes amb el mateix límit mensual; en una de fons, el fons comprat el primer dia.',
   'newStrategy.results.story': 'Història',
   'newStrategy.results.indexTabs': 'Índexs provats',
   'newStrategy.how.noBacktest': 'Aquesta plantilla no té backtest.',
@@ -99,14 +99,16 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.how.run.checked': "Les regles es comproven un cop al dia, després del tancament, com a l'app.",
   'newStrategy.how.run.bought': "Cada senyal es compra al preu d'obertura del dia següent.",
   'newStrategy.how.run.euro': 'Resultats en euros, al tipus de canvi de cada dia.',
-  'newStrategy.how.run.index': 'Un fons de l’S&P 500 (SPY) rep els mateixos diners els mateixos dies, i no es ven mai.',
-  'newStrategy.how.run.fees': 'Comissions: {fee} per operació. Sense impostos.',
+  'newStrategy.how.run.index': 'Un fons de l’S&P 500 (SPY) rep el mateix pressupost, amb el mateix límit mensual, i no es ven mai.',
+  'newStrategy.how.run.indexFund': 'El mateix fons, comprat amb tot el pressupost el primer dia i sense vendre mai.',
+  'newStrategy.how.run.irr': 'Rendiments ponderats pels diners (TIR) sobre els diners invertits: els diners sense invertir no hi compten.',
+  'newStrategy.how.run.fees': 'Comissió i diferencial: {fee} per operació. Sense impostos.',
   'newStrategy.how.byPeriod': 'Per període',
   'newStrategy.how.independentPeriods':
     'Totes les xifres són mitjanes anuals. Cada període és una prova independent que comença amb diners nous.',
   'newStrategy.how.cantShow': 'El que un backtest no pot mostrar',
   'newStrategy.how.survivors':
-    'Les proves històriques utilitzen empreses i índexs que cotitzen avui. Les empreses que van fer fallida o van ser excloses fa dècades no hi són, cosa que afavoreix els resultats passats.',
+    'Les accions surten de l’S&P 500 tal com era a l’inici de cada període, però les empreses excloses de borsa després no tenen preus i no poden sortir, cosa que afavoreix els resultats passats.',
   'newStrategy.how.realPrices': "Els preus reals poden diferir del preu d'obertura, sobretot els dies de molta activitat.",
 
   'newStrategy.advanced.title': 'Configuració avançada',

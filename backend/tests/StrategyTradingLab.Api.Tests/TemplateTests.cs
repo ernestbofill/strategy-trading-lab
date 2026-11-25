@@ -22,11 +22,19 @@ public class TemplateTests
             Assert.NotEmpty(texts.Name);
             Assert.Equal(3, texts.Rules.Count);
             Assert.Equal(template.Backtest is null, texts.Backtest is null);
+            // A story is said where there is something to say: each index tab has one for All, and none names a period the figures
+            // don't have (the POC's stories went with its periods).
             if (template.Benchmarks is { } benchmarks)
             {
-                Assert.All(benchmarks, b => Assert.All(b.Periods, p =>
-                    Assert.False(string.IsNullOrWhiteSpace(texts.Backtest!.Benchmarks![b.Key].Stories![p.Period]))));
+                Assert.All(benchmarks, b =>
+                {
+                    var stories = texts.Backtest!.Benchmarks![b.Key].Stories!;
+                    Assert.False(string.IsNullOrWhiteSpace(stories["All"]));
+                    Assert.All(stories.Keys, period => Assert.Contains(period, b.Periods.Select(p => p.Period)));
+                });
             }
+            if (template.Backtest is { } periods && texts.Backtest!.Stories is { } own)
+                Assert.All(own.Keys, period => Assert.Contains(period, periods.Select(p => p.Period)));
         }
     }
 
@@ -103,7 +111,8 @@ public class TemplateTests
     [Fact]
     public void Templates_with_backtest_have_standardized_periods()
     {
-        string[] expectedPeriods = ["2000-12", "2013-19", "2020-26", "All"];
+        // STL's own backtest's periods (docs/backtest.md): 16 years in 4-year periods, then All.
+        string[] expectedPeriods = ["2011–14", "2015–18", "2019–22", "2023–26", "All"];
         foreach (var template in TemplateCatalog.All.Where(t => t.Backtest is not null))
         {
             var periods = template.Backtest!.Select(p => p.Period).ToArray();
@@ -111,8 +120,8 @@ public class TemplateTests
         }
 
         var all = TemplateCatalog.Dip.Backtest![^1];
-        Assert.Equal((14.3m, 9.8m, -37m, 4.5m), (all.TemplatePerYear, all.IndexPerYear, all.IndexWorstYear, all.Alpha));
-        Assert.Null(TemplateCatalog.Bear.Backtest![1].Alpha);
+        Assert.Equal((12.2m, 14.4m, -13.1m, -2.2m), (all.TemplatePerYear, all.IndexPerYear, all.IndexWorstYear, all.Alpha));
+        Assert.Null(TemplateCatalog.Bear.Backtest![1].Alpha); // No 20% fall in 2015–18: no trade.
         Assert.Equal(["sp500", "qqq", "efa", "dax", "nikkei", "vfinx"], TemplateCatalog.Trend.Benchmarks!.Select(b => b.Key));
     }
 

@@ -19,10 +19,10 @@
       }
     ],
     "backtest": {
-      "scope": "1.146 accions, 2000-2026.",
-      "years": "2000-2026",
-      "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per operació, fins a 5 operacions per acció. Provada amb tres mitjanes apilades (SMA 50 > SMA 150 > SMA 200); ara l'estratègia en demana dues (SMA 50 > SMA 200)."
+      "scope": "60 accions de l'S&P 500, 2011–2026.",
+      "years": "2011–2026",
+      "universe": "La mostra de prova: 60 accions de l'S&P 500 per sector i mida, com era l'índex a l'inici de cada període",
+      "testedDefaults": "Els valors provats: pressupost de 6.000 €, 100 € per operació, fins a 5 operacions per acció, com a molt 400 € al mes."
     },
     "stockStatus": {
       "zone": "la zona de descompte",
@@ -147,10 +147,10 @@
       }
     ],
     "backtest": {
-      "scope": "1.146 accions, 2000-2026.",
-      "years": "2000-2026",
-      "universe": "1.146 accions dels EUA (S&P 500, S&P 400, Nasdaq-100 i baixes històriques)",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, €100 per operació, fins a 5 operacions per acció. Provada amb fites per a les operacions següents (tornar per sobre de la SMA 200, un encreuament daurat, prop del màxim antic, una ruptura); ara l'estratègia les afegeix a un ritme constant."
+      "scope": "60 accions de l'S&P 500, 2011–2026.",
+      "years": "2011–2026",
+      "universe": "La mostra de prova: 60 accions de l'S&P 500 per sector i mida, com era l'índex a l'inici de cada període",
+      "testedDefaults": "Els valors provats: pressupost de 6.000 €, 100 € per operació, fins a 5 operacions per acció, com a molt 400 € al mes."
     },
     "stockStatus": {
       "zone": "la línia de compra",
@@ -305,15 +305,16 @@
       }
     ],
     "backtest": {
-      "scope": "Principals índexs i fons sectorials, 2000-2026. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
-      "years": "2000-2026",
-      "universe": "Principals índexs i 30 ETF sectorials en 134 mercats baixistes",
-      "testedDefaults": "Els valors provats: pressupost de €3,000, 5 operacions de €600 cada una.",
+      "scope": "Un fons de l'S&P 500 (SPY), 2011–2026. Les grans caigudes són poc freqüents: pot passar anys sense senyal.",
+      "years": "2011–2026",
+      "universe": "Un fons de l'S&P 500 (SPY)",
+      "testedDefaults": "Els valors provats: pressupost de 3.000 €, 5 operacions de 600 €.",
       "stories": {
-        "2000-12": "Va comprar els mínims del 2001–02 i del 2008–09",
-        "2013-19": "Cap gran caiguda del mercat",
-        "2020-26": "Va comprar les caigudes del 2020, 2022 i 2025",
-        "All": "7 cicles baixistes en 3 grans caigudes"
+        "2011–14": "Cap caiguda del 20%: cap operació",
+        "2015–18": "Cap caiguda del 20%: cap operació",
+        "2019–22": "Va comprar les caigudes del 2020 i del 2022",
+        "2023–26": "Cap caiguda del 20%: cap operació",
+        "All": "Només hi va operar el 2019–22: Tot és aquell període"
       }
     },
     "stockStatus": {
@@ -425,69 +426,48 @@
       }
     ],
     "backtest": {
-      "scope": "6 índexs principals, 2000-2026.",
-      "years": "2000-2026",
-      "universe": "6 grans índexs globals (S&P 500, Nasdaq-100, Desenvolupats ex-EUA, DAX, Nikkei 225, Vanguard 500)",
-      "testedDefaults": "Tot el pressupost de €3,000, tot dins, tot fora, sense límit de compra.",
+      "scope": "6 fons indexats, 2011–2026.",
+      "years": "2011–2026",
+      "universe": "6 fons indexats (S&P 500, Nasdaq-100, Desenvolupats ex-EUA, DAX, Nikkei 225, Vanguard 500)",
+      "testedDefaults": "Tot el pressupost de 3.000 €, tot dins, tot fora.",
       "stories": {
-        "2000-12": "Va esquivar les caigudes del 2000–02 i del 2008",
-        "2013-19": "El cost de l'assegurança en un mercat alcista continu",
-        "2020-26": "Entrades i sortides en rebots en V",
-        "All": "Gairebé el mateix rendiment, menys de la meitat de caiguda"
+        "All": "3,1 l'any per sota; pitjor el 2022 (−18,6% vs −13,1%)"
       },
       "benchmarks": {
         "sp500": {
           "name": "S&P 500",
           "stories": {
-            "2000-12": "Va esquivar les caigudes del 2000–02 i del 2008",
-            "2013-19": "El cost de l'assegurança en un mercat alcista continu",
-            "2020-26": "Entrades i sortides en rebots en V",
-            "All": "Gairebé el mateix rendiment, menys de la meitat de caiguda"
+            "All": "3,1 l'any per sota; pitjor el 2022 (−18,6% vs −13,1%)"
           }
         },
         "qqq": {
           "name": "Nasdaq-100",
           "stories": {
-            "2000-12": "Va esquivar l'esclat de les puntcom i el 2008",
-            "2013-19": "Per darrere d'una pujada tecnològica contínua",
-            "2020-26": "Va reduir a la meitat la caiguda tecnològica del 2022",
-            "All": "Supera comprar i mantenir, caiguda màxima del −42% vs −83%"
+            "All": "Pitjor any −13,4% vs −28,4%, per 2,1 l'any menys"
           }
         },
         "efa": {
           "name": "Desenvolupats ex-EUA",
           "stories": {
-            "2002-12": "Va sortir abans de la crisi global del 2008",
-            "2013-19": "Mercats laterals amb falsos girs",
-            "2020-26": "Va esquivar les caigudes del 2020 i del 2022",
-            "All": "Per davant de l'índex amb menys de la meitat de caiguda"
+            "All": "3,9 l'any per sota"
           }
         },
         "dax": {
           "name": "DAX",
           "stories": {
-            "2000-12": "Va evitar les grans caigudes del 2000–03 i del 2008",
-            "2013-19": "Pèrdua menor el 2018 (−11% vs −18%)",
-            "2020-26": "Va protegir el capital en la crisi energètica del 2022",
-            "All": "+1,4%/any per davant, caiguda màxima del −31% vs −73%"
+            "All": "Pitjor any −11,3% vs −18,3%, per 1,2 l'any menys"
           }
         },
         "nikkei": {
           "name": "Nikkei 225",
           "stories": {
-            "2000-12": "En efectiu durant la dècada perduda del Japó",
-            "2013-19": "Va capturar la recuperació d'Abenomics",
-            "2020-26": "Va aprofitar la ruptura alcista post-2020",
-            "All": "Va superar una caiguda del −82% amb un màxim del −35%"
+            "All": "7,9 l'any per sota"
           }
         },
         "vfinx": {
           "name": "Vanguard 500",
           "stories": {
-            "2000-12": "Va esquivar les caigudes del 2000–02 i del 2008",
-            "2013-19": "El cost de l'assegurança en un mercat alcista continu",
-            "2020-26": "Entrades i sortides en rebots en V",
-            "All": "Des del 1981 (inclòs el crac del 1987): gairebé el mateix rendiment"
+            "All": "2,5 l'any per sota"
           }
         }
       }

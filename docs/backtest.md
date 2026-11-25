@@ -331,6 +331,25 @@ Assumptions made while building them (listed in its PR):
 - **The chart** shows the gain on the money invested at each month's end, for the strategy and baseline 1, per period (not on *All*). Tapping a baseline to add its line is left for later.
 - **Trades** on *All* are every period's.
 
+## The templates' figures (item 56)
+
+Run on production on 2026-11-25 (snapshot 2026-11, the defaults in use, in euro), through `POST /admin/backtest`; they replace the POC's in `TemplateCatalog` and *How we tested*. A year on average and the worst year, money-weighted; the index column is baseline 1 (*S&P 500, monthly*) for the stock templates, and the fund bought with the whole budget on day one (baseline 3 with no limit) for *Bear markets* and *Index trend*.
+
+| Template | 2011–14 | 2015–18 | 2019–22 | 2023–26 | All | Worst year |
+| --- | --- | --- | --- | --- | --- | --- |
+| *Winners at a discount* | +18.9% (21.4) | +9.6% (7.3) | +9.2% (11.6) | +11.2% (17.4) | **+12.2%** (14.4) | −12.7% (−13.1), 2022 |
+| *The comeback* | +23.3% (21.4) | +3.5% (7.3) | +13.4% (11.6) | +10.4% (17.4) | **+12.7%** (14.4) | −30.6% (−13.1), 2015 |
+| *Bear markets* (SPY) | no trade (17.9) | no trade (8.5) | +16.5% (15.6) | no trade (18.2) | **+16.5%** (15.6) | −13.1% (−13.1), 2022 |
+| *Index trend* (SPY) | +16.6% (17.9) | +5.8% (8.5) | +9.2% (15.6) | +15.9% (18.2) | **+11.9%** (15.0) | −18.6% (−13.1), 2022 |
+
+The index's figure in brackets. *Index trend* on the other tabs (All, against the fund held): Nasdaq-100 +17.1% (19.2), worst −13.4% (−28.4); Developed ex-US +3.9% (7.8); DAX +7.1% (8.3), worst −11.3% (−18.3); Nikkei 225 +0.3% (8.2); Vanguard 500 +12.4% (14.9).
+
+- **Budget at work:** about 73% (*Winners at a discount*) and 83% (*The comeback*) against 85% for the S&P 500, monthly; *Index trend* 80%; *Bear markets* 17% (it trades in one period of four).
+- **The budget runs out early:** at €400 a month, both stock templates spend the €6,000 within about 15 months of each period's start (60 trades a period), so the later years only hold, and the signals after go unpaid (54 to 218 a period).
+- **Trades and the budget invested per year** (the candidates check's last part, item 52), stocks traded in brackets: *Winners at a discount* 2011 34 (12), 2012 22 (10), 2013 4, 2015 11, 2016 29 (12), 2017 10, 2018 10, 2019 31 (12), 2020 29 (16), 2023 45 (18), 2024 15; *The comeback* 2011 48 (14), 2012 12, 2015 42 (12), 2016 18, 2019 48 (18), 2020 12, 2023 48 (21), 2024 12. Each trade is €100.
+- ***Bear markets*' All** is its only traded period (2019–22) against the fund over the same period, so like is compared with like; the simulator's own *All* averages the index over all four.
+- The texts' stories now give numbers; the POC's period stories are gone (other periods, other events).
+
 ## Biases
 
 | Bias | How the backtest handles it |
@@ -350,5 +369,5 @@ Assumptions made while building them (listed in its PR):
 
 ## Open points
 
-- *Bear markets* and *Index trend*'s test money (item 54's default: the template's budget, no monthly limit), with item 56's numbers.
+- *Bear markets* and *Index trend*'s test money (item 54's default: the template's budget, no monthly limit): shown to Ernest with item 56's numbers.
 - Tapping a baseline to add its line to the chart (item 55 left it out).

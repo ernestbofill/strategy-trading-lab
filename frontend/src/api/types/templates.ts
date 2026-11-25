@@ -56,7 +56,7 @@ export interface BenchmarkBacktest {
 }
 
 export interface Backtest {
-  /** "1,146 stocks, 2000-2026." */
+  /** "60 S&P 500 stocks, 2011–2026." */
   scope: string
   /** Sub-periods, then the whole period last (shown on the review). */
   periods: PeriodResult[]

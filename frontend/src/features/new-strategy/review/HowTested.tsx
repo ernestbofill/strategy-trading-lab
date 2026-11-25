@@ -36,7 +36,8 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
     )
   }
 
-  const feeText = `${b.feePercent ? `${b.feePercent}% + ` : ''}${eur(b.feePerTrade)}`
+  // The backtest's costs have no fixed part: "0.2%"; a fixed part shows as "0.2% + €1".
+  const feeText = [b.feePercent ? `${b.feePercent}%` : null, b.feePerTrade ? eur(b.feePerTrade) : null].filter(Boolean).join(' + ')
 
   return (
     <Screen top={top}>
@@ -58,7 +59,8 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
                   t('newStrategy.how.run.bought'),
                   b.testedDefaults,
                   t('newStrategy.how.run.euro'),
-                  t('newStrategy.how.run.index'),
+                  t(template.watches.kind === 'fund' ? 'newStrategy.how.run.indexFund' : 'newStrategy.how.run.index'),
+                  t('newStrategy.how.run.irr'),
                   t('newStrategy.how.run.fees', { fee: feeText }),
                 ]}
               />
@@ -78,7 +80,8 @@ function HowTestedContent({ template }: { template: TemplateDetail }) {
               />
             </Section>
             <Callout tone="warning" title={t('newStrategy.how.cantShow')}>
-              <p>{t('newStrategy.how.survivors')}</p>
+              {/* Survivorship is about the stocks drawn; an index fund has its whole history. */}
+              {template.watches.kind !== 'fund' && <p>{t('newStrategy.how.survivors')}</p>}
               <p>{t('newStrategy.how.realPrices')}</p>
             </Callout>
           </>

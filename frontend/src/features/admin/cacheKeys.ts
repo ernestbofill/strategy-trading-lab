@@ -8,5 +8,6 @@ export const adminCacheKeys = {
   assets: 'admin:assets',
   templates: 'admin:templates',
   prices: 'admin:prices',
+  backtestData: 'admin:backtest-data',
 } as const
 

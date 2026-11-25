@@ -67,6 +67,7 @@ export function AdminSettings() {
         <NavRow label="Notifications" meta="pushes sent, and a test push" to="/admin/notifications" />
         <NavRow label="Assets" meta="stocks, funds and indexes" to="/admin/assets" />
         <NavRow label="Templates" meta="defaults, starter lists and getting close" to="/admin/templates" />
+        <NavRow label="Backtest data" meta="the test draft, its prices and the quality report" to="/admin/backtest-data" />
         <NavRow label="Feedback" meta="open issues, ideas and notes" to="/feedback" />
       </section>
       <Loaded state={state} what="the settings" english>

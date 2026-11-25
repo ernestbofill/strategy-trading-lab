@@ -81,6 +81,7 @@ const owner: LinkGroup = {
     { to: '/admin/invites', label: 'footer.invites' },
     { to: '/admin/notifications', label: 'footer.adminNotifications' },
     { to: '/admin/templates', label: 'footer.adminTemplates' },
+    { to: '/admin/backtest-data', label: 'footer.backtestData' },
     { to: '/feedback', label: 'footer.feedback' },
   ],
 }

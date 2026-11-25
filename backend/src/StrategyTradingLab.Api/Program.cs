@@ -16,6 +16,7 @@ using StrategyTradingLab.Api.Admin;
 using StrategyTradingLab.Api.Assets;
 using StrategyTradingLab.Api.Ai;
 using StrategyTradingLab.Api.Auth;
+using StrategyTradingLab.Api.Backtest;
 using StrategyTradingLab.Api.Invites;
 using StrategyTradingLab.Api;
 using StrategyTradingLab.Api.Data;
@@ -85,6 +86,12 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<DailySummary>();
 builder.Services.AddScoped<AiRounds>();
 builder.Services.AddHostedService<NotificationWorker>();
+
+// The backtest's data: the test draft and the monthly snapshot, started by the owner (/admin/backtest-data).
+builder.Services.Configure<BacktestDataOptions>(builder.Configuration.GetSection("BacktestData"));
+builder.Services.AddScoped<BacktestStore>();
+builder.Services.AddScoped<BacktestData>();
+builder.Services.AddSingleton<BacktestDataJob>();
 
 // Accounts (backend/AUTH.md).
 builder.Services.AddHttpContextAccessor();

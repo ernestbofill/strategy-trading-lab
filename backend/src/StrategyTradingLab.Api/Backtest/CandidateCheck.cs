@@ -6,7 +6,7 @@ namespace StrategyTradingLab.Api.Backtest;
 
 /// <summary>
 /// One stock template in one calendar year on the test draft: how many different stocks were candidates on some day, how many got a buy
-/// signal, and the buy signals in all. Counted before the budget's limits (the simulator, ROADMAP item 53, adds the money).
+/// signal, and the buy signals in all. Each stock buys up to its max trades, with no budget (the simulator, ROADMAP item 53, adds the money).
 /// </summary>
 public record CandidateYear(string Template, int Year, int Candidates, int Signalled, int BuySignals)
 {
@@ -38,7 +38,8 @@ public static class CandidateCheck
                 foreach (var day in days.Where(d => d.Date >= period.Start))
                 {
                     var year = years[day.Date.Year];
-                    if (day.Status is not (RuleStatus.NotEnoughData or RuleStatus.NotCandidate)) year.Candidates.Add(stock.Symbol);
+                    // A candidate meets the candidate rules that day; a stock only held (building, holding) isn't one.
+                    if (day.Status is RuleStatus.Watching or RuleStatus.BuySignal or RuleStatus.SignalEnded) year.Candidates.Add(stock.Symbol);
                     if (day.NewBuy)
                     {
                         year.Signalled.Add(stock.Symbol);

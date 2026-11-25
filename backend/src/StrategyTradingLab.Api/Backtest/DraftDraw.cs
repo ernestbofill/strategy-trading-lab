@@ -19,7 +19,11 @@ public record DraftReplacement(DraftStock Left, DraftStock? Replacement, bool St
 
 /// <summary>The test draft in one period: its stocks, and for a rolled period those kept and replaced. <c>Notes</c> say where a rule couldn't be followed.</summary>
 public record DraftPeriod(BacktestPeriod Period, IReadOnlyList<DraftStock> Stocks, IReadOnlyList<DraftStock> Kept,
-    IReadOnlyList<DraftReplacement> Replaced, IReadOnlyList<string> Notes);
+    IReadOnlyList<DraftReplacement> Replaced, IReadOnlyList<string> Notes)
+{
+    /// <summary>Seats no member could fill (sector and third): the next roll tries them again, so the draft gets back to its size.</summary>
+    public IReadOnlyList<(string Sector, int Third)> Open { get; init; } = [];
+}
 
 /// <summary>
 /// Draws the test draft (docs/backtest.md, *How it is drawn*): at the first period's start, seats per sector in proportion to its share
@@ -107,30 +111,37 @@ public static class DraftDraw
         var stocks = new List<DraftStock>(kept);
         var replaced = new List<DraftReplacement>();
         var notes = new List<string>();
-        foreach (var left in previous.Stocks.Where(s => !bySymbol.ContainsKey(s.Symbol)))
+        var open = new List<(string Sector, int Third)>();
+
+        // A seat's own sector and third first; with none left there, the nearest third of the sector.
+        DraftStock? Fill(string sector, int seatThird, string seat)
         {
-            // The seat's own sector and third first; with none left there, the nearest third of the sector.
-            DrawCandidate? pick = null;
-            foreach (var third in new[] { left.Third }.Concat(new[] { 1, 2, 3 }.Where(t => t != left.Third).OrderBy(t => Math.Abs(t - left.Third)).ThenBy(t => t)))
+            foreach (var third in new[] { seatThird }.Concat(new[] { 1, 2, 3 }.Where(t => t != seatThird).OrderBy(t => Math.Abs(t - seatThird)).ThenBy(t => t)))
             {
-                pick = Shuffled(eligible.Where(c => c.Sector == left.Sector && thirds[c.Symbol] == third), seed, $"{period.Start:yyyy-MM-dd}|{left.Sector}|{third}")
+                var pick = Shuffled(eligible.Where(c => c.Sector == sector && thirds[c.Symbol] == third), seed, $"{period.Start:yyyy-MM-dd}|{sector}|{third}")
                     .FirstOrDefault(c => !used.Contains(c.Symbol));
                 if (pick is null) continue;
-                if (third != left.Third) notes.Add($"{left.Symbol}'s seat ({left.Sector}, third {left.Third}) went to third {third}: none left in its own.");
-                break;
+                if (third != seatThird) notes.Add($"{seat} ({sector}, third {seatThird}) went to third {third}: none left in its own.");
+                used.Add(pick.Symbol);
+                var stock = new DraftStock(pick.Ticker, pick.Symbol, sector, thirds[pick.Symbol]);
+                stocks.Add(stock);
+                return stock;
             }
-            if (pick is null) notes.Add($"No member of {left.Sector} was left to replace {left.Symbol}.");
-            var replacement = pick is null ? null : new DraftStock(pick.Ticker, pick.Symbol, left.Sector, thirds[pick.Symbol]);
-            if (replacement is not null)
-            {
-                used.Add(replacement.Symbol);
-                stocks.Add(replacement);
-            }
+            notes.Add($"No member of {sector} was left for {seat}: the seat stays open and is tried again at the next period's start.");
+            open.Add((sector, seatThird));
+            return null;
+        }
+
+        foreach (var left in previous.Stocks.Where(s => !bySymbol.ContainsKey(s.Symbol)))
+        {
+            var replacement = Fill(left.Sector, left.Third, $"{left.Symbol}'s seat");
             var stillIn = members?.Contains(left.Symbol) ?? false;
             if (stillIn) notes.Add($"{left.Symbol} is still in the index but can't be drawn (see the members that can't be drawn): its seat was refilled.");
             replaced.Add(new(left, replacement, stillIn));
         }
-        return new(period, stocks, kept, replaced, notes);
+        foreach (var (sector, third) in previous.Open)
+            if (Fill(sector, third, "A seat left open") is { } filled) notes.Add($"A seat left open in {sector} went to {filled.Symbol}.");
+        return new(period, stocks, kept, replaced, notes) { Open = open };
     }
 
     /// <summary>The members in a seeded order: sorted by symbol, then shuffled with the stream for <paramref name="key"/>.</summary>

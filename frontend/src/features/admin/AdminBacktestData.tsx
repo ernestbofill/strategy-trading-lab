@@ -184,7 +184,7 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
           Candidates per template and year
         </h2>
         <p className={styles.muted}>
-          Different stocks with a buy signal (needs 4), stocks that were candidates, and buy signals, before the budget's limits.
+          Different stocks with a buy signal (needs 4), stocks that were candidates, and buy signals; up to 5 trades a stock, with no budget.
         </p>
         <CandidatesTable rows={draw.candidates} />
       </section>
@@ -230,7 +230,7 @@ function DrawSections({ draw, warnings }: { draw: DrawReport; warnings: PriceWar
           <h2 id="backtest-unchecked" className={styles.groupTitle}>
             Names not checked ({draw.unchecked.length})
           </h2>
-          <p className={styles.muted}>Wikipedia doesn't name these tickers. Check Yahoo's name is the company that was in the index, or add a symbol-map row.</p>
+          <p className={styles.muted}>Wikipedia or Yahoo gives no name for these tickers. Check Yahoo's listing is the company that was in the index, or add a symbol-map row.</p>
           <ul className={styles.replaced}>
             {draw.unchecked.map((u) => (
               <li key={`${u.ticker}-${u.symbol}`}>

@@ -91,6 +91,9 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
         var missing = new Dictionary<(string Ticker, MissingReason Reason), (string? Symbol, List<string> Periods, string Detail)>();
         var eligible = new List<(BacktestPeriod Period, IReadOnlyList<DrawCandidate> Eligible)>();
         var noNameCheck = new Dictionary<(string Ticker, string Symbol), List<string>>();
+        // Each company's share class, chosen the first time it is drawable and kept after, so a drafted class never loses its seat
+        // to another stock because its other class traded more in a later period.
+        var classOf = new Dictionary<string, string>();
         foreach (var period in periods)
         {
             var candidates = new List<DrawCandidate>();
@@ -103,13 +106,22 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
                     if (!missing.TryGetValue(key, out var seen)) missing[key] = seen = (resolved.Symbol, [], unfit.Detail);
                     seen.Periods.Add(period.Label);
                 }
-                else if (candidates.All(c => c.Symbol != member!.Symbol))
-                    candidates.Add(new(ticker, member!.Symbol, member.Sector!, member.Traded[period.Start]!.Value));
+                else if (candidates.FirstOrDefault(c => c.Symbol == member!.Symbol) is { } same)
+                {
+                    // Two tickers for one Yahoo symbol on the same day (a map row each): the stock counts once.
+                    var key = (ticker, MissingReason.OtherClass);
+                    if (!missing.TryGetValue(key, out var seen)) missing[key] = seen = (same.Symbol, [], $"Same Yahoo symbol as {same.Ticker}, which is drawn instead.");
+                    seen.Periods.Add(period.Label);
+                }
+                else candidates.Add(new(ticker, member!.Symbol, member.Sector!, member.Traded[period.Start]!.Value));
             }
-            // One share class per company (GOOG and GOOGL, FOX and FOXA): the one most traded, so no company holds two seats.
-            foreach (var company in candidates.GroupBy(c => membership.Company(c.Ticker, period.Start)).Where(g => g.Count() > 1).ToList())
+            // One share class per company (GOOG and GOOGL, FOX and FOXA), so no company holds two seats: the class chosen before if it is
+            // still drawable, else the one most traded now.
+            foreach (var company in candidates.GroupBy(c => membership.Company(c.Ticker, period.Start)).ToList())
             {
-                var kept = company.OrderByDescending(c => c.TradedValue).ThenBy(c => c.Symbol, StringComparer.Ordinal).First();
+                var kept = company.FirstOrDefault(c => classOf.GetValueOrDefault(company.Key) == c.Symbol)
+                    ?? company.OrderByDescending(c => c.TradedValue).ThenBy(c => c.Symbol, StringComparer.Ordinal).First();
+                classOf[company.Key] = kept.Symbol;
                 foreach (var other in company.Where(c => c != kept))
                 {
                     candidates.Remove(other);
@@ -119,7 +131,8 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
                 }
             }
             // Drawable without a name check: listed, so a reused ticker among them can be caught by eye.
-            foreach (var c in candidates.Where(c => membership.Resolve(c.Ticker, period.Start).Note is null && membership.WikipediaName(c.Ticker, period.Start) is null))
+            foreach (var c in candidates.Where(c => membership.Resolve(c.Ticker, period.Start).Note is null
+                && (membership.WikipediaName(c.Ticker, period.Start) is null || members[c.Symbol].Name is null)))
             {
                 if (!noNameCheck.TryGetValue((c.Ticker, c.Symbol), out var labels)) noNameCheck[(c.Ticker, c.Symbol)] = labels = [];
                 labels.Add(period.Label);
@@ -368,11 +381,12 @@ public class BacktestData(IMarketDataSource yahoo, BacktestStore store, Template
     }
 
     /// <summary>
-    /// Whether Yahoo failed rather than answered: any HTTP error but 404 (429 when asked too often, 401 or 403 when it blocks, a server
-    /// error), a timeout or no connection. Only an answer (404, Yahoo's own "no data", an answer we can't read) says something about the member.
+    /// Whether Yahoo failed rather than answered: refused us (401, 403 when it blocks, 429 when asked too often), timed out (408, or no
+    /// answer), failed itself (5xx, 999) or couldn't be reached. Any other answer (404, 400 or 422 for a symbol or range it has no data for,
+    /// its own "no data", an answer we can't read) says something about the member, and the same symbol would fail every draw.
     /// </summary>
     static bool YahooFailed(MarketDataException error) =>
-        error.Status is { } status && status != 404 || error.InnerException is HttpRequestException or TaskCanceledException;
+        error.Status is 401 or 403 or 408 or 429 or >= 500 || error.InnerException is HttpRequestException or TaskCanceledException;
 
     /// <summary>
     /// One request to Yahoo, with the pause after it, asked again after Yahoo failed. Still failing after the retries, the run

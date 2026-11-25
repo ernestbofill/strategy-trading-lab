@@ -90,6 +90,21 @@ public class BacktestDataTests
     }
 
     [Fact]
+    public void A_seat_no_member_can_fill_stays_open_until_a_later_roll_fills_it()
+    {
+        var periods = BacktestPeriods.For(new DateOnly(2026, 11, 25));
+        var all = Members(30, "Energy", "Healthcare", "Technology");
+        var noEnergy = all.Where(c => c.Sector != "Energy").ToList();
+
+        var drafts = DraftDraw.Draw([(periods[0], all), (periods[1], noEnergy), (periods[2], all)]);
+
+        Assert.Equal(50, drafts[1].Stocks.Count);
+        Assert.Equal(10, drafts[1].Open.Count);
+        Assert.Equal(60, drafts[2].Stocks.Count);
+        Assert.Equal(10, drafts[2].Stocks.Count(s => s.Sector == "Energy"));
+    }
+
+    [Fact]
     public void The_money_weighted_rate_counts_each_euro_for_as_long_as_it_was_invested()
     {
         Assert.Equal(0.10, MoneyWeighted.AnnualRate([(new DateOnly(2021, 1, 1), -100m), (new DateOnly(2022, 1, 1), 110m)])!.Value, 6);

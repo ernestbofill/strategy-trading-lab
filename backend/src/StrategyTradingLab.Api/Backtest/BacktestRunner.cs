@@ -111,8 +111,8 @@ public class BacktestRunner(BacktestStore store, BacktestPrices prices, Template
 
     /// <summary>
     /// The request with its defaults (docs/backtest.md, *What is tested* and *Stocks*): the template's defaults in use; the test draft
-    /// over 16 years in 4-year periods, a list or one stock over the latest period only; €6,000, €100 a trade, up to 5 a stock, at most
-    /// €400 a month; one stock's budget is its max trades × the amount per trade. <i>Bear markets</i> and <i>Index trend</i> trade one
+    /// over 16 years in 4-year periods, a list or one stock over the latest period only; €6,000 at most €400 a month, with the template's
+    /// amount per trade and trades a stock; one stock's budget is its max trades × the amount per trade. <i>Bear markets</i> and <i>Index trend</i> trade one
     /// fund with the template's budget and no monthly limit unless one is given, as the template's own figures were tested.
     /// </summary>
     public static BacktestSetup Resolve(BacktestRequest request, Template template)
@@ -133,8 +133,9 @@ public class BacktestRunner(BacktestStore store, BacktestPrices prices, Template
             throw new BacktestRunException($"The years must be a multiple of the period's, up to {MaxYears}.");
 
         var allIn = template.Budget.Step is null;
-        decimal? amount = allIn ? null : request.AmountPerTrade ?? (fund ? template.Budget.Step : DefaultAmountPerTrade);
-        var maxTrades = allIn ? 1 : request.MaxTrades ?? (fund ? template.Budget.MaxSteps ?? DefaultMaxTrades : DefaultMaxTrades);
+        // The template's own amount per trade and trades a stock (Winners at a discount: €100 × 5; The comeback: €200 × 2).
+        decimal? amount = allIn ? null : request.AmountPerTrade ?? template.Budget.Step ?? DefaultAmountPerTrade;
+        var maxTrades = allIn ? 1 : request.MaxTrades ?? template.Budget.MaxSteps ?? DefaultMaxTrades;
         var budget = request.Budget ?? (fund ? template.Budget.Amount : stocks == TestStocks.Stock ? maxTrades * amount!.Value : DefaultMoney.Budget);
         var limit = request.MonthlyLimit ?? (fund ? budget : DefaultMoney.MonthlyLimit);
         var (fee, spread) = (request.FeePct ?? DefaultMoney.FeePct, request.SpreadPct ?? DefaultMoney.SpreadPct);

@@ -21,7 +21,7 @@ The backtest runs the app's own engine (`Engine/`): the same rules, signals at t
 | Index | S&P 500 | *Bear markets* and *Index trend* only: the index fund they trade (S&P 500, Nasdaq-100, DAX, Nikkei 225…). How often a market fell 20% depends on it |
 | Years | 16 years, in 4-year periods (Ernest, 2026-11-23) | Both are parameters. 4 years gives the strategy time to profit from its buys. One stock and the strategy's own list: the latest period only |
 | Budget | €6,000 (60 trades, one per drafted stock) | A test setting. A strategy's test uses its own budget. One stock: max trades × amount per trade, so the budget fits it |
-| Amount per trade | €100, up to 5 trades a stock | As the strategy's budget |
+| Amount per trade | The template's: €100, up to 5 trades a stock (*The comeback*: €200, up to 2) | As the strategy's budget |
 | Monthly limit | €400 a month (the budget over 15 months at the earliest) | A cap on new money spent; unspent limit carries over in full (see *Money*). Limit = budget means no limit |
 | Fee | 0.1% a trade | No fixed part, so results don't depend on the budget's size, only on how many trades it holds |
 | Spread | 0.1% a trade | Added to the buy price and taken off the sell price |
@@ -186,7 +186,7 @@ After #284's fixes (Ernest accepted it, #285):
 
 `POST /admin/backtest` (owner only, `Backtest/BacktestRunner.cs`) runs one test in the request and answers with the setup it used (every default filled in), the snapshot's month, each period's pool (and the stocks that sat it out) and the simulator's results. Assumptions made while building it (listed in its PR):
 
-- **Defaults:** the template's defaults in use (`/admin/templates`), with any settings given over them, checked as a strategy's are (known, in range, on a step); the test draft over 16 years in 4-year periods; €6,000, €100 a trade, up to 5 a stock, at most €400 a month; fee and spread 0.1%; in euro (USD or GBP on request). A list or one stock: the latest period only. One stock: budget = max trades × amount per trade.
+- **Defaults:** the template's defaults in use (`/admin/templates`), with any settings given over them, checked as a strategy's are (known, in range, on a step); the test draft over 16 years in 4-year periods; €6,000 at most €400 a month, with the template's amount per trade and trades a stock (€100 × 5; *The comeback* €200 × 2); fee and spread 0.1%; in euro (USD or GBP on request). A list or one stock: the latest period only. One stock: budget = max trades × amount per trade.
 - ***Bear markets* and *Index trend*** trade one fund (SPY unless another is given) with **the template's own budget and no monthly limit** unless the request sets them: €3,000 in 5 trades of €600, and €3,000 all in. That is how their figures were tested so far (all in against buying the index on day one); the €400 limit would leave *Bear markets*' €600 trade waiting a month and turn *Index trend* into monthly buying. To settle with item 56's numbers.
 - **The test draft per period:** each tested period uses the draft of the drawn period it starts in, so other period lengths still read the drawn drafts; a period before the draft is refused, and one after it asks for a new draw.
 - **Prices:** a symbol in the snapshot is read from it whenever the test starts no earlier than the snapshot's own first warm-up (a parsed file stays in memory: a snapshot never changes); any other (an edited list, another stock, another index) is fetched from Yahoo from the first warm-up on and kept for the month under `backtest/fetched/yyyy-MM/` (its prices and a small description with its currency); next month's tests fetch it again. In the request there are no retries: Yahoo refusing or timing out says to try again, apart from a symbol it has no prices for.
@@ -338,7 +338,8 @@ Run on production on 2026-11-25 (snapshot 2026-11, the defaults in use, in euro)
 | Template | 2011–14 | 2015–18 | 2019–22 | 2023–26 | All | Worst year |
 | --- | --- | --- | --- | --- | --- | --- |
 | *Winners at a discount* | +18.9% (21.4) | +9.6% (7.3) | +9.2% (11.6) | +11.2% (17.4) | **+12.2%** (14.4) | −12.7% (−13.1), 2022 |
-| *The comeback* | +23.3% (21.4) | +3.5% (7.3) | +13.4% (11.6) | +10.4% (17.4) | **+12.7%** (14.4) | −30.6% (−13.1), 2015 |
+| *The comeback* (2 trades of €200, since 2026-11-26) | +24.3% (21.4) | +10.7% (7.3) | +14.4% (11.6) | +11.8% (17.4) | **+15.3%** (14.4) | −15.9% (−13.1), 2015 |
+| *The comeback* before (5 trades of €100) | +23.3% (21.4) | +3.5% (7.3) | +13.4% (11.6) | +10.4% (17.4) | +12.7% (14.4) | −30.6% (−13.1), 2015 |
 | *Bear markets* (SPY) | no trade (17.9) | no trade (8.5) | +16.5% (15.6) | no trade (18.2) | **+16.5%** (15.6) | −13.1% (−13.1), 2022 |
 | *Index trend* (SPY) | +16.6% (17.9) | +5.8% (8.5) | +9.2% (15.6) | +15.9% (18.2) | **+11.9%** (15.0) | −18.6% (−13.1), 2022 |
 
@@ -357,7 +358,7 @@ Looked into with Ernest before the figures went live:
 - ***Index trend* and *Bear markets*: the years.** 2011–2026 has no long bear market. Over 1999–2026 (SPY, in dollars, since Yahoo's EUR/USD rate starts in 2004), *Index trend* makes +10.1% a year against +8.7% held, with a worst year of −20.8% against −36.8% (2008). After 2011 the falls were short and V-shaped, and it bought back higher each time; in 2022 a whipsaw (sold 386, rebought 433, sold 399) and euro cash while the dollar rose made it worse than holding. *Bear markets* over 1999–2026 makes +5.7% against +8.7%: it bought 2001–02 too early.
 - **The stock templates: the choice of stocks.** Against baseline 2 (the same days and money on the whole draft) they lose 2.3 (*Winners at a discount*) and 2.8 (*The comeback*) points a year; timing adds a little; the draft (equal-weighted) trails the S&P 500 (cap-weighted) only in 2023–26 (3.2 points). The money goes to the first signals (all spent 13–27 months into each period), and the 5 trades a stock come within about 70 days, mostly at higher prices, so 60 trades sit in 17–29 stocks.
 - **On the starter lists** (2023–26, chosen today, so with hindsight): *Winners at a discount* +47.4% against +39.5% for its own list bought on the same days (+7.9 points) and +17.3% for the S&P 500; *The comeback* +35.1% against +42.8%. On 16 years, Dip beats its list in 3 periods of 4.
-- **2 trades a stock** (on the draft): *The comeback* +15.4% a year against +12.7% with 5, ahead of the S&P 500 (+14.4%); *Winners at a discount* unchanged (+12.2%). *The comeback*'s default becomes 2 trades of 200 (Ernest, 2026-11-26).
+- **2 trades a stock** (on the draft): *The comeback* +15.4% a year against +12.7% with 5, ahead of the S&P 500 (+14.4%); *Winners at a discount* unchanged (+12.2%). *The comeback*'s default becomes 2 trades of 200 (Ernest, 2026-11-26): +15.3% a year, worst year −15.9%, ahead of the index in 3 periods of 4; its figures are those since.
 - Next: a test draft of the strategies' kind of stocks (`ROADMAP.md` item 59).
 
 ## Biases

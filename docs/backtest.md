@@ -350,6 +350,16 @@ The index's figure in brackets. *Index trend* on the other tabs (All, against th
 - ***Bear markets*' All** is its only traded period (2019–22) against the fund over the same period, so like is compared with like; the simulator's own *All* averages the index over all four.
 - The texts' stories now give numbers; the POC's period stories are gone (other periods, other events).
 
+### What explains the figures (2026-11-26)
+
+Looked into with Ernest before the figures went live:
+
+- ***Index trend* and *Bear markets*: the years.** 2011–2026 has no long bear market. Over 1999–2026 (SPY, in dollars, since Yahoo's EUR/USD rate starts in 2004), *Index trend* makes +10.1% a year against +8.7% held, with a worst year of −20.8% against −36.8% (2008). After 2011 the falls were short and V-shaped, and it bought back higher each time; in 2022 a whipsaw (sold 386, rebought 433, sold 399) and euro cash while the dollar rose made it worse than holding. *Bear markets* over 1999–2026 makes +5.7% against +8.7%: it bought 2001–02 too early.
+- **The stock templates: the choice of stocks.** Against baseline 2 (the same days and money on the whole draft) they lose 2.3 (*Winners at a discount*) and 2.8 (*The comeback*) points a year; timing adds a little; the draft (equal-weighted) trails the S&P 500 (cap-weighted) only in 2023–26 (3.2 points). The money goes to the first signals (all spent 13–27 months into each period), and the 5 trades a stock come within about 70 days, mostly at higher prices, so 60 trades sit in 17–29 stocks.
+- **On the starter lists** (2023–26, chosen today, so with hindsight): *Winners at a discount* +47.4% against +39.5% for its own list bought on the same days (+7.9 points) and +17.3% for the S&P 500; *The comeback* +35.1% against +42.8%. On 16 years, Dip beats its list in 3 periods of 4.
+- **2 trades a stock** (on the draft): *The comeback* +15.4% a year against +12.7% with 5, ahead of the S&P 500 (+14.4%); *Winners at a discount* unchanged (+12.2%). *The comeback*'s default becomes 2 trades of 200 (Ernest, 2026-11-26).
+- Next: a test draft of the strategies' kind of stocks (`ROADMAP.md` item 59).
+
 ## Biases
 
 | Bias | How the backtest handles it |
@@ -369,5 +379,4 @@ The index's figure in brackets. *Index trend* on the other tabs (All, against th
 
 ## Open points
 
-- *Bear markets* and *Index trend*'s test money (item 54's default: the template's budget, no monthly limit): shown to Ernest with item 56's numbers.
 - Tapping a baseline to add its line to the chart (item 55 left it out).

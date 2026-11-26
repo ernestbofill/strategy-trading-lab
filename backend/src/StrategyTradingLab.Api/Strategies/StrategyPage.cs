@@ -88,7 +88,7 @@ public static class StrategyPage
         StockStatus.Signal => 1,
         StockStatus.Building => 2,
         StockStatus.Holding or StockStatus.Done => 3,
-        StockStatus.NoBudget or StockStatus.Watching or StockStatus.OutOfTheMarket => 4,
+        StockStatus.NoBudget or StockStatus.MonthlyLimit or StockStatus.Watching or StockStatus.OutOfTheMarket => 4,
         StockStatus.Removed => 6,
         _ => 5,
     };

@@ -147,7 +147,11 @@ public class PushSubscription
 }
 
 /// <summary>budget_amount, budget_step and budget_max_steps. Step and max steps are null for all in, all out.</summary>
-public record Budget(decimal Amount, decimal? Step, int? MaxSteps);
+/// <param name="MonthlyLimit">
+/// At most this much new money a calendar month, unspent limit carried over in full: by the end of the strategy's month m, at most
+/// m × the limit (ROADMAP item 57, as the backtest tests). Null: no limit (every strategy before it, and all-in templates).
+/// </param>
+public record Budget(decimal Amount, decimal? Step, int? MaxSteps, decimal? MonthlyLimit = null);
 
 public class Strategy : IHasUpdatedAt
 {

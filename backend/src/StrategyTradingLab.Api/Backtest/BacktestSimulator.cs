@@ -109,8 +109,7 @@ public static class BacktestSimulator
         var strategy = new BacktestLine(money, fx);
         var unpaid = 0;
         // The new money the limit allows by the end of a day's month: m × the limit by the end of month m, at most the budget.
-        decimal Allowed(DateOnly day) =>
-            Math.Min(money.Budget, ((day.Year - period.Start.Year) * 12 + day.Month - period.Start.Month + 1) * money.MonthlyLimit);
+        decimal Allowed(DateOnly day) => Signals.MonthlyLimit.Room(money.Budget, money.MonthlyLimit, period.Start, day);
         const decimal Cent = 0.01m;
 
         // Buys decided on their signal's day, made at the next open; sales the same. Proceeds wait until a buy takes them.

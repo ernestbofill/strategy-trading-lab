@@ -43,6 +43,7 @@ import { SignalPage } from './features/signal/SignalPage'
 import { StockPage } from './features/strategy/StockPage'
 import { StrategyPage } from './features/strategy/StrategyPage'
 import { StrategySettings } from './features/strategy/StrategySettings'
+import { MonthlyLimit } from './features/strategy/MonthlyLimit'
 import { EditList } from './features/strategy/EditList'
 import { HowTested } from './features/new-strategy/review/HowTested'
 import { DraftPromptEditor } from './features/new-strategy/review/DraftPromptEditor'
@@ -311,6 +312,7 @@ export default function App() {
                   </Route>
                   <Route path="/strategies/:id" element={<StrategyPage />} />
                   <Route path="/strategies/:id/settings" element={<StrategySettings />} />
+                  <Route path="/strategies/:id/monthly-limit" element={<MonthlyLimit />} />
                   <Route path="/strategies/:id/list" element={<EditList />} />
                   <Route path="/strategies/:id/stocks/:assetId" element={<StockPage />} />
                   <Route path="/strategies/:id/signals/:signalId" element={<SignalPage />} />

@@ -18,9 +18,9 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
-| Frontend (Vitest) | 3 | 13 | 16 |
-| Backend (xUnit) | 3 | 32 | 35 |
-| **All** | **6** | **45** | **51** |
+| Frontend (Vitest) | 3 | 14 | 17 |
+| Backend (xUnit) | 3 | 33 | 36 |
+| **All** | **6** | **47** | **53** |
 
 ## Log
 
@@ -28,6 +28,8 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-26 | #291 | local | Backend (xUnit) | `ModelTests.Budget_is_a_complex_type_in_three_columns` | 1 | FP | The budget gained its fourth column, `budget_monthly_limit` (item 57); the test names the four. |
+| 2026-11-26 | #291 | local | Frontend (Vitest) | `src/lib/budget.test.ts` (resolveBudget, 3 tests) and `src/features/new-strategy/newStrategy.test.ts > starts from the tested defaults` | 4 | FP | The resolved budget and the new strategy's request now carry `monthlyLimit` (null: no limit); the expectations include it. |
 | 2026-11-26 | #290 | local | Backend (xUnit) | `BacktestDataDrawTests.The_owner_draws_the_test_draft_and_gets_its_report_and_snapshot` | 1 | FP | *The comeback*'s one-stock test budget is its max trades × amount per trade, now 2 × 200 = 400 (was 5 × 100); the expectation follows the new defaults. |
 | 2026-11-25 | #289 | local | Backend (xUnit) | `TemplateTests.Every_template_has_texts_with_rules` (en, ca) | 2 | FP | It wanted a story for every period of every *Index trend* tab; the new figures keep a story for *All* only. It now checks each tab's *All* story and that no story names a missing period. |
 | 2026-11-25 | #287 | local | Backend (xUnit) | `BacktestDataDrawTests.The_owner_draws_the_test_draft_and_gets_its_report_and_snapshot` | 1 | FP | The test's synthetic Yahoo leaves one symbol in 20 without prices, and `EURUSD=X` was one; exchange rates now always have prices there, as SPY does. |

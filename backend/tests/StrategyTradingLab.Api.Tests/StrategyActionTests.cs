@@ -36,6 +36,31 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     static string Tag() => Guid.NewGuid().ToString("N")[..10];
 
     [NeonFact]
+    public async Task A_running_strategys_monthly_limit_is_set_and_cleared()
+    {
+        var (client, email) = await factory.VerifiedAsync();
+        var (other, otherEmail) = await factory.VerifiedAsync();
+        try
+        {
+            var id = await StartAsync(client, $"Limit {Tag()}");
+            Assert.Equal(JsonValueKind.Null, (await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("budget").GetProperty("monthlyLimit").ValueKind);
+
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/monthly-limit", new { monthlyLimit = 400 })).StatusCode);
+            Assert.Equal(400m, (await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("budget").GetProperty("monthlyLimit").GetDecimal());
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync($"/strategies/{id}/monthly-limit", new { monthlyLimit = 50 })).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await other.PutAsJsonAsync($"/strategies/{id}/monthly-limit", new { monthlyLimit = 400 })).StatusCode);
+
+            Assert.Equal(HttpStatusCode.NoContent, (await client.PutAsJsonAsync($"/strategies/{id}/monthly-limit", new { monthlyLimit = (decimal?)null })).StatusCode);
+            Assert.Equal(JsonValueKind.Null, (await client.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("budget").GetProperty("monthlyLimit").ValueKind);
+        }
+        finally
+        {
+            await RemoveAsync(email);
+            await RemoveAsync(otherEmail);
+        }
+    }
+
+    [NeonFact]
     public async Task A_strategy_is_renamed_with_the_name_rules_of_Confirm()
     {
         var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).

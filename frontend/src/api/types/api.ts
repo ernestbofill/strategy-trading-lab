@@ -86,6 +86,8 @@ export interface Api {
   deleteStrategy(id: string): Promise<void>
   /** Rejects with `NameTakenError` when another running strategy has the name, `InvalidFieldsError` for a wrong length. */
   renameStrategy(id: string, name: string): Promise<void>
+  /** Sets a running strategy's monthly limit, or clears it with null. Rejects with `InvalidFieldsError` (`monthlyLimit`) when refused. */
+  setMonthlyLimit(id: string, monthlyLimit: number | null): Promise<void>
   /** The VAPID key to subscribe with; null when the server doesn't send push. */
   getPushKey(): Promise<string | null>
   /** Saves this device's push subscription for the logged-in user. */

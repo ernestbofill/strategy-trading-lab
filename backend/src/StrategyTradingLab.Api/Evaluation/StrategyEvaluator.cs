@@ -113,7 +113,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         var added = listed.ToDictionary(a => a.Key, a => DateOnly.FromDateTime(a.Value.UtcDateTime));
         var wanted = added.Keys.ToList();
         // The budget the signals so far use (confirmed ones, and those still waiting: a skipped or missed one uses none); new signals stop once the next step wouldn't fit (DATA-MODEL: strategies).
-        var (used, heldByBudget) = await BudgetHistoryAsync(db, strategy.Id, strategy.Budget, cancellationToken);
+        var (used, heldByBudget) = await BudgetHistoryAsync(db, strategy.Id, strategy.Budget, strategy.StartedOn, cancellationToken);
         var budget = new BudgetUse(used);
         var assets = await db.Assets.AsNoTracking().Where(a => a.Active && wanted.Contains(a.Id)).ToListAsync(cancellationToken);
         foreach (var asset in assets)
@@ -177,7 +177,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
             // time, or a signal over the budget.
             if (strategy.Mode == StrategyMode.Live && await LastAnswerAsync(db, strategy.Id, asset.Id, cancellationToken) != answered)
             {
-                (budget.Used, heldByBudget) = await BudgetHistoryAsync(db, strategy.Id, strategy.Budget, cancellationToken);
+                (budget.Used, heldByBudget) = await BudgetHistoryAsync(db, strategy.Id, strategy.Budget, strategy.StartedOn, cancellationToken);
                 (days, afterBuy) = await ReplayAsync();
             }
             var run = await SyncAsync(strategy, asset, bars, days, checkedUntil, now, rates, budget, afterBuy, price, cancellationToken);
@@ -254,11 +254,11 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
     /// <summary>
     /// What the strategy's signals use of its budget (<see cref="SignalBudget.UsingBudget"/>), and whether it had no room for one more
     /// step on a day: the steps signalled up to that day, its own included (another stock's signal that day may have come first),
-    /// and one more step overrun it. So a stock reads as held only when the budget really was full that day. From today's statuses:
+    /// and one more step overran it, or the monthly limit's room that day (<see cref="MonthlyLimit"/>). So a stock reads as held only when the budget really was full that day. From today's statuses:
     /// a signal skipped or missed since frees its step, and the stock then reads as free, as it now is. Loaded once per strategy.
     /// </summary>
     internal static async Task<(decimal Used, Func<DateOnly, bool> HeldOn)> BudgetHistoryAsync(AppDbContext db, Guid strategyId, Budget budget,
-        CancellationToken cancellationToken)
+        DateOnly startedOn, CancellationToken cancellationToken)
     {
         var spent = await db.Signals.Where(s => s.StrategyId == strategyId && s.StepAmount != null).UsingBudget()
             .GroupBy(s => s.SignalDate).OrderBy(g => g.Key)
@@ -270,7 +270,7 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         return (upTo[^1], day =>
         {
             var index = days.BinarySearch(day);
-            return upTo[index < 0 ? ~index : index + 1] + step > budget.Amount;
+            return upTo[index < 0 ? ~index : index + 1] + step > MonthlyLimit.Room(budget, startedOn, day);
         });
     }
 
@@ -311,7 +311,8 @@ public class StrategyEvaluator(AppDbContext db, AdminAlerts alerts, TimeProvider
         foreach (var day in Unsignalled(d => d.NewBuy, TradeSide.Buy))
         {
             var stepAmount = strategy.Budget.Step ?? 0;
-            if (budget.Used + stepAmount > strategy.Budget.Amount) continue; // The budget is used up: no more signals.
+            // The budget is used up, or this month's room under the monthly limit (unspent room carried over): no signal.
+            if (budget.Used + stepAmount > MonthlyLimit.Room(strategy.Budget, strategy.StartedOn, day.Date)) continue;
             budget.Used += stepAmount;
             AddSignal(day, TradeSide.Buy);
         }

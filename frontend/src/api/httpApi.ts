@@ -223,6 +223,7 @@ export const httpApi: Api = {
   // Already gone (another tab, or a retry after a request that went through) is what the user asked for.
   deleteStrategy: (id) => done(request('DELETE', `/strategies/${encodeURIComponent(id)}`, undefined, { ok: [404] })),
   renameStrategy: (id, name) => strategyAction('PUT', id, 'name', { name }),
+  setMonthlyLimit: (id, monthlyLimit) => strategyAction('PUT', id, 'monthly-limit', { monthlyLimit }),
   getPushKey: async () => (await getRequired<{ publicKey: string | null }>('/push/key')).publicKey,
   savePushSubscription: (subscription) => put('/push/subscription', subscription),
   removePushSubscription: (endpoint) => done(request('POST', '/push/unsubscribe', { endpoint })),

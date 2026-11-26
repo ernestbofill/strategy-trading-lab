@@ -149,6 +149,23 @@ public class BacktestSimulatorTests(AccountsApi api) : IClassFixture<AccountsApi
         Assert.Equal(95m, result.EndValue); // The proceeds, not reinvested.
     }
 
+    [Fact]
+    public void The_monthly_limit_carries_unspent_room_over_and_never_passes_the_budget()
+    {
+        var start = new DateOnly(2026, 1, 15);
+        Assert.Equal(400m, StrategyTradingLab.Api.Signals.MonthlyLimit.Room(6000, 400, start, new DateOnly(2026, 1, 31))); // Month 1.
+        Assert.Equal(1200m, StrategyTradingLab.Api.Signals.MonthlyLimit.Room(6000, 400, start, new DateOnly(2026, 3, 1))); // Month 3: January's and February's carried over.
+        Assert.Equal(6000m, StrategyTradingLab.Api.Signals.MonthlyLimit.Room(6000, 400, start, new DateOnly(2027, 12, 1))); // Never past the budget.
+        Assert.Equal(6000m, StrategyTradingLab.Api.Signals.MonthlyLimit.Room(6000, null, start, start)); // No limit.
+
+        // Which holds the next €100 step in month 2 (room €800): the month while the budget has room, else the budget.
+        var budget = new StrategyTradingLab.Api.Data.Entities.Budget(1000, 100, 10, 400);
+        var february = new DateOnly(2026, 2, 10);
+        Assert.True(StrategyTradingLab.Api.Signals.MonthlyLimit.HoldsNextStep(budget, start, february, 800));
+        Assert.False(StrategyTradingLab.Api.Signals.MonthlyLimit.HoldsNextStep(budget, start, february, 700)); // The month has room.
+        Assert.False(StrategyTradingLab.Api.Signals.MonthlyLimit.HoldsNextStep(budget, start, february, 1000)); // The budget is full.
+    }
+
     record Golden(string Symbol, string[] Dates, decimal[] Close, long[]? Volume, string[] Status, int[] NewBuy, int[]? NewSell = null);
 
     static Golden LoadGolden(string name) =>
@@ -206,8 +223,12 @@ public class BacktestSimulatorTests(AccountsApi api) : IClassFixture<AccountsApi
         return bars;
     }
 
-    [NeonFact]
-    public async Task A_backtest_of_a_running_simulation_from_its_start_gives_the_trades_the_app_recorded()
+    /// <param name="startIndex">The strategy's first day, a Monday (the day before it, checked already, has no bar).</param>
+    /// <param name="monthlyLimit">Null: no limit. 100 from 7 August 2023: August's room is one trade, so the 21 August signal waits for none.</param>
+    [NeonTheory]
+    [InlineData(300, null, 2)]
+    [InlineData(415, 100, 2)]
+    public async Task A_backtest_of_a_running_simulation_from_its_start_gives_the_trades_the_app_recorded(int startIndex, int? monthlyLimit, int unpaid)
     {
         using var scope = api.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -223,8 +244,8 @@ public class BacktestSimulatorTests(AccountsApi api) : IClassFixture<AccountsApi
         for (var i = 0; i < assets.Count; i++)
             db.Prices.AddRange(series[i].Bars.Select(b => new PriceDaily
                 { AssetId = assets[i].Id, Date = b.Date, Open = b.Open, High = b.High, Low = b.Low, Close = b.Close, Volume = b.Volume }));
-        var start = series[0].Bars[300].Date;
-        var budget = new Budget(500, 100, 5);
+        var start = series[0].Bars[startIndex].Date;
+        var budget = new Budget(500, 100, 5, monthlyLimit);
         var strategy = new Strategy
         {
             UserId = user.Id, TemplateKey = "dip", Name = $"Backtest {tag}", Mode = StrategyMode.Simulation, Status = StrategyStatus.Running,
@@ -249,13 +270,13 @@ public class BacktestSimulatorTests(AccountsApi api) : IClassFixture<AccountsApi
 
             var period = new BacktestPeriod(start.Year, last.Year, start, last, first, Partial: false);
             var pool = series.Select((s, i) => new TestAsset(assets[i].Symbol, "USD", s.Bars)).ToList();
-            var result = BacktestSimulator.Run(TestRules.For("dip", strategy.Params, budget), new TestMoney(500, 500, 0.2m, 0), [new(period, pool)],
+            var result = BacktestSimulator.Run(TestRules.For("dip", strategy.Params, budget), new TestMoney(500, monthlyLimit ?? 500, 0.2m, 0), [new(period, pool)],
                 pool[0], (_, _) => 1).Periods.Single();
             var simulated = result.Trades.Select(t => (t.Date, t.Symbol, t.Side, t.StepNo, t.SignalDate!.Value)).Order().ToList();
 
             Assert.Equal(5, recorded.Count);
             Assert.Equal(recorded, simulated);
-            Assert.Equal(2, result.Unpaid); // The app made no signal for them: the budget was used.
+            Assert.Equal(unpaid, result.Unpaid); // The app made no signal for them: the budget, or the month's room, was used.
             Assert.Equal(5, await db.Signals.CountAsync(s => s.StrategyId == strategy.Id));
         }
         finally

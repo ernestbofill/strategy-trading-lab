@@ -20,6 +20,18 @@ public class NewStrategyValidationTests
             new NewStrategy(template.Key, name, StrategyMode.Simulation, budget, [.. assets.Select(a => a.Id)]), template, assets);
 
     [Fact]
+    public void A_monthly_limit_is_a_whole_amount_from_one_trade_up_to_the_budget_and_none_for_all_in()
+    {
+        var stock = Stock();
+        Assert.DoesNotContain("budget.monthlyLimit", Check(TemplateCatalog.Dip, new(3000, 100, 5, 400), assets: stock).Keys);
+        Assert.DoesNotContain("budget.monthlyLimit", Check(TemplateCatalog.Dip, new(3000, 100, 5, null), assets: stock).Keys);
+        Assert.Contains("budget.monthlyLimit", Check(TemplateCatalog.Dip, new(3000, 100, 5, 50), assets: stock).Keys); // Under one trade.
+        Assert.Contains("budget.monthlyLimit", Check(TemplateCatalog.Dip, new(3000, 100, 5, 3500), assets: stock).Keys); // Over the budget.
+        Assert.Contains("budget.monthlyLimit", Check(TemplateCatalog.Dip, new(3000, 100, 5, 400.5m), assets: stock).Keys);
+        Assert.Contains("budget.monthlyLimit", Check(TemplateCatalog.Trend, new(3000, null, null, 400), assets: Fund()).Keys);
+    }
+
+    [Fact]
     public void A_delisted_stock_is_refused_unless_the_strategy_already_lists_it()
     {
         var (listed, other) = (Stock(active: false), Stock(active: false));

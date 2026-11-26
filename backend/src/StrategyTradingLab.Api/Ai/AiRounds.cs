@@ -133,8 +133,13 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
         var unavailable = ids.Except(priced).Concat(signals.Where(s => s.SignalDate == session).Select(s => s.AssetId)).ToHashSet();
 
         var parameters = AiRoundRules.Params(strategy);
-        var (picks, missing) = AiRoundRules.Pick(reading.Scores, steps, stocks.ToDictionary(s => s.AssetId, s => s.Name), strategy.Budget, used,
+        // The monthly limit caps what the round may use, as the budget does (its room on the round's signal day).
+        var room = strategy.Budget with { Amount = MonthlyLimit.Room(strategy.Budget, strategy.StartedOn, session) };
+        var (picks, missing) = AiRoundRules.Pick(reading.Scores, steps, stocks.ToDictionary(s => s.AssetId, s => s.Name), room, used,
             parameters.TopN, unavailable);
+        // Stopped by the month's room while the budget itself has room for the next step: say so, not that the budget is used up.
+        if (missing == AiNoStep.Budget && MonthlyLimit.HoldsNextStep(strategy.Budget, strategy.StartedOn, session, used + picks.Count * (strategy.Budget.Step ?? 0)))
+            missing = AiNoStep.MonthlyLimit;
         return new AiPlan(answer!, reading, stocks, picks, missing, strategy.Budget);
     }
 

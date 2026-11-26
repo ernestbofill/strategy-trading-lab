@@ -6,6 +6,8 @@ export interface BudgetSettings {
   budget: number
   step: number
   maxSteps: number
+  /** At most this much new money a month (unspent room carries over); null: no limit, the default. */
+  monthlyLimit: number | null
 }
 
 /** The draft's settings, null where the user kept the template's tested default. */
@@ -17,12 +19,26 @@ export type BudgetChoices = { [K in keyof BudgetSettings]: number | null }
  */
 export function resolveBudget(choices: BudgetChoices, defaults: Budget): BudgetSettings {
   const budget = choices.budget ?? defaults.amount
+  const step = choices.step ?? defaults.step ?? budget
   return {
     budget,
-    step: choices.step ?? defaults.step ?? budget,
+    step,
     maxSteps: choices.maxSteps ?? defaults.maxSteps ?? 1,
+    monthlyLimit: monthlyLimitOf(choices.monthlyLimit, budget, step),
   }
 }
+
+/**
+ * A monthly limit that still fits once the budget or the step changed: null (no limit) when it reaches the budget, at least one
+ * step. An all-in template has none (its step is the budget).
+ */
+export function monthlyLimitOf(limit: number | null | undefined, budget: number, step: number): number | null {
+  if (limit == null || limit >= budget || step >= budget) return null
+  return Math.max(limit, step)
+}
+
+/** Months until a monthly limit has let the whole budget in, at the earliest. */
+export const monthsToUse = (budget: number, limit: number) => Math.ceil(budget / limit)
 
 export const BUDGET_LIMITS = { min: 500, max: 1_000_000, stepBy: 500 }
 export const STEP_LIMITS = { min: 10, stepBy: 10 }

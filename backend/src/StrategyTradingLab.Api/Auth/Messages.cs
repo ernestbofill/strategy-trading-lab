@@ -113,6 +113,8 @@ public static class Messages
     public static readonly Message NoSteps = new("This template has no trades.", "Aquesta plantilla no té operacions.");
     public static readonly Message WholeStep = new("Use a whole amount from {0:0} up to the budget.", "Fes servir un import sencer des de {0:0} fins al pressupost.");
     public static readonly Message UseSteps = new("Use 1 to {0} trades.", "Fes servir d'1 a {0} operacions.");
+    public static readonly Message MonthlyLimitRange = new("Use a whole amount from one trade's amount up to the budget.", "Fes servir un import sencer des de l'import d'una operació fins al pressupost.");
+    public static readonly Message NoMonthlyLimit = new("An all-in template has no monthly limit.", "Una plantilla de tot dins no té límit mensual.");
 
     // Advanced settings
     public static readonly Message NoSuchSetting = new("This template has no such setting.", "Aquesta plantilla no té aquest ajust.");

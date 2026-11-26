@@ -9,10 +9,10 @@ namespace StrategyTradingLab.Api.Ai;
 public record AiPick(Guid AssetId, int StepNo);
 
 /// <summary>
-/// Why a round gave fewer steps than its top N: the budget is used up, every stock left has all its steps, or some couldn't get
-/// a signal now (no price yet, or one already that day).
+/// Why a round gave fewer steps than its top N: the budget is used up, every stock left has all its steps, some couldn't get
+/// a signal now (no price yet, or one already that day), or the budget has room but this month's limit is used (ROADMAP item 57).
 /// </summary>
-public enum AiNoStep { Budget, AllSteps, Unavailable }
+public enum AiNoStep { Budget, AllSteps, Unavailable, MonthlyLimit }
 
 /// <summary>A score as a round keeps it: the stock as it was named then, and the step it got, if any.</summary>
 public record AiRoundScore(Guid AssetId, string Symbol, string Name, decimal Overall, decimal? News, decimal? Mood, decimal? Figures,

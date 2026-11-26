@@ -33,6 +33,7 @@ export function draftFromStrategy(s: StrategyDetail, template: TemplateDetail, n
     budget: s.budget.amount,
     step: s.budget.step,
     maxSteps: s.budget.maxSteps,
+    monthlyLimit: s.budget.monthlyLimit ?? null,
     settings,
     name,
     currency: s.currency,

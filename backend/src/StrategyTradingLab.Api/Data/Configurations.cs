@@ -119,6 +119,9 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
             table.HasCheckConstraint("ck_strategies_budget_step", "budget_step <= budget_amount");
             table.HasCheckConstraint("ck_strategies_budget_steps",
                 "(budget_step IS NULL) = (budget_max_steps IS NULL)");
+            // A monthly limit only with steps (an all-in template has none), and between a step and the budget.
+            table.HasCheckConstraint("ck_strategies_budget_monthly_limit",
+                "budget_monthly_limit IS NULL OR (budget_step IS NOT NULL AND budget_monthly_limit >= budget_step AND budget_monthly_limit <= budget_amount)");
         });
         entity.Property(strategy => strategy.Currency).HasColumnType(Money.Currency);
         entity.ComplexProperty(strategy => strategy.Budget, budget =>
@@ -126,6 +129,7 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
             budget.Property(b => b.Amount).HasColumnName("budget_amount").HasColumnType(Money.Amount);
             budget.Property(b => b.Step).HasColumnName("budget_step").HasColumnType(Money.Amount);
             budget.Property(b => b.MaxSteps).HasColumnName("budget_max_steps");
+            budget.Property(b => b.MonthlyLimit).HasColumnName("budget_monthly_limit").HasColumnType(Money.Amount);
         });
         entity.Property(strategy => strategy.Params).HasColumnType("jsonb");
 

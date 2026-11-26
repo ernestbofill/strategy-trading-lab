@@ -9,7 +9,7 @@ export const NAME_MAX_LENGTH = 60
 /** What to send to start the strategy the user set up: their choices over the template's tested defaults. */
 export function newStrategyFrom(draft: DraftState, template: TemplateDetail, name: string, currency: Currency): NewStrategy {
   const { watches, defaults } = template
-  const { budget, step, maxSteps } = resolveBudget(draft, defaults.budget)
+  const { budget, step, maxSteps, monthlyLimit } = resolveBudget(draft, defaults.budget)
   // An all-in, all-out template has no steps (its tested default has none).
   const hasSteps = defaults.budget.step !== null
   return {
@@ -17,7 +17,7 @@ export function newStrategyFrom(draft: DraftState, template: TemplateDetail, nam
     name,
     mode: draft.mode,
     currency,
-    budget: { amount: budget, step: hasSteps ? step : null, maxSteps: hasSteps ? maxSteps : null },
+    budget: { amount: budget, step: hasSteps ? step : null, maxSteps: hasSteps ? maxSteps : null, monthlyLimit: hasSteps ? monthlyLimit : null },
     assetIds: watches.kind === 'fund' ? [fundOf(draft, template)!.id] : tickedStocks(draft, template).map((s) => s.id),
     // Every setting, not only the changed ones: the API never fills one from a default this screen didn't show.
     settings: settingValues(template, draft.settings),

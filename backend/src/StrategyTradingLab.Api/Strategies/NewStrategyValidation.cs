@@ -66,11 +66,24 @@ public static class NewStrategyValidation
         if (!steps)
         {
             if (budget.Step is not null || budget.MaxSteps is not null) fail("budget", Messages.NoSteps.In(locale));
+            if (budget.MonthlyLimit is not null) fail("budget.monthlyLimit", Messages.NoMonthlyLimit.In(locale));
             return;
         }
         if (budget.Step is not { } step || step < MinStep || step > budget.Amount || HasCents(step))
             fail("budget.step", Messages.WholeStep.In(locale, MinStep));
         if (budget.MaxSteps is not (>= 1 and <= MaxSteps)) fail("budget.maxSteps", Messages.UseSteps.In(locale, MaxSteps));
+        if (MonthlyLimitError(budget, locale) is { } limit) fail("budget.monthlyLimit", limit);
+    }
+
+    /// <summary>
+    /// Why a monthly limit is refused, or null: a whole amount from one trade's amount up to the budget, and none for an all-in
+    /// template (it has no trades to pace). Null is no limit.
+    /// </summary>
+    public static string? MonthlyLimitError(Budget budget, string locale)
+    {
+        if (budget.MonthlyLimit is not { } limit) return null;
+        if (budget.Step is not { } step) return Messages.NoMonthlyLimit.In(locale);
+        return limit < step || limit > budget.Amount || HasCents(limit) ? Messages.MonthlyLimitRange.In(locale) : null;
     }
 
     static bool HasCents(decimal amount) => amount != decimal.Truncate(amount);

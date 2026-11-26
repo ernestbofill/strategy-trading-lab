@@ -14,6 +14,8 @@ import {
   resolveBudget,
   summarize,
   daysToUse,
+  monthlyLimitOf,
+  monthsToUse,
 } from '../../lib/budget'
 import { currencyName, money } from '../../lib/format'
 import { useNewStrategyDraft } from './NewStrategyDraft'
@@ -42,7 +44,7 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
   const { mode, update } = draft
   const currency = useDraftCurrency()
   const amount = (n: number) => money(n, currency)
-  const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
+  const { budget, step, maxSteps, monthlyLimit } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
   // Branch on what the template does, not on its key.
   const allIn = template.signals === 'buysAndSells'
@@ -54,6 +56,10 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
     // A step can't be more than the budget; otherwise it keeps following the tested default.
     update(step > next ? { budget: next, step: next } : { budget: next })
   }
+
+  // The limit moves by one trade's amount; at the budget it is no limit.
+  const setLimit = (value: number) => update({ monthlyLimit: monthlyLimitOf(value, budget, step) })
+  const limitShown = monthlyLimit ?? budget
 
   const steps = t('newStrategy.budget.steps', { n: totalSteps })
   const upTo = t('newStrategy.budget.steps', { n: maxSteps })
@@ -125,12 +131,28 @@ function BudgetForm({ template, top }: { template: TemplateDetail; top: ReactNod
               canDecrease={maxSteps > MAX_STEPS_LIMITS.min}
               canIncrease={maxSteps < MAX_STEPS_LIMITS.max}
             />
+            <StepperCard
+              label={t('newStrategy.budget.monthlyLimit')}
+              value={limitShown}
+              display={monthlyLimit === null ? t('newStrategy.budget.noLimit') : amount(monthlyLimit)}
+              onChange={setLimit}
+              help={t('newStrategy.budget.monthlyLimitHelp')}
+              onDecrease={() => setLimit(limitShown - step)}
+              onIncrease={() => setLimit(limitShown + step)}
+              canDecrease={limitShown > step}
+              canIncrease={monthlyLimit !== null}
+            />
           </>
         )}
       </div>
 
       <div className={styles.summary}>
         <p className={styles.sentence}>{sentence}</p>
+        {monthlyLimit !== null && (
+          <p className={styles.sentence}>
+            {t('newStrategy.budget.pace', { limit: amount(monthlyLimit), months: monthsToUse(budget, monthlyLimit) })}
+          </p>
+        )}
         {!allIn && (
           <div>
             <ul className={styles.squares} aria-hidden="true">

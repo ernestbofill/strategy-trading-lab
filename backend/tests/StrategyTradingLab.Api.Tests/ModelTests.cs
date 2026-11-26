@@ -69,12 +69,12 @@ public class ModelTests
     }
 
     [Fact]
-    public void Budget_is_a_complex_type_in_three_columns()
+    public void Budget_is_a_complex_type_in_four_columns()
     {
         var budget = Model.FindEntityType(typeof(Strategy))!.FindComplexProperty(nameof(Strategy.Budget))!;
 
         Assert.Equal(
-            ["budget_amount", "budget_max_steps", "budget_step"],
+            ["budget_amount", "budget_max_steps", "budget_monthly_limit", "budget_step"],
             budget.ComplexType.GetProperties().Select(p => p.GetColumnName()).Order());
     }
 

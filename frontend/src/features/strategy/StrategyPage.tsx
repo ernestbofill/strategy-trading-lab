@@ -11,7 +11,7 @@ import { ModeTag } from '../../components/ModeTag'
 import { TextAction } from '../../components/TextAction'
 import { useI18n, useT } from '../../i18n/I18n'
 import { exact, money, pctTone, shortDate, signedPct, signedPctOrDash } from '../../lib/format'
-import { aiRoundPath, aiRoundsPath, signalPath, stockPath, strategyListPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
+import { aiRoundPath, aiRoundsPath, monthlyLimitPath, signalPath, stockPath, strategyListPath, strategyPath, strategySettingsPath } from '../dashboard/paths'
 import { DeleteStrategy } from './DeleteStrategy'
 import { ArchiveStrategy, GoLive, RenameForm } from './StrategyActions'
 import { ResultsChart } from './ResultsChart'
@@ -54,6 +54,15 @@ function Summary({ s, status }: { s: StrategyDetail; status?: ReactNode }) {
           {t('strategy.budgetRatio', { used: money(budget.used, s.currency), amount: money(budget.amount, s.currency) })}
           {budget.totalSteps !== null && ` · ${t('strategy.budgetSteps', { steps: budget.steps ?? 0, total: budget.totalSteps })}`}
         </Stat>
+        {/* The monthly limit (ROADMAP item 57): only with trades, so never for an all-in template. */}
+        {budget.step !== null && (
+          <Stat label={t('strategy.monthlyLimit')}>
+            <span className={styles.limit}>
+              {budget.monthlyLimit != null ? money(budget.monthlyLimit, s.currency) : t('strategy.monthlyLimitNone')}
+              {s.status === 'running' && <TextAction to={monthlyLimitPath(s.id)}>{t('strategy.monthlyLimitChange')}</TextAction>}
+            </span>
+          </Stat>
+        )}
         {s.aiRounds && <AiRoundFacts s={s} rounds={s.aiRounds} />}
         {signals && (
           <Stat label={t('strategy.signals')}>{t('strategy.signalsCount', { did: signals.did, skipped: signals.skipped, missed: signals.missed })}</Stat>

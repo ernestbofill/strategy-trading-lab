@@ -338,7 +338,7 @@ Run on production on 2026-11-25 (snapshot 2026-11, the defaults in use, in euro)
 | Template | 2011–14 | 2015–18 | 2019–22 | 2023–26 | All | Worst year |
 | --- | --- | --- | --- | --- | --- | --- |
 | *Winners at a discount* | +18.9% (21.4) | +9.6% (7.3) | +9.2% (11.6) | +11.2% (17.4) | **+12.2%** (14.4) | −12.7% (−13.1), 2022 |
-| *The comeback* (2 trades of €200, since 2026-11-26) | +24.3% (21.4) | +10.7% (7.3) | +14.4% (11.6) | +11.8% (17.4) | **+15.3%** (14.4) | −15.9% (−13.1), 2015 |
+| *The comeback* (2 trades of €200, since 2026-11-26) | +24.3% (21.4) | +10.7% (7.3) | +14.4% (11.6) | +11.8% (17.3) | **+15.3%** (14.4) | −15.9% (−13.1), 2015 |
 | *The comeback* before (5 trades of €100) | +23.3% (21.4) | +3.5% (7.3) | +13.4% (11.6) | +10.4% (17.4) | +12.7% (14.4) | −30.6% (−13.1), 2015 |
 | *Bear markets* (SPY) | no trade (17.9) | no trade (8.5) | +16.5% (15.6) | no trade (18.2) | **+16.5%** (15.6) | −13.1% (−13.1), 2022 |
 | *Index trend* (SPY) | +16.6% (17.9) | +5.8% (8.5) | +9.2% (15.6) | +15.9% (18.2) | **+11.9%** (15.0) | −18.6% (−13.1), 2022 |
@@ -373,10 +373,10 @@ Looked into with Ernest before the figures went live:
 | Unequal money or costs | The same money, limit, costs and formulas for every line |
 | Backtest ≠ app | The same engine; simulations use the same costs; the monthly limit becomes a strategy setting |
 
-## In the app (decided, not built)
+## In the app
 
-- **The monthly limit becomes a strategy setting:** "Spend at most [€x] a month", part of the budget, with unspent limit carried over in full as in the backtest. Existing strategies get x = the budget, so nothing changes for them, and it can be lowered afterwards (with *Change the budget*).
-- **Simulations use the backtest's costs:** fee 0.1% + spread 0.1% a trade, no fixed part, for new trades from the change on (past trades keep the fee they were recorded with). Manual strategies keep the fee the user enters (`ROADMAP.md` item 41).
+- **The monthly limit is a strategy setting** (built, item 57): "Each month at most [€x]", part of the budget, with unspent limit carried over in full, by the same rule as the backtest (`MonthlyLimit.Room`, shared). No limit is the default and what every earlier strategy has (null, the same as x = the budget). Set on *Set your budget*, changed on a running strategy from its page (*Change the budget* isn't built). Not for *Index trend*: all in, it has no trades to pace, as its tested figures have no limit (Ernest, 2026-11-26). The daily check and AI rounds make no signal past the month's room; a strategy's backtest uses its limit.
+- **Simulations use the backtest's costs** (decided, not built): fee 0.1% + spread 0.1% a trade, no fixed part, for new trades from the change on (past trades keep the fee they were recorded with). Manual strategies keep the fee the user enters (`ROADMAP.md` item 41).
 
 ## Open points
 

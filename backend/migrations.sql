@@ -2481,3 +2481,28 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261126093732_AddMonthlyLimit') THEN
+    ALTER TABLE strategies ADD budget_monthly_limit numeric(14,2);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261126093732_AddMonthlyLimit') THEN
+    ALTER TABLE strategies ADD CONSTRAINT ck_strategies_budget_monthly_limit CHECK (budget_monthly_limit IS NULL OR (budget_step IS NOT NULL AND budget_monthly_limit >= budget_step AND budget_monthly_limit <= budget_amount));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261126093732_AddMonthlyLimit') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261126093732_AddMonthlyLimit', '10.0.4');
+    END IF;
+END $EF$;
+COMMIT;
+

@@ -113,7 +113,7 @@ public static class StrategyEndpoints
             var user = await sessions.RequiredAsync(cancellationToken);
             var strategy = await db.Strategies.AsNoTracking()
                 .Where(s => s.Id == id && s.UserId == user.Id && s.Assets.Any(a => a.AssetId == assetId))
-                .Select(s => new { s.TemplateKey, s.Params, s.Budget, s.Mode }).SingleOrDefaultAsync(cancellationToken);
+                .Select(s => new { s.TemplateKey, s.Params, s.Budget, s.Mode, s.StartedOn }).SingleOrDefaultAsync(cancellationToken);
             if (strategy is null) return TypedResults.NotFound();
             var bars = await db.FinishedBarsAsync(assetId, UsSession.LastComplete(time.GetUtcNow()), cancellationToken);
             if (bars.Count == 0) return TypedResults.Ok(new StockChartData(null, []));
@@ -126,7 +126,7 @@ public static class StrategyEndpoints
                 CheckedDays? past = null;
                 if (checkedUntil is not null)
                 {
-                    var (_, heldOn) = await StrategyEvaluator.BudgetHistoryAsync(db, id, strategy.Budget, cancellationToken);
+                    var (_, heldOn) = await StrategyEvaluator.BudgetHistoryAsync(db, id, strategy.Budget, strategy.StartedOn, cancellationToken);
                     past = await StrategyEvaluator.PastDaysAsync(db, id, strategy.Mode, assetId, checkedUntil, heldOn, cancellationToken);
                 }
                 checks = StockChart.Checks(() => TemplateRules.Create(strategy.TemplateKey, bars, strategy.Params), bars, from, startedOn, past,
@@ -359,6 +359,23 @@ public static class StrategyEndpoints
         .WithName("RenameStrategy")
         .WithSummary("Renames a strategy, with Confirm's name rules (unique among the user's running strategies).");
 
+        group.MapPut("/{id:guid}/monthly-limit", async Task<Results<NoContent, NotFound, ValidationProblem>> (
+            Guid id, ChangeMonthlyLimit request, AppDbContext db, Sessions sessions, CancellationToken cancellationToken) =>
+        {
+            var user = await sessions.RequiredAsync(cancellationToken);
+            var strategy = await db.Strategies.SingleOrDefaultAsync(s => s.Id == id && s.UserId == user.Id && s.Status == StrategyStatus.Running,
+                cancellationToken);
+            if (strategy is null) return TypedResults.NotFound();
+            var budget = strategy.Budget with { MonthlyLimit = request.MonthlyLimit };
+            if (NewStrategyValidation.MonthlyLimitError(budget, user.Locale) is { } invalid) return ApiProblems.Invalid("monthlyLimit", invalid);
+            // From the strategy's start, as if it had always had this limit: unspent room carries over, and signals already made stay.
+            strategy.Budget = budget;
+            await db.SaveChangesAsync(cancellationToken);
+            return TypedResults.NoContent();
+        })
+        .WithName("ChangeMonthlyLimit")
+        .WithSummary("Sets or clears a running strategy's monthly limit: at most this much new money a month, unspent room carried over.");
+
         group.MapPost("/{id:guid}/archive", async Task<Results<NoContent, NotFound, Conflict<string>>> (
             Guid id, AppDbContext db, Sessions sessions, TimeProvider time, CancellationToken cancellationToken) =>
         {
@@ -527,7 +544,8 @@ public static class StrategyEndpoints
 
         return new StrategyDetail(strategy.Id, strategy.Name, strategy.TemplateKey, texts.Name, template.InvestsIn, strategy.Mode, strategy.Status,
             UserClock.EndedOn(strategy, user), strategy.StartedOn, today, strategy.Currency,
-            new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps),
+            new BudgetUsed(budget.Amount, book.Used(strategy), budget.Step, budget.MaxSteps, steps is null ? null : you.Count(b => b.Side == TradeSide.Buy), steps)
+                { MonthlyLimit = budget.MonthlyLimit },
             book.Figures(strategy, resultsDay), TemplateCustomization.PastResultOf(strategy, template, texts, shown), counts, texts.StockStatus, stocks, tradeItems, signalHistory, ratesList, settings, ai,
             aiSetup, sourceName is null ? null : strategy.SourceStrategyId, sourceName) { CheckTexts = texts.Checks, DefaultsVersion = strategy.DefaultsVersion, RareSignals = template.RareSignals };
     }

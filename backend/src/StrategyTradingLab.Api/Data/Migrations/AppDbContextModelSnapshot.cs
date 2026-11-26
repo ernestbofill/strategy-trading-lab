@@ -1726,6 +1726,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("budget_max_steps");
 
+                            b1.Property<decimal?>("MonthlyLimit")
+                                .HasColumnType("numeric(14,2)")
+                                .HasColumnName("budget_monthly_limit");
+
                             b1.Property<decimal?>("Step")
                                 .HasColumnType("numeric(14,2)")
                                 .HasColumnName("budget_step");
@@ -1742,6 +1746,8 @@ namespace StrategyTradingLab.Api.Data.Migrations
 
                     b.ToTable("strategies", null, t =>
                         {
+                            t.HasCheckConstraint("ck_strategies_budget_monthly_limit", "budget_monthly_limit IS NULL OR (budget_step IS NOT NULL AND budget_monthly_limit >= budget_step AND budget_monthly_limit <= budget_amount)");
+
                             t.HasCheckConstraint("ck_strategies_budget_step", "budget_step <= budget_amount");
 
                             t.HasCheckConstraint("ck_strategies_budget_steps", "(budget_step IS NULL) = (budget_max_steps IS NULL)");

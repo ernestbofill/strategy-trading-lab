@@ -32,6 +32,8 @@ export interface DraftState {
   budget: number | null
   step: number | null
   maxSteps: number | null
+  /** Null: no monthly limit (the default). */
+  monthlyLimit: number | null
   /** Advanced settings the user changed, by setting key; the others follow the template's tested defaults. */
   settings: Record<string, number>
   /** What the user typed on the last screen; null until then, so the name follows the template. */
@@ -57,6 +59,7 @@ export const initialDraft: DraftState = {
   budget: null,
   step: null,
   maxSteps: null,
+  monthlyLimit: null,
   settings: {},
   name: null,
   currency: null,

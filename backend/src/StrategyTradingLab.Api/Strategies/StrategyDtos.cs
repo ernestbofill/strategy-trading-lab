@@ -29,6 +29,9 @@ public record UpdateStrategyAssets(IReadOnlyList<Guid>? AssetIds);
 /// <summary>A new name for a strategy (Rename): the same rules as Confirm's.</summary>
 public record RenameStrategy(string? Name);
 
+/// <summary>A running strategy's monthly limit, or null for none (ROADMAP item 57).</summary>
+public record ChangeMonthlyLimit(decimal? MonthlyLimit);
+
 /// <summary>
 /// A strategy as shown on the dashboard. <c>EndedOn</c> is the user's local date it was archived (status <c>Ended</c>, null
 /// while running); its results stop there, and it goes in the dashboard's collapsed Archived section. <c>IndexSinceStart</c>
@@ -82,7 +85,11 @@ public record WaitingItem(Guid Id, WaitingKind Kind, Guid StrategyId, string Str
 public record Dashboard(DateOnly Today, IReadOnlyList<StrategySummary> Strategies, IReadOnlyList<WaitingItem> Waiting);
 
 /// <summary>The budget and what the strategy's buys use of it. <c>Steps</c> and <c>TotalSteps</c> are null for all in, all out.</summary>
-public record BudgetUsed(decimal Amount, decimal Used, decimal? Step, int? MaxSteps, int? Steps, int? TotalSteps);
+public record BudgetUsed(decimal Amount, decimal Used, decimal? Step, int? MaxSteps, int? Steps, int? TotalSteps)
+{
+    /// <summary>At most this much new money a month, unspent room carried over; null: no limit.</summary>
+    public decimal? MonthlyLimit { get; init; }
+}
 
 /// <summary>How a live strategy's signals were answered.</summary>
 public record SignalCounts(int Did, int Skipped, int Missed);

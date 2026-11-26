@@ -165,6 +165,10 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.budget.maxStepsStock': 'Màxim d’operacions per acció',
   'newStrategy.budget.maxStepsHelpFund': 'Comprar el fons en diverses operacions limita el mal d’una primera compra dolenta.',
   'newStrategy.budget.maxStepsHelpStock': 'Comprar una acció en diverses operacions limita el mal d’una primera compra dolenta.',
+  'newStrategy.budget.monthlyLimit': 'Com a molt cada mes',
+  'newStrategy.budget.noLimit': 'Sense límit',
+  'newStrategy.budget.monthlyLimitHelp': 'Diners nous cada mes. El que un mes no gasta passa als següents.',
+  'newStrategy.budget.pace': 'Com a molt {limit} al mes: el pressupost dura {months} mesos o més.',
   'newStrategy.budget.steps': '{n, plural, one {# operació} other {# operacions}}',
   'newStrategy.budget.stocks': '{n, plural, one {# acció} other {# accions}}',
   'newStrategy.budget.sentenceAllIn':
@@ -210,6 +214,7 @@ export const newStrategy: Record<keyof typeof en, string> = {
   'newStrategy.confirm.stocksMore': '{first} i {n} més',
   'newStrategy.confirm.budgetStepsFund': '{budget} · {step} per operació · fins a {max} per al fons',
   'newStrategy.confirm.budgetStepsStock': '{budget} · {step} per operació · fins a {max} per acció',
+  'newStrategy.confirm.monthlyLimit': ' · com a molt {limit} al mes',
   'newStrategy.confirm.prompt': 'Suggerit',
   'newStrategy.confirm.promptEdited': 'Editat',
   'newStrategy.confirm.next': 'Què passa després',

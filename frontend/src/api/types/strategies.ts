@@ -95,6 +95,8 @@ export interface BudgetUsed {
   /** Steps bought (live: confirmed) and how many the budget holds. */
   steps: number | null
   totalSteps: number | null
+  /** At most this much new money a month, unspent room carried over; null: no limit. */
+  monthlyLimit?: number | null
 }
 
 /** A point of the results chart: each line's gain in percent that day. */

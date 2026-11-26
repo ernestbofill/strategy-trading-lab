@@ -29,3 +29,12 @@ public sealed class NeonFactAttribute : FactAttribute
     static bool IsConfigured() =>
         NeonEnvironment.ConnectionString(Configuration) is not null && ObjectStorage.IsConfigured(Configuration);
 }
+
+/// <summary>A theory against the linked Neon branch, skipped as <see cref="NeonFactAttribute"/> is.</summary>
+public sealed class NeonTheoryAttribute : TheoryAttribute
+{
+    public NeonTheoryAttribute()
+    {
+        if (!NeonFactAttribute.Configured) Skip = "No Neon branch: run `neon env pull` to write .env.local.";
+    }
+}

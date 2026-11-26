@@ -98,9 +98,9 @@ function preset(template: TemplateDetail, strategy: StrategyDetail | null, stock
   const params = settings ?? strategy?.settings ?? undefined
   if (params && Object.keys(params).length > 0) request.settings = params
   if (strategy) {
-    // A strategy's test uses its own budget, with no monthly limit until strategies have one (ROADMAP item 57).
+    // A strategy's test uses its own budget and monthly limit (none: the budget).
     request.budget = strategy.budget.amount
-    request.monthlyLimit = strategy.budget.amount
+    request.monthlyLimit = strategy.budget.monthlyLimit ?? strategy.budget.amount
     if (strategy.budget.step !== null) request.amountPerTrade = strategy.budget.step
     if (strategy.budget.maxSteps !== null) request.maxTrades = strategy.budget.maxSteps
     request.currency = strategy.currency

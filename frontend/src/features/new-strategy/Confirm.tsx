@@ -55,7 +55,7 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
   const emailVerified = account?.emailVerified ?? false
   const currency = useDraftCurrency()
   const amount = (n: number) => money(n, currency)
-  const { budget, step, maxSteps } = resolveBudget(draft, template.defaults.budget)
+  const { budget, step, maxSteps, monthlyLimit } = resolveBudget(draft, template.defaults.budget)
   const isLive = mode === 'live'
   // Branch on what the template does, as the budget screen does.
   const allIn = template.signals === 'buysAndSells'
@@ -153,9 +153,10 @@ function ConfirmForm({ template, top }: { template: TemplateDetail; top: ReactNo
       label: t('newStrategy.confirm.row.budget'),
       value: allIn
         ? amount(budget)
-        : isFund
-          ? t('newStrategy.confirm.budgetStepsFund', { budget: amount(budget), step: amount(step), max: maxSteps })
-          : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps }),
+        : (isFund
+            ? t('newStrategy.confirm.budgetStepsFund', { budget: amount(budget), step: amount(step), max: maxSteps })
+            : t('newStrategy.confirm.budgetStepsStock', { budget: amount(budget), step: amount(step), max: maxSteps })) +
+          (monthlyLimit !== null ? t('newStrategy.confirm.monthlyLimit', { limit: amount(monthlyLimit) }) : ''),
       to: budgetPath,
     },
     {

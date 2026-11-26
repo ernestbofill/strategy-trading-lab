@@ -518,9 +518,11 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 | Budget | €3,000 | €500 | €500–€1,000,000 | "The most this strategy can invest in total." |
 | Amount per trade | €100 (*The comeback*: €200) | €10 | €10–budget | "How much each buy is." |
 | Max trades per stock | 5 (*The comeback*: 2) | 1 | 1–20 | "Buying a stock over several trades limits the damage of a bad first buy." |
+| Each month at most (item 57) | "No limit" (the budget) | one trade's amount | one trade's amount–budget ("No limit" at the budget) | "New money a month. What a month leaves unspent carries over." Not for *Index trend* (all in). |
 
 **Summary box**, updated live:
 - "Each buy is [amount]. A stock gets at most [max] trades ([amount × max]). The budget covers [floor(budget ÷ amount)] trades, enough for [floor(trades ÷ max)] stocks bought in full." Singular "trade" and "stock" when the number is 1.
+- With a monthly limit: "At most [€400] a month: the budget lasts [8] months or more." Confirm's budget row adds " · at most [€400] a month".
 - A row of small squares, one per step (at most 60), grouped by stock in alternating shades, captioned "[n] trades in the budget" or "First 60 of [n] trades".
 - Last line, Live: "When the budget is used up, the strategy stops signalling buys. Only trades you confirm use the budget; skipped signals don't."
 - Last line, Simulation (not drawn): "When the budget is used up, the strategy stops buying."
@@ -592,6 +594,7 @@ The same three settings can be changed later from the strategy page (not drawn).
   - Tiles come first in every state: a fund's Status (its pill and sentence, on one line when they fit), Budget used, the AI rows and Signals; one per row on a phone, side by side on desktop. Then the framed figures and chart, or, before the first buy, the template's past as quieter text.
   - Live: two figures, "You" `[+X%]` and "S&P 500 fund" `[+X%]` (with its "i"); a chart with two lines (You solid and highlighted, S&P 500 fund dashed) and a legend; then "Budget used" / "€[used] of €[budget] · [n] of [total] trades" and "Signals" / "[n] did · [n] skipped · [n] missed".
   - Simulation (not drawn): "Since start" `[+X%]` and "S&P 500 fund" `[+X%]`, a two-line chart, and "Budget used".
+  - A tile "Each month at most" (item 57, templates with trades): the monthly limit or "No limit", and on a running strategy "Change", which opens **Monthly limit** (`/strategies/[id]/monthly-limit`): "At most this much new money a month. What a month leaves unspent carries over, counted from the strategy's start.", the same stepper as Set your budget's, the pace line, and "Save the limit". A new limit applies from the strategy's start, as if it had always had it; signals already made stay.
   - Under the chart, until the strategy has a year of its own: "Worst year, [years]: the template [−X%], an S&P 500 fund [−X%]" (product rule: results next to the worst year).
   - Before the first buy (not drawn): "No trades yet." and the template's past, a year on average: "In the past, [years], the template did on average [+X.X%] a year vs [+X.X%] for an S&P 500 fund. Its worst year was [−X%], the fund's [−X%]." The chart appears with the first buy.
   - With trades but no price to value them yet (page and dashboard card): "Results show once the prices of your trades are in." A trade without a price or exchange rate is left out of the results until it has one; a buy dated after the index fund's last stored price is compared at that last close.

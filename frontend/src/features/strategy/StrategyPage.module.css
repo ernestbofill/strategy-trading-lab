@@ -255,3 +255,11 @@ button.tile:disabled {
     line-height: 44px;
   }
 }
+
+/* The monthly limit's value with its Change link on one line. */
+.limit {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}

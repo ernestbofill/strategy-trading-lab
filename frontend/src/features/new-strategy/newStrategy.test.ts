@@ -26,7 +26,7 @@ describe('newStrategyFrom', () => {
       name: 'Winners at a discount',
       mode: 'simulation',
       currency: 'EUR',
-      budget: { amount: 3000, step: 100, maxSteps: 5 },
+      budget: { amount: 3000, step: 100, maxSteps: 5, monthlyLimit: null },
       assetIds: ['id-NVDA', 'id-AVGO', 'id-META'],
       settings: { peakDays: 60, zoneEndPct: 15 },
       defaultsVersion: 1,

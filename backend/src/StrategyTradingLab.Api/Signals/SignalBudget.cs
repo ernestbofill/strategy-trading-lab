@@ -2,6 +2,20 @@ using StrategyTradingLab.Api.Data.Entities;
 
 namespace StrategyTradingLab.Api.Signals;
 
+/// <summary>
+/// The monthly limit (ROADMAP item 57): how much of the budget a strategy's signals may have used by a day. Unspent limit carries over
+/// in full, so by the end of month m (counted from the start's month, which is month 1) it is m × the limit, never more than the
+/// budget. The backtest's simulator uses the same rule.
+/// </summary>
+public static class MonthlyLimit
+{
+    public static decimal Room(decimal amount, decimal? limit, DateOnly start, DateOnly day) =>
+        limit is not { } perMonth ? amount : Math.Min(amount, Math.Max(1, (day.Year - start.Year) * 12 + day.Month - start.Month + 1) * perMonth);
+
+    /// <summary>A strategy's budget: what its signals may have used by <paramref name="day"/>.</summary>
+    public static decimal Room(Budget budget, DateOnly start, DateOnly day) => Room(budget.Amount, budget.MonthlyLimit, start, day);
+}
+
 /// <summary>Which signals use their step of the budget: done ones and those still waiting (a skipped or missed one uses none).</summary>
 public static class SignalBudget
 {

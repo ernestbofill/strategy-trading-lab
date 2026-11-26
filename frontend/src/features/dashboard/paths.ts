@@ -1,6 +1,7 @@
 export const strategyPath = (id: string) => `/strategies/${id}`
 /** Advanced settings for a running strategy ("Tune the settings"). */
 export const strategySettingsPath = (id: string) => `/strategies/${id}/settings`
+export const monthlyLimitPath = (id: string) => `/strategies/${id}/monthly-limit`
 /** Edit list: a running strategy's stocks. */
 export const strategyListPath = (id: string) => `/strategies/${id}/list`
 /** Confirm a signal: one signal of a strategy. */

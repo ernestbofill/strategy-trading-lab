@@ -77,6 +77,8 @@ export interface Budget {
   amount: number
   step: number | null
   maxSteps: number | null
+  /** At most this much new money a month, unspent room carried over; null or left out: no limit. Never for all-in templates. */
+  monthlyLimit?: number | null
 }
 
 /** What a new strategy from this template starts with. `params` is the template's own rule settings. */

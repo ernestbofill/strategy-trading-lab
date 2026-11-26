@@ -105,6 +105,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | B6 | Prompt editor (AI draft) | §6.2 | deep | 2026-11-08-3 | Prompt editor verified in new strategy flow; source toggles, live markdown preview, reset to suggested. C2.7–C2.8 |
 | B7 | Choose the mode (Manual needs a confirmed email) | §6.3 | deep | 2026-11-10-1 | SIM "Simulation" / MANUAL "With alerts" cards word for word (#205, #207, #208), EN and CA; Manual → Budget and Confirm copy. F-026. C2.5–C2.8, C2.14 |
 | B8 | Set your budget: budget, step, max steps, currency | §6.4 | deep | 2026-11-06-1 | F-002, F-008. C1.9–13 |
+| B11 | Set your budget's "Each month at most" (No limit by default; the pace line) and Confirm's budget row with a limit | §6.4 | untested | | Added in #291 (item 57). Not for *Index trend*. |
 | B9 | Name, preview and confirm: name rules, Edit links, notifications ask | §6.5 | smoke | 2026-11-06-1 | C1.14–17 |
 | B10 | The draft across reloads, Back, and leaving and coming back | §4 | smoke | 2026-11-06-1 | Reload and direct address only. C1.18 |
 
@@ -131,6 +132,7 @@ Areas come from the spec ([§4–7](../docs/strategy-trading-lab-app-spec.md)). 
 | D8 | Rename | §6 Strategy page | smoke | 2026-11-06-1 | C3.4 |
 | D9 | Tune the settings while running | §6 Strategy page | deep | 2026-11-08-3 | Tune settings verified on Discount Sim; steppers, CHANGED badge, RESET TO TESTED, cancel return without changes. C2.9–C2.12 |
 | D10 | Change the budget while running | §6 Strategy page | untested | | Not built yet (ROADMAP) |
+| D16 | The monthly limit while running: the tile "Each month at most" and its *Monthly limit* screen (set, then back to No limit) | §6 Strategy page | untested | | Added in #291 (item 57). A test strategy only: a limit holds its signals back. |
 | D11 | Follow a simulation manually | §4 Going live | smoke | 2026-11-06-1 | C2.15 |
 | D12 | Archive, then delete | §6 Strategy page | deep | 2026-11-08-1 | Full lifecycle tested: create, archive, permanently delete throwaway. C3.4 |
 | D13 | An archived strategy is read-only | §6 Strategy page | smoke | 2026-11-06-1 | C3.16 |

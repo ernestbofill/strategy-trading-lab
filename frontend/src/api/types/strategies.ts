@@ -128,6 +128,7 @@ export type StockStatus =
   | 'building'
   | 'outOfTheMarket'
   | 'noBudget'
+  | 'monthlyLimit'
   | 'watching'
   | 'notCandidate'
   | 'notEnoughData'

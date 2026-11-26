@@ -78,6 +78,7 @@ export const strategy: Record<keyof typeof en, string> = {
   'strategy.stock.stepsOf': '{n} de {max} operacions',
   'strategy.stock.noBudget': 'Sense pressupost per a les seves operacions',
   'strategy.stock.noBudgetShort': 'Sense pressupost',
+  'strategy.stock.monthlyLimit': 'El límit d’aquest mes està gastat: més marge el mes que ve',
   'strategy.stock.sellWaiting': 'Senyal de venda en espera',
   'strategy.stock.soldNextOpen': 'Venut a la propera obertura',
   'strategy.stock.dropBought': 'Les operacions d’aquesta caiguda ja estan fetes',

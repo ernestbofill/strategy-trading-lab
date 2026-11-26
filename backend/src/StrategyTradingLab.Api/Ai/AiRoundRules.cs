@@ -12,7 +12,8 @@ public record AiPick(Guid AssetId, int StepNo);
 /// Why a round gave fewer steps than its top N: the budget is used up, every stock left has all its steps, or some couldn't get
 /// a signal now (no price yet, or one already that day).
 /// </summary>
-public enum AiNoStep { Budget, AllSteps, Unavailable }
+/// <summary>Why a round gives fewer steps than its top N. <c>MonthlyLimit</c>: the budget has room, but this month's limit is used (ROADMAP item 57).</summary>
+public enum AiNoStep { Budget, AllSteps, Unavailable, MonthlyLimit }
 
 /// <summary>A score as a round keeps it: the stock as it was named then, and the step it got, if any.</summary>
 public record AiRoundScore(Guid AssetId, string Symbol, string Name, decimal Overall, decimal? News, decimal? Mood, decimal? Figures,

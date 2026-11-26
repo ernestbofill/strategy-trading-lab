@@ -23,7 +23,7 @@ public static class StockStates
         return new StockCounts(
             states.Count(s => s.Status is StockStatus.WaitingForYou or StockStatus.Signal),
             states.Count(Close),
-            states.Count(s => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket or StockStatus.NoBudget && !Close(s)),
+            states.Count(s => s.Status is StockStatus.Watching or StockStatus.OutOfTheMarket or StockStatus.NoBudget or StockStatus.MonthlyLimit && !Close(s)),
             states.Count(s => s.Status is StockStatus.Holding or StockStatus.Building or StockStatus.Done),
             states.Count(s => s.Status == StockStatus.NotCandidate));
     }
@@ -82,6 +82,9 @@ public static class StockStates
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
             StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, live ? steps : signalled, maxSteps, strategy.TemplateKey,
                 unboughtSignal: unbought is not null), checks);
+        // Held back while the budget still has room for a trade: it was this month's limit, not the budget (ROADMAP item 57).
+        if (status == StockStatus.NoBudget && strategy.Budget is { MonthlyLimit: not null, Step: { } step } budget && book.Used(strategy) + step <= budget.Amount)
+            status = StockStatus.MonthlyLimit;
         // The row names the signal it stands for: waiting for the user, today's, or one the user skipped (or missed) while its window is open.
         var signal = status switch
         {

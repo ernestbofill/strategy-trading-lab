@@ -4,14 +4,15 @@ import { api, type StrategyDetail } from '../../api'
 import { LoadableScreen } from '../../components/LoadableScreen'
 import { PageHeader } from '../../components/PageHeader'
 import { PrimaryAction, Screen, ScreenMessage, TopBar } from '../../components/Screen'
-import { StepperCard } from '../../components/StepperCard'
 import { useLeave } from '../../components/useLeave'
 import { useSubmit } from '../../components/useSubmit'
 import { useT } from '../../i18n/I18n'
-import { monthlyLimitOf, monthsToUse } from '../../lib/budget'
 import { money } from '../../lib/format'
 import { invalidateAll } from '../../lib/useLoadable'
 import { strategyPath } from '../dashboard/paths'
+import { MonthlyLimitStepper } from '../new-strategy/MonthlyLimitStepper'
+import { usePaceLine } from '../new-strategy/usePaceLine'
+import styles from './MonthlyLimit.module.css'
 import { useStrategy } from './useStrategy'
 
 /**
@@ -37,8 +38,8 @@ function MonthlyLimitForm({ s }: { s: StrategyDetail }) {
   const [limit, setLimit] = useState<number | null>(budget.monthlyLimit ?? null)
   const { busy, line, run } = useSubmit(t('strategy.limit.failed'))
   const top = <TopBar up={strategyPath(s.id)} upLabel="common.up.strategy" step={s.name} />
-  const shown = limit ?? budget.amount
-  const set = (value: number) => setLimit(monthlyLimitOf(value, budget.amount, step))
+  const format = (amount: number) => money(amount, s.currency)
+  const pace = usePaceLine(limit, budget.amount, format)
 
   const save = async () => {
     if (!(await run(() => api.setMonthlyLimit(s.id, limit)))) return
@@ -61,20 +62,8 @@ function MonthlyLimitForm({ s }: { s: StrategyDetail }) {
           <span role="alert">{line.text}</span>
         </ScreenMessage>
       )}
-      <StepperCard
-        label={t('newStrategy.budget.monthlyLimit')}
-        value={shown}
-        display={limit === null ? t('newStrategy.budget.noLimit') : money(limit, s.currency)}
-        onChange={set}
-        help={t('newStrategy.budget.monthlyLimitHelp')}
-        onDecrease={() => set(shown - step)}
-        onIncrease={() => set(shown + step)}
-        canDecrease={shown > step}
-        canIncrease={limit !== null}
-      />
-      {limit !== null && (
-        <p>{t('newStrategy.budget.pace', { limit: money(limit, s.currency), months: monthsToUse(budget.amount, limit) })}</p>
-      )}
+      <MonthlyLimitStepper limit={limit} budget={budget.amount} step={step} format={format} onChange={setLimit} />
+      {pace && <p className={styles.pace}>{pace}</p>}
     </Screen>
   )
 }

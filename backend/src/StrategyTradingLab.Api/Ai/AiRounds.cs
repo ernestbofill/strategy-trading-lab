@@ -137,6 +137,9 @@ public partial class AiRounds(AppDbContext db, Admin.AdminAlerts alerts, TimePro
         var room = strategy.Budget with { Amount = MonthlyLimit.Room(strategy.Budget, strategy.StartedOn, session) };
         var (picks, missing) = AiRoundRules.Pick(reading.Scores, steps, stocks.ToDictionary(s => s.AssetId, s => s.Name), room, used,
             parameters.TopN, unavailable);
+        // Stopped by the month's room while the budget itself has room for the next step: say so, not that the budget is used up.
+        if (missing == AiNoStep.Budget && strategy.Budget.Step is { } step && used + (picks.Count + 1) * step <= strategy.Budget.Amount)
+            missing = AiNoStep.MonthlyLimit;
         return new AiPlan(answer!, reading, stocks, picks, missing, strategy.Budget);
     }
 

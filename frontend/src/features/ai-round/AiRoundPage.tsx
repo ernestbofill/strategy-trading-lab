@@ -24,6 +24,20 @@ import { stepOf } from './stepOf'
 import { aiRoundCacheKey, aiRoundsCacheKey, useAiRound } from './useAiRound'
 
 /** AI round (wireframe `AIRound`): copy the prompt, paste the answer, check the scores, use them. */
+
+/** Why a round gives no step, or fewer than its top N. */
+const NO_STEP = {
+  budget: 'aiRound.noStepBudget',
+  monthlyLimit: 'aiRound.noStepMonthly',
+  unavailable: 'aiRound.noStepUnavailable',
+  allSteps: 'aiRound.noStepAllSteps',
+} as const
+const FEWER = {
+  budget: 'aiRound.fewerBudget',
+  monthlyLimit: 'aiRound.fewerMonthly',
+  unavailable: 'aiRound.fewerUnavailable',
+  allSteps: 'aiRound.fewerAllSteps',
+} as const
 export function AiRoundPage() {
   const { id = '' } = useParams()
   const round = useAiRound(id)
@@ -284,7 +298,7 @@ function RoundScreen({ r, top: topFor }: { r: AiRoundDetail; top: (date: string)
 function stepLine(reading: AiReading, r: AiRoundDetail, t: Translate): string {
   const picks = reading.scores.filter((s) => s.step !== null)
   if (picks.length === 0)
-    return t(reading.short === 'budget' ? 'aiRound.noStepBudget' : reading.short === 'unavailable' ? 'aiRound.noStepUnavailable' : 'aiRound.noStepAllSteps')
+    return t(NO_STEP[reading.short ?? 'allSteps'])
   const gets = picks
     .map((p) => t('aiRound.gets', { stock: p.name, step: stepOf(t, p.step ?? 0, reading.maxSteps) }))
     .join(', ')
@@ -293,5 +307,5 @@ function stepLine(reading: AiReading, r: AiRoundDetail, t: Translate): string {
       ? t('aiRound.getsNoAmount', { picks: gets })
       : t('aiRound.getsAmount', { picks: gets, amount: money(reading.stepAmount, r.currency) })
   if (picks.length >= r.topN) return line
-  return `${line} ${t(reading.short === 'budget' ? 'aiRound.fewerBudget' : reading.short === 'unavailable' ? 'aiRound.fewerUnavailable' : 'aiRound.fewerAllSteps')}`
+  return `${line} ${t(FEWER[reading.short ?? 'allSteps'])}`
 }

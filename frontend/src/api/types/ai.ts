@@ -82,7 +82,7 @@ export interface AiReading {
   ok: boolean
   maxSteps: number | null
   stepAmount: number | null
-  short: 'budget' | 'allSteps' | 'unavailable' | null
+  short: 'budget' | 'allSteps' | 'unavailable' | 'monthlyLimit' | null
 }
 
 export interface AiRoundResult {

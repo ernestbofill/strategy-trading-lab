@@ -79,6 +79,7 @@ describe('stockLine', () => {
     const notCandidate = stockLine(row({ status: 'notCandidate' }), 'live', 'EUR', words)
     expect([notCandidate.pill, notCandidate.detail]).toEqual(['NOT A CANDIDATE', 'Below its long trend'])
     expect(stockLine(row({ status: 'noBudget' }), 'live', 'EUR', words).detail).toBe('No budget left for its trades')
+    expect(stockLine(row({ status: 'monthlyLimit' }), 'live', 'EUR', words).detail).toBe("This month's limit is used: more room next month")
   })
 
   it('names the rules a stock misses, from its checks, as the stock page does', () => {

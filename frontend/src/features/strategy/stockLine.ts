@@ -47,6 +47,8 @@ function detailOf(row: StockRow, words: StockStatusWords | null, checks: Texts, 
       return row.maxSteps === null ? (words?.holding ?? t('strategy.stock.inMarket')) : steps(row.steps, row.maxSteps, t)
     case 'noBudget':
       return t(row.maxSteps === null ? 'strategy.stock.noBudgetShort' : 'strategy.stock.noBudget')
+    case 'monthlyLimit':
+      return t('strategy.stock.monthlyLimit')
     case 'outOfTheMarket':
       return unmetLine(row, checks, ['buy']) ?? (row.distancePct !== null && row.distancePct > 0 && words
         ? fromZone(row.distancePct, words.zone)
@@ -86,6 +88,7 @@ const PILL_KEYS: Record<StockRow['status'], [MessageKey, PillTone]> = {
   building: ['strategy.pill.building', 'building'],
   outOfTheMarket: ['strategy.pill.candidate', 'watching'],
   noBudget: ['strategy.pill.candidate', 'watching'],
+  monthlyLimit: ['strategy.pill.candidate', 'watching'],
   watching: ['strategy.pill.candidate', 'watching'],
   notCandidate: ['strategy.pill.notCandidate', 'muted'],
   notEnoughData: ['strategy.pill.notChecked', 'muted'],

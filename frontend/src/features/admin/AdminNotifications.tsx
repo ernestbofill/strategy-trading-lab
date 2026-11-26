@@ -47,7 +47,7 @@ const columns: DataTableColumn<AdminPush>[] = [
     cell: (p) => (p.error?.startsWith('Not sent') ? p.error : p.error ? `${resultText[resultOf(p)]}: ${p.error}` : resultOf(p) === 'skipped' ? 'Sending' : resultText[resultOf(p)]),
   },
   // When it went out (or failed), not when it was claimed: a user's pushes are claimed together and sent a minute apart.
-  { id: 'when', header: 'When', accessorFn: whenOf, cell: (p) => localDateTime(whenOf(p)), mono: true },
+  { id: 'when', header: 'When', accessorFn: (p) => Date.parse(whenOf(p)), cell: (p) => localDateTime(whenOf(p)), mono: true },
 ]
 
 const filters: DataTableFilter[] = [

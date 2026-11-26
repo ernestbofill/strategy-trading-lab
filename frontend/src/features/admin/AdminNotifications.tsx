@@ -30,6 +30,7 @@ const kindText: Record<NotificationKind, string> = {
 
 type Result = 'sent' | 'failed' | 'skipped'
 const resultOf = (p: AdminPush): Result => (p.sentAt ? 'sent' : p.failedAt ? 'failed' : 'skipped')
+const whenOf = (p: AdminPush) => p.sentAt ?? p.failedAt ?? p.createdAt
 const resultText: Record<Result, string> = { sent: 'Sent', failed: 'Failed', skipped: 'Not sent' }
 
 const columns: DataTableColumn<AdminPush>[] = [
@@ -45,7 +46,8 @@ const columns: DataTableColumn<AdminPush>[] = [
     // A skipped push's reason already says "Not sent: …"; one with no result yet is still going out.
     cell: (p) => (p.error?.startsWith('Not sent') ? p.error : p.error ? `${resultText[resultOf(p)]}: ${p.error}` : resultOf(p) === 'skipped' ? 'Sending' : resultText[resultOf(p)]),
   },
-  { id: 'createdAt', header: 'When', accessorFn: (p) => p.createdAt, cell: (p) => localDateTime(p.createdAt), mono: true },
+  // When it went out (or failed), not when it was claimed: a user's pushes are claimed together and sent a minute apart.
+  { id: 'when', header: 'When', accessorFn: (p) => Date.parse(whenOf(p)), cell: (p) => localDateTime(whenOf(p)), mono: true },
 ]
 
 const filters: DataTableFilter[] = [
@@ -97,7 +99,7 @@ export function AdminNotifications() {
                 columns={columns}
                 filters={filters}
                 searchPlaceholder="Search pushes…"
-                initialSort={{ id: 'createdAt', desc: true }}
+                initialSort={{ id: 'when', desc: true }}
                 emptyMessage="No pushes yet."
               />
             </section>

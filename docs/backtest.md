@@ -331,6 +331,35 @@ Assumptions made while building them (listed in its PR):
 - **The chart** shows the gain on the money invested at each month's end, for the strategy and baseline 1, per period (not on *All*). Tapping a baseline to add its line is left for later.
 - **Trades** on *All* are every period's.
 
+## The templates' figures (item 56)
+
+Run on production on 2026-11-25 (snapshot 2026-11, the defaults in use, in euro), through `POST /admin/backtest`; they replace the POC's in `TemplateCatalog` and *How we tested*. A year on average and the worst year, money-weighted; the index column is baseline 1 (*S&P 500, monthly*) for the stock templates, and the fund bought with the whole budget on day one (baseline 3 with no limit) for *Bear markets* and *Index trend*.
+
+| Template | 2011–14 | 2015–18 | 2019–22 | 2023–26 | All | Worst year |
+| --- | --- | --- | --- | --- | --- | --- |
+| *Winners at a discount* | +18.9% (21.4) | +9.6% (7.3) | +9.2% (11.6) | +11.2% (17.4) | **+12.2%** (14.4) | −12.7% (−13.1), 2022 |
+| *The comeback* | +23.3% (21.4) | +3.5% (7.3) | +13.4% (11.6) | +10.4% (17.4) | **+12.7%** (14.4) | −30.6% (−13.1), 2015 |
+| *Bear markets* (SPY) | no trade (17.9) | no trade (8.5) | +16.5% (15.6) | no trade (18.2) | **+16.5%** (15.6) | −13.1% (−13.1), 2022 |
+| *Index trend* (SPY) | +16.6% (17.9) | +5.8% (8.5) | +9.2% (15.6) | +15.9% (18.2) | **+11.9%** (15.0) | −18.6% (−13.1), 2022 |
+
+The index's figure in brackets. *Index trend* on the other tabs (All, against the fund held): Nasdaq-100 +17.1% (19.2), worst −13.4% (−28.4); Developed ex-US +3.9% (7.8), worst −10.2% (−10.3); DAX (the index, ^GDAXI) +7.1% (8.3), worst −11.3% (−18.3); Nikkei 225 (the index, ^N225) +0.3% (8.2); Vanguard 500 +12.4% (14.9).
+
+- **Budget at work:** about 73% (*Winners at a discount*) and 83% (*The comeback*) against 85% for the S&P 500, monthly; *Index trend* 80%; *Bear markets* 17% (it trades in one period of four).
+- **The budget runs out early:** at €400 a month, both stock templates spend the €6,000 within about 15 months of each period's start (60 trades a period), so the later years only hold, and the signals after go unpaid (54 to 218 a period).
+- **Trades and the budget invested per year** (the candidates check's last part, item 52), stocks traded in brackets: *Winners at a discount* 2011 34 (12), 2012 22 (10), 2013 4, 2015 11, 2016 29 (12), 2017 10, 2018 10, 2019 31 (12), 2020 29 (16), 2023 45 (18), 2024 15; *The comeback* 2011 48 (14), 2012 12, 2015 42 (12), 2016 18, 2019 48 (18), 2020 12, 2023 48 (21), 2024 12. Each trade is €100.
+- ***Bear markets*' All** is its only traded period (2019–22) against the fund over the same period, so like is compared with like; the simulator's own *All* averages the index over all four.
+- The texts' stories now give numbers; the POC's period stories are gone (other periods, other events).
+
+### What explains the figures (2026-11-26)
+
+Looked into with Ernest before the figures went live:
+
+- ***Index trend* and *Bear markets*: the years.** 2011–2026 has no long bear market. Over 1999–2026 (SPY, in dollars, since Yahoo's EUR/USD rate starts in 2004), *Index trend* makes +10.1% a year against +8.7% held, with a worst year of −20.8% against −36.8% (2008). After 2011 the falls were short and V-shaped, and it bought back higher each time; in 2022 a whipsaw (sold 386, rebought 433, sold 399) and euro cash while the dollar rose made it worse than holding. *Bear markets* over 1999–2026 makes +5.7% against +8.7%: it bought 2001–02 too early.
+- **The stock templates: the choice of stocks.** Against baseline 2 (the same days and money on the whole draft) they lose 2.3 (*Winners at a discount*) and 2.8 (*The comeback*) points a year; timing adds a little; the draft (equal-weighted) trails the S&P 500 (cap-weighted) only in 2023–26 (3.2 points). The money goes to the first signals (all spent 13–27 months into each period), and the 5 trades a stock come within about 70 days, mostly at higher prices, so 60 trades sit in 17–29 stocks.
+- **On the starter lists** (2023–26, chosen today, so with hindsight): *Winners at a discount* +47.4% against +39.5% for its own list bought on the same days (+7.9 points) and +17.3% for the S&P 500; *The comeback* +35.1% against +42.8%. On 16 years, Dip beats its list in 3 periods of 4.
+- **2 trades a stock** (on the draft): *The comeback* +15.4% a year against +12.7% with 5, ahead of the S&P 500 (+14.4%); *Winners at a discount* unchanged (+12.2%). *The comeback*'s default becomes 2 trades of 200 (Ernest, 2026-11-26).
+- Next: a test draft of the strategies' kind of stocks (`ROADMAP.md` item 59).
+
 ## Biases
 
 | Bias | How the backtest handles it |
@@ -350,5 +379,4 @@ Assumptions made while building them (listed in its PR):
 
 ## Open points
 
-- *Bear markets* and *Index trend*'s test money (item 54's default: the template's budget, no monthly limit), with item 56's numbers.
 - Tapping a baseline to add its line to the chart (item 55 left it out).

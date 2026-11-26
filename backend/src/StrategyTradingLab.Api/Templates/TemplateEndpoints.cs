@@ -94,7 +94,8 @@ public static class TemplateEndpoints
             return new BenchmarkBacktestDto(b.Key, bw.Name, WithStories(b.Periods, bw.Stories, enBw.Stories));
         }).ToList();
         return new BacktestDto(words.Scope, localizedPeriods, TemplateCatalog.PriceProvider, words.Years, words.Universe,
-            words.TestedDefaults, TemplateCatalog.Fee.Fixed, TemplateCatalog.Fee.Percent, benchmarks);
+            // The backtest's costs (docs/backtest.md): a fee and a spread of 0.1% each, no fixed part.
+            words.TestedDefaults, 0, Backtest.BacktestRunner.DefaultMoney.FeePct + Backtest.BacktestRunner.DefaultMoney.SpreadPct, benchmarks);
     }
 
     static IReadOnlyList<PeriodResult> WithStories(

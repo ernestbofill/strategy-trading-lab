@@ -19,8 +19,8 @@ Whoever sees a test fail (an AI tool or Ernest) adds a row to the log, in the sa
 | Suite | TP | FP | Total |
 | --- | --- | --- | --- |
 | Frontend (Vitest) | 3 | 13 | 16 |
-| Backend (xUnit) | 3 | 30 | 33 |
-| **All** | **6** | **43** | **49** |
+| Backend (xUnit) | 3 | 31 | 34 |
+| **All** | **6** | **44** | **50** |
 
 ## Log
 
@@ -28,6 +28,7 @@ Newest first. *Where* is `local` or `CI`. *Test* is the file and test name (or t
 
 | Date | PR | Where | Suite | Test | Tests | Verdict | Cause and fix |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-25 | #289 | local | Backend (xUnit) | `TemplateTests.Every_template_has_texts_with_rules` (en, ca) | 2 | FP | It wanted a story for every period of every *Index trend* tab; the new figures keep a story for *All* only. It now checks each tab's *All* story and that no story names a missing period. |
 | 2026-11-25 | #287 | local | Backend (xUnit) | `BacktestDataDrawTests.The_owner_draws_the_test_draft_and_gets_its_report_and_snapshot` | 1 | FP | The test's synthetic Yahoo leaves one symbol in 20 without prices, and `EURUSD=X` was one; exchange rates now always have prices there, as SPY does. |
 | 2026-11-25 | #286 | local | Backend (xUnit) | `BacktestSimulatorTests.A_backtest_of_a_running_simulation_from_its_start_gives_the_trades_the_app_recorded` | 1 | FP | The new test ran the daily check once over 400 days, which pays the new signals stock by stock, not by date; it now checks each evening, as production does. The catch-up order went to `ROADMAP.md`'s ideas. |
 | 2026-11-25 | #286 | local | Backend (xUnit) | `BacktestSimulatorTests.With_money_for_every_signal_it_trades_the_POCs_signals_at_the_next_open(comeback-TSLA-0)` | 1 | FP | The new test's golden loader dropped the volumes the comeback reads; it reads them now. |

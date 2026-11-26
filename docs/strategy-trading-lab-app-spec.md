@@ -458,7 +458,7 @@ The settings are available when starting a strategy and on a running one (Tune t
 - H1: "How we tested"
 - Intro: "We ran the template's rules on past prices, day by day, as if it had been running then. Here's exactly how."
 - Two columns from 1024px: the main column (left, 3fr) holds **"By period"** and **"How a test runs"** so the results table has full width; the aside column (right, 2fr) holds **"The data"** and the warning box **"What a backtest can't show"**.
-- **"By period"**: a table "Period", then "A year, on average" and "Worst year" (each with "Template" and the index name), "Alpha" (with an "i" explaining direct alpha), and an optional "Story" column; rows "2000-12", "2013-19", "2020-26", "All" (standardized across templates from POC research; see `docs/backtest-research-findings.md`). For *Bear markets*, `2013-19` reads "No market crashes". For *Index trend*, tabs above the table switch between the 6 tested indexes (S&P 500 first).
+- **"By period"**: a table "Period", then "A year, on average" and "Worst year" (each with "Template" and the index name), "Alpha" (with an "i" explaining direct alpha), and an optional "Story" column; rows "2011–14", "2015–18", "2019–22", "2023–26", "All" (STL's own backtest, `docs/backtest.md`, *The templates' figures*). For *Bear markets*, a period with no 20% fall reads "No 20% fall: no trade". For *Index trend*, tabs above the table switch between the 6 tested indexes (S&P 500 first).
 - Caption under table: "All figures are yearly averages. Each period is an independent test that starts with fresh money."
 - **"How a test runs"**:
   - "The rules are checked once a day, after the close, as in the app."

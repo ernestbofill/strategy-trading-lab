@@ -1,5 +1,6 @@
 
 ## Todos from Claude to Ernest
+- [x] Backtest: look at the templates' new tested figures on #289 (the numbers and the five points in its description, especially *Bear markets* and *Index trend*'s money: the template's budget with no monthly limit) and say whether they go live. The PR stays open until then. (#289) Done 2026-11-26: accepted.
 - [x] Backtest data: once #284 is merged and deployed, press *Draw again* on `/admin/backtest-data` (the symbol map and sectors changed, so the page asks for it), and look at the new report. (#284) Done 2026-11-25: second report reviewed in the chat, accepted.
 - [x] Backtest data: once #283 is merged and deployed, open `/admin/backtest-data` on production and press *Draw the test draft* (about 15 minutes; the page shows its progress). Then review the report (missing members, renamed tickers, name mismatches, the second list's differences, the two checks, the price warnings) before any backtest result counts. Fixes to the symbol map come as a PR and a new draw. The cloud sessions can't run it: Yahoo refuses them. (#283) Done 2026-11-25, reviewed in the chat.
 - [ ] GitHub: delete the branch `claude/awesome-clarke-32nvbu-admin-loading`. It holds one bad commit from the refactor (it undoes #239) and has no PR; the cloud session couldn't delete it. Its work merged as #241 from another branch. (#252)

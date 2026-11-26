@@ -124,17 +124,19 @@ public static class TemplateCatalog
     // The POC scales in with 5 steps per stock ($110 steps, $550 per stock).
     static readonly Budget StockBudget = new(3000, 100, 5);
 
-    // Backtests of the strategy across time periods and a broad universe of assets (from the POC research).
-    // Each period is an independent test starting with fresh money at its beginning.
+    // STL's own backtest (docs/backtest.md, ROADMAP item 56): the test draft for the stock templates, the fund for Bear markets and
+    // Index trend, at the defaults in use on 2026-11-25, snapshot 2026-11. Each period is an independent test with fresh money; the
+    // index column is the S&P 500, monthly (stock templates) or the fund bought with the whole budget on day one (fund templates).
 
     public static readonly Template Dip = new(
         TemplateKeys.Dip, "stage2_pullback", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
         new StarterList(Coherent, Eaton, Modine, MonolithicPower, NVent, Schneider, SuperMicro, Vertiv, Vicor),
         [
-            new("2000-12", 11.5m, 5.5m, -18m, -37m),
-            new("2013-19", 14.9m, 13.4m, -12m, -4m),
-            new("2020-26", 16.3m, 14.3m, -21m, -18m),
-            new("All", 14.3m, 9.8m, -21m, -37m),
+            new("2011–14", 18.9m, 21.4m, -4.7m, 12.9m),
+            new("2015–18", 9.6m, 7.3m, -4.3m, -0.4m),
+            new("2019–22", 9.2m, 11.6m, -12.7m, -13.1m),
+            new("2023–26", 11.2m, 17.4m, -3.9m, 4.3m),
+            new("All", 12.2m, 14.4m, -12.7m, -13.1m),
         ],
         // STL's own low rule from a new strategy's first day (the params' default keeps the POC's).
         new DipParams { LowBeforePeakFrom = DateOnly.MinValue })
@@ -160,10 +162,11 @@ public static class TemplateCatalog
         new StarterList(Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
             ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler),
         [
-            new("2000-12", 15.1m, 5.5m, -15m, -37m),
-            new("2013-19", 16.3m, 13.4m, -14m, -4m),
-            new("2020-26", 19.2m, 14.3m, -24m, -18m),
-            new("All", 16.5m, 9.8m, -24m, -37m),
+            new("2011–14", 23.3m, 21.4m, 13.4m, 12.9m),
+            new("2015–18", 3.5m, 7.3m, -30.6m, -0.4m),
+            new("2019–22", 13.4m, 11.6m, 1.6m, -13.1m),
+            new("2023–26", 10.4m, 17.4m, -8.6m, 4.3m),
+            new("All", 12.7m, 14.4m, -30.6m, -13.1m),
         ],
         new ComebackParams())
     {
@@ -186,10 +189,11 @@ public static class TemplateCatalog
         TemplateKeys.Bear, "bear_accumulation", InvestsIn.Sp500Fund, SignalSides.BuysOnly, new Budget(3000, 600, 5),
         new DefaultFund(Cspx),
         [
-            new("2000-12", 9.4m, 1.7m, -12m, -37m),
-            new("2013-19"),
-            new("2020-26", 16.8m, 13.3m, -14m, -18m),
-            new("All", 11.2m, 7.7m, -14m, -37m),
+            new("2011–14", null, 17.9m, null, 4.1m),
+            new("2015–18", null, 8.5m, null, -0.4m),
+            new("2019–22", 16.5m, 15.6m, -13.1m, -13.1m),
+            new("2023–26", null, 18.2m, null, 4.3m),
+            new("All", 16.5m, 15.6m, -13.1m, -13.1m),
         ],
         new BearParams())
     {
@@ -206,10 +210,11 @@ public static class TemplateCatalog
 
     static readonly IReadOnlyList<PeriodResult> TrendSp500Periods =
     [
-        new("2000-12", 6.4m, 1.7m, -4m, -37m),
-        new("2013-19", 10.4m, 13.8m, -11m, -4m),
-        new("2020-26", 11.2m, 13.3m, -16m, -18m),
-        new("All", 10.2m, 10.9m, -16m, -37m),
+        new("2011–14", 16.6m, 17.9m, -5.0m, 4.1m),
+        new("2015–18", 5.8m, 8.5m, -5.9m, -0.4m),
+        new("2019–22", 9.2m, 15.6m, -18.6m, -13.1m),
+        new("2023–26", 15.9m, 18.2m, 0.4m, 4.3m),
+        new("All", 11.9m, 15.0m, -18.6m, -13.1m),
     ];
 
     // All in, all out: no step, the whole budget at once.
@@ -231,38 +236,43 @@ public static class TemplateCatalog
             new("sp500", TrendSp500Periods),
             new("qqq",
             [
-                new("2000-12", 4.8m, -1.2m, -15m, -42m),
-                new("2013-19", 15.4m, 18.9m, -9m, -1m),
-                new("2020-26", 16.2m, 18.5m, -19m, -33m),
-                new("All", 9.4m, 8.7m, -19m, -42m),
+                new("2011–14", 18.8m, 21.3m, -5.2m, 5.5m),
+                new("2015–18", 8.3m, 13.0m, -3.3m, 4.3m),
+                new("2019–22", 21.6m, 18.1m, -13.4m, -28.4m),
+                new("2023–26", 19.7m, 24.4m, 1.0m, 7.0m),
+                new("All", 17.1m, 19.2m, -13.4m, -28.4m),
             ]),
             new("efa",
             [
-                new("2002-12", 7.8m, 5.6m, -8m, -41m),
-                new("2013-19", 4.9m, 6.8m, -10m, -14m),
-                new("2020-26", 8.6m, 9.1m, -11m, -14m),
-                new("All", 7.2m, 7.0m, -11m, -41m),
+                new("2011–14", 2.9m, 6.6m, -8.4m, -10.3m),
+                new("2015–18", 0.4m, 3.3m, -8.8m, -10.0m),
+                new("2019–22", 5.6m, 8.0m, -10.2m, -9.1m),
+                new("2023–26", 6.6m, 13.2m, -3.3m, 10.1m),
+                new("All", 3.9m, 7.8m, -10.2m, -10.3m),
             ]),
             new("dax",
             [
-                new("2000-12", 6.1m, 0.8m, -12m, -44m),
-                new("2013-19", 6.8m, 8.5m, -11m, -18m),
-                new("2020-26", 10.4m, 11.2m, -9m, -12m),
-                new("All", 8.9m, 7.5m, -12m, -44m),
+                new("2011–14", 6.1m, 8.9m, -5.1m, -15.6m),
+                new("2015–18", 6.1m, 1.7m, -11.3m, -18.3m),
+                new("2019–22", 3.4m, 7.3m, -7.4m, -12.3m),
+                new("2023–26", 12.7m, 15.4m, -3.8m, 0.9m),
+                new("All", 7.1m, 8.3m, -11.3m, -18.3m),
             ]),
             new("nikkei",
             [
-                new("2000-12", 1.8m, -4.5m, -11m, -42m),
-                new("2013-19", 10.9m, 12.8m, -9m, -12m),
-                new("2020-26", 11.8m, 13.1m, -8m, -9m),
-                new("All", 6.5m, 5.8m, -11m, -42m),
+                new("2011–14", -5.4m, 5.8m, -19.0m, -11.6m),
+                new("2015–18", 4.9m, 7.0m, -7.0m, -6.5m),
+                new("2019–22", -8.6m, 3.5m, -12.7m, -16.5m),
+                new("2023–26", 10.3m, 16.4m, -7.9m, 13.1m),
+                new("All", 0.3m, 8.2m, -19.0m, -16.5m),
             ]),
             new("vfinx",
             [
-                new("2000-12", 6.3m, 1.7m, -4m, -37m),
-                new("2013-19", 10.3m, 13.7m, -11m, -4m),
-                new("2020-26", 11.1m, 13.3m, -16m, -18m),
-                new("All", 10.5m, 11.1m, -16m, -37m),
+                new("2011–14", 16.5m, 17.7m, -4.9m, 3.7m),
+                new("2015–18", 6.6m, 8.5m, -3.1m, -0.4m),
+                new("2019–22", 11.5m, 15.0m, -14.0m, -13.2m),
+                new("2023–26", 15.1m, 18.4m, 1.1m, 4.3m),
+                new("All", 12.4m, 14.9m, -14.0m, -13.2m),
             ]),
         ],
     };

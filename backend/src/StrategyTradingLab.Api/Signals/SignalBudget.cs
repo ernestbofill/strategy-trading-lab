@@ -17,7 +17,7 @@ public static class MonthlyLimit
 
     /// <summary>
     /// The month's room, not the budget, holds the next step back on <paramref name="day"/>: with <paramref name="used"/> of the budget
-    /// used by the signals, one more step fits the budget but not the room. The pill and the AI round then say so.
+    /// used by the signals, one more step fits the budget but not the room. An AI round then says so.
     /// </summary>
     public static bool HoldsNextStep(Budget budget, DateOnly start, DateOnly day, decimal used) =>
         budget is { MonthlyLimit: not null, Step: { } step } && used + step <= budget.Amount && used + step > Room(budget, start, day);

@@ -104,7 +104,7 @@ public enum StockStatus
     Building,
     OutOfTheMarket,
     NoBudget,
-    /// <summary>As <c>NoBudget</c>, but the budget has room: this month's limit is used (ROADMAP item 57), so the next month can pay.</summary>
+    /// <summary>As <c>NoBudget</c>, but the budget has room: the monthly limit held the step (ROADMAP item 57).</summary>
     MonthlyLimit,
     Watching,
     NotCandidate,

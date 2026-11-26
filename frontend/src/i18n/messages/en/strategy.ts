@@ -76,7 +76,7 @@ export const strategy = {
   'strategy.stock.stepsOf': '{n} of {max} trades',
   'strategy.stock.noBudget': 'No budget left for its trades',
   'strategy.stock.noBudgetShort': 'No budget left',
-  'strategy.stock.monthlyLimit': "This month's limit is used: more room next month",
+  'strategy.stock.monthlyLimit': 'Held by the monthly limit',
   'strategy.stock.sellWaiting': 'Sell signal waiting',
   'strategy.stock.soldNextOpen': 'Sold at the next open',
   'strategy.stock.dropBought': "This drop's trades are bought",

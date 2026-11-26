@@ -85,8 +85,9 @@ public static class StockStates
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
             StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, live ? steps : signalled, maxSteps, strategy.TemplateKey,
                 unboughtSignal: unbought is not null), checks);
-        // Held back by this month's limit while the budget still has room for a step (ROADMAP item 57).
-        if (status == StockStatus.NoBudget && evaluation is not null && MonthlyLimit.HoldsNextStep(strategy.Budget, strategy.StartedOn, evaluation.Date, used))
+        // Held back while the budget still has room for a step: only the monthly limit's room, on the day it was held, can have held
+        // it, as signals only add to what is used (ROADMAP item 57). Not today's room: a step held in August still stands in September.
+        if (status == StockStatus.NoBudget && strategy.Budget is { MonthlyLimit: not null, Step: { } step } budget && used + step <= budget.Amount)
             status = StockStatus.MonthlyLimit;
         // The row names the signal it stands for: waiting for the user, today's, or one the user skipped (or missed) while its window is open.
         var signal = status switch

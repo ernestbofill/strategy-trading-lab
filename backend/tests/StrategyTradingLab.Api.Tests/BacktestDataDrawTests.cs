@@ -153,7 +153,7 @@ public class BacktestDataDrawTests
             var one = await (await admin.PostAsJsonAsync("/admin/backtest", new { templateKey = "comeback", stocks = "stock", symbols = new[] { "zzzq" }, currency = "USD" }))
                 .Content.ReadFromJsonAsync<JsonElement>();
             Assert.Single(one.GetProperty("result").GetProperty("periods").EnumerateArray());
-            Assert.Equal(500m, one.GetProperty("setup").GetProperty("budget").GetDecimal());
+            Assert.Equal(400m, one.GetProperty("setup").GetProperty("budget").GetDecimal()); // The comeback's 2 trades of 200.
             Assert.Equal(JsonValueKind.Null, one.GetProperty("result").GetProperty("periods")[0].GetProperty("sameDays").ValueKind);
             Assert.NotNull(await store.FetchedAsync(DateTime.UtcNow.ToString("yyyy-MM"), "ZZZQ", CancellationToken.None));
             // Index trend on SPY: the template's budget, no monthly limit.

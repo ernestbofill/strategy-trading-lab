@@ -158,15 +158,16 @@ public static class TemplateCatalog
     };
 
     public static readonly Template Comeback = new(
-        TemplateKeys.Comeback, "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, StockBudget,
+        // 2 trades of 200 a stock (Ernest, 2026-11-26): spread over more stocks, the backtest's rate rose from +12.7% to +15.3% a year.
+        TemplateKeys.Comeback, "turnaround", InvestsIn.StockList, SignalSides.BuysOnly, new Budget(3000, 200, 2),
         new StarterList(Byd, Coherent, Eaton, Modine, Moderna, MoltenVentures, MonolithicPower, Palantir, Salesforce,
             ServiceNow, Snowflake, Tesla, Vertiv, Vicor, ZetaGlobal, Zscaler),
         [
-            new("2011–14", 23.3m, 21.4m, 13.4m, 12.9m),
-            new("2015–18", 3.5m, 7.3m, -30.6m, -0.4m),
-            new("2019–22", 13.4m, 11.6m, 1.6m, -13.1m),
-            new("2023–26", 10.4m, 17.4m, -8.6m, 4.3m),
-            new("All", 12.7m, 14.4m, -30.6m, -13.1m),
+            new("2011–14", 24.3m, 21.4m, 18.7m, 12.9m),
+            new("2015–18", 10.7m, 7.3m, -15.9m, -0.4m),
+            new("2019–22", 14.4m, 11.6m, 3.8m, -13.1m),
+            new("2023–26", 11.8m, 17.3m, -9.3m, 4.3m),
+            new("All", 15.3m, 14.4m, -15.9m, -13.1m),
         ],
         new ComebackParams())
     {

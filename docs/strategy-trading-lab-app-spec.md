@@ -463,10 +463,11 @@ The settings are available when starting a strategy and on a running one (Tune t
 - **"How a test runs"**:
   - "The rules are checked once a day, after the close, as in the app."
   - "Each signal is bought at the next day's opening price."
-  - "The tested defaults: €3,000 budget, €100 per trade, up to 5 trades a stock."
+  - The template's tested defaults (stock templates: "€6,000 budget, [€100] per trade, up to [5] trades a stock, at most €400 a month.").
   - "Results in euro, at each day's exchange rate."
-  - "An S&P 500 fund (SPY) gets the same money on the same days, and is never sold."
-  - "Fees: [€X] per trade. Taxes not included."
+  - Stock templates: "An S&P 500 fund (SPY) gets the same budget, at the same monthly limit, and is never sold."; fund templates: "The same fund or index, bought with the whole budget on the first day and never sold."
+  - "Money-weighted returns (IRR) on the money invested: idle cash is left out."
+  - "Fee and spread: [0.2%] a trade. Taxes not included."
 - **"The data"**: rows "Prices" / "Daily, from [provider]"; "Period" / "[year]-[year]"; "Stocks" / "[N], the starter list" (fund templates: the fund); "Adjusted for" / "Splits and dividends".
 - Warning box **"What a backtest can't show"**:
   - "Historical tests use companies and indexes trading today. Failed or delisted companies from decades ago aren't included, which flatters past results."
@@ -515,8 +516,8 @@ For *Your AI's top picks*, restate under the cards that it has no backtest (not 
 | Label | Default | Step | Min–max | Help line |
 | --- | --- | --- | --- | --- |
 | Budget | €3,000 | €500 | €500–€1,000,000 | "The most this strategy can invest in total." |
-| Amount per trade | €100 | €10 | €10–budget | "How much each buy is." |
-| Max trades per stock | 5 | 1 | 1–20 | "Buying a stock over several trades limits the damage of a bad first buy." |
+| Amount per trade | €100 (*The comeback*: €200) | €10 | €10–budget | "How much each buy is." |
+| Max trades per stock | 5 (*The comeback*: 2) | 1 | 1–20 | "Buying a stock over several trades limits the damage of a bad first buy." |
 
 **Summary box**, updated live:
 - "Each buy is [amount]. A stock gets at most [max] trades ([amount × max]). The budget covers [floor(budget ÷ amount)] trades, enough for [floor(trades ÷ max)] stocks bought in full." Singular "trade" and "stock" when the number is 1.

@@ -150,7 +150,7 @@
       "scope": "60 accions de l'S&P 500, 2011–2026.",
       "years": "2011–2026",
       "universe": "La mostra de prova: 60 accions de l'S&P 500 per sector i mida, com era l'índex a l'inici de cada període",
-      "testedDefaults": "Els valors provats: pressupost de 6.000 €, 100 € per operació, fins a 5 operacions per acció, com a molt 400 € al mes."
+      "testedDefaults": "Els valors provats: pressupost de 6.000 €, 200 € per operació, fins a 2 operacions per acció, com a molt 400 € al mes."
     },
     "stockStatus": {
       "zone": "la línia de compra",

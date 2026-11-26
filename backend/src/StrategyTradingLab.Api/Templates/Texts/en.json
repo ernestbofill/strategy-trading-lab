@@ -150,7 +150,7 @@
       "scope": "60 S&P 500 stocks, 2011–2026.",
       "years": "2011–2026",
       "universe": "The test draft: 60 S&P 500 stocks by sector and size, as the index stood at each period's start",
-      "testedDefaults": "The tested defaults: €6,000 budget, €100 per trade, up to 5 trades a stock, at most €400 a month."
+      "testedDefaults": "The tested defaults: €6,000 budget, €200 per trade, up to 2 trades a stock, at most €400 a month."
     },
     "stockStatus": {
       "zone": "the buy line",

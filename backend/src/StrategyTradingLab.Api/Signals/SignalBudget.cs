@@ -14,6 +14,13 @@ public static class MonthlyLimit
 
     /// <summary>A strategy's budget: what its signals may have used by <paramref name="day"/>.</summary>
     public static decimal Room(Budget budget, DateOnly start, DateOnly day) => Room(budget.Amount, budget.MonthlyLimit, start, day);
+
+    /// <summary>
+    /// The month's room, not the budget, holds the next step back on <paramref name="day"/>: with <paramref name="used"/> of the budget
+    /// used by the signals, one more step fits the budget but not the room. The pill and the AI round then say so.
+    /// </summary>
+    public static bool HoldsNextStep(Budget budget, DateOnly start, DateOnly day, decimal used) =>
+        budget is { MonthlyLimit: not null, Step: { } step } && used + step <= budget.Amount && used + step > Room(budget, start, day);
 }
 
 /// <summary>Which signals use their step of the budget: done ones and those still waiting (a skipped or missed one uses none).</summary>
@@ -25,4 +32,7 @@ public static class SignalBudget
 
     /// <summary>For signals already loaded.</summary>
     public static bool UsesBudget(this SignalStatus status) => status is SignalStatus.Confirmed or SignalStatus.Waiting;
+
+    /// <summary>What loaded signals use of the budget: their steps (as <c>StrategyEvaluator.BudgetHistoryAsync</c>'s <c>Used</c>).</summary>
+    public static decimal BudgetUsed(this IEnumerable<Signal> signals) => signals.Where(s => s.Status.UsesBudget()).Sum(s => s.StepAmount ?? 0);
 }

@@ -157,6 +157,13 @@ public class BacktestSimulatorTests(AccountsApi api) : IClassFixture<AccountsApi
         Assert.Equal(1200m, StrategyTradingLab.Api.Signals.MonthlyLimit.Room(6000, 400, start, new DateOnly(2026, 3, 1))); // Month 3: January's and February's carried over.
         Assert.Equal(6000m, StrategyTradingLab.Api.Signals.MonthlyLimit.Room(6000, 400, start, new DateOnly(2027, 12, 1))); // Never past the budget.
         Assert.Equal(6000m, StrategyTradingLab.Api.Signals.MonthlyLimit.Room(6000, null, start, start)); // No limit.
+
+        // Which holds the next €100 step in month 2 (room €800): the month while the budget has room, else the budget.
+        var budget = new StrategyTradingLab.Api.Data.Entities.Budget(1000, 100, 10, 400);
+        var february = new DateOnly(2026, 2, 10);
+        Assert.True(StrategyTradingLab.Api.Signals.MonthlyLimit.HoldsNextStep(budget, start, february, 800));
+        Assert.False(StrategyTradingLab.Api.Signals.MonthlyLimit.HoldsNextStep(budget, start, february, 700)); // The month has room.
+        Assert.False(StrategyTradingLab.Api.Signals.MonthlyLimit.HoldsNextStep(budget, start, february, 1000)); // The budget is full.
     }
 
     record Golden(string Symbol, string[] Dates, decimal[] Close, long[]? Volume, string[] Status, int[] NewBuy, int[]? NewSell = null);

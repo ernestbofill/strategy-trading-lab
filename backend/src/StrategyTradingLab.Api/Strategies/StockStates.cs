@@ -3,6 +3,7 @@ using StrategyTradingLab.Api.Data;
 using StrategyTradingLab.Api.Data.Entities;
 using StrategyTradingLab.Api.Engine;
 using StrategyTradingLab.Api.Evaluation;
+using StrategyTradingLab.Api.Signals;
 using StrategyTradingLab.Api.Templates;
 
 namespace StrategyTradingLab.Api.Strategies;
@@ -16,8 +17,9 @@ public static class StockStates
     {
         var you = book.You(strategy);
         var own = signals.ToList();
+        var used = own.BudgetUsed();
         var states = strategy.Assets.Where(a => a.IsFollowed).Select(a => StockStateOf(strategy, a.AssetId, false,
-            latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], book, aiScores))
+            latest.GetValueOrDefault((strategy.Id, a.AssetId)), [.. own.Where(s => s.AssetId == a.AssetId)], [.. you.Where(b => b.AssetId == a.AssetId)], book, used, aiScores))
             .ToList();
         bool Close(StockState s) => IsClose(strategy.TemplateKey, template.ClosePct, s.Status, s.Distance);
         return new StockCounts(
@@ -51,8 +53,9 @@ public static class StockStates
     /// A stock's state from its latest evaluation, its signals and the trades the results count (spec: Strategy page). For an AI
     /// strategy, <paramref name="aiScores"/> holds the last round's scores (null for other templates).
     /// </summary>
+    /// <param name="used">What all the strategy's signals use of its budget (<see cref="SignalBudget.BudgetUsed"/>), as the daily check counts it.</param>
     public static StockState StockStateOf(Strategy strategy, Guid assetId, bool removed, DailyEvaluation? evaluation, IReadOnlyList<Signal> own,
-        IReadOnlyList<Buy> trades, StrategyBook book, IReadOnlyDictionary<Guid, decimal>? aiScores)
+        IReadOnlyList<Buy> trades, StrategyBook book, decimal used, IReadOnlyDictionary<Guid, decimal>? aiScores)
     {
         var live = strategy.Mode == StrategyMode.Live;
         var maxSteps = strategy.Budget.MaxSteps;
@@ -82,8 +85,8 @@ public static class StockStates
         var status = removed ? StockStatus.Removed : StrategyPage.WithCandidacy(
             StrategyPage.Status(strategy.Mode, latestStatus, waiting is not null, todays is not null, live ? steps : signalled, maxSteps, strategy.TemplateKey,
                 unboughtSignal: unbought is not null), checks);
-        // Held back while the budget still has room for a trade: it was this month's limit, not the budget (ROADMAP item 57).
-        if (status == StockStatus.NoBudget && strategy.Budget is { MonthlyLimit: not null, Step: { } step } budget && book.Used(strategy) + step <= budget.Amount)
+        // Held back by this month's limit while the budget still has room for a step (ROADMAP item 57).
+        if (status == StockStatus.NoBudget && evaluation is not null && MonthlyLimit.HoldsNextStep(strategy.Budget, strategy.StartedOn, evaluation.Date, used))
             status = StockStatus.MonthlyLimit;
         // The row names the signal it stands for: waiting for the user, today's, or one the user skipped (or missed) while its window is open.
         var signal = status switch

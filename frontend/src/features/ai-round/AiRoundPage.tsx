@@ -23,8 +23,6 @@ import { ScoreList } from './ScoreList'
 import { stepOf } from './stepOf'
 import { aiRoundCacheKey, aiRoundsCacheKey, useAiRound } from './useAiRound'
 
-/** AI round (wireframe `AIRound`): copy the prompt, paste the answer, check the scores, use them. */
-
 /** Why a round gives no step, or fewer than its top N. */
 const NO_STEP = {
   budget: 'aiRound.noStepBudget',
@@ -38,6 +36,8 @@ const FEWER = {
   unavailable: 'aiRound.fewerUnavailable',
   allSteps: 'aiRound.fewerAllSteps',
 } as const
+
+/** AI round (wireframe `AIRound`): copy the prompt, paste the answer, check the scores, use them. */
 export function AiRoundPage() {
   const { id = '' } = useParams()
   const round = useAiRound(id)

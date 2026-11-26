@@ -455,6 +455,7 @@ public static class StrategyEndpoints
             .ToDictionaryAsync(p => (p.AssetId, p.Date), p => p.Close, cancellationToken);
 
         var maxSteps = strategy.Budget.MaxSteps;
+        var used = signalEntities.BudgetUsed();
         var stocks = assets.Select(asset =>
         {
             var evaluation = latest.GetValueOrDefault(asset.Id);
@@ -462,7 +463,7 @@ public static class StrategyEndpoints
             var invested = Performance.Used(trades);
             var own = signalEntities.Where(s => s.AssetId == asset.Id).ToList();
             var (status, held, distance, signal, checks) = StockStates.StockStateOf(strategy, asset.Id, removed.Contains(asset.Id), evaluation,
-                own, trades, book, aiScores);
+                own, trades, book, used, aiScores);
             checks = StockStates.ChecksAfterBuy(evaluation, own) ?? checks;
             // The fallback is only for facts stored without candidateSince: a met candidate check's date, which for the comeback's
             // "beaten" is the last day it was beaten down, not the start of the run (#275).

@@ -63,6 +63,7 @@
 - [x] CI / CD on github
 
 ## Minor
+- [ ] Backtest, a fund younger than the test: a fund strategy's test now runs on its own fund (#293), but QQQM (Oct 2020) or VOO (2010) have no prices for the early periods, which then fail or come up short. Fix: fall back to the older twin on the same index (QQQM → QQQ, VOO → SPY, IWDA.L → URTH?) for the years before the fund, and say so on the page; or at least say which periods it can't cover. Meanwhile, type the twin in *Index fund*. (Ernest, 2026-11-27)
 - [ ] Backtest data, Danaher: Yahoo recorded the Fortive spin-off (2 July 2016) as a split, so DHR's history before it is scaled down and shows a fake +61% on 5 July 2016. It sits in the 2015–18 pool (not drafted) and lifts that period's all-members rate by about 0.1 point. Fix: two symbol-map rows that leave DHR out of 2015–18 only (`DHR,2015-01-01,DHR,…` and `DHR,2019-01-01,,…`), then *Draw again*. Found in the second report (2026-11-25, #285).
 - [ ] On Oracle Cloud, review if it should be more isolated from the trading bot.
 - [ ] Admin ssh

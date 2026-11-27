@@ -32,7 +32,7 @@ import { changedSettings, settingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
 import { strategySettingsPath } from '../dashboard/paths'
 import { strategyCacheKey, useStrategy } from '../strategy/useStrategy'
-import { ALL, chartSeries, defaultsOf, gaps, lineRows, preset, sameDefaults, tradesOf, type LineRow } from './backtestView'
+import { ALL, chartSeries, DEFAULT_KEYS, gaps, lineRows, preset, sameDefaults, tradesOf, type LineRow } from './backtestView'
 import type { BacktestState } from './paths'
 import styles from './BacktestPage.module.css'
 
@@ -105,6 +105,9 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
     [],
   )
   const [request, setRequest] = useState<BacktestRequest>(initial)
+  // The strategy's saved test settings, as saved on this page since it opened.
+  const [saved, setSaved] = useState(strategy?.backtestDefaults ?? null)
+  // The strategy's saved test settings, as saved on this page since it opened.
   const [run, setRun] = useState<BacktestRun | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -145,8 +148,10 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
         request={request}
         run={run}
         busy={busy}
-        // Reset keeps the entry point's stocks (one stock stays that stock) and its rules, and leaves out the strategy's saved test settings.
-        reset={() => preset(template, strategy, search.get('stock'), state?.settings, false)}
+        // Reset keeps the entry point's stocks (one stock stays that stock) and its rules, with the strategy's saved test settings.
+        reset={() => preset(template, strategy && { ...strategy, backtestDefaults: saved }, search.get('stock'), state?.settings)}
+        saved={saved}
+        onSaved={setSaved}
         onRun={(test) => {
           setRequest(test)
           return start(test)
@@ -185,18 +190,19 @@ function fieldsOf(request: BacktestRequest, setup: BacktestRun['setup'] | undefi
 
 const num = (s: string) => (s.trim() === '' ? undefined : Number(s.replace(',', '.')))
 
-function TestSettings({ template, strategy, request, run, busy, reset, onRun }: {
+function TestSettings({ template, strategy, request, run, busy, reset, saved, onSaved, onRun }: {
   template: TemplateDetail
   strategy: StrategyDetail | null
   request: BacktestRequest
   run: BacktestRun | null
   busy: boolean
   reset: () => BacktestRequest
+  saved: BacktestDefaults | null
+  onSaved: (defaults: BacktestDefaults) => void
   onRun: (test: BacktestRequest) => Promise<boolean>
 }) {
   const [fields, setFields] = useState<Fields | null>(null)
   const fund = template.investsIn !== 'stockList'
-  const [saved, setSaved] = useState(strategy?.backtestDefaults ?? null)
   const setup = run?.setup
   const currency = (setup?.currency ?? request.currency ?? 'EUR') as 'EUR' | 'USD' | 'GBP'
   const allIn = setup ? setup.amountPerTrade === null : template.defaults.budget.step === null
@@ -262,9 +268,6 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
           </dd>
         </dl>
       )}
-      {!fields && strategy && setup && !busy && (
-        <SaveDefaults strategyId={strategy.id} defaults={defaultsOf(setup, fund)} saved={saved} onSaved={setSaved} />
-      )}
       {fields && (
         <form
           className={styles.form}
@@ -308,8 +311,9 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
           </div>
           <ButtonRow>
             <Button variant="outline" onClick={() => setFields(fieldsOf(reset(), undefined))}>
-              Reset to test defaults
+              Reset to defaults
             </Button>
+            {strategy && <SaveDefaults strategyId={strategy.id} defaults={defaultsOf(fields)} saved={saved} onSaved={onSaved} />}
             <Button variant="primary" type="submit" disabled={busy}>
               {busy ? 'Running…' : 'Run backtest'}
             </Button>
@@ -320,7 +324,11 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
   )
 }
 
-/** Saves the test as run as the strategy's own test settings, what its backtest opens on; once they are, says so. */
+/** The years, money and costs in the form, as a strategy's test settings to save; blank ones are left to the test defaults. */
+const defaultsOf = (fields: Fields): BacktestDefaults =>
+  Object.fromEntries(DEFAULT_KEYS.flatMap((key) => (num(fields[key]) === undefined ? [] : [[key, num(fields[key])]])))
+
+/** Saves the form's years, money and costs as the strategy's test defaults: what its backtest opens on and Reset goes back to. */
 function SaveDefaults({ strategyId, defaults, saved, onSaved }: {
   strategyId: string
   defaults: BacktestDefaults
@@ -328,7 +336,7 @@ function SaveDefaults({ strategyId, defaults, saved, onSaved }: {
   onSaved: (defaults: BacktestDefaults) => void
 }) {
   const { busy, line, run, reset } = useSubmit("The defaults weren't saved. Try again.")
-  if (sameDefaults(defaults, saved)) return <p className={styles.saveDefaults}>This strategy's test defaults</p>
+  const same = sameDefaults(defaults, saved)
   const save = async () => {
     if (!(await run(() => api.saveBacktestDefaults(strategyId, defaults)))) return
     reset()
@@ -336,12 +344,16 @@ function SaveDefaults({ strategyId, defaults, saved, onSaved }: {
     update<StrategyDetail>(strategyCacheKey(strategyId), (s) => ({ ...s, backtestDefaults: defaults }))
   }
   return (
-    <div className={styles.saveDefaults}>
-      {line && <span role="alert">{line.text}</span>}
-      <Button variant="outline" onClick={() => void save()} disabled={busy}>
-        {busy ? 'Saving…' : 'Save as defaults'}
+    <>
+      <Button variant="outline" onClick={() => void save()} disabled={busy || same}>
+        {busy ? 'Saving…' : same ? 'Saved as defaults' : 'Save as defaults'}
       </Button>
-    </div>
+      {line && (
+        <span className={styles.error} role="alert">
+          {line.text}
+        </span>
+      )}
+    </>
   )
 }
 

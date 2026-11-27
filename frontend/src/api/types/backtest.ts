@@ -159,13 +159,10 @@ export interface BacktestRequest {
 }
 
 /**
- * A strategy's own test settings (backend Backtest/BacktestDefaults.cs), saved from the Backtest page: what its test opens on.
- * The rules and currency stay the strategy's, and a list tests the strategy's stocks, so only one stock keeps its symbol.
+ * A strategy's own test settings (backend Backtest/BacktestDefaults.cs), saved from the Backtest page: the years, money and costs its
+ * test opens on and Reset goes back to. Which stocks it runs on is the test's mode, not saved; the rules and currency stay the strategy's.
  */
-export type BacktestDefaults = Pick<
-  BacktestRequest,
-  'stocks' | 'symbols' | 'index' | 'years' | 'periodYears' | 'budget' | 'amountPerTrade' | 'maxTrades' | 'monthlyLimit' | 'feePct' | 'spreadPct'
->
+export type BacktestDefaults = Pick<BacktestRequest, 'years' | 'periodYears' | 'budget' | 'amountPerTrade' | 'maxTrades' | 'monthlyLimit' | 'feePct' | 'spreadPct'>
 
 /** The test as run, with its defaults filled in. `amountPerTrade` is null for all in (Index trend). */
 export interface BacktestSetup {

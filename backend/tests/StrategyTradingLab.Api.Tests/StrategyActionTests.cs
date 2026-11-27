@@ -69,10 +69,9 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
         {
             var id = await StartAsync(owner, $"Defaults {Tag()}");
             var path = $"/admin/backtest/defaults/{id}";
-            var defaults = new { stocks = "list", years = 8, periodYears = 4, budget = 2000, feePct = 0.2 };
+            var defaults = new { years = 8, periodYears = 4, budget = 2000, feePct = 0.2 };
             Assert.Equal(HttpStatusCode.NoContent, (await owner.PutAsJsonAsync(path, defaults)).StatusCode);
             var saved = (await owner.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("backtestDefaults");
-            Assert.Equal("list", saved.GetProperty("stocks").GetString());
             Assert.Equal(8, saved.GetProperty("years").GetInt32());
             Assert.Equal(0.2m, saved.GetProperty("feePct").GetDecimal());
 

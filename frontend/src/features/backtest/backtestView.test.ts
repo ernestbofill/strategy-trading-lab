@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { AllLine, BacktestPeriodResult, BacktestRun, LineResult } from '../../api'
-import { ALL, gaps, lineRows } from './backtestView'
+import type { AllLine, BacktestPeriodResult, BacktestRun, LineResult, StrategyDetail, TemplateDetail } from '../../api'
+import { ALL, gaps, lineRows, preset } from './backtestView'
 
 const line = (rate: number): LineResult => ({ rate, years: [], budgetAtWork: 0.5, trades: 3, invested: 100, endValue: 110, values: [], worst: { year: 2024, return: -0.1 } })
 const all = (rate: number): AllLine => ({ rate, worst: { year: 2022, return: -0.2 }, budgetAtWork: 0.6, trades: 9 })
@@ -46,5 +46,19 @@ describe('the backtest results', () => {
     expect(rows.map((r) => r.key)).toEqual(['strategy', 'index', 'sameStocks'])
     expect(rows[0].trades).toBe(9)
     expect(gaps(rows).map((g) => g.key)).toEqual(['market'])
+  })
+})
+
+describe('the opening test', () => {
+  const strategy = (symbol: string) =>
+    ({ settings: {}, currency: 'USD', budget: { amount: 500, step: null, maxSteps: null }, stocks: [{ symbol, status: 'holding' }] }) as unknown as StrategyDetail
+
+  it("tests a fund strategy's own fund, and one stock of a stock template", () => {
+    const trend = { key: 'trend', investsIn: 'indexFund' } as TemplateDetail
+    expect(preset(trend, strategy('IWDA.L'), null, undefined)).toMatchObject({ index: 'IWDA.L', budget: 500, monthlyLimit: 500, currency: 'USD' })
+    const dip = { key: 'dip', investsIn: 'stockList' } as TemplateDetail
+    const test = preset(dip, null, 'NVDA', undefined)
+    expect(test).toMatchObject({ stocks: 'stock', symbols: ['NVDA'] })
+    expect(test.index).toBeUndefined()
   })
 })

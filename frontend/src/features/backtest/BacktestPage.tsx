@@ -30,7 +30,7 @@ import { changedSettings, settingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
 import { strategySettingsPath } from '../dashboard/paths'
 import { useStrategy } from '../strategy/useStrategy'
-import { ALL, chartSeries, gaps, lineRows, tradesOf, type LineRow } from './backtestView'
+import { ALL, chartSeries, gaps, lineRows, preset, tradesOf, type LineRow } from './backtestView'
 import type { BacktestState } from './paths'
 import styles from './BacktestPage.module.css'
 
@@ -93,25 +93,6 @@ function Page({ template, strategy, loading }: { template: Loadable<TemplateDeta
 }
 
 /** The test the page opens with: the entry point's rules, stocks and money; the rest the test defaults. */
-function preset(template: TemplateDetail, strategy: StrategyDetail | null, stock: string | null, settings: Record<string, number> | undefined): BacktestRequest {
-  const request: BacktestRequest = { templateKey: template.key }
-  const params = settings ?? strategy?.settings ?? undefined
-  if (params && Object.keys(params).length > 0) request.settings = params
-  if (strategy) {
-    // A strategy's test uses its own budget and monthly limit (none: the budget).
-    request.budget = strategy.budget.amount
-    request.monthlyLimit = strategy.budget.monthlyLimit ?? strategy.budget.amount
-    if (strategy.budget.step !== null) request.amountPerTrade = strategy.budget.step
-    if (strategy.budget.maxSteps !== null) request.maxTrades = strategy.budget.maxSteps
-    request.currency = strategy.currency
-  }
-  if (stock) {
-    request.stocks = 'stock'
-    request.symbols = [stock]
-    delete request.budget
-  }
-  return request
-}
 
 function Backtest({ template, strategy }: { template: TemplateDetail; strategy: StrategyDetail | null }) {
   const [search] = useSearchParams()

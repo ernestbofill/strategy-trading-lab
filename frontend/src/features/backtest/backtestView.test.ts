@@ -19,6 +19,7 @@ const period = (label: string, sameDays: LineResult | null): BacktestPeriodResul
 
 const run = (sameDays: boolean) =>
   ({
+    setup: { budget: 200 },
     result: {
       periods: [period('2023–26', sameDays ? line(0.099) : null)],
       strategy: all(0.12),
@@ -34,6 +35,7 @@ describe('the backtest results', () => {
     expect(rows.map((r) => r.key)).toEqual(['strategy', 'index', 'sameDays', 'sameStocks'])
     expect(rows[0].rate).toBeCloseTo(11.6)
     expect(rows[0].atWork).toBe(50)
+    expect(rows[0].used).toBe(50)
     expect(gaps(rows).map((g) => [g.key, Math.round(g.points * 10) / 10])).toEqual([
       ['market', 2.5],
       ['choice', 1.7],

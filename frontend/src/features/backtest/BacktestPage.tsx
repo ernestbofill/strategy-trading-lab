@@ -52,7 +52,7 @@ const LINES: Record<LineRow['key'], { name: string; tip?: string }> = {
 }
 
 const AT_WORK_TIP =
-  'How much of the budget was invested, on average over the period\'s days. All of it spent on day one is 100%; all of it spent 2 years into a 4-year period is 50%.'
+  'How much of the budget was invested, on average over the period\'s days. All of it spent on day one is 100%; all of it spent 2 years into a 4-year period is 50%. In brackets: the share of the budget used by the end.'
 
 const GAP_TEXT = { market: 'vs 1  the market', choice: 'vs 2  the choice of stocks', timing: '2 vs 3  the timing' } as const
 
@@ -361,7 +361,9 @@ function Results({ run, busy }: { run: BacktestRun; busy: boolean }) {
                   </th>
                   <td>{pct(r.rate)}</td>
                   <td>{r.worst ? pct(r.worst.return * 100) : '–'}</td>
-                  <td>{Math.round(r.atWork)}%</td>
+                  <td>
+                    {Math.round(r.atWork)}% <span className={styles.used}>({Math.round(r.used)}% used)</span>
+                  </td>
                 </tr>
               ))}
             </tbody>

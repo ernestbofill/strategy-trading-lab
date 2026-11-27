@@ -284,8 +284,8 @@ vs 2  the choice of stocks  +1.7
   - *1 S&P 500, monthly*: "Buys an S&P 500 fund with each month's money until the budget is used. Does the strategy beat the market?"
   - *2 Same days, same list*: "Each time the strategy buys, the same amount goes into all the stocks in the list that day, split evenly. Does the strategy choose the right stocks?"
   - *3 Same stocks, monthly*: "Buys all the stocks in the list with each month's money, split evenly. Does the timing matter? Compare it with 2: same stocks, other days."
-  - *Budget at work*: "How much of the budget was invested, on average over the period's days. All of it spent on day one is 100%; all of it spent 2 years into a 4-year period is 50%."
-- **All** tab: the average of the periods' rates, the worst year of any period, the average budget at work; under it, "Average of 4 periods, each a fresh test." The latest period's tab says it runs to the last close.
+  - *Budget at work*: "How much of the budget was invested, on average over the period's days. All of it spent on day one is 100%; all of it spent 2 years into a 4-year period is 50%. In brackets: the share of the budget used by the end." The cell reads "48% (92% used)": the budget at work, then the new money put in over the period as a share of the budget (Ernest, 2026-11-27).
+- **All** tab: the average of the periods' rates, the worst year of any period, the average budget at work and budget used; under it, "Average of 4 periods, each a fresh test." The latest period's tab says it runs to the last close.
 - **See the trades**: the strategy's simulated trades in the shared data table (`DataTable`): date, stock, buy or sell, trade number (2 of 5), price, amount, fee; sortable and filterable, for the selected period.
 - **The chart**: the strategy and baseline 1; tapping a baseline row adds its line.
 - **One stock**: baseline 2 is hidden (it would be the strategy itself); baseline 3 reads "[stock], monthly". **Bear markets** and **Index trend**: baseline 2 hidden, baseline 3 is the index fund, monthly.

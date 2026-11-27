@@ -1,24 +1,27 @@
 import type { AllLine, BacktestRequest, BacktestRun, LineResult, StrategyDetail, TemplateDetail, YearReturn } from '../../api'
 import { followedStocks } from '../strategy/stockLine'
 
-/** One row of the results table: a line's yearly rate, worst year and budget at work, as percentages. */
+/** One row of the results table: a line's yearly rate, worst year, budget at work and budget used, as percentages. */
 export interface LineRow {
   key: 'strategy' | 'index' | 'sameDays' | 'sameStocks'
   rate: number | null
   worst: YearReturn | null
   /** 0–100. */
   atWork: number
+  /** 0–100: the budget's new money put in over the period (sale proceeds going back in aren't new money); All averages the periods. */
+  used: number
   trades: number
 }
 
 /** The tab "All" or a period's label. */
 export const ALL = 'all'
 
-const row = (key: LineRow['key'], line: LineResult | AllLine): LineRow => ({
+const row = (key: LineRow['key'], line: LineResult | AllLine, used: number): LineRow => ({
   key,
   rate: line.rate === null ? null : line.rate * 100,
   worst: line.worst,
   atWork: line.budgetAtWork * 100,
+  used,
   trades: line.trades,
 })
 
@@ -27,15 +30,17 @@ const row = (key: LineRow['key'], line: LineResult | AllLine): LineRow => ({
  * itself (one stock, or one fund).
  */
 export function lineRows(run: BacktestRun, tab: string): LineRow[] {
-  const lines =
-    tab === ALL
-      ? run.result
-      : run.result.periods.find((p) => p.period.label === tab) ?? run.result.periods[run.result.periods.length - 1]
+  const periods = tab === ALL ? run.result.periods : [run.result.periods.find((p) => p.period.label === tab) ?? run.result.periods[run.result.periods.length - 1]]
+  const lines = tab === ALL ? run.result : periods[0]
+  const budget = run.setup.budget
+  // The share of the budget put in, per period, averaged for All as the budget at work is.
+  const used = (key: LineRow['key']) =>
+    budget > 0 ? (periods.reduce((sum, p) => sum + (p[key]?.invested ?? 0), 0) / periods.length / budget) * 100 : 0
   return [
-    row('strategy', lines.strategy),
-    row('index', lines.index),
-    ...(lines.sameDays ? [row('sameDays', lines.sameDays)] : []),
-    row('sameStocks', lines.sameStocks),
+    row('strategy', lines.strategy, used('strategy')),
+    row('index', lines.index, used('index')),
+    ...(lines.sameDays ? [row('sameDays', lines.sameDays, used('sameDays'))] : []),
+    row('sameStocks', lines.sameStocks, used('sameStocks')),
   ]
 }
 

@@ -142,3 +142,10 @@
 .gaps dd {
   margin: 0;
 }
+
+/* The budget used, after the budget at work. */
+.used {
+  color: var(--ink-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}

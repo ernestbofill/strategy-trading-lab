@@ -254,6 +254,11 @@ export const httpApi: Api = {
       // The API says why in plain text: a request out of range (400) or missing data (409).
       refused: (problem, status) => (status === 400 ? new InvalidValueError(typeof problem === 'string' ? problem : 'That test was refused.') : undefined),
     })),
+  saveBacktestDefaults: (strategyId, defaults) =>
+    done(request('PUT', `/admin/backtest/defaults/${encodeURIComponent(strategyId)}`, defaults, {
+      fields: 'none',
+      refused: (problem, status) => (status === 400 ? new InvalidValueError(typeof problem === 'string' ? problem : 'Those settings were refused.') : undefined),
+    })),
   sendAdminTestPush: (push) => json(admin('POST', '/notifications/test', push)),
   getAdminAlerts: () => json(admin('GET', '/alerts')),
   dismissAdminAlert: (id) => done(admin('POST', `/alerts/${encodeURIComponent(id)}/dismiss`)),

@@ -132,6 +132,7 @@ class StrategyConfiguration : IEntityTypeConfiguration<Strategy>
             budget.Property(b => b.MonthlyLimit).HasColumnName("budget_monthly_limit").HasColumnType(Money.Amount);
         });
         entity.Property(strategy => strategy.Params).HasColumnType("jsonb");
+        entity.Property(strategy => strategy.BacktestDefaults).HasColumnType("jsonb");
 
         entity.HasOne<User>().WithMany()
             .HasForeignKey(strategy => strategy.UserId).OnDelete(DeleteBehavior.Cascade);

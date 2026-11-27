@@ -168,6 +168,8 @@ public class Strategy : IHasUpdatedAt
     public required string Currency { get; set; }
     public required Budget Budget { get; set; }
     public required JsonDocument Params { get; set; }
+    /// <summary>The owner's test settings for its backtest (<c>Backtest.BacktestDefaults</c>); null: the test defaults.</summary>
+    public JsonDocument? BacktestDefaults { get; set; }
     public Guid? SourceStrategyId { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }

@@ -3,6 +3,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   api,
   InvalidValueError,
+  type BacktestDefaults,
   type BacktestRequest,
   type BacktestRun,
   type BacktestTrade,
@@ -22,15 +23,16 @@ import { Section } from '../../components/Section'
 import { Tabs } from '../../components/Tabs'
 import { TextAction } from '../../components/TextAction'
 import { TwoLineChart } from '../../components/TwoLineChart'
+import { useSubmit } from '../../components/useSubmit'
 import { tabPanel } from '../../components/tabPanel'
 import { exact, formatShares, localDateTime, money, signedPctOrDash } from '../../lib/format'
-import type { Loadable } from '../../lib/useLoadable'
+import { update, type Loadable } from '../../lib/useLoadable'
 import { advancedPath } from '../new-strategy/paths'
 import { changedSettings, settingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
 import { strategySettingsPath } from '../dashboard/paths'
-import { useStrategy } from '../strategy/useStrategy'
-import { ALL, chartSeries, gaps, lineRows, preset, tradesOf, type LineRow } from './backtestView'
+import { strategyCacheKey, useStrategy } from '../strategy/useStrategy'
+import { ALL, chartSeries, defaultsOf, gaps, lineRows, preset, sameDefaults, tradesOf, type LineRow } from './backtestView'
 import type { BacktestState } from './paths'
 import styles from './BacktestPage.module.css'
 
@@ -143,8 +145,8 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
         request={request}
         run={run}
         busy={busy}
-        // Reset keeps the entry point's stocks (one stock stays that stock) and its rules.
-        reset={() => preset(template, strategy, search.get('stock'), state?.settings)}
+        // Reset keeps the entry point's stocks (one stock stays that stock) and its rules, and leaves out the strategy's saved test settings.
+        reset={() => preset(template, strategy, search.get('stock'), state?.settings, false)}
         onRun={(test) => {
           setRequest(test)
           return start(test)
@@ -194,6 +196,7 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
 }) {
   const [fields, setFields] = useState<Fields | null>(null)
   const fund = template.investsIn !== 'stockList'
+  const [saved, setSaved] = useState(strategy?.backtestDefaults ?? null)
   const setup = run?.setup
   const currency = (setup?.currency ?? request.currency ?? 'EUR') as 'EUR' | 'USD' | 'GBP'
   const allIn = setup ? setup.amountPerTrade === null : template.defaults.budget.step === null
@@ -259,6 +262,9 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
           </dd>
         </dl>
       )}
+      {!fields && strategy && setup && !busy && (
+        <SaveDefaults strategyId={strategy.id} defaults={defaultsOf(setup, fund)} saved={saved} onSaved={setSaved} />
+      )}
       {fields && (
         <form
           className={styles.form}
@@ -311,6 +317,31 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
         </form>
       )}
     </Section>
+  )
+}
+
+/** Saves the test as run as the strategy's own test settings, what its backtest opens on; once they are, says so. */
+function SaveDefaults({ strategyId, defaults, saved, onSaved }: {
+  strategyId: string
+  defaults: BacktestDefaults
+  saved: BacktestDefaults | null
+  onSaved: (defaults: BacktestDefaults) => void
+}) {
+  const { busy, line, run, reset } = useSubmit("The defaults weren't saved. Try again.")
+  if (sameDefaults(defaults, saved)) return <p className={styles.saveDefaults}>This strategy's test defaults</p>
+  const save = async () => {
+    if (!(await run(() => api.saveBacktestDefaults(strategyId, defaults)))) return
+    reset()
+    onSaved(defaults)
+    update<StrategyDetail>(strategyCacheKey(strategyId), (s) => ({ ...s, backtestDefaults: defaults }))
+  }
+  return (
+    <div className={styles.saveDefaults}>
+      {line && <span role="alert">{line.text}</span>}
+      <Button variant="outline" onClick={() => void save()} disabled={busy}>
+        {busy ? 'Saving…' : 'Save as defaults'}
+      </Button>
+    </div>
   )
 }
 

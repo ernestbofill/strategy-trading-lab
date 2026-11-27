@@ -1,4 +1,4 @@
-import type { AllLine, BacktestRequest, BacktestRun, LineResult, StrategyDetail, TemplateDetail, YearReturn } from '../../api'
+import type { AllLine, BacktestDefaults, BacktestRequest, BacktestRun, BacktestSetup, LineResult, StrategyDetail, TemplateDetail, YearReturn } from '../../api'
 import { followedStocks } from '../strategy/stockLine'
 
 /** One row of the results table: a line's yearly rate, worst year, budget at work and budget used, as percentages. */
@@ -69,9 +69,16 @@ export function chartSeries(run: BacktestRun, tab: string) {
 
 /**
  * The page's opening test, from where it was opened: a template (its defaults, or the settings on screen), a strategy (its settings,
- * budget, monthly limit and currency, and a fund template's own fund) or a stock.
+ * budget, monthly limit and currency, and a fund template's own fund, then the test settings saved for it unless `saved` is false)
+ * or a stock (the saved settings left out: one stock has its own budget and years).
  */
-export function preset(template: TemplateDetail, strategy: StrategyDetail | null, stock: string | null, settings: Record<string, number> | undefined): BacktestRequest {
+export function preset(
+  template: TemplateDetail,
+  strategy: StrategyDetail | null,
+  stock: string | null,
+  settings: Record<string, number> | undefined,
+  saved = true,
+): BacktestRequest {
   const request: BacktestRequest = { templateKey: template.key }
   const fund = template.investsIn !== 'stockList'
   const params = settings ?? strategy?.settings ?? undefined
@@ -86,6 +93,15 @@ export function preset(template: TemplateDetail, strategy: StrategyDetail | null
     // A fund template tests the fund the strategy trades, not SPY.
     const own = followedStocks(strategy)[0]
     if (fund && own) request.index = own.symbol
+    const defaults = saved && !stock ? strategy.backtestDefaults : null
+    if (defaults) {
+      for (const key of DEFAULT_KEYS) {
+        const value = defaults[key]
+        if (value !== undefined && value !== null) Object.assign(request, { [key]: value })
+      }
+      // A list tests the strategy's stocks as they are now.
+      if (defaults.stocks === 'list') request.symbols = strategy.stocks.map((s) => s.symbol)
+    }
   }
   if (stock) {
     request.stocks = 'stock'
@@ -94,3 +110,31 @@ export function preset(template: TemplateDetail, strategy: StrategyDetail | null
   }
   return request
 }
+
+const DEFAULT_KEYS = ['stocks', 'symbols', 'index', 'years', 'periodYears', 'budget', 'amountPerTrade', 'maxTrades', 'monthlyLimit', 'feePct', 'spreadPct'] as const
+
+/** The test settings to save as a strategy's defaults from a test as run: its stocks (a list's are the strategy's), years, money and costs. */
+export function defaultsOf(setup: BacktestSetup, fund: boolean): BacktestDefaults {
+  const defaults: BacktestDefaults = {
+    years: setup.years,
+    periodYears: setup.periodYears,
+    budget: setup.budget,
+    monthlyLimit: setup.monthlyLimit,
+    feePct: setup.feePct,
+    spreadPct: setup.spreadPct,
+  }
+  if (fund) defaults.index = setup.index
+  else {
+    defaults.stocks = setup.stocks
+    if (setup.stocks === 'stock') defaults.symbols = setup.symbols
+  }
+  if (setup.amountPerTrade !== null) {
+    defaults.amountPerTrade = setup.amountPerTrade
+    defaults.maxTrades = setup.maxTrades
+  }
+  return defaults
+}
+
+/** Whether two sets of test settings are the same (the server sends a left-out one as null). */
+export const sameDefaults = (a: BacktestDefaults, b: BacktestDefaults | null | undefined) =>
+  !!b && DEFAULT_KEYS.every((key) => JSON.stringify(a[key] ?? null) === JSON.stringify(b[key] ?? null))

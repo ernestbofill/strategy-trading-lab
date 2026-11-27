@@ -266,6 +266,9 @@ public record StrategyDetail(
     /// <summary>The template's words for each rule check (<see cref="StockRow.Checks"/>), by its key.</summary>
     public IReadOnlyDictionary<string, CheckTexts>? CheckTexts { get; init; }
 
+    /// <summary>The test settings its backtest opens on, saved by the owner on the Backtest page; null: the test defaults.</summary>
+    public Backtest.BacktestDefaults? BacktestDefaults { get; init; }
+
     /// <summary>The template version it started from (/admin/templates): its settings screen shows that version as tested.</summary>
     public int DefaultsVersion { get; init; }
 

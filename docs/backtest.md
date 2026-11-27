@@ -246,6 +246,8 @@ COSTS    Fee [0.1]%   Spread [0.1]%  a trade
 [ Reset to test defaults ]    [ Run backtest ]
 ```
 
+Under the summary, on a strategy's test: `[ Save as defaults ]`, or "This strategy's test defaults" once the test as run is the one saved.
+
 - *Edit rules* opens Advanced settings for this strategy (or for the new strategy being set up).
 - **Years and data:** with the test draft, the years can't reach past the dataset (16 years and their warm-up, shown on the *Data* line). The strategy's list, one stock and an index aren't limited to it: their prices come from Yahoo, as far back as Yahoo has them. A list and one stock default to the latest period.
 - No warning on the strategy's list or one stock (Ernest: say nothing); the latest-period default does the work.
@@ -330,6 +332,7 @@ Assumptions made while building them (listed in its PR):
 - **The panel** runs on *Rerun tests*, not on open: up to three tests (Default, Saved, Current), each kept by its key, so a repeat is quick. *Saved* shows only when a running strategy's settings differ from the defaults, *Current* only when the screen's differ from both.
 - **The chart** shows the gain on the money invested at each month's end, for the strategy and baseline 1, per period (not on *All*). Tapping a baseline to add its line is left for later.
 - **Trades** on *All* are every period's.
+- **A strategy's test defaults** (Ernest's feedback, 2026-11-27: "defaults are per strategy"): *Save as defaults* under the summary saves the test as run (stocks, years, money, costs) for that strategy, owner only (`PUT /admin/backtest/defaults/{strategyId}`, checked against the ranges a test is held to), in `strategies.backtest_defaults`. Its backtest then opens on them, over the strategy's own rules and currency; *This strategy's list* tests the list as it is then, so only one stock keeps its symbol. *Reset to test defaults* leaves them out, and *Test this stock* (one stock) doesn't use them. Templates have no saved defaults: the test defaults stay the comparable test.
 
 ## The templates' figures (item 56)
 

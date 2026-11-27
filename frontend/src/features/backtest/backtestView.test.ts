@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AllLine, BacktestPeriodResult, BacktestRun, LineResult, StrategyDetail, TemplateDetail } from '../../api'
-import { ALL, gaps, lineRows, preset } from './backtestView'
+import { ALL, defaultsOf, gaps, lineRows, preset, sameDefaults } from './backtestView'
 
 const line = (rate: number): LineResult => ({ rate, years: [], budgetAtWork: 0.5, trades: 3, invested: 100, endValue: 110, values: [], worst: { year: 2024, return: -0.1 } })
 const all = (rate: number): AllLine => ({ rate, worst: { year: 2022, return: -0.2 }, budgetAtWork: 0.6, trades: 9 })
@@ -62,5 +62,22 @@ describe('the opening test', () => {
     const test = preset(dip, null, 'NVDA', undefined)
     expect(test).toMatchObject({ stocks: 'stock', symbols: ['NVDA'] })
     expect(test.index).toBeUndefined()
+  })
+
+  it("opens on a strategy's saved test settings, which reset and one stock leave out", () => {
+    const dip = { key: 'dip', investsIn: 'stockList' } as TemplateDetail
+    const saved = { ...strategy('NVDA'), backtestDefaults: { stocks: 'list', years: 8, periodYears: 4, budget: 2000, feePct: null } } as unknown as StrategyDetail
+    expect(preset(dip, saved, null, undefined)).toMatchObject({ stocks: 'list', symbols: ['NVDA'], years: 8, budget: 2000 })
+    expect(preset(dip, saved, null, undefined)).not.toHaveProperty('feePct')
+    expect(preset(dip, saved, null, undefined, false)).toMatchObject({ budget: 500 })
+    expect(preset(dip, saved, 'AAPL', undefined)).not.toHaveProperty('years')
+  })
+
+  it('saves the test as run, a list without its stocks', () => {
+    const setup = { stocks: 'list', symbols: ['NVDA'], index: 'SPY', years: 4, periodYears: 4, budget: 500, amountPerTrade: 100, maxTrades: 5, monthlyLimit: 400, feePct: 0.1, spreadPct: 0.1 }
+    const defaults = defaultsOf(setup as BacktestRun['setup'], false)
+    expect(defaults).toEqual({ stocks: 'list', years: 4, periodYears: 4, budget: 500, amountPerTrade: 100, maxTrades: 5, monthlyLimit: 400, feePct: 0.1, spreadPct: 0.1 })
+    expect(sameDefaults(defaults, { ...defaults, symbols: null, index: null } as never)).toBe(true)
+    expect(sameDefaults(defaults, { ...defaults, years: 8 })).toBe(false)
   })
 })

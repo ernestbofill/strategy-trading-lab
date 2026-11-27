@@ -111,11 +111,17 @@ export function preset(
   return request
 }
 
-const DEFAULT_KEYS = ['stocks', 'symbols', 'index', 'years', 'periodYears', 'budget', 'amountPerTrade', 'maxTrades', 'monthlyLimit', 'feePct', 'spreadPct'] as const
+/** Every key of `BacktestDefaults`: a record, so the compiler says when the type gains one this list lacks. */
+const DEFAULT_KEYS = Object.keys({
+  stocks: true, symbols: true, index: true, years: true, periodYears: true, budget: true, amountPerTrade: true, maxTrades: true,
+  monthlyLimit: true, feePct: true, spreadPct: true,
+} satisfies Record<keyof BacktestDefaults, true>) as (keyof BacktestDefaults)[]
 
 /** The test settings to save as a strategy's defaults from a test as run: its stocks (a list's are the strategy's), years, money and costs. */
 export function defaultsOf(setup: BacktestSetup, fund: boolean): BacktestDefaults {
+  // The stocks always: the server reads a left-out one as the test draft (a fund's test is its one fund, whatever this says).
   const defaults: BacktestDefaults = {
+    stocks: setup.stocks,
     years: setup.years,
     periodYears: setup.periodYears,
     budget: setup.budget,
@@ -124,10 +130,7 @@ export function defaultsOf(setup: BacktestSetup, fund: boolean): BacktestDefault
     spreadPct: setup.spreadPct,
   }
   if (fund) defaults.index = setup.index
-  else {
-    defaults.stocks = setup.stocks
-    if (setup.stocks === 'stock') defaults.symbols = setup.symbols
-  }
+  else if (setup.stocks === 'stock') defaults.symbols = setup.symbols
   if (setup.amountPerTrade !== null) {
     defaults.amountPerTrade = setup.amountPerTrade
     defaults.maxTrades = setup.maxTrades

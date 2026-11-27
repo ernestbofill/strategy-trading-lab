@@ -79,5 +79,8 @@ describe('the opening test', () => {
     expect(defaults).toEqual({ stocks: 'list', years: 4, periodYears: 4, budget: 500, amountPerTrade: 100, maxTrades: 5, monthlyLimit: 400, feePct: 0.1, spreadPct: 0.1 })
     expect(sameDefaults(defaults, { ...defaults, symbols: null, index: null } as never)).toBe(true)
     expect(sameDefaults(defaults, { ...defaults, years: 8 })).toBe(false)
+    // A fund's as the server sends it back: its stocks kept, not read as the test draft.
+    const fund = defaultsOf({ ...setup, stocks: 'stock', symbols: ['SPY'] } as BacktestRun['setup'], true)
+    expect(sameDefaults(fund, { ...fund, stocks: 'stock', symbols: null } as never)).toBe(true)
   })
 })

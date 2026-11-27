@@ -3,6 +3,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   api,
   InvalidValueError,
+  type BacktestDefaults,
   type BacktestRequest,
   type BacktestRun,
   type BacktestTrade,
@@ -22,15 +23,16 @@ import { Section } from '../../components/Section'
 import { Tabs } from '../../components/Tabs'
 import { TextAction } from '../../components/TextAction'
 import { TwoLineChart } from '../../components/TwoLineChart'
+import { useSubmit } from '../../components/useSubmit'
 import { tabPanel } from '../../components/tabPanel'
 import { exact, formatShares, localDateTime, money, signedPctOrDash } from '../../lib/format'
-import type { Loadable } from '../../lib/useLoadable'
+import { update, type Loadable } from '../../lib/useLoadable'
 import { advancedPath } from '../new-strategy/paths'
 import { changedSettings, settingValues } from '../new-strategy/settings'
 import { useTemplate } from '../new-strategy/useTemplate'
 import { strategySettingsPath } from '../dashboard/paths'
-import { useStrategy } from '../strategy/useStrategy'
-import { ALL, chartSeries, gaps, lineRows, preset, tradesOf, type LineRow } from './backtestView'
+import { strategyCacheKey, useStrategy } from '../strategy/useStrategy'
+import { ALL, chartSeries, DEFAULT_KEYS, gaps, lineRows, preset, sameDefaults, tradesOf, type LineRow } from './backtestView'
 import type { BacktestState } from './paths'
 import styles from './BacktestPage.module.css'
 
@@ -103,6 +105,8 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
     [],
   )
   const [request, setRequest] = useState<BacktestRequest>(initial)
+  // The strategy's saved test settings, as saved on this page since it opened.
+  const [saved, setSaved] = useState(strategy?.backtestDefaults ?? null)
   const [run, setRun] = useState<BacktestRun | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -143,8 +147,10 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
         request={request}
         run={run}
         busy={busy}
-        // Reset keeps the entry point's stocks (one stock stays that stock) and its rules.
-        reset={() => preset(template, strategy, search.get('stock'), state?.settings)}
+        // Reset keeps the entry point's stocks (one stock stays that stock) and its rules, with the strategy's saved test settings.
+        reset={() => preset(template, strategy && { ...strategy, backtestDefaults: saved }, search.get('stock'), state?.settings)}
+        saved={saved}
+        onSaved={setSaved}
         onRun={(test) => {
           setRequest(test)
           return start(test)
@@ -162,9 +168,8 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
   )
 }
 
-/** The form's numbers as typed: blank means the test default. */
-const NUMBERS = ['years', 'periodYears', 'budget', 'amountPerTrade', 'maxTrades', 'monthlyLimit', 'feePct', 'spreadPct'] as const
-type NumberKey = (typeof NUMBERS)[number]
+/** The form's numbers as typed (a strategy's test settings, `DEFAULT_KEYS`): blank means the test default. */
+type NumberKey = keyof BacktestDefaults
 type Fields = Record<NumberKey, string> & { stocks: TestStocks; symbol: string; index: string }
 
 /** The form for a request: its own values, else the last run's, so Edit opens on what ran. */
@@ -174,7 +179,7 @@ function fieldsOf(request: BacktestRequest, setup: BacktestRun['setup'] | undefi
     return value === undefined || value === null ? '' : String(value)
   }
   return {
-    ...(Object.fromEntries(NUMBERS.map((k) => [k, text(k)])) as Record<NumberKey, string>),
+    ...(Object.fromEntries(DEFAULT_KEYS.map((k) => [k, text(k)])) as Record<NumberKey, string>),
     stocks: request.stocks ?? 'draft',
     symbol: request.symbols?.[0] ?? '',
     index: request.index ?? setup?.index ?? 'SPY',
@@ -183,13 +188,19 @@ function fieldsOf(request: BacktestRequest, setup: BacktestRun['setup'] | undefi
 
 const num = (s: string) => (s.trim() === '' ? undefined : Number(s.replace(',', '.')))
 
-function TestSettings({ template, strategy, request, run, busy, reset, onRun }: {
+/** The form's numbers that aren't blank. */
+const numbersOf = (fields: Fields): BacktestDefaults =>
+  Object.fromEntries(DEFAULT_KEYS.flatMap((key) => (num(fields[key]) === undefined ? [] : [[key, num(fields[key])]])))
+
+function TestSettings({ template, strategy, request, run, busy, reset, saved, onSaved, onRun }: {
   template: TemplateDetail
   strategy: StrategyDetail | null
   request: BacktestRequest
   run: BacktestRun | null
   busy: boolean
   reset: () => BacktestRequest
+  saved: BacktestDefaults | null
+  onSaved: (defaults: BacktestDefaults) => void
   onRun: (test: BacktestRequest) => Promise<boolean>
 }) {
   const [fields, setFields] = useState<Fields | null>(null)
@@ -212,10 +223,7 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
   const submit = async () => {
     if (!fields) return
     const test: BacktestRequest = { templateKey: request.templateKey, settings: request.settings, currency: request.currency }
-    for (const key of NUMBERS) {
-      const value = num(fields[key])
-      if (value !== undefined) test[key] = value
-    }
+    Object.assign(test, numbersOf(fields))
     if (fund) test.index = fields.index.trim().toUpperCase() || undefined
     else {
       test.stocks = fields.stocks
@@ -302,8 +310,9 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
           </div>
           <ButtonRow>
             <Button variant="outline" onClick={() => setFields(fieldsOf(reset(), undefined))}>
-              Reset to test defaults
+              Reset to defaults
             </Button>
+            {strategy && <SaveDefaults strategyId={strategy.id} defaults={defaultsOf(fields)} saved={saved} onSaved={onSaved} />}
             <Button variant="primary" type="submit" disabled={busy}>
               {busy ? 'Running…' : 'Run backtest'}
             </Button>
@@ -311,6 +320,45 @@ function TestSettings({ template, strategy, request, run, busy, reset, onRun }: 
         </form>
       )}
     </Section>
+  )
+}
+
+/** The years, money and costs in the form, as a strategy's test settings to save; blank ones are left to the test defaults. */
+/**
+ * The form's numbers as a strategy's test settings to save, less what its stocks mode sets: a list's or one stock's years (the latest
+ * period, Edit fills them in) and one stock's budget (max trades × amount per trade), which would pin that mode's own over the draft's.
+ */
+function defaultsOf(fields: Fields): BacktestDefaults {
+  const { years, budget, ...rest } = numbersOf(fields)
+  return { ...rest, ...(fields.stocks === 'draft' && { years }), ...(fields.stocks !== 'stock' && { budget }) }
+}
+
+/** Saves the form's years, money and costs as the strategy's test defaults: what its backtest opens on and Reset goes back to. */
+function SaveDefaults({ strategyId, defaults, saved, onSaved }: {
+  strategyId: string
+  defaults: BacktestDefaults
+  saved: BacktestDefaults | null
+  onSaved: (defaults: BacktestDefaults) => void
+}) {
+  const { busy, line, run, reset } = useSubmit("The defaults weren't saved. Try again.")
+  const same = sameDefaults(defaults, saved)
+  const save = async () => {
+    if (!(await run(() => api.saveBacktestDefaults(strategyId, defaults)))) return
+    reset()
+    onSaved(defaults)
+    update<StrategyDetail>(strategyCacheKey(strategyId), (s) => ({ ...s, backtestDefaults: defaults }))
+  }
+  return (
+    <>
+      <Button variant="outline" onClick={() => void save()} disabled={busy || same}>
+        {busy ? 'Saving…' : same ? 'Saved as defaults' : 'Save as defaults'}
+      </Button>
+      {line && (
+        <span className={styles.error} role="alert">
+          {line.text}
+        </span>
+      )}
+    </>
   )
 }
 

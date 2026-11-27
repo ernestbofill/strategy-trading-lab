@@ -1,4 +1,4 @@
-import type { AllLine, BacktestRequest, BacktestRun, LineResult, StrategyDetail, TemplateDetail, YearReturn } from '../../api'
+import type { AllLine, BacktestDefaults, BacktestRequest, BacktestRun, LineResult, StrategyDetail, TemplateDetail, YearReturn } from '../../api'
 import { followedStocks } from '../strategy/stockLine'
 
 /** One row of the results table: a line's yearly rate, worst year, budget at work and budget used, as percentages. */
@@ -69,7 +69,8 @@ export function chartSeries(run: BacktestRun, tab: string) {
 
 /**
  * The page's opening test, from where it was opened: a template (its defaults, or the settings on screen), a strategy (its settings,
- * budget, monthly limit and currency, and a fund template's own fund) or a stock.
+ * budget, monthly limit and currency, and a fund template's own fund, then the test settings saved for it) or a stock (the saved
+ * years and budget left out: one stock has its own).
  */
 export function preset(template: TemplateDetail, strategy: StrategyDetail | null, stock: string | null, settings: Record<string, number> | undefined): BacktestRequest {
   const request: BacktestRequest = { templateKey: template.key }
@@ -86,6 +87,10 @@ export function preset(template: TemplateDetail, strategy: StrategyDetail | null
     // A fund template tests the fund the strategy trades, not SPY.
     const own = followedStocks(strategy)[0]
     if (fund && own) request.index = own.symbol
+    for (const key of DEFAULT_KEYS) {
+      const value = strategy.backtestDefaults?.[key]
+      if (value !== undefined && value !== null && !(stock && (key === 'years' || key === 'budget'))) request[key] = value
+    }
   }
   if (stock) {
     request.stocks = 'stock'
@@ -94,3 +99,12 @@ export function preset(template: TemplateDetail, strategy: StrategyDetail | null
   }
   return request
 }
+
+/** Every key of `BacktestDefaults`: a record, so the compiler says when the type gains one this list lacks. */
+export const DEFAULT_KEYS = Object.keys({
+  years: true, periodYears: true, budget: true, amountPerTrade: true, maxTrades: true, monthlyLimit: true, feePct: true, spreadPct: true,
+} satisfies Record<keyof BacktestDefaults, true>) as (keyof BacktestDefaults)[]
+
+/** Whether two sets of test settings are the same (the server sends a left-out one as null). */
+export const sameDefaults = (a: BacktestDefaults, b: BacktestDefaults | null | undefined) =>
+  !!b && DEFAULT_KEYS.every((key) => (a[key] ?? null) === (b[key] ?? null))

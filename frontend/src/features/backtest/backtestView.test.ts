@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AllLine, BacktestPeriodResult, BacktestRun, LineResult, StrategyDetail, TemplateDetail } from '../../api'
-import { ALL, gaps, lineRows, preset } from './backtestView'
+import { ALL, gaps, lineRows, preset, sameDefaults } from './backtestView'
 
 const line = (rate: number): LineResult => ({ rate, years: [], budgetAtWork: 0.5, trades: 3, invested: 100, endValue: 110, values: [], worst: { year: 2024, return: -0.1 } })
 const all = (rate: number): AllLine => ({ rate, worst: { year: 2022, return: -0.2 }, budgetAtWork: 0.6, trades: 9 })
@@ -62,5 +62,25 @@ describe('the opening test', () => {
     const test = preset(dip, null, 'NVDA', undefined)
     expect(test).toMatchObject({ stocks: 'stock', symbols: ['NVDA'] })
     expect(test.index).toBeUndefined()
+  })
+
+  it("opens on a strategy's saved test settings; one stock keeps its own years and budget", () => {
+    const dip = { key: 'dip', investsIn: 'stockList' } as TemplateDetail
+    const saved = { ...strategy('NVDA'), backtestDefaults: { years: 8, periodYears: 4, budget: 2000, feePct: null } } as unknown as StrategyDetail
+    const test = preset(dip, saved, null, undefined)
+    expect(test).toMatchObject({ years: 8, periodYears: 4, budget: 2000 })
+    expect(test).not.toHaveProperty('feePct')
+    expect(test).not.toHaveProperty('stocks')
+    const stock = preset(dip, saved, 'AAPL', undefined)
+    expect(stock).toMatchObject({ stocks: 'stock', periodYears: 4 })
+    expect(stock).not.toHaveProperty('years')
+    expect(stock).not.toHaveProperty('budget')
+  })
+
+  it('compares saved settings as the server sends them back', () => {
+    const defaults = { years: 16, periodYears: 4, budget: 500, feePct: 0.1 }
+    expect(sameDefaults(defaults, { ...defaults, spreadPct: null } as never)).toBe(true)
+    expect(sameDefaults(defaults, { ...defaults, years: 8 })).toBe(false)
+    expect(sameDefaults(defaults, null)).toBe(false)
   })
 })

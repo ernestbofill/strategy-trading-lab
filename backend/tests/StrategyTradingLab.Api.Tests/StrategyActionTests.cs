@@ -61,6 +61,34 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
     }
 
     [NeonFact]
+    public async Task The_owner_saves_a_strategys_backtest_defaults()
+    {
+        var (owner, email) = await factory.VerifiedAsync(UserRole.Owner);
+        var (other, otherEmail) = await factory.VerifiedAsync();
+        try
+        {
+            var id = await StartAsync(owner, $"Defaults {Tag()}");
+            var path = $"/admin/backtest/defaults/{id}";
+            var defaults = new { years = 8, periodYears = 4, budget = 2000, feePct = 0.2 };
+            Assert.Equal(HttpStatusCode.NoContent, (await owner.PutAsJsonAsync(path, defaults)).StatusCode);
+            var saved = (await owner.GetFromJsonAsync<JsonElement>($"/strategies/{id}")).GetProperty("backtestDefaults");
+            Assert.Equal(8, saved.GetProperty("years").GetInt32());
+            Assert.Equal(0.2m, saved.GetProperty("feePct").GetDecimal());
+
+            // The ranges a test is held to: the years a multiple of the period's.
+            Assert.Equal(HttpStatusCode.BadRequest, (await owner.PutAsJsonAsync(path, new { years = 6, periodYears = 4 })).StatusCode);
+            // Left out, the years are the test draft's 16.
+            Assert.Equal(HttpStatusCode.BadRequest, (await owner.PutAsJsonAsync(path, new { periodYears = 3 })).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await other.PutAsJsonAsync(path, defaults)).StatusCode);
+        }
+        finally
+        {
+            await RemoveAsync(email);
+            await RemoveAsync(otherEmail);
+        }
+    }
+
+    [NeonFact]
     public async Task A_strategy_is_renamed_with_the_name_rules_of_Confirm()
     {
         var (client, email) = await factory.VerifiedAsync(); // Live strategies need a confirmed email (#89).

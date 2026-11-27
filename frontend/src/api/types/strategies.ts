@@ -1,5 +1,6 @@
 import type { Currency } from './account'
 import type { AiRoundsSummary, AiSetup } from './ai'
+import type { BacktestDefaults } from './backtest'
 import type { CurrencyRates, SignalStatus, StrategySignalItem, StrategyTradeItem } from './signals'
 import type { Budget, InvestsIn, TemplateKey } from './templates'
 
@@ -279,6 +280,8 @@ export interface StrategyDetail {
   defaultsVersion?: number
   /** The template's signals are years apart (Bear markets): the page says so next to the past results. */
   rareSignals?: boolean
+  /** The test settings its backtest opens on, saved by the owner; null: the test defaults. */
+  backtestDefaults?: BacktestDefaults | null
 }
 
 /** What the Confirm screen sends to start a strategy: the choices of the five steps. Its other settings start at the template's tested defaults. */

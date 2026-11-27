@@ -1652,6 +1652,10 @@ namespace StrategyTradingLab.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<JsonDocument>("BacktestDefaults")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("backtest_defaults");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamptz")

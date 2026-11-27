@@ -92,8 +92,6 @@ function Page({ template, strategy, loading }: { template: Loadable<TemplateDeta
   )
 }
 
-/** The test the page opens with: the entry point's rules, stocks and money; the rest the test defaults. */
-
 function Backtest({ template, strategy }: { template: TemplateDetail; strategy: StrategyDetail | null }) {
   const [search] = useSearchParams()
   const location = useLocation()

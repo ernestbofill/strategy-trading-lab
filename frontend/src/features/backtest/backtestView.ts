@@ -1,4 +1,5 @@
 import type { AllLine, BacktestRequest, BacktestRun, LineResult, StrategyDetail, TemplateDetail, YearReturn } from '../../api'
+import { followedStocks } from '../strategy/stockLine'
 
 /** One row of the results table: a line's yearly rate, worst year and budget at work, as percentages. */
 export interface LineRow {
@@ -78,11 +79,10 @@ export function preset(template: TemplateDetail, strategy: StrategyDetail | null
     if (strategy.budget.maxSteps !== null) request.maxTrades = strategy.budget.maxSteps
     request.currency = strategy.currency
     // A fund template tests the fund the strategy trades, not SPY.
-    const own = strategy.stocks.find((s) => s.status !== 'removed')
+    const own = followedStocks(strategy)[0]
     if (fund && own) request.index = own.symbol
   }
-  if (stock && fund) request.index = stock
-  else if (stock) {
+  if (stock) {
     request.stocks = 'stock'
     request.symbols = [stock]
     delete request.budget

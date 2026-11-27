@@ -77,6 +77,8 @@ public class StrategyActionTests(AccountsApi factory) : IClassFixture<AccountsAp
 
             // The ranges a test is held to: the years a multiple of the period's.
             Assert.Equal(HttpStatusCode.BadRequest, (await owner.PutAsJsonAsync(path, new { years = 6, periodYears = 4 })).StatusCode);
+            // Left out, the years are the test draft's 16.
+            Assert.Equal(HttpStatusCode.BadRequest, (await owner.PutAsJsonAsync(path, new { periodYears = 3 })).StatusCode);
             Assert.Equal(HttpStatusCode.Forbidden, (await other.PutAsJsonAsync(path, defaults)).StatusCode);
         }
         finally

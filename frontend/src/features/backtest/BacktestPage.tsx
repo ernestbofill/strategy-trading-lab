@@ -107,7 +107,6 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
   const [request, setRequest] = useState<BacktestRequest>(initial)
   // The strategy's saved test settings, as saved on this page since it opened.
   const [saved, setSaved] = useState(strategy?.backtestDefaults ?? null)
-  // The strategy's saved test settings, as saved on this page since it opened.
   const [run, setRun] = useState<BacktestRun | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -169,9 +168,8 @@ function Backtest({ template, strategy }: { template: TemplateDetail; strategy: 
   )
 }
 
-/** The form's numbers as typed: blank means the test default. */
-const NUMBERS = ['years', 'periodYears', 'budget', 'amountPerTrade', 'maxTrades', 'monthlyLimit', 'feePct', 'spreadPct'] as const
-type NumberKey = (typeof NUMBERS)[number]
+/** The form's numbers as typed (a strategy's test settings, `DEFAULT_KEYS`): blank means the test default. */
+type NumberKey = keyof BacktestDefaults
 type Fields = Record<NumberKey, string> & { stocks: TestStocks; symbol: string; index: string }
 
 /** The form for a request: its own values, else the last run's, so Edit opens on what ran. */
@@ -181,7 +179,7 @@ function fieldsOf(request: BacktestRequest, setup: BacktestRun['setup'] | undefi
     return value === undefined || value === null ? '' : String(value)
   }
   return {
-    ...(Object.fromEntries(NUMBERS.map((k) => [k, text(k)])) as Record<NumberKey, string>),
+    ...(Object.fromEntries(DEFAULT_KEYS.map((k) => [k, text(k)])) as Record<NumberKey, string>),
     stocks: request.stocks ?? 'draft',
     symbol: request.symbols?.[0] ?? '',
     index: request.index ?? setup?.index ?? 'SPY',
@@ -189,6 +187,10 @@ function fieldsOf(request: BacktestRequest, setup: BacktestRun['setup'] | undefi
 }
 
 const num = (s: string) => (s.trim() === '' ? undefined : Number(s.replace(',', '.')))
+
+/** The form's numbers that aren't blank. */
+const numbersOf = (fields: Fields): BacktestDefaults =>
+  Object.fromEntries(DEFAULT_KEYS.flatMap((key) => (num(fields[key]) === undefined ? [] : [[key, num(fields[key])]])))
 
 function TestSettings({ template, strategy, request, run, busy, reset, saved, onSaved, onRun }: {
   template: TemplateDetail
@@ -221,10 +223,7 @@ function TestSettings({ template, strategy, request, run, busy, reset, saved, on
   const submit = async () => {
     if (!fields) return
     const test: BacktestRequest = { templateKey: request.templateKey, settings: request.settings, currency: request.currency }
-    for (const key of NUMBERS) {
-      const value = num(fields[key])
-      if (value !== undefined) test[key] = value
-    }
+    Object.assign(test, numbersOf(fields))
     if (fund) test.index = fields.index.trim().toUpperCase() || undefined
     else {
       test.stocks = fields.stocks
@@ -325,8 +324,14 @@ function TestSettings({ template, strategy, request, run, busy, reset, saved, on
 }
 
 /** The years, money and costs in the form, as a strategy's test settings to save; blank ones are left to the test defaults. */
-const defaultsOf = (fields: Fields): BacktestDefaults =>
-  Object.fromEntries(DEFAULT_KEYS.flatMap((key) => (num(fields[key]) === undefined ? [] : [[key, num(fields[key])]])))
+/**
+ * The form's numbers as a strategy's test settings to save, less what its stocks mode sets: a list's or one stock's years (the latest
+ * period, Edit fills them in) and one stock's budget (max trades × amount per trade), which would pin that mode's own over the draft's.
+ */
+function defaultsOf(fields: Fields): BacktestDefaults {
+  const { years, budget, ...rest } = numbersOf(fields)
+  return { ...rest, ...(fields.stocks === 'draft' && { years }), ...(fields.stocks !== 'stock' && { budget }) }
+}
 
 /** Saves the form's years, money and costs as the strategy's test defaults: what its backtest opens on and Reset goes back to. */
 function SaveDefaults({ strategyId, defaults, saved, onSaved }: {

@@ -19,12 +19,9 @@ public record BacktestDefaults(int? Years = null, int? PeriodYears = null, decim
     /// <summary>Why these can't be saved for <paramref name="template"/>, or null: the ranges a test is held to.</summary>
     public string? Error(Template template)
     {
-        // Left out, the years are a mode's default: the latest period stands for them (one stock), as it is always in range.
-        var request = Years is null
-            ? new BacktestRequest(template.Key, null, TestStocks.Stock, ["X"], null, Years, PeriodYears, Budget, AmountPerTrade, MaxTrades,
-                MonthlyLimit, FeePct, SpreadPct)
-            : new BacktestRequest(template.Key, null, TestStocks.Draft, null, null, Years, PeriodYears, Budget, AmountPerTrade, MaxTrades,
-                MonthlyLimit, FeePct, SpreadPct);
+        // Over the test draft, which a strategy's backtest opens on: left out, the years are its 16, which the period must divide.
+        var request = new BacktestRequest(template.Key, null, TestStocks.Draft, null, null, Years, PeriodYears, Budget, AmountPerTrade, MaxTrades,
+            MonthlyLimit, FeePct, SpreadPct);
         try
         {
             BacktestRunner.Resolve(request, template);
